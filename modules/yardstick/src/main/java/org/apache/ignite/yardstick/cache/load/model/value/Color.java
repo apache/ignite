@@ -15,47 +15,36 @@
  * limitations under the License.
  */
 
-/**
- * \mainpage Apache Ignite C++
- *
- * Apache Ignite In-Memory Data Fabric is a high-performance, integrated and distributed in-memory platform for
- * computing and transacting on large-scale data sets in real-time, orders of magnitude faster than possible with
- * traditional disk-based or flash-based technologies.
- */
- 
- /**
-  * Apache %Ignite API.
-  */
- namespace ignite
- {
-	 /**
-	  * %Ignite Binary Objects API.
-	  */
-	 namespace binary
-	 {
-		 // Empty.
-	 }
+package org.apache.ignite.yardstick.cache.load.model.value;
 
-	 /**
-	  * %Ignite Transaction API.
-	  */
-	 namespace transactions
-	 {
-		 // Empty.
-	 }
-	 
-	 /**
-	  * %Ignite %Cache API.
-	  */
-	 namespace cache
-	 {
-		 /**
-		  * Contains APIs for creating and executing cache queries.
-		  */
-		 namespace query
-		 {
-			 // Empty.
-		 }
-	 }
- }
- 
+import java.io.Serializable;
+
+/**
+ * Car color
+ */
+public enum Color implements Serializable {
+    /**
+     * Grey color.
+     */
+    GREY,
+
+    /**
+     * Red color.
+     */
+    RED,
+
+    /**
+     * Green color.
+     */
+    GREEN,
+
+    /**
+     * Purple color.
+     */
+    PURPLE,
+
+    /**
+     * Light blue color.
+     */
+    LIGHTBLUE
+}

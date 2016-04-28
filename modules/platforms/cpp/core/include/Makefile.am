@@ -63,7 +63,13 @@ nobase_include_HEADERS = ignite/cache/cache.h \
                          ignite/ignite_configuration.h \
                          ignite/ignite_error.h \
                          ignite/ignition.h \
-                         ignite/guid.h
+                         ignite/guid.h \
+                         ignite/impl/transactions/transaction_impl.h \
+                         ignite/impl/transactions/transactions_impl.h \
+                         ignite/transactions/transaction.h \
+                         ignite/transactions/transactions.h \
+                         ignite/transactions/transaction_state.h
+
 
 uninstall-hook:
 	find ${includedir}/ignite -type d -empty -delete

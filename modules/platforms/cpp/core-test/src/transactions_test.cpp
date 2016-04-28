@@ -435,7 +435,7 @@ BOOST_AUTO_TEST_CASE(TransactionRollbackOnlyNe)
     BOOST_CHECK(tx.IsRollbackOnly());
 
     tx.Commit(err);
-    BOOST_REQUIRE_NE(IgniteError::IGNITE_SUCCESS, err.GetCode());
+    BOOST_REQUIRE(err.GetCode() != IgniteError::IGNITE_SUCCESS);
 
     tx.Close(err);
     if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
