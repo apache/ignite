@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Tests
 {
     using System.IO;
     using System.Linq;
-    using System.Reflection;
     using System.ServiceProcess;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
@@ -29,6 +28,18 @@ namespace Apache.Ignite.Core.Tests
     /// </summary>
     public class WindowsServiceTest
     {
+        [TestFixtureSetUp]
+        public void TestFixtureSetUp()
+        {
+            StopServiceAndUninstall();
+        }
+
+        [TestFixtureTearDown]
+        public void TestFixtureTearDown()
+        {
+            StopServiceAndUninstall();
+        }
+
         /// <summary>
         /// Tests that service stops when Ignition stops.
         /// </summary>
@@ -38,8 +49,6 @@ namespace Apache.Ignite.Core.Tests
             var exePath = typeof(IgniteRunner).Assembly.Location;
             var springPath = Path.GetFullPath("config\\compute\\compute-grid2.xml");
 
-            StopServiceAndUninstall();
-
             IgniteProcess.Start(exePath, string.Empty, args: new[]
             {
                 "-springConfigUrl=" + springPath,
@@ -47,6 +56,10 @@ namespace Apache.Ignite.Core.Tests
                 "/install"
             });
 
+            var service = GetIgniteService();
+            Assert.IsNotNull(service);
+
+            service.Start();
 
 
             // TODO: Deploy and start service
@@ -57,13 +70,18 @@ namespace Apache.Ignite.Core.Tests
 
         private static void StopServiceAndUninstall()
         {
-            var controller = ServiceController.GetServices().FirstOrDefault(x => x.ServiceName == "Apache Ignite.NET");
+            var controller = GetIgniteService();
 
             if (controller != null && controller.CanStop)
                 controller.Stop();
 
             var exePath = typeof(IgniteRunner).Assembly.Location;
             IgniteProcess.Start(exePath, string.Empty, args: new[] {"/uninstall"});
+        }
+
+        private static ServiceController GetIgniteService()
+        {
+            return ServiceController.GetServices().FirstOrDefault(x => x.ServiceName == "Apache Ignite.NET");
         }
     }
 }
