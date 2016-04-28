@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cache.database.tree.util;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
+import org.apache.ignite.internal.util.GridUnsafe;
+import sun.nio.ch.DirectBuffer;
 
 /**
  * Page handler. Can do {@link #readPage(Page, PageHandler, Object, int)}
@@ -101,5 +103,22 @@ public abstract class PageHandler<X> {
         }
 
         return res;
+    }
+
+    /**
+     * @param src Source.
+     * @param dst Destination.
+     * @param srcOff Source offset in bytes.
+     * @param dstOff Destination offset in bytes.
+     * @param cnt Bytes count to copy.
+     */
+    public static void copyMemory(ByteBuffer src, ByteBuffer dst, long srcOff, long dstOff, long cnt) {
+        assert src.isDirect();
+        assert dst.isDirect();
+
+        long srcPtr = ((DirectBuffer)src).address() + srcOff;
+        long dstPtr = ((DirectBuffer)dst).address() + dstOff;
+
+        GridUnsafe.copyMemory(srcPtr, dstPtr, cnt);
     }
 }

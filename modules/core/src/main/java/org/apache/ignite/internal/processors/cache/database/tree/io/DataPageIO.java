@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
+import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
@@ -652,15 +653,10 @@ public class DataPageIO extends PageIO {
      */
     private static void moveBytes(ByteBuffer buf, int off, int cnt, int step) {
         assert step != 0: step;
+        assert off + step >= 0;
+        assert off + step + cnt < buf.capacity();
 
-        if (step > 0) {
-            for (int i = off + cnt - 1; i >= 0; i--)
-                buf.put(i + step, buf.get(i));
-        }
-        else {
-            for (int i = off, end = off + cnt; i < end; i++)
-                buf.put(i + step, buf.get(i));
-        }
+        PageHandler.copyMemory(buf, buf, off, off + step, cnt);
     }
 
     /**
