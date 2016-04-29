@@ -422,6 +422,18 @@ h1, h2, h3, h4, h5, h6 {
     margin-top: 20px;
 }
 
+.details-row:first-child {
+    margin-top: 0;
+
+    .group-section {
+        margin-top: 10px;
+    }
+}
+
+.details-row:last-child {
+    margin-bottom: 0;
+}
+
 .settings-row:first-child {
     margin-top: 0;
 
@@ -997,7 +1009,7 @@ button.form-control {
 
 .panel-details {
     margin-top: 5px;
-    padding: 5px;
+    padding: 10px 5px;
 
     border-radius: 5px;
     border: thin dotted $ignite-border-color;

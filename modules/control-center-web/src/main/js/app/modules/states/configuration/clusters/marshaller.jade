@@ -46,7 +46,7 @@ form.panel.panel-default(name=form novalidate)
                         ng-click='#{marshaller}.expanded = !#{marshaller}.expanded'
                     ) {{ #{marshaller}.expanded ? "Hide settings" : "Show settings"}}
                 .settings-row
-                    .panel-details.col-sm-12(ng-if='#{marshaller}.expanded && #{marshaller}.kind === "OptimizedMarshaller"')
+                    .panel-details(ng-if='#{marshaller}.expanded && #{marshaller}.kind === "OptimizedMarshaller"')
                         .details-row
                             +number('Streams pool size:', optMarshaller + '.poolSize', 'poolSize', 'true', '0', '0',
                                 'Specifies size of cached object streams used by marshaller<br/>\

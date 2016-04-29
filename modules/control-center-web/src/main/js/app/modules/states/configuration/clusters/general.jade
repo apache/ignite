@@ -50,7 +50,7 @@ form.panel.panel-default(name=form novalidate)
                             <li>Apache ZooKeeper - Apache ZooKeeper based IP finder</li>\
                         </ul>')
                 .settings-row
-                    .panel-details.col-sm-12
+                    .panel-details
                         ignite-configuration-clusters-general-discovery-cloud(
                             ng-if='#{model}.discovery.kind === "Cloud"')
                         ignite-configuration-clusters-general-discovery-google(

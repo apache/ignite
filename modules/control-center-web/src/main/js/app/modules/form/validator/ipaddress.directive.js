@@ -32,6 +32,8 @@ export default ['ipaddress', ['IgniteInetAddress', (InetAddress) => {
             return ngModel.$isEmpty(modelValue) || _.isUndefined(attrs.ipaddress) || attrs.ipaddress !== 'true';
         };
 
+        const portRange = !_.isNil(attrs.ipaddressWithPortRange);
+
         if (attrs.ipaddressWithPort) {
             ngModel.$validators.ipaddressPort = (modelValue, viewValue) => {
                 if (isEmpty(modelValue) || viewValue.indexOf(':') === -1)
@@ -43,13 +45,13 @@ export default ['ipaddress', ['IgniteInetAddress', (InetAddress) => {
                 const {ports} = parse(viewValue);
 
                 if (ports.length !== 1)
-                    return true;
+                    return portRange;
 
                 return InetAddress.validPort(ports[0]);
             };
         }
 
-        if (attrs.ipaddressWithPortRange) {
+        if (portRange) {
             ngModel.$validators.ipaddressPortRange = (modelValue, viewValue) => {
                 if (isEmpty(modelValue) || viewValue.indexOf('..') === -1)
                     return true;
@@ -57,7 +59,7 @@ export default ['ipaddress', ['IgniteInetAddress', (InetAddress) => {
                 const {ports} = parse(viewValue);
 
                 if (ports.length !== 2)
-                    return ports.length < 2;
+                    return false;
 
                 return InetAddress.validPort(ports[0]) && InetAddress.validPort(ports[1]) && ports[0] < ports[1];
             };

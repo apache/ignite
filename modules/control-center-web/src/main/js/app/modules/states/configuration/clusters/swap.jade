@@ -44,7 +44,7 @@ form.panel.panel-default(name=form novalidate)
                         ng-click='#{swapModel}.expanded = !#{swapModel}.expanded'
                     ) {{ #{swapModel}.expanded ? "Hide settings" : "Show settings"}}
                 .settings-row
-                    .panel-details.col-sm-12(ng-if='#{swapModel}.expanded && #{swapModel}.kind')
+                    .panel-details(ng-if='#{swapModel}.expanded && #{swapModel}.kind')
                         .details-row
                             +text('Base directory:', fileSwapModel + '.baseDirectory', 'baseDirectory', 'false', 'swapspace',
                                 'Base directory where to write files')

@@ -51,7 +51,7 @@ div
                 <li>Default - exponential backoff retry policy with configured base sleep time equal to 1000ms and max retry count equal to 10</li>\
             </ul>')
     .details-row(ng-if='#{model}.retryPolicy.kind')
-        .panel-details.col-sm-12
+        .panel-details
             div(ng-switch='#{model}.retryPolicy.kind')
                 ignite-configuration-clusters-general-discovery-zookeeper-exponential(ng-switch-when='ExponentialBackoff')
                 ignite-configuration-clusters-general-discovery-zookeeper-bounded-exponential(ng-switch-when='BoundedExponentialBackoff')
