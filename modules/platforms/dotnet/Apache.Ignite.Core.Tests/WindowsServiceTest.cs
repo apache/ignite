@@ -65,7 +65,9 @@ namespace Apache.Ignite.Core.Tests
             IgniteProcess.Start(exePath, string.Empty, args: new[]
             {
                 "/install",
-                "-springConfigUrl=" + springPath
+                "-springConfigUrl=" + springPath,
+                "-J-Xms513m",
+                "-J-Xmx555m"
             }).WaitForExit();
 
             var service = GetIgniteService();
