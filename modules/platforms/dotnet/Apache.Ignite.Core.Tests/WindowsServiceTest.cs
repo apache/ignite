@@ -67,8 +67,13 @@ namespace Apache.Ignite.Core.Tests
             }))
             {
                 Assert.IsTrue(ignite.WaitTopology(2));
-                // TODO: ExecuteJavaTask on the remote service node to stop Ignite there
-                // Check that service has stopped
+
+                ignite.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<object>(
+                    "org.apache.ignite.platform.PlatformStopIgniteTask", ignite.Name);
+
+                Assert.IsTrue(ignite.WaitTopology(2));
+                
+                // TODO: Check that service has stopped
             }
         }
 
