@@ -19,12 +19,14 @@ Common Requirements:
 
 Building the Apache Ignite C++ components:
  * Navigate to the directory $IGNITE_HOME/platforms/cpp
+ * Generate configure file using autotools.
  * Configure build system using './configure' script. For additional options
    use './configure --help'
  * Build enabled components using 'make' command.
 
 Or simply speaking do the following:
  * cd $IGNITE_HOME/platforms/cpp
+ * libtoolize && aclocal && autoheader && automake --add-missing && autoreconf
  * ./configure
  * make
 
