@@ -163,7 +163,8 @@ namespace Apache.Ignite.Service
         /** <inheritdoc /> */
         public void OnLifecycleEvent(LifecycleEventType evt)
         {
-            if (evt == LifecycleEventType.AfterNodeStop)
+            // TODO: Why the hell AfterNodeStop does not arrive?
+            if (evt == LifecycleEventType.BeforeNodeStop)
             {
                 _isStopping = true;
 
