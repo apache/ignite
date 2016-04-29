@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core
 {
     using System;
+    using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
@@ -266,5 +267,12 @@ namespace Apache.Ignite.Core
         /// <typeparam name="TV">Cache value type.</typeparam>
         /// <returns>Near cache instance.</returns>
         ICache<TK, TV> GetOrCreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration);
+
+        /// <summary>
+        /// Gets the collection of names of currently available caches, or empty collection if there are no caches.
+        /// Note that null string is a valid cache name.
+        /// </summary>
+        /// <returns>Collection of names of currently available caches.</returns>
+        ICollection<string> GetCacheNames();
     }
 }

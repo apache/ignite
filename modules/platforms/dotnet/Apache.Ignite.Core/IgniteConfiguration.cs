@@ -26,6 +26,7 @@
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.DataStructures.Configuration;
@@ -91,6 +92,11 @@
         public const int DefaultNetworkSendRetryCount = 3;
 
         /// <summary>
+        /// Default late affinity assignment mode.
+        /// </summary>
+        public const bool DefaultIsLateAffinityAssignment = true;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class.
         /// </summary>
         public IgniteConfiguration()
@@ -105,6 +111,7 @@
             NetworkTimeout = DefaultNetworkTimeout;
             NetworkSendRetryCount = DefaultNetworkSendRetryCount;
             NetworkSendRetryDelay = DefaultNetworkSendRetryDelay;
+            IsLateAffinityAssignment = DefaultIsLateAffinityAssignment;
         }
 
         /// <summary>
@@ -181,6 +188,7 @@
             writer.WriteString(WorkDirectory);
             writer.WriteString(Localhost);
             writer.WriteBoolean(IsDaemon);
+            writer.WriteBoolean(IsLateAffinityAssignment);
 
             // Cache config
             var caches = CacheConfiguration;
@@ -283,6 +291,7 @@
             WorkDirectory = r.ReadString();
             Localhost = r.ReadString();
             IsDaemon = r.ReadBoolean();
+            IsLateAffinityAssignment = r.ReadBoolean();
 
             // Cache config
             var cacheCfgCount = r.ReadInt();
@@ -573,5 +582,30 @@
         /// Gets or sets the transaction configuration.
         /// </summary>
         public TransactionConfiguration TransactionConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether late affinity assignment mode should be used.
+        /// <para />
+        /// On each topology change, for each started cache, partition-to-node mapping is
+        /// calculated using AffinityFunction for cache. When late
+        /// affinity assignment mode is disabled then new affinity mapping is applied immediately.
+        /// <para />
+        /// With late affinity assignment mode, if primary node was changed for some partition, but data for this
+        /// partition is not rebalanced yet on this node, then current primary is not changed and new primary 
+        /// is temporary assigned as backup. This nodes becomes primary only when rebalancing for all assigned primary 
+        /// partitions is finished. This mode can show better performance for cache operations, since when cache 
+        /// primary node executes some operation and data is not rebalanced yet, then it sends additional message 
+        /// to force rebalancing from other nodes.
+        /// <para />
+        /// Note, that <see cref="ICacheAffinity"/> interface provides assignment information taking late assignment
+        /// into account, so while rebalancing for new primary nodes is not finished it can return assignment 
+        /// which differs from assignment calculated by AffinityFunction.
+        /// <para />
+        /// This property should have the same value for all nodes in cluster.
+        /// <para />
+        /// If not provided, default value is <see cref="DefaultIsLateAffinityAssignment"/>.
+        /// </summary>
+        [DefaultValue(DefaultIsLateAffinityAssignment)]
+        public bool IsLateAffinityAssignment { get; set; }
     }
 }
