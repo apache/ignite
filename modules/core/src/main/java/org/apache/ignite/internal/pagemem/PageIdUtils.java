@@ -50,14 +50,14 @@ public final class PageIdUtils {
     private static final long OFFSET_MASK = ~(-1 << OFFSET_SIZE);
 
     /** */
-    private static final int PART_ID_MASK = ~(-1 << PART_ID_SIZE);
+    private static final long PART_ID_MASK = ~(-1 << PART_ID_SIZE);
 
     /** */
-    private static final int FLAG_MASK = ~(-1 << FLAG_SIZE);
+    private static final long FLAG_MASK = ~(-1 << FLAG_SIZE);
 
     /** */
     private static final long EFFECTIVE_NON_DATA_PAGE_ID_MASK =
-        ((long)FLAG_MASK << (PAGE_IDX_SIZE + PART_ID_SIZE)) | PAGE_IDX_MASK;
+        (FLAG_MASK << (PAGE_IDX_SIZE + PART_ID_SIZE)) | PAGE_IDX_MASK;
 
     /** Maximum page number. */
     public static final int MAX_PAGE_NUM = (1 << PAGE_IDX_SIZE) - 1;
@@ -131,7 +131,7 @@ public final class PageIdUtils {
      * @param pageId Page id.
      * @return Page ID.
      */
-    public static int pageIdx(long pageId) {
+    public static int pageIndex(long pageId) {
         return (int)(pageId & PAGE_IDX_MASK); // 30 bytes
     }
 
@@ -188,12 +188,12 @@ public final class PageIdUtils {
      * @return Part ID constructed from the given cache ID and partition ID.
      */
     public static long pageId(int partId, byte flag, long pageIdx) {
-        int fileId = 0;
+        long fileId = 0;
 
         fileId = (fileId << FLAG_SIZE) | (flag & FLAG_MASK);
         fileId = (fileId << PART_ID_SIZE) | (partId & PART_ID_MASK);
 
-        return pageId(fileId, pageIdx);
+        return pageId((int)fileId, pageIdx);
     }
 
     /**
@@ -220,7 +220,7 @@ public final class PageIdUtils {
         assert flag(pageId) == PageIdAllocator.FLAG_IDX; // Possible only for index pages.
 
         int partId = partId(pageId);
-        long pageIdx = pageIdx(pageId);
+        long pageIdx = pageIndex(pageId);
 
         return pageId(partId + 1, PageIdAllocator.FLAG_IDX, pageIdx);
     }
@@ -232,6 +232,6 @@ public final class PageIdUtils {
     public static long maskPartId(long pageId) {
         assert flag(pageId) == PageIdAllocator.FLAG_IDX; // Possible only for index pages.
 
-        return pageId & ~((long)PART_ID_MASK << PAGE_IDX_SIZE);
+        return pageId & ~(PART_ID_MASK << PAGE_IDX_SIZE);
     }
 }

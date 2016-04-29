@@ -37,7 +37,7 @@ public final class ReuseLeafIO extends BPlusLeafIO<Number> {
      * @param ver Page format version.
      */
     protected ReuseLeafIO(int ver) {
-        super(T_REUSE_LEAF, ver, 8); // TODO we can store only 6 bytes here: pageIdx(4) + partId(2)
+        super(T_REUSE_LEAF, ver, 8); // TODO we can store only 6 bytes here: pageIndex(4) + partId(2)
     }
 
     /** {@inheritDoc} */

@@ -216,7 +216,7 @@ public class  PageMemoryImpl implements PageMemory {
 
             pageId = readPageId(absPtr);
 
-            long idx = PageIdUtils.pageIdx(pageId);
+            long idx = PageIdUtils.pageIndex(pageId);
 
             // Reassign page ID according to flags and partition ID.
             pageId = PageIdUtils.pageId(partId, flags, idx);

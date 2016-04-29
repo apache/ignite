@@ -31,7 +31,7 @@ public class FreeInnerIO extends BPlusInnerIO<FreeItem> implements FreeIO {
         int off = offset(idx);
 
         buf.putShort(off, row.freeSpace());
-        buf.putInt(off + 2, PageIdUtils.pageIdx(row.pageId()));
+        buf.putInt(off + 2, PageIdUtils.pageIndex(row.pageId()));
     }
 
     /** {@inheritDoc} */

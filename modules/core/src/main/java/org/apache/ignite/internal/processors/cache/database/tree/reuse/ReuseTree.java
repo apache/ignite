@@ -51,7 +51,7 @@ public final class ReuseTree extends BPlusTree<Number, Long> {
     @Override protected int compare(BPlusIO<Number> io, ByteBuffer buf, int idx, Number row)
         throws IgniteCheckedException {
         int pageIdx = io.isLeaf() ?
-            PageIdUtils.pageIdx(((ReuseLeafIO)io).getPageId(buf, idx)) :
+            PageIdUtils.pageIndex(((ReuseLeafIO)io).getPageId(buf, idx)) :
             (((ReuseInnerIO)io).getPageIndex(buf, idx));
 
         return Integer.compare(pageIdx, toPageIndex(row));
@@ -65,7 +65,7 @@ public final class ReuseTree extends BPlusTree<Number, Long> {
         if (row.getClass() == Integer.class)
             return row.intValue();
 
-        return PageIdUtils.pageIdx(row.longValue());
+        return PageIdUtils.pageIndex(row.longValue());
     }
 
     /** {@inheritDoc} */
