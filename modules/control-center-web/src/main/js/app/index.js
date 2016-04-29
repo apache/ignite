@@ -30,7 +30,6 @@ import 'angular-animate';
 import 'angular-sanitize';
 import 'angular-strap';
 import 'angular-socket-io';
-import 'angular-loading';
 import 'angular-retina';
 import 'angular-ui-router';
 import 'angular-ui-router-metatags';
@@ -52,7 +51,6 @@ import 'angular-gridster/dist/angular-gridster.min.css!';
 import 'angular-tree-control/css/tree-control-attribute.css!';
 import 'angular-tree-control/css/tree-control.css!';
 import 'angular-ui-grid/ui-grid.css!';
-import 'angular-loading/angular-loading.css!';
 import 'angular-motion/dist/angular-motion.css!';
 
 import './decorator/select';
@@ -81,10 +79,11 @@ import './modules/dialog/dialog.module';
 import './modules/Version/Version.provider';
 import './modules/ace.module';
 import './modules/socket.module';
+import './modules/loading/loading.module';
 // endignite
 
 // Directives.
-import igniteLoading from './directives/loading/loading.directive';
+import igniteHideOnStateChange from './directives/hide-on-state-change/hide-on-state-change.directive';
 import igniteInformation from './directives/information/information.directive';
 import igniteUiAceTabs from './directives/ui-ace-tabs.directive';
 import igniteUiAceXml from './directives/ui-ace-xml/ui-ace-xml.directive';
@@ -172,13 +171,14 @@ angular
     'ignite-console.configuration',
     'ignite-console.getting-started',
     'ignite-console.version',
+    'ignite-console.loading',
     // Ignite legacy module.
     'ignite-console.legacy',
     // Ignite modules.
     'ignite-console.modules'
 ])
 // Directives.
-.directive(...igniteLoading)
+.directive(...igniteHideOnStateChange)
 .directive(...igniteInformation)
 .directive(...igniteUiAceTabs)
 .directive(...igniteUiAceXml)

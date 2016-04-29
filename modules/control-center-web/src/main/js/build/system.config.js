@@ -19,7 +19,6 @@ System.config({
     "angular-animate": "github:angular/bower-angular-animate@1.5.5",
     "angular-drag-and-drop-lists": "github:marceljuenemann/angular-drag-and-drop-lists@1.4.0",
     "angular-gridster": "github:ManifestWebDesign/angular-gridster@0.13.5",
-    "angular-loading": "github:darthwade/angular-loading@0.1.4",
     "angular-motion": "github:mgcrea/angular-motion@0.4.4",
     "angular-nvd3": "github:krispo/angular-nvd3@1.0.6",
     "angular-retina": "github:jrief/angular-retina@0.3.8",
@@ -66,9 +65,6 @@ System.config({
     },
     "github:btford/angular-socket-io@0.7.0": {
       "socket.io-client": "github:socketio/socket.io-client@1.4.5"
-    },
-    "github:darthwade/angular-loading@0.1.4": {
-      "spinjs": "github:fgnass/spin.js@2.3.2"
     },
     "github:eligrey/FileSaver.js@master": {
       "blob": "github:eligrey/Blob.js@master"

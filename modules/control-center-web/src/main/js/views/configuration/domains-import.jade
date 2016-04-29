@@ -23,7 +23,7 @@ mixin td-ellipses-lbl(w, lbl)
 
 .modal.modal-domain-import.center(role='dialog')
     .modal-dialog
-        .modal-content(dw-loading='importDomainFromDb' dw-loading-options='importDomain.loadingOptions')
+        .modal-content(ignite-loading='importDomainFromDb' ignite-loading-text='{{importDomain.loadingOptions.text}}')
             #errors-container.modal-header.header
                 button.close(ng-click='$hide()' aria-hidden='true') &times;
                 h4.modal-title(ng-if='!importDomain.demo') Import domain models from database

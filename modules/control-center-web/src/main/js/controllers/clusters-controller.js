@@ -19,8 +19,8 @@
 import consoleModule from 'controllers/common-module';
 
 consoleModule.controller('clustersController', [
-    '$scope', '$http', '$state', '$timeout', '$common', '$confirm', '$clone', '$loading', '$cleanup', '$unsavedChangesGuard', 'igniteEventGroups', 'DemoInfo',
-    function ($scope, $http, $state, $timeout, $common, $confirm, $clone, $loading, $cleanup, $unsavedChangesGuard, igniteEventGroups, DemoInfo) {
+    '$rootScope', '$scope', '$http', '$state', '$timeout', '$common', '$confirm', '$clone', '$loading', '$cleanup', '$unsavedChangesGuard', 'igniteEventGroups', 'DemoInfo',
+    function ($root, $scope, $http, $state, $timeout, $common, $confirm, $clone, $loading, $cleanup, $unsavedChangesGuard, igniteEventGroups, DemoInfo) {
         $unsavedChangesGuard.install($scope);
 
         var emptyCluster = {empty: true};
@@ -162,7 +162,7 @@ consoleModule.controller('clustersController', [
                         form.$setDirty();
                 }, true);
 
-                if ($scope.$root.IgniteDemoMode) {
+                if ($root.IgniteDemoMode) {
                     if (sessionStorage.showDemoInfo !== 'true') {
                         sessionStorage.showDemoInfo = 'true';
 

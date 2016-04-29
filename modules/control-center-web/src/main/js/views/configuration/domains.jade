@@ -22,7 +22,7 @@ include ../../app/helpers/jade/mixins.jade
     ignite-information
         ul
             li Import database schemas
-    div(dw-loading='loadingDomainModelsScreen' dw-loading-options='{text: "Loading domain models screen...", className: "page-loading-overlay"}')
+    div(ignite-loading='loadingDomainModelsScreen' ignite-loading-text='Loading domain models...')
         div(ng-show='ui.ready')
             hr
             .padding-bottom-dflt(ng-show='domains && domains.length > 0')

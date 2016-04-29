@@ -32,9 +32,6 @@ angular
     .state('base.sql.notebook', {
         url: '/notebook/{noteId}',
         templateUrl: '/sql/sql.html',
-        data: {
-            loading: 'Loading notebook screen...'
-        },
         metaTags: {
             title: 'Query notebook'
         }
@@ -42,9 +39,6 @@ angular
     .state('base.sql.demo', {
         url: '/demo',
         templateUrl: '/sql/sql.html',
-        data: {
-            loading: 'Enable SQL...'
-        },
         metaTags: {
             title: 'SQL demo'
         }

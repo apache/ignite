@@ -15,14 +15,12 @@
  * limitations under the License.
  */
 
-import template from './loading.jade!';
-import './loading.css!';
+import angular from 'angular';
 
-export default ['igniteLoading', [() => {
-    return {
-        restrict: 'E',
-        template,
-        replace: true,
-        transclude: true
-    };
-}]];
+import IgniteLoadingDirective from './loading.directive';
+import IgniteLoadingService from './loading.service';
+
+angular
+    .module('ignite-console.loading', [])
+    .directive(...IgniteLoadingDirective)
+    .service(...IgniteLoadingService);

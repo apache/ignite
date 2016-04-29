@@ -23,7 +23,7 @@ include ../../app/helpers/jade/mixins.jade
         ul
             li Configure #[a(href='https://apacheignite.readme.io/docs/data-grid' target='_blank') memory] settings
             li Configure persistence
-    div(dw-loading='loadingCachesScreen' dw-loading-options='{text: "Loading caches screen...", className: "page-loading-overlay"}')
+    div(ignite-loading='loadingCachesScreen' ignite-loading-text='Loading caches...')
         div(ng-show='ui.ready')
             hr
             +main-table('caches', 'caches', 'cacheName', 'selectItem(row)', '{{$index + 1}}) {{row.label}}', 'label')

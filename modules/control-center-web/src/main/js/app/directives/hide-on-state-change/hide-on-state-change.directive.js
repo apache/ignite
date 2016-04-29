@@ -15,7 +15,17 @@
  * limitations under the License.
  */
 
-.dw-loading.dw-loading-overlay,
-.page-loading-overlay {
-    background: unset none;
-}
+export default ['hideOnStateChange', ['$timeout', ($timeout) => {
+    const link = (scope, element) => {
+        scope.$on('$stateChangeSuccess', () => {
+            $timeout(() => {
+                element.fadeOut('slow');
+            });
+        });
+    };
+
+    return {
+        restrict: 'AE',
+        link
+    };
+}]];

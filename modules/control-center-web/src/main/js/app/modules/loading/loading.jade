@@ -14,5 +14,10 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-div(class='page-loading-overlay' dw-loading='loading' dw-loading-options='{text: $state.current.data.loading}')
-    div(ng-transclude='')
+.loading.loading-opacity-80(class='{{class}}')
+    .loading-wrapper
+        .spinner
+            .bounce1
+            .bounce2
+            .bounce3
+        .loading-wellcome {{ text }}

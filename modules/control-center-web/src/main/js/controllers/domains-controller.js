@@ -19,8 +19,8 @@
 import consoleModule from 'controllers/common-module';
 
 consoleModule.controller('domainsController', [
-    '$scope', '$http', '$state', '$filter', '$timeout', '$modal', '$common', '$focus', '$confirm', '$confirmBatch', '$clone', '$loading', '$cleanup', '$unsavedChangesGuard', 'IgniteAgentMonitor', '$table',
-    function ($scope, $http, $state, $filter, $timeout, $modal, $common, $focus, $confirm, $confirmBatch, $clone, $loading, $cleanup, $unsavedChangesGuard, IgniteAgentMonitor, $table) {
+    '$rootScope', '$scope', '$http', '$state', '$filter', '$timeout', '$modal', '$common', '$focus', '$confirm', '$confirmBatch', '$clone', '$loading', '$cleanup', '$unsavedChangesGuard', 'IgniteAgentMonitor', '$table',
+    function ($root, $scope, $http, $state, $filter, $timeout, $modal, $common, $focus, $confirm, $confirmBatch, $clone, $loading, $cleanup, $unsavedChangesGuard, IgniteAgentMonitor, $table) {
         $unsavedChangesGuard.install($scope);
 
         var emptyDomain = {empty: true};
@@ -51,7 +51,7 @@ consoleModule.controller('domainsController', [
         };
 
         $scope.ui.packageNameUserInput = $scope.ui.packageName =
-            _toJavaPackage($scope.$root.user.email.replace('@', '.').split('.').reverse().join('.') + '.model');
+            _toJavaPackage($root.user.email.replace('@', '.').split('.').reverse().join('.') + '.model');
         $scope.ui.builtinKeys = true;
         $scope.ui.usePrimitives = true;
         $scope.ui.generateAliases = true;
@@ -385,7 +385,7 @@ consoleModule.controller('domainsController', [
                 if ($scope.ui.inputForm.$dirty)
                     $scope.backupItem = $scope.selectedItem ? angular.copy($scope.selectedItem) : prepareNewItem();
 
-                const demo = $scope.$root.IgniteDemoMode;
+                const demo = $root.IgniteDemoMode;
 
                 $scope.importDomain = {
                     demo: demo,
@@ -472,7 +472,7 @@ consoleModule.controller('domainsController', [
                 .then(function() {
                     $loading.start('importDomainFromDb');
 
-                    if ($scope.$root.IgniteDemoMode)
+                    if ($root.IgniteDemoMode)
                         return IgniteAgentMonitor.schemas($scope.demoConnection);
 
                     const preset = $scope.selectedPreset;

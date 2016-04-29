@@ -156,9 +156,6 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
                 params: {
                     id: null
                 },
-                data: {
-                    loading: 'Loading clusters screen...'
-                },
                 metaTags: {
                     title: 'Configure Clusters'
                 }
@@ -168,9 +165,6 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
                 templateUrl: '/configuration/caches.html',
                 params: {
                     id: null
-                },
-                data: {
-                    loading: 'Loading caches screen...'
                 },
                 metaTags: {
                     title: 'Configure Caches'
@@ -182,9 +176,6 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
                 params: {
                     id: null
                 },
-                data: {
-                    loading: 'Loading domain models screen...'
-                },
                 metaTags: {
                     title: 'Configure Domain Model'
                 }
@@ -195,9 +186,6 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
                 params: {
                     id: null
                 },
-                data: {
-                    loading: 'Loading IGFS screen...'
-                },
                 metaTags: {
                     title: 'Configure IGFS'
                 }
@@ -207,9 +195,6 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
                 templateUrl: '/configuration/summary.html',
                 controller: ConfigurationSummaryCtrl,
                 controllerAs: 'ctrl',
-                data: {
-                    loading: 'Loading summary screen...'
-                },
                 metaTags: {
                     title: 'Configurations Summary'
                 }

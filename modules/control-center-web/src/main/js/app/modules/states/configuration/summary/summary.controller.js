@@ -19,11 +19,11 @@ import _ from 'lodash';
 import JSZip from 'jszip';
 
 export default [
-    '$scope', '$http', '$common', '$loading', '$table', '$filter', '$timeout', 'ConfigurationSummaryResource', 'JavaTypes', 'IgniteVersion', 'GeneratorDocker', 'GeneratorPom',
-    function($scope, $http, $common, $loading, $table, $filter, $timeout, Resource, JavaTypes, IgniteVersion, docker, pom) {
+    '$rootScope', '$scope', '$http', '$common', '$loading', '$table', '$filter', '$timeout', 'ConfigurationSummaryResource', 'JavaTypes', 'IgniteVersion', 'GeneratorDocker', 'GeneratorPom',
+    function($root, $scope, $http, $common, $loading, $table, $filter, $timeout, Resource, JavaTypes, IgniteVersion, docker, pom) {
         const ctrl = this;
 
-        $loading.start('loading');
+        $loading.start('summaryPage');
 
         Resource.read().then(({clusters}) => {
             $scope.clusters = clusters;
@@ -36,7 +36,7 @@ export default [
                 return { _id, name };
             });
 
-            $loading.finish('loading');
+            $loading.finish('summaryPage');
 
             if (!_.isEmpty(clusters)) {
                 const idx = sessionStorage.summarySelectedId || 0;
@@ -219,7 +219,7 @@ export default [
             if ($generatorCommon.secretPropertiesNeeded(cluster))
                 mainFolder.children.push(resourcesFolder);
 
-            if ($generatorJava.isDemoConfigured(cluster, $scope.$root.IgniteDemoMode))
+            if ($generatorJava.isDemoConfigured(cluster, $root.IgniteDemoMode))
                 javaFolder.children.push(demoFolder);
 
             _.forEach(cluster.caches, (cache) => {
@@ -290,7 +290,7 @@ export default [
             zip.file(srcPath + 'config/ServerConfigurationFactory.java', $generatorJava.cluster(cluster, 'config', 'ServerConfigurationFactory', null));
             zip.file(srcPath + 'config/ClientConfigurationFactory.java', $generatorJava.cluster(cluster, 'config', 'ClientConfigurationFactory', clientNearCfg));
 
-            if ($generatorJava.isDemoConfigured(cluster, $scope.$root.IgniteDemoMode)) {
+            if ($generatorJava.isDemoConfigured(cluster, $root.IgniteDemoMode)) {
                 zip.file(srcPath + 'demo/DemoStartup.java', $generatorJava.nodeStartup(cluster, 'demo', 'DemoStartup',
                     'ServerConfigurationFactory.createConfiguration()', 'config.ServerConfigurationFactory'));
             }

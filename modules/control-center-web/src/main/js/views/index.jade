@@ -35,6 +35,25 @@ html(ng-app='ignite-console' id='app' ng-strict-di)
         link(rel='stylesheet', href='/app.css')
         // endbuild
 
+    body.theme-line.body-overlap.greedy
+
+        .splash.splash-max-foreground(hide-on-state-change)
+            .splash-wrapper
+                .spinner
+                    .bounce1
+                    .bounce2
+                    .bounce3
+
+                .splash-wellcome Loading...
+
+
+        .ribbon-wrapper.right(ng-cloak)
+            .ribbon(ng-style='IgniteDemoMode && {"background": "#1b6d88"}')
+                label {{IgniteDemoMode ? "Demo" : "Beta" }}
+
+        .wrapper(ui-view='')
+
+
         // build:js
         script(src='jspm_packages/system.js')
         script(src='system.config.js')
@@ -45,10 +64,3 @@ html(ng-app='ignite-console' id='app' ng-strict-di)
 
         // ignite:plugins
         // endignite
-
-    body.theme-line.body-overlap.greedy
-        .ribbon-wrapper.right(ng-cloak)
-            .ribbon(ng-style='IgniteDemoMode && {"background": "#1b6d88"}')
-                label {{IgniteDemoMode ? "Demo" : "Beta" }}
-
-        .wrapper(ui-view='')

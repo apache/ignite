@@ -17,7 +17,6 @@
 
 const consoleModule = angular.module('ignite-console.legacy',
     [
-        'darthwade.dwLoading',
         'smart-table',
         'treeControl',
         'ui.grid',
@@ -2086,20 +2085,20 @@ consoleModule.controller('auth', ['$scope', '$focus', 'Auth', 'IgniteCountries',
 }]);
 
 // Navigation bar controller.
-consoleModule.controller('notebooks', ['$scope', '$modal', '$state', '$http', '$common',
-    ($scope, $modal, $state, $http, $common) => {
-    $scope.$root.notebooks = [];
+consoleModule.controller('notebooks', ['$rootScope', '$scope', '$modal', '$state', '$http', '$common',
+    ($root, $scope, $modal, $state, $http, $common) => {
+    $root.notebooks = [];
 
     // Pre-fetch modal dialogs.
     var _notebookNewModal = $modal({scope: $scope, templateUrl: '/sql/notebook-new.html', show: false});
 
-    $scope.$root.rebuildDropdown = function() {
+    $root.rebuildDropdown = function() {
         $scope.notebookDropdown = [
             {text: 'Create new notebook', click: 'inputNotebookName()'},
             {divider: true}
         ];
 
-        _.forEach($scope.$root.notebooks, function (notebook) {
+        _.forEach($root.notebooks, function (notebook) {
             $scope.notebookDropdown.push({
                 text: notebook.name,
                 sref: 'base.sql.notebook({noteId:"' + notebook._id + '"})'
@@ -2107,29 +2106,29 @@ consoleModule.controller('notebooks', ['$scope', '$modal', '$state', '$http', '$
         });
     };
 
-    $scope.$root.reloadNotebooks = function() {
+    $root.reloadNotebooks = function() {
         // When landing on the page, get clusters and show them.
         $http.post('/api/v1/notebooks/list')
             .success(function (data) {
-                $scope.$root.notebooks = data;
+                $root.notebooks = data;
 
-                $scope.$root.rebuildDropdown();
+                $root.rebuildDropdown();
             })
             .error(function (errMsg) {
                 $common.showError(errMsg);
             });
     };
 
-    $scope.$root.inputNotebookName = function() {
+    $root.inputNotebookName = function() {
         _notebookNewModal.$promise.then(_notebookNewModal.show);
     };
 
-    $scope.$root.createNewNotebook = function(name) {
+    $root.createNewNotebook = function(name) {
         $http.post('/api/v1/notebooks/new', {name: name})
             .success(function (noteId) {
                 _notebookNewModal.hide();
 
-                $scope.$root.reloadNotebooks();
+                $root.reloadNotebooks();
 
                 $state.go('base.sql.notebook', {noteId: noteId});
             })
@@ -2138,7 +2137,7 @@ consoleModule.controller('notebooks', ['$scope', '$modal', '$state', '$http', '$
             });
     };
 
-    $scope.$root.reloadNotebooks();
+    $root.reloadNotebooks();
 }]);
 
 export default consoleModule;
