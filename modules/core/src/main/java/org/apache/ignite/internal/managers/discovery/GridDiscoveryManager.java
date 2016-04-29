@@ -257,6 +257,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
+    /** */
+    private Object consistentId;
+
     /** @param ctx Context. */
     public GridDiscoveryManager(GridKernalContext ctx) {
         super(ctx, ctx.config().getDiscoverySpi());
@@ -1701,6 +1704,24 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** @return Local node. */
     public ClusterNode localNode() {
         return locNode == null ? getSpi().getLocalNode() : locNode;
+    }
+
+    /**
+     * @return Consistent ID.
+     */
+    public Object consistentId() {
+        if (consistentId == null) {
+            try {
+                inject();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to init consisten ID.", e);
+            }
+
+            consistentId = getSpi().consistentId();
+        }
+
+        return consistentId;
     }
 
     /** @return Topology version. */

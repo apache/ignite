@@ -164,6 +164,15 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     }
 
     /**
+     * Gets ignite instance.
+     *
+     * @return Ignite instance.
+     */
+    public Ignite ignite() {
+        return ignite;
+    }
+
+    /**
      * Sets SPI name.
      *
      * @param name SPI name.
