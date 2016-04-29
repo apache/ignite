@@ -19,13 +19,14 @@ package org.apache.ignite.internal.pagemem.wal;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.pagemem.wal.entry.WALRecord;
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
 import org.apache.ignite.lang.IgniteBiInClosure;
 
 /**
  *
  */
-public interface WriteAheadLog {
+public interface IgniteWriteAheadLogManager extends GridCacheSharedManager {
     /**
      * Appends the given log entry to the write-ahead log.
      *

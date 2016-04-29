@@ -157,7 +157,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 dbCfg.getPageCacheSize(),
                 fragmentSize);
 
-        return new PageMemoryImpl(log, memProvider, cctx.pageStore(), dbCfg.getPageSize(), dbCfg.getConcurrencyLevel());
+        return new PageMemoryImpl(log, memProvider, cctx, dbCfg.getPageSize(), dbCfg.getConcurrencyLevel());
     }
 
     /**

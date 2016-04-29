@@ -15,19 +15,37 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.pagemem.wal.entry;
+package org.apache.ignite.internal.pagemem.wal.record;
 
-import java.util.Collection;
+import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
+import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
  *
  */
-public class DataRecord extends WALRecord {
+public class DataEntry {
     /** */
-    private Collection<DataEntry> writeEntries;
+    private int cacheId;
 
-    /** {@inheritDoc} */
-    @Override public RecordType type() {
-        return RecordType.DATA_RECORD;
-    }
+    /** */
+    private CacheObject key;
+
+    /** */
+    private CacheObject val;
+
+    /** */
+    private GridCacheOperation op;
+
+    /** */
+    private GridCacheVersion nearXidVer;
+
+    /** */
+    private GridCacheVersion ver;
+
+    /** */
+    private int partId;
+
+    /** */
+    private long partCnt;
 }

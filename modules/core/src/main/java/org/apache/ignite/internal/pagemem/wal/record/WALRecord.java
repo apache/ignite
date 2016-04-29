@@ -15,37 +15,42 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.pagemem.wal.entry;
-
-import org.apache.ignite.internal.processors.cache.CacheObject;
-import org.apache.ignite.internal.processors.cache.GridCacheOperation;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+package org.apache.ignite.internal.pagemem.wal.record;
 
 /**
- *
+ * Log entry abstract class.
  */
-public class DataEntry {
-    /** */
-    private int cacheId;
+public abstract class WALRecord {
+    /**
+     * Record type.
+     */
+    public enum RecordType {
+        /** */
+        PAGE_RECORD,
 
-    /** */
-    private CacheObject key;
+        /** */
+        DATA_RECORD,
 
-    /** */
-    private CacheObject val;
+        /** */
+        STORE_OPERATION_RECORD,
 
-    /** */
-    private GridCacheOperation op;
+        /** */
+        CHECKPOINT_RECORD,
 
-    /** */
-    private GridCacheVersion nearXidVer;
+        /** */
+        TX_RECORD;
 
-    /** */
-    private GridCacheVersion ver;
+        /** */
+        private static final RecordType[] VALS = RecordType.values();
 
-    /** */
-    private int partId;
+        /** */
+        public static RecordType fromOrdinal(int ord) {
+            return ord < 0 || ord >= VALS.length ? null : VALS[ord];
+        }
+    }
 
-    /** */
-    private long partCnt;
+    /**
+     * @return Entry type.
+     */
+    public abstract RecordType type();
 }

@@ -15,42 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.pagemem.wal.entry;
+package org.apache.ignite.internal.pagemem.wal.record;
 
 /**
- * Log entry abstract class.
+ *
  */
-public abstract class WALRecord {
+public class PageWrapperRecord extends PageAbstractRecord {
+    /** */
+    private long pagePtr;
+
     /**
-     * Record type.
+     * @param pagePtr Page start pointer.
      */
-    public enum RecordType {
-        /** */
-        PAGE_RECORD,
-
-        /** */
-        DATA_RECORD,
-
-        /** */
-        STORE_OPERATION_RECORD,
-
-        /** */
-        CHECKPOINT_RECORD,
-
-        /** */
-        TX_RECORD;
-
-        /** */
-        private static final RecordType[] VALS = RecordType.values();
-
-        /** */
-        public static RecordType fromOrdinal(int ord) {
-            return ord < 0 || ord >= VALS.length ? null : VALS[ord];
-        }
+    public PageWrapperRecord(long pagePtr) {
+        this.pagePtr = pagePtr;
     }
 
     /**
-     * @return Entry type.
+     * @return Page start pointer.
      */
-    public abstract RecordType type();
+    public long pointer() {
+        return pagePtr;
+    }
 }

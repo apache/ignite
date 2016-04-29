@@ -15,26 +15,19 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.pagemem.wal.entry;
+package org.apache.ignite.internal.pagemem.wal.record;
+
+import java.util.Collection;
 
 /**
  *
  */
-public class PageWrapperRecord extends PageAbstractRecord {
+public class DataRecord extends WALRecord {
     /** */
-    private long pagePtr;
+    private Collection<DataEntry> writeEntries;
 
-    /**
-     * @param pagePtr Page start pointer.
-     */
-    public PageWrapperRecord(long pagePtr) {
-        this.pagePtr = pagePtr;
-    }
-
-    /**
-     * @return Page start pointer.
-     */
-    public long pointer() {
-        return pagePtr;
+    /** {@inheritDoc} */
+    @Override public RecordType type() {
+        return RecordType.DATA_RECORD;
     }
 }

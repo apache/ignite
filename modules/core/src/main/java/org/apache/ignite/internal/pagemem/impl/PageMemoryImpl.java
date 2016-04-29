@@ -44,6 +44,8 @@ import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -104,6 +106,9 @@ public class  PageMemoryImpl implements PageMemory {
     /** Page store manager. */
     private IgnitePageStoreManager storeMgr;
 
+    /** */
+    private IgniteWriteAheadLogManager walMgr;
+
     /** Direct byte buffer factory. */
     private JavaNioAccess nioAccess;
 
@@ -139,25 +144,30 @@ public class  PageMemoryImpl implements PageMemory {
     private Collection<FullPageId> dirtyPages = new GridConcurrentHashSet<>();
 
     /**
-     * @param log Logger to use.
      * @param directMemoryProvider Memory allocator to use.
+     * @param sharedCtx Cache shared context.
      * @param pageSize Page size.
      * @param segments Number of segments.
      */
     public PageMemoryImpl(
         IgniteLogger log,
         DirectMemoryProvider directMemoryProvider,
-        IgnitePageStoreManager storeMgr,
+        GridCacheSharedContext<?, ?> sharedCtx,
         int pageSize,
         int segments
     ) {
+        assert log != null || sharedCtx != null;
+
         if (segments == 0)
             segments = Runtime.getRuntime().availableProcessors() * 8;
 
-        this.log = log;
-        this.directMemoryProvider = directMemoryProvider;
-        this.storeMgr = storeMgr;
+        this.log = sharedCtx != null ? sharedCtx.logger(PageMemoryImpl.class) : log;
         this.segments = new Segment[segments];
+        this.directMemoryProvider = directMemoryProvider;
+
+        if (sharedCtx != null)
+        storeMgr = sharedCtx.pageStore();
+        walMgr = sharedCtx.wal();
 
         chunks = new ArrayList<>();
         sysPageSize = pageSize + PAGE_OVERHEAD;

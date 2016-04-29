@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.pagemem.wal.entry;
+package org.apache.ignite.internal.pagemem.wal.record;
 
 /**
  *
