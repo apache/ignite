@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Tests
         [TestFixtureTearDown]
         public void TestFixtureTearDown()
         {
-            //StopServiceAndUninstall();
+            StopServiceAndUninstall();
         }
 
         /// <summary>

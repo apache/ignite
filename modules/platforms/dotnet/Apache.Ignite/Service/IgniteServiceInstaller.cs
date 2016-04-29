@@ -17,8 +17,10 @@
 
 namespace Apache.Ignite.Service
 {
+    using System.Collections;
     using System.ComponentModel;
     using System.Configuration.Install;
+    using System.Diagnostics;
     using System.ServiceProcess;
 
     /// <summary>
@@ -27,16 +29,27 @@ namespace Apache.Ignite.Service
     [RunInstaller(true)]
     public class IgniteServiceInstaller : Installer
     {
+        public static string Args = "";
+
         public IgniteServiceInstaller()
         {
+            Debugger.Launch();
+
             Installers.Add(new ServiceInstaller
             {
                 StartType = ServiceStartMode.Manual,
                 ServiceName = IgniteService.SvcName,
-                Description = "Apache Ignite.NET Service."
+                Description = "Apache Ignite.NET Service.",
             });
 
-            Installers.Add(new ServiceProcessInstaller { Account = ServiceAccount.LocalSystem });
+            Installers.Add(new ServiceProcessInstaller {Account = ServiceAccount.LocalSystem});
+        }
+
+        protected override void OnBeforeInstall(IDictionary savedState)
+        {
+            Context.Parameters["assemblyPath"] += " " + Args;
+
+            base.OnBeforeInstall(savedState);
         }
     }
 }

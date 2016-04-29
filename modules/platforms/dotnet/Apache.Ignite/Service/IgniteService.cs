@@ -40,9 +40,6 @@ namespace Apache.Ignite.Service
         private static readonly string ExeName =
             new FileInfo(new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath).FullName;
 
-        /** Current executable fully qualified name. */
-        private static readonly string FullExeName = Path.GetFileName(FullExeName);
-
         /** Ignite configuration to start with. */
         private readonly IgniteConfiguration _cfg;
 
@@ -133,12 +130,15 @@ namespace Apache.Ignite.Service
         private static void Install0(Tuple<string, string>[] args)
         {
             // 1. Prepare arguments.
-            var binPath = new StringBuilder(FullExeName).Append(" ").Append(IgniteRunner.Svc);
+            var argString = new StringBuilder(IgniteRunner.Svc);
 
             foreach (var arg in args)
-                binPath.Append(" ").AppendFormat("-{0}={1}", arg.Item1, arg.Item2);
+                argString.Append(" ").AppendFormat("-{0}={1}", arg.Item1, arg.Item2);
 
-            ManagedInstallerClass.InstallHelper(new[] {binPath.ToString()});
+            IgniteServiceInstaller.Args = argString.ToString();
+
+            // 2. Install service.
+            ManagedInstallerClass.InstallHelper(new[] { ExeName });
 
             /*
             // 2. Get SC manager.
