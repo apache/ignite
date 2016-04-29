@@ -20,11 +20,11 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
 
-public class AssignmentState implements Serializable {
+public class CacheState implements Serializable {
 
     private final boolean active;
 
-    public AssignmentState(boolean active) {
+    public CacheState(boolean active) {
         this.active = active;
     }
 
@@ -38,7 +38,7 @@ public class AssignmentState implements Serializable {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        AssignmentState state = (AssignmentState)o;
+        CacheState state = (CacheState)o;
 
         return active == state.active;
 

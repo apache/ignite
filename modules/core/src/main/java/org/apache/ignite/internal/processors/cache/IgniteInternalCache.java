@@ -1977,7 +1977,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
         EntryProcessor<K, V, T> entryProcessor,
         Object... args) throws IgniteCheckedException;
 
-    public AssignmentState state();
+    public CacheState state();
 
-    public boolean state(AssignmentState state);
+    public boolean state(CacheState state);
 }

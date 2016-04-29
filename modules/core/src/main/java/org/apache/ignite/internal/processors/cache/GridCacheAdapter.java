@@ -283,7 +283,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** Asynchronous operations limit semaphore. */
     private Semaphore asyncOpsSem;
 
-    private final AtomicReference<AssignmentState> state = new AtomicReference<>(new AssignmentState(true));
+    private final AtomicReference<CacheState> state = new AtomicReference<>(new CacheState(true));
 
     /** {@inheritDoc} */
     @Override public String name() {
@@ -3960,13 +3960,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         return entrySet().iterator();
     }
 
-    public AssignmentState state() {
+    public CacheState state() {
         return state.get();
     }
 
-    public boolean state(AssignmentState state) {
+    public boolean state(CacheState state) {
         while (true) {
-            AssignmentState oldState = this.state.get();
+            CacheState oldState = this.state.get();
 
             if (state.equals(oldState))
                 return false;

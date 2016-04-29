@@ -1773,6 +1773,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             for (DynamicCacheChangeRequest req : reqs) {
                 String masked = maskNull(req.cacheName());
 
+                if (req.modify()) {
+                    GridCacheAdapter<Object, Object> cache = internalCache(req.cacheName());
+                    if (cache != null)
+                        cache.state(req.state());
+                }
                 if (req.stop()) {
                     stopGateway(req);
 
@@ -1977,6 +1982,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 true,
                                 req.deploymentId());
 
+                            desc.state(req.state());
+
                             registeredTemplates.put(maskNull(req.cacheName()), desc);
                         }
 
@@ -1994,6 +2001,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                                 existing.addRemoteConfiguration(rmtNodeId, req.startCacheConfiguration());
 
+                                if (req.state() != null)
+                                    existing.state(req.state());
+
                                 ctx.discovery().setCacheFilter(
                                     req.cacheName(),
                                     ccfg.getNodeFilter(),
@@ -2010,6 +2020,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 req.cacheType(),
                                 false,
                                 req.deploymentId());
+
+                            desc.state(req.state());
 
                             // Received statically configured cache.
                             if (req.initiatingNodeId() == null)
@@ -2365,7 +2377,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         return F.first(initiateCacheChanges(F.asList(t), false));
     }
 
-    public IgniteInternalFuture<?> changeCacheState(String cacheName, AssignmentState state) {
+    public IgniteInternalFuture<?> changeCacheState(String cacheName, CacheState state) {
         IgniteCacheProxy<?, ?> proxy = jCacheProxies.get(maskNull(cacheName));
 
         if (proxy == null || proxy.proxyClosed())
@@ -2581,7 +2593,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                         startDesc.startTopologyVersion(newTopVer);
 
-                        startDesc.state(req.state());
+                        if (req.state() != null)
+                            startDesc.state(req.state());
 
                         DynamicCacheDescriptor old = registeredCaches.put(maskNull(ccfg.getName()), startDesc);
 
@@ -2638,12 +2651,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             else if (req.modify()) {
                 if (desc != null) {
 
-                    if (req.state() != null) {
-                        GridCacheAdapter cache = caches.get(req.cacheName());
-
-                        cache.state(req.state());
-
+                    if (req.state() != null && !req.state().equals(desc.state())) {
                         desc.state(req.state());
+
+                        needExchange = true;
                     }
                 }
             }

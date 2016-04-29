@@ -71,7 +71,7 @@ public class DynamicCacheDescriptor {
     /** */
     private boolean rcvdOnDiscovery;
 
-    private AssignmentState state;
+    private CacheState state;
 
     /**
      * @param ctx Context.
@@ -255,11 +255,11 @@ public class DynamicCacheDescriptor {
         this.rcvdOnDiscovery = rcvdOnDiscovery;
     }
 
-    public AssignmentState state() {
+    public CacheState state() {
         return state;
     }
 
-    public void state(AssignmentState state) {
+    public void state(CacheState state) {
         this.state = state;
     }
 
