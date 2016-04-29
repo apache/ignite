@@ -27,6 +27,7 @@ namespace Apache.Ignite.Service
     using System.Text;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Lifecycle;
 
     /// <summary>
@@ -68,7 +69,23 @@ namespace Apache.Ignite.Service
         /** <inheritDoc /> */
         protected override void OnStart(string[] args)
         {
-            Ignition.Start(_cfg);
+            var logFile = Path.Combine(IgniteHome.Resolve(null), @"work\log\svc.log");
+            var fs = new FileStream(logFile, FileMode.OpenOrCreate);
+            var streamWriter = new StreamWriter(fs) { AutoFlush = true };
+            Console.SetOut(streamWriter);
+            Console.SetError(streamWriter);
+
+            Console.WriteLine("Starting Ignite...");
+            try
+            {
+                Ignition.Start(_cfg);
+                Console.WriteLine("Ignite Started");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Failed to start Ignite: " + e);
+                throw;
+            }
         }
 
         /** <inheritDoc /> */
