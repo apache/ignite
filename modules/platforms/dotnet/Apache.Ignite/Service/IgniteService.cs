@@ -44,6 +44,9 @@ namespace Apache.Ignite.Service
         /** Ignite configuration to start with. */
         private readonly IgniteConfiguration _cfg;
 
+        /** Stopping recurse check flag. */
+        private bool _isStopping;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -58,6 +61,8 @@ namespace Apache.Ignite.Service
             // Subscribe to lifecycle events
             var beans = _cfg.LifecycleBeans ?? new List<ILifecycleBean>();
             beans.Add(this);
+
+            _cfg.LifecycleBeans = beans;
         }
 
         /** <inheritDoc /> */
@@ -69,7 +74,8 @@ namespace Apache.Ignite.Service
         /** <inheritDoc /> */
         protected override void OnStop()
         {
-            Ignition.StopAll(true);
+            if (!_isStopping)
+                Ignition.StopAll(true);
         }
 
         /// <summary>
@@ -158,7 +164,11 @@ namespace Apache.Ignite.Service
         public void OnLifecycleEvent(LifecycleEventType evt)
         {
             if (evt == LifecycleEventType.AfterNodeStop)
+            {
+                _isStopping = true;
+
                 Stop();
+            }
         }
     }
 }

@@ -90,7 +90,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.IsTrue(ignite.WaitTopology(1), "Failed to stop remote node");
 
                 // Check that service has stopped
-                service.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(5));
+                service.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(15));
             }
         }
 
