@@ -82,8 +82,9 @@ namespace Apache.Ignite.Core.Tests
                         "org.apache.ignite.platform.PlatformStopIgniteTask", ignite.Name));
 
                 Assert.IsTrue(ignite.WaitTopology(1));
-                
-                // TODO: Check that service has stopped
+
+                // Check that service has stopped
+                service.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
             }
         }
 
