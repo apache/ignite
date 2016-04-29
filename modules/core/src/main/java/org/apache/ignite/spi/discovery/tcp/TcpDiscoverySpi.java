@@ -407,6 +407,12 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     /** */
     private boolean clientReconnectDisabled;
 
+    /** */
+    private Object consistentId;
+
+    /** Local node addresses. */
+    private IgniteBiTuple<Collection<String>, Collection<String>> addrs;
+
     /** {@inheritDoc} */
     @Override public String getSpiState() {
         return impl.getSpiState();
@@ -967,20 +973,45 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         locNodeVer = ver;
     }
 
+    /** {@inheritDoc} */
+    @Nullable @Override public Object consistentId() throws IgniteSpiException {
+        if (consistentId == null) {
+            initializeImpl();
+
+            initAddresses();
+
+            List<String> sortedAddrs = new ArrayList<>(addrs.get1());
+
+            Collections.sort(sortedAddrs);
+
+            consistentId = U.consistentId(sortedAddrs, impl.boundPort());
+        }
+
+        return consistentId;
+    }
+
+    /**
+     *
+     */
+    private void initAddresses() {
+        if (addrs == null) {
+            try {
+                addrs = U.resolveLocalAddresses(locHost);
+            }
+            catch (IOException | IgniteCheckedException e) {
+                throw new IgniteSpiException("Failed to resolve local host to set of external addresses: " + locHost,
+                    e);
+            }
+        }
+    }
+
     /**
      * @param srvPort Server port.
      * @param addExtAddrAttr If {@code true} adds {@link #ATTR_EXT_ADDRS} attribute.
      */
     protected void initLocalNode(int srvPort, boolean addExtAddrAttr) {
         // Init local node.
-        IgniteBiTuple<Collection<String>, Collection<String>> addrs;
-
-        try {
-            addrs = U.resolveLocalAddresses(locHost);
-        }
-        catch (IOException | IgniteCheckedException e) {
-            throw new IgniteSpiException("Failed to resolve local host to set of external addresses: " + locHost, e);
-        }
+        initAddresses();
 
         locNode = new TcpDiscoveryNode(
             ignite.configuration().getNodeId(),
@@ -989,7 +1020,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
             srvPort,
             metricsProvider,
             locNodeVer,
-            ignite.configuration().getConsistentId());
+            (Serializable)consistentId());
 
         if (addExtAddrAttr) {
             Collection<InetSocketAddress> extAddrs = addrRslvr == null ? null :
@@ -1726,6 +1757,20 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
     /** {@inheritDoc} */
     @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+        initializeImpl();
+
+        registerMBean(gridName, this, TcpDiscoverySpiMBean.class);
+
+        impl.spiStart(gridName);
+    }
+
+    /**
+     *
+     */
+    private void initializeImpl() {
+        if (impl != null)
+            return;
+
         initFailureDetectionTimeout();
 
         if (!forceSrvMode && (Boolean.TRUE.equals(ignite.configuration().isClientMode()))) {
@@ -1819,8 +1864,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         if (netTimeout < 3000)
             U.warn(log, "Network timeout is too low (at least 3000 ms recommended): " + netTimeout);
 
-        registerMBean(gridName, this, TcpDiscoverySpiMBean.class);
-
         if (ipFinder instanceof TcpDiscoveryMulticastIpFinder) {
             TcpDiscoveryMulticastIpFinder mcastIpFinder = ((TcpDiscoveryMulticastIpFinder)ipFinder);
 
@@ -1829,8 +1872,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         }
 
         cfgNodeId = ignite.configuration().getNodeId();
-
-        impl.spiStart(gridName);
     }
 
     /** {@inheritDoc} */
@@ -1868,13 +1909,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     void printStopInfo() {
         if (log.isDebugEnabled())
             log.debug(stopInfo());
-    }
-
-    /**
-     * @return Ignite instance.
-     */
-    Ignite ignite() {
-        return ignite;
     }
 
     /**
