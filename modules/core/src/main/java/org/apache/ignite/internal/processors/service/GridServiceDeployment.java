@@ -31,10 +31,10 @@ public class GridServiceDeployment implements GridCacheInternal, Serializable {
     private static final long serialVersionUID = 0L;
 
     /** Node ID. */
-    protected UUID nodeId;
+    private UUID nodeId;
 
     /** Service configuration. */
-    protected ServiceConfiguration cfg;
+    private ServiceConfiguration cfg;
 
     /**
      * @param nodeId Node ID.
