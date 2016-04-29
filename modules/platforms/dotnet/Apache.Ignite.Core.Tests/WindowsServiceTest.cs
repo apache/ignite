@@ -81,6 +81,8 @@ namespace Apache.Ignite.Core.Tests
                 if (controller.CanStop)
                     controller.Stop();
 
+                controller.WaitForStatus(ServiceControllerStatus.Stopped);
+
                 var exePath = typeof(IgniteRunner).Assembly.Location;
                 IgniteProcess.Start(exePath, string.Empty, args: new[] {"/uninstall"}).WaitForExit();
             }
