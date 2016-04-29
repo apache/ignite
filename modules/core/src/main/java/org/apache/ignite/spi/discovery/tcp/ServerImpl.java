@@ -160,7 +160,6 @@ import static org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusChe
 /**
  *
  */
-@SuppressWarnings("All")
 class ServerImpl extends TcpDiscoveryImpl {
     /** */
     private static final int ENSURED_MSG_HIST_SIZE = getInteger(IGNITE_DISCOVERY_HISTORY_SIZE, 1024 * 10);
@@ -1643,7 +1642,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @return {@code True} if given parameters contain the same permissions, {@code False} otherwise.
      */
     private boolean permissionsEqual(SecurityPermissionSet locPerms, SecurityPermissionSet rmtPerms) {
-        boolean dfltAllowMatch = !(locPerms.defaultAllowAll() ^ rmtPerms.defaultAllowAll());
+        boolean dfltAllowMatch = locPerms.defaultAllowAll() == rmtPerms.defaultAllowAll();
 
         boolean bothHaveSamePerms = F.eqNotOrdered(rmtPerms.systemPermissions(), locPerms.systemPermissions()) &&
             F.eqNotOrdered(rmtPerms.cachePermissions(), locPerms.cachePermissions()) &&
@@ -1964,7 +1963,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         private final Queue<TcpDiscoveryAbstractMessage> msgs = new ArrayDeque<>(MAX * 2);
 
         /** Processed custom message IDs. */
-        private Set<IgniteUuid> procCustomMsgs = new GridBoundedLinkedHashSet<IgniteUuid>(MAX * 2);
+        private Set<IgniteUuid> procCustomMsgs = new GridBoundedLinkedHashSet<>(MAX * 2);
 
         /** Discarded message ID. */
         private IgniteUuid discardId;

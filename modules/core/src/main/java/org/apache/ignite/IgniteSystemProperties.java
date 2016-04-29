@@ -19,6 +19,8 @@ package org.apache.ignite;
 
 import java.io.Serializable;
 import java.lang.management.RuntimeMXBean;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Properties;
 import javax.net.ssl.HostnameVerifier;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
@@ -542,10 +544,22 @@ public final class IgniteSystemProperties {
     /**
      * Gets snapshot of system properties.
      * Snapshot could be used for thread safe iteration over system properties.
+     * Non-string properties are removed before return.
      *
      * @return Snapshot of system properties.
      */
     public static Properties snapshot() {
-        return (Properties)System.getProperties().clone();
+        Properties sysProps = (Properties)System.getProperties().clone();
+
+        Iterator<Map.Entry<Object, Object>> iter = sysProps.entrySet().iterator();
+
+        while (iter.hasNext()) {
+            Map.Entry entry = iter.next();
+
+            if (!(entry.getValue() instanceof String) || !(entry.getKey() instanceof String))
+                iter.remove();
+        }
+
+        return sysProps;
     }
 }

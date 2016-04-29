@@ -37,6 +37,7 @@ import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.internal.GridKernalGateway;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgniteProperties;
@@ -201,7 +202,7 @@ class GridUpdateNotifier {
             StringWriter sw = new StringWriter();
 
             try {
-                System.getProperties().store(new PrintWriter(sw), "");
+                IgniteSystemProperties.snapshot().store(new PrintWriter(sw), "");
             }
             catch (IOException ignore) {
                 return null;
