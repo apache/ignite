@@ -51,8 +51,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.UUID;
 
 /**
@@ -70,13 +72,13 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     /** Default number of partitions. */
     public static final int DFLT_PARTITION_COUNT = 1024;
     /** Default number of partitions. */
-    public static final int DFLT_CLUSTER_SIZE = 16;
+    public static final int DFLT_BUCKETS_COUNT = 32;
     /** */
     private static final long serialVersionUID = 0L;
     /** Comparator. */
     private static final Comparator<IgniteBiTuple<Long, ClusterNode>> COMPARATOR = new HashComparator();
-    /** Permanent list to collect & sort hashed ClusterNodes */
-    private transient List<IgniteBiTuple<Long, ClusterNode>> hashedNodes;
+
+    private transient List<List<Integer>> bucketIdxsByPartition;
     /** Thread local message digest. */
     private ThreadLocal<MessageDigest> digest = new ThreadLocal<MessageDigest>() {
         @Override protected MessageDigest initialValue() {
@@ -164,7 +166,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         this.exclNeighbors = exclNeighbors;
         this.parts = parts;
         this.backupFilter = backupFilter;
-        hashedNodes = new ArrayList<>(parts);
+        bucketIdxsByPartition = calculateBucketIdxs(parts, DFLT_BUCKETS_COUNT);
 
         try {
             MessageDigest.getInstance("MD5");
@@ -183,6 +185,19 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     private static long hash(int part, Object nodeHash) {
         long key = (nodeHash.hashCode() & 0xFFFFFFFFL)
             | ((part & 0xFFFFFFFFL) << 32);
+        key = (~key) + (key << 21); // key = (key << 21) - key - 1;
+        key ^= (key >>> 24);
+        key += (key << 3) + (key << 8); // key * 265
+        key ^= (key >>> 14);
+        key += (key << 2) + (key << 4); // key * 21
+        key ^= (key >>> 28);
+        key += (key << 31);
+        return key;
+    }
+
+    private static long hash(int key0, int key1) {
+        long key = (key0 & 0xFFFFFFFFL)
+            | ((key1 & 0xFFFFFFFFL) << 32);
         key = (~key) + (key << 21); // key = (key << 21) - key - 1;
         key ^= (key >>> 24);
         key += (key << 3) + (key << 8); // key * 265
@@ -402,26 +417,26 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         if (nodes.size() <= 1)
             return nodes;
 
-        hashedNodes.clear();
+        List<IgniteBiTuple<Long, ClusterNode>> lst = new ArrayList<>(nodes.size());
         for (ClusterNode node : nodes) {
             IgniteBiTuple<Long, ClusterNode> t = F.t(hash(part, resolveNodeHash(node)), node);
-            int pos = Collections.binarySearch(hashedNodes, t, COMPARATOR);
-            hashedNodes.add(-1 - pos, t);
+            int pos = Collections.binarySearch(lst, t, COMPARATOR);
+            lst.add(-1 - pos, t);
         }
 
         final int primaryAndBackups = backups == Integer.MAX_VALUE ? nodes.size() : Math.min(backups + 1, nodes.size());
 
         List<ClusterNode> res = new ArrayList<>(primaryAndBackups);
 
-        ClusterNode primary = hashedNodes.get(0).get2();
+        ClusterNode primary = lst.get(0).get2();
 
         res.add(primary);
 
         // Select backups.
         if (backups > 0) {
-            Collection<ClusterNode> allNeighbors = new HashSet<>((exclNeighbors) ? hashedNodes.size() / 4 : 16);
-            for (int i = 1; i < hashedNodes.size() && res.size() < primaryAndBackups; i++) {
-                ClusterNode node = hashedNodes.get(i).get2();
+            Collection<ClusterNode> allNeighbors = new HashSet<>((exclNeighbors) ? lst.size() / 4 : 16);
+            for (int i = 1; i < lst.size() && res.size() < primaryAndBackups; i++) {
+                ClusterNode node = lst.get(i).get2();
 
                 if (exclNeighbors) {
                     if (!allNeighbors.contains(node)) {
@@ -439,9 +454,9 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
 
         if (res.size() < primaryAndBackups && nodes.size() >= primaryAndBackups && exclNeighbors) {
             // Need to iterate again in case if there are no nodes which pass exclude neighbors backups criteria.
-            for (int i = 1; i < hashedNodes.size() && res.size() < primaryAndBackups; i++) {
+            for (int i = 1; i < lst.size() && res.size() < primaryAndBackups; i++) {
 
-                ClusterNode node = hashedNodes.get(i).get2();
+                ClusterNode node = lst.get(i).get2();
 
                 if (!res.contains(node))
                     res.add(node);
@@ -516,7 +531,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     public List<List<ClusterNode>> assignPartitions_new(AffinityFunctionContext affCtx) {
         List<ClusterNode> topSnapshot = affCtx.currentTopologySnapshot();
 
-        if(topSnapshot.size() > DFLT_CLUSTER_SIZE)
+        if(topSnapshot.size() > DFLT_BUCKETS_COUNT * 2)
             return assignPartitionsClustered(topSnapshot, affCtx.backups());
 
         Map<UUID, Collection<ClusterNode>> neighborhoodCache = exclNeighbors ?
@@ -534,17 +549,6 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     }
 
     public List<List<ClusterNode>> assignPartitionsClustered(List<ClusterNode> topSnapshot, int backups) {
-        int clusterSize = DFLT_CLUSTER_SIZE;
-        List<ClusterNode> sortedSnapshot = new ArrayList<>(topSnapshot);
-            Collections.sort(sortedSnapshot, new Comparator<ClusterNode>() {
-                @Override public int compare(ClusterNode o1, ClusterNode o2) {
-                    return o1.id().compareTo(o2.id());
-                }
-            });
-
-        List<Integer> clusters = new ArrayList<>(sortedSnapshot.size() / clusterSize + (sortedSnapshot.size() % clusterSize == 0 ? 0 : 1));
-        for (int i = 0; i < clusters.size(); ++i)
-            clusters.add(i);
 
         Map<UUID, Collection<ClusterNode>> neighborhoodCache = exclNeighbors ?
             GridCacheUtils.neighbors(topSnapshot) : null;
@@ -566,26 +570,23 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         if (nodes.size() <= 1)
             return nodes;
 
-        hashedNodes.clear();
-        for (ClusterNode node : nodes) {
-            IgniteBiTuple<Long, ClusterNode> t = F.t(hash(part, resolveNodeHash(node)), node);
-            int pos = Collections.binarySearch(hashedNodes, t, COMPARATOR);
-            hashedNodes.add(-1 - pos, t);
-        }
+        NodeHashSortedIterator it = new NodeHashSortedIterator(part, nodes);
 
         final int primaryAndBackups = backups == Integer.MAX_VALUE ? nodes.size() : Math.min(backups + 1, nodes.size());
 
         List<ClusterNode> res = new ArrayList<>(primaryAndBackups);
+        Collection<ClusterNode> allNeighbors = new HashSet<>();
 
-        ClusterNode primary = hashedNodes.get(0).get2();
+        ClusterNode primary = it.next();
 
         res.add(primary);
+        if (exclNeighbors)
+            allNeighbors.addAll(neighborhoodCache.get(primary.id()));
 
         // Select backups.
         if (backups > 0) {
-            Collection<ClusterNode> allNeighbors = new HashSet<>((exclNeighbors) ? hashedNodes.size() / 4 : 16);
-            for (int i = 1; i < hashedNodes.size() && res.size() < primaryAndBackups; i++) {
-                ClusterNode node = hashedNodes.get(i).get2();
+            while (it.hasNext() && res.size() < primaryAndBackups) {
+                ClusterNode node = it.next();
 
                 if (exclNeighbors) {
                     if (!allNeighbors.contains(node)) {
@@ -603,9 +604,11 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
 
         if (res.size() < primaryAndBackups && nodes.size() >= primaryAndBackups && exclNeighbors) {
             // Need to iterate again in case if there are no nodes which pass exclude neighbors backups criteria.
-            for (int i = 1; i < hashedNodes.size() && res.size() < primaryAndBackups; i++) {
+            it = new NodeHashSortedIterator(part, nodes);
+            it.next();
+            while(it.hasNext() && res.size() < primaryAndBackups) {
 
-                ClusterNode node = hashedNodes.get(i).get2();
+                ClusterNode node = it.next();
 
                 if (!res.contains(node))
                     res.add(node);
@@ -621,6 +624,28 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
 
         assert res.size() <= primaryAndBackups;
 
+        return res;
+    }
+
+    public static List<List<Integer>> calculateBucketIdxs(int parts, int buckets) {
+        List<List<Integer>> res = new ArrayList<>(parts);
+        for(int part = 0; part < parts; ++part) {
+            List<IgniteBiTuple<Long, Integer>> lst = new ArrayList<>(buckets);
+            for(int i = 0; i < buckets; ++i)
+                lst.add(F.t(hash(i, part), i));
+
+            Collections.sort(lst, new Comparator<IgniteBiTuple<Long, Integer>>() {
+                @Override public int compare(IgniteBiTuple<Long, Integer> o1, IgniteBiTuple<Long, Integer> o2) {
+                    return o1.get1() < o2.get1() ? -1 : o1.get1() > o2.get1() ? 1 :
+                        o1.get2().compareTo(o2.get2());
+                }
+            });
+            List<Integer> lstPartClusters = new ArrayList<>(buckets);
+            for(IgniteBiTuple<Long, Integer> t : lst)
+                lstPartClusters.add(t.get2());
+
+            res.add(lstPartClusters);
+        }
         return res;
     }
 
@@ -644,7 +669,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         exclNeighbors = in.readBoolean();
         hashIdRslvr = (AffinityNodeHashResolver)in.readObject();
         backupFilter = (IgniteBiPredicate<ClusterNode, ClusterNode>)in.readObject();
-        hashedNodes = new ArrayList<>(parts);
+        bucketIdxsByPartition = calculateBucketIdxs(parts, DFLT_BUCKETS_COUNT);
     }
 
     /**
@@ -658,6 +683,62 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
         @Override public int compare(IgniteBiTuple<Long, ClusterNode> o1, IgniteBiTuple<Long, ClusterNode> o2) {
             return o1.get1() < o2.get1() ? -1 : o1.get1() > o2.get1() ? 1 :
                 o1.get2().id().compareTo(o2.get2().id());
+        }
+    }
+
+    private class NodeHashSortedIterator implements Iterator<ClusterNode> {
+        private final List<ClusterNode> topSnapshot;
+        private final List<Integer> bucketIdxs;
+        private List<IgniteBiTuple<Long, ClusterNode>> currBucket;
+        private int currBucketIdx;
+        private int currNodeIdx;
+        private int bucketSize;
+        private int part;
+
+
+        public NodeHashSortedIterator(int part, List<ClusterNode> topSnapshot) {
+            this.part = part;
+            this.topSnapshot = topSnapshot;
+            bucketIdxs = bucketIdxsByPartition.get(part);
+            bucketSize = topSnapshot.size() / topSnapshot.size();
+
+            prepareNewCluster();
+        }
+
+        private void prepareNewCluster() {
+            currNodeIdx = 0;
+            int begin = bucketIdxs.get(currBucketIdx) * bucketSize;
+            int end = Math.max(begin + bucketSize, topSnapshot.size()) - begin;
+            currBucket = new ArrayList<>(end - begin);
+
+            for (int i = begin; i < end; ++i) {
+                ClusterNode node = topSnapshot.get(i);
+                IgniteBiTuple<Long, ClusterNode> t = F.t(hash(resolveNodeHash(node).hashCode(), part), node);
+                int pos = Collections.binarySearch(currBucket, t, COMPARATOR);
+                currBucket.add(-1 - pos, t);
+            }
+        }
+
+        @Override public boolean hasNext() {
+            return currBucketIdx < bucketIdxs.size() - 1 || currNodeIdx < currBucket.size() - 1;
+        }
+
+        /** {@inheritDoc} */
+        @Override public ClusterNode next() {
+            ClusterNode node = currBucket.get(currNodeIdx).get2();
+            ++currNodeIdx;
+            if(currNodeIdx == currBucket.size()) {
+                ++currBucketIdx;
+                if(currBucketIdx == bucketIdxs.size())
+                    throw new NoSuchElementException();
+
+                prepareNewCluster();
+            }
+            return node;
+        }
+
+        @Override public void remove() {
+            // No-op
         }
     }
 }

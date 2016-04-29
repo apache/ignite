@@ -216,5 +216,15 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
                 nodesCnt, avr, var, avr_new, var_new));
         }
     }
+
+    public void testIntDistribution() {
+        List<List<Integer>> cls = RendezvousAffinityFunction.calculateBucketIdxs(1024, 64);
+
+        for(List<Integer> lst : cls) {
+            for(int i : lst)
+                System.out.print(String.format("%02d ", i));
+            System.out.println("");
+        }
+    }
 }
 
