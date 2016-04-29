@@ -29,6 +29,7 @@ import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -178,26 +179,26 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             rnd.nextBytes(data);
 
-            IgniteInternalFuture<Boolean> fut = mgr.writeStart(info);
+            final GridCompoundFuture<Boolean, Boolean> f = new GridCompoundFuture<>();
 
-            expectsStoreFail(info, data, "Not enough space reserved to store data");
+            expectsStoreFail(info, data, "Not enough space reserved to store data", f);
 
             info = info.length(info.length() + data.length - 3);
 
-            expectsStoreFail(info, data, "Not enough space reserved to store data");
+            expectsStoreFail(info, data, "Not enough space reserved to store data", f);
 
             info = info.length(info.length() + 3);
 
             IgfsFileAffinityRange range = new IgfsFileAffinityRange();
 
-            byte[] remainder = mgr.storeDataBlocks(info, info.length(), null, 0, ByteBuffer.wrap(data), true,
-                range, null);
+            byte[] remainder = mgr.storeDataBlocks(info, info.length(), null, 0, ByteBuffer.wrap(data), data.length,
+                true, range, null, f);
 
             assert remainder == null;
 
-            mgr.writeClose(info);
+            f.markInitialized();
 
-            fut.get(3000);
+            f.get(3000);
 
             for (int j = 0; j < NODES_CNT; j++) {
                 GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(DATA_CACHE_NAME),
@@ -269,12 +270,12 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             info = info.length(info.length() + data.length + remainder.length);
 
-            IgniteInternalFuture<Boolean> fut = mgr.writeStart(info);
-
             IgfsFileAffinityRange range = new IgfsFileAffinityRange();
 
-            byte[] left = mgr.storeDataBlocks(info, info.length(), remainder, remainder.length, ByteBuffer.wrap(data),
-                false, range, null);
+            final GridCompoundFuture<Boolean,Boolean> f = new GridCompoundFuture<>();
+
+            byte[] left = mgr.storeDataBlocks(info, info.length(), remainder, remainder.length,
+                ByteBuffer.wrap(data), data.length, false, range, null, f);
 
             assert left.length == blockSize / 2;
 
@@ -282,14 +283,14 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             info = info.length(info.length() + remainder2.length);
 
-            byte[] left2 = mgr.storeDataBlocks(info, info.length(), left, left.length, ByteBuffer.wrap(remainder2),
-                false, range, null);
+            byte[] left2 = mgr.storeDataBlocks(info, info.length(), left, left.length,
+                ByteBuffer.wrap(remainder2), remainder2.length, false, range, null, f);
 
             assert left2 == null;
 
-            mgr.writeClose(info);
+            f.markInitialized();
 
-            fut.get(3000);
+            f.get(3000);
 
             for (int j = 0; j < NODES_CNT; j++) {
                 GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(DATA_CACHE_NAME),
@@ -358,22 +359,23 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             info = info.length(info.length() + data.length * writesCnt);
 
-            IgniteInternalFuture<Boolean> fut = mgr.writeStart(info);
+            final GridCompoundFuture<Boolean, Boolean> fut = new GridCompoundFuture<>();
 
             for (int j = 0; j < 64; j++) {
                 Arrays.fill(data, (byte)(j / 4));
 
                 byte[] left = mgr.storeDataBlocks(info, (j + 1) * chunkSize, null, 0, ByteBuffer.wrap(data),
-                    true, range, null);
+                    data.length, true, range, null, fut);
 
                 assert left == null : "No remainder should be returned if flush is true: " + Arrays.toString(left);
             }
 
-            mgr.writeClose(info);
+            fut.markInitialized();
+
+            fut.get(3000);
 
             assertTrue(range.regionEqual(new IgfsFileAffinityRange(0, writesCnt * chunkSize - 1, null)));
 
-            fut.get(3000);
 
             for (int j = 0; j < NODES_CNT; j++) {
                 GridCacheContext<Object, Object> ctx = GridTestUtils.getFieldValue(grid(j).cachex(DATA_CACHE_NAME),
@@ -415,7 +417,6 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
         long t = System.currentTimeMillis();
 
-        //IgfsFileInfo info = new IgfsFileInfo(blockSize, 0);
         IgfsEntryInfo info = IgfsUtils.createFile(IgniteUuid.randomUuid(), blockSize, 1024 * 1024, null, null, false,
             null, t, t);
 
@@ -577,47 +578,13 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
      * @param data Data to store.
      * @param msg Expected failure message.
      */
-    private void expectsStoreFail(final IgfsEntryInfo reserved, final byte[] data, @Nullable String msg) {
+    private void expectsStoreFail(final IgfsEntryInfo reserved, final byte[] data, @Nullable String msg, final GridCompoundFuture<Boolean, Boolean> f) {
         GridTestUtils.assertThrows(log, new Callable() {
             @Override public Object call() throws Exception {
                 IgfsFileAffinityRange range = new IgfsFileAffinityRange();
 
-                mgr.storeDataBlocks(reserved, reserved.length(), null, 0, ByteBuffer.wrap(data), false, range, null);
-
-                return null;
-            }
-        }, IgfsException.class, msg);
-    }
-
-    /**
-     * Test expected failures for 'delete' operation.
-     *
-     * @param fileInfo File to delete data for.
-     * @param msg Expected failure message.
-     */
-    private void expectsDeleteFail(final IgfsEntryInfo fileInfo, @Nullable String msg) {
-        GridTestUtils.assertThrows(log, new Callable() {
-            @Override public Object call() throws Exception {
-                mgr.delete(fileInfo);
-
-                return null;
-            }
-        }, IgfsException.class, msg);
-    }
-
-    /**
-     * Test expected failures for 'affinity' operation.
-     *
-     * @param info File info to resolve affinity nodes for.
-     * @param start Start position in the file.
-     * @param len File part length to get affinity for.
-     * @param msg Expected failure message.
-     */
-    private void expectsAffinityFail(final IgfsEntryInfo info, final long start, final long len,
-        @Nullable String msg) {
-        GridTestUtils.assertThrows(log, new Callable() {
-            @Override public Object call() throws Exception {
-                mgr.affinity(info, start, len);
+                mgr.storeDataBlocks(reserved, reserved.length(), null, 0,
+                    ByteBuffer.wrap(data), data.length, false, range, null, f);
 
                 return null;
             }

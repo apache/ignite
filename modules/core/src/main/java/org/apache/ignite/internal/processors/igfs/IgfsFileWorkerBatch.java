@@ -129,7 +129,7 @@ public abstract class IgfsFileWorkerBatch implements Runnable {
      * Process the batch.
      */
     @SuppressWarnings("unchecked")
-    public void run() {
+    @Override public void run() {
         Throwable err = null;
 
         try {

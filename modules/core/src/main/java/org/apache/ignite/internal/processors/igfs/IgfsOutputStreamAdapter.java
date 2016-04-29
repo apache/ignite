@@ -198,16 +198,7 @@ abstract class IgfsOutputStreamAdapter extends IgfsOutputStream {
      * @param data Data to store.
      * @throws IgniteCheckedException If failed.
      */
-    protected abstract void storeDataBlock(ByteBuffer data) throws IgniteCheckedException, IOException;
-
-    /**
-     * Store data blocks in file reading appropriate number of bytes from given data input.
-     *
-     * @param in Data input to read from.
-     * @param len Data length to store.
-     * @throws IgniteCheckedException If failed.
-     */
-    protected abstract void storeDataBlocks(DataInput in, int len) throws IgniteCheckedException, IOException;
+    protected abstract void storeDataBlocks(Object data, int len) throws IgniteCheckedException, IOException;
 
     /**
      * Close callback. It will be called only once in synchronized section.
@@ -249,7 +240,7 @@ abstract class IgfsOutputStreamAdapter extends IgfsOutputStream {
             if (flip)
                 buf.flip();
 
-            storeDataBlock(buf);
+            storeDataBlocks(buf, buf.remaining());
         }
         catch (IgniteCheckedException e) {
             throw new IOException("Failed to store data into file: " + path, e);

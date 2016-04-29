@@ -17,6 +17,16 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
@@ -40,21 +50,8 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.transactions.Transaction;
 import org.jsr166.ThreadLocalRandom8;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -256,41 +253,6 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Ensure that exception is not thrown in case PARTITIONED cache is oversized, but data is deleted concurrently.
-     *
-     * @throws Exception If failed.
-     */
-    public void testPartitionedOversizeDelay() throws Exception {
-        cacheMode = PARTITIONED;
-        nearEnabled = true;
-
-        checkOversizeDelay();
-    }
-
-    /**
-     * Ensure that exception is not thrown in case co-located cache is oversized, but data is deleted concurrently.
-     *
-     * @throws Exception If failed.
-     */
-    public void testColocatedOversizeDelay() throws Exception {
-        cacheMode = PARTITIONED;
-        nearEnabled = false;
-
-        checkOversizeDelay();
-    }
-
-    /**
-     * Ensure that exception is not thrown in case REPLICATED cache is oversized, but data is deleted concurrently.
-     *
-     * @throws Exception If failed.
-     */
-    public void testReplicatedOversizeDelay() throws Exception {
-        cacheMode = REPLICATED;
-
-        checkOversizeDelay();
-    }
-
-    /**
      * Ensure that IGFS size is correctly updated in case of preloading for PARTITIONED cache.
      *
      * @throws Exception If failed.
@@ -447,40 +409,42 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
         final IgfsPath path = new IgfsPath("/file");
 
         // This write is expected to be successful.
-        IgfsOutputStream os = igfs(0).create(path, false);
-        os.write(chunk(BLOCK_SIZE - 1));
-        os.close();
+        try (IgfsOutputStream os = igfs(0).create(path, false)) {
+            os.write(chunk(BLOCK_SIZE - 1));
+        }
 
         // This write must be successful as well.
-        os = igfs(0).append(path, false);
-        os.write(chunk(1));
-        os.close();
+        try (IgfsOutputStream os = igfs(0).append(path, false)) {
+            os.write(chunk(1));
+        }
 
-        // This write must fail w/ exception.
-        GridTestUtils.assertThrows(log(), new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                IgfsOutputStream osErr = igfs(0).append(path, false);
+        try {
+            IgfsOutputStream osErr = igfs(0).append(path, false);
 
-                try {
-                    osErr.write(chunk(BLOCK_SIZE));
-                    osErr.close();
-
-                    return null;
-                }
-                catch (IOException e) {
-                    Throwable e0 = e;
-
-                    while (e0.getCause() != null)
-                        e0 = e0.getCause();
-
-                    throw (Exception)e0;
-                }
-                finally {
-                    U.closeQuiet(osErr);
-                }
+            try {
+                osErr.write(chunk(BLOCK_SIZE));
+                osErr.close();
             }
-        }, IgfsOutOfSpaceException.class, "Failed to write data block (IGFS maximum data size exceeded) [used=" +
-            igfsMaxData + ", allowed=" + igfsMaxData + ']');
+            catch (IOException e) {
+                Throwable e0 = e;
+
+                while (e0.getCause() != null)
+                    e0 = e0.getCause();
+
+                throw (Exception) e0;
+            }
+            finally {
+                U.closeQuiet(osErr);
+            }
+
+            fail("IgfsOutOfSpaceException expected.");
+        }
+        catch (IgfsOutOfSpaceException ioose) {
+            assert ioose.getMessage().startsWith("Failed to write data block " +
+                "(IGFS maximum data size exceeded on node) ");
+
+            assert ioose.getMessage().endsWith(", used=" + igfsMaxData + ", allowed=" + igfsMaxData + ']');
+        }
     }
 
     /**

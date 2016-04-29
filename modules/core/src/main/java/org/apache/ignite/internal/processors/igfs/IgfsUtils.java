@@ -50,6 +50,7 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -712,7 +713,28 @@ public class IgfsUtils {
      * @param id The file id.
      * @return The new short name for trash directory.
      */
-    static String composeNameForTrash(IgfsPath path, IgniteUuid id) {
+    public static String composeNameForTrash(IgfsPath path, IgniteUuid id) {
         return id.toString() + TRASH_NAME_SEPARATOR + path.toString();
+    }
+
+    /**
+     * Read data from some source. Source could be either {@code ByteBuffer} of {@code DataInput}.
+     *
+     * @param src Source.
+     * @param dst Destination.
+     * @param dstOff Destination offset.
+     * @param len Length.
+     * @throws IOException If failed.
+     * @throws IgniteCheckedException If failed.
+     */
+    public static void readData(Object src, byte[] dst, int dstOff, int len) throws IOException,
+        IgniteCheckedException {
+        assert src != null;
+        assert src instanceof ByteBuffer || src instanceof DataInput;
+
+        if (src instanceof ByteBuffer)
+            ((ByteBuffer)src).get(dst, dstOff, len);
+        else
+            ((DataInput)src).readFully(dst, dstOff, len);
     }
 }

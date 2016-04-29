@@ -22,14 +22,12 @@ import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.IgfsPathNotFoundException;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.DataInput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -58,7 +56,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private IgfsEntryInfo fileInfo;
 
-    /** Space in file to write data. */
+    /** Space in file to write data. How many bytes are waiting to be written since last flush. */
     @SuppressWarnings("FieldAccessedSynchronizedAndUnsynchronized")
     private long space;
 
@@ -68,8 +66,8 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
     /** Data length in remainder. */
     private int remainderDataLen;
 
-    /** Write completion future. */
-    private final IgniteInternalFuture<Boolean> writeCompletionFut;
+    /** "Aggregated" write completion future. */
+    private GridCompoundFuture<Boolean, Boolean> aggregateFut;
 
     /** IGFS mode. */
     private final IgfsMode mode;
@@ -123,8 +121,6 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
         this.metrics = metrics;
 
         streamRange = initialStreamRange(fileInfo);
-
-        writeCompletionFut = data.writeStart(fileInfo);
     }
 
     /**
@@ -164,44 +160,10 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override protected synchronized void storeDataBlock(ByteBuffer block) throws IgniteCheckedException, IOException {
-        int writeLen = block.remaining();
+    @Override protected void storeDataBlocks(Object src, final int len) throws IOException, IgniteCheckedException {
+        preStoreDataBlocks(len);
 
-        preStoreDataBlocks(null, writeLen);
-
-        int blockSize = fileInfo.blockSize();
-
-        // If data length is not enough to fill full block, fill the remainder and return.
-        if (remainderDataLen + writeLen < blockSize) {
-            if (remainder == null)
-                remainder = new byte[blockSize];
-            else if (remainder.length != blockSize) {
-                assert remainderDataLen == remainder.length;
-
-                byte[] allocated = new byte[blockSize];
-
-                U.arrayCopy(remainder, 0, allocated, 0, remainder.length);
-
-                remainder = allocated;
-            }
-
-            block.get(remainder, remainderDataLen, writeLen);
-
-            remainderDataLen += writeLen;
-        }
-        else {
-            remainder = data.storeDataBlocks(fileInfo, fileInfo.length() + space, remainder, remainderDataLen, block,
-                false, streamRange, batch);
-
-            remainderDataLen = remainder == null ? 0 : remainder.length;
-        }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected synchronized void storeDataBlocks(DataInput in, int len) throws IgniteCheckedException, IOException {
-        preStoreDataBlocks(in, len);
-
-        int blockSize = fileInfo.blockSize();
+        final int blockSize = fileInfo.blockSize();
 
         // If data length is not enough to fill full block, fill the remainder and return.
         if (remainderDataLen + len < blockSize) {
@@ -217,13 +179,13 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
                 remainder = allocated;
             }
 
-            in.readFully(remainder, remainderDataLen, len);
+            IgfsUtils.readData(src, remainder, remainderDataLen, len);
 
             remainderDataLen += len;
         }
         else {
-            remainder = data.storeDataBlocks(fileInfo, fileInfo.length() + space, remainder, remainderDataLen, in, len,
-                false, streamRange, batch);
+            remainder = data.storeDataBlocks(fileInfo, fileInfo.length() + space, remainder, remainderDataLen,
+                src, len, false, streamRange, batch, aggregateFut);
 
             remainderDataLen = remainder == null ? 0 : remainder.length;
         }
@@ -234,16 +196,11 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
      *
      * @param len Data length to be written.
      */
-    private void preStoreDataBlocks(@Nullable DataInput in, int len) throws IgniteCheckedException, IOException {
-        // Check if any exception happened while writing data.
-        if (writeCompletionFut.isDone()) {
-            assert ((GridFutureAdapter)writeCompletionFut).isFailed();
+    private void preStoreDataBlocks(int len) throws IgniteCheckedException, IOException {
+        assert Thread.holdsLock(this);
 
-            if (in != null)
-                in.skipBytes(len);
-
-            writeCompletionFut.get();
-        }
+        if (aggregateFut == null)
+            aggregateFut = new GridCompoundFuture<>();
 
         bytes += len;
         space += len;
@@ -270,19 +227,26 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
             throw new IOException("File was concurrently deleted: " + path);
         }
 
+        // This will store all the full blocks and update the remainder from the internal 'buf' ByteBuffer:
         super.flush();
 
         try {
             if (remainder != null) {
-                data.storeDataBlocks(fileInfo, fileInfo.length() + space, null, 0,
-                    ByteBuffer.wrap(remainder, 0, remainderDataLen), true, streamRange, batch);
+                ByteBuffer wrappedRemainderByteBuf = ByteBuffer.wrap(remainder, 0, remainderDataLen);
+
+                byte[] rem = data.storeDataBlocks(fileInfo,
+                    fileInfo.length() + space, null/*remainder*/, 0/*remainderLen*/,
+                    wrappedRemainderByteBuf, wrappedRemainderByteBuf.remaining(),
+                    true/*flush*/, streamRange, batch, aggregateFut);
+
+                assert rem == null; // The remainder must be absent.
 
                 remainder = null;
                 remainderDataLen = 0;
             }
 
             if (space > 0) {
-                data.awaitAllAcksReceived(fileInfo.id());
+                awaitAllPendingBlcoks();
 
                 IgfsEntryInfo fileInfo0 = meta.reserveSpace(path, fileInfo.id(), space, streamRange);
 
@@ -295,9 +259,28 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
 
                 space = 0;
             }
+            else
+                aggregateFut = null;
         }
         catch (IgniteCheckedException e) {
             throw new IOException("Failed to flush data [path=" + path + ", space=" + space + ']', e);
+        }
+    }
+
+    /**
+     * Awaits for the main block sequence future and (optional) the remainder future.
+     *
+     * @throws IgniteCheckedException On error.
+     */
+    private void awaitAllPendingBlcoks() throws IgniteCheckedException {
+        assert Thread.holdsLock(this);
+
+        if (aggregateFut != null) {
+            aggregateFut.markInitialized();
+
+            aggregateFut.get();
+
+            aggregateFut = null;
         }
     }
 
@@ -337,9 +320,8 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
                 IOException err = null;
 
                 try {
-                    data.writeClose(fileInfo);
-
-                    writeCompletionFut.get();
+                    // Wait for all blocks to be written:
+                    awaitAllPendingBlcoks();
                 }
                 catch (IgniteCheckedException e) {
                     err = new IOException("Failed to close stream [path=" + path + ", fileInfo=" + fileInfo + ']', e);
@@ -377,6 +359,8 @@ class IgfsOutputStreamImpl extends IgfsOutputStreamAdapter {
                     throw err;
             }
             else {
+                aggregateFut = null;
+
                 try {
                     if (mode == DUAL_SYNC)
                         batch.await();
