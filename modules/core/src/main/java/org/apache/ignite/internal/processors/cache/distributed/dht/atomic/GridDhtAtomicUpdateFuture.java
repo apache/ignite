@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -216,6 +217,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
      * @param prevVal Previous value.
      * @param updateCntr Partition update counter.
      */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void addWriteEntry(GridDhtCacheEntry entry,
         @Nullable CacheObject val,
         EntryProcessor<Object, Object, Object> entryProcessor,
@@ -227,7 +229,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         long updateCntr) {
         AffinityTopologyVersion topVer = updateReq.topologyVersion();
 
-        Collection<ClusterNode> dhtNodes = cctx.dht().topology().nodes(entry.partition(), topVer);
+        List<ClusterNode> dhtNodes = cctx.dht().topology().nodes(entry.partition(), topVer);
 
         if (log.isDebugEnabled())
             log.debug("Mapping entry to DHT nodes [nodes=" + U.nodeIds(dhtNodes) + ", entry=" + entry + ']');
@@ -236,7 +238,9 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
 
         keys.add(entry.key());
 
-        for (ClusterNode node : dhtNodes) {
+        for (int i = 0; i < dhtNodes.size(); i++) {
+            ClusterNode node = dhtNodes.get(i);
+
             UUID nodeId = node.id();
 
             if (!nodeId.equals(cctx.localNodeId())) {

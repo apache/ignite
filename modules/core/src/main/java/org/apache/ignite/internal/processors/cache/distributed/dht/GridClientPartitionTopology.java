@@ -395,14 +395,14 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<ClusterNode> nodes(int p, AffinityTopologyVersion topVer) {
+    @Override public List<ClusterNode> nodes(int p, AffinityTopologyVersion topVer) {
         lock.readLock().lock();
 
         try {
             assert node2part != null && node2part.valid() : "Invalid node-to-partitions map [topVer=" + topVer +
                 ", node2part=" + node2part + ']';
 
-            Collection<ClusterNode> nodes = null;
+            List<ClusterNode> nodes = null;
 
             Collection<UUID> nodeIds = part2node.get(p);
 
@@ -412,7 +412,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
 
                     if (n != null && (topVer.topologyVersion() < 0 || n.order() <= topVer.topologyVersion())) {
                         if (nodes == null)
-                            nodes = new ArrayList<>();
+                            nodes = new ArrayList<>(nodeIds.size());
 
                         nodes.add(n);
                     }
