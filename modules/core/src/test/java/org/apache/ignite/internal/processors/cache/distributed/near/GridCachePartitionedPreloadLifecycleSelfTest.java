@@ -17,15 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.util.Map;
-import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePreloadLifecycleAbstractTest;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -185,42 +182,5 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
      */
     public void testLifecycleBean4() throws Exception {
         checkCache(keys(false, 500));
-    }
-
-    /**
-     *
-     */
-    private static class EntryIntegerIgniteReducer implements IgniteReducer<Map.Entry<Object, MyValue>, Integer> {
-        @IgniteInstanceResource
-        private Ignite grid;
-
-        private int cnt;
-
-        @Override public boolean collect(Map.Entry<Object, MyValue> e) {
-            Object key = e.getKey();
-
-            assertNotNull(e.getValue());
-
-            try {
-                Object v1 = e.getValue();
-                Object v2 = grid.cache("one").get(key);
-
-                assertNotNull(v2);
-                assertEquals(v1, v2);
-            }
-            catch (CacheException e1) {
-                e1.printStackTrace();
-
-                assert false;
-            }
-
-            cnt++;
-
-            return true;
-        }
-
-        @Override public Integer reduce() {
-            return cnt;
-        }
     }
 }

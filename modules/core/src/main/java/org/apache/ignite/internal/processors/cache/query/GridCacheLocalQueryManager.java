@@ -92,7 +92,7 @@ public class GridCacheLocalQueryManager<K, V> extends GridCacheQueryManager<K, V
     /** {@inheritDoc} */
     @Override public GridCloseableIterator<Map.Entry<K, V>> scanQueryDistributed(GridCacheQueryAdapter qry,
         Collection<ClusterNode> nodes) throws IgniteCheckedException {
-        assert cctx.config().getCacheMode() == LOCAL;
+        assert cctx.isLocal() : cctx.name();
 
         throw new IgniteException("Distributed scan query are not available for local cache " +
             "(use 'CacheQuery.executeScanQuery(grid.forLocal())' instead) [cacheName=" + cctx.name() + ']');
