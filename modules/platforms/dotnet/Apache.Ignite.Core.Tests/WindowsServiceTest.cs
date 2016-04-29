@@ -17,9 +17,11 @@
 
 namespace Apache.Ignite.Core.Tests
 {
+    using System;
     using System.IO;
     using System.Linq;
     using System.ServiceProcess;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
 
@@ -61,6 +63,8 @@ namespace Apache.Ignite.Core.Tests
 
             service.Start();
 
+            service.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(30));
+
             using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = springPath
@@ -68,10 +72,13 @@ namespace Apache.Ignite.Core.Tests
             {
                 Assert.IsTrue(ignite.WaitTopology(2));
 
-                ignite.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<object>(
-                    "org.apache.ignite.platform.PlatformStopIgniteTask", ignite.Name);
+                // Stop remote node via Java task
+                // Doing so will fail the task execution
+                Assert.Throws<ClusterGroupEmptyException>(() =>
+                    ignite.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<object>(
+                        "org.apache.ignite.platform.PlatformStopIgniteTask", ignite.Name));
 
-                Assert.IsTrue(ignite.WaitTopology(2));
+                Assert.IsTrue(ignite.WaitTopology(1));
                 
                 // TODO: Check that service has stopped
             }
@@ -86,7 +93,7 @@ namespace Apache.Ignite.Core.Tests
                 if (controller.CanStop)
                     controller.Stop();
 
-                controller.WaitForStatus(ServiceControllerStatus.Stopped);
+                controller.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
 
                 var exePath = typeof(IgniteRunner).Assembly.Location;
                 IgniteProcess.Start(exePath, string.Empty, args: new[] {"/uninstall"}).WaitForExit();
