@@ -183,9 +183,9 @@ form.panel.panel-default(name=form novalidate)
 
                                         .group-content(ng-if='#{hibernateProperties}.length')
                                             -var field = 'edit'
-                                            -var valid = form + '.' + field + '.$valid'
-                                            -var unique = form + '.' + field + '.$error.ignitePropertyUnique'
-                                            -var prop = form + '.' + field + '.$error.ignitePropertyValueSpecified'
+                                            -var valid = 'form[ngModelName].$valid'
+                                            -var unique = 'form[ngModelName].$error.ignitePropertyUnique'
+                                            -var prop = 'form[ngModelName].$error.ignitePropertyValueSpecified'
                                             -var save = hibernateProperties + '[$index] = ' + field
 
                                             ignite-form-field(ng-repeat='model in #{hibernateProperties} track by $index' type='internal' name='Hibernate properties')
@@ -203,9 +203,9 @@ form.panel.panel-default(name=form novalidate)
 
                                         .group-content(ng-repeat='field in group.add')
                                             -var field = 'new'
-                                            -var valid = form + '.' + field + '.$valid'
-                                            -var unique = form + '.' + field + '.$error.ignitePropertyUnique'
-                                            -var prop = form + '.' + field + '.$error.ignitePropertyValueSpecified'
+                                            -var valid = 'form[ngModelName].$valid'
+                                            -var unique = 'form[ngModelName].$error.ignitePropertyUnique'
+                                            -var prop = 'form[ngModelName].$error.ignitePropertyValueSpecified'
                                             -var save = hibernateProperties + '.push(' + field + ')'
 
                                             ignite-form-field(type='internal' name='Hibernate property')

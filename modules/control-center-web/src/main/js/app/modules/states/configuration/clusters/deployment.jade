@@ -71,10 +71,10 @@ form.panel.panel-default(name='deployment' novalidate)
 
                         .group-content(ng-if=exclude + '.length')
                             -var field = 'edit'
-                            -var valid = form + '.' + field + '.$valid'
-                            -var unique = form + '.' + field + '.$error.igniteUnique'
-                            -var javaPackageName = form + '.' + field + '.$error.javaPackageName'
-                            -var javaKeywords = form + '.' + field + '.$error.javaKeywords'
+                            -var valid = 'form[ngModelName].$valid'
+                            -var unique = 'form[ngModelName].$error.igniteUnique'
+                            -var javaPackageName = 'form[ngModelName].$error.javaPackageName'
+                            -var javaKeywords = 'form[ngModelName].$error.javaKeywords'
                             -var save = exclude + '[$index] = ' + field
 
                             ignite-form-field(ng-repeat='model in #{exclude} track by $index' type='internal' name='Package name')
@@ -92,10 +92,10 @@ form.panel.panel-default(name='deployment' novalidate)
 
                         .group-content(ng-repeat='field in group.add')
                             -var field = 'new'
-                            -var valid = form + '.' + field + '.$valid'
-                            -var unique = form + '.' + field + '.$error.igniteUnique'
-                            -var javaPackageName = form + '.' + field + '.$error.javaPackageName'
-                            -var javaKeywords = form + '.' + field + '.$error.javaKeywords'
+                            -var valid = 'form[ngModelName].$valid'
+                            -var unique = 'form[ngModelName].$error.igniteUnique'
+                            -var javaPackageName = 'form[ngModelName].$error.javaPackageName'
+                            -var javaKeywords = 'form[ngModelName].$error.javaKeywords'
                             -var save = exclude + '.push(' + field + ')'
 
                             ignite-form-field(type='internal' name='Package name')

@@ -16,12 +16,11 @@
 
 include ../../../../../../../app/helpers/jade/mixins.jade
 
--var form = 'general'
 -var model = 'backupItem.discovery.ZooKeeper'
 
 div
     .details-row
-        +java-class('Curator:', form, model + '.curator', 'curator', 'true', 'false',
+        +java-class('Curator:', model + '.curator', 'curator', 'true', 'false',
             'The Curator framework in use<br/>\
             By default generates curator of org.apache.curator. framework.imps.CuratorFrameworkImpl\
             class with configured connect string, retry policy, and default session and connection timeouts')

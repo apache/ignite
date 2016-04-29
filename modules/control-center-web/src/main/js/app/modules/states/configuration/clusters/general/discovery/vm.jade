@@ -44,11 +44,11 @@ include ../../../../../../../app/helpers/jade/mixins.jade
 
         .group-content(ng-if='#{addresses}.length')
             -var field = 'edit'
-            -var valid = form + '.' + field + '.$valid'
-            -var unique = form + '.' + field + '.$error.igniteUnique'
-            -var ipaddress = form + '.' + field + '.$error.ipaddress'
-            -var ipaddressPort = form + '.' + field + '.$error.ipaddressPort'
-            -var ipaddressPortRange = form + '.' + field + '.$error.ipaddressPortRange'
+            -var valid = 'form[ngModelName].$valid'
+            -var unique = 'form[ngModelName].$error.igniteUnique'
+            -var ipaddress = 'form[ngModelName].$error.ipaddress'
+            -var ipaddressPort = 'form[ngModelName].$error.ipaddressPort'
+            -var ipaddressPortRange = 'form[ngModelName].$error.ipaddressPortRange'
             -var save = addresses + '[$index] = ' + field
 
             ignite-form-field(ng-repeat='model in #{addresses} track by $index' type='internal' name='Address')
@@ -62,7 +62,7 @@ include ../../../../../../../app/helpers/jade/mixins.jade
                 span(ng-hide='field.edit')
                     a.labelFormField(ng-click='field.edit = true') {{ model }}
                 span(ng-if='field.edit' ng-init='#{field} = model')
-                    +table-address-field(field, addresses, valid, save, false)
+                    +table-address-field(field, addresses, valid, save, false, true)
                         +table-save-button(valid, save, false)
                         +unique-feedback(unique, uniqueTip)
                         +ipaddress-feedback(ipaddress)
@@ -71,15 +71,15 @@ include ../../../../../../../app/helpers/jade/mixins.jade
 
         .group-content(ng-repeat='field in group.add')
             -var field = 'new'
-            -var valid = form + '.' + field + '.$valid'
-            -var unique = form + '.' + field + '.$error.igniteUnique'
-            -var ipaddress = form + '.' + field + '.$error.ipaddress'
-            -var ipaddressPort = form + '.' + field + '.$error.ipaddressPort'
-            -var ipaddressPortRange = form + '.' + field + '.$error.ipaddressPortRange'
+            -var valid = 'form[ngModelName].$valid'
+            -var unique = 'form[ngModelName].$error.igniteUnique'
+            -var ipaddress = 'form[ngModelName].$error.ipaddress'
+            -var ipaddressPort = 'form[ngModelName].$error.ipaddressPort'
+            -var ipaddressPortRange = 'form[ngModelName].$error.ipaddressPortRange'
             -var save = addresses + '.push(' + field + ')'
 
             ignite-form-field(type='internal' name='Address')
-                +table-address-field(field, addresses, valid, save, true)
+                +table-address-field(field, addresses, valid, save, true, true)
                     +table-save-button(valid, save, true)
                     +unique-feedback(unique, uniqueTip)
                     +ipaddress-feedback(ipaddress)

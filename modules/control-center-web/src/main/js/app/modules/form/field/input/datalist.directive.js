@@ -18,7 +18,7 @@
 import template from './datalist.jade!';
 
 export default ['igniteFormFieldInputDatalist', ['IgniteFormGUID', '$table', (guid, $table) => {
-    const link = (scope, el, attrs, [ngModel, form, label]) => {
+    const link = (scope, element, attrs, [ngModel, form, label], transclude) => {
         const {id, ngModelName} = scope;
 
         const name = ngModelName;
@@ -63,7 +63,7 @@ export default ['igniteFormFieldInputDatalist', ['IgniteFormGUID', '$table', (gu
         scope.$watch('value', setAsDefault);
 
         const checkValid = () => {
-            const input = el.find('input');
+            const input = element.find('input');
 
             const invalid = ngModel.$invalid || (input[0].required && !input[0].value);
 
@@ -90,6 +90,13 @@ export default ['igniteFormFieldInputDatalist', ['IgniteFormGUID', '$table', (gu
         scope.tableReset = () => {
             $table.tableSaveAndReset();
         };
+
+        transclude(scope.$parent, function(clone, tscope) {
+            tscope.form = form;
+            tscope.ngModelName = ngModelName;
+
+            element.find('.transclude-here').append(clone);
+        });
     };
 
     return {

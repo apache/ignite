@@ -22,7 +22,7 @@ include ../../../../../../../app/helpers/jade/mixins.jade
 
 div
     .details-row
-        +text-ip-address('IP address:', form, model + '.multicastGroup', 'multicastGroup', 'true', '228.1.2.4', 'IP address of multicast group')
+        +text-ip-address('IP address:', model + '.multicastGroup', 'multicastGroup', 'true', '228.1.2.4', 'IP address of multicast group')
     .details-row
         +number-min-max('Port number:', model + '.multicastPort', 'multicastPort', 'true', '47400', '0', '65535', 'Port number which multicast messages are sent to')
     .details-row
@@ -33,7 +33,7 @@ div
             'Number of attempts to send multicast address request<br/>\
             IP finder re - sends request only in case if no reply for previous request is received')
     .details-row
-        +text-ip-address('Local address:', form, model + '.localAddress', 'localAddress', 'true', '0.0.0.0',
+        +text-ip-address('Local address:', model + '.localAddress', 'localAddress', 'true', '0.0.0.0',
             'Local host address used by this IP finder<br/>\
             If provided address is non - loopback then multicast socket is bound to this interface<br/>\
             If local address is not set or is any local address then IP finder creates multicast sockets for all found non - loopback addresses')
@@ -63,11 +63,11 @@ div
 
             .group-content(ng-if='#{addresses}.length')
                 -var field = 'edit'
-                -var valid = form + '.' + field + '.$valid'
-                -var unique = form + '.' + field + '.$error.igniteUnique'
-                -var ipaddress = form + '.' + field + '.$error.ipaddress'
-                -var ipaddressPort = form + '.' + field + '.$error.ipaddressPort'
-                -var ipaddressPortRange = form + '.' + field + '.$error.ipaddressPortRange'
+                -var valid = 'form[ngModelName].$valid'
+                -var unique = 'form[ngModelName].$error.igniteUnique'
+                -var ipaddress = 'form[ngModelName].$error.ipaddress'
+                -var ipaddressPort = 'form[ngModelName].$error.ipaddressPort'
+                -var ipaddressPortRange = 'form[ngModelName].$error.ipaddressPortRange'
                 -var save = addresses + '[$index] = ' + field
 
                 ignite-form-field(ng-repeat='model in #{addresses} track by $index' type='internal' name='Address')
@@ -81,7 +81,7 @@ div
                     span(ng-hide='field.edit')
                         a.labelFormField(ng-click='field.edit = true') {{ model }}
                     span(ng-if='field.edit' ng-init='#{field} = model')
-                        +table-address-field(field, addresses, valid, save, false)
+                        +table-address-field(field, addresses, valid, save, false, true)
                             +table-save-button(valid, save, false)
                             +unique-feedback(unique, uniqueTip)
                             +ipaddress-feedback(ipaddress)
@@ -90,15 +90,15 @@ div
 
             .group-content(ng-repeat='field in group.add')
                 -var field = 'new'
-                -var valid = form + '.' + field + '.$valid'
-                -var unique = form + '.' + field + '.$error.igniteUnique'
-                -var ipaddress = form + '.' + field + '.$error.ipaddress'
-                -var ipaddressPort = form + '.' + field + '.$error.ipaddressPort'
-                -var ipaddressPortRange = form + '.' + field + '.$error.ipaddressPortRange'
+                -var valid = 'form[ngModelName].$valid'
+                -var unique = 'form[ngModelName].$error.igniteUnique'
+                -var ipaddress = 'form[ngModelName].$error.ipaddress'
+                -var ipaddressPort = 'form[ngModelName].$error.ipaddressPort'
+                -var ipaddressPortRange = 'form[ngModelName].$error.ipaddressPortRange'
                 -var save = addresses + '.push(' + field + ')'
 
                 ignite-form-field(type='internal' name='Address')
-                    +table-address-field(field, addresses, valid, save, true)
+                    +table-address-field(field, addresses, valid, save, true, true)
                         +table-save-button(valid, save, true)
                         +unique-feedback(unique, uniqueTip)
                         +ipaddress-feedback(ipaddress)

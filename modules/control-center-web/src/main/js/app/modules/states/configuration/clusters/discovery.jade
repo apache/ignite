@@ -30,13 +30,13 @@ form.panel.panel-default(name=form novalidate)
         .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
             .col-sm-6
                 .settings-row
-                    +text-ip-address('Local address:', form, model + '.localAddress', 'discoLocalAddress', 'true', '228.1.2.4', 'Local address')
+                    +text-ip-address('Local address:', model + '.localAddress', 'discoLocalAddress', 'true', '228.1.2.4', 'Local address')
                 .settings-row
                     +number-min-max('Local port:', model + '.localPort', 'discoLocalPort', 'true', '47500', '1024', '65535', 'Local port which node uses')
                 .settings-row
                     +number('Local port range:', model + '.localPortRange', 'discoLocalPortRange', 'true', '100', '1', 'Local port range')
                 .settings-row
-                    +java-class('Address resolver:', form, model + '.addressResolver', 'discoAddressResolver', 'true', 'false',
+                    +java-class('Address resolver:', model + '.addressResolver', 'discoAddressResolver', 'true', 'false',
                         'Class name of resolution between external and internal addresses provider')
                 .settings-row
                     +number('Socket timeout:', model + '.socketTimeout', 'socketTimeout', 'true', '5000', '0', 'Socket operations timeout')
@@ -60,11 +60,11 @@ form.panel.panel-default(name=form novalidate)
                 .settings-row
                     +number('Topology history:', model + '.topHistorySize', 'topHistorySize', 'true', '1000', '0', 'Size of topology snapshots history')
                 .settings-row
-                    +java-class('Discovery listener:', form, model + '.listener', 'discoListener', 'true', 'false', 'Grid discovery listener')
+                    +java-class('Discovery listener:', model + '.listener', 'discoListener', 'true', 'false', 'Grid discovery listener')
                 .settings-row
-                    +java-class('Data exchange:', form, model + '.dataExchange', 'dataExchange', 'true', 'false', 'Class name of handler for initial data exchange between Ignite nodes')
+                    +java-class('Data exchange:', model + '.dataExchange', 'dataExchange', 'true', 'false', 'Class name of handler for initial data exchange between Ignite nodes')
                 .settings-row
-                    +java-class('Metrics provider:', form, model + '.metricsProvider', 'metricsProvider', 'true', 'false', 'Class name of metric provider to discovery SPI')
+                    +java-class('Metrics provider:', model + '.metricsProvider', 'metricsProvider', 'true', 'false', 'Class name of metric provider to discovery SPI')
                 .settings-row
                     +number('Reconnect count:', model + '.reconnectCount', 'discoReconnectCount', 'true', '10', '1', 'Reconnect attempts count')
                 .settings-row
@@ -72,7 +72,7 @@ form.panel.panel-default(name=form novalidate)
                 .settings-row
                     +number('IP finder clean frequency:', model + '.ipFinderCleanFrequency', 'ipFinderCleanFrequency', 'true', '60000', '1', 'IP finder clean frequency')
                 .settings-row
-                    +java-class('Node authenticator:', form, model + '.authenticator', 'authenticator', 'true', 'false', 'Node authenticator')
+                    +java-class('Node authenticator:', model + '.authenticator', 'authenticator', 'true', 'false', 'Node authenticator')
                 .settings-row
                     +checkbox('Force server mode', model + '.forceServerMode', 'forceServerMode', 'Force server mode')
                 .settings-row

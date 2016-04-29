@@ -35,7 +35,7 @@ form.panel.panel-default(name=form novalidate)
                         'Maximum amount of pending data read from the secondary file system and waiting to be written to data cache\
                         0 or negative value stands for unlimited size')
                 .settings-row
-                    +java-class('Put executor service:', form, model + '.dualModePutExecutorService', 'dualModePutExecutorService', 'true', 'false', 'DUAL mode put operation executor service')
+                    +java-class('Put executor service:', model + '.dualModePutExecutorService', 'dualModePutExecutorService', 'true', 'false', 'DUAL mode put operation executor service')
                 .settings-row
                     +checkbox('Put executor service shutdown', model + '.dualModePutExecutorServiceShutdown', 'dualModePutExecutorServiceShutdown', 'DUAL mode put operation executor service shutdown flag')
             .col-sm-6

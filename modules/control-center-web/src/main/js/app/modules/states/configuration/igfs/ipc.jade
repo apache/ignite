@@ -46,7 +46,7 @@ form.panel.panel-default(name=form novalidate)
                             <li>TCP - TCP endpoint</li>\
                         </ul>')
                 .settings-row
-                    +text-ip-address('Host:', form, ipcEndpointConfiguration + '.host', 'ipcEndpointConfigurationHost', enabled, '127.0.0.1', 'Host name')
+                    +text-ip-address('Host:', ipcEndpointConfiguration + '.host', 'ipcEndpointConfigurationHost', enabled, '127.0.0.1', 'Host name')
                 .settings-row
                     +number-min-max('Port:', ipcEndpointConfiguration + '.port', 'ipcEndpointConfigurationPort', enabled, '10500', '1', '65535', 'Port number')
                 .settings-row

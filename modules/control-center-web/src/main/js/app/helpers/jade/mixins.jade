@@ -117,8 +117,7 @@ mixin checkbox-enabled(lbl, model, name, enabled, tip)
             | !{tip}
 
 //- Mixin for java name field with enabled condition.
-mixin java-class(lbl, form, model, name, enabled, required, tip)
-    -var err = form + '.' + name + '.$error'
+mixin java-class(lbl, model, name, enabled, required, tip)
     -var errLbl = lbl.substring(0, lbl.length - 1)
 
     ignite-form-field
@@ -139,14 +138,13 @@ mixin java-class(lbl, form, model, name, enabled, required, tip)
             data-java-keywords='true'
             data-java-built-in-class='true'
         )
-            +error-feedback(err + '.javaBuiltInClass', 'javaBuiltInClass', errLbl + ' should not be the Java built-in class!', name)
-            +error-feedback(err + '.javaKeywords', 'javaKeywords', errLbl + ' could not contains reserved Java keyword!', name)
-            +error-feedback(err + '.javaPackageSpecified', 'javaPackageSpecified', errLbl + ' does not have package specified!', name)
-            +error-feedback(err + '.javaIdentifier', 'javaIdentifier', errLbl + ' is invalid Java identifier!', name)
+            +error-feedback('form[ngModelName].$error.javaBuiltInClass', 'javaBuiltInClass', errLbl + ' should not be the Java built-in class!', name)
+            +error-feedback('form[ngModelName].$error.javaKeywords', 'javaKeywords', errLbl + ' could not contains reserved Java keyword!', name)
+            +error-feedback('form[ngModelName].$error.javaPackageSpecified', 'javaPackageSpecified', errLbl + ' does not have package specified!', name)
+            +error-feedback('form[ngModelName].$error.javaIdentifier', 'javaIdentifier', errLbl + ' is invalid Java identifier!', name)
 
 //- Mixin for text field with enabled condition with options.
-mixin java-class-typeahead(lbl, form, model, name, options, enabled, required, placeholder, tip)
-    -var err = form + '.' + name + '.$error'
+mixin java-class-typeahead(lbl, model, name, options, enabled, required, placeholder, tip)
     -var errLbl = lbl.substring(0, lbl.length - 1)
 
     ignite-form-field
@@ -167,12 +165,12 @@ mixin java-class-typeahead(lbl, form, model, name, options, enabled, required, p
             data-java-package-specified='allow-built-in'
             data-java-keywords='true'
         )
-            +error-feedback(err + '.javaKeywords', 'javaKeywords', errLbl + ' could not contains reserved Java keyword!', name)
-            +error-feedback(err + '.javaPackageSpecified', 'javaPackageSpecified', errLbl + ' does not have package specified!', name)
-            +error-feedback(err + '.javaIdentifier', 'javaIdentifier', errLbl + ' is invalid Java identifier!', name)
+            +error-feedback('form[ngModelName].$error.javaKeywords', 'javaKeywords', errLbl + ' could not contains reserved Java keyword!', name)
+            +error-feedback('form[ngModelName].$error.javaPackageSpecified', 'javaPackageSpecified', errLbl + ' does not have package specified!', name)
+            +error-feedback('form[ngModelName].$error.javaIdentifier', 'javaIdentifier', errLbl + ' is invalid Java identifier!', name)
 
 //- Mixin for text field with IP address check.
-mixin text-ip-address(lbl, form, model, name, enabled, placeholder, tip)
+mixin text-ip-address(lbl, model, name, enabled, placeholder, tip)
     ignite-form-field
         ignite-form-field-label
             | #{lbl}
@@ -186,27 +184,27 @@ mixin text-ip-address(lbl, form, model, name, enabled, placeholder, tip)
             data-ng-disabled='!(#{enabled})'
             data-placeholder=placeholder
         )
-            +ipaddress-feedback(form + '.' + name + '.$error.ipaddress', name)
+            +ipaddress-feedback('form[ngModelName].$error.ipaddress', name)
 
 
 //- Mixin for text field with IP address and port check.
-mixin text-ip-address-with-port(lbl, form, model, name, enabled, placeholder, tip)
+mixin text-ip-address-with-port(lbl, model, name, enabled, placeholder, tip)
     ignite-form-field
         ignite-form-field-label
             | #{lbl}
         ignite-form-field-tooltip
             | !{tip}
         ignite-form-field-input-text(
-        data-id=name
-        data-name=name
-        data-ng-model=model
-        data-ipaddress='true'
-        data-ipaddress-with-port='true'
-        data-ng-disabled='!(#{enabled})'
-        data-placeholder=placeholder
+            data-id=name
+            data-name=name
+            data-ng-model=model
+            data-ipaddress='true'
+            data-ipaddress-with-port='true'
+            data-ng-disabled='!(#{enabled})'
+            data-placeholder=placeholder
         )
-            +ipaddress-feedback(form + '.' + name + '.$error.ipaddress', name)
-            +ipaddress-port-feedback(form + '.' + name + '.$error.ipaddressPort', name)
+            +ipaddress-feedback('form[ngModelName].$error.ipaddress', name)
+            +ipaddress-port-feedback('form[ngModelName].$error.ipaddressPort', name)
 
 //- Mixin for text field.
 mixin text-enabled(lbl, model, name, enabled, required, placeholder, tip)
@@ -367,9 +365,7 @@ mixin table-text-field(field, items, valid, save, placeholder, newItem)
         block
 
 //- Mixin for table java class field.
-mixin table-java-class-field(lbl, form, field, items, valid, save, newItem)
-    -var err = form + '.' + field + '.$error'
-
+mixin table-java-class-field(lbl, field, items, valid, save, newItem)
     -var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
     -var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
 
@@ -396,10 +392,10 @@ mixin table-java-class-field(lbl, form, field, items, valid, save, newItem)
         on-escape=onEscape
         ng-blur=onBlur
     )
-        +error-feedback(err + '.javaBuiltInClass', 'javaBuiltInClass', lbl + ' should not be the Java built-in class!')
-        +error-feedback(err + '.javaKeywords', 'javaKeywords', lbl + ' could not contains reserved Java keyword!')
-        +error-feedback(err + '.javaPackageSpecified', 'javaPackageSpecified', lbl + ' does not have package specified!')
-        +error-feedback(err + '.javaIdentifier', 'javaIdentifier', lbl + ' is invalid Java identifier!')
+        +error-feedback('form[ngModelName].$error.javaBuiltInClass', 'javaBuiltInClass', lbl + ' should not be the Java built-in class!')
+        +error-feedback('form[ngModelName].$error.javaKeywords', 'javaKeywords', lbl + ' could not contains reserved Java keyword!')
+        +error-feedback('form[ngModelName].$error.javaPackageSpecified', 'javaPackageSpecified', lbl + ' does not have package specified!')
+        +error-feedback('form[ngModelName].$error.javaIdentifier', 'javaIdentifier', lbl + ' is invalid Java identifier!')
 
         block
 
@@ -429,7 +425,7 @@ mixin table-java-package-field(field, items, valid, save, newItem)
         block
 
 //- Mixin for table address field.
-mixin table-address-field(field, items, valid, save, newItem)
+mixin table-address-field(field, items, valid, save, newItem, portRange)
     -var resetOnEnter = newItem ? '(stopblur = true) && (group.add = [{}])' : '(field.edit = false)'
     -var onEnter = valid + ' && (' + save + '); ' + valid + ' && ' + resetOnEnter + ';'
 
@@ -445,7 +441,7 @@ mixin table-address-field(field, items, valid, save, newItem)
         data-placeholder='IP address:port'
         data-ipaddress='true'
         data-ipaddress-with-port='true'
-        data-ipaddress-with-port-range='true'
+        data-ipaddress-with-port-range=portRange ? 'true' : null
         data-ignite-unique=items
         data-ignite-form-field-input-autofocus='true'
         on-enter=onEnter
@@ -454,9 +450,8 @@ mixin table-address-field(field, items, valid, save, newItem)
     )
         block
 
-//-
-    Mixin for table save button.
-    "||" used instead of "&&" to workaround escaping of "&&" to "&amp;&amp;"
+//- Mixin for table save button.
+   "||" used instead of "&&" to workaround escaping of "&&" to "&amp;&amp;"
 mixin table-save-button(valid, save, newItem)
     -var reset = newItem ? 'group.add = []' : 'field.edit = false'
 

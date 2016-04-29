@@ -52,8 +52,8 @@ div
 
             .group-content(ng-if='#{regions}.length')
                 -var field = 'edit'
-                -var valid = formRegions + '.' + field + '.$valid'
-                -var unique = formRegions + '.' + field + '.$error.igniteUnique'
+                -var valid = 'form[ngModelName].$valid'
+                -var unique = 'form[ngModelName].$error.igniteUnique'
                 -var save = regions + '[$index] = ' + field
 
                 ignite-form-field(ng-repeat='model in #{regions} track by $index' type='internal' name='Region')
@@ -69,8 +69,8 @@ div
 
             .group-content(ng-repeat='field in group.add')
                 -var field = 'new'
-                -var valid = formRegions + '.' + field + '.$valid'
-                -var unique = formRegions + '.' + field + '.$error.igniteUnique'
+                -var valid = 'form[ngModelName].$valid'
+                -var unique = 'form[ngModelName].$error.igniteUnique'
                 -var save = regions + '.push(' + field + ')'
 
                 ignite-form-field(type='internal' name='Region')
@@ -95,8 +95,8 @@ div
 
             .group-content(ng-if='#{zones}.length')
                 -var field = 'edit'
-                -var valid = formZones + '.' + field + '.$valid'
-                -var unique = formZones + '.' + field + '.$error.igniteUnique'
+                -var valid = 'form[ngModelName].$valid'
+                -var unique = 'form[ngModelName].$error.igniteUnique'
                 -var save = zones + '[$index] = ' + field
 
                 ignite-form-field(ng-repeat='model in #{zones} track by $index' type='internal' name='Zone')
@@ -112,8 +112,8 @@ div
 
             .group-content(ng-repeat='field in group.add')
                 -var field = 'new'
-                -var valid = formZones + '.' + field + '.$valid'
-                -var unique = formZones + '.' + field + '.$error.igniteUnique'
+                -var valid = 'form[ngModelName].$valid'
+                -var unique = 'form[ngModelName].$error.igniteUnique'
                 -var save = zones + '.push(' + field + ')'
 
                 ignite-form-field(type='internal' name='Zone')
