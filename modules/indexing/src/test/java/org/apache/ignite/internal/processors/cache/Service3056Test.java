@@ -16,11 +16,15 @@
  */
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteServices;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.services.Service;
@@ -35,7 +39,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class Service3056Test extends GridCommonAbstractTest {
     /** */
-    public static final String PERSON_KEY_CLS_NAME = "org.apache.ignite.tests.p2p.cache.PersonKey";
+    public static final String NOOP_SERVICE_CLS_NAME = "org.apache.ignite.tests.p2p.NoopService";
 
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
@@ -46,13 +50,8 @@ public class Service3056Test extends GridCommonAbstractTest {
     /** */
     private static ClassLoader extClassLoader;
 
-    /**
-     * Gets Person class name.
-     * @return class name.
-     */
-    protected String getTaskName(){
-        return "org.apache.ignite.tests.p2p.cache.Person";
-    }
+    /** */
+    private Set<String> extClassLoaderGrids = new HashSet<>();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -71,23 +70,29 @@ public class Service3056Test extends GridCommonAbstractTest {
         if (getTestGridName(GRID_CNT - 1).equals(gridName))
             cfg.setClientMode(true);
 
-        if (getTestGridName(0).equals(gridName) && getTestGridName(GRID_CNT - 1).equals(gridName))
+        if (extClassLoaderGrids.contains(gridName))
             cfg.setClassLoader(extClassLoader);
 
         return cfg;
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        extClassLoaderGrids.clear();
+
+        extClassLoaderGrids.add(getTestGridName(0));
+        extClassLoaderGrids.add(getTestGridName(GRID_CNT - 1));
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         extClassLoader = getExternalClassLoader();
-
-        startGrids(GRID_CNT);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-
         extClassLoader = null;
     }
 
@@ -111,39 +116,107 @@ public class Service3056Test extends GridCommonAbstractTest {
      * @throws InstantiationException
      * @throws IllegalAccessException
      */
-    private void check(boolean useGrpFilter) throws ClassNotFoundException, InstantiationException, IllegalAccessException {
-        final UUID id0 = grid(0).cluster().localNode().id();
+    private void check(boolean useGrpFilter) throws Exception {
+        startGrids(GRID_CNT);
 
-        IgniteEx client = grid(GRID_CNT - 1);
+        try {
+            final UUID id0 = grid(0).cluster().localNode().id();
 
-        final IgnitePredicate<ClusterNode> nodeFilter = new IgnitePredicate<ClusterNode>() {
-            @Override public boolean apply(ClusterNode node) {
-                return node.id().equals(id0);
-            }
-        };
+            IgniteEx client = grid(GRID_CNT - 1);
 
-        IgniteServices srvs;
+            final IgnitePredicate<ClusterNode> nodeFilter = new IgnitePredicate<ClusterNode>() {
+                @Override public boolean apply(ClusterNode node) {
+//                    return node.id().equals(id0);
+                    return true;
+                }
+            };
 
-        if (useGrpFilter)
-            srvs = client.services(client.cluster().forPredicate(nodeFilter));
-        else
-            srvs = client.services();
+            IgniteServices srvs;
 
-        ServiceConfiguration srvCfg = new ServiceConfiguration();
+            if (useGrpFilter)
+                srvs = client.services(client.cluster().forPredicate(nodeFilter));
+            else
+                srvs = client.services();
 
-        if (!useGrpFilter)
-            srvCfg.setNodeFilter(nodeFilter);
+            ServiceConfiguration srvCfg = new ServiceConfiguration();
 
-        Class<Service> srvcCls = (Class<Service>)extClassLoader.loadClass("org.apache.ignite.tests.p2p.NoopService");
+            if (!useGrpFilter)
+                srvCfg.setNodeFilter(nodeFilter);
 
-        Service srvc = srvcCls.newInstance();
+            Class<Service> srvcCls = (Class<Service>)extClassLoader.loadClass(NOOP_SERVICE_CLS_NAME);
 
-        srvCfg.setService(srvc);
+            Service srvc = srvcCls.newInstance();
 
-        srvCfg.setName("TestDeploymentService");
+            srvCfg.setService(srvc);
 
-        srvCfg.setMaxPerNodeCount(1);
+            srvCfg.setName("TestDeploymentService");
 
-        srvs.deploy(srvCfg);
+            srvCfg.setMaxPerNodeCount(1);
+
+            srvs.deploy(srvCfg);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testNodeStart1() throws Exception {
+        checkNodeStart(false);
+    }
+
+    /**
+     * @param useGrpFilter Use group filter or not.
+     * @throws Exception If failed.
+     */
+    public void checkNodeStart(boolean useGrpFilter) throws Exception {
+        for (int i = 0; i < GRID_CNT; i++)
+            extClassLoaderGrids.add(getTestGridName(i));
+
+        startGrids(GRID_CNT);
+
+        try {
+            final Collection<UUID> ids = F.nodeIds(grid(0).cluster().nodes());
+
+            IgniteEx client = grid(GRID_CNT - 1);
+
+            final IgnitePredicate<ClusterNode> nodeFilter = new IgnitePredicate<ClusterNode>() {
+                @Override public boolean apply(ClusterNode node) {
+                    return ids.contains(node.id());
+                }
+            };
+
+            IgniteServices srvs;
+
+            if (useGrpFilter)
+                srvs = client.services(client.cluster().forPredicate(nodeFilter));
+            else
+                srvs = client.services();
+
+            ServiceConfiguration srvCfg = new ServiceConfiguration();
+
+            if (!useGrpFilter)
+                srvCfg.setNodeFilter(nodeFilter);
+
+            Class<Service> srvcCls = (Class<Service>)extClassLoader.loadClass(NOOP_SERVICE_CLS_NAME);
+
+            Service srvc = srvcCls.newInstance();
+
+            srvCfg.setService(srvc);
+
+            srvCfg.setName("TestDeploymentService");
+
+            srvCfg.setMaxPerNodeCount(1);
+
+            srvs.deploy(srvCfg);
+
+            // Checks node without extclassloader.
+            startGrid(100500);
+        }
+        finally {
+            stopAllGrids();
+        }
     }
 }
