@@ -20,15 +20,13 @@ package org.apache.ignite.internal.processors.cache.database.freelist;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.freelist.io.FreeIO;
 import org.apache.ignite.internal.processors.cache.database.freelist.io.FreeInnerIO;
 import org.apache.ignite.internal.processors.cache.database.freelist.io.FreeLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.PageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 
 /**
@@ -48,7 +46,7 @@ public class FreeTree extends BPlusTree<FreeItem, FreeItem> {
      */
     public FreeTree(ReuseList reuseList, int cacheId, int partId, PageMemory pageMem, FullPageId metaPageId, boolean initNew)
         throws IgniteCheckedException {
-        super(cacheId, pageMem, metaPageId, reuseList);
+        super(cacheId, pageMem, metaPageId, reuseList, FreeInnerIO.VERSIONS, FreeLeafIO.VERSIONS);
 
         this.partId = partId;
 
@@ -66,32 +64,12 @@ public class FreeTree extends BPlusTree<FreeItem, FreeItem> {
     }
 
     /** {@inheritDoc} */
-    @Override protected BPlusIO<FreeItem> io(int type, int ver) {
-        if (type == PageIO.T_FREE_INNER)
-            return FreeInnerIO.VERSIONS.forVersion(ver);
-
-        assert type == PageIO.T_FREE_LEAF: type;
-
-        return FreeLeafIO.VERSIONS.forVersion(ver);
-    }
-
-    /** {@inheritDoc} */
-    @Override protected BPlusInnerIO<FreeItem> latestInnerIO() {
-        return FreeInnerIO.VERSIONS.latest();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected BPlusLeafIO<FreeItem> latestLeafIO() {
-        return FreeLeafIO.VERSIONS.latest();
-    }
-
-    /** {@inheritDoc} */
     @Override protected int compare(BPlusIO<FreeItem> io, ByteBuffer buf, int idx, FreeItem row)
         throws IgniteCheckedException {
         int res = Short.compare(((FreeIO)io).getFreeSpace(buf, idx), row.freeSpace());
 
         if (res == 0)
-            res = Integer.compare(((FreeIO)io).getPageIndex(buf, idx), FreeInnerIO.pageIndex(row.pageId()));
+            res = Integer.compare(((FreeIO)io).getPageIndex(buf, idx), PageIdUtils.pageIndex(row.pageId()));
 
         return res;
     }
@@ -103,7 +81,7 @@ public class FreeTree extends BPlusTree<FreeItem, FreeItem> {
         FreeItem row = io.getLookupRow(this, buf, idx);
 
         assert row.pageId() != 0;
-        assert row.cacheId() == cacheId;
+        assert row.cacheId() == getCacheId();
 
         return row;
     }

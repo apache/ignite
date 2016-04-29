@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.database.tree.reuse;
 
-import org.apache.ignite.internal.pagemem.FullPageId;
-
 /**
  * Reuse bag for free index pages.
  */
@@ -26,10 +24,10 @@ public interface ReuseBag {
     /**
      * @param pageId Free page ID for reuse.
      */
-    public void addFreePage(FullPageId pageId);
+    public void addFreePage(long pageId);
 
     /**
-     * @return Free page ID for reuse or {@code null} if empty.
+     * @return Free page ID for reuse or {@code 0} if empty.
      */
-    public FullPageId pollFreePage();
+    public long pollFreePage();
 }

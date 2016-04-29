@@ -30,9 +30,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
  */
 public final class ReuseList {
     /** */
-    private static final FullPageId MIN = new FullPageId(0,0);
-
-    /** */
     private final ReuseTree[] trees;
 
     /**
@@ -99,15 +96,17 @@ public final class ReuseList {
     /**
      * @param client Client tree.
      * @param bag Reuse bag.
-     * @return Page ID.
+     * @return Page ID or {@code 0} if none available.
      * @throws IgniteCheckedException If failed.
      */
-    public FullPageId take(BPlusTree<?,?> client, ReuseBag bag) throws IgniteCheckedException {
+    public long take(BPlusTree<?,?> client, ReuseBag bag) throws IgniteCheckedException {
         if (trees == null)
-            return null;
+            return 0;
 
         // Remove and return page at min possible position.
-        return tree(client).removeCeil(MIN, bag);
+        Long pageId = tree(client).removeCeil(0L, bag);
+
+        return pageId != null ? pageId : 0;
     }
 
     /**
@@ -116,13 +115,12 @@ public final class ReuseList {
      * @throws IgniteCheckedException If failed.
      */
     public void add(BPlusTree<?,?> client, ReuseBag bag) throws IgniteCheckedException {
-        if (bag == null)
-            return;
+        assert bag != null;
 
         for (int i = client.randomInt(trees.length);;) {
-            FullPageId pageId = bag.pollFreePage();
+            long pageId = bag.pollFreePage();
 
-            if (pageId == null)
+            if (pageId == 0)
                 break;
 
             trees[i].put(pageId, bag);

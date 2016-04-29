@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
+import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -64,7 +65,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     private static int MAX_PER_PAGE = 0;
 
     /** */
-    private static int CNT = 10;
+    protected static int CNT = 10;
 
     /** */
     private static int PUT_INC = 1;
@@ -76,7 +77,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     private PageMemory pageMem;
 
     /** */
-    private ReuseList reuseList;
+    protected ReuseList reuseList;
 
 //    /** {@inheritDoc} */
 //    @Override protected long getTestTimeout() {
@@ -98,7 +99,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         reuseList = createReuseList(CACHE_ID, pageMem, 2, new MetaStore() {
             @Override public IgniteBiTuple<FullPageId,Boolean> getOrAllocateForIndex(int cacheId, String idxName)
                 throws IgniteCheckedException {
-                return new T2<>(allocatePage(), true);
+                return new T2<>(allocateMetaPage(), true);
             }
         });
     }
@@ -123,6 +124,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
             assertTrue("Reuse size: " + size, size < 2000);
         }
+
+        assertEquals(0, ((PageMemoryImpl)pageMem).acquiredPages());
 
         pageMem.stop();
 
@@ -466,39 +469,45 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testRandomRemove_1_30_0() throws IgniteCheckedException {
+    public void testRandomPutRemove_1_30_0() throws IgniteCheckedException {
         MAX_PER_PAGE = 1;
         CNT = 30;
 
-        doTestRandomRemove(false);
+        doTestRandomPutRemove(false);
     }
 
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testRandomRemove_1_30_1() throws IgniteCheckedException {
+    public void testRandomPutRemove_1_30_1() throws IgniteCheckedException {
         MAX_PER_PAGE = 1;
         CNT = 30;
 
-        doTestRandomRemove(true);
+        doTestRandomPutRemove(true);
     }
 
     /**
      * @param canGetRow Can get row from inner page.
      * @throws IgniteCheckedException If failed.
      */
-    private void doTestRandomRemove(boolean canGetRow) throws IgniteCheckedException {
+    private void doTestRandomPutRemove(boolean canGetRow) throws IgniteCheckedException {
         TestTree tree = createTestTree(canGetRow);
 
         Map<Long,Long> map = new HashMap<>();
 
-        for (int i = 0 ; i < 1_000_000; i++) {
+        int loops = reuseList == null ? 200_000 : 1000_000;
+
+        for (int i = 0 ; i < loops; i++) {
             Long x = (long)tree.randomInt(CNT);
 
-            if (i % 100_000 == 0)
-                X.println(" --> " + i + "  " + x);
+            boolean put = tree.randomInt(2) == 0;
 
-            if (tree.randomInt(2) == 0)
+            if (i % 100_000 == 0) {
+                X.println(" --> " + (put ? "put " : "rmv ") + i + "  " + x);
+                X.println(tree.printTree());
+            }
+
+            if (put)
                 assertEquals(map.put(x, x), tree.put(x));
             else {
                 if (map.remove(x) != null)
@@ -527,8 +536,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @return Test tree instance.
      * @throws IgniteCheckedException If failed.
      */
-    private TestTree createTestTree(boolean canGetRow) throws IgniteCheckedException {
-        TestTree tree = new TestTree(reuseList, canGetRow, CACHE_ID, pageMem, allocatePage());
+    protected TestTree createTestTree(boolean canGetRow) throws IgniteCheckedException {
+        TestTree tree = new TestTree(reuseList, canGetRow, CACHE_ID, pageMem, allocateMetaPage());
 
         assertEquals(0, tree.size());
         assertEquals(0, tree.rootLevel());
@@ -537,24 +546,22 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @return Allocated full page ID.
+     * @return Allocated meta page ID.
      * @throws IgniteCheckedException If failed.
      */
-    private FullPageId allocatePage() throws IgniteCheckedException {
-        return pageMem.allocatePage(CACHE_ID, -1, PageIdAllocator.FLAG_IDX);
+    private FullPageId allocateMetaPage() throws IgniteCheckedException {
+        return pageMem.allocatePage(CACHE_ID, 0, PageIdAllocator.FLAG_META);
     }
 
     /**
      * Test tree.
      */
-    private static class TestTree extends BPlusTree<Long, Long> {
+    protected static class TestTree extends BPlusTree<Long, Long> {
         /** */
         static Random rnd;
 
-        /** */
-        final boolean canGetRow;
-
         /**
+         * @param reuseList Reuse list.
          * @param canGetRow Can get row from inner page.
          * @param cacheId Cache ID.
          * @param pageMem Page memory.
@@ -563,9 +570,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
          */
         public TestTree(ReuseList reuseList, boolean canGetRow, int cacheId, PageMemory pageMem, FullPageId metaPageId)
             throws IgniteCheckedException {
-            super(cacheId, pageMem, metaPageId, reuseList);
-
-            this.canGetRow = canGetRow;
+            super(cacheId, pageMem, metaPageId, reuseList,
+                new IOVersions<>(new LongInnerIO(canGetRow)), new IOVersions<>(new LongLeafIO()));
 
             initNew();
         }
@@ -574,42 +580,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         @Override public int randomInt(int max) {
             // Need to have predictable reproducibility.
             return rnd.nextInt(max);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected BPlusIO<Long> io(int type, int ver) {
-            BPlusIO<Long> io = io(type);
-
-            assert io.getVersion() == ver: ver;
-
-            return io;
-        }
-
-        /**
-         * @param type Type.
-         * @return IO.
-         */
-        private BPlusIO<Long> io(int type) {
-            switch (type) {
-                case LONG_INNER_IO:
-                    return latestInnerIO();
-
-                case LONG_LEAF_IO:
-                    return latestLeafIO();
-
-                default:
-                    throw new IllegalStateException("type: " + type);
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override protected BPlusInnerIO<Long> latestInnerIO() {
-            return canGetRow ? LongInnerIO.INSTANCE1 : LongInnerIO.INSTANCE0;
-        }
-
-        /** {@inheritDoc} */
-        @Override protected BPlusLeafIO<Long> latestLeafIO() {
-            return LongLeafIO.INSTANCE;
         }
 
         /** {@inheritDoc} */
@@ -633,16 +603,10 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * Long inner.
      */
     private static final class LongInnerIO extends BPlusInnerIO<Long> {
-        /** */
-        static final LongInnerIO INSTANCE0 = new LongInnerIO(false);
-
-        /** */
-        static final LongInnerIO INSTANCE1 = new LongInnerIO(true);
-
         /**
          */
         protected LongInnerIO(boolean canGetRow) {
-            super(LONG_INNER_IO, 302, canGetRow, 8);
+            super(LONG_INNER_IO, 1, canGetRow, 8);
         }
 
         /** {@inheritDoc} */
@@ -675,13 +639,10 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * Long leaf.
      */
     private static final class LongLeafIO extends BPlusLeafIO<Long> {
-        /** */
-        static final LongLeafIO INSTANCE = new LongLeafIO();
-
         /**
          */
         protected LongLeafIO() {
-            super(LONG_LEAF_IO, 603, 8);
+            super(LONG_LEAF_IO, 1, 8);
         }
 
         /** {@inheritDoc} */

@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.database.tree.io;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 
 /**
  * Abstract IO routines for B+Tree leaf pages.
@@ -43,14 +44,7 @@ public abstract class BPlusLeafIO<L> extends BPlusIO<L> {
         boolean cpLeft) throws IgniteCheckedException {
         assert srcIdx != dstIdx || src != dst;
 
-        if (dstIdx > srcIdx) {
-            for (int i = cnt - 1; i >= 0; i--)
-                store(dst, dstIdx + i, this, src, srcIdx + i); // TODO optimize with copy by itemSize
-        }
-        else {
-            for (int i = 0; i < cnt; i++)
-                store(dst, dstIdx + i, this, src, srcIdx + i); // TODO optimize with copy by itemSize
-        }
+        PageHandler.copyMemory(src, dst, offset(srcIdx), offset(dstIdx), cnt * itemSize);
     }
 
     /**
