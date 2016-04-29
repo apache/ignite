@@ -58,7 +58,7 @@ public class IgniteDbSingleNodePutGetSelfTest extends GridCommonAbstractTest {
 
         dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
 
-        dbCfg.setPageSize(256);
+        dbCfg.setPageSize(1024);
 
         dbCfg.setPageCacheSize(100 * 1024 * 1024);
 
@@ -108,6 +108,79 @@ public class IgniteDbSingleNodePutGetSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
     }
+
+    /**
+     *
+     */
+    public void testRandomRemove() {
+        IgniteEx ig = grid(0);
+
+        IgniteCache<Integer, DbValue> cache = ig.cache(null);
+
+        final int cnt = 50_000;
+
+        long seed = System.nanoTime();
+
+        X.println("Seed: " + seed);
+
+        Random rnd = new GridRandom(seed);
+
+        int[] keys = generateUniqueRandomKeys(cnt, rnd);
+
+        X.println("Put start");
+
+        for (int i : keys) {
+            DbValue v0 = new DbValue(i, "test-value", i);
+
+//            if (i % 1000 == 0)
+//                X.println(" --> " + i);
+
+            cache.put(i, v0);
+
+            assertEquals(v0, cache.get(i));
+        }
+
+        keys = generateUniqueRandomKeys(cnt, rnd);
+
+        X.println("Rmv start");
+
+        for (int i : keys) {
+//            X.println(" --> " + i);
+
+            assertTrue(cache.remove(i));
+        }
+    }
+
+
+    /**
+     */
+    public void testRandomPut() {
+        IgniteEx ig = grid(0);
+
+        IgniteCache<Integer, DbValue> cache = ig.cache(null);
+
+        final int cnt = 1_000;
+
+        long seed = System.nanoTime();
+
+        X.println("Seed: " + seed);
+
+        Random rnd = new GridRandom(seed);
+
+        for (int i = 0; i < 500_000; i++) {
+            int k = rnd.nextInt(cnt);
+
+            DbValue v0 = new DbValue(k, "test-value " + k, i);
+
+            if (i % 1000 == 0)
+                X.println(" --> " + i);
+
+            cache.put(k, v0);
+
+            assertEquals(v0, cache.get(k));
+        }
+    }
+
 
     /**
      * @throws Exception if failed.
