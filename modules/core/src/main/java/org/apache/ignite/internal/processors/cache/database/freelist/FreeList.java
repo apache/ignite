@@ -53,7 +53,7 @@ public class FreeList {
 
     /** */
     private final PageHandler<CacheDataRow> writeRow = new PageHandler<CacheDataRow>() {
-        @Override public int run(Page page, ByteBuffer buf, CacheDataRow row, int entrySize)
+        @Override public int run(long pageId, Page page, ByteBuffer buf, CacheDataRow row, int entrySize)
             throws IgniteCheckedException {
             DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
 
@@ -61,12 +61,12 @@ public class FreeList {
 
             assert idx >= 0;
 
-            row.link(PageIdUtils.linkFromDwordOffset(page.id(), idx));
+            row.link(PageIdUtils.linkFromDwordOffset(pageId, idx));
 
             int freeSpace = io.getFreeSpace(buf);
 
             // Put our free item.
-            tree(row.partition()).put(new FreeItem(freeSpace, page.id(), cctx.cacheId()));
+            tree(row.partition()).put(new FreeItem(freeSpace, pageId, cctx.cacheId()));
 
             return 0;
         }
@@ -74,7 +74,7 @@ public class FreeList {
 
     /** */
     private final PageHandler<FreeTree> removeRow = new PageHandler<FreeTree>() {
-        @Override public int run(Page page, ByteBuffer buf, FreeTree tree, int itemId) throws IgniteCheckedException {
+        @Override public int run(long pageId, Page page, ByteBuffer buf, FreeTree tree, int itemId) throws IgniteCheckedException {
             assert tree != null;
 
             DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
@@ -88,13 +88,13 @@ public class FreeList {
             int newFreeSpace = io.getFreeSpace(buf);
 
             // Move page to the new position with respect to the new free space.
-            FreeItem item = tree.remove(new FreeItem(oldFreeSpace, page.id(), cctx.cacheId()));
+            FreeItem item = tree.remove(new FreeItem(oldFreeSpace, pageId, cctx.cacheId()));
 
             // If item is null, then it was removed concurrently by insertRow, because
             // in removeRow we own the write lock on this page. Thus we can be sure that
             // insertRow will update position correctly after us.
             if (item != null) {
-                FreeItem old = tree.put(new FreeItem(newFreeSpace, page.id(), cctx.cacheId()));
+                FreeItem old = tree.put(new FreeItem(newFreeSpace, pageId, cctx.cacheId()));
 
                 assert old == null;
             }
@@ -176,7 +176,7 @@ public class FreeList {
         FreeTree tree = tree(partId);
 
         try (Page page = pageMem.page(new FullPageId(pageId, cctx.cacheId()))) {
-            writePage(page, removeRow, tree, itemId);
+            writePage(pageId, page, removeRow, tree, itemId);
         }
     }
 
@@ -207,10 +207,10 @@ public class FreeList {
 
                 io.initNewPage(buf, page.id());
 
-                writeRow.run(page, buf, row, entrySize);
+                writeRow.run(page.id(), page, buf, row, entrySize);
             }
             else
-                writePage(page, writeRow, row, entrySize);
+                writePage(page.id(), page, writeRow, row, entrySize);
         }
     }
 

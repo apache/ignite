@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.database.tree.reuse.io;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
@@ -28,7 +27,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 /**
  * Reuse list leaf page IO routines.
  */
-public final class ReuseLeafIO extends BPlusLeafIO<FullPageId> {
+public final class ReuseLeafIO extends BPlusLeafIO<Number> {
     /** */
     public static final IOVersions<ReuseLeafIO> VERSIONS = new IOVersions<>(
         new ReuseLeafIO(1)
@@ -38,16 +37,18 @@ public final class ReuseLeafIO extends BPlusLeafIO<FullPageId> {
      * @param ver Page format version.
      */
     protected ReuseLeafIO(int ver) {
-        super(T_REUSE_LEAF, ver, 8);
+        super(T_REUSE_LEAF, ver, 8); // TODO we can store only 6 bytes here: pageIdx(4) + partId(2)
     }
 
     /** {@inheritDoc} */
-    @Override public void store(ByteBuffer buf, int idx, FullPageId fullPageId) {
-        buf.putLong(offset(idx), fullPageId.pageId());
+    @Override public void store(ByteBuffer buf, int idx, Number pageId) {
+        assert pageId.getClass() == Long.class;
+
+        buf.putLong(offset(idx), pageId.longValue());
     }
 
     /** {@inheritDoc} */
-    @Override public void store(ByteBuffer dst, int dstIdx, BPlusIO<FullPageId> srcIo, ByteBuffer src, int srcIdx) {
+    @Override public void store(ByteBuffer dst, int dstIdx, BPlusIO<Number> srcIo, ByteBuffer src, int srcIdx) {
         assert srcIo == this;
 
         dst.putLong(offset(dstIdx), getPageId(src, srcIdx));
@@ -63,8 +64,8 @@ public final class ReuseLeafIO extends BPlusLeafIO<FullPageId> {
     }
 
     /** {@inheritDoc} */
-    @Override public FullPageId getLookupRow(BPlusTree<FullPageId,?> tree, ByteBuffer buf, int idx)
+    @Override public Number getLookupRow(BPlusTree<Number,?> tree, ByteBuffer buf, int idx)
         throws IgniteCheckedException {
-        return new FullPageId(getPageId(buf, idx), tree.getCacheId());
+        return getPageId(buf, idx);
     }
 }

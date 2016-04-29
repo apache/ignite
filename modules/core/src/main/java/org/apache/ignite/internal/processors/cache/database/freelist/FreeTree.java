@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.database.freelist;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.freelist.io.FreeIO;
 import org.apache.ignite.internal.processors.cache.database.freelist.io.FreeInnerIO;
@@ -68,7 +69,7 @@ public class FreeTree extends BPlusTree<FreeItem, FreeItem> {
         int res = Short.compare(((FreeIO)io).getFreeSpace(buf, idx), row.freeSpace());
 
         if (res == 0)
-            res = Integer.compare(((FreeIO)io).getPageIndex(buf, idx), FreeInnerIO.pageIndex(row.pageId()));
+            res = Integer.compare(((FreeIO)io).getPageIndex(buf, idx), PageIdUtils.pageIdx(row.pageId()));
 
         return res;
     }

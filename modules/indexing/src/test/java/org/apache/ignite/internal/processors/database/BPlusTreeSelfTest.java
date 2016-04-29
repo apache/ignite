@@ -99,7 +99,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         reuseList = createReuseList(CACHE_ID, pageMem, 2, new MetaStore() {
             @Override public IgniteBiTuple<FullPageId,Boolean> getOrAllocateForIndex(int cacheId, String idxName)
                 throws IgniteCheckedException {
-                return new T2<>(allocatePage(), true);
+                return new T2<>(allocateMetaPage(), true);
             }
         });
     }
@@ -124,6 +124,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
             assertTrue("Reuse size: " + size, size < 2000);
         }
+
+        assertEquals(0, ((PageMemoryImpl)pageMem).acquiredPages());
 
         pageMem.stop();
 
@@ -498,10 +500,14 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         for (int i = 0 ; i < loops; i++) {
             Long x = (long)tree.randomInt(CNT);
 
-            if (i % 100_000 == 0)
-                X.println(" --> " + i + "  " + x);
+            boolean put = tree.randomInt(2) == 0;
 
-            if (tree.randomInt(2) == 0)
+            if (i % 100_000 == 0) {
+                X.println(" --> " + (put ? "put " : "rmv ") + i + "  " + x);
+                X.println(tree.printTree());
+            }
+
+            if (put)
                 assertEquals(map.put(x, x), tree.put(x));
             else {
                 if (map.remove(x) != null)
@@ -531,7 +537,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     private TestTree createTestTree(boolean canGetRow) throws IgniteCheckedException {
-        TestTree tree = new TestTree(reuseList, canGetRow, CACHE_ID, pageMem, allocatePage());
+        TestTree tree = new TestTree(reuseList, canGetRow, CACHE_ID, pageMem, allocateMetaPage());
 
         assertEquals(0, tree.size());
         assertEquals(0, tree.rootLevel());
@@ -540,11 +546,11 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @return Allocated full page ID.
+     * @return Allocated meta page ID.
      * @throws IgniteCheckedException If failed.
      */
-    private FullPageId allocatePage() throws IgniteCheckedException {
-        return pageMem.allocatePage(CACHE_ID, -1, PageIdAllocator.FLAG_IDX);
+    private FullPageId allocateMetaPage() throws IgniteCheckedException {
+        return pageMem.allocatePage(CACHE_ID, 0, PageIdAllocator.FLAG_META);
     }
 
     /**

@@ -49,7 +49,7 @@ public class FreeLeafIO extends BPlusLeafIO<FreeItem> implements FreeIO {
         int off = offset(idx);
 
         buf.putShort(off, row.freeSpace());
-        buf.putInt(off + 2, FreeInnerIO.pageIndex(row.pageId()));
+        buf.putInt(off + 2, PageIdUtils.pageIdx(row.pageId()));
     }
 
     /** {@inheritDoc} */

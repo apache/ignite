@@ -24,11 +24,11 @@ import org.apache.ignite.internal.util.GridUnsafe;
 import sun.nio.ch.DirectBuffer;
 
 /**
- * Page handler. Can do {@link #readPage(Page, PageHandler, Object, int)}
- * and {@link #writePage(Page, PageHandler, Object, int)} operations.
+ * Page handler.
  */
 public abstract class PageHandler<X> {
     /**
+     * @param pageId Page ID.
      * @param page Page.
      * @param buf Page buffer.
      * @param arg Argument.
@@ -36,19 +36,21 @@ public abstract class PageHandler<X> {
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
-    public abstract int run(Page page, ByteBuffer buf, X arg, int intArg) throws IgniteCheckedException;
+    public abstract int run(long pageId, Page page, ByteBuffer buf, X arg, int intArg) throws IgniteCheckedException;
 
     /**
+     * @param pageId Page ID.
      * @param page Page.
      * @param arg Argument.
      * @param intArg Argument of type {@code int}.
      * @return {@code true} If release.
      */
-    public boolean releaseAfterWrite(Page page, X arg, int intArg) {
+    public boolean releaseAfterWrite(long pageId, Page page, X arg, int intArg) {
         return true;
     }
 
     /**
+     * @param pageId Page ID.
      * @param page Page.
      * @param h Handler.
      * @param arg Argument.
@@ -56,7 +58,7 @@ public abstract class PageHandler<X> {
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
-    public static <X> int readPage(Page page, PageHandler<X> h, X arg, int intArg)
+    public static <X> int readPage(long pageId, Page page, PageHandler<X> h, X arg, int intArg)
         throws IgniteCheckedException {
         assert page != null;
 
@@ -65,7 +67,7 @@ public abstract class PageHandler<X> {
         assert buf != null;
 
         try {
-            return h.run(page, buf, arg, intArg);
+            return h.run(pageId, page, buf, arg, intArg);
         }
         finally {
             page.releaseRead();
@@ -73,6 +75,7 @@ public abstract class PageHandler<X> {
     }
 
     /**
+     * @param pageId Page ID.
      * @param page Page.
      * @param h Handler.
      * @param arg Argument.
@@ -80,7 +83,7 @@ public abstract class PageHandler<X> {
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
-    public static <X> int writePage(Page page, PageHandler<X> h, X arg, int intArg)
+    public static <X> int writePage(long pageId, Page page, PageHandler<X> h, X arg, int intArg)
         throws IgniteCheckedException {
         assert page != null;
 
@@ -93,12 +96,12 @@ public abstract class PageHandler<X> {
         assert buf != null;
 
         try {
-            res = h.run(page, buf, arg, intArg);
+            res = h.run(pageId, page, buf, arg, intArg);
 
             ok = true;
         }
         finally {
-            if (h.releaseAfterWrite(page, arg, intArg))
+            if (h.releaseAfterWrite(pageId, page, arg, intArg))
                 page.releaseWrite(ok);
         }
 

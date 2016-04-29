@@ -131,8 +131,8 @@ public final class PageIdUtils {
      * @param pageId Page id.
      * @return Page ID.
      */
-    public static long pageIdx(long pageId) {
-        return pageId & PAGE_IDX_MASK;
+    public static int pageIdx(long pageId) {
+        return (int)(pageId & PAGE_IDX_MASK); // 30 bytes
     }
 
     /**
@@ -191,7 +191,6 @@ public final class PageIdUtils {
         int fileId = 0;
 
         fileId = (fileId << FLAG_SIZE) | (flag & FLAG_MASK);
-
         fileId = (fileId << PART_ID_SIZE) | (partId & PART_ID_MASK);
 
         return pageId(fileId, pageIdx);
@@ -224,5 +223,15 @@ public final class PageIdUtils {
         long pageIdx = pageIdx(pageId);
 
         return pageId(partId + 1, PageIdAllocator.FLAG_IDX, pageIdx);
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @return Page ID with masked partition ID.
+     */
+    public static long maskPartId(long pageId) {
+        assert flag(pageId) == PageIdAllocator.FLAG_IDX; // Possible only for index pages.
+
+        return pageId & ~((long)PART_ID_MASK << PAGE_IDX_SIZE);
     }
 }

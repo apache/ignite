@@ -252,7 +252,7 @@ class PageImpl extends AbstractQueuedSynchronizer implements Page {
     boolean releaseReference() {
         int refs = refCntUpd.decrementAndGet(this);
 
-        assert refs >= 0: fullId.pageId();
+        assert refs >= 0: fullId;
 
         return refs == 0;
     }

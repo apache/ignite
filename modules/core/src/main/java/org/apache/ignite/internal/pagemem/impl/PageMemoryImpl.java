@@ -470,7 +470,7 @@ public class  PageMemoryImpl implements PageMemory {
     /**
      * @return Total number of loaded pages in memory.
      */
-    public long totalPages() {
+    public long loadedPages() {
         long total = 0;
 
         for (Segment seg : segments) {
@@ -478,6 +478,26 @@ public class  PageMemoryImpl implements PageMemory {
 
             try {
                 total += seg.loadedPages.size();
+            }
+            finally {
+                seg.readLock().unlock();
+            }
+        }
+
+        return total;
+    }
+
+    /**
+     * @return Total number of acquired pages.
+     */
+    public long acquiredPages() {
+        long total = 0;
+
+        for (Segment seg : segments) {
+            seg.readLock().lock();
+
+            try {
+                total += seg.acquiredPages.size();
             }
             finally {
                 seg.readLock().unlock();

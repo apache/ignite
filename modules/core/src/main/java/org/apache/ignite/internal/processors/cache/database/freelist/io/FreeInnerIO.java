@@ -26,24 +26,12 @@ public class FreeInnerIO extends BPlusInnerIO<FreeItem> implements FreeIO {
         super(T_FREE_INNER, ver, false, 6); // freeSpace(2) + pageIndex(4)
     }
 
-    /**
-     * @param pageId Page Id.
-     * @return Page index.
-     */
-    public static int pageIndex(long pageId) {
-        long idx = PageIdUtils.pageIdx(pageId);
-
-        assert idx >= 0 && idx < Integer.MAX_VALUE: idx;
-
-        return (int)idx;
-    }
-
     /** {@inheritDoc} */
     @Override public void store(ByteBuffer buf, int idx, FreeItem row) {
         int off = offset(idx);
 
         buf.putShort(off, row.freeSpace());
-        buf.putInt(off + 2, pageIndex(row.pageId()));
+        buf.putInt(off + 2, PageIdUtils.pageIdx(row.pageId()));
     }
 
     /** {@inheritDoc} */

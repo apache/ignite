@@ -30,7 +30,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.reuse.io.ReuseL
 /**
  * Reuse tree for index pages.
  */
-public final class ReuseTree extends BPlusTree<FullPageId, FullPageId> {
+public final class ReuseTree extends BPlusTree<Number, Long> {
     /**
      * @param reuseList Reuse list.
      * @param cacheId Cache ID.
@@ -48,20 +48,31 @@ public final class ReuseTree extends BPlusTree<FullPageId, FullPageId> {
     }
 
     /** {@inheritDoc} */
-    @Override protected int compare(BPlusIO<FullPageId> io, ByteBuffer buf, int idx, FullPageId fullPageId)
+    @Override protected int compare(BPlusIO<Number> io, ByteBuffer buf, int idx, Number row)
         throws IgniteCheckedException {
-        long pageIdx = io.isLeaf() ?
+        int pageIdx = io.isLeaf() ?
             PageIdUtils.pageIdx(((ReuseLeafIO)io).getPageId(buf, idx)) :
-            (((ReuseInnerIO)io).getPageIndex(buf, idx) & 0xFFFFFFFFL);
+            (((ReuseInnerIO)io).getPageIndex(buf, idx));
 
-        return Long.compare(pageIdx, PageIdUtils.pageIdx(fullPageId.pageId()));
+        return Integer.compare(pageIdx, toPageIndex(row));
+    }
+
+    /**
+     * @param row Lookup row.
+     * @return Page index.
+     */
+    private static int toPageIndex(Number row) {
+        if (row.getClass() == Integer.class)
+            return row.intValue();
+
+        return PageIdUtils.pageIdx(row.longValue());
     }
 
     /** {@inheritDoc} */
-    @Override protected FullPageId getRow(BPlusIO<FullPageId> io, ByteBuffer buf, int idx)
+    @Override protected Long getRow(BPlusIO<Number> io, ByteBuffer buf, int idx)
         throws IgniteCheckedException {
         assert io.isLeaf();
 
-        return new FullPageId(((ReuseLeafIO)io).getPageId(buf, idx) , getCacheId());
+        return ((ReuseLeafIO)io).getPageId(buf, idx);
     }
 }
