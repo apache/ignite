@@ -24,9 +24,9 @@ import org.apache.ignite.IgniteCache;
 
 /**
  * Cache entry that extends {@link javax.cache.Cache.Entry} by providing additional entry related information.
- *
- * To get an instance of {@code CacheEntry} use {@link javax.cache.Cache.Entry#unwrap(Class)} method by passing
- * {@code CacheEntry} class to it as the argument.
+ * <p>
+ * To get an instance of {@code CacheEntry} from {@link javax.cache.Cache.Entry} use
+ * {@link javax.cache.Cache.Entry#unwrap(Class)} method by passing {@code CacheEntry} class to it as the argument.
  * <p>
  * {@code CacheEntry} is supported only for {@link javax.cache.Cache.Entry} returned by one of the following methods:
  * <ul>
@@ -35,6 +35,9 @@ import org.apache.ignite.IgniteCache;
  * <li>invoke and invokeAll methods of {@link IgniteCache}</li>
  * <li>{@link IgniteCache#randomEntry()}</li>
  * </ul>
+ * <p>
+ * To get an instance of {@code CacheEntry} directly use {@link IgniteCache#getEntry(Object)} or
+ * {@link IgniteCache#getEntries(Set)} methods.
  * <p>
  * {@code CacheEntry} is not supported for {@link javax.cache.Cache#iterator()} because of performance reasons.
  * {@link javax.cache.Cache#iterator()} loads entries from all the cluster nodes and to speed up the load additional

@@ -58,7 +58,7 @@ public class GridCacheUpdateAtomicResult {
     private final boolean sndToDht;
 
     /** */
-    private final Long updateCntr;
+    private final long updateCntr;
 
     /** Value computed by entry processor. */
     private IgniteBiTuple<Object, Exception> res;
@@ -137,7 +137,7 @@ public class GridCacheUpdateAtomicResult {
     /**
      * @return Partition update index.
      */
-    public Long updateCounter() {
+    public long updateCounter() {
         return updateCntr;
     }
 

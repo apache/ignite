@@ -154,16 +154,15 @@
 
     <feature name="ignite-kafka" version="${project.version}" description="Apache Ignite :: Kafka">
         <details>
-            <![CDATA[The Apache Ignite Kafka module + dependencies. This module installs the Scala 2.10 library bundle.]]>
+            <![CDATA[The Apache Ignite Kafka module + dependencies. This module installs the Scala 2.1 library bundle.]]>
         </details>
         <feature prerequisite="true">wrap</feature>
-        <bundle start="true" dependency="true">mvn:org.scala-lang/scala-library/${scala210.library.version}</bundle>
-        <bundle start="true" dependency="true">mvn:org.apache.zookeeper/zookeeper/${zookeeper.version}</bundle>
-        <bundle start="true" dependency="true">wrap:mvn:com.101tec/zkclient/${zkclient.version}$Bundle-SymbolicName=zkclient&amp;Bundle-Version=${zkclient.version}&amp;Export-Package=*;-noimport:=true;version=${zkclient.version}</bundle>
+        <bundle start="true" dependency="true">mvn:org.scala-lang/scala-library/${scala211.library.version}</bundle>
         <bundle start="true" dependency="true">wrap:mvn:com.yammer.metrics/metrics-core/${yammer.metrics.core.version}$Bundle-SymbolicName=yammer-metrics-core&amp;Bundle-Version=2.2.0&amp;Export-Package=*;-noimport:=true;version=${yammer.metrics.core.version}</bundle>
         <bundle start="true" dependency="true">wrap:mvn:com.yammer.metrics/metrics-annotation/${yammer.metrics.annotation.version}$Bundle-SymbolicName=yammer-metrics-annotation&amp;Bundle-Version=2.2.0&amp;Export-Package=*;-noimport:=true;version=${yammer.metrics.annotation.version}</bundle>
-        <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.kafka-clients/${kafka.clients.bundle.version}</bundle>
-        <bundle start="true" dependency="true">mvn:org.apache.servicemix.bundles/org.apache.servicemix.bundles.kafka_2.10/${kafka.bundle.version}</bundle>
+        <bundle start="true" dependency="true">wrap:mvn:org.apache.kafka/connect-api/${kafka.version}$Bundle-SymbolicName=connect-api&amp;Bundle-Version=${kafka.version}</bundle>
+        <bundle start="true" dependency="true">wrap:mvn:org.apache.kafka/kafka_2.11/${kafka.version}$Bundle-SymbolicName=kafka_2.11&amp;Bundle-Version=${kafka.version}</bundle>
+        <bundle start="true" dependency="true">wrap:mvn:org.apache.kafka/kafka-clients/${kafka.version}$Bundle-SymbolicName=kafka-clients&amp;Bundle-Version=${kafka.version}</bundle>
         <bundle start="true">mvn:org.apache.ignite/ignite-kafka/${project.version}</bundle>
     </feature>
 
@@ -317,6 +316,7 @@
         <details>
             <![CDATA[The Apache Ignite ZooKeeper module + dependencies.]]>
         </details>
+        <bundle start="true" dependency="true">mvn:org.apache.zookeeper/zookeeper/${zookeeper.version}</bundle>
         <bundle start="true" dependency="true">mvn:com.google.guava/guava/${guava16.version}</bundle>
         <bundle start="true" dependency="true">mvn:org.codehaus.jackson/jackson-core-asl/${jackson.version}</bundle>
         <bundle start="true" dependency="true">mvn:org.codehaus.jackson/jackson-mapper-asl/${jackson.version}</bundle>

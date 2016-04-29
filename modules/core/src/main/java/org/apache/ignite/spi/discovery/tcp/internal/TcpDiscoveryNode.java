@@ -32,6 +32,7 @@ import java.util.UUID;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
@@ -39,6 +40,7 @@ import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -131,6 +133,22 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     /** */
     @GridToStringExclude
     private volatile transient InetSocketAddress lastSuccessfulAddr;
+
+    /** Cache client initialization flag. */
+    @GridToStringExclude
+    private transient volatile boolean cacheCliInit;
+
+    /** Cache client flag. */
+    @GridToStringExclude
+    private transient boolean cacheCli;
+
+    /** Daemon node initialization flag. */
+    @GridToStringExclude
+    private transient volatile boolean daemonInit;
+
+    /** Daemon node flag. */
+    @GridToStringExclude
+    private transient boolean daemon;
 
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
@@ -364,7 +382,13 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
     /** {@inheritDoc} */
     @Override public boolean isDaemon() {
-        return "true".equalsIgnoreCase((String)attribute(ATTR_DAEMON));
+        if (!daemonInit) {
+            daemon = "true".equalsIgnoreCase((String)attribute(ATTR_DAEMON));
+
+            daemonInit = true;
+        }
+
+        return daemon;
     }
 
     /** {@inheritDoc} */
@@ -499,6 +523,21 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         node.clientRouterNodeId = clientRouterNodeId;
 
         return node;
+    }
+
+    /**
+     * Whether this node is cache client (see {@link IgniteConfiguration#isClientMode()}).
+     *
+     * @return {@code True if client}.
+     */
+    public boolean isCacheClient() {
+        if (!cacheCliInit) {
+            cacheCli = CU.clientNodeDirect(this);
+
+            cacheCliInit = true;
+        }
+
+        return cacheCli;
     }
 
     /** {@inheritDoc} */

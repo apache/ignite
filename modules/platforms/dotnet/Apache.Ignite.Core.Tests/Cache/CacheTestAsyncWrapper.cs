@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System.Diagnostics;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cache.Query;
     using Apache.Ignite.Core.Cache.Query.Continuous;
@@ -55,6 +56,12 @@ namespace Apache.Ignite.Core.Tests.Cache
         public IIgnite Ignite
         {
             get { return _cache.Ignite; }
+        }
+
+        /** <inheritDoc /> */
+        public CacheConfiguration GetConfiguration()
+        {
+            return _cache.GetConfiguration();
         }
 
         /** <inheritDoc /> */
@@ -109,6 +116,18 @@ namespace Apache.Ignite.Core.Tests.Cache
         public Task LocalLoadCacheAsync(ICacheEntryFilter<TK, TV> p, params object[] args)
         {
             return _cache.LocalLoadCacheAsync(p, args);
+        }
+
+        /** <inheritDoc /> */
+        public void LoadAll(IEnumerable<TK> keys, bool replaceExistingValues)
+        {
+            _cache.LoadAll(keys, replaceExistingValues);
+        }
+
+        /** <inheritDoc /> */
+        public Task LoadAllAsync(IEnumerable<TK> keys, bool replaceExistingValues)
+        {
+            return _cache.LoadAllAsync(keys, replaceExistingValues);
         }
 
         /** <inheritDoc /> */

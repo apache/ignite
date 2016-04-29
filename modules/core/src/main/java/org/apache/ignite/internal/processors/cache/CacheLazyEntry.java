@@ -17,15 +17,15 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import javax.cache.Cache;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.cache.CacheInterceptorEntry;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
  */
-public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
+public class CacheLazyEntry<K, V> extends CacheInterceptorEntry<K, V> {
     /** Cache context. */
     protected GridCacheContext cctx;
 
@@ -46,10 +46,14 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
     /** Keep binary flag. */
     private boolean keepBinary;
 
+    /** Update counter. */
+    private Long updateCntr;
+
     /**
      * @param cctx Cache context.
      * @param keyObj Key cache object.
      * @param valObj Cache object value.
+     * @param keepBinary Keep binary flag.
      */
     public CacheLazyEntry(GridCacheContext cctx, KeyCacheObject keyObj, CacheObject valObj, boolean keepBinary) {
         this.cctx = cctx;
@@ -61,6 +65,7 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
     /**
      * @param keyObj Key cache object.
      * @param val Value.
+     * @param keepBinary Keep binary flag.
      * @param cctx Cache context.
      */
     public CacheLazyEntry(GridCacheContext cctx, KeyCacheObject keyObj, V val, boolean keepBinary) {
@@ -75,9 +80,36 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
      * @param keyObj Key cache object.
      * @param key Key value.
      * @param valObj Cache object
+     * @param keepBinary Keep binary flag.
+     * @param updateCntr Partition update counter.
      * @param val Cache value.
      */
-    public CacheLazyEntry(GridCacheContext<K, V> ctx,
+    public CacheLazyEntry(GridCacheContext ctx,
+        KeyCacheObject keyObj,
+        K key,
+        CacheObject valObj,
+        V val,
+        boolean keepBinary,
+        Long updateCntr
+    ) {
+        this.cctx = ctx;
+        this.keyObj = keyObj;
+        this.key = key;
+        this.valObj = valObj;
+        this.val = val;
+        this.keepBinary = keepBinary;
+        this.updateCntr = updateCntr;
+    }
+
+    /**
+     * @param ctx Cache context.
+     * @param keyObj Key cache object.
+     * @param key Key value.
+     * @param valObj Cache object
+     * @param keepBinary Keep binary flag.
+     * @param val Cache value.
+     */
+    public CacheLazyEntry(GridCacheContext ctx,
         KeyCacheObject keyObj,
         K key,
         CacheObject valObj,
@@ -111,9 +143,10 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
      * @param keepBinary Flag to keep binary if needed.
      * @return the value corresponding to this entry
      */
+    @SuppressWarnings("unchecked")
     public V getValue(boolean keepBinary) {
         if (val == null)
-            val = (V)cctx.unwrapBinaryIfNeeded(valObj, keepBinary, false);
+            val = (V)cctx.unwrapBinaryIfNeeded(valObj, keepBinary, true);
 
         return val;
     }
@@ -130,6 +163,27 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
      */
     public K key() {
         return key;
+    }
+
+    /**
+     * @return Keep binary flag.
+     */
+    public boolean keepBinary() {
+        return keepBinary;
+    }
+
+    /** {@inheritDoc} */
+    @Override public long getPartitionUpdateCounter() {
+        return updateCntr == null ? 0L : updateCntr;
+    }
+
+    /**
+     * Sets update counter.
+     *
+     * @param updateCntr Update counter.
+     */
+    public void updateCounter(Long updateCntr) {
+        this.updateCntr = updateCntr;
     }
 
     /** {@inheritDoc} */

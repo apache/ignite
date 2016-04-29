@@ -147,6 +147,12 @@ public final class IgniteNodeAttributes {
     /** Update notifier enabled. */
     public static final String ATTR_UPDATE_NOTIFIER_ENABLED = ATTR_PREFIX + ".update.notifier.enabled";
 
+    /** Binary configuration. */
+    public static final String ATTR_BINARY_CONFIGURATION = ATTR_PREFIX + ".binary.config";
+
+    /** Late affinity assignment mode. */
+    public static final String ATTR_LATE_AFFINITY_ASSIGNMENT = ATTR_PREFIX + ".cache.lateAffinity";
+
     /**
      * Enforces singleton.
      */

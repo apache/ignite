@@ -299,7 +299,7 @@ public class GridCacheStopSelfTest extends GridCommonAbstractTest {
 
                         return null;
                     }
-                }));
+                }, "cache-thread"));
             }
 
             readyLatch.await();

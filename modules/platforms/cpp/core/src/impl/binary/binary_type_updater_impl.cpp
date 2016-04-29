@@ -21,7 +21,8 @@
 #include "ignite/binary/binary_raw_writer.h"
 
 using namespace ignite::common::concurrent;
-using namespace ignite::common::java;
+using namespace ignite::jni::java;
+using namespace ignite::java;
 using namespace ignite::impl;
 using namespace ignite::impl::interop;
 using namespace ignite::binary;
@@ -79,6 +80,8 @@ namespace ignite
                     rawWriter.WriteInt32(0);
 
                 rawWriter.WriteBool(false); // Enums are not supported for now.
+
+                rawWriter.WriteInt32(0); // Schema size. Compact schema footer is not yet supported.
 
                 out.Synchronize();
 

@@ -19,16 +19,15 @@ package org.apache.ignite.internal.processors.hadoop.igfs;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.logging.Log;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteIllegalStateException;
-import org.apache.ignite.IgniteState;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsFile;
@@ -38,6 +37,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.processors.igfs.IgfsHandshakeResponse;
 import org.apache.ignite.internal.processors.igfs.IgfsStatus;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
@@ -335,7 +335,12 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
             }
         }
 
-        throw new IOException("Failed to communicate with IGFS.", err);
+        List<Throwable> list = X.getThrowableList(err);
+
+        Throwable cause = list.get(list.size() - 1);
+
+        throw new IOException("Failed to communicate with IGFS: "
+            + (cause.getMessage() == null ? cause.toString() : cause.getMessage()), err);
     }
 
     /**

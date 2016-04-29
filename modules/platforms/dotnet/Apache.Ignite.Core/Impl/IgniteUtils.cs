@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.IO;
     using System.Linq;
@@ -32,6 +33,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Unmanaged;
+    using Microsoft.Win32;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
 
     /// <summary>
@@ -45,11 +47,18 @@ namespace Apache.Ignite.Core.Impl
         /** Lookup paths. */
         private static readonly string[] JvmDllLookupPaths = {@"jre\bin\server", @"jre\bin\default"};
 
-        /** File: jvm.dll. */
-        private const string FileJvmDll = "jvm.dll";
+        /** Registry lookup paths. */
+        private static readonly string[] JreRegistryKeys =
+        {
+            @"Software\JavaSoft\Java Runtime Environment",
+            @"Software\Wow6432Node\JavaSoft\Java Runtime Environment"
+        };
 
-        /** File: Ignite.Common.dll. */
-        internal const string FileIgniteJniDll = "ignite.common.dll";
+        /** File: jvm.dll. */
+        internal const string FileJvmDll = "jvm.dll";
+
+        /** File: Ignite.Jni.dll. */
+        internal const string FileIgniteJniDll = "ignite.jni.dll";
         
         /** Prefix for temp directory names. */
         private const string DirIgniteTmp = "Ignite_";
@@ -64,6 +73,8 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Initializes the <see cref="IgniteUtils"/> class.
         /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline",
+            Justification = "Readability.")]
         static IgniteUtils()
         {
             TryCleanTempDirectories();
@@ -72,10 +83,10 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Gets thread local random.
         /// </summary>
-        /// <returns>Thread local random.</returns>
-        private static Random ThreadLocalRandom()
+        /// <value>Thread local random.</value>
+        public static Random ThreadLocalRandom
         {
-            return _rnd ?? (_rnd = new Random());
+            get { return _rnd ?? (_rnd = new Random()); }
         }
 
         /// <summary>
@@ -89,7 +100,7 @@ namespace Apache.Ignite.Core.Impl
             if (cnt > 1) {
                 List<T> res = new List<T>(list);
 
-                Random rnd = ThreadLocalRandom();
+                Random rnd = ThreadLocalRandom;
 
                 while (cnt > 1)
                 {
@@ -253,19 +264,48 @@ namespace Apache.Ignite.Core.Impl
                 foreach (var path in JvmDllLookupPaths)
                     yield return
                         new KeyValuePair<string, string>(EnvJavaHome, Path.Combine(javaHomeDir, path, FileJvmDll));
+
+            // Get paths from the Windows Registry
+            foreach (var regPath in JreRegistryKeys)
+            {
+                using (var jSubKey = Registry.LocalMachine.OpenSubKey(regPath))
+                {
+                    if (jSubKey == null)
+                        continue;
+
+                    var curVer = jSubKey.GetValue("CurrentVersion") as string;
+
+                    // Current version comes first
+                    var versions = new[] {curVer}.Concat(jSubKey.GetSubKeyNames().Where(x => x != curVer));
+
+                    foreach (var ver in versions.Where(v => !string.IsNullOrEmpty(v)))
+                    {
+                        using (var verKey = jSubKey.OpenSubKey(ver))
+                        {
+                            var dllPath = verKey == null ? null : verKey.GetValue("RuntimeLib") as string;
+
+                            if (dllPath != null)
+                                yield return new KeyValuePair<string, string>(verKey.Name, dllPath);
+                        }
+                    }
+                }
+            }
         }
 
         /// <summary>
         /// Unpacks an embedded resource into a temporary folder and returns the full path of resulting file.
         /// </summary>
         /// <param name="resourceName">Resource name.</param>
-        /// <returns>Path to a temp file with an unpacked resource.</returns>
-        public static string UnpackEmbeddedResource(string resourceName)
+        /// <param name="fileName">Name of the resulting file.</param>
+        /// <returns>
+        /// Path to a temp file with an unpacked resource.
+        /// </returns>
+        public static string UnpackEmbeddedResource(string resourceName, string fileName)
         {
             var dllRes = Assembly.GetExecutingAssembly().GetManifestResourceNames()
                 .Single(x => x.EndsWith(resourceName, StringComparison.OrdinalIgnoreCase));
 
-            return WriteResourceToTempFile(dllRes, resourceName);
+            return WriteResourceToTempFile(dllRes, fileName);
         }
 
         /// <summary>

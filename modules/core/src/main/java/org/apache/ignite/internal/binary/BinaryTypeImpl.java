@@ -20,12 +20,15 @@ package org.apache.ignite.internal.binary;
 import org.apache.ignite.binary.BinaryType;
 
 import java.util.Collection;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Binary type implementation.
  */
 public class BinaryTypeImpl implements BinaryType {
     /** Binary context. */
+    @GridToStringExclude
     private final BinaryContext ctx;
 
     /** Type metadata. */
@@ -89,5 +92,10 @@ public class BinaryTypeImpl implements BinaryType {
      */
     public BinaryMetadata metadata() {
         return meta;
+    }
+
+    /** {@inheritDoc} */
+    public String toString() {
+        return S.toString(BinaryTypeImpl.class, this);
     }
 }

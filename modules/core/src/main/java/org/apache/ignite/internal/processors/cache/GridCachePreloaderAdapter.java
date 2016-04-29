@@ -93,6 +93,11 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     }
 
     /** {@inheritDoc} */
+    @Override public boolean needForceKeys() {
+        return false;
+    }
+
+    /** {@inheritDoc} */
     @Override public void onReconnected() {
         // No-op.
     }
@@ -154,16 +159,6 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     }
 
     /** {@inheritDoc} */
-    @Override public void onExchangeFutureAdded() {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
-    @Override public void updateLastExchangeFuture(GridDhtPartitionsExchangeFuture lastFut) {
-        // No-op.
-    }
-
-    /** {@inheritDoc} */
     @Override public GridDhtPreloaderAssignments assign(GridDhtPartitionsExchangeFuture exchFut) {
         return null;
     }
@@ -180,7 +175,7 @@ public class GridCachePreloaderAdapter implements GridCachePreloader {
     }
 
     /** {@inheritDoc} */
-    @Override public void onTopologyChanged(AffinityTopologyVersion topVer) {
+    @Override public void onTopologyChanged(GridDhtPartitionsExchangeFuture lastFut) {
         // No-op.
     }
 

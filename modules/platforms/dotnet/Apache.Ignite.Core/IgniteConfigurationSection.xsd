@@ -1,0 +1,316 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<xs:schema id="IgniteConfigurationSection"
+    targetNamespace="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
+    elementFormDefault="qualified"
+    xmlns="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
+    xmlns:mstns="http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection"
+    xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <xs:element name="igniteConfiguration">
+        <xs:complexType>
+            <xs:all>
+                <xs:element name="binaryConfiguration" minOccurs="0">
+                    <xs:complexType>
+                        <xs:all>
+                            <xs:element name="typeConfigurations" minOccurs="0">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="binaryTypeConfiguration">
+                                            <xs:complexType>
+                                                <xs:all>
+                                                    <xs:element name="nameMapper" minOccurs="0">
+                                                        <xs:complexType>
+                                                            <xs:attribute name="type" type="xs:string" use="required" />
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                    <xs:element name="idMapper" minOccurs="0">
+                                                        <xs:complexType>
+                                                            <xs:attribute name="type" type="xs:string" use="required" />
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                    <xs:element name="serializer" minOccurs="0">
+                                                        <xs:complexType>
+                                                            <xs:attribute name="type" type="xs:string" use="required" />
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                </xs:all>
+                                                <xs:attribute name="typeName" type="xs:string" />
+                                                <xs:attribute name="affinityKeyFieldName" type="xs:string" />
+                                                <xs:attribute name="keepDeserialized" type="xs:string" />
+                                                <xs:attribute name="isEnum" type="xs:boolean" />
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:sequence>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="types" minOccurs="0">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element maxOccurs="unbounded" name="string" type="xs:string" />
+                                    </xs:sequence>
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="defaultNameMapper" minOccurs="0">
+                                <xs:complexType>
+                                    <xs:attribute name="type" type="xs:string" use="required" />
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="defaultIdMapper" minOccurs="0">
+                                <xs:complexType>
+                                    <xs:attribute name="type" type="xs:string" use="required" />
+                                </xs:complexType>
+                            </xs:element>
+                            <xs:element name="defaultSerializer" minOccurs="0">
+                                <xs:complexType>
+                                    <xs:attribute name="type" type="xs:string" use="required" />
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:all>
+                        <xs:attribute name="defaultKeepDeserialized" type="xs:boolean" />
+                        <xs:attribute name="compactFooter" type="xs:boolean" />
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="cacheConfiguration" minOccurs="0">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="cacheConfiguration" maxOccurs="unbounded">
+                                <xs:complexType>
+                                    <xs:all>
+                                        <xs:element name="cacheStoreFactory" minOccurs="0">
+                                            <xs:complexType>
+                                                <xs:attribute name="type" type="xs:string" use="required" />
+                                            </xs:complexType>
+                                        </xs:element>
+                                        <xs:element name="queryEntities" minOccurs="0">
+                                            <xs:complexType>
+                                                <xs:sequence>
+                                                    <xs:element name="queryEntity" maxOccurs="unbounded">
+                                                        <xs:complexType>
+                                                            <xs:all>
+                                                                <xs:element name="fields" minOccurs="0">
+                                                                    <xs:complexType>
+                                                                        <xs:sequence>
+                                                                            <xs:element name="queryField" maxOccurs="unbounded">
+                                                                                <xs:complexType>
+                                                                                    <xs:attribute name="name" type="xs:string" use="required" />
+                                                                                    <xs:attribute name="fieldType" type="xs:string" />
+                                                                                    <xs:attribute name="fieldTypeName" type="xs:string" />
+                                                                                </xs:complexType>
+                                                                            </xs:element>
+                                                                        </xs:sequence>
+                                                                    </xs:complexType>
+                                                                </xs:element>
+                                                                <xs:element name="aliases" minOccurs="0">
+                                                                    <xs:complexType>
+                                                                        <xs:sequence>
+                                                                            <xs:element name="queryAlias" maxOccurs="unbounded">
+                                                                                <xs:complexType>
+                                                                                    <xs:attribute name="fullName" type="xs:string" use="required" />
+                                                                                    <xs:attribute name="alias" type="xs:string" use="required" />
+                                                                                </xs:complexType>
+                                                                            </xs:element>
+                                                                        </xs:sequence>
+                                                                    </xs:complexType>
+                                                                </xs:element>
+                                                                <xs:element name="indexes" minOccurs="0">
+                                                                    <xs:complexType>
+                                                                        <xs:sequence>
+                                                                            <xs:element name="queryIndex" maxOccurs="unbounded">
+                                                                                <xs:complexType>
+                                                                                    <xs:sequence>
+                                                                                        <xs:element name="fields" minOccurs="1">
+                                                                                            <xs:complexType>
+                                                                                                <xs:sequence>
+                                                                                                    <xs:element name="queryIndexField" maxOccurs="unbounded">
+                                                                                                        <xs:complexType>
+                                                                                                            <xs:attribute name="name" type="xs:string" use="required" />
+                                                                                                            <xs:attribute name="isDescending" type="xs:boolean" />
+                                                                                                        </xs:complexType>
+                                                                                                    </xs:element>
+                                                                                                </xs:sequence>
+                                                                                            </xs:complexType>
+                                                                                        </xs:element>
+                                                                                    </xs:sequence>
+                                                                                    <xs:attribute name="name" type="xs:string" />
+                                                                                    <xs:attribute name="indexType" type="xs:string" />
+                                                                                </xs:complexType>
+                                                                            </xs:element>
+                                                                        </xs:sequence>
+                                                                    </xs:complexType>
+                                                                </xs:element>
+                                                            </xs:all>
+                                                            <xs:attribute name="keyTypeName" type="xs:string"/>
+                                                            <xs:attribute name="keyType" type="xs:string" />
+                                                            <xs:attribute name="valueTypeName" type="xs:string" />
+                                                            <xs:attribute name="valueType" type="xs:string" />
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                </xs:sequence>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:all>
+                                    <xs:attribute name="name" type="xs:string" />
+                                    <xs:attribute name="cacheMode" type="xs:string" />
+                                    <xs:attribute name="writeSynchronizationMode" type="xs:string" />
+                                    <xs:attribute name="evictSynchronized" type="xs:boolean" />
+                                    <xs:attribute name="evictSynchronizedKeyBufferSize" type="xs:int" />
+                                    <xs:attribute name="evictSynchronizedConcurrencyLevel" type="xs:int" />
+                                    <xs:attribute name="evictSynchronizedTimeout" type="xs:string" />
+                                    <xs:attribute name="maxEvictionOverflowRatio" type="xs:decimal" />
+                                    <xs:attribute name="startSize" type="xs:int" />
+                                    <xs:attribute name="loadPreviousValue" type="xs:string" />
+                                    <xs:attribute name="atomicityMode" type="xs:string" />
+                                    <xs:attribute name="atomicWriteOrderMode" type="xs:string" />
+                                    <xs:attribute name="backups" type="xs:int" />
+                                    <xs:attribute name="lockTimeout" type="xs:string" />
+                                    <xs:attribute name="invalidate" type="xs:boolean" />
+                                    <xs:attribute name="rebalanceMode" type="xs:string" />
+                                    <xs:attribute name="rebalanceBatchSize" type="xs:int" />
+                                    <xs:attribute name="enableSwap" type="xs:boolean" />
+                                    <xs:attribute name="maxConcurrentAsyncOperations" type="xs:int" />
+                                    <xs:attribute name="writeBehindEnabled" type="xs:boolean" />
+                                    <xs:attribute name="writeBehindFlushSize" type="xs:int" />
+                                    <xs:attribute name="writeBehindFlushThreadCount" type="xs:int" />
+                                    <xs:attribute name="writeBehindBatchSize" type="xs:int" />
+                                    <xs:attribute name="rebalanceTimeout" type="xs:string" />
+                                    <xs:attribute name="rebalanceDelay" type="xs:string" />
+                                    <xs:attribute name="rebalanceThrottle" type="xs:string" />
+                                    <xs:attribute name="offHeapMaxMemory" type="xs:int" />
+                                    <xs:attribute name="memoryMode" type="xs:string" />
+                                    <xs:attribute name="longQueryWarningTimeout" type="xs:string" />
+                                    <xs:attribute name="sqlEscapeAll" type="xs:boolean" />
+                                    <xs:attribute name="sqlOnheapRowCacheSize" type="xs:int" />
+                                    <xs:attribute name="readThrough" type="xs:boolean" />
+                                    <xs:attribute name="writeThrough" type="xs:boolean" />
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="jvmOptions" minOccurs="0">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element maxOccurs="unbounded" name="string" type="xs:string" />
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="assemblies" minOccurs="0">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element maxOccurs="unbounded" name="string" type="xs:string" />
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="lifecycleBeans" minOccurs="0">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element maxOccurs="unbounded" name="iLifecycleBean">
+                                <xs:complexType>
+                                    <xs:attribute name="type" type="xs:string" use="required" />
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="discoverySpi" minOccurs="0">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element name="ipFinder" minOccurs="0">
+                                <xs:complexType>
+                                    <xs:sequence>
+                                        <xs:element name="endpoints" minOccurs="0">
+                                            <xs:complexType>
+                                                <xs:sequence>
+                                                    <xs:element maxOccurs="unbounded" name="string" type="xs:string" />
+                                                </xs:sequence>
+                                            </xs:complexType>
+                                        </xs:element>
+                                    </xs:sequence>
+                                    <xs:attribute name="type" type="xs:string" use="required" />
+                                    <xs:attribute name="localAddress" type="xs:string" />
+                                    <xs:attribute name="multicastGroup" type="xs:string" />
+                                    <xs:attribute name="multicastPort" type="xs:int" />
+                                    <xs:attribute name="addressRequestAttempts" type="xs:int" />
+                                    <xs:attribute name="responseTimeout" type="xs:string" />
+                                    <xs:attribute name="timeToLive" type="xs:byte" />
+                                </xs:complexType>
+                            </xs:element>
+                        </xs:sequence>
+                        <xs:attribute name="socketTimeout" type="xs:string" />
+                        <xs:attribute name="ackTimeout" type="xs:string" />
+                        <xs:attribute name="maxAckTimeout" type="xs:string" />
+                        <xs:attribute name="networkTimeout" type="xs:string" />
+                        <xs:attribute name="joinTimeout" type="xs:string" />
+                        <xs:attribute name="type" type="xs:string" use="required" />
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="includedEventTypes" minOccurs="0">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element maxOccurs="unbounded" name="int" type="xs:string" />
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="userAttributes" minOccurs="0">
+                    <xs:complexType>
+                        <xs:sequence>
+                            <xs:element maxOccurs="unbounded" name="pair"  />
+                        </xs:sequence>
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="atomicConfiguration" minOccurs="0">
+                    <xs:complexType>
+                        <xs:attribute name="cacheMode" type="xs:string" />
+                        <xs:attribute name="backups" type="xs:int" />
+                        <xs:attribute name="atomicSequenceReserveSize" type="xs:int" />
+                    </xs:complexType>
+                </xs:element>
+                <xs:element name="transactionConfiguration" minOccurs="0">
+                    <xs:complexType>
+                        <xs:attribute name="defaultTransactionConcurrency" type="xs:string" />
+                        <xs:attribute name="defaultTransactionIsolation" type="xs:string" />
+                        <xs:attribute name="defaultTimeout" type="xs:string" />
+                        <xs:attribute name="pessimisticTransactionLogSize" type="xs:int" />
+                        <xs:attribute name="pessimisticTransactionLogLinger" type="xs:string" />
+                    </xs:complexType>
+                </xs:element>
+            </xs:all>
+            <xs:attribute name="gridName" type="xs:string" />
+            <xs:attribute name="jvmDllPath" type="xs:string" />
+            <xs:attribute name="igniteHome" type="xs:string" />
+            <xs:attribute name="jvmClasspath" type="xs:string" />
+            <xs:attribute name="suppressWarnings" type="xs:boolean" />
+            <xs:attribute name="jvmInitialMemoryMb" type="xs:int" />
+            <xs:attribute name="jvmMaxMemoryMb" type="xs:int" />
+            <xs:attribute name="clientMode" type="xs:boolean" />
+            <xs:attribute name="metricsExpireTime" type="xs:string" />
+            <xs:attribute name="metricsHistorySize" type="xs:int" />
+            <xs:attribute name="metricsLogFrequency" type="xs:string" />
+            <xs:attribute name="metricsUpdateFrequency" type="xs:string" />
+            <xs:attribute name="networkSendRetryCount" type="xs:int" />
+            <xs:attribute name="networkSendRetryDelay" type="xs:string" />
+            <xs:attribute name="networkTimeout" type="xs:string" />
+            <xs:attribute name="workDirectory" type="xs:string" />
+            <xs:attribute name="localhost" type="xs:string" />
+            <xs:attribute name="isDaemon" type="xs:boolean" />
+        </xs:complexType>
+    </xs:element>    
+</xs:schema>

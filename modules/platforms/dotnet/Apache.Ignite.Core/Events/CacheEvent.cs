@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Events
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
@@ -45,9 +46,6 @@ namespace Apache.Ignite.Core.Events
 
         /** */
         private readonly IgniteGuid? _xid;
-
-        /** */
-        private readonly object _lockId;
 
         /** */
         private readonly object _newValue;
@@ -82,7 +80,6 @@ namespace Apache.Ignite.Core.Events
             _eventNode = ReadNode(r);
             _key = r.ReadObject<object>();
             _xid = IgniteGuid.Read(r);
-            _lockId = r.ReadObject<object>();
             _newValue = r.ReadObject<object>();
             _oldValue = r.ReadObject<object>();
             _hasOldValue = r.ReadBoolean();
@@ -125,7 +122,9 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// ID of the lock if held or null if no lock held. 
         /// </summary>
-        public object LockId { get { return _lockId; } }
+        [Obsolete("LockId is no longer provided. This property is always null.")]
+        [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic", Justification = "Compatibility")]
+        public object LockId { get { return null; } }
 
         /// <summary>
         /// Gets new value for this event. 
@@ -166,9 +165,11 @@ namespace Apache.Ignite.Core.Events
         /// Gets task name if cache event was caused by an operation initiated within task execution. 
         /// </summary>
         public string TaskName { get { return _taskName; } }
-        
-        /** <inheritDoc /> */
-	    public override string ToShortString()
+
+        /// <summary>
+        /// Gets shortened version of ToString result.
+        /// </summary>
+        public override string ToShortString()
 	    {
             return string.Format(CultureInfo.InvariantCulture, 
                 "{0}: IsNear={1}, Key={2}, HasNewValue={3}, HasOldValue={4}, NodeId={5}", Name, 

@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.binary.streams;
 
+import org.apache.ignite.internal.util.GridUnsafe;
+
+import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
+
 /**
  * Base binary output stream.
  */
@@ -36,7 +40,7 @@ public abstract class BinaryAbstractOutputStream extends BinaryAbstractStream
     @Override public void writeByteArray(byte[] val) {
         ensureCapacity(pos + val.length);
 
-        copyAndShift(val, BYTE_ARR_OFF, val.length);
+        copyAndShift(val, GridUnsafe.BYTE_ARR_OFF, val.length);
     }
 
     /** {@inheritDoc} */
@@ -48,15 +52,12 @@ public abstract class BinaryAbstractOutputStream extends BinaryAbstractStream
     @Override public void writeBooleanArray(boolean[] val) {
         ensureCapacity(pos + val.length);
 
-        copyAndShift(val, BOOLEAN_ARR_OFF, val.length);
+        copyAndShift(val, GridUnsafe.BOOLEAN_ARR_OFF, val.length);
     }
 
     /** {@inheritDoc} */
     @Override public void writeShort(short val) {
         ensureCapacity(pos + 2);
-
-        if (!LITTLE_ENDIAN)
-            val = Short.reverseBytes(val);
 
         writeShortFast(val);
 
@@ -69,22 +70,20 @@ public abstract class BinaryAbstractOutputStream extends BinaryAbstractStream
 
         ensureCapacity(pos + cnt);
 
-        if (LITTLE_ENDIAN)
-            copyAndShift(val, SHORT_ARR_OFF, cnt);
-        else {
-            for (short item : val)
-                writeShortFast(Short.reverseBytes(item));
+        if (BIG_ENDIAN) {
+            for (short item : val) {
+                writeShortFast(item);
 
-            shift(cnt);
+                shift(2);
+            }
         }
+        else
+            copyAndShift(val, GridUnsafe.SHORT_ARR_OFF, cnt);
     }
 
     /** {@inheritDoc} */
     @Override public void writeChar(char val) {
         ensureCapacity(pos + 2);
-
-        if (!LITTLE_ENDIAN)
-            val = Character.reverseBytes(val);
 
         writeCharFast(val);
 
@@ -97,22 +96,20 @@ public abstract class BinaryAbstractOutputStream extends BinaryAbstractStream
 
         ensureCapacity(pos + cnt);
 
-        if (LITTLE_ENDIAN)
-            copyAndShift(val, CHAR_ARR_OFF, cnt);
-        else {
-            for (char item : val)
-                writeCharFast(Character.reverseBytes(item));
+        if (BIG_ENDIAN) {
+            for (char item : val) {
+                writeCharFast(item);
 
-            shift(cnt);
+                shift(2);
+            }
         }
+        else
+            copyAndShift(val, GridUnsafe.CHAR_ARR_OFF, cnt);
     }
 
     /** {@inheritDoc} */
     @Override public void writeInt(int val) {
         ensureCapacity(pos + 4);
-
-        if (!LITTLE_ENDIAN)
-            val = Integer.reverseBytes(val);
 
         writeIntFast(val);
 
@@ -139,14 +136,15 @@ public abstract class BinaryAbstractOutputStream extends BinaryAbstractStream
 
         ensureCapacity(pos + cnt);
 
-        if (LITTLE_ENDIAN)
-            copyAndShift(val, INT_ARR_OFF, cnt);
-        else {
-            for (int item : val)
-                writeIntFast(Integer.reverseBytes(item));
+        if (BIG_ENDIAN) {
+            for (int item : val) {
+                writeIntFast(item);
 
-            shift(cnt);
+                shift(4);
+            }
         }
+        else
+            copyAndShift(val, GridUnsafe.INT_ARR_OFF, cnt);
     }
 
     /** {@inheritDoc} */
@@ -160,23 +158,20 @@ public abstract class BinaryAbstractOutputStream extends BinaryAbstractStream
 
         ensureCapacity(pos + cnt);
 
-        if (LITTLE_ENDIAN)
-            copyAndShift(val, FLOAT_ARR_OFF, cnt);
-        else {
+        if (BIG_ENDIAN) {
             for (float item : val) {
-                writeIntFast(Integer.reverseBytes(Float.floatToIntBits(item)));
+                writeIntFast(Float.floatToIntBits(item));
 
                 shift(4);
             }
         }
+        else
+            copyAndShift(val, GridUnsafe.FLOAT_ARR_OFF, cnt);
     }
 
     /** {@inheritDoc} */
     @Override public void writeLong(long val) {
         ensureCapacity(pos + 8);
-
-        if (!LITTLE_ENDIAN)
-            val = Long.reverseBytes(val);
 
         writeLongFast(val);
 
@@ -189,14 +184,15 @@ public abstract class BinaryAbstractOutputStream extends BinaryAbstractStream
 
         ensureCapacity(pos + cnt);
 
-        if (LITTLE_ENDIAN)
-            copyAndShift(val, LONG_ARR_OFF, cnt);
-        else {
-            for (long item : val)
-                writeLongFast(Long.reverseBytes(item));
+        if (BIG_ENDIAN) {
+            for (long item : val) {
+                writeLongFast(item);
 
-            shift(cnt);
+                shift(8);
+            }
         }
+        else
+            copyAndShift(val, GridUnsafe.LONG_ARR_OFF, cnt);
     }
 
     /** {@inheritDoc} */
@@ -210,22 +206,22 @@ public abstract class BinaryAbstractOutputStream extends BinaryAbstractStream
 
         ensureCapacity(pos + cnt);
 
-        if (LITTLE_ENDIAN)
-            copyAndShift(val, DOUBLE_ARR_OFF, cnt);
-        else {
+        if (BIG_ENDIAN) {
             for (double item : val) {
-                writeLongFast(Long.reverseBytes(Double.doubleToLongBits(item)));
+                writeLongFast(Double.doubleToLongBits(item));
 
                 shift(8);
             }
         }
+        else
+            copyAndShift(val, GridUnsafe.DOUBLE_ARR_OFF, cnt);
     }
 
     /** {@inheritDoc} */
     @Override public void write(byte[] arr, int off, int len) {
         ensureCapacity(pos + len);
 
-        copyAndShift(arr, BYTE_ARR_OFF + off, len);
+        copyAndShift(arr, GridUnsafe.BYTE_ARR_OFF + off, len);
     }
 
     /** {@inheritDoc} */
