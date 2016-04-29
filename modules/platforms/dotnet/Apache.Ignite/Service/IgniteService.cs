@@ -19,10 +19,10 @@ namespace Apache.Ignite.Service
 {
     using System;
     using System.ComponentModel;
+    using System.Configuration.Install;
     using System.IO;
     using System.Linq;
     using System.Reflection;
-    using System.Runtime.InteropServices;
     using System.ServiceProcess;
     using System.Text;
     using Apache.Ignite.Core;
@@ -34,14 +34,7 @@ namespace Apache.Ignite.Service
     internal class IgniteService : ServiceBase
     {
         /** Service name. */
-        private static readonly string SvcName = "Apache Ignite.NET";
-
-        /** Service display name. */
-        private static readonly string SvcDisplayName = "Apache Ignite.NET " + 
-            Assembly.GetExecutingAssembly().GetName().Version.ToString(4);
-
-        /** Service description. */
-        private static readonly string SvcDesc = "Apache Ignite.NET Service.";
+        public static readonly string SvcName = "Apache Ignite.NET";
 
         /** Current executable name. */
         private static readonly string ExeName =
@@ -145,6 +138,9 @@ namespace Apache.Ignite.Service
             foreach (var arg in args)
                 binPath.Append(" ").AppendFormat("-{0}={1}", arg.Item1, arg.Item2);
 
+            ManagedInstallerClass.InstallHelper(new[] {binPath.ToString()});
+
+            /*
             // 2. Get SC manager.
             var scMgr = OpenServiceControlManager();
 
@@ -180,7 +176,7 @@ namespace Apache.Ignite.Service
             finally 
             {
                 Marshal.FreeHGlobal(desc.desc);
-            }
+            }*/
         }
 
         /// <summary>
