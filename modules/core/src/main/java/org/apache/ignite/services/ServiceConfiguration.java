@@ -21,7 +21,6 @@ import java.io.Serializable;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 
 /**
@@ -108,8 +107,6 @@ public class ServiceConfiguration implements Serializable {
      * @return Service instance.
      */
     public Service getService() {
-        U.dumpStack(">>>>> service 1: " + svc.getClass());
-
         return svc;
     }
 

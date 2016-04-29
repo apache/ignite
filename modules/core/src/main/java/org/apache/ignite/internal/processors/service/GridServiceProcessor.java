@@ -397,8 +397,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     public IgniteInternalFuture<?> deploy(ServiceConfiguration cfg) {
         A.notNull(cfg, "cfg");
 
-        cfg = new LazyServiceConfiguration(cfg, ctx);
-
         validate(cfg);
 
         GridServiceDeploymentFuture fut = new GridServiceDeploymentFuture(cfg);
@@ -432,7 +430,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                 try {
                     GridServiceDeployment dep = (GridServiceDeployment)cache.getAndPutIfAbsent(key,
-//                        new GridServiceDeployment(ctx.localNodeId(), cfg));
                         new GridServiceDeployment(ctx.localNodeId(), cfg));
 
                     if (dep != null) {
@@ -756,8 +753,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException If failed.
      */
     private void reassign(GridServiceDeployment dep, AffinityTopologyVersion topVer) throws IgniteCheckedException {
-        U.dumpStack(">>>>> JFI dep: " + dep + ", topver: " + topVer);
-
         ServiceConfiguration cfg = dep.configuration();
 
         Object nodeFilter = cfg.getNodeFilter();
@@ -1303,8 +1298,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                                     GridServiceDeployment dep = (GridServiceDeployment)e.getValue();
 
-                                    ((LazyServiceConfiguration)dep.configuration()).context(ctx);
-
                                     try {
                                         svcName.set(dep.configuration().getName());
 
@@ -1443,8 +1436,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         }
 
                         if (assigns != null) {
-                            ((LazyServiceConfiguration)assigns.configuration()).context(ctx);
-
                             svcName.set(assigns.name());
 
                             Throwable t = null;
