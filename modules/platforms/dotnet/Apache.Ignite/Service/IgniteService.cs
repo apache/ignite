@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Service
 {
     using System;
+    using System.Collections.Generic;
     using System.Configuration.Install;
     using System.IO;
     using System.Linq;
@@ -26,11 +27,12 @@ namespace Apache.Ignite.Service
     using System.Text;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Lifecycle;
 
     /// <summary>
     /// Ignite windows service.
     /// </summary>
-    internal class IgniteService : ServiceBase
+    internal class IgniteService : ServiceBase, ILifecycleBean
     {
         /** Service name. */
         public static readonly string SvcName = "Apache Ignite.NET";
@@ -52,6 +54,10 @@ namespace Apache.Ignite.Service
             ServiceName = SvcName;
 
             _cfg = cfg;
+
+            // Subscribe to lifecycle events
+            var beans = _cfg.LifecycleBeans ?? new List<ILifecycleBean>();
+            beans.Add(this);
         }
 
         /** <inheritDoc /> */
@@ -146,6 +152,13 @@ namespace Apache.Ignite.Service
         private static void Uninstall0()
         {
             ManagedInstallerClass.InstallHelper(new[] { ExeName, "/u" });
+        }
+
+        /** <inheritdoc /> */
+        public void OnLifecycleEvent(LifecycleEventType evt)
+        {
+            if (evt == LifecycleEventType.AfterNodeStop)
+                Stop();
         }
     }
 }
