@@ -45,8 +45,6 @@ public class AtomicBinaryOffheapEntryProcessorRemoveBatchTest extends AtomicBina
      * @throws Exception If fail.
      */
     @Override public void testBatchOperations() throws Exception {
-        fail("IGNITE-2982");
-
         Ignite ignite = ignite(0);
 
         int iterations = 50;

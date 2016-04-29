@@ -17,28 +17,40 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.CacheEntryProcessor;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
- * The test are checking batch operation onto atomic offheap cache with per certain key and value types.
+ *
  */
-public abstract class AtomicBinaryOffheapBaseBatchTest extends IgniteCacheAbstractTest {
+public class CacheOffheapBatchIndexingTest extends GridCommonAbstractTest {
+    /** */
     private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
@@ -49,85 +61,138 @@ public abstract class AtomicBinaryOffheapBaseBatchTest extends IgniteCacheAbstra
 
         cfg.setPeerClassLoadingEnabled(false);
 
-        TcpDiscoverySpi spi = new TcpDiscoverySpi();
-        spi.setIpFinder(ipFinder);
-        cfg.setDiscoverySpi(spi);
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
         return cfg;
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected void beforeTestsStarted() throws Exception {
+        startGrid(0);
+    }
 
-        cfg.setMemoryMode(memoryMode());
-
-        int size = onHeapRowCacheSize();
-
-        if (size > 0 )
-            cfg.setSqlOnheapRowCacheSize(size);
-
-        cfg.setIndexedTypes(indexedTypes());
-
-        cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
-
-        return cfg;
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
     }
 
     /**
-     * Row off-heap cache. Zero is used for default value (10_000).
-     * @return row heap cache size in bytes.
+     * @throws Exception If failed.
      */
-    protected int onHeapRowCacheSize() {
-        return 0;
+    public void testBatchRemove() throws Exception {
+        Ignite ignite = grid(0);
+
+        final IgniteCache<Object, Object> cache =
+            ignite.createCache(cacheConfiguration(1, new Class<?>[] {Integer.class, Organization.class}));
+
+        int iterations = 50;
+
+        try {
+            while (iterations-- >= 0) {
+                int total = 1000;
+
+                for (int id = 0; id < total; id++)
+                    cache.put(id, new Organization(id, "Organization " + id));
+
+                cache.invoke(0, new CacheEntryProcessor<Object, Object, Object>() {
+                    @Override public Object process(MutableEntry<Object, Object> entry,
+                        Object... arguments) throws EntryProcessorException {
+
+                        entry.remove();
+
+                        return null;
+                    }
+                });
+
+                QueryCursor<List<?>> q = cache.query(new SqlFieldsQuery("select _key,_val from Organization where id=0"));
+
+                assertEquals(0, q.getAll().size());
+
+                q = cache.query(new SqlFieldsQuery("select _key,_val from Organization where id=1"));
+
+                assertEquals(1, q.getAll().size());
+
+                assertEquals(total - 1, cache.size());
+
+                cache.clear();
+            }
+        }
+        finally {
+            cache.destroy();
+        }
     }
 
     /**
-     * Indexed types for test.
-     * @return array of classes for indexing.
+     * Test putAll after with streamer batch load with one entity.
      */
-    protected Class<?>[] indexedTypes() {
-        return new Class<?>[]{Integer.class, Person.class, Integer.class, Organization.class};
-    }
-
-    /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return 1;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheMode cacheMode() {
-        return CacheMode.PARTITIONED;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode atomicityMode() {
-        return CacheAtomicityMode.ATOMIC;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected NearCacheConfiguration nearConfiguration() {
-        return null;
+    public void testPutWithStreamerSmallOnHeapRowCache() {
+        //fail("IGNITE-2982");
+        doStreamerBatchTest(50, new Class<?>[] {Integer.class, Organization.class}, 1, false);
     }
 
     /**
-     * @return Cache memory mode.
+     * Test putAll after with streamer batch load with one entity.
      */
-    protected CacheMemoryMode memoryMode() {
-        return CacheMemoryMode.OFFHEAP_TIERED;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return CacheAtomicWriteOrderMode.PRIMARY;
+    public void testPutWithStreamerDefaultOnHeapRowCache() {
+        //fail("IGNITE-2982");
+        doStreamerBatchTest(50, new Class<?>[] {Integer.class, Person.class, Integer.class, Organization.class},
+            CacheConfiguration.DFLT_SQL_ONHEAP_ROW_CACHE_SIZE, true);
     }
 
     /**
-     * Test method.
-     *
-     * @throws Exception If fail.
+     * Test putAll after with streamer batch load with one entity.
      */
-    public abstract void testBatchOperations() throws Exception;
+    private void doStreamerBatchTest(int iterations, Class<?>[] entityClasses, int onHeapRowCacheSize, boolean preloadInStreamer) {
+        Ignite ignite = grid(0);
+
+        final IgniteCache<Object, Object> cache =
+            ignite.createCache(cacheConfiguration(onHeapRowCacheSize, entityClasses));
+
+        try {
+            if (preloadInStreamer)
+                loadingCacheAnyDate(cache.getName());
+
+            while (iterations-- >= 0) {
+                int total = 1_000;
+
+                Map<Integer, Person> putMap1 = new TreeMap<>();
+
+                for (int i = 0; i < total; i++)
+                    putMap1.put(i, new Person(i, i + 1, String.valueOf(i), String.valueOf(i + 1), i * 100.));
+
+                cache.putAll(putMap1);
+
+                Map<Integer, Organization> putMap2 = new TreeMap<>();
+
+                for (int i = total / 2; i < total * 3 / 2; i++) {
+                    cache.remove(i);
+
+                    putMap2.put(i, new Organization(i, String.valueOf(i)));
+                }
+
+                cache.putAll(putMap2);
+            }
+        } finally {
+            cache.destroy();
+        }
+    }
+
+    /**
+     * @param onHeapRowCacheSize on heap row cache size.
+     * @param indexedTypes indexed types for cache.
+     * @return Cache configuration.
+     */
+    private CacheConfiguration<Object, Object> cacheConfiguration(int onHeapRowCacheSize, Class<?>[] indexedTypes) {
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+
+        ccfg.setAtomicityMode(ATOMIC);
+        //ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setMemoryMode(OFFHEAP_TIERED);
+        //ccfg.setSqlOnheapRowCacheSize(onHeapRowCacheSize);
+        ccfg.setIndexedTypes(indexedTypes);
+
+        return ccfg;
+    }
 
     /**
      * Ignite cache value class.
@@ -336,6 +401,21 @@ public abstract class AtomicBinaryOffheapBaseBatchTest extends IgniteCacheAbstra
         @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
             id = reader.readInt("id");
             name = reader.readString("name");
+        }
+    }
+
+    /**
+     * Loading date into cache
+     * @param name
+     */
+    private void loadingCacheAnyDate(String name) {
+        try (IgniteDataStreamer<Object, Object> streamer = ignite(0).dataStreamer(name)) {
+            for (int i = 0; i < 30_000; i++) {
+                if (i % 2 == 0)
+                    streamer.addData(i, new AtomicBinaryOffheapBaseBatchTest.Person(i, i + 1, String.valueOf(i), String.valueOf(i + 1), i / 0.99));
+                else
+                    streamer.addData(i, new AtomicBinaryOffheapBaseBatchTest.Organization(i, String.valueOf(i)));
+            }
         }
     }
 }
