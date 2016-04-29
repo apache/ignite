@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Linq;
     using System.ServiceProcess;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
 
@@ -33,6 +34,8 @@ namespace Apache.Ignite.Core.Tests
         [TestFixtureSetUp]
         public void TestFixtureSetUp()
         {
+            Environment.SetEnvironmentVariable(Classpath.EnvIgniteNativeTestClasspath, "true");
+
             StopServiceAndUninstall();
         }
 
@@ -40,6 +43,8 @@ namespace Apache.Ignite.Core.Tests
         public void TestFixtureTearDown()
         {
             StopServiceAndUninstall();
+
+            Environment.SetEnvironmentVariable(Classpath.EnvIgniteNativeTestClasspath, null);
         }
 
         /// <summary>
@@ -54,8 +59,7 @@ namespace Apache.Ignite.Core.Tests
             IgniteProcess.Start(exePath, string.Empty, args: new[]
             {
                 "/install",
-                "-springConfigUrl=" + springPath,
-                //"-jvmClasspath=" + Classpath.CreateClasspath(forceTestClasspath: true, skipPrefix: true)
+                "-springConfigUrl=" + springPath
             }).WaitForExit();
 
             var service = GetIgniteService();
