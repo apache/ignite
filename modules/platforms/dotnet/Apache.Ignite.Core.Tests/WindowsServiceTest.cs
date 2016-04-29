@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Tests
     using System.IO;
     using System.Linq;
     using System.ServiceProcess;
-    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
 
@@ -48,13 +47,13 @@ namespace Apache.Ignite.Core.Tests
         public void TestStopFromJava()
         {
             var exePath = typeof(IgniteRunner).Assembly.Location;
-            var springPath = Path.GetFullPath("config\\compute\\compute-grid2.xml");
+            var springPath = Path.GetFullPath("config\\compute\\compute-grid1.xml");
 
             IgniteProcess.Start(exePath, string.Empty, args: new[]
             {
                 "/install",
                 "-springConfigUrl=" + springPath,
-                "-jvmClasspath=" + Classpath.CreateClasspath(forceTestClasspath: true, skipPrefix: true)
+                //"-jvmClasspath=" + Classpath.CreateClasspath(forceTestClasspath: true, skipPrefix: true)
             }).WaitForExit();
 
             var service = GetIgniteService();
@@ -62,11 +61,15 @@ namespace Apache.Ignite.Core.Tests
 
             service.Start();
 
-
-            // TODO: Deploy and start service
-            // Start ignite from here
-            // ExecuteJavaTask on the remote service node to stop Ignite there
-            // Check that service has stopped
+            using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                SpringConfigUrl = springPath
+            }))
+            {
+                Assert.IsTrue(ignite.WaitTopology(2));
+                // TODO: ExecuteJavaTask on the remote service node to stop Ignite there
+                // Check that service has stopped
+            }
         }
 
         private static void StopServiceAndUninstall()

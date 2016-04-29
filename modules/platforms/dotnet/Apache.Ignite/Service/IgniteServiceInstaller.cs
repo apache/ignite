@@ -20,7 +20,6 @@ namespace Apache.Ignite.Service
     using System.Collections;
     using System.ComponentModel;
     using System.Configuration.Install;
-    using System.Diagnostics;
     using System.ServiceProcess;
 
     /// <summary>
@@ -33,8 +32,6 @@ namespace Apache.Ignite.Service
 
         public IgniteServiceInstaller()
         {
-            Debugger.Launch();
-
             Installers.Add(new ServiceInstaller
             {
                 StartType = ServiceStartMode.Manual,
@@ -47,7 +44,7 @@ namespace Apache.Ignite.Service
 
         protected override void OnBeforeInstall(IDictionary savedState)
         {
-            Context.Parameters["assemblyPath"] += " " + Args;
+            Context.Parameters["assemblyPath"] = string.Format("\"{0}\" {1}", Context.Parameters["assemblyPath"], Args);
 
             base.OnBeforeInstall(savedState);
         }
