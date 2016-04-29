@@ -32,9 +32,9 @@ namespace Apache.Ignite.Core.Tests
             Debug.Listeners.Add(new TextWriterTraceListener(Console.Out));
             Debug.AutoFlush = true;
 
-            TestOne(typeof(CacheLinqTest), "TestExcept");
+            //TestOne(typeof(CacheLinqTest), "TestExcept");
 
-            //TestAll(typeof (CacheQueriesCodeConfigurationTest));
+            TestAll(typeof (WindowsServiceTest));
             //TestAllInAssembly();
         }
 
@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Tests
 
         private static void TestAll(Type testClass)
         {
-            string[] args = { "/run:" + testClass.FullName, Assembly.GetAssembly(testClass).Location };
+            string[] args = { "/noshadow", "/run:" + testClass.FullName, Assembly.GetAssembly(testClass).Location };
 
             int returnCode = Runner.Main(args);
 
