@@ -738,5 +738,5 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
 
     public boolean active();
 
-    public void active(boolean active);
+    public IgniteFuture<?> active(boolean active);
 }

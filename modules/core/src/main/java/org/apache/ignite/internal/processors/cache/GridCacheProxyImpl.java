@@ -1673,7 +1673,7 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
         throw new UnsupportedOperationException("Not implemented");
     }
 
-    @Override public boolean state(CacheState state) {
+    @Override public boolean state(CacheState state, AffinityTopologyVersion topVer) {
         throw new UnsupportedOperationException("Not implemented");
     }
 

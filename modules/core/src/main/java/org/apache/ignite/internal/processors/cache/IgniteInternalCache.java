@@ -1979,5 +1979,5 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
 
     public CacheState state();
 
-    public boolean state(CacheState state);
+    public boolean state(CacheState state, AffinityTopologyVersion topVer);
 }

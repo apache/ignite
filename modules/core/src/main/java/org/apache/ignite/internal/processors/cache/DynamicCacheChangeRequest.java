@@ -151,7 +151,7 @@ public class DynamicCacheChangeRequest implements Serializable {
     }
 
     public boolean modify() {
-        return state != null && !stop && !close;
+        return state != null && !start() && !stop && !close;
     }
 
     /**
