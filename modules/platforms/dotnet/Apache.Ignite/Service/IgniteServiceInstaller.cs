@@ -30,18 +30,22 @@ namespace Apache.Ignite.Service
     {
         public static string Args = "";
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="IgniteServiceInstaller"/> class.
+        /// </summary>
         public IgniteServiceInstaller()
         {
             Installers.Add(new ServiceInstaller
             {
-                StartType = ServiceStartMode.Manual,
+                StartType = ServiceStartMode.Automatic,
                 ServiceName = IgniteService.SvcName,
-                Description = "Apache Ignite.NET Service.",
+                Description = "Apache Ignite.NET Service."
             });
 
             Installers.Add(new ServiceProcessInstaller {Account = ServiceAccount.LocalSystem});
         }
 
+        /** <inheritdoc /> */
         protected override void OnBeforeInstall(IDictionary savedState)
         {
             Context.Parameters["assemblyPath"] = string.Format("\"{0}\" {1}", Context.Parameters["assemblyPath"], Args);
