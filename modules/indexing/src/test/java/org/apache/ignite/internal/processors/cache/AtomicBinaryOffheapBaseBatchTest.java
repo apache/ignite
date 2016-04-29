@@ -36,8 +36,8 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
  * The test are checking batch operation onto atomic offheap cache with per certain key and value types.
  */
 public abstract class AtomicBinaryOffheapBaseBatchTest extends IgniteCacheAbstractTest {
-    @Override
-    protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setMarshaller(new BinaryMarshaller());
@@ -47,8 +47,8 @@ public abstract class AtomicBinaryOffheapBaseBatchTest extends IgniteCacheAbstra
         return cfg;
     }
 
-    @Override
-    protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+    /** {@inheritDoc} */
+    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = super.cacheConfiguration(gridName);
 
         cfg.setMemoryMode(memoryMode());
@@ -82,26 +82,22 @@ public abstract class AtomicBinaryOffheapBaseBatchTest extends IgniteCacheAbstra
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected int gridCount() {
+    @Override protected int gridCount() {
         return 1;
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected CacheMode cacheMode() {
+    @Override protected CacheMode cacheMode() {
         return CacheMode.PARTITIONED;
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected CacheAtomicityMode atomicityMode() {
+    @Override protected CacheAtomicityMode atomicityMode() {
         return CacheAtomicityMode.ATOMIC;
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected NearCacheConfiguration nearConfiguration() {
+    @Override protected NearCacheConfiguration nearConfiguration() {
         return null;
     }
 
@@ -113,8 +109,7 @@ public abstract class AtomicBinaryOffheapBaseBatchTest extends IgniteCacheAbstra
     }
 
     /** {@inheritDoc} */
-    @Override
-    protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
+    @Override protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
         return CacheAtomicWriteOrderMode.PRIMARY;
     }
 
