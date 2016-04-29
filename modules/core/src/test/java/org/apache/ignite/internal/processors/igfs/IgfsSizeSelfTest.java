@@ -218,18 +218,6 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Ensure that exception is thrown in case PARTITIONED cache is oversized.
-     *
-     * @throws Exception If failed.
-     */
-    public void testPartitionedOversize() throws Exception {
-        cacheMode = PARTITIONED;
-        nearEnabled = true;
-
-        checkOversize();
-    }
-
-    /**
      * Ensure that exception is thrown in case co-located cache is oversized.
      *
      * @throws Exception If failed.
