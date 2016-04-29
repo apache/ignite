@@ -65,7 +65,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     private static int MAX_PER_PAGE = 0;
 
     /** */
-    private static int CNT = 10;
+    protected static int CNT = 10;
 
     /** */
     private static int PUT_INC = 1;
@@ -77,7 +77,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     private PageMemory pageMem;
 
     /** */
-    private ReuseList reuseList;
+    protected ReuseList reuseList;
 
 //    /** {@inheritDoc} */
 //    @Override protected long getTestTimeout() {
@@ -469,28 +469,28 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testRandomRemove_1_30_0() throws IgniteCheckedException {
+    public void testRandomPutRemove_1_30_0() throws IgniteCheckedException {
         MAX_PER_PAGE = 1;
         CNT = 30;
 
-        doTestRandomRemove(false);
+        doTestRandomPutRemove(false);
     }
 
     /**
      * @throws IgniteCheckedException If failed.
      */
-    public void testRandomRemove_1_30_1() throws IgniteCheckedException {
+    public void testRandomPutRemove_1_30_1() throws IgniteCheckedException {
         MAX_PER_PAGE = 1;
         CNT = 30;
 
-        doTestRandomRemove(true);
+        doTestRandomPutRemove(true);
     }
 
     /**
      * @param canGetRow Can get row from inner page.
      * @throws IgniteCheckedException If failed.
      */
-    private void doTestRandomRemove(boolean canGetRow) throws IgniteCheckedException {
+    private void doTestRandomPutRemove(boolean canGetRow) throws IgniteCheckedException {
         TestTree tree = createTestTree(canGetRow);
 
         Map<Long,Long> map = new HashMap<>();
@@ -536,7 +536,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @return Test tree instance.
      * @throws IgniteCheckedException If failed.
      */
-    private TestTree createTestTree(boolean canGetRow) throws IgniteCheckedException {
+    protected TestTree createTestTree(boolean canGetRow) throws IgniteCheckedException {
         TestTree tree = new TestTree(reuseList, canGetRow, CACHE_ID, pageMem, allocateMetaPage());
 
         assertEquals(0, tree.size());
@@ -556,7 +556,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     /**
      * Test tree.
      */
-    private static class TestTree extends BPlusTree<Long, Long> {
+    protected static class TestTree extends BPlusTree<Long, Long> {
         /** */
         static Random rnd;
 
