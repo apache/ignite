@@ -31,6 +31,9 @@ namespace Apache.Ignite.Core.Tests
     /// </summary>
     public class WindowsServiceTest
     {
+        /// <summary>
+        /// Test fixture set up.
+        /// </summary>
         [TestFixtureSetUp]
         public void TestFixtureSetUp()
         {
@@ -39,6 +42,9 @@ namespace Apache.Ignite.Core.Tests
             StopServiceAndUninstall();
         }
 
+        /// <summary>
+        /// Test fixture tear down.
+        /// </summary>
         [TestFixtureTearDown]
         public void TestFixtureTearDown()
         {
@@ -73,7 +79,7 @@ namespace Apache.Ignite.Core.Tests
                 SpringConfigUrl = springPath
             }))
             {
-                Assert.IsTrue(ignite.WaitTopology(2));
+                Assert.IsTrue(ignite.WaitTopology(2), "Failed to join with service node");
 
                 // Stop remote node via Java task
                 // Doing so will fail the task execution
@@ -81,13 +87,16 @@ namespace Apache.Ignite.Core.Tests
                     ignite.GetCluster().ForRemotes().GetCompute().ExecuteJavaTask<object>(
                         "org.apache.ignite.platform.PlatformStopIgniteTask", ignite.Name));
 
-                Assert.IsTrue(ignite.WaitTopology(1));
+                Assert.IsTrue(ignite.WaitTopology(1), "Failed to stop remote node");
 
                 // Check that service has stopped
-                service.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
+                service.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(5));
             }
         }
 
+        /// <summary>
+        /// Stops the service and uninstalls it.
+        /// </summary>
         private static void StopServiceAndUninstall()
         {
             var controller = GetIgniteService();
@@ -104,6 +113,9 @@ namespace Apache.Ignite.Core.Tests
             }
         }
 
+        /// <summary>
+        /// Gets the ignite service.
+        /// </summary>
         private static ServiceController GetIgniteService()
         {
             return ServiceController.GetServices().FirstOrDefault(x => x.ServiceName.StartsWith("Apache Ignite.NET"));
