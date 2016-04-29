@@ -21,6 +21,6 @@ export default ['centered', [() => {
     return {
         restrict: 'E',
         transclude: true,
-        template: '<div class="center-container"><div class="centered" ng-transclude></div></div>'
+        template: '<div class="center-container"><div class="centered"><div ng-transclude></div></div></div>'
     };
 }]];
