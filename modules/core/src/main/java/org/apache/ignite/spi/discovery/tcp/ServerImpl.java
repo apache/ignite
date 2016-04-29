@@ -2168,7 +2168,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         void addMessage(TcpDiscoveryAbstractMessage msg) {
             if ((msg instanceof TcpDiscoveryStatusCheckMessage ||
                 msg instanceof TcpDiscoveryJoinRequestMessage ||
-                msg instanceof TcpDiscoveryCustomEventMessage) &&
+                msg instanceof TcpDiscoveryCustomEventMessage ||
+                msg instanceof TcpDiscoveryClientReconnectMessage) &&
                 queue.contains(msg)) {
                 if (log.isDebugEnabled())
                     log.debug("Ignoring duplicate message: " + msg);
@@ -2289,9 +2290,6 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             else if (msg instanceof TcpDiscoveryNodeFailedMessage)
                 processNodeFailedMessage((TcpDiscoveryNodeFailedMessage)msg);
-
-            else if (msg instanceof TcpDiscoveryClientHeartbeatMessage)
-                processClientHeartbeatMessage((TcpDiscoveryClientHeartbeatMessage)msg);
 
             else if (msg instanceof TcpDiscoveryHeartbeatMessage)
                 processHeartbeatMessage((TcpDiscoveryHeartbeatMessage)msg);
@@ -4521,22 +4519,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         }
 
         /**
-         * Processes client heartbeat message.
-         *
-         * @param msg Heartbeat message.
-         */
-        private void processClientHeartbeatMessage(TcpDiscoveryClientHeartbeatMessage msg) {
-            assert msg.client();
-
-            ClientMessageWorker wrk = clientMsgWorkers.get(msg.creatorNodeId());
-
-            if (wrk != null)
-                wrk.metrics(msg.metrics());
-            else if (log.isDebugEnabled())
-                log.debug("Received heartbeat message from unknown client node: " + msg);
-        }
-
-        /**
          * @param nodeId Node ID.
          * @param metrics Metrics.
          * @param cacheMetrics Cache metrics.
@@ -5436,7 +5418,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                             continue;
                         }
 
-                        msgWorker.addMessage(msg);
+                        TcpDiscoveryClientHeartbeatMessage heartbeatMsg = null;
+
+                        if (msg instanceof TcpDiscoveryClientHeartbeatMessage)
+                            heartbeatMsg = (TcpDiscoveryClientHeartbeatMessage)msg;
+                        else
+                            msgWorker.addMessage(msg);
 
                         // Send receipt back.
                         if (clientMsgWrk != null) {
@@ -5448,6 +5435,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                         }
                         else
                             spi.writeToSocket(msg, sock, RES_OK, socketTimeout);
+
+                        if (heartbeatMsg != null)
+                            processClientHeartbeatMessage(heartbeatMsg);
                     }
                     catch (IgniteCheckedException e) {
                         if (log.isDebugEnabled())
@@ -5512,6 +5502,22 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 U.closeQuiet(sock);
             }
+        }
+
+        /**
+         * Processes client heartbeat message.
+         *
+         * @param msg Heartbeat message.
+         */
+        private void processClientHeartbeatMessage(TcpDiscoveryClientHeartbeatMessage msg) {
+            assert msg.client();
+
+            ClientMessageWorker wrk = clientMsgWorkers.get(msg.creatorNodeId());
+
+            if (wrk != null)
+                wrk.metrics(msg.metrics());
+            else if (log.isDebugEnabled())
+                log.debug("Received heartbeat message from unknown client node: " + msg);
         }
 
         /**
