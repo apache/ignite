@@ -11,9 +11,12 @@ package org.apache.ignite.internal.processors.database;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -768,6 +771,51 @@ public class IgniteDbSingleNodePutGetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    public void testIndexOverwrite() throws Exception {
+        IgniteEx ig = grid(0);
+
+        final IgniteCache<Integer, DbValue> cache = ig.cache(null);
+
+        GridCacheAdapter<Object, Object> internalCache = ig.context().cache().internalCache("non-primitive");
+
+        X.println("Put start");
+
+        int cnt = 10_000;
+
+        for (int a = 0; a < cnt; a++) {
+            DbValue v0 = new DbValue(a, "test-value-" + a, a);
+
+            DbKey k0 = new DbKey(a);
+
+            cache.put(a, v0);
+
+            checkEmpty(internalCache, k0);
+        }
+
+        info("Update start");
+
+        for (int k = 0; k < 4000; k++) {
+            int batchSize = 20;
+
+            LinkedHashMap<Integer, DbValue> batch = new LinkedHashMap<>();
+
+            for (int i = 0; i < batchSize; i++) {
+                int a = ThreadLocalRandom.current().nextInt(cnt);
+
+                DbValue v0 = new DbValue(a, "test-value-" + a, a);
+
+                batch.put(a, v0);
+            }
+
+            cache.putAll(batch);
+
+            cache.remove(ThreadLocalRandom.current().nextInt(cnt));
+        }
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
     public void testObjectKey() throws Exception {
         IgniteEx ig = grid(0);
 
@@ -859,7 +907,7 @@ public class IgniteDbSingleNodePutGetSelfTest extends GridCommonAbstractTest {
         private int iVal;
 
         /** */
-        @QuerySqlField
+        @QuerySqlField(index = true)
         private String sVal;
 
         /** */
