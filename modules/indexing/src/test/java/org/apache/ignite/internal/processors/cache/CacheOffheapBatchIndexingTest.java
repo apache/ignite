@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -122,11 +121,22 @@ public class CacheOffheapBatchIndexingTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test putAll with multiple indexed entites and streamer preloading.
+     * Test putAll with multiple indexed entites and streamer preloading with low off-heap cache size.
+     * The test fails in remove call.
      */
     public void testPutAllMultupleEntitiesAndStreamer() {
         //fail("IGNITE-2982");
         doStreamerBatchTest(50, 1_000, new Class<?>[] {Integer.class, Person.class, Integer.class, Organization.class}, 1, true);
+    }
+
+    /**
+     * Test putAll with multiple indexed entites and streamer preloading with default off-heap cache size.
+     * The test hangs very often in putAll call.
+     */
+    public void testPutAllMultupleEntitiesAndStreamerDfltOffHeapRowCacheSize() {
+        //fail("IGNITE-2982");
+        doStreamerBatchTest(50, 1_000, new Class<?>[] {Integer.class, Person.class, Integer.class, Organization.class},
+            CacheConfiguration.DFLT_SQL_ONHEAP_ROW_CACHE_SIZE, true);
     }
 
     /**
@@ -149,7 +159,7 @@ public class CacheOffheapBatchIndexingTest extends GridCommonAbstractTest {
     /**
      * Test putAll after with streamer batch load with one entity.
      */
-    private void doStreamerBatchTest(int iterations, int entitiesCount, Class<?>[] entityClasses, int onHeapRowCacheSize, boolean preloadInStreamer) {
+    private void doStreamerBatchTest(int iterations, int entitiesCnt, Class<?>[] entityClasses, int onHeapRowCacheSize, boolean preloadInStreamer) {
         Ignite ignite = grid(0);
 
         final IgniteCache<Object, Object> cache =
@@ -162,14 +172,14 @@ public class CacheOffheapBatchIndexingTest extends GridCommonAbstractTest {
             while (iterations-- >= 0) {
                 Map<Integer, Person> putMap1 = new TreeMap<>();
 
-                for (int i = 0; i < entitiesCount; i++)
+                for (int i = 0; i < entitiesCnt; i++)
                     putMap1.put(i, new Person(i, i + 1, String.valueOf(i), String.valueOf(i + 1), i * 100.));
 
                 cache.putAll(putMap1);
 
                 Map<Integer, Organization> putMap2 = new TreeMap<>();
 
-                for (int i = entitiesCount / 2; i < entitiesCount * 3 / 2; i++) {
+                for (int i = entitiesCnt / 2; i < entitiesCnt * 3 / 2; i++) {
                     cache.remove(i);
 
                     putMap2.put(i, new Organization(i, String.valueOf(i)));
