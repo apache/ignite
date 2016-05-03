@@ -85,9 +85,8 @@ public class CacheOffheapBatchIndexingTest extends GridCommonAbstractTest {
         final IgniteCache<Object, Object> cache =
             ignite.createCache(cacheConfiguration(1, new Class<?>[] {Integer.class, Organization.class}));
 
-        int iterations = 50;
-
         try {
+            int iterations = 50;
             while (iterations-- >= 0) {
                 int total = 1000;
 
@@ -123,11 +122,19 @@ public class CacheOffheapBatchIndexingTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test putAll after with streamer batch load with one entity.
+     * Test putAll with multiple indexed entites and streamer preloading.
      */
-    public void testPutWithStreamerSmallOnHeapRowCache() {
+    public void testPutAllMultupleEntitiesAndStreamer() {
         //fail("IGNITE-2982");
-        doStreamerBatchTest(50, new Class<?>[] {Integer.class, Organization.class}, 1, false);
+        doStreamerBatchTest(50, 1_000, new Class<?>[] {Integer.class, Person.class, Integer.class, Organization.class}, 1, true);
+    }
+
+    /**
+     * Test putAll with single indexed entity.
+     */
+    public void testPutAllSingleEntityNoStreamer() {
+        //fail("IGNITE-2982");
+        doStreamerBatchTest(50, 1_000, new Class<?>[] {Integer.class, Person.class}, 1, true);
     }
 
     /**
@@ -135,14 +142,14 @@ public class CacheOffheapBatchIndexingTest extends GridCommonAbstractTest {
      */
     public void testPutWithStreamerDefaultOnHeapRowCache() {
         //fail("IGNITE-2982");
-        doStreamerBatchTest(50, new Class<?>[] {Integer.class, Person.class, Integer.class, Organization.class},
+        doStreamerBatchTest(50, 1_000, new Class<?>[] {Integer.class, Person.class, Integer.class, Organization.class},
             CacheConfiguration.DFLT_SQL_ONHEAP_ROW_CACHE_SIZE, true);
     }
 
     /**
      * Test putAll after with streamer batch load with one entity.
      */
-    private void doStreamerBatchTest(int iterations, Class<?>[] entityClasses, int onHeapRowCacheSize, boolean preloadInStreamer) {
+    private void doStreamerBatchTest(int iterations, int entitiesCount, Class<?>[] entityClasses, int onHeapRowCacheSize, boolean preloadInStreamer) {
         Ignite ignite = grid(0);
 
         final IgniteCache<Object, Object> cache =
@@ -153,18 +160,16 @@ public class CacheOffheapBatchIndexingTest extends GridCommonAbstractTest {
                 loadingCacheAnyDate(cache.getName());
 
             while (iterations-- >= 0) {
-                int total = 1_000;
-
                 Map<Integer, Person> putMap1 = new TreeMap<>();
 
-                for (int i = 0; i < total; i++)
+                for (int i = 0; i < entitiesCount; i++)
                     putMap1.put(i, new Person(i, i + 1, String.valueOf(i), String.valueOf(i + 1), i * 100.));
 
                 cache.putAll(putMap1);
 
                 Map<Integer, Organization> putMap2 = new TreeMap<>();
 
-                for (int i = total / 2; i < total * 3 / 2; i++) {
+                for (int i = entitiesCount / 2; i < entitiesCount * 3 / 2; i++) {
                     cache.remove(i);
 
                     putMap2.put(i, new Organization(i, String.valueOf(i)));
@@ -186,9 +191,9 @@ public class CacheOffheapBatchIndexingTest extends GridCommonAbstractTest {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
 
         ccfg.setAtomicityMode(ATOMIC);
-        //ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setMemoryMode(OFFHEAP_TIERED);
-        //ccfg.setSqlOnheapRowCacheSize(onHeapRowCacheSize);
+        ccfg.setSqlOnheapRowCacheSize(onHeapRowCacheSize);
         ccfg.setIndexedTypes(indexedTypes);
 
         return ccfg;
@@ -412,9 +417,9 @@ public class CacheOffheapBatchIndexingTest extends GridCommonAbstractTest {
         try (IgniteDataStreamer<Object, Object> streamer = ignite(0).dataStreamer(name)) {
             for (int i = 0; i < 30_000; i++) {
                 if (i % 2 == 0)
-                    streamer.addData(i, new AtomicBinaryOffheapBaseBatchTest.Person(i, i + 1, String.valueOf(i), String.valueOf(i + 1), i / 0.99));
+                    streamer.addData(i, new Person(i, i + 1, String.valueOf(i), String.valueOf(i + 1), i / 0.99));
                 else
-                    streamer.addData(i, new AtomicBinaryOffheapBaseBatchTest.Organization(i, String.valueOf(i)));
+                    streamer.addData(i, new Organization(i, String.valueOf(i)));
             }
         }
     }
