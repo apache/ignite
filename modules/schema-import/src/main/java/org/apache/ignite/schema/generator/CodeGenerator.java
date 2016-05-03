@@ -194,11 +194,11 @@ public class CodeGenerator {
      *
      * @param src Source code.
      * @param pkg Package name.
-     * @param imports Optional imports.
      * @param desc Class description.
      * @param cls Class declaration.
+     * @param imports Optional imports.
      */
-    private static void header(Collection<String> src, String pkg, String imports, String desc, String cls) {
+    private static void header(Collection<String> src, String pkg, String desc, String cls, String... imports) {
         // License.
         add0(src, "/*");
         add0(src, " * Licensed to the Apache Software Foundation (ASF) under one or more");
@@ -223,12 +223,9 @@ public class CodeGenerator {
         add0(src, "");
 
         // Imports.
-        if (!imports.isEmpty()) {
-            for (String imp : imports.split(";"))
-                if (imp.isEmpty())
-                    add0(src, "");
-                else
-                    add0(src, "import " + imp + ";");
+        if (imports != null && imports.length > 0) {
+            for (String imp : imports)
+                add0(src, imp.isEmpty() ? "" : "import " + imp + ";");
 
             add0(src, "");
         }
@@ -295,7 +292,7 @@ public class CodeGenerator {
 
         Collection<String> src = new ArrayList<>(256);
 
-        header(src, pkg, "java.io.*", type, type + " implements Serializable");
+        header(src, pkg, type, type + " implements Serializable", "java.io.*");
 
         add1(src, "/** */");
         add1(src, "private static final long serialVersionUID = 0L;");
@@ -584,15 +581,14 @@ public class CodeGenerator {
 
         Collection<String> src = new ArrayList<>(256);
 
-        header(src, pkg, "java.sql.*;java.util.*;" +
-            "org.apache.ignite.cache.*;org.apache.ignite.cache.store.jdbc.*;" +
-            "org.apache.ignite.configuration.*",
-            "CacheConfig", "CacheConfig");
+        header(src, pkg, "CacheConfig", "CacheConfig", "java.sql.*", "java.util.*", "", "org.apache.ignite.cache.*",
+            "org.apache.ignite.cache.store.jdbc.*", "org.apache.ignite.configuration.*");
 
         // Generate methods for each type in order to avoid compiler error "java: code too large".
         for (PojoDescriptor pojo : pojos) {
             String tbl = pojo.table();
             String valClsName = pojo.valueClassName();
+            Collection<PojoField> fields = pojo.valueFields(true);
 
             add1(src, "/**");
             add1(src, " * Create JDBC type for " + tbl + ".");
@@ -656,7 +652,7 @@ public class CodeGenerator {
             add2(src, "LinkedHashMap<String, String> fields = new LinkedHashMap<>();");
             add0(src, "");
 
-            for (PojoField field : pojo.fields())
+            for (PojoField field : fields)
                 add2(src, "fields.put(\"" + field.javaName() + "\", \"" +
                     GeneratorUtils.boxPrimitiveType(field.javaTypeName()) + "\");");
 
@@ -668,14 +664,14 @@ public class CodeGenerator {
             if (generateAliases) {
                 Collection<PojoField> aliases = new ArrayList<>();
 
-                for (PojoField field : pojo.fields()) {
+                for (PojoField field : fields) {
                     if (!field.javaName().equalsIgnoreCase(field.dbName()))
                         aliases.add(field);
                 }
 
                 if (!aliases.isEmpty()) {
                     add2(src, "// Aliases for fields.");
-                    add2(src, "LinkedHashMap<String, String> aliases = new LinkedHashMap<>();");
+                    add2(src, "Map<String, String> aliases = new HashMap<>();");
                     add0(src, "");
 
                     for (PojoField alias : aliases)
@@ -702,7 +698,7 @@ public class CodeGenerator {
                     List<T2<String, Boolean>> idxFlds = new ArrayList<>(sz);
 
                     for (Map.Entry<String, Boolean> idxFld : dbIdxFlds) {
-                        PojoField field = GeneratorUtils.findFieldByName(pojo.valueFields(true), idxFld.getKey());
+                        PojoField field = GeneratorUtils.findFieldByName(fields, idxFld.getKey());
 
                         if (field != null)
                             idxFlds.add(new T2<>(field.javaName(), idxFld.getValue()));
