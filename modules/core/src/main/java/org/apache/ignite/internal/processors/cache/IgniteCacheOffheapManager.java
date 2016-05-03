@@ -564,7 +564,7 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
     /**
      *
      */
-    static class CacheDataTree extends BPlusTree<KeySearchRow, DataRow> {
+    private static class CacheDataTree extends BPlusTree<KeySearchRow, DataRow> {
         /** */
         private final CacheDataRowStore rowStore;
 
@@ -579,12 +579,12 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
          * @param initNew Initialize new index.
          * @throws IgniteCheckedException If failed.
          */
-        public CacheDataTree(CacheDataRowStore rowStore,
+        private CacheDataTree(CacheDataRowStore rowStore,
             GridCacheContext cctx,
             PageMemory pageMem,
             FullPageId metaPageId,
             boolean initNew) throws IgniteCheckedException {
-            super(cctx.cacheId(), pageMem, metaPageId, null);
+            super(cctx.cacheId(), pageMem, metaPageId, null, DataInnerIO.VERSIONS, DataLeafIO.VERSIONS);
 
             assert rowStore != null;
 
@@ -593,26 +593,6 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
 
             if (initNew)
                 initNew();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected BPlusIO<KeySearchRow> io(int type, int ver) {
-            if (type == PageIO.T_DATA_REF_INNER)
-                return DataInnerIO.VERSIONS.forVersion(ver);
-
-            assert type == PageIO.T_DATA_REF_LEAF: type;
-
-            return DataLeafIO.VERSIONS.forVersion(ver);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected BPlusInnerIO<KeySearchRow> latestInnerIO() {
-            return DataInnerIO.VERSIONS.latest();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected BPlusLeafIO<KeySearchRow> latestLeafIO() {
-            return DataLeafIO.VERSIONS.latest();
         }
 
         /** {@inheritDoc} */
