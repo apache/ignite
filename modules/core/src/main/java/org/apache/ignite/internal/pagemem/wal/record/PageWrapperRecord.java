@@ -17,24 +17,30 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
+import sun.nio.ch.DirectBuffer;
+
+import java.nio.ByteBuffer;
+
 /**
  *
  */
 public class PageWrapperRecord extends PageAbstractRecord {
     /** */
-    private long pagePtr;
+    private ByteBuffer pageBuf;
 
     /**
-     * @param pagePtr Page start pointer.
+     * @param pageBuf Page buf.
      */
-    public PageWrapperRecord(long pagePtr) {
-        this.pagePtr = pagePtr;
+    public PageWrapperRecord(ByteBuffer pageBuf) {
+        assert pageBuf instanceof DirectBuffer;
+
+        this.pageBuf = pageBuf;
     }
 
     /**
      * @return Page start pointer.
      */
-    public long pointer() {
-        return pagePtr;
+    public ByteBuffer buffer() {
+        return pageBuf;
     }
 }

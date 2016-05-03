@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
+import java.nio.ByteBuffer;
+
 /**
  * Log entry abstract class.
  */
@@ -42,6 +44,25 @@ public abstract class WALRecord {
 
         /** */
         private static final RecordType[] VALS = RecordType.values();
+
+        /** */
+        private ByteBuffer typeBuf;
+
+        /**
+         *
+         */
+        RecordType() {
+            typeBuf = ByteBuffer.allocateDirect(1);
+
+            typeBuf.put((byte)ordinal());
+        }
+
+        /**
+         * @return Type buffer.
+         */
+        public ByteBuffer typeBuffer() {
+            return typeBuf;
+        }
 
         /** */
         public static RecordType fromOrdinal(int ord) {

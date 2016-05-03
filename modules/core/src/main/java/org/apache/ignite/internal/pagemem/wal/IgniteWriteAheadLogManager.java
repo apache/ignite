@@ -21,7 +21,11 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.lang.IgniteBiInClosure;
+import org.apache.ignite.lang.IgniteBiTuple;
+
+import java.util.Iterator;
 
 /**
  *
@@ -53,13 +57,13 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager {
     /**
      * Invoke this method to iterate over the written log entries.
      *
-     * @param visitor Callback closure that will receive written entries.
      * @param start Optional WAL pointer from which to start iteration.
+     * @return Records iterator.
      * @throws IgniteException If failed to start iteration.
      * @throws StorageException If IO error occurred while reading WAL entries.
      */
-    public void replay(IgniteBiInClosure<WALPointer, WALRecord> visitor, WALPointer start)
-        throws IgniteException, StorageException;
+    public GridCloseableIterator<IgniteBiTuple<WALPointer, WALRecord>> replay(WALPointer start)
+        throws IgniteCheckedException, StorageException;
 
     /**
      * Given WAL a hint to clear entries logged before the given pointer.
