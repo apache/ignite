@@ -258,7 +258,7 @@
     <ClInclude Include="..\..\include\ignite\impl\transactions\transaction_impl.h">
       <Filter>Code\impl\transactions</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\transactions\transaction_state.h">
+    <ClInclude Include="..\..\include\ignite\transactions\transaction_consts.h">
       <Filter>Code\transactions</Filter>
     </ClInclude>
   </ItemGroup>

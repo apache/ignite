@@ -20,7 +20,7 @@
 
 #include <ignite/common/concurrent.h>
 #include <ignite/common/java.h>
-#include <ignite/transactions/transaction_state.h>
+#include <ignite/transactions/transaction_consts.h>
 
 #include "ignite/impl/cache/cache_impl.h"
 #include "ignite/impl/ignite_environment.h"

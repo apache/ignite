@@ -20,13 +20,40 @@
  * Declares ignite::transactions::TransactionState enumeration.
  */
 
-#ifndef _IGNITE_TRANSACTIONS_TRANSACTION_STATE
-#define _IGNITE_TRANSACTIONS_TRANSACTION_STATE
+#ifndef _IGNITE_TRANSACTIONS_TRANSACTION_CONSTS
+#define _IGNITE_TRANSACTIONS_TRANSACTION_CONSTS
 
 namespace ignite 
 {
     namespace transactions
     {
+        /**
+         * Transaction concurrency control.
+         */
+        enum TransactionConcurrency
+        {
+            /** Optimistic concurrency control. */
+            IGNITE_TX_CONCURRENCY_OPTIMISTIC = 0,
+
+            /** Pessimistic concurrency control. */
+            IGNITE_TX_CONCURRENCY_PESSIMISTIC = 1
+        };
+
+        /**
+         * Defines different cache transaction isolation levels.
+         */
+        enum TransactionIsolation
+        {
+            /** Read committed isolation level. */
+            IGNITE_TX_ISOLATION_READ_COMMITTED = 0,
+
+            /** Repeatable read isolation level. */
+            IGNITE_TX_ISOLATION_REPEATABLE_READ = 1,
+
+            /** Serializable isolation level. */
+            IGNITE_TX_ISOLATION_SERIALIZABLE = 2
+        };
+
         /**
          * Cache transaction state.
          */
@@ -62,4 +89,4 @@ namespace ignite
     }
 }
 
-#endif //_IGNITE_TRANSACTIONS_TRANSACTION_STATE
+#endif //_IGNITE_TRANSACTIONS_TRANSACTION_CONSTS

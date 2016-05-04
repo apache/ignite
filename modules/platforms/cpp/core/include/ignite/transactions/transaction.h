@@ -27,38 +27,12 @@
 #include <ignite/common/java.h>
 
 #include "ignite/impl/transactions/transaction_impl.h"
+#include "ignite/transactions/transaction_consts.h"
 
 namespace ignite
 {
     namespace transactions
     {
-        /**
-         * Transaction concurrency control.
-         */
-        enum TransactionConcurrency
-        {
-            /** Optimistic concurrency control. */
-            IGNITE_TX_CONCURRENCY_OPTIMISTIC = 0,
-
-            /** Pessimistic concurrency control. */
-            IGNITE_TX_CONCURRENCY_PESSIMISTIC = 1
-        };
-
-        /**
-         * Defines different cache transaction isolation levels.
-         */
-        enum TransactionIsolation
-        {
-            /** Read committed isolation level. */
-            IGNITE_TX_ISOLATION_READ_COMMITTED = 0,
-
-            /** Repeatable read isolation level. */
-            IGNITE_TX_ISOLATION_REPEATABLE_READ = 1,
-
-            /** Serializable isolation level. */
-            IGNITE_TX_ISOLATION_SERIALIZABLE = 2
-        };
-
         /**
          * Transactions.
          */
