@@ -460,10 +460,10 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     }
 
     /** {@inheritDoc} */
-    @Override public void localLoad(Collection<? extends K> keys, final ExpiryPolicy plc)
+    @Override public void localLoad(Collection<? extends K> keys, final ExpiryPolicy plc, final boolean keepBinary)
         throws IgniteCheckedException {
         if (ctx.store().isLocal()) {
-            super.localLoad(keys, plc);
+            super.localLoad(keys, plc, keepBinary);
 
             return;
         }
