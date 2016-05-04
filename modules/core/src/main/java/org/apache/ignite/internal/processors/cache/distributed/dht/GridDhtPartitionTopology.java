@@ -167,7 +167,7 @@ public interface GridDhtPartitionTopology {
      * @param topVer Topology version.
      * @return Collection of all nodes responsible for this partition with primary node being first.
      */
-    public Collection<ClusterNode> nodes(int p, AffinityTopologyVersion topVer);
+    public List<ClusterNode> nodes(int p, AffinityTopologyVersion topVer);
 
     /**
      * @param p Partition ID.
@@ -193,13 +193,6 @@ public interface GridDhtPartitionTopology {
      * @return Node IDs mapped to partitions.
      */
     public GridDhtPartitionFullMap partitionMap(boolean onlyActive);
-
-    /**
-     * @param topVer Topology version.
-     * @param e Entry added to cache.
-     * @return Local partition.
-     */
-    public GridDhtLocalPartition onAdded(AffinityTopologyVersion topVer, GridDhtCacheEntry e);
 
     /**
      * @param e Entry removed from cache.

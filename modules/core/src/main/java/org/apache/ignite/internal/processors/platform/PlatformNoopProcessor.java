@@ -152,12 +152,27 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
+    @Override public void getCacheNames(long memPtr) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public PlatformTarget atomicSequence(String name, long initVal, boolean create) throws IgniteException {
         return null;
     }
 
     /** {@inheritDoc} */
     @Override public PlatformTarget atomicReference(String name, long memPtr, boolean create) throws IgniteException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget createNearCache(@Nullable String cacheName, long memPtr) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget getOrCreateNearCache(@Nullable String cacheName, long memPtr) {
         return null;
     }
 }

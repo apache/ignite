@@ -18,11 +18,13 @@
 package org.apache.ignite.internal.processors.cache.datastructures;
 
 import java.util.concurrent.Callable;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCountDownLatch;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteQueue;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteSet;
@@ -322,6 +324,74 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
 
         assertNull(creator.semaphore("semaphore1", 1, true, false));
         assertNull(other.semaphore("semaphore1", 1, true, false));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testReentrantLock() throws Exception {
+        Ignite clientNode = clientIgnite();
+        Ignite srvNode = serverNode();
+
+        testReentrantLock(clientNode, srvNode);
+        testReentrantLock(srvNode, clientNode);
+    }
+
+    /**
+     * @param creator Creator node.
+     * @param other Other node.
+     * @throws Exception If failed.
+     */
+    private void testReentrantLock(Ignite creator, final Ignite other) throws Exception {
+        assertNull(creator.reentrantLock("lock1", true, false, false));
+        assertNull(other.reentrantLock("lock1", true, false, false));
+
+        try (IgniteLock lock = creator.reentrantLock("lock1", true, false, true)) {
+            assertNotNull(lock);
+
+            assertFalse(lock.isLocked());
+
+            final Semaphore semaphore = new Semaphore(0);
+
+            IgniteInternalFuture<?> fut = GridTestUtils.runAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    IgniteLock lock0 = other.reentrantLock("lock1", true, false, false);
+
+                    lock0.lock();
+
+                    assertTrue(lock0.isLocked());
+
+                    semaphore.release();
+
+                    U.sleep(1000);
+
+                    log.info("Release reentrant lock.");
+
+                    lock0.unlock();
+
+                    return null;
+                }
+            });
+
+            semaphore.acquire();
+
+            log.info("Try acquire lock.");
+
+            assertTrue(lock.tryLock(5000, TimeUnit.MILLISECONDS));
+
+            log.info("Finished wait.");
+
+            fut.get();
+
+            assertTrue(lock.isLocked());
+
+            lock.unlock();
+
+            assertFalse(lock.isLocked());
+        }
+
+        assertNull(creator.reentrantLock("lock1", true, false, false));
+        assertNull(other.reentrantLock("lock1", true, false, false));
     }
 
     /**
