@@ -566,6 +566,11 @@ public abstract class GridCacheQueryFutureAdapter<K, V, R> extends GridFutureAda
     }
 
     /** {@inheritDoc} */
+    @Override public void close() throws Exception {
+        cancel();
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheQueryFutureAdapter.class, this);
     }

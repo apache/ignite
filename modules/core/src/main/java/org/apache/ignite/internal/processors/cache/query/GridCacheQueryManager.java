@@ -3420,11 +3420,24 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
 
                 if (val != null) {
-                    next0 = F.t(
-                        (K)cctx.unwrapBinaryIfNeeded(key, !locNode || keepBinary),
-                        (V)cctx.unwrapBinaryIfNeeded(val, !locNode || keepBinary));
+                    boolean keepBinary0 = !locNode || keepBinary;
 
-                    if (checkPredicate(next0))
+                    next0 = F.t(
+                        (K)cctx.unwrapBinaryIfNeeded(key, keepBinary0),
+                        (V)cctx.unwrapBinaryIfNeeded(val, keepBinary0));
+
+                    boolean passPredicate = true;
+
+                    if (keyValFilter != null) {
+                        Map.Entry<K, V> e0 = next0;
+
+                        if (keepBinary0)
+                            e0 = (Map.Entry<K, V>)cctx.unwrapBinaryIfNeeded(next0, keepBinary);
+
+                        passPredicate = keyValFilter.apply(e0.getKey(), e0.getValue());
+                    }
+
+                    if (passPredicate)
                         break;
                     else
                         next0 = null;
@@ -3470,22 +3483,6 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         return null;
                 }
             }
-        }
-
-        /**
-         * Check key-value predicate.
-         *
-         * @param e Entry to check.
-         * @return Filter evaluation result.
-         */
-        private boolean checkPredicate(Map.Entry<K, V> e) {
-            if (keyValFilter != null) {
-                Map.Entry<K, V> e0 = (Map.Entry<K, V>)cctx.unwrapBinaryIfNeeded(e, keepBinary);
-
-                return keyValFilter.apply(e0.getKey(), e0.getValue());
-            }
-
-            return true;
         }
     }
 }

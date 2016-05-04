@@ -100,7 +100,6 @@ import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFi
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
-import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridEmbeddedFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -3928,33 +3927,16 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             .keepAll(false)
             .executeScanQuery();
 
-        final CacheWeakQueryIteratorsHolder.WeakReferenceCloseableIterator<Map.Entry<K, V>> iter0 =
-            ctx.itHolder().iterator(iter);
-
-        return new GridCloseableIteratorAdapter<Cache.Entry<K, V>>() {
-            /** */
-            private K curKey;
-
-            @Override protected Cache.Entry<K, V> onNext() throws IgniteCheckedException {
-                Map.Entry<K, V> next = iter0.next();
-
-                curKey = next.getKey();
-
-                return new CacheEntryImpl<>(curKey, next.getValue());
+        return ctx.itHolder().iterator(iter, new CacheIteratorConverter<Cache.Entry<K, V>, Map.Entry<K, V>>() {
+            @Override protected Cache.Entry<K, V> convert(Map.Entry<K, V> e) {
+                return new CacheEntryImpl<>(e.getKey(), e.getValue());
             }
 
-            @Override protected boolean onHasNext() throws IgniteCheckedException {
-                return iter0.hasNext();
-            }
-
-            @Override protected void onRemove() throws IgniteCheckedException {
-                if (curKey == null)
-                    throw new IllegalStateException();
-
+            @Override protected void remove(Cache.Entry<K, V> item) {
                 CacheOperationContext prev = ctx.gate().enter(opCtx);
 
                 try {
-                    GridCacheAdapter.this.remove(curKey);
+                    GridCacheAdapter.this.remove(item.getKey());
                 }
                 catch (IgniteCheckedException e) {
                     throw CU.convertToCacheException(e);
@@ -3962,14 +3944,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 finally {
                     ctx.gate().leave(prev);
                 }
-
-                curKey = null;
             }
-
-            @Override protected void onClose() throws IgniteCheckedException {
-                iter0.close();
-            }
-        };
+        });
     }
 
     /**

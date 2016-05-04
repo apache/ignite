@@ -41,4 +41,9 @@ public class GridCacheQueryErrorFuture<T> extends GridFinishedFuture<Collection<
 
         return null;
     }
+
+    /** {@inheritDoc} */
+    @Override public void close() throws Exception {
+        cancel();
+    }
 }

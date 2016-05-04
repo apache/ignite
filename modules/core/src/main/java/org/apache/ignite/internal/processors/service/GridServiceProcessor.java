@@ -59,6 +59,7 @@ import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
+import org.apache.ignite.internal.processors.cache.CacheIteratorConverter;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.query.CacheQuery;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
@@ -70,6 +71,7 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -1134,23 +1136,18 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                 qry.projection(ctx.cluster().get().forNode(oldestSrvNode));
 
-                final Iterator<Map.Entry> iter0 = (Iterator)cache.context().itHolder().iterator(qry.executeScanQuery());
+                GridCloseableIterator<Map.Entry<Object, Object>> iter = qry.executeScanQuery();
 
-                return new Iterator<Cache.Entry<Object, Object>>() {
-                    @Override public boolean hasNext() {
-                        return iter0.hasNext();
-                    }
+                return cache.context().itHolder().iterator(iter,
+                    new CacheIteratorConverter<Cache.Entry<Object, Object>, Map.Entry<Object,Object>>() {
+                        @Override protected Cache.Entry<Object, Object> convert(Map.Entry<Object, Object> e) {
+                            return new CacheEntryImpl<>(e.getKey(), e.getValue());
+                        }
 
-                    @Override public Cache.Entry<Object, Object> next() {
-                        Map.Entry next = iter0.next();
-
-                        return new CacheEntryImpl(next.getKey(), next.getValue());
-                    }
-
-                    @Override public void remove() {
-                        iter0.remove();
-                    }
-                };
+                        @Override protected void remove(Cache.Entry<Object, Object> item) {
+                            throw new UnsupportedOperationException();
+                        }
+                    });
             }
             else
                 return cache.entrySetx().iterator();

@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.query;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -580,19 +579,25 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "serial"})
     @Override public GridCloseableIterator<Map.Entry<K, V>> scanQueryDistributed(final GridCacheQueryAdapter qry,
-        final Collection<ClusterNode> nodes) throws IgniteCheckedException {
+        Collection<ClusterNode> nodes) throws IgniteCheckedException {
         assert cctx.config().getCacheMode() != LOCAL;
         assert qry.type() == GridCacheQueryType.SCAN: "Wrong query processing: " + qry;
 
         GridCloseableIterator<Map.Entry<K, V>> locIter0 = null;
 
-        for (Iterator<ClusterNode> iter = nodes.iterator(); iter.hasNext(); ) {
-            ClusterNode node = iter.next();
-
+        for (ClusterNode node : nodes) {
             if (node.isLocal()) {
                 locIter0 = (GridCloseableIterator)scanQueryLocal(qry, false);
 
-                iter.remove();
+                Collection<ClusterNode> rmtNodes = new ArrayList<>(nodes.size() - 1);
+
+                for (ClusterNode n : nodes) {
+                    // Equals by reference can be used here.
+                    if (n != node)
+                        rmtNodes.add(n);
+                }
+
+                nodes = rmtNodes;
 
                 break;
             }

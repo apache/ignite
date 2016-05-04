@@ -26,7 +26,7 @@ import org.jetbrains.annotations.Nullable;
  * Cache query future returned by query execution.
  * Refer to {@link CacheQuery} documentation for more information.
  */
-public interface CacheQueryFuture<T> extends IgniteInternalFuture<Collection<T>> {
+public interface CacheQueryFuture<T> extends IgniteInternalFuture<Collection<T>>, AutoCloseable {
     /**
      * Returns next element from result set.
      * <p>
