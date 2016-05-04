@@ -43,7 +43,7 @@ mixin main-table(title, rows, focusId, click, rowTemplate, searchField)
                                     tr(ng-repeat='row in displayedRows track by row._id' ignite-bs-affix-update)
                                         td
                                             a(ng-class='{active: row._id == selectedItem._id}' on-click-focus=focusId ng-click=click) #{rowTemplate}
-                        label.placeholder(ng-show='displayedRows.length == 0') No #{rows} found
+                        label.placeholder(ng-show='displayedRows.length == 0') No #{title} found
 
 //- Mixin with save, remove, clone and undo buttons.
 mixin save-remove-clone-undo-buttons(objectName)
@@ -325,7 +325,7 @@ mixin dropdown(lbl, model, name, enabled, placeholder, options, tip)
     +dropdown-required(lbl, model, name, enabled, 'false', placeholder, options, tip)
 
 //- Mixin for dropdown-multiple field.
-mixin dropdown-multiple(lbl, model, name, placeholder, placeholderEmpty, options, tip)
+mixin dropdown-multiple(lbl, model, name, enabled, placeholder, placeholderEmpty, options, tip)
     ignite-form-field
         ignite-form-field-label
             | !{lbl}
@@ -337,6 +337,7 @@ mixin dropdown-multiple(lbl, model, name, placeholder, placeholderEmpty, options
             data-multiple='true'
             data-options=options
             data-ng-model=model
+            data-ng-disabled='!(#{enabled})'
             data-placeholder='{{ #{options}.length > 0 ? "#{placeholder}" : "#{placeholderEmpty}" }}'
             data-disabled='!#{options}.length'
         )
@@ -465,8 +466,7 @@ mixin table-save-button(valid, save, newItem)
 //- Mixin for table remove button.
 mixin table-remove-conditional-button(items, show, tip)
     i.tipField.fa.fa-remove(
-        ng-show='#{show}'
-        ng-hide='field.edit'
+        ng-show='#{show} && !field.edit'
         bs-tooltip='"#{tip}"'
         ng-click='#{items}.splice(#{items}.indexOf(model), 1)'
     )
@@ -520,12 +520,12 @@ mixin evictionPolicy(model, name, enabled, required, tip)
 //- Mixin for clusters dropdown.
 mixin clusters(model, tip)
     +dropdown-multiple('<span>Clusters:</span>' + '<a ui-sref="base.configuration.clusters({id: ' + model + '._id})"> (add)</a>',
-        model + '.clusters', 'clusters', 'Choose clusters', 'No clusters configured', 'clusters', tip)
+        model + '.clusters', 'clusters', 'true', 'Choose clusters', 'No clusters configured', 'clusters', tip)
 
 //- Mixin for caches dropdown.
 mixin caches(model, tip)
     +dropdown-multiple('<span>Caches:</span>' + '<a ui-sref="base.configuration.caches({id: ' + model + '._id})"> (add)</a>',
-        model + '.caches', 'caches', 'Choose caches', 'No caches configured', 'caches', tip)
+        model + '.caches', 'caches', 'true', 'Choose caches', 'No caches configured', 'caches', tip)
 
 //- Mixin for XML and Java preview.
 mixin preview-xml-java(master, generator, detail)
@@ -553,6 +553,10 @@ mixin btn-add(click, tip)
 //- LEGACY mixin for LEGACY tables.
 mixin btn-remove(click, tip)
     i.tipField.fa.fa-remove(ng-click=click bs-tooltip=tip data-trigger='hover')
+
+//- LEGACY mixin for LEGACY tables.
+mixin btn-remove-cond(cond, click, tip)
+    i.tipField.fa.fa-remove(ng-show=cond ng-click=click bs-tooltip=tip data-trigger='hover')
 
 //- LEGACY mixin for LEGACY pair values tables.
 mixin table-pair-edit(tbl, prefix, keyPlaceholder, valPlaceholder, keyJavaBuiltInTypes, valueJavaBuiltInTypes, focusId, index, divider)

@@ -58,7 +58,8 @@ const jsModulePaths = [
     igniteModulesTemp + '/**/main.js',
     igniteModulesTemp + '/**/module.js',
     igniteModulesTemp + '/**/app/modules/*.js',
-    igniteModulesTemp + '/**/app/modules/**/*.js'
+    igniteModulesTemp + '/**/app/modules/**/*.js',
+    igniteModulesTemp + '/**/app/modules/**/*.jade'
 ];
 
 const appPaths = [

@@ -32,8 +32,6 @@ consoleModule.controller('sqlController', [
                 });
         });
 
-        $scope.joinTip = $common.joinTip;
-
         $scope.caches = [];
 
         $scope.pageSizes = [50, 100, 200, 400, 800, 1000];

@@ -70,15 +70,14 @@ form.panel.panel-default(name='query' novalidate)
                                 | Collection of name-to-type mappings to be queried, in addition to indexed fields
                             ignite-form-group-add(ng-click='tableNewItem(queryFieldsTbl)')
                                 | Add field to query
-
-                            .group-content-empty(ng-if='!((#{queryFields} && #{queryFields}.length > 0) || tableNewItemActive(queryFieldsTbl))') Not defined
-
+                            .group-content-empty(ng-if='!((#{queryFields} && #{queryFields}.length > 0) || tableNewItemActive(queryFieldsTbl))')
+                                | Not defined
                             .group-content(ng-show='(#{queryFields} && #{queryFields}.length > 0) || tableNewItemActive(queryFieldsTbl)')
                                 table.links-edit(id='fields' st-table=queryFields)
                                     tbody
                                         tr(ng-repeat='item in #{queryFields}')
                                             td.col-sm-12(ng-show='!tableEditing(queryFieldsTbl, $index)')
-                                                a.labelFormField(ng-click='tableStartEdit(backupItem, queryFieldsTbl, $index)') {{item.name + " / " + item.className}}
+                                                a.labelFormField(ng-click='tableStartEdit(backupItem, queryFieldsTbl, $index)') {{item.name}}  / {{item.className}}
                                                 +btn-remove('tableRemove(backupItem, queryFieldsTbl, $index)', '"Remove path"')
                                             td.col-sm-12(ng-show='tableEditing(queryFieldsTbl, $index)')
                                                 +table-pair-edit('queryFieldsTbl', 'cur', 'Field name', 'Field full class name', false, true, '{{::queryFieldsTbl.focusId + $index}}', '$index', '/')
@@ -95,15 +94,14 @@ form.panel.panel-default(name='query' novalidate)
                                 | For example: "parent.name" as "parentName"
                             ignite-form-group-add(ng-click='tableNewItem(aliasesTbl)')
                                 | Add alias to query
-
-                            .group-content-empty(ng-if='!((#{queryAliases} && #{queryAliases}.length > 0) || tableNewItemActive(aliasesTbl))') Not defined
-
+                            .group-content-empty(ng-if='!((#{queryAliases} && #{queryAliases}.length > 0) || tableNewItemActive(aliasesTbl))')
+                                | Not defined
                             .group-content(ng-show='(#{queryAliases} && #{queryAliases}.length > 0) || tableNewItemActive(aliasesTbl)')
                                 table.links-edit(id='aliases' st-table=queryAliases)
                                     tbody
                                         tr(ng-repeat='item in #{queryAliases}')
                                             td.col-sm-12(ng-show='!tableEditing(aliasesTbl, $index)')
-                                                a.labelFormField(ng-click='tableStartEdit(backupItem, aliasesTbl, $index)') {{item.field + "&rarr;" + item.alias}}
+                                                a.labelFormField(ng-click='tableStartEdit(backupItem, aliasesTbl, $index)') {{item.field}} &rarr; {{item.alias}}
                                                 +btn-remove('tableRemove(backupItem, aliasesTbl, $index)', '"Remove alias"')
                                             td.col-sm-12(ng-show='tableEditing(aliasesTbl, $index)')
                                                 +table-pair-edit('aliasesTbl', 'cur', 'Field name', 'Field Alias', false, false, '{{::aliasesTbl.focusId + $index}}', '$index', '&rarr;')
@@ -119,9 +117,8 @@ form.panel.panel-default(name='query' novalidate)
                                 | Collection of indexes
                             ignite-form-group-add(ng-click='tableNewItem(indexesTbl)')
                                 | Add new index
-
-                            .group-content-empty(id='indexes-add' ng-show='!((#{queryIndexes} && #{queryIndexes}.length > 0) || tableNewItemActive(indexesTbl))') Not defined
-
+                            .group-content-empty(id='indexes-add' ng-show='!((#{queryIndexes} && #{queryIndexes}.length > 0) || tableNewItemActive(indexesTbl))')
+                                | Not defined
                             .group-content(ng-show='(#{queryIndexes} && #{queryIndexes}.length > 0) || tableNewItemActive(indexesTbl)')
                                 -var btnVisibleAndSave = 'tableIndexSaveVisible(indexesTbl, $index) && tableIndexSave(indexesTbl, $index)'
 
@@ -130,18 +127,18 @@ form.panel.panel-default(name='query' novalidate)
                                         tr(ng-repeat='item in #{queryIndexes}')
                                             td
                                                 .col-sm-12(ng-show='!tableEditing(indexesTbl, $index)')
-                                                    a.labelFormField(id='{{"indexes" + $index}}' ng-click='tableStartEdit(backupItem, indexesTbl, $index)') {{$index + 1}}) {{item.name}} [{{item.indexType}}]
+                                                    a.labelFormField(id='indexes{{$index}}' ng-click='tableStartEdit(backupItem, indexesTbl, $index)') {{$index + 1}}) {{item.name}} [{{item.indexType}}]
                                                     +btn-remove('tableRemove(backupItem, indexesTbl, $index)', '"Remove index"')
                                                     +btn-add('tableIndexNewItem(indexesTbl, $index)', '"Add new field to index"')
                                                 div(ng-show='tableEditing(indexesTbl, $index)')
                                                     .col-sm-7
                                                         label.fieldSep /
                                                         .input-tip
-                                                            input.form-control(id='{{"curIndexName" + $index}}' type='text' enter-focus-next='{{"curIndexType" + $index}}' ng-model='indexesTbl.curIndexName' placeholder='Index name' on-enter=btnVisibleAndSave on-escape='tableReset()')
+                                                            input.form-control(id='curIndexName{{$index}}' type='text' enter-focus-next='curIndexType{{$index}}' ng-model='indexesTbl.curIndexName' placeholder='Index name' on-enter=btnVisibleAndSave on-escape='tableReset()')
                                                     .col-sm-5
                                                         +btn-save('tableIndexSaveVisible(indexesTbl, $index)', 'tableIndexSave(indexesTbl, $index)')
                                                         .input-tip
-                                                            button.select-toggle.form-control(id='{{"curIndexType" + $index}}' bs-select ng-model='indexesTbl.curIndexType' data-placeholder='Select index type' bs-options='item.value as item.label for item in indexType' tabindex='0' on-enter=btnVisibleAndSave on-escape='tableReset()')
+                                                            button.select-toggle.form-control(id='curIndexType{{$index}}' bs-select ng-model='indexesTbl.curIndexType' data-placeholder='Select index type' bs-options='item.value as item.label for item in indexType' tabindex='0' on-enter=btnVisibleAndSave on-escape='tableReset()')
                                                 .margin-left-dflt
                                                     table.links-edit-sub(st-table='item.fields' ng-init='itemIndex = $index')
                                                         tbody
@@ -161,12 +158,10 @@ form.panel.panel-default(name='query' novalidate)
                                         tr
                                             td
                                                 .col-sm-7
-                                                    label.placeholder Index name
-                                                    label.fieldSep /
+                                                    .fieldSep /
                                                     .input-tip
                                                         input#newIndexName.form-control(type='text' enter-focus-next='newIndexType' ng-model='indexesTbl.newIndexName' placeholder='Index name' on-enter='tableIndexSaveVisible(indexesTbl, -1) && tableIndexSave(indexesTbl, -1)' on-escape='tableReset()')
                                                 .col-sm-5
-                                                    label.placeholder Index type
                                                     +btn-save('tableIndexSaveVisible(indexesTbl, -1)', 'tableIndexSave(indexesTbl, -1)')
                                                     .input-tip
                                                         button#newIndexType.select-toggle.form-control(bs-select ng-model='indexesTbl.newIndexType' data-placeholder='Select index type' bs-options='item.value as item.label for item in indexType' tabindex='0' on-enter=btnVisibleAndSave on-escape='tableReset()')

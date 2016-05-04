@@ -37,7 +37,6 @@ consoleModule.controller('cachesController', [
         $scope.backupItem = emptyCache;
 
         $scope.ui = $common.formUI();
-        $scope.ui.angularWay = true; // TODO We need to distinguish refactored UI from legacy UI.
         $scope.ui.activePanels = [0];
         $scope.ui.topPanels = [0, 1, 2, 3];
 

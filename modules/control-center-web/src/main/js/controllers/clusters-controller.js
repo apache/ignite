@@ -43,7 +43,6 @@ consoleModule.controller('clustersController', [
         $scope.backupItem = emptyCluster;
 
         $scope.ui = $common.formUI();
-        $scope.ui.angularWay = true; // TODO We need to distinguish refactored UI from legacy UI.
         $scope.ui.activePanels = [0];
         $scope.ui.topPanels = [0];
 

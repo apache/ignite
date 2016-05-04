@@ -20,8 +20,8 @@ include ../../app/helpers/jade/mixins.jade
     h1 Configure Domain Model And SQL Queries
 .docs-body(ng-controller='domainsController')
     ignite-information
-        ul
-            li Import database schemas
+        ul: li Import database schemas
+            li Configure indexed types
     div(ignite-loading='loadingDomainModelsScreen' ignite-loading-text='Loading domain models...')
         div(ng-show='ui.ready')
             hr

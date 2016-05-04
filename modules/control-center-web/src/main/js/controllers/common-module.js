@@ -523,7 +523,7 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
         /**
          * Calculate available width for text in link to edit element.
          *
-         * @param index Showed index of element for calcuraion maximal width in pixel.
+         * @param index Showed index of element for calculation of maximum width in pixels.
          * @param id Id of contains link table.
          * @returns {*[]} First element is length of class for single value, second element is length for pair vlaue.
          */
@@ -580,8 +580,14 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
                 if (idx >= 0) {
                     var activePanels = ui.activePanels;
 
-                    if (!_.includes(ui.topPanels, idx))
+                    if (!_.includes(ui.topPanels, idx)) {
                         ui.expanded = true;
+
+                        var customExpanded = ui[pnl];
+
+                        if (customExpanded)
+                            ui[customExpanded] = true;
+                    }
 
                     if (!activePanels || activePanels.length < 1)
                         ui.activePanels = [idx];
@@ -642,7 +648,7 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
             if (ui) {
                 ensureActivePanel(ui, panelId);
 
-                $timeout(() => _showPopoverMessage(id, message, showTime), ui.isPanelLoaded(panelId) ? 100 : 500);
+                $timeout(() => _showPopoverMessage(id, message, showTime), ui.isPanelLoaded(panelId) ? 200 : 500);
             }
             else
                 _showPopoverMessage(id, message, showTime);
@@ -779,21 +785,6 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
 
         return {
             getModel: getModel,
-            joinTip: function (arr) {
-                if (!arr)
-                    return arr;
-
-                var lines = _.map(arr, function (line) {
-                    var rtrimmed = line.replace(/\s+$/g, '');
-
-                    if (arr.length > 1 && rtrimmed.indexOf('>', rtrimmed.length - 1) === -1)
-                        rtrimmed = rtrimmed + '<br/>';
-
-                    return rtrimmed;
-                });
-
-                return lines.join('');
-            },
             mkOptions: function (options) {
                 return _.map(options, function (option) {
                     return {value: option, label: isDefined(option) ? option : 'Not set'};
@@ -948,17 +939,6 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
             ensureActivePanel: function (panels, id, focusId) {
                 ensureActivePanel(panels, id, focusId);
             },
-            panelExpanded: function (ui, id) {
-                if (ui && ui.activePanels && ui.activePanels.length > 0) {
-                    var idx = _.findIndex($('div.panel-collapse'), function(pnl) {
-                        return pnl.id === id;
-                    });
-
-                    return idx >= 0 && _.includes(ui.activePanels, idx);
-                }
-
-                return false;
-            },
             showPopoverMessage: showPopoverMessage,
             hidePopover: function () {
                 if (popover)
@@ -993,67 +973,10 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
 
                 document.body.removeChild(file);
             },
-            resetItem: function (backupItem, selectedItem, groups, group) {
-                function restoreFields(fields) {
-                    // Reset fields by one.
-                    for (var fldIx = 0; fldIx < fields.length; fldIx ++) {
-                        var field = fields[fldIx];
-
-                        if (field.model) {
-                            var destMdl = getModel(backupItem, field);
-
-                            if (isDefined(destMdl)) {
-                                if (isDefined(selectedItem)) {
-                                    var srcMdl = getModel(selectedItem, field);
-
-                                    if (isDefined(srcMdl)) {
-                                        // For array create copy.
-                                        if ($.isArray(srcMdl[field.model]))
-                                            destMdl[field.model] = srcMdl[field.model].slice();
-                                        else
-                                            destMdl[field.model] = srcMdl[field.model];
-                                    }
-                                    else
-                                        destMdl[field.model] = undefined;
-                                }
-                                else
-                                    destMdl[field.model] = undefined;
-
-                                // For kind field restore kind value and all configured kinds.
-                                if (field.model === 'kind') {
-                                    var kind = getModel(backupItem, field)[field.model];
-
-                                    var details = field.details;
-
-                                    var keys = Object.keys(details);
-
-                                    for (var detIx = 0; detIx < keys.length; detIx++)
-                                        restoreFields(details[keys[detIx]].fields);
-                                }
-                            }
-                        }
-                        else if (field.type === 'panel-details')
-                            restoreFields(field.details);
-                    }
-                }
-
-                // Find group to reset group values.
-                for (var grpIx = 0; grpIx < groups.length; grpIx ++) {
-                    if (groups[grpIx].group === group) {
-                        var fields = groups[grpIx].fields;
-
-                        restoreFields(fields);
-
-                        break;
-                    }
-                }
-            },
             formUI: function () {
                 return {
                     ready: false,
                     expanded: false,
-                    groups: [],
-                    errors: {},
                     loadedPanels: [],
                     loadPanel: function(pnl) {
                         if (!_.includes(this.loadedPanels, pnl))
@@ -1061,29 +984,6 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
                     },
                     isPanelLoaded: function(pnl) {
                         return _.includes(this.loadedPanels, pnl);
-                    },
-                    addGroups: function (general, advanced) {
-                        if (general)
-                            $.merge(this.groups, general);
-
-                        if (advanced)
-                            $.merge(this.groups, advanced);
-                    },
-                    isDirty: function () {
-                        return _.findIndex(this.groups, function (group) {
-                            return group.dirty;
-                        }) >= 0;
-                    },
-                    markPristine: function () {
-                        this.groups.forEach(function (group) {
-                            group.dirty = false;
-                        });
-                    },
-                    checkDirty: function(curItem, srcItem) {
-                        this.groups.forEach(function(group) {
-                            if (checkGroupDirty(group, curItem, srcItem))
-                                group.dirty = true;
-                        });
                     }
                 };
             },
@@ -1191,7 +1091,7 @@ consoleModule.service('$unsavedChangesGuard', ['$rootScope', ($root) => {
             });
 
             var unbind = $root.$on('$stateChangeStart', function(event) {
-                if ($scope.ui && ($scope.ui.isDirty() || ($scope.ui.angularWay && $scope.ui.inputForm && $scope.ui.inputForm.$dirty))) {
+                if ($scope.ui && $scope.ui.inputForm && $scope.ui.inputForm.$dirty) {
                     if (!confirm('You have unsaved changes.\n\nAre you sure you want to discard them?')) {
                         event.preventDefault();
                     } else {
@@ -1201,7 +1101,7 @@ consoleModule.service('$unsavedChangesGuard', ['$rootScope', ($root) => {
             });
 
             window.onbeforeunload = function(){
-                return $scope.ui && $scope.ui.isDirty()
+                return $scope.ui && $scope.ui.inputForm && $scope.ui.inputForm.$dirty
                     ? 'You have unsaved changes.\n\nAre you sure you want to discard them?'
                     : undefined;
             };
@@ -1329,13 +1229,6 @@ consoleModule.service('$clone', ['$modal', '$rootScope', '$q', ($modal, $root, $
 
 // Tables support service.
 consoleModule.service('$table', ['$common', '$focus', function ($common, $focus) {
-    function _swapSimpleItems(a, ix1, ix2) {
-        var tmp = a[ix1];
-
-        a[ix1] = a[ix2];
-        a[ix2] = tmp;
-    }
-
     function _model(item, field) {
         return $common.getModel(item, field);
     }
@@ -1380,97 +1273,80 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
         $focus((index < 0 ? 'new' : 'cur') + focusId + (index >= 0 ? index : ''));
     }
 
-    function _tableSimpleValue(filed, index) {
-        return index < 0 ? filed.newValue : filed.curValue;
-    }
-
     function _tablePairValue(filed, index) {
         return index < 0 ? {key: filed.newKey, value: filed.newValue} : {key: filed.curKey, value: filed.curValue};
     }
 
-    function _tableStartEdit(item, field, index, save) {
-        _tableState(field, index);
+    function _tableStartEdit(item, tbl, index, save) {
+        _tableState(tbl, index);
 
-        var val = _model(item, field)[field.model][index];
+        var val = _model(item, tbl)[tbl.model][index];
 
-        var ui = _tableUI(field);
+        var ui = _tableUI(tbl);
 
-        field.save = save;
+        tbl.save = save;
 
-        if (ui === 'table-simple') {
-            field.curValue = val;
+        if (ui === 'table-pair') {
+            tbl.curKey = val[tbl.keyName];
+            tbl.curValue = val[tbl.valueName];
 
-            _tableFocus(field.focusId, index);
-        }
-        else if (ui === 'table-pair') {
-            field.curKey = val[field.keyName];
-            field.curValue = val[field.valueName];
-
-            _tableFocus('Key' + field.focusId, index);
+            _tableFocus('Key' + tbl.focusId, index);
         }
         else if (ui === 'table-db-fields') {
-            field.curDatabaseFieldName = val.databaseFieldName;
-            field.curDatabaseFieldType = val.databaseFieldType;
-            field.curJavaFieldName = val.javaFieldName;
-            field.curJavaFieldType = val.javaFieldType;
+            tbl.curDatabaseFieldName = val.databaseFieldName;
+            tbl.curDatabaseFieldType = val.databaseFieldType;
+            tbl.curJavaFieldName = val.javaFieldName;
+            tbl.curJavaFieldType = val.javaFieldType;
 
-            _tableFocus('DatabaseFieldName' + field.focusId, index);
+            _tableFocus('DatabaseFieldName' + tbl.focusId, index);
         }
         else if (ui === 'table-indexes') {
-            field.curIndexName = val.name;
-            field.curIndexType = val.indexType;
-            field.curIndexFields = val.fields;
+            tbl.curIndexName = val.name;
+            tbl.curIndexType = val.indexType;
+            tbl.curIndexFields = val.fields;
 
-            _tableFocus(field.focusId, index);
+            _tableFocus(tbl.focusId, index);
         }
     }
 
-    function _tableNewItem(field) {
-        _tableState(field, -1);
+    function _tableNewItem(tbl) {
+        _tableState(tbl, -1);
 
-        var ui = _tableUI(field);
+        var ui = _tableUI(tbl);
 
-        if (ui === 'table-simple') {
-            field.newValue = null;
+        if (ui === 'table-pair') {
+            tbl.newKey = null;
+            tbl.newValue = null;
 
-            _tableFocus(field.focusId, -1);
-        }
-        else if (ui === 'table-pair') {
-            field.newKey = null;
-            field.newValue = null;
-
-            _tableFocus('Key' + field.focusId, -1);
+            _tableFocus('Key' + tbl.focusId, -1);
         }
         else if (ui === 'table-db-fields') {
-            field.newDatabaseFieldName = null;
-            field.newDatabaseFieldType = null;
-            field.newJavaFieldName = null;
-            field.newJavaFieldType = null;
+            tbl.newDatabaseFieldName = null;
+            tbl.newDatabaseFieldType = null;
+            tbl.newJavaFieldName = null;
+            tbl.newJavaFieldType = null;
 
-            _tableFocus('DatabaseFieldName' + field.focusId, -1);
+            _tableFocus('DatabaseFieldName' + tbl.focusId, -1);
         }
         else if (ui === 'table-indexes') {
-            field.newIndexName = null;
-            field.newIndexType = 'SORTED';
-            field.newIndexFields = null;
+            tbl.newIndexName = null;
+            tbl.newIndexType = 'SORTED';
+            tbl.newIndexFields = null;
 
-            _tableFocus(field.focusId, -1);
+            _tableFocus(tbl.focusId, -1);
         }
     }
 
     return {
-        tableVisibleRow: function (rows, row) {
-            return !row || !row._id || _.findIndex(rows, function(item) {return item._id === row._id;}) >= 0;
-        },
         tableState: _tableState,
         tableReset: _tableReset,
         tableSaveAndReset: _tableSaveAndReset,
         tableNewItem: _tableNewItem,
-        tableNewItemActive: function (field) {
-            return table.name === field.model && table.editIndex < 0;
+        tableNewItemActive: function (tbl) {
+            return table.name === tbl.model && table.editIndex < 0;
         },
-        tableEditing: function (field, index) {
-            return table.name === field.model && table.editIndex === index;
+        tableEditing: function (tbl, index) {
+            return table.name === tbl.model && table.editIndex === index;
         },
         tableEditedRowIndex: function () {
             return table.editIndex;
@@ -1483,55 +1359,6 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
             _tableReset();
 
             _model(item, field)[field.model].splice(index, 1);
-        },
-        tableSimpleSave: function (valueValid, item, field, index, stopEdit) {
-            var simpleValue = _tableSimpleValue(field, index);
-
-            var valid = valueValid(item, field, simpleValue, index);
-
-            if (valid) {
-                _tableReset();
-
-                if (index < 0) {
-                    if (_model(item, field)[field.model])
-                        _model(item, field)[field.model].push(simpleValue);
-                    else
-                        _model(item, field)[field.model] = [simpleValue];
-
-                    if (!stopEdit)
-                        _tableNewItem(field);
-                }
-                else {
-                    var arr = _model(item, field)[field.model];
-
-                    arr[index] = simpleValue;
-
-                    if (!stopEdit) {
-                        if (index < arr.length - 1)
-                            _tableStartEdit(item, field, index + 1);
-                        else
-                            _tableNewItem(field);
-                    }
-                }
-            }
-
-            return valid;
-        },
-        tableSimpleSaveVisible: function (field, index) {
-            return !$common.isEmptyString(_tableSimpleValue(field, index));
-        },
-        tableSimpleUp: function (item, field, index) {
-            _tableReset();
-
-            _swapSimpleItems(_model(item, field)[field.model], index, index - 1);
-        },
-        tableSimpleDown: function (item, field, index) {
-            _tableReset();
-
-            _swapSimpleItems(_model(item, field)[field.model], index, index + 1);
-        },
-        tableSimpleDownVisible: function (item, field, index) {
-            return index < _model(item, field)[field.model].length - 1;
         },
         tablePairValue: _tablePairValue,
         tablePairSave: function (pairValid, item, field, index, stopEdit) {
@@ -1584,222 +1411,6 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
         tableFieldId: function (index, id) {
             return (index < 0 ? 'new' : 'cur') + id + (index >= 0 ? index : '');
         }
-    };
-}]);
-
-// Preview support service.
-consoleModule.service('$preview', ['$timeout', '$interval', function ($timeout, $interval) {
-    var Range = require('ace/range').Range;
-
-    var prevContent = [];
-
-    var animation = {editor: null, stage: 0, start: 0, stop: 0};
-
-    function _clearSelection(editor) {
-        _.forEach(editor.session.getMarkers(false), function (marker) {
-            editor.session.removeMarker(marker.id);
-        });
-    }
-
-    /**
-     * Switch to next stage of animation.
-     */
-    function _animate() {
-        animation.stage += animation.step;
-
-        var stage = animation.stage;
-
-        var editor = animation.editor;
-
-        _clearSelection(editor);
-
-        animation.selections.forEach(function (selection) {
-            editor.session.addMarker(new Range(selection.start, 0, selection.stop, 0),
-                'preview-highlight-' + stage, 'line', false);
-        });
-
-        if (stage === animation.finalStage) {
-            editor.animatePromise = null;
-
-            if (animation.clearOnFinal)
-                _clearSelection(editor);
-        }
-    }
-
-    /**
-     * Show selections with animation.
-     *
-     * @param editor Editor to show selection.
-     * @param selections Array of selection intervals.
-     */
-    function _fadeIn(editor, selections) {
-        _fade(editor, selections, 1, 0, 10, false);
-    }
-
-    /**
-     * Hide selections with animation.
-     *
-     * @param editor Editor to show selection.
-     * @param selections Array of selection intervals.
-     */
-    function _fadeOut(editor, selections) {
-        _fade(editor, selections, -1, 10, 0, true);
-    }
-
-    /**
-     * Selection with animation.
-     *
-     * @param editor Editor to show selection animation.
-     * @param selections Array of selection intervals.
-     * @param step Step of animation (1 or -1).
-     * @param startStage Start stage of animaiton.
-     * @param finalStage Final stage of animation.
-     * @param clearOnFinal Boolean flat to clear selection on animation finish.
-     */
-    function _fade(editor, selections, step, startStage, finalStage, clearOnFinal) {
-        var promise = editor.animatePromise;
-
-        if (promise) {
-            $interval.cancel(promise);
-
-            _clearSelection(editor);
-        }
-
-        animation = {editor: editor, step: step, stage: startStage, finalStage: finalStage, clearOnFinal: clearOnFinal, selections: selections};
-
-        editor.animatePromise = $interval(_animate, 100, 10, false);
-    }
-
-    function previewChanged (ace) {
-        var content = ace[0];
-
-        var editor = ace[1];
-
-        var clearPromise = editor.clearPromise;
-
-        var newContent = content.lines;
-
-        if (content.action === 'remove')
-            prevContent = newContent;
-        else if (prevContent.length > 0 && newContent.length > 0 && editor.attractAttention) {
-            if (clearPromise) {
-                $timeout.cancel(clearPromise);
-
-                _clearSelection(editor);
-            }
-
-            var selections = [];
-
-            var newIx = 0;
-            var prevIx = 0;
-
-            var prevLen = prevContent.length - (prevContent[prevContent.length - 1] === '' ? 1 : 0);
-            var newLen = newContent.length - (newContent[newContent.length - 1] === '' ? 1 : 0);
-
-            var removed = newLen < prevLen;
-
-            var skipEnd = 0;
-
-            var selected = false;
-            var scrollTo = -1;
-
-            while (newContent[newLen - 1] === prevContent[prevLen - 1] && newLen > 0 && prevLen > 0) {
-                prevLen -= 1;
-                newLen -= 1;
-
-                skipEnd += 1;
-            }
-
-            while (newIx < newLen || prevIx < prevLen) {
-                var start = -1;
-                var end = -1;
-
-                // Find an index of a first line with different text.
-                for (; (newIx < newLen || prevIx < prevLen) && start < 0; newIx++, prevIx++) {
-                    if (newIx >= newLen || prevIx >= prevLen || newContent[newIx] !== prevContent[prevIx]) {
-                        start = newIx;
-
-                        break;
-                    }
-                }
-
-                if (start >= 0) {
-                    // Find an index of a last line with different text by checking last string of old and new content in reverse order.
-                    for (var i = start; i < newLen && end < 0; i ++) {
-                        for (var j = prevIx; j < prevLen && end < 0; j ++) {
-                            if (newContent[i] === prevContent[j] && newContent[i] !== '') {
-                                end = i;
-
-                                newIx = i;
-                                prevIx = j;
-
-                                break;
-                            }
-                        }
-                    }
-
-                    if (end < 0) {
-                        end = newLen;
-
-                        newIx = newLen;
-                        prevIx = prevLen;
-                    }
-
-                    if (start === end) {
-                        if (removed)
-                            start = Math.max(0, start - 1);
-
-                        end = Math.min(newLen + skipEnd, end + 1);
-                    }
-
-                    if (start <= end) {
-                        selections.push({start: start, stop: end});
-
-                        if (!selected)
-                            scrollTo = start;
-
-                        selected = true;
-                    }
-                }
-            }
-
-            // Run clear selection one time.
-            if (selected) {
-                _fadeIn(editor, selections);
-
-                editor.clearPromise = $timeout(function () {
-                    _fadeOut(editor, selections);
-
-                    editor.clearPromise = null;
-                }, 2000);
-
-                editor.scrollToRow(scrollTo);
-            }
-
-            prevContent = [];
-        }
-        else
-            editor.attractAttention = true;
-    }
-
-    return {
-        previewInit: function (preview) {
-            preview.setReadOnly(true);
-            preview.setOption('highlightActiveLine', false);
-            preview.setAutoScrollEditorIntoView(true);
-            preview.$blockScrolling = Infinity;
-            preview.attractAttention = false;
-
-            var renderer = preview.renderer;
-
-            renderer.setHighlightGutterLine(false);
-            renderer.setShowPrintMargin(false);
-            renderer.setOption('fontSize', '10px');
-            renderer.setOption('maxLines', '50');
-
-            preview.setTheme('ace/theme/chrome');
-        },
-        previewChanged: previewChanged
     };
 }]);
 

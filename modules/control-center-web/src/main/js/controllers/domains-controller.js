@@ -33,7 +33,6 @@ consoleModule.controller('domainsController', [
         $scope.backupItem = emptyDomain;
 
         $scope.ui = $common.formUI();
-        $scope.ui.angularWay = true; // TODO We need to distinguish refactored UI from legacy UI.
         $scope.ui.activePanels = [0, 1];
         $scope.ui.topPanels = [0, 1, 2];
 
@@ -73,15 +72,11 @@ consoleModule.controller('domainsController', [
             return !item.empty && (!item._id || _.find($scope.displayedRows, {_id: item._id}));
         };
 
-        $scope.joinTip = $common.joinTip;
         $scope.getModel = $common.getModel;
         $scope.javaBuiltInClasses = $common.javaBuiltInClasses;
         $scope.compactJavaName = $common.compactJavaName;
         $scope.widthIsSufficient = $common.widthIsSufficient;
         $scope.saveBtnTipText = $common.saveBtnTipText;
-        $scope.panelExpanded = $common.panelExpanded;
-
-        $scope.tableVisibleRow = $table.tableVisibleRow;
 
         $scope.tableSave = function (field, index, stopEdit) {
             if ($table.tableEditing({model: 'table-index-fields'}, $table.tableEditedRowIndex())) {
@@ -144,21 +139,6 @@ consoleModule.controller('domainsController', [
             if ($scope.tableReset(true))
                 $table.tableRemove(item, field, index);
         };
-
-        $scope.tableSimpleSave = $table.tableSimpleSave;
-        $scope.tableSimpleSaveVisible = $table.tableSimpleSaveVisible;
-
-        $scope.tableSimpleUp = function (item, field, index) {
-            if ($scope.tableReset(true))
-                $table.tableSimpleUp(item, field, index);
-        };
-
-        $scope.tableSimpleDown = function (item, field, index) {
-            if ($scope.tableReset(true))
-                $table.tableSimpleDown(item, field, index);
-        };
-
-        $scope.tableSimpleDownVisible = $table.tableSimpleDownVisible;
 
         $scope.tablePairStartEdit = $table.tablePairStartEdit;
         $scope.tablePairSave = $table.tablePairSave;
@@ -428,7 +408,7 @@ consoleModule.controller('domainsController', [
                                 if (drivers && drivers.length > 0) {
                                     drivers = _.sortBy(drivers, 'jdbcDriverJar');
 
-                                    drivers.forEach(function (drv) {
+                                    _.forEach(drivers, function (drv) {
                                         $scope.jdbcDriverJars.push({
                                             label: drv.jdbcDriverJar,
                                             value: {

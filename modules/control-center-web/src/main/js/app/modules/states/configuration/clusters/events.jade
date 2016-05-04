@@ -30,7 +30,7 @@ form.panel.panel-default(name=form novalidate)
         .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
             .col-sm-6
                 .settings-row
-                    +dropdown-multiple('Include type:', model + '.includeEventTypes', 'includeEventTypes', 'Choose recorded event types', '', 'eventGroups',
+                    +dropdown-multiple('Include type:', model + '.includeEventTypes', 'includeEventTypes', 'true', 'Choose recorded event types', '', 'eventGroups',
                         'Array of event types, which will be recorded by GridEventStorageManager#record(Event)<br/>\
                         Note, that either the include event types or the exclude event types can be established')
             .col-sm-6

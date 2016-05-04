@@ -31,9 +31,8 @@ form.panel.panel-default(name='general' novalidate)
                 .settings-row
                     +clusters(model, 'Associate clusters with the current cache')
                 .settings-row
-                    +dropdown-multiple('<span>Domain models:</span>' +
-                        '<a ui-sref="base.configuration.domains({id: ' + model + '._id})"> (add)</a>',
-                        model + '.domains', 'domains', 'Choose domain models', 'No domain models configured', 'domains',
+                    +dropdown-multiple('<span>Domain models:</span><a ui-sref="base.configuration.domains({id: ' + model + '._id})"> (add)</a>',
+                        model + '.domains', 'domains', 'true', 'Choose domain models', 'No domain models configured', 'domains',
                         'Select domain models to describe types in cache')
                 .settings-row
                     +cacheMode('Mode:', model + '.cacheMode', 'cacheMode', 'PARTITIONED')

@@ -19,8 +19,8 @@ import _ from 'lodash';
 import JSZip from 'jszip';
 
 export default [
-    '$rootScope', '$scope', '$http', '$common', '$loading', '$table', '$filter', '$timeout', 'ConfigurationSummaryResource', 'JavaTypes', 'IgniteVersion', 'GeneratorDocker', 'GeneratorPom',
-    function($root, $scope, $http, $common, $loading, $table, $filter, $timeout, Resource, JavaTypes, IgniteVersion, docker, pom) {
+    '$rootScope', '$scope', '$http', '$common', '$loading', '$filter', 'ConfigurationSummaryResource', 'JavaTypes', 'IgniteVersion', 'GeneratorDocker', 'GeneratorPom',
+    function($root, $scope, $http, $common, $loading, $filter, Resource, JavaTypes, IgniteVersion, docker, pom) {
         const ctrl = this;
 
         $loading.start('summaryPage');
@@ -45,8 +45,10 @@ export default [
             }
         });
 
-        $scope.panelExpanded = $common.panelExpanded;
-        $scope.tableVisibleRow = $table.tableVisibleRow;
+        $scope.contentVisible = (rows, row) => {
+            return !row || !row._id || _.findIndex(rows, (item) => item._id === row._id) >= 0;
+        };
+
         $scope.widthIsSufficient = $common.widthIsSufficient;
         $scope.dialects = {};
 

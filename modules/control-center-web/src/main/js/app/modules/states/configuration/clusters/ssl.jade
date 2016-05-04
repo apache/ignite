@@ -67,16 +67,23 @@ form.panel.panel-default(name=form novalidate)
                             -var save = trust + '[$index] = ' + field
                             -var reset = 'field.edit = false'
 
-                            ignite-form-field(ng-repeat='model in #{trust} track by $index' type='internal' name='Trust manager')
-                                .indexField
-                                    | {{ $index+1 }})
-                                +table-remove-conditional-button(trust, enabled, 'Remove trust manager')
-                                span(ng-hide='field.edit')
-                                    a.labelFormField(ng-click='#{enabled} && (field.edit = true)') {{ model }}
-                                span(ng-if='field.edit' ng-init='#{field} = model')
-                                    +table-java-class-field('Trust manager', field, trust, valid, save, false)
-                                        +table-save-button(valid, save, false)
-                                        +unique-feedback(unique, uniqueTip)
+                            div(ng-show=enabled)
+                                ignite-form-field(ng-repeat='model in #{trust} track by $index' type='internal' name='Trust manager')
+                                    .indexField
+                                        | {{ $index+1 }})
+                                    +table-remove-conditional-button(trust, enabled, 'Remove trust manager')
+                                    span(ng-hide='field.edit')
+                                        a.labelFormField(ng-click='#{enabled} && (field.edit = true)') {{ model }}
+                                    span(ng-if='field.edit' ng-init='#{field} = model')
+                                        +table-java-class-field('Trust manager', field, trust, valid, save, false)
+                                            +table-save-button(valid, save, false)
+                                            +unique-feedback(unique, uniqueTip)
+                            div(ng-hide=enabled)
+                                ignite-form-field(ng-repeat='model in #{trust} track by $index' type='internal' name='Trust manager')
+                                    .labelFormField.labelField
+                                        | {{ $index+1 }})
+                                    span.labelFormField
+                                        | {{ model }}
 
                         .group-content(ng-repeat='field in group.add')
                             -var field = 'new'

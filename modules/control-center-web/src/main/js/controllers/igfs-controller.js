@@ -36,7 +36,6 @@ consoleModule.controller('igfsController', [
         $scope.backupItem = emptyIgfs;
 
         $scope.ui = $common.formUI();
-        $scope.ui.angularWay = true; // TODO We need to distinguish refactored UI from legacy UI.
         $scope.ui.activePanels = [0];
         $scope.ui.topPanels = [0];
 
@@ -45,10 +44,6 @@ consoleModule.controller('igfsController', [
         $scope.saveBtnTipText = $common.saveBtnTipText;
 
         // TODO LEGACY start
-        $scope.joinTip = $common.joinTip;
-
-        $scope.tableVisibleRow = $table.tableVisibleRow;
-
         $scope.tableSave = function (field, index, stopEdit) {
             switch (field.type) {
                 case 'pathModes':
