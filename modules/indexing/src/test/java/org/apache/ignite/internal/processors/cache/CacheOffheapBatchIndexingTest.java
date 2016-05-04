@@ -160,7 +160,7 @@ public class CacheOffheapBatchIndexingTest extends GridCommonAbstractTest {
      * Test putAll after with streamer batch load with one entity.
      * The test fails in putAll.
      */
-    public void testPutWithStreamerDefaultOnHeapRowCache2() {
+    public void testPuAllSingleEntity() {
         //fail("IGNITE-2982");
         doStreamerBatchTest(50, 1_000, new Class<?>[] {Integer.class, Organization.class}, 1, false);
     }
