@@ -17,49 +17,41 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
 /**
- * Test to reproduce https://issues.apache.org/jira/browse/IGNITE-3073
+ * Test to reproduce https://issues.apache.org/jira/browse/IGNITE-3073.
  */
 public class IgniteCacheStarvationOnRebalanceTest extends GridCacheAbstractSelfTest {
     /** Grid count. */
     private static final int GRID_CNT = 4;
-    /** Timeout for put tasks. */
-    private static final long PUT_TASK_TIMEOUT = 1 * 60 * 1000;
+
     /** Test timeout. */
-    private static final long TEST_TIMEOUT = 5 * 60 * 1000;
+    private static final long TEST_TIMEOUT = 3 * 60 * 1000;
+
     /** Use small system thread pool to reproduce the issue. */
     private static final int IGNITE_THREAD_POOL_SIZE = 5;
-    /** Use many threads to put values into cache. */
-    private static final int PUT_THREAD_POOL_SIZE = IGNITE_THREAD_POOL_SIZE * 10;
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return TEST_TIMEOUT;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
@@ -70,30 +62,22 @@ public class IgniteCacheStarvationOnRebalanceTest extends GridCacheAbstractSelfT
         return cfg;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected Class<?>[] indexedTypes() {
         return new Class<?>[] {Integer.class, CacheValue.class};
     }
 
-    /**
-     *  {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected CacheAtomicityMode atomicityMode() {
         return ATOMIC;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected int gridCount() {
         return GRID_CNT;
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return PARTITIONED;
     }
@@ -102,44 +86,60 @@ public class IgniteCacheStarvationOnRebalanceTest extends GridCacheAbstractSelfT
      * @throws Exception If failed.
      */
     public void testLoadSystemWithPutAndStartRebalancing() throws Exception {
-        final AtomicInteger cnt = new AtomicInteger(0);
         final IgniteCache<Integer, CacheValue> cache = grid(0).cache(null);
-        final long endTaskTime = System.currentTimeMillis() + PUT_TASK_TIMEOUT;
 
-        Collection<Future> futures = new ArrayList<>();
-        ExecutorService executorSrvc = Executors.newFixedThreadPool(20);
+        final long endTime = System.currentTimeMillis() + TEST_TIMEOUT - 60_000;
 
-        for (int i = 0; i < PUT_THREAD_POOL_SIZE; ++i) {
-            futures.add(executorSrvc.submit(new Runnable() {
-                @Override public void run() {
+        int iter = 0;
 
-                    // Put values to cache for 1 min.
-                    while (System.currentTimeMillis() < endTaskTime) {
-                        int key = cnt.getAndIncrement();
+        while (System.currentTimeMillis() < endTime) {
+            info("Iteration: " + iter++);
+
+            final AtomicBoolean stop = new AtomicBoolean();
+
+            IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+                    while (!stop.get() && System.currentTimeMillis() < endTime) {
+                        int key = rnd.nextInt(100_000);
+
                         cache.put(key, new CacheValue(key));
-                        if (key % 50 == 0)
-                            System.out.println("put " + key);
                     }
+
+                    return null;
                 }
-            }));
+            }, IGNITE_THREAD_POOL_SIZE * 4, "put-thread");
+
+            try {
+                Thread.sleep(500);
+
+                info("Initial set of keys is loaded.");
+
+                info("Starting new node...");
+
+                startGrid(GRID_CNT + 1);
+
+                info("New node is started.");
+
+                Thread.sleep(500);
+            }
+            finally {
+                stop.set(true);
+            }
+
+            // Wait for put tasks. If put() is blocked the test is timed out.
+            fut.get();
+
+            stopGrid(GRID_CNT + 1);
         }
-
-        Thread.sleep(500);
-        info("Initial set of keys is loaded");
-
-        info("Starting new node...");
-        startGrid(GRID_CNT + 1);
-        info("New node is started");
-
-        // Wait for put tasks. If put() is blocked the test is timed out.
-        for (Future f : futures)
-            f.get();
     }
 
     /**
      * Test cache value.
      */
     private static class CacheValue {
+        /** */
         @QuerySqlField(index = true)
         private final int val;
 
@@ -151,14 +151,13 @@ public class IgniteCacheStarvationOnRebalanceTest extends GridCacheAbstractSelfT
         }
 
         /**
+         * @return Value.
          */
         int value() {
             return val;
         }
 
-        /**
-         * {@inheritDoc}
-         */
+        /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(CacheValue.class, this);
         }
