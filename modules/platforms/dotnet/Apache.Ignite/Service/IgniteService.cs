@@ -27,7 +27,6 @@ namespace Apache.Ignite.Service
     using System.Text;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Lifecycle;
 
     /// <summary>
@@ -164,8 +163,7 @@ namespace Apache.Ignite.Service
         /** <inheritdoc /> */
         public void OnLifecycleEvent(LifecycleEventType evt)
         {
-            // TODO: Why the hell AfterNodeStop does not arrive?
-            if (evt == LifecycleEventType.BeforeNodeStop)
+            if (evt == LifecycleEventType.AfterNodeStop)
             {
                 _isStopping = true;
 
