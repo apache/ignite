@@ -46,17 +46,6 @@ public class CacheStateSelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setCacheConfiguration(cacheConfiguration(null));
-        cfg.setMarshaller(new BinaryMarshaller());
-
-        DatabaseConfiguration dbCfg = new DatabaseConfiguration();
-
-        dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
-        dbCfg.setPageSize(8192);
-        dbCfg.setPageCacheSize(100 * 1024 * 1024);
-        //        dbCfg.setPersistenceEnabled(true);
-        //        dbCfg.setFileCacheAllocationPath("D:/db/");
-
-//        cfg.setDatabaseConfiguration(dbCfg);
 
         return cfg;
     }
