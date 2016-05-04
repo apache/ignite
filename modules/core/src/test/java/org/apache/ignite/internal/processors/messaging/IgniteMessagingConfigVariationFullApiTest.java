@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.messaging;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -24,12 +26,17 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.junits.IgniteConfigVariationsAbstractTest;
 
 /**
  * The test checks process messaging.
  */
 public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVariationsAbstractTest {
+
+    private static final String LATCH_NAME = "latchName";
+    private static final String MESSAGE_TOPIC = "topic";
+
     /** {@inheritDoc} */
     @Override protected boolean expectedClient(String testGridName) {
         return getTestGridName(CLIENT_NODE_IDX).equals(testGridName)
@@ -104,6 +111,17 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     /**
      * @throws Exception If failed.
      */
+    public void testCollectionMessage() throws Exception {
+        runInAllDataModes(new TestRunnable() {
+            @Override public void run() throws Exception {
+                collectionMessage();
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testOrderedMessage() throws Exception {
         runInAllDataModes(new TestRunnable() {
             @Override public void run() throws Exception {
@@ -113,25 +131,72 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     }
 
     /**
-     * Single server test.
+     * @throws Exception If failed.
      */
-    private void localServerInternal() {
+    public void testClientServerOrderedMessage() throws Exception {
+        if (!testsCfg.withClients())
+            return;
+
+        runInAllDataModes(new TestRunnable() {
+            @Override public void run() throws Exception {
+                clientServerOrderedMessage();
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientClientOrderedMessage() throws Exception {
+        if (!testsCfg.withClients())
+            return;
+
+        runInAllDataModes(new TestRunnable() {
+            @Override public void run() throws Exception {
+                clientClientOrderedMessage();
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testServerClientOrderedMessage() throws Exception {
+        if (!testsCfg.withClients())
+            return;
+
+        runInAllDataModes(new TestRunnable() {
+            @Override public void run() throws Exception {
+                serverClientOrderedMessage();
+            }
+        });
+    }
+
+    /**
+     * Single server test.
+     * @throws Exception If failed.
+     */
+    private void localServerInternal() throws Exception {
         int messages = 5;
 
         Ignite ignite = grid(SERVER_NODE_IDX);
 
-        IgniteCountDownLatch latch = ignite.countDownLatch("latchName", messages, true, true);
+        IgniteCountDownLatch latch = ignite.countDownLatch(LATCH_NAME, messages, true, true);
 
         ClusterGroup grp = grid(SERVER_NODE_IDX).cluster().forLocal();
 
-        UUID opId = registerListener(grp, new MessageListener(latch));
+        UUID opId = registerListener(grp);
 
-        for (int i = 0; i < messages; i++)
-            sendMessage(grp, value(i));
+        try {
+            for (int i = 0; i < messages; i++)
+                sendMessage(grp, value(i));
 
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
+            assertTrue(latch.await(10, TimeUnit.SECONDS));
 
-        ignite.message().stopRemoteListen(opId);
+        }
+        finally {
+            ignite.message().stopRemoteListen(opId);
+        }
     }
 
     /**
@@ -142,26 +207,31 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
 
         Ignite ignite = grid(SERVER_NODE_IDX);
 
-        IgniteCountDownLatch latch = ignite.countDownLatch("latchName", messages, true, true);
+        IgniteCountDownLatch latch = ignite.countDownLatch(LATCH_NAME, messages, true, true);
 
         ClusterGroup grp = grid(SERVER_NODE_IDX).cluster().forLocal();
 
-        MessageListener c = new MessageListener(latch);
+        MessageListener c = new MessageListener(LATCH_NAME);
 
-        ignite.message(grp).localListen("localListenerTopic", c);
+        try {
+            ignite.message(grp).localListen("localListenerTopic", c);
 
-        for (int i=0; i < messages; i++)
-            ignite.message(grp).send("localListenerTopic", value(i));
+            for (int i = 0; i < messages; i++)
+                ignite.message(grp).send("localListenerTopic", value(i));
 
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
+            assertTrue(latch.await(10, TimeUnit.SECONDS));
 
-        ignite.message().stopLocalListen("localListenerTopic", c);
+        }
+        finally {
+            ignite.message().stopLocalListen("localListenerTopic", c);
+        }
     }
 
     /**
      * Server sends a message and client receives it.
+     * @throws Exception If failed.
      */
-    private void serverClientMessage() {
+    private void serverClientMessage() throws Exception {
         int messages = 5;
 
         Ignite ignite = grid(SERVER_NODE_IDX);
@@ -170,89 +240,166 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
 
         assert grp.nodes().size() > 0;
 
-        IgniteCountDownLatch latch = ignite.countDownLatch("latchName", grp.nodes().size() * messages, true, true);
-
-        UUID opId = registerListener(grp, new MessageListener(latch));
-
-        for (int i = 0; i < messages; i++)
-            sendMessage(grp, value(i));
-
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
-
-        ignite.message().stopRemoteListen(opId);
+        registerListenerAndSendMessages(ignite, grp);
     }
 
     /**
      * Client sends a message and client receives it.
+     * @throws Exception If failed.
      */
-    private void clientClientMessage() {
-        int messages = 5;
-
+    private void clientClientMessage() throws Exception {
         Ignite ignite = grid(CLIENT_NODE_IDX);
 
         ClusterGroup grp = ignite.cluster().forClients();
 
         assert grp.nodes().size() > 0;
 
-        IgniteCountDownLatch latch = ignite.countDownLatch("latchName", grp.nodes().size() * messages, true, true);
-
-        UUID opId = registerListener(grp, new MessageListener(latch));
-
-        for (int i = 0; i < messages; i++)
-            sendMessage(grp, value(i));
-
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
-
-        ignite.message().stopRemoteListen(opId);
+        registerListenerAndSendMessages(ignite, grp);
     }
 
     /**
      * Client sends a message and client receives it.
+     * @throws Exception If failed.
      */
-    private void clientServerMessage() {
-        int messages = 5;
-
+    private void clientServerMessage() throws Exception {
         Ignite ignite = grid(CLIENT_NODE_IDX);
 
         ClusterGroup grp = ignite.cluster().forServers();
 
         assert grp.nodes().size() > 0;
 
-        IgniteCountDownLatch latch = ignite.countDownLatch("latchName", grp.nodes().size() * messages, true, true);
+        registerListenerAndSendMessages(ignite, grp);
+    }
 
-        UUID opId = registerListener(grp, new MessageListener(latch));
+    private void registerListenerAndSendMessages(Ignite ignite, ClusterGroup grp) throws Exception {
+        int messages = 5;
 
-        for (int i = 0; i < messages; i++)
-            sendMessage(grp, value(i));
+        IgniteCountDownLatch latch = ignite.countDownLatch(LATCH_NAME, grp.nodes().size() * messages, true, true);
 
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
+        UUID opId = registerListener(grp);
+        try {
+            for (int i = 0; i < messages; i++)
+                sendMessage(grp, value(i));
 
-        ignite.message().stopRemoteListen(opId);
+            assertTrue(latch.await(10, TimeUnit.SECONDS));
+
+        }
+        finally {
+            ignite.message().stopRemoteListen(opId);
+        }
     }
 
     /**
      *
      */
-    private void orderedMessage() {
-        int messages = 5;
-
+    private void collectionMessage() {
         Ignite ignite = grid(SERVER_NODE_IDX);
 
         ClusterGroup grp = gridCount() > 1
             ? ignite.cluster().forRemotes()
             : ignite.cluster().forLocal();
 
-        IgniteCountDownLatch latch = ignite.countDownLatch("orderedTestLatch",
+        assert grp.nodes().size() > 0;
+
+        int messages = 5;
+
+        IgniteCountDownLatch latch = ignite.countDownLatch(LATCH_NAME,
             grp.nodes().size() * messages, true, true);
 
-        UUID opId = ignite.message(grp).remoteListen("ordered", new OrderedMessageListener(latch));
+        UUID opId = ignite.message(grp).remoteListen(MESSAGE_TOPIC, new MessageListener(LATCH_NAME));
 
-        for (int i=0; i < messages; i++)
-            ignite.message(grp).sendOrdered("ordered", value(i), 2000);
+        try {
+            List<Object> msgs = new ArrayList<>();
+            for (int i = 0; i < messages; i++)
+                msgs.add(value(i));
 
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
+            ignite.message(grp).send(MESSAGE_TOPIC, msgs);
 
-        ignite.message().stopRemoteListen(opId);
+            assertTrue(latch.await(10, TimeUnit.SECONDS));
+
+        } finally {
+            ignite.message().stopRemoteListen(opId);
+        }
+
+    }
+
+
+    /**
+     *
+     */
+    private void orderedMessage() {
+        Ignite ignite = grid(SERVER_NODE_IDX);
+
+        ClusterGroup grp = gridCount() > 1
+            ? ignite.cluster().forRemotes()
+            : ignite.cluster().forLocal();
+
+        assert grp.nodes().size() > 0;
+
+        registerListenerAndSendOrderedMessages(ignite, grp);
+    }
+
+    /**
+     *
+     */
+    private void clientServerOrderedMessage() {
+        Ignite ignite = grid(CLIENT_NODE_IDX);
+
+        ClusterGroup grp = ignite.cluster().forServers();
+
+        assert grp.nodes().size() > 0;
+
+        registerListenerAndSendOrderedMessages(ignite, grp);
+    }
+
+    /**
+     *
+     */
+    private void clientClientOrderedMessage() {
+        Ignite ignite = grid(CLIENT_NODE_IDX);
+
+        ClusterGroup grp = ignite.cluster().forClients();
+
+        assert grp.nodes().size() > 0;
+
+        registerListenerAndSendOrderedMessages(ignite, grp);
+    }
+
+    /**
+     *
+     */
+    private void serverClientOrderedMessage() {
+        Ignite ignite = grid(SERVER_NODE_IDX);
+
+        ClusterGroup grp = ignite.cluster().forClients();
+
+        assert grp.nodes().size() > 0;
+
+        registerListenerAndSendOrderedMessages(ignite, grp);
+    }
+
+    /**
+     * @param ignite Ignite.
+     * @param grp Cluster group.
+     */
+    private void registerListenerAndSendOrderedMessages(Ignite ignite, ClusterGroup grp) {
+        int messages = 5;
+
+        IgniteCountDownLatch latch = ignite.countDownLatch(LATCH_NAME,
+            grp.nodes().size() * messages, true, true);
+
+        UUID opId = ignite.message(grp).remoteListen(MESSAGE_TOPIC, new OrderedMessageListener(LATCH_NAME));
+
+        try {
+            for (int i=0; i < messages; i++)
+                ignite.message(grp).sendOrdered(MESSAGE_TOPIC, value(i), 2000);
+
+            assertTrue(latch.await(10, TimeUnit.SECONDS));
+
+        } finally {
+            ignite.message().stopRemoteListen(opId);
+        }
+
     }
 
     /**
@@ -262,37 +409,55 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     private void sendMessage(ClusterGroup grp, Object msg) {
         Ignite ignite = grid(SERVER_NODE_IDX);
 
-        ignite.message(grp).send("topic", msg);
+        ignite.message(grp).send(MESSAGE_TOPIC, msg);
     }
 
     /**
      * @param grp Cluster group.
-     * @param c Ignite predicate.
+     * @return Message listener uuid.
+     * @throws Exception If failed.
      */
-    private UUID registerListener(ClusterGroup grp, IgniteBiPredicate<UUID, Object> c) {
+    private UUID registerListener(ClusterGroup grp) throws Exception {
         Ignite ignite = grid(SERVER_NODE_IDX);
 
-        return ignite.message(grp).remoteListen("topic", c);
+        IgniteBiPredicate<UUID,Object> listener = new MessageListener(LATCH_NAME);
+
+        return ignite.message(grp).remoteListen(MESSAGE_TOPIC, listener);
     }
 
     /**
      * Ignite predicate.
      */
     private static class MessageListener implements IgniteBiPredicate<UUID,Object> {
+
+        /**
+         * Ignite
+         */
+        @IgniteInstanceResource
+        transient Ignite ignite;
+
         /**
          * Ignite latch.
          */
-        private IgniteCountDownLatch latch;
+        protected String latchName;
 
         /**
-         * @param latch Ignite latch.
+         * @param latchName Ignite latch name.
          */
-        public MessageListener(IgniteCountDownLatch latch) {
-            this.latch = latch;
+        public MessageListener(String latchName) {
+            this.latchName = latchName;
+        }
+
+        /**
+         * Default constructor.
+         */
+        public MessageListener() {
+            // No-op.
         }
 
         /** {@inheritDoc} */
         @Override public boolean apply(UUID nodeId, Object msg) {
+            IgniteCountDownLatch latch = ignite.countDownLatch(latchName, 0, false, false);
             latch.countDown();
 
             return true;
@@ -303,10 +468,17 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
      * Ignite order predicate.
      */
     private static class OrderedMessageListener implements IgniteBiPredicate<UUID,TestObject> {
+
         /**
-         * Ignite latch.
+         * Ignite
          */
-        private IgniteCountDownLatch latch;
+        @IgniteInstanceResource
+        transient Ignite ignite;
+
+        /**
+         * Ignite latch name.
+         */
+        private String latchName;
 
         /**
          * Counter.
@@ -314,10 +486,10 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
         private AtomicInteger cntr;
 
         /**
-         * @param latch Ignite latch.
+         * @param latchName Ignite latch name.
          */
-        public OrderedMessageListener(IgniteCountDownLatch latch) {
-            this.latch = latch;
+        OrderedMessageListener(String latchName) {
+            this.latchName = latchName;
 
             cntr = new AtomicInteger(0);
         }
@@ -326,6 +498,7 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
         @Override public boolean apply(UUID nodeId, TestObject msg) {
             assertEquals(cntr.getAndIncrement(), msg.value());
 
+            IgniteCountDownLatch latch = ignite.countDownLatch(latchName, 0, false, false);
             latch.countDown();
 
             return true;

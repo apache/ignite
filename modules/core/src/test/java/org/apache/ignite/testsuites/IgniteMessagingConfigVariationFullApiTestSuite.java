@@ -41,7 +41,7 @@ public class IgniteMessagingConfigVariationFullApiTestSuite extends TestSuite {
             Parameters.factory(BinaryMarshaller.class),
             ConfigVariations.optimizedMarshallerFactory()
         ),
-        Parameters.booleanParameters("setPeerClassLoadingEnabled"),
+        Parameters.booleanParameters("setPeerClassLoadingEnabled")
     };
 
     /**
@@ -61,6 +61,7 @@ public class IgniteMessagingConfigVariationFullApiTestSuite extends TestSuite {
         suite.addTest(new ConfigVariationsTestSuiteBuilder(
             "Multiple servers and client",
             IgniteMessagingConfigVariationFullApiTest.class)
+            .testedNodesCount(2)
             .gridsCount(6)
             .withClients()
             .igniteParams(GRID_PARAMETER_VARIATION)
