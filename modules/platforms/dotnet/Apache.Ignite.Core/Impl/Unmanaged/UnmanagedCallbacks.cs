@@ -785,17 +785,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 var bean = _handleRegistry.Get<LifecycleBeanHolder>(ptr);
 
-                var eventType = (LifecycleEventType)evt;
-
-                bean.OnLifecycleEvent(eventType);
-
-                if (eventType == LifecycleEventType.BeforeNodeStop)
-                {
-                    var ignite = _ignite;
-
-                    if (ignite != null)
-                        ignite.BeforeNodeStop();
-                }
+                bean.OnLifecycleEvent((LifecycleEventType)evt);
             }, true);
         }
 
