@@ -356,7 +356,6 @@ namespace Apache.Ignite.Core.Impl
         internal void BeforeNodeStop()
         {
             var handler = Stopping;
-
             if (handler != null)
                 handler.Invoke(this, EventArgs.Empty);
         }
@@ -370,7 +369,6 @@ namespace Apache.Ignite.Core.Impl
                 bean.OnLifecycleEvent(LifecycleEventType.AfterNodeStop);
 
             var handler = Stopped;
-
             if (handler != null)
                 handler.Invoke(this, EventArgs.Empty);
         }
