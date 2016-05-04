@@ -77,6 +77,22 @@ public class CacheOffheapBatchIndexingTest extends GridCommonAbstractTest {
     }
 
     /**
+     * Loading date into cache
+     * @param name
+     */
+    private void loadingCacheAnyDate(String name) {
+        try (IgniteDataStreamer<Object, Object> streamer = ignite(0).dataStreamer(name)) {
+            for (int i = 0; i < 30_000; i++) {
+                if (i % 2 == 0)
+                    streamer.addData(i, new Person(i, i + 1, String.valueOf(i), String.valueOf(i + 1), salary(i)));
+                else
+                    streamer.addData(i, new Organization(i, String.valueOf(i)));
+            }
+        }
+    }
+
+    /**
+     * Test removal using EntryProcessor.
      * @throws Exception If failed.
      */
     public void testBatchRemove() throws Exception {
@@ -122,7 +138,7 @@ public class CacheOffheapBatchIndexingTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Test putAll with multiple indexed entites and streamer preloading with low off-heap cache size.
+     * Test putAll with multiple indexed entites and streamer pre-loading with low off-heap cache size.
      * The test fails in remove call.
      */
     public void testPutAllMultupleEntitiesAndStreamer() {
@@ -132,7 +148,7 @@ public class CacheOffheapBatchIndexingTest extends GridCommonAbstractTest {
 
     /**
      * Test putAll with multiple indexed entites and streamer preloading with default off-heap cache size.
-     * The test hangs very often in putAll call.
+     * The test fails on remove and often hangs in putAll call.
      */
     public void testPutAllMultupleEntitiesAndStreamerDfltOffHeapRowCacheSize() {
         //fail("IGNITE-2982");
@@ -166,7 +182,7 @@ public class CacheOffheapBatchIndexingTest extends GridCommonAbstractTest {
                 Map<Integer, Person> putMap1 = new TreeMap<>();
 
                 for (int i = 0; i < entitiesCnt; i++)
-                    putMap1.put(i, new Person(i, i + 1, String.valueOf(i), String.valueOf(i + 1), i * 100.));
+                    putMap1.put(i, new Person(i, i + 1, String.valueOf(i), String.valueOf(i + 1), salary(i)));
 
                 cache.putAll(putMap1);
 
@@ -183,6 +199,13 @@ public class CacheOffheapBatchIndexingTest extends GridCommonAbstractTest {
         } finally {
             cache.destroy();
         }
+    }
+
+    /**
+     * @param base Base.
+     */
+    private double salary(int base) {
+        return base * 100.;
     }
 
     /**
@@ -204,7 +227,7 @@ public class CacheOffheapBatchIndexingTest extends GridCommonAbstractTest {
                 Map<Integer, Person> putMap1 = new TreeMap<>();
 
                 for (int i = 0; i < total; i++)
-                    putMap1.put(i, new Person(i, i + 1, String.valueOf(i), String.valueOf(i + 1), i * 100.));
+                    putMap1.put(i, new Person(i, i + 1, String.valueOf(i), String.valueOf(i + 1), salary(i)));
 
                 cache.putAll(putMap1);
 
@@ -243,7 +266,7 @@ public class CacheOffheapBatchIndexingTest extends GridCommonAbstractTest {
     /**
      * Ignite cache value class.
      */
-    protected static class Person implements Binarylizable {
+    private static class Person implements Binarylizable {
 
         /** Person ID. */
         @QuerySqlField(index = true)
@@ -381,251 +404,7 @@ public class CacheOffheapBatchIndexingTest extends GridCommonAbstractTest {
     /**
      * Ignite cache value class with indexed field.
      */
-    protected static class Organization implements Binarylizable {
-
-        /** Organization ID. */
-        @QuerySqlField(index = true)
-        private int id;
-
-        /** Organization name. */
-        @QuerySqlField(index = true)
-        private String name;
-
-        /**
-         * Constructs empty organization.
-         */
-        public Organization() {
-            // No-op.
-        }
-
-        /**
-         * Constructs organization with given ID.
-         *
-         * @param id Organization ID.
-         * @param name Organization name.
-         */
-        public Organization(int id, String name) {
-            this.id = id;
-            this.name = name;
-        }
-
-        /**
-         * @return Organization id.
-         */
-        public int getId() {
-            return id;
-        }
-
-        /**
-         * @param id Organization id.
-         */
-        public void setId(int id) {
-            this.id = id;
-        }
-
-        /**
-         * @return Organization name.
-         */
-        public String getName() {
-            return name;
-        }
-
-        /**
-         * @param name Organization name.
-         */
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-            writer.writeInt("id", id);
-            writer.writeString("name", name);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
-            id = reader.readInt("id");
-            name = reader.readString("name");
-        }
-    }
-
-    /**
-     * Loading date into cache
-     * @param name
-     */
-    private void loadingCacheAnyDate(String name) {
-        try (IgniteDataStreamer<Object, Object> streamer = ignite(0).dataStreamer(name)) {
-            for (int i = 0; i < 30_000; i++) {
-                if (i % 2 == 0)
-                    streamer.addData(i, new Person(i, i + 1, String.valueOf(i), String.valueOf(i + 1), i / 0.99));
-                else
-                    streamer.addData(i, new Organization(i, String.valueOf(i)));
-            }
-        }
-    }
-
-    /**
-     * @param name Name.
-     */
-    private void loadingCacheAnyDate2(String name) {
-        try (IgniteDataStreamer<Object, Object> streamer = ignite(0).dataStreamer(name)) {
-            for (int i = 0; i < 30_000; i++) {
-                if (i % 2 == 0)
-                    streamer.addData(i, new Other.Person(i, i + 1, String.valueOf(i), String.valueOf(i + 1), i / 0.99));
-                else
-                    streamer.addData(i, new Other.Organization(i, String.valueOf(i)));
-            }
-        }
-    }
-}
-
-/**
- * Define another namespace
- */
-class Other {
-    /**
-     * Ignite cache value class.
-     */
-    protected static class Person implements Binarylizable {
-
-        /** Person ID. */
-        @QuerySqlField(index = true)
-        private int id;
-
-        /** Organization ID. */
-        @QuerySqlField(index = true)
-        private int orgId;
-
-        /** First name (not-indexed). */
-        @QuerySqlField
-        private String firstName;
-
-        /** Last name (not indexed). */
-        @QuerySqlField
-        private String lastName;
-
-        /** Salary. */
-        @QuerySqlField(index = true)
-        private double salary;
-
-        /**
-         * Constructs empty person.
-         */
-        public Person() {
-            // No-op.
-        }
-
-        /**
-         * Constructs person record.
-         *
-         * @param id Person ID.
-         * @param orgId Organization ID.
-         * @param firstName First name.
-         * @param lastName Last name.
-         * @param salary Salary.
-         */
-        public Person(int id, int orgId, String firstName, String lastName, double salary) {
-            this.id = id;
-            this.orgId = orgId;
-            this.firstName = firstName;
-            this.lastName = lastName;
-            this.salary = salary;
-        }
-
-        /**
-         * @return Person id.
-         */
-        public int getId() {
-            return id;
-        }
-
-        /**
-         * @param id Person id.
-         */
-        public void setId(int id) {
-            this.id = id;
-        }
-
-        /**
-         * @return Organization id.
-         */
-        public int getOrganizationId() {
-            return orgId;
-        }
-
-        /**
-         * @param orgId Organization id.
-         */
-        public void setOrganizationId(int orgId) {
-            this.orgId = orgId;
-        }
-
-        /**
-         * @return Person first name.
-         */
-        public String getFirstName() {
-            return firstName;
-        }
-
-        /**
-         * @param firstName Person first name.
-         */
-        public void setFirstName(String firstName) {
-            this.firstName = firstName;
-        }
-
-        /**
-         * @return Person last name.
-         */
-        public String getLastName() {
-            return lastName;
-        }
-
-        /**
-         * @param lastName Person last name.
-         */
-        public void setLastName(String lastName) {
-            this.lastName = lastName;
-        }
-
-        /**
-         * @return Salary.
-         */
-        public double getSalary() {
-            return salary;
-        }
-
-        /**
-         * @param salary Salary.
-         */
-        public void setSalary(double salary) {
-            this.salary = salary;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-            writer.writeInt("id", id);
-            writer.writeInt("orgId", orgId);
-            writer.writeString("firstName", firstName);
-            writer.writeString("lastName", lastName);
-            writer.writeDouble("salary", salary);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
-            id = reader.readInt("id");
-            orgId = reader.readInt("orgId");
-            firstName = reader.readString("firstName");
-            lastName = reader.readString("lastName");
-            salary = reader.readDouble("salary");
-        }
-    }
-
-    /**
-     * Ignite cache value class with indexed field.
-     */
-    protected static class Organization implements Binarylizable {
+    private static class Organization implements Binarylizable {
 
         /** Organization ID. */
         @QuerySqlField(index = true)
