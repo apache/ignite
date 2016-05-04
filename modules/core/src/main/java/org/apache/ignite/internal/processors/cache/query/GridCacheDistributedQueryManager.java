@@ -579,8 +579,8 @@ public class GridCacheDistributedQueryManager<K, V> extends GridCacheQueryManage
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked", "serial"})
     @Override public GridCloseableIterator<Map.Entry<K, V>> scanQueryDistributed(final GridCacheQueryAdapter qry,
-        final Collection<ClusterNode> nodes) throws IgniteCheckedException {
-        assert cctx.config().getCacheMode() != LOCAL;
+        Collection<ClusterNode> nodes) throws IgniteCheckedException {
+        assert !cctx.isLocal() : cctx.name();
         assert qry.type() == GridCacheQueryType.SCAN: qry;
 
         GridCloseableIterator<Map.Entry<K, V>> locIter0 = null;
