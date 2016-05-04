@@ -351,12 +351,28 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /// <summary>
+        /// Called before node has stopped.
+        /// </summary>
+        internal void BeforeNodeStop()
+        {
+            var handler = Stopping;
+
+            if (handler != null)
+                handler.Invoke(this, EventArgs.Empty);
+        }
+
+        /// <summary>
         /// Called after node has stopped.
         /// </summary>
         internal void AfterNodeStop()
         {
             foreach (var bean in _lifecycleBeans)
                 bean.OnLifecycleEvent(LifecycleEventType.AfterNodeStop);
+
+            var handler = Stopped;
+
+            if (handler != null)
+                handler.Invoke(this, EventArgs.Empty);
         }
 
         /** <inheritdoc /> */
@@ -645,6 +661,18 @@ namespace Apache.Ignite.Core.Impl
                 return res;
             }
         }
+
+        /** <inheritdoc /> */
+        public event EventHandler Stopping;
+
+        /** <inheritdoc /> */
+        public event EventHandler Stopped;
+
+        /** <inheritdoc /> */
+        public event EventHandler ClientDisconnected;
+
+        /** <inheritdoc /> */
+        public event EventHandler<ClientReconnectEventArgs> ClientReconnected;
 
         /// <summary>
         /// Gets or creates near cache.
