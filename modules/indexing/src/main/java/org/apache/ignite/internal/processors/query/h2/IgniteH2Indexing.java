@@ -594,9 +594,13 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         Class<?> keyCls = getClass(coctx, key);
         Class<?> valCls = val == null ? null : getClass(coctx, val);
 
+        boolean foundTbl = false;
+
         for (TableDescriptor tbl : tables(schema(spaceName))) {
             if (tbl.type().keyClass().isAssignableFrom(keyCls)
                 && (val == null || tbl.type().valueClass().isAssignableFrom(valCls))) {
+                foundTbl = true;
+
                 if (tbl.tbl.update(key, partId, val, ver, 0, true)) {
                     if (tbl.luceneIdx != null)
                         tbl.luceneIdx.remove(key);
@@ -606,7 +610,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
         }
 
-        return false;
+        return foundTbl;
     }
 
     /** {@inheritDoc} */
@@ -622,8 +626,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         IgniteBiTuple<CacheObject, GridCacheVersion> res = null;
 
+        boolean foundTbl = false;
+
         for (TableDescriptor tbl : tables(schema(spaceName))) {
             if (tbl.type().keyClass().isAssignableFrom(keyCls)) {
+                foundTbl = true;
+
                 res = tbl.tbl.read(cctx, key, partId);
 
                 if (res != null)
@@ -631,28 +639,25 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
         }
 
+        if (foundTbl && res == null)
+            return F.t(null, null);
+
         return res;
     }
 
     /** {@inheritDoc} */
-    @Override public List<BPlusTree<?, ? extends CacheDataRow>> pkIndexes(String spaceName) {
+    @Override public BPlusTree<?, ? extends CacheDataRow> pkIndex(String spaceName) {
         Schema schema = schemas.get(schema(spaceName));
 
         if (schema == null)
-            return Collections.emptyList();
-
-        List<BPlusTree<?, ? extends CacheDataRow>> res = null;
+            return null;
 
         for (TableDescriptor tbl : schema.tbls.values()) {
-            if (tbl.pkTreeIdx != null) {
-                if (res == null)
-                    res = new ArrayList<>();
-
-                res.add(tbl.pkTreeIdx.tree());
-            }
+            if (tbl.pkTreeIdx != null)
+                return tbl.pkTreeIdx.tree();
         }
 
-        return res != null ? res : Collections.<BPlusTree<?, ? extends CacheDataRow>>emptyList();
+        return null;
     }
 
     /** {@inheritDoc} */

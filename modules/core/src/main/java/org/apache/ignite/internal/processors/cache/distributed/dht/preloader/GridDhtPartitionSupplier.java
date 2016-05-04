@@ -282,15 +282,7 @@ class GridDhtPartitionSupplier {
                     }
                 }
 
-                GridCacheEntryInfoCollectSwapListener swapLsnr = null;
-
                 try {
-                    if (phase == SupplyContextPhase.NEW && cctx.isOffHeapEnabled()) {
-                        swapLsnr = new GridCacheEntryInfoCollectSwapListener(log);
-
-                        cctx.swap().addOffHeapListener(part, swapLsnr);
-                    }
-
                     boolean partMissing = false;
 
                     if (phase == SupplyContextPhase.NEW)
@@ -321,12 +313,11 @@ class GridDhtPartitionSupplier {
                                         partIt,
                                         part,
                                         entIt,
-                                        swapLsnr,
+                                        null,
                                         loc,
                                         d.topologyVersion(),
                                         d.updateSequence());
 
-                                    swapLsnr = null;
                                     loc = null;
 
                                     reply(node, d, s, scId);
@@ -368,14 +359,14 @@ class GridDhtPartitionSupplier {
                                 phase,
                                 partIt,
                                 null,
-                                swapLsnr,
+                                null,
                                 part,
                                 loc,
                                 d.updateSequence());
                         }
                     }
 
-                    if (phase == SupplyContextPhase.SWAP && cctx.isOffHeapEnabled()) {
+                    if (phase == SupplyContextPhase.SWAP && false) {
                         GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> iter =
                             sctx != null && sctx.entryIt != null ?
                                 (GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>>)sctx.entryIt :
@@ -407,12 +398,11 @@ class GridDhtPartitionSupplier {
                                             partIt,
                                             part,
                                             iter,
-                                            swapLsnr,
+                                            null,
                                             loc,
                                             d.topologyVersion(),
                                             d.updateSequence());
 
-                                        swapLsnr = null;
                                         loc = null;
 
                                         reply(node, d, s, scId);
@@ -476,15 +466,6 @@ class GridDhtPartitionSupplier {
                         }
                     }
 
-                    if (swapLsnr == null && sctx != null)
-                        swapLsnr = sctx.swapLsnr;
-
-                    // Stop receiving promote notifications.
-                    if (swapLsnr != null) {
-                        cctx.swap().removeOffHeapListener(part, swapLsnr);
-                        cctx.swap().removeSwapListener(part, swapLsnr);
-                    }
-
                     if (phase == SupplyContextPhase.SWAP) {
                         phase = SupplyContextPhase.EVICTED;
 
@@ -500,65 +481,6 @@ class GridDhtPartitionSupplier {
                         }
                     }
 
-                    if (phase == SupplyContextPhase.EVICTED && swapLsnr != null) {
-                        Collection<GridCacheEntryInfo> entries = swapLsnr.entries();
-
-                        swapLsnr = null;
-
-                        Iterator<GridCacheEntryInfo> lsnrIt = sctx != null && sctx.entryIt != null ?
-                            (Iterator<GridCacheEntryInfo>)sctx.entryIt : entries.iterator();
-
-                        while (lsnrIt.hasNext()) {
-                            if (!cctx.affinity().belongs(node, part, d.topologyVersion())) {
-                                // Demander no longer needs this partition,
-                                // so we send '-1' partition and move on.
-                                s.missed(part);
-
-                                if (log.isDebugEnabled())
-                                    log.debug("Demanding node does not need requested partition " +
-                                        "[part=" + part + ", nodeId=" + id + ']');
-
-                                // No need to continue iteration over swap entries.
-                                break;
-                            }
-
-                            if (s.messageSize() >= cctx.config().getRebalanceBatchSize()) {
-                                if (++bCnt >= maxBatchesCnt) {
-                                    saveSupplyContext(scId,
-                                        phase,
-                                        partIt,
-                                        part,
-                                        lsnrIt,
-                                        swapLsnr,
-                                        loc,
-                                        d.topologyVersion(),
-                                        d.updateSequence());
-
-                                    loc = null;
-
-                                    reply(node, d, s, scId);
-
-                                    return;
-                                }
-                                else {
-                                    if (!reply(node, d, s, scId))
-                                        return;
-
-                                    s = new GridDhtPartitionSupplyMessageV2(d.updateSequence(),
-                                        cctx.cacheId(), d.topologyVersion(), cctx.deploymentEnabled());
-                                }
-                            }
-
-                            GridCacheEntryInfo info = lsnrIt.next();
-
-                            if (preloadPred == null || preloadPred.apply(info))
-                                s.addEntry(part, info, cctx);
-                            else if (log.isDebugEnabled())
-                                log.debug("Rebalance predicate evaluated to false (will not sender cache entry): " +
-                                    info);
-                        }
-                    }
-
                     // Mark as last supply message.
                     s.last(part);
 
@@ -569,11 +491,6 @@ class GridDhtPartitionSupplier {
                 finally {
                     if (loc != null)
                         loc.release();
-
-                    if (swapLsnr != null) {
-                        cctx.swap().removeOffHeapListener(part, swapLsnr);
-                        cctx.swap().removeSwapListener(part, swapLsnr);
-                    }
                 }
             }
 

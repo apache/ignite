@@ -730,7 +730,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         }
     }
 
-    public List<BPlusTree<?, ? extends CacheDataRow>> pkIndexes(String space) {
+    public BPlusTree<?, ? extends CacheDataRow> pkIndex(String space) {
         if (idx == null)
             return null;
 
@@ -738,7 +738,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             throw new IllegalStateException("Failed to write to index (grid is stopping).");
 
         try {
-            return idx.pkIndexes(space);
+            return idx.pkIndex(space);
         }
         finally {
             busyLock.leaveBusy();

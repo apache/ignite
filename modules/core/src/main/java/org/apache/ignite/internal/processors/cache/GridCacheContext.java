@@ -153,9 +153,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Continuous query manager. */
     private CacheContinuousQueryManager contQryMgr;
 
-    /** Swap manager. */
-    private GridCacheSwapManager swapMgr;
-
     /** Evictions manager. */
     private GridCacheEvictionManager evictMgr;
 
@@ -258,7 +255,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @param affNode {@code True} if local node is affinity node.
      * @param updatesAllowed Updates allowed flag.
      * @param evtMgr Cache event manager.
-     * @param swapMgr Cache swap manager.
      * @param storeMgr Store manager.
      * @param evictMgr Cache eviction manager.
      * @param qryMgr Cache query manager.
@@ -285,7 +281,6 @@ public class GridCacheContext<K, V> implements Externalizable {
          */
 
         GridCacheEventManager evtMgr,
-        GridCacheSwapManager swapMgr,
         CacheStoreManager storeMgr,
         GridCacheEvictionManager evictMgr,
         GridCacheQueryManager<K, V> qryMgr,
@@ -303,7 +298,6 @@ public class GridCacheContext<K, V> implements Externalizable {
         assert cacheCfg != null;
 
         assert evtMgr != null;
-        assert swapMgr != null;
         assert storeMgr != null;
         assert evictMgr != null;
         assert qryMgr != null;
@@ -328,7 +322,6 @@ public class GridCacheContext<K, V> implements Externalizable {
          * ===========================
          */
         this.evtMgr = add(evtMgr);
-        this.swapMgr = add(swapMgr);
         this.storeMgr = add(storeMgr);
         this.evictMgr = add(evictMgr);
         this.qryMgr = add(qryMgr);
@@ -989,7 +982,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return Swap manager.
      */
     public GridCacheSwapManager swap() {
-        return swapMgr;
+        return null;
     }
 
     /**

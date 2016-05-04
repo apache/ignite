@@ -1,10 +1,18 @@
 /*
- *  Copyright (C) GridGain Systems. All Rights Reserved.
- *  _________        _____ __________________        _____
- *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
- *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
- *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
- *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package org.apache.ignite.internal.processors.database;
@@ -43,16 +51,19 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  *
  */
-public class IgniteDbSingleNodePutGetSelfTest extends GridCommonAbstractTest {
+public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest {
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /**
-     * @return Grid count.
+     * @return Node count.
      */
-    protected int gridCount() {
-        return 1;
-    }
+    protected abstract int gridCount();
+
+    /**
+     * @return {@code True} if indexing is enabled.
+     */
+    protected abstract boolean indexingEnabled();
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -70,7 +81,8 @@ public class IgniteDbSingleNodePutGetSelfTest extends GridCommonAbstractTest {
 
         CacheConfiguration ccfg = new CacheConfiguration();
 
-        ccfg.setIndexedTypes(Integer.class, DbValue.class);
+        if (indexingEnabled())
+            ccfg.setIndexedTypes(Integer.class, DbValue.class);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
@@ -80,7 +92,8 @@ public class IgniteDbSingleNodePutGetSelfTest extends GridCommonAbstractTest {
 
         CacheConfiguration ccfg2 = new CacheConfiguration("non-primitive");
 
-        ccfg2.setIndexedTypes(DbKey.class, DbValue.class);
+        if (indexingEnabled())
+            ccfg2.setIndexedTypes(DbKey.class, DbValue.class);
 
         ccfg2.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
@@ -318,34 +331,36 @@ public class IgniteDbSingleNodePutGetSelfTest extends GridCommonAbstractTest {
             assertEquals(v0, cache.get(i));
         }
 
-        awaitPartitionMapExchange();
+        if (indexingEnabled()) {
+            awaitPartitionMapExchange();
 
-        X.println("Query start");
+            X.println("Query start");
 
-        assertEquals(cnt, cache.query(new SqlFieldsQuery("select null from dbvalue")).getAll().size());
+            assertEquals(cnt, cache.query(new SqlFieldsQuery("select null from dbvalue")).getAll().size());
 
-        List<List<?>> res = cache.query(new SqlFieldsQuery("select ival, _val from dbvalue where ival < ?")
-            .setArgs(10_000)).getAll();
+            List<List<?>> res = cache.query(new SqlFieldsQuery("select ival, _val from dbvalue where ival < ?")
+                .setArgs(10_000)).getAll();
 
-        assertEquals(10_000, res.size());
+            assertEquals(10_000, res.size());
 
-        for (int i = 0; i < 10_000; i++) {
-            List<?> row = res.get(i);
+            for (int i = 0; i < 10_000; i++) {
+                List<?> row = res.get(i);
 
-            assertEquals(2, row.size());
-            assertEquals(i, row.get(0));
+                assertEquals(2, row.size());
+                assertEquals(i, row.get(0));
 
-            assertEquals(new DbValue(i, "test-value", i), row.get(1));
-        }
+                assertEquals(new DbValue(i, "test-value", i), row.get(1));
+            }
 
-        assertEquals(1, cache.query(new SqlFieldsQuery("select lval from dbvalue where ival = 7899")).getAll().size());
-        assertEquals(2000, cache.query(new SqlFieldsQuery("select lval from dbvalue where ival >= 5000 and ival < 7000"))
-            .getAll().size());
+            assertEquals(1, cache.query(new SqlFieldsQuery("select lval from dbvalue where ival = 7899")).getAll().size());
+            assertEquals(2000, cache.query(new SqlFieldsQuery("select lval from dbvalue where ival >= 5000 and ival < 7000"))
+                .getAll().size());
 
-        String plan = cache.query(new SqlFieldsQuery(
+            String plan = cache.query(new SqlFieldsQuery(
                 "explain select lval from dbvalue where ival >= 5000 and ival < 7000")).getAll().get(0).get(0).toString();
 
-        assertTrue(plan, plan.contains("iVal_idx"));
+            assertTrue(plan, plan.contains("iVal_idx"));
+        }
     }
 
     /**
@@ -419,25 +434,27 @@ public class IgniteDbSingleNodePutGetSelfTest extends GridCommonAbstractTest {
             assertEquals(v0, cache.get(k));
         }
 
-        awaitPartitionMapExchange();
+        if (indexingEnabled()) {
+            awaitPartitionMapExchange();
 
-        X.println("Query start");
+            X.println("Query start");
 
-        // Make sure to cover multiple pages.
-        int limit = 500;
+            // Make sure to cover multiple pages.
+            int limit = 500;
 
-        for (int i = 0; i < limit; i++) {
-            List<List<?>> res = cache.query(new SqlFieldsQuery("select ival, _val from dbvalue where ival < ? order by ival")
-                .setArgs(i)).getAll();
+            for (int i = 0; i < limit; i++) {
+                List<List<?>> res = cache.query(new SqlFieldsQuery("select ival, _val from dbvalue where ival < ? order by ival")
+                    .setArgs(i)).getAll();
 
-            // 0 => 0, 1 => 1, 2=>1,...
-            assertEquals((i + 1) / 2, res.size());
+                // 0 => 0, 1 => 1, 2=>1,...
+                assertEquals((i + 1) / 2, res.size());
 
-            res = cache.query(new SqlFieldsQuery("select ival, _val from dbvalue where ival <= ? order by ival")
-                .setArgs(i)).getAll();
+                res = cache.query(new SqlFieldsQuery("select ival, _val from dbvalue where ival <= ? order by ival")
+                    .setArgs(i)).getAll();
 
-            // 0 => 1, 1 => 1, 2=>2,...
-            assertEquals(i / 2 + 1, res.size());
+                // 0 => 1, 1 => 1, 2=>2,...
+                assertEquals(i / 2 + 1, res.size());
+            }
         }
     }
 
@@ -471,36 +488,38 @@ public class IgniteDbSingleNodePutGetSelfTest extends GridCommonAbstractTest {
             assertEquals(v0, cache.get(i));
         }
 
-        awaitPartitionMapExchange();
+        if (indexingEnabled()) {
+            awaitPartitionMapExchange();
 
-        X.println("Query start");
+            X.println("Query start");
 
-        assertEquals(cnt, cache.query(new SqlFieldsQuery("select null from dbvalue")).getAll().size());
+            assertEquals(cnt, cache.query(new SqlFieldsQuery("select null from dbvalue")).getAll().size());
 
-        int limit = 500;
+            int limit = 500;
 
-        List<List<?>> res = cache.query(new SqlFieldsQuery("select ival, _val from dbvalue where ival < ? order by ival")
-            .setArgs(limit)).getAll();
+            List<List<?>> res = cache.query(new SqlFieldsQuery("select ival, _val from dbvalue where ival < ? order by ival")
+                .setArgs(limit)).getAll();
 
-        assertEquals(limit, res.size());
+            assertEquals(limit, res.size());
 
-        for (int i = 0; i < limit; i++) {
-            List<?> row = res.get(i);
+            for (int i = 0; i < limit; i++) {
+                List<?> row = res.get(i);
 
-            assertEquals(2, row.size());
-            assertEquals(i, row.get(0));
+                assertEquals(2, row.size());
+                assertEquals(i, row.get(0));
 
-            assertEquals(new DbValue(i, "test-value", i), row.get(1));
+                assertEquals(new DbValue(i, "test-value", i), row.get(1));
+            }
+
+            assertEquals(1, cache.query(new SqlFieldsQuery("select lval from dbvalue where ival = 7899")).getAll().size());
+            assertEquals(2000, cache.query(new SqlFieldsQuery("select lval from dbvalue where ival >= 5000 and ival < 7000"))
+                .getAll().size());
+
+            String plan = cache.query(new SqlFieldsQuery(
+                "explain select lval from dbvalue where ival >= 5000 and ival < 7000")).getAll().get(0).get(0).toString();
+
+            assertTrue(plan, plan.contains("iVal_idx"));
         }
-
-        assertEquals(1, cache.query(new SqlFieldsQuery("select lval from dbvalue where ival = 7899")).getAll().size());
-        assertEquals(2000, cache.query(new SqlFieldsQuery("select lval from dbvalue where ival >= 5000 and ival < 7000"))
-            .getAll().size());
-
-        String plan = cache.query(new SqlFieldsQuery(
-            "explain select lval from dbvalue where ival >= 5000 and ival < 7000")).getAll().get(0).get(0).toString();
-
-        assertTrue(plan, plan.contains("iVal_idx"));
     }
 
     /**
@@ -913,6 +932,9 @@ public class IgniteDbSingleNodePutGetSelfTest extends GridCommonAbstractTest {
         /** */
         private int val;
 
+        /**
+         * @param val Value.
+         */
         private DbKey(int val) {
             this.val = val;
         }
@@ -971,10 +993,10 @@ public class IgniteDbSingleNodePutGetSelfTest extends GridCommonAbstractTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            DbValue dbValue = (DbValue)o;
+            DbValue dbVal = (DbValue)o;
 
-            return iVal == dbValue.iVal && lVal == dbValue.lVal &&
-                !(sVal != null ? !sVal.equals(dbValue.sVal) : dbValue.sVal != null);
+            return iVal == dbVal.iVal && lVal == dbVal.lVal &&
+                !(sVal != null ? !sVal.equals(dbVal.sVal) : dbVal.sVal != null);
         }
 
         /** {@inheritDoc} */

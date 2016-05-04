@@ -1308,8 +1308,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         GridCacheAffinityManager affMgr = new GridCacheAffinityManager();
         GridCacheEventManager evtMgr = new GridCacheEventManager();
-        GridCacheSwapManager swapMgr = new GridCacheSwapManager(cfg.getCacheMode() == LOCAL ||
-            !GridCacheUtils.isNearEnabled(cfg));
         GridCacheEvictionManager evictMgr = new GridCacheEvictionManager();
         GridCacheQueryManager qryMgr = queryManager(cfg);
         CacheContinuousQueryManager contQryMgr = new CacheContinuousQueryManager();
@@ -1341,7 +1339,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
              * ===========================
              */
             evtMgr,
-            swapMgr,
             storeMgr,
             evictMgr,
             qryMgr,
@@ -1452,7 +1449,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
              * 7. GridCacheTtlManager.
              * ===============================================
              */
-            swapMgr = new GridCacheSwapManager(true);
             evictMgr = new GridCacheEvictionManager();
             evtMgr = new GridCacheEventManager();
             pluginMgr = new CachePluginManager(ctx, cfg);
@@ -1471,7 +1467,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                  * ===========================
                  */
                 evtMgr,
-                swapMgr,
                 storeMgr,
                 evictMgr,
                 qryMgr,
