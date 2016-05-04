@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Tests
         public void TestStopFromJava()
         {
             var exePath = typeof(IgniteRunner).Assembly.Location;
-            var springPath = Path.GetFullPath("config\\compute\\compute-grid1.xml");
+            var springPath = Path.GetFullPath(@"config\compute\compute-grid1.xml");
 
             IgniteProcess.Start(exePath, string.Empty, args: new[]
             {
@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.IsTrue(ignite.WaitTopology(1), "Failed to stop remote node");
 
                 // Check that service has stopped
-                service.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(15));
+                service.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
             }
         }
 
