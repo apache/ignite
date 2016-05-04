@@ -120,10 +120,7 @@ namespace ignite
                  *
                  * @return True if the transaction is rollback-only.
                  */
-                bool IsRollbackOnly()
-                {
-                    return rollbackOnly;
-                }
+                bool IsRollbackOnly();
 
                 /**
                  * Get concurrency.
@@ -212,9 +209,6 @@ namespace ignite
 
                 /** Closed flag. */
                 bool closed;
-
-                /** Rollback-only flag. */
-                bool rollbackOnly;
 
                 IGNITE_NO_COPY_ASSIGNMENT(TransactionImpl)
             };

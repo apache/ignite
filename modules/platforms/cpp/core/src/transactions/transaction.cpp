@@ -143,6 +143,32 @@ namespace ignite
                     "Instance is not usable (did you check for error?).");
             }
         }
+
+        bool Transaction::IsRollbackOnly()
+        {
+            IgniteError err;
+
+            bool res = IsRollbackOnly(err);
+
+            IgniteError::ThrowIfNeeded(err);
+
+            return res;
+        }
+
+        bool Transaction::IsRollbackOnly(IgniteError& err)
+        {
+            err = IgniteError();
+
+            TransactionImpl* txImpl = impl.Get();
+
+            if (txImpl)
+                return txImpl->IsRollbackOnly();
+            else
+            {
+                err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                    "Instance is not usable (did you check for error?).");
+            }
+        }
     }
 }
 

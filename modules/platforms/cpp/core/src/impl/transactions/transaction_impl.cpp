@@ -38,8 +38,7 @@ namespace ignite
                 timeout(timeout),
                 txSize(txSize),
                 state(IGNITE_TX_STATE_UNKNOWN),
-                closed(false),
-                rollbackOnly(false)
+                closed(false)
             {
                 // No-op.
             }
@@ -161,7 +160,16 @@ namespace ignite
                     return;
                 }
 
-                rollbackOnly = txs.Get()->TxSetRollbackOnly(id, err);
+                txs.Get()->TxSetRollbackOnly(id, err);
+            }
+
+            bool TransactionImpl::IsRollbackOnly()
+            {
+                TransactionState state0 = GetState();
+
+                return state0 == IGNITE_TX_STATE_MARKED_ROLLBACK ||
+                       state0 == IGNITE_TX_STATE_ROLLING_BACK ||
+                       state0 == IGNITE_TX_STATE_ROLLED_BACK;
             }
 
             TransactionState TransactionImpl::GetState()
