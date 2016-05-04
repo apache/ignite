@@ -30,7 +30,7 @@ typedef std::set<std::string> StringSet;
 
 namespace config
 {
-    using ignite::common::util::ToLower;
+    using ignite::common::utils::ToLower;
 
     /** Command line argument: Ignite home. */
     const std::string CmdIgniteHome = ToLower("-IgniteHome=");
@@ -61,7 +61,7 @@ namespace config
      */
     void ToArgs(const ignite::IgniteConfiguration& cfg, StringList& args)
     {
-        using ignite::common::util::LongToString;
+        using ignite::common::utils::LongToString;
 
         if (!cfg.igniteHome.empty())
             args.push_back(CmdIgniteHome + cfg.igniteHome);
@@ -93,7 +93,7 @@ namespace config
      */
     void Configure(ignite::IgniteConfiguration& cfg, const StringList& src)
     {
-        using ignite::common::util::ParseInt;
+        using ignite::common::utils::ParseInt;
 
         StringList jvmOpts;
 
@@ -177,7 +177,7 @@ int main(int argc, const char* argv[])
         // Check for special cases.
         if (!args.empty())
         {
-            using ignite::common::util::ToLower;
+            using ignite::common::utils::ToLower;
 
             std::string first = ToLower(args.front());
 

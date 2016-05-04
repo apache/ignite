@@ -421,7 +421,7 @@ public class IgniteConfiguration {
     private ConnectorConfiguration connectorCfg = new ConnectorConfiguration();
 
     /** ODBC configuration. */
-    private OdbcConfiguration odbcCfg;
+    private OdbcConfiguration odbcCfg = new OdbcConfiguration();
 
     /** Warmup closure. Will be invoked before actual grid start. */
     private IgniteInClosure<IgniteConfiguration> warmupClos;
