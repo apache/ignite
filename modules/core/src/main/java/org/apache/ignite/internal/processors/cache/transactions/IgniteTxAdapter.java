@@ -692,27 +692,24 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     /**
      * Gets remaining allowed transaction time.
      *
-     * @return Remaining transaction time.
+     * @return Remaining transaction time. {@code 0} if timeout isn't specified. {@code -1} if time is out.
      */
     @Override public long remainingTime() {
         if (timeout() <= 0)
-            return -1;
+            return 0;
 
         long timeLeft = timeout() - (U.currentTimeMillis() - startTime());
 
-        if (timeLeft < 0)
-            return 0;
+        return timeLeft <= 0 ? -1 : timeLeft;
 
-        return timeLeft;
     }
 
     /**
-     * @return Lock timeout.
+     * @return Transaction timeout exception.
      */
-    protected long lockTimeout() {
-        long timeout = remainingTime();
-
-        return timeout < 0 ? 0 : timeout == 0 ? -1 : timeout;
+    protected final IgniteCheckedException timeoutException() {
+        return new IgniteTxTimeoutCheckedException("Failed to acquire lock within provided timeout " +
+            "for transaction [timeout=" + timeout() + ", tx=" + this + ']');
     }
 
     /** {@inheritDoc} */

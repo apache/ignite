@@ -15,26 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.service;
+package org.apache.ignite.testsuites;
 
-import org.apache.ignite.IgniteCheckedException;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.testframework.config.GridTestProperties;
 
 /**
- * Exception thrown if service is not found.
+ *
  */
-public class GridServiceNotFoundException extends IgniteCheckedException {
-    /** */
-    private static final long serialVersionUID = 0L;
-
+public class BinaryObjectsTxDeadlockDetectionTestSuite {
     /**
-     * @param name Service name.
+     * @return Test suite.
+     * @throws Exception If failed.
      */
-    public GridServiceNotFoundException(String name) {
-        super("Service not found: " + name);
-    }
+    public static TestSuite suite() throws Exception {
+        GridTestProperties.setProperty(GridTestProperties.MARSH_CLASS_NAME, BinaryMarshaller.class.getName());
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return getClass() + ": " + getMessage();
+        return TxDeadlockDetectionTestSuite.suite();
     }
 }
