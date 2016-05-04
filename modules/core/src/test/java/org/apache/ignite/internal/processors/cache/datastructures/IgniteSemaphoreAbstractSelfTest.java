@@ -77,6 +77,7 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
      */
     public void testSemaphore() throws Exception {
         checkSemaphore();
+        checkSemaphoreSerialization();
     }
 
     /**
@@ -228,6 +229,36 @@ public abstract class IgniteSemaphoreAbstractSelfTest extends IgniteAtomicsAbstr
         semaphore1.close();
 
         checkRemovedSemaphore(semaphore1);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void checkSemaphoreSerialization() throws Exception {
+        final IgniteSemaphore sem = grid(0).semaphore("semaphore", -gridCount() + 1, true, true);
+
+        assertEquals(-gridCount() + 1, sem.availablePermits());
+
+        grid(0).compute().broadcast(new IgniteCallable<Object>() {
+            @Nullable @Override public Object call() throws Exception {
+                sem.release();
+
+                return null;
+            }
+        });
+
+        assert sem.availablePermits() == 1;
+
+        sem.acquire();
+
+        assert sem.availablePermits() == 0;
+
+        sem.release();
+
+        // Test operations on removed semaphore.
+        sem.close();
+
+        checkRemovedSemaphore(sem);
     }
 
     /**

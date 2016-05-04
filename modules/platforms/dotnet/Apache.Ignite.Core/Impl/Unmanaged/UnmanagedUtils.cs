@@ -180,6 +180,38 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return target.ChangeTarget(res);
         }
 
+        internal static IUnmanagedTarget ProcessorCreateNearCache(IUnmanagedTarget target, string name, long memPtr)
+        {
+            sbyte* name0 = IgniteUtils.StringToUtf8Unmanaged(name);
+
+            try
+            {
+                void* res = JNI.ProcessorCreateNearCache(target.Context, target.Target, name0, memPtr);
+
+                return target.ChangeTarget(res);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(new IntPtr(name0));
+            }
+        }
+
+        internal static IUnmanagedTarget ProcessorGetOrCreateNearCache(IUnmanagedTarget target, string name, long memPtr)
+        {
+            sbyte* name0 = IgniteUtils.StringToUtf8Unmanaged(name);
+
+            try
+            {
+                void* res = JNI.ProcessorGetOrCreateNearCache(target.Context, target.Target, name0, memPtr);
+
+                return target.ChangeTarget(res);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(new IntPtr(name0));
+            }
+        }
+
         internal static void ProcessorDestroyCache(IUnmanagedTarget target, string name)
         {
             sbyte* name0 = IgniteUtils.StringToUtf8Unmanaged(name);
@@ -322,6 +354,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         internal static void ProcessorGetIgniteConfiguration(IUnmanagedTarget target, long memPtr)
         {
             JNI.ProcessorGetIgniteConfiguration(target.Context, target.Target, memPtr);
+        }
+
+        internal static void ProcessorGetCacheNames(IUnmanagedTarget target, long memPtr)
+        {
+            JNI.ProcessorGetCacheNames(target.Context, target.Target, memPtr);
         }
 
         #endregion

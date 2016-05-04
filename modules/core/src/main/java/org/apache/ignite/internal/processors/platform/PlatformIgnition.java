@@ -28,6 +28,7 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
@@ -60,16 +61,16 @@ public class PlatformIgnition {
         Thread.currentThread().setContextClassLoader(PlatformProcessor.class.getClassLoader());
 
         try {
-            IgniteConfiguration cfg = configuration(springCfgPath);
+            IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> cfg = configuration(springCfgPath);
 
             if (gridName != null)
-                cfg.setGridName(gridName);
+                cfg.get1().setGridName(gridName);
             else
-                gridName = cfg.getGridName();
+                gridName = cfg.get1().getGridName();
 
             PlatformBootstrap bootstrap = bootstrap(factoryId);
 
-            PlatformProcessor proc = bootstrap.start(cfg, envPtr, dataPtr);
+            PlatformProcessor proc = bootstrap.start(cfg.get1(), cfg.get2(), envPtr, dataPtr);
 
             PlatformProcessor old = instances.put(gridName, proc);
 
@@ -141,16 +142,15 @@ public class PlatformIgnition {
      * @param springCfgPath Path to Spring XML.
      * @return Configuration.
      */
-    private static IgniteConfiguration configuration(@Nullable String springCfgPath) {
+    private static IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> configuration(
+        @Nullable String springCfgPath) {
         if (springCfgPath == null)
-            return new IgniteConfiguration();
+            return new T2<>(new IgniteConfiguration(), null);
 
         try {
             URL url = U.resolveSpringUrl(springCfgPath);
 
-            IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> t = IgnitionEx.loadConfiguration(url);
-
-            return t.get1();
+            return IgnitionEx.loadConfiguration(url);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to instantiate configuration from Spring XML: " + springCfgPath, e);
