@@ -50,7 +50,26 @@ namespace ignite
 
         Transaction Transactions::GetTx()
         {
-            return Transaction(TransactionImpl::GetCurrent());
+            IgniteError err;
+
+            Transaction tx = GetTx(err);
+
+            IgniteError::ThrowIfNeeded(err);
+
+            return tx;
+        }
+
+        Transaction Transactions::GetTx(IgniteError& err)
+        {
+            err = IgniteError();
+
+            SharedPointer<TransactionImpl> ptr = TransactionImpl::GetCurrent();
+
+            if (!ptr.Get())
+                err = IgniteError(IgniteError::IGNITE_ERR_ILLEGAL_STATE, 
+                    "There is no current transaction for the thread.");
+
+            return Transaction(ptr);
         }
 
         Transaction Transactions::TxStart()
