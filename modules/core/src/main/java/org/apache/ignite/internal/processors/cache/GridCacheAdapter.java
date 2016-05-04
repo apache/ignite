@@ -283,6 +283,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** Asynchronous operations limit semaphore. */
     private Semaphore asyncOpsSem;
 
+    /** Current cache state. */
     private final AtomicReference<CacheState> state = new AtomicReference<>(new CacheState(true));
 
     /** {@inheritDoc} */
@@ -2820,7 +2821,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         IgniteInternalFuture<Boolean> fut = asyncOp(new AsyncOp<Boolean>() {
             @Override public IgniteInternalFuture<Boolean> op(IgniteTxLocalAdapter tx) {
-
                 // Register before hiding in the filter.
                 try {
                     checkState();
@@ -4039,11 +4039,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         return entrySet().iterator();
     }
 
-    public CacheState state() {
+    /** {@inheritDoc} */
+    @Override public CacheState state() {
         return state.get();
     }
 
-    public boolean state(CacheState state, AffinityTopologyVersion topVer) {
+    /** {@inheritDoc} */
+    @Override public boolean state(CacheState state, AffinityTopologyVersion topVer) {
         while (true) {
             CacheState previousState = this.state.get();
 

@@ -449,12 +449,14 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 
+    /** {@inheritDoc} */
     @Override public boolean active() {
-        throw new UnsupportedOperationException("Not implemented");
+        throw new UnsupportedOperationException("Method should be supported.");
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteFuture<?> active(boolean active) {
-        throw new UnsupportedOperationException("Not implemented");
+        throw new UnsupportedOperationException("Method should be supported.");
     }
 
     /**

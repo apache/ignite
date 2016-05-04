@@ -68,6 +68,7 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** Template configuration flag. */
     private boolean template;
 
+    /** Cache state. */
     private CacheState state;
 
     /** */
@@ -150,6 +151,9 @@ public class DynamicCacheChangeRequest implements Serializable {
         return !template && startCfg != null;
     }
 
+    /**
+     * @return {@code True} if this is a state modification request.
+     */
     public boolean modify() {
         return state != null && !start() && !stop && !close;
     }
@@ -273,10 +277,16 @@ public class DynamicCacheChangeRequest implements Serializable {
         this.close = close;
     }
 
+    /**
+     * @return Cache state.
+     */
     public CacheState state() {
         return state;
     }
 
+    /**
+     * @param state New cache state.
+     */
     public void state(CacheState state) {
         this.state = state;
     }

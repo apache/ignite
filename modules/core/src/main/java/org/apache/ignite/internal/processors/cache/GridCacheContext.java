@@ -249,6 +249,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** */
     private boolean deferredDel;
+
     /**
      * Empty constructor required for {@link Externalizable}.
      */

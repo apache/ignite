@@ -2378,6 +2378,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         return F.first(initiateCacheChanges(F.asList(t), false));
     }
 
+    /**
+     * @param cacheName Cache name.
+     * @param state New state.
+     * @return Future that will be completed when state is changed.
+     */
     public IgniteInternalFuture<?> changeCacheState(String cacheName, CacheState state) {
         IgniteCacheProxy<?, ?> proxy = jCacheProxies.get(maskNull(cacheName));
 

@@ -736,7 +736,18 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      */
     public CacheMetricsMXBean mxBean();
 
+    /**
+     * Checks that cache is active.
+     *
+     * @return {@code True} if cache is active.
+     */
     public boolean active();
 
+    /**
+     * Changes cache active flag.
+     *
+     * @param active New value of active flag.
+     * @return Future that will be done when state is changed.
+     */
     public IgniteFuture<?> active(boolean active);
 }

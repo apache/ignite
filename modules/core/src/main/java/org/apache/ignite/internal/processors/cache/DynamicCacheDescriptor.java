@@ -71,6 +71,7 @@ public class DynamicCacheDescriptor {
     /** */
     private boolean rcvdOnDiscovery;
 
+    /** */
     private CacheState state;
 
     /**
@@ -255,10 +256,16 @@ public class DynamicCacheDescriptor {
         this.rcvdOnDiscovery = rcvdOnDiscovery;
     }
 
+    /**
+     * @return Cache state.
+     */
     public CacheState state() {
         return state;
     }
 
+    /**
+     * @param state Current cache state.
+     */
     public void state(CacheState state) {
         this.state = state;
     }

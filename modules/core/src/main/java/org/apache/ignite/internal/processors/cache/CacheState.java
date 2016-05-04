@@ -20,18 +20,30 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
 
+/**
+ * This class represents mutable cache state.
+ */
 public class CacheState implements Serializable {
 
+    /** Active flag. */
     private final boolean active;
 
+    /**
+     * Constructor.
+     * @param active Active flag.
+     */
     public CacheState(boolean active) {
         this.active = active;
     }
 
+    /**
+     * @return {@code True} if cache is active.
+     */
     public boolean active() {
         return active;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -44,6 +56,7 @@ public class CacheState implements Serializable {
 
     }
 
+    /** {@inheritDoc} */
     @Override public int hashCode() {
         return (active ? 1 : 0);
     }

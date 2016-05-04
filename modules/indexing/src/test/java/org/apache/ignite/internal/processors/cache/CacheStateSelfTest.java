@@ -40,8 +40,12 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
 
+/**
+ * Tests functionality related to {@link CacheState}.
+ */
 public class CacheStateSelfTest extends GridCommonAbstractTest {
 
+    /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
@@ -50,6 +54,10 @@ public class CacheStateSelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /**
+     * @param cacheName Cache name.
+     * @return Cache configuration.
+     */
     protected static CacheConfiguration cacheConfiguration(String cacheName) {
         CacheConfiguration ccfg = new CacheConfiguration(cacheName);
 
@@ -60,10 +68,15 @@ public class CacheStateSelfTest extends GridCommonAbstractTest {
         return ccfg;
     }
 
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         G.stopAll(false);
     }
 
+    /**
+     * Tests that state changes are propagated to existing and new nodes.
+     * @throws Exception If fails.
+     */
     public void testStatePropagation() throws Exception {
         IgniteEx ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
         IgniteEx ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
@@ -101,6 +114,10 @@ public class CacheStateSelfTest extends GridCommonAbstractTest {
         }, 5000);
     }
 
+    /**
+     * Tests that state doesn't change until all aquired locks are released.
+     * @throws Exception If fails.
+     */
     public void testDeactivationWithPendingLock() throws Exception {
         IgniteEx ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
         IgniteEx ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
@@ -149,6 +166,10 @@ public class CacheStateSelfTest extends GridCommonAbstractTest {
         assert ex;
     }
 
+    /**
+     * Tests that state doesn't change until all pending transactions are finished.
+     * @throws Exception If fails.
+     */
     public void testDeactivationWithPendingTransaction() throws Exception {
         IgniteEx ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
         IgniteEx ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
@@ -210,6 +231,10 @@ public class CacheStateSelfTest extends GridCommonAbstractTest {
         assert cache1.get(2).equals(2);
     }
 
+    /**
+     * Tests that rebalancing is disabled when cache is inactive.
+     * @throws Exception If fails.
+     */
     public void testNoRebalancingWhenInactive() throws Exception {
         IgniteEx ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
         IgniteEx ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
