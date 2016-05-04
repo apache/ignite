@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Tests
     using System.Linq;
     using System.ServiceProcess;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
 
