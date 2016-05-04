@@ -162,7 +162,7 @@ public class CacheOffheapBatchIndexingTest extends GridCommonAbstractTest {
      */
     public void testPutWithStreamerDefaultOnHeapRowCache2() {
         //fail("IGNITE-2982");
-        doStreamerBatchTest2(50, new Class<?>[] {Integer.class, Organization.class}, 1, false);
+        doStreamerBatchTest(50, 1_000, new Class<?>[] {Integer.class, Organization.class}, 1, false);
     }
 
     /**
@@ -206,44 +206,6 @@ public class CacheOffheapBatchIndexingTest extends GridCommonAbstractTest {
      */
     private double salary(int base) {
         return base * 100.;
-    }
-
-    /**
-     * Test putAll after with streamer batch load with one entity.
-     */
-    private void doStreamerBatchTest2(int iterations, Class<?>[] entityClasses, int onHeapRowCacheSize, boolean preloadInStreamer) {
-        Ignite ignite = grid(0);
-
-        final IgniteCache<Object, Object> cache =
-            ignite.createCache(cacheConfiguration(onHeapRowCacheSize, entityClasses));
-
-        try {
-            if (preloadInStreamer)
-                preload(cache.getName());
-
-            while (iterations-- >= 0) {
-                int total = 1_000;
-
-                Map<Integer, Person> putMap1 = new TreeMap<>();
-
-                for (int i = 0; i < total; i++)
-                    putMap1.put(i, new Person(i, i + 1, String.valueOf(i), String.valueOf(i + 1), salary(i)));
-
-                cache.putAll(putMap1);
-
-                Map<Integer, Organization> putMap2 = new TreeMap<>();
-
-                for (int i = total / 2; i < total * 3 / 2; i++) {
-                    cache.remove(i);
-
-                    putMap2.put(i, new Organization(i, String.valueOf(i)));
-                }
-
-                cache.putAll(putMap2);
-            }
-        } finally {
-            cache.destroy();
-        }
     }
 
     /**
