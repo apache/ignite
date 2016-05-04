@@ -11,9 +11,12 @@ package org.apache.ignite.internal.processors.database;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
+
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -58,6 +61,8 @@ public class IgniteDbSingleNodePutGetSelfTest extends GridCommonAbstractTest {
         DatabaseConfiguration dbCfg = new DatabaseConfiguration();
 
         dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
+
+        dbCfg.setPageSize(1024);
 
         dbCfg.setPageCacheSize(100 * 1024 * 1024);
 
@@ -107,6 +112,79 @@ public class IgniteDbSingleNodePutGetSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTest() throws Exception {
         stopAllGrids();
     }
+
+    /**
+     *
+     */
+    public void testRandomRemove() {
+        IgniteEx ig = grid(0);
+
+        IgniteCache<Integer, DbValue> cache = ig.cache(null);
+
+        final int cnt = 50_000;
+
+        long seed = System.nanoTime();
+
+        X.println("Seed: " + seed);
+
+        Random rnd = new GridRandom(seed);
+
+        int[] keys = generateUniqueRandomKeys(cnt, rnd);
+
+        X.println("Put start");
+
+        for (int i : keys) {
+            DbValue v0 = new DbValue(i, "test-value", i);
+
+//            if (i % 1000 == 0)
+//                X.println(" --> " + i);
+
+            cache.put(i, v0);
+
+            assertEquals(v0, cache.get(i));
+        }
+
+        keys = generateUniqueRandomKeys(cnt, rnd);
+
+        X.println("Rmv start");
+
+        for (int i : keys) {
+//            X.println(" --> " + i);
+
+            assertTrue(cache.remove(i));
+        }
+    }
+
+
+    /**
+     */
+    public void testRandomPut() {
+        IgniteEx ig = grid(0);
+
+        IgniteCache<Integer, DbValue> cache = ig.cache(null);
+
+        final int cnt = 1_000;
+
+        long seed = System.nanoTime();
+
+        X.println("Seed: " + seed);
+
+        Random rnd = new GridRandom(seed);
+
+        for (int i = 0; i < 500_000; i++) {
+            int k = rnd.nextInt(cnt);
+
+            DbValue v0 = new DbValue(k, "test-value " + k, i);
+
+            if (i % 1000 == 0)
+                X.println(" --> " + i);
+
+            cache.put(k, v0);
+
+            assertEquals(v0, cache.get(k));
+        }
+    }
+
 
     /**
      * @throws Exception if failed.
@@ -731,6 +809,51 @@ public class IgniteDbSingleNodePutGetSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception if failed.
      */
+    public void testIndexOverwrite() throws Exception {
+        IgniteEx ig = grid(0);
+
+        final IgniteCache<Integer, DbValue> cache = ig.cache(null);
+
+        GridCacheAdapter<Object, Object> internalCache = ig.context().cache().internalCache("non-primitive");
+
+        X.println("Put start");
+
+        int cnt = 10_000;
+
+        for (int a = 0; a < cnt; a++) {
+            DbValue v0 = new DbValue(a, "test-value-" + a, a);
+
+            DbKey k0 = new DbKey(a);
+
+            cache.put(a, v0);
+
+            checkEmpty(internalCache, k0);
+        }
+
+        info("Update start");
+
+        for (int k = 0; k < 4000; k++) {
+            int batchSize = 20;
+
+            LinkedHashMap<Integer, DbValue> batch = new LinkedHashMap<>();
+
+            for (int i = 0; i < batchSize; i++) {
+                int a = ThreadLocalRandom.current().nextInt(cnt);
+
+                DbValue v0 = new DbValue(a, "test-value-" + a, a);
+
+                batch.put(a, v0);
+            }
+
+            cache.putAll(batch);
+
+            cache.remove(ThreadLocalRandom.current().nextInt(cnt));
+        }
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
     public void testObjectKey() throws Exception {
         IgniteEx ig = grid(0);
 
@@ -822,7 +945,7 @@ public class IgniteDbSingleNodePutGetSelfTest extends GridCommonAbstractTest {
         private int iVal;
 
         /** */
-        @QuerySqlField
+        @QuerySqlField(index = true)
         private String sVal;
 
         /** */

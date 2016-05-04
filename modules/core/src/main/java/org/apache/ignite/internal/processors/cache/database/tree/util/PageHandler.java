@@ -20,13 +20,15 @@ package org.apache.ignite.internal.processors.cache.database.tree.util;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.Page;
+import org.apache.ignite.internal.util.GridUnsafe;
+import sun.nio.ch.DirectBuffer;
 
 /**
- * Page handler. Can do {@link #readPage(Page, PageHandler, Object, int, int)}
- * and {@link #writePage(Page, PageHandler, Object, int, int)} operations.
+ * Page handler.
  */
 public abstract class PageHandler<X> {
     /**
+     * @param pageId Page ID.
      * @param page Page.
      * @param buf Page buffer.
      * @param arg Argument.
@@ -34,39 +36,38 @@ public abstract class PageHandler<X> {
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
-    public abstract int run(Page page, ByteBuffer buf, X arg, int intArg) throws IgniteCheckedException;
+    public abstract int run(long pageId, Page page, ByteBuffer buf, X arg, int intArg) throws IgniteCheckedException;
 
     /**
+     * @param pageId Page ID.
      * @param page Page.
      * @param arg Argument.
      * @param intArg Argument of type {@code int}.
      * @return {@code true} If release.
      */
-    public boolean releaseAfterWrite(Page page, X arg, int intArg) {
+    public boolean releaseAfterWrite(long pageId, Page page, X arg, int intArg) {
         return true;
     }
 
     /**
+     * @param pageId Page ID.
      * @param page Page.
      * @param h Handler.
      * @param arg Argument.
      * @param intArg Argument of type {@code int}.
-     * @param dfltRes Default result in case of page invalidation.
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
-    public static <X> int readPage(Page page, PageHandler<X> h, X arg, int intArg, int dfltRes)
+    public static <X> int readPage(long pageId, Page page, PageHandler<X> h, X arg, int intArg)
         throws IgniteCheckedException {
-        if (page == null)
-            return dfltRes;
+        assert page != null;
 
         ByteBuffer buf = page.getForRead();
 
-        if (buf == null)
-            return dfltRes;
+        assert buf != null;
 
         try {
-            return h.run(page, buf, arg, intArg);
+            return h.run(pageId, page, buf, arg, intArg);
         }
         finally {
             page.releaseRead();
@@ -74,18 +75,17 @@ public abstract class PageHandler<X> {
     }
 
     /**
+     * @param pageId Page ID.
      * @param page Page.
      * @param h Handler.
      * @param arg Argument.
      * @param intArg Argument of type {@code int}.
-     * @param dfltRes Default result in case of page invalidation.
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
-    public static <X> int writePage(Page page, PageHandler<X> h, X arg, int intArg, int dfltRes)
+    public static <X> int writePage(long pageId, Page page, PageHandler<X> h, X arg, int intArg)
         throws IgniteCheckedException {
-        if (page == null)
-            return dfltRes; // TODO drop dfltRes parameter and assert not null
+        assert page != null;
 
         int res;
 
@@ -93,19 +93,35 @@ public abstract class PageHandler<X> {
 
         ByteBuffer buf = page.getForWrite();
 
-        if (buf == null)
-            return dfltRes; // TODO ---//---
+        assert buf != null;
 
         try {
-            res = h.run(page, buf, arg, intArg);
+            res = h.run(pageId, page, buf, arg, intArg);
 
             ok = true;
         }
         finally {
-            if (h.releaseAfterWrite(page, arg, intArg))
+            if (h.releaseAfterWrite(pageId, page, arg, intArg))
                 page.releaseWrite(ok);
         }
 
         return res;
+    }
+
+    /**
+     * @param src Source.
+     * @param dst Destination.
+     * @param srcOff Source offset in bytes.
+     * @param dstOff Destination offset in bytes.
+     * @param cnt Bytes count to copy.
+     */
+    public static void copyMemory(ByteBuffer src, ByteBuffer dst, long srcOff, long dstOff, long cnt) {
+        assert src.isDirect();
+        assert dst.isDirect();
+
+        long srcPtr = ((DirectBuffer)src).address() + srcOff;
+        long dstPtr = ((DirectBuffer)dst).address() + dstOff;
+
+        GridUnsafe.copyMemory(srcPtr, dstPtr, cnt);
     }
 }

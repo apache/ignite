@@ -44,7 +44,7 @@ public class MetadataStorage implements MetaStore {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteBiTuple<FullPageId, Boolean> getOrAllocateForIndex(int cacheId, String idxName)
+    @Override public synchronized IgniteBiTuple<FullPageId, Boolean> getOrAllocateForIndex(int cacheId, String idxName)
         throws IgniteCheckedException {
         byte[] idxNameBytes = idxName.getBytes(StandardCharsets.UTF_8);
 
@@ -173,7 +173,7 @@ public class MetadataStorage implements MetaStore {
                 // Position buffer to the last record.
                 writeBuf.position(state.position);
 
-                FullPageId idxRoot = pageMem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_IDX);
+                FullPageId idxRoot = pageMem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_META);
 
                 if (writeBuf.remaining() < idxNameBytes.length + 9) {
                     // Link new meta page.

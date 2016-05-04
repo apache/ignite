@@ -67,11 +67,6 @@ public class H2RowStore extends RowStore<GridH2Row> {
             ByteBuffer buf = page.getForRead();
 
             try {
-                GridH2Row existing = rowDesc.cachedRow(link);
-
-                if (existing != null)
-                    return existing;
-
                 DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
 
                 int dataOff = io.getDataOffset(buf, dwordsOffset(link));
@@ -103,8 +98,6 @@ public class H2RowStore extends RowStore<GridH2Row> {
                 }
 
                 assert row.ver != null;
-
-                rowDesc.cache(row);
 
                 return row;
             }

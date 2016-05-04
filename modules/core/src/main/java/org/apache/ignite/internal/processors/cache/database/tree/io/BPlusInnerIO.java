@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.database.tree.io;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 
 /**
  * Abstract IO routines for B+Tree inner pages.
@@ -96,11 +97,10 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
         boolean cpLeft) throws IgniteCheckedException {
         assert srcIdx != dstIdx || src != dst;
 
+        cnt *= itemSize + 8; // From items to bytes.
+
         if (dstIdx > srcIdx) {
-            for (int i = cnt - 1; i >= 0; i--) {
-                dst.putLong(offset(dstIdx + i, SHIFT_RIGHT), src.getLong(offset(srcIdx + i, SHIFT_RIGHT)));
-                store(dst, dstIdx + i, this, src, srcIdx + i); // TODO optimize with copy by itemSize
-            }
+            PageHandler.copyMemory(src, dst, offset(srcIdx), offset(dstIdx), cnt);
 
             if (cpLeft)
                 dst.putLong(offset(dstIdx, SHIFT_LEFT), src.getLong(offset(srcIdx, SHIFT_LEFT)));
@@ -109,10 +109,7 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
             if (cpLeft)
                 dst.putLong(offset(dstIdx, SHIFT_LEFT), src.getLong(offset(srcIdx, SHIFT_LEFT)));
 
-            for (int i = 0; i < cnt; i++) {
-                dst.putLong(offset(dstIdx + i, SHIFT_RIGHT), src.getLong(offset(srcIdx + i, SHIFT_RIGHT)));
-                store(dst, dstIdx + i, this, src, srcIdx + i); // TODO optimize with copy by itemSize
-            }
+            PageHandler.copyMemory(src, dst, offset(srcIdx), offset(dstIdx), cnt);
         }
     }
 
