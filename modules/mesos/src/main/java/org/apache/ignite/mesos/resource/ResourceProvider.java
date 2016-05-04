@@ -21,6 +21,8 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.ignite.mesos.ClusterProperties;
 
 import static org.apache.ignite.mesos.resource.ResourceHandler.CONFIG_PREFIX;
@@ -32,6 +34,9 @@ import static org.apache.ignite.mesos.resource.ResourceHandler.LIBS_PREFIX;
  * Provides path to user's libs and config file.
  */
 public class ResourceProvider {
+    /** */
+    private static final Logger log = Logger.getLogger(ResourceProvider.class.getSimpleName());
+
     /** Ignite url. */
     private String igniteUrl;
 
@@ -45,20 +50,35 @@ public class ResourceProvider {
     private String configName;
 
     /**
-     * @param properties Cluster properties.
+     * @param props Cluster properties.
      * @param provider Ignite provider.
      * @param baseUrl Base url.
      */
-    public void init(ClusterProperties properties, IgniteProvider provider, String baseUrl) {
-        // Downloading ignite.
-        if (properties.igniteVer().equals(ClusterProperties.DEFAULT_IGNITE_VERSION))
-            igniteUrl = baseUrl + IGNITE_PREFIX + provider.getIgnite();
-        else
-            igniteUrl = baseUrl + IGNITE_PREFIX + provider.getIgnite(properties.igniteVer());
+    public void init(ClusterProperties props, IgniteProvider provider, String baseUrl) {
+        if (props.ignitePackageUrl() == null && props.ignitePackagePath() == null) {
+            // Downloading ignite.
+            try {
+                igniteUrl = baseUrl + IGNITE_PREFIX + provider.getIgnite(props.igniteVer());
+            }
+            catch (Exception e) {
+                log.log(Level.SEVERE, "Failed to download Ignite [err={0}, ver={1}].\n" +
+                    "If application working behind NAT or Intranet and does not have access to external resources, " +
+                    "see IGNITE_PACKAGE_URL and IGNITE_PACKAGE_PATH properties.",
+                    new Object[]{e, props.igniteVer()});
+            }
+        }
+
+        if (props.ignitePackagePath() != null) {
+            if (provider.fileExist(props.ignitePackagePath()))
+                igniteUrl = baseUrl + IGNITE_PREFIX + props.ignitePackagePath();
+            else
+                throw new IllegalArgumentException("Failed to find Ignite by path: "
+                    + props.ignitePackagePath());
+        }
 
         // Find all jar files into user folder.
-        if (properties.userLibs() != null && !properties.userLibs().isEmpty()) {
-            File libsDir = new File(properties.userLibs());
+        if (props.userLibs() != null && !props.userLibs().isEmpty()) {
+            File libsDir = new File(props.userLibs());
 
             List<String> libs = new ArrayList<>();
 
@@ -78,8 +98,8 @@ public class ResourceProvider {
         }
 
         // Set configuration url.
-        if (properties.igniteCfg() != null) {
-            File cfg = new File(properties.igniteCfg());
+        if (props.igniteCfg() != null) {
+            File cfg = new File(props.igniteCfg());
 
             if (cfg.isFile() && cfg.canRead()) {
                 configUrl = baseUrl + CONFIG_PREFIX + cfg.getName();

@@ -155,6 +155,12 @@ public class ClusterProperties {
     private String ignitePackageUrl = null;
 
     /** */
+    public static final String IGNITE_PACKAGE_PATH = "IGNITE_PACKAGE_PATH";
+
+    /** Ignite package path. */
+    private String ignitePackagePath = null;
+
+    /** */
     public static final String IGNITE_WORK_DIR = "IGNITE_WORK_DIR";
 
     /** */
@@ -397,6 +403,13 @@ public class ClusterProperties {
     }
 
     /**
+     * @return Url to ignite package.
+     */
+    public String ignitePackagePath() {
+        return ignitePackagePath;
+    }
+
+    /**
      * @return Url to ignite configuration.
      */
     public String igniteConfigUrl() {
@@ -456,6 +469,7 @@ public class ClusterProperties {
 
             prop.userLibsUrl = getStringProperty(IGNITE_USERS_LIBS_URL, props, null);
             prop.ignitePackageUrl = getStringProperty(IGNITE_PACKAGE_URL, props, null);
+            prop.ignitePackagePath = getStringProperty(IGNITE_PACKAGE_PATH, props, null);
             prop.licenceUrl = getStringProperty(LICENCE_URL, props, null);
             prop.igniteCfgUrl = getStringProperty(IGNITE_CONFIG_XML_URL, props, null);
 
@@ -550,6 +564,6 @@ public class ClusterProperties {
             }
         }
 
-        throw new RuntimeException("Failed. Couldn't find non-loopback address");
+        throw new RuntimeException("Failed. Could not find non-loopback address");
     }
 }
