@@ -354,6 +354,8 @@ public class CacheMetricsSnapshot implements CacheMetrics, Externalizable {
             puts += e.getCachePuts();
             hits += e.getCacheHits();
             misses += e.getCacheHits();
+            size += e.getSize();
+            keySize += e.getKeySize();
             txCommits += e.getCacheTxCommits();
             txRollbacks += e.getCacheTxRollbacks();
             evicts += e.getCacheEvictions();
