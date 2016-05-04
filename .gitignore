@@ -56,3 +56,4 @@ ipch/
 [Dd]ebug*/
 [Rr]elease*/
 packages
+*.classname

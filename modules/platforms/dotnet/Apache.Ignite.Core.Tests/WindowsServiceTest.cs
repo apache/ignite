@@ -37,8 +37,6 @@ namespace Apache.Ignite.Core.Tests
         [TestFixtureSetUp]
         public void TestFixtureSetUp()
         {
-            Environment.SetEnvironmentVariable(Classpath.EnvIgniteNativeTestClasspath, "true");
-
             StopServiceAndUninstall();
         }
 
@@ -49,8 +47,6 @@ namespace Apache.Ignite.Core.Tests
         public void TestFixtureTearDown()
         {
             StopServiceAndUninstall();
-
-            Environment.SetEnvironmentVariable(Classpath.EnvIgniteNativeTestClasspath, null);
         }
 
         /// <summary>
@@ -65,6 +61,7 @@ namespace Apache.Ignite.Core.Tests
             IgniteProcess.Start(exePath, string.Empty, args: new[]
             {
                 "/install",
+                "ForceTestClasspath=true",
                 "-springConfigUrl=" + springPath,
                 "-J-Xms513m",
                 "-J-Xmx555m"
@@ -74,7 +71,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsNotNull(service);
 
             service.Start();  // see IGNITE_HOME\work\log for service instance logs
-            service.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(300));
+            service.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(30));
 
             using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
