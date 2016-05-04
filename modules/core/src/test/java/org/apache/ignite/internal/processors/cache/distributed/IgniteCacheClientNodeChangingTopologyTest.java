@@ -721,7 +721,8 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
             null,
             discoEvt,
             new AffinityTopologyVersion(topVer + 1),
-            1);
+            1,
+            null);
 
         AffinityFunction affFunc = ignite.cache(null).getConfiguration(CacheConfiguration.class).getAffinity();
 

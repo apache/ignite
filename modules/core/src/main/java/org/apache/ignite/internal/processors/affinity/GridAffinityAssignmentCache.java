@@ -267,11 +267,11 @@ public class GridAffinityAssignmentCache {
                 assignment = prevAssignment;
             else
                 assignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(sorted, prevAssignment,
-                    discoEvt, topVer, backups));
+                    discoEvt, topVer, backups, ctx.discovery().oldestNodeVersion()));
         }
         else
             assignment = aff.assignPartitions(new GridAffinityFunctionContextImpl(sorted, prevAssignment, discoEvt,
-                topVer, backups));
+                topVer, backups, ctx.discovery().oldestNodeVersion()));
 
         assert assignment != null;
 

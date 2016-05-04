@@ -22,10 +22,13 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+
+import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.testframework.GridTestNode;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -34,6 +37,14 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 public class GridCachePartitionedAffinitySpreadTest extends GridCommonAbstractTest {
     /** */
     public static final int NODES_CNT = 50;
+    /** Ignite. */
+    private static Ignite ignite;
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        ignite = startGrid();
+    }
+
 
     /**
      * @throws Exception If failed.
@@ -46,6 +57,7 @@ public class GridCachePartitionedAffinitySpreadTest extends GridCommonAbstractTe
                 Collection<ClusterNode> nodes = createNodes(i, replicas);
 
                 RendezvousAffinityFunction aff = new RendezvousAffinityFunction(false, 10000);
+                GridTestUtils.setFieldValue(aff, "ignite", ignite);
 
                 checkDistribution(aff, nodes);
             }
@@ -140,6 +152,7 @@ public class GridCachePartitionedAffinitySpreadTest extends GridCommonAbstractTe
          * @param nodeId Node id.
          */
         private TestRichNode(UUID nodeId, int replicas) {
+            super(nodeId);
             this.nodeId = nodeId;
             this.replicas = replicas;
         }

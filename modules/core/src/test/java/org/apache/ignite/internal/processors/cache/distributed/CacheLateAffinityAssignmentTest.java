@@ -245,7 +245,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             null,
             null,
             topVer(1, 0),
-            cctx.config().getBackups());
+            cctx.config().getBackups(),
+            null);
 
         List<List<ClusterNode>> calcAff1_0 = func.assignPartitions(ctx);
 
@@ -256,7 +257,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             calcAff1_0,
             null,
             topVer(1, 0),
-            cctx.config().getBackups());
+            cctx.config().getBackups(),
+            null);
 
         List<List<ClusterNode>> calcAff2_0 = func.assignPartitions(ctx);
 
@@ -2461,7 +2463,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
                 previousAssignment(topVer, cacheDesc.cacheId()),
                 evt,
                 topVer0,
-                cacheDesc.cacheConfiguration().getBackups());
+                cacheDesc.cacheConfiguration().getBackups(),
+                null);
 
             List<List<ClusterNode>> assignment = func.assignPartitions(affCtx);
 

@@ -138,7 +138,8 @@ public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstrac
             DiscoveryEvent discoEvt = new DiscoveryEvent(node, "", EventType.EVT_NODE_JOINED, node);
 
             GridAffinityFunctionContextImpl ctx =
-                new GridAffinityFunctionContextImpl(nodes, prev, discoEvt, new AffinityTopologyVersion(i), backups);
+                new GridAffinityFunctionContextImpl(nodes, prev, discoEvt,
+                    new AffinityTopologyVersion(i), backups, null);
 
             List<List<ClusterNode>> assignment = aff.assignPartitions(ctx);
 
@@ -164,7 +165,7 @@ public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstrac
 
             List<List<ClusterNode>> assignment = aff.assignPartitions(
                 new GridAffinityFunctionContextImpl(nodes, prev, discoEvt, new AffinityTopologyVersion(i),
-                    backups));
+                    backups, null));
 
             info("Assigned.");
 
@@ -237,7 +238,7 @@ public abstract class AbstractAffinityFunctionSelfTest extends GridCommonAbstrac
 
             List<List<ClusterNode>> assignment = aff.assignPartitions(
                 new GridAffinityFunctionContextImpl(nodes, prev, discoEvt, new AffinityTopologyVersion(i),
-                    backups));
+                    backups, null));
 
             verifyAssignment(assignment, backups, aff.partitions(), nodes.size());
 

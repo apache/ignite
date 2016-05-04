@@ -26,10 +26,15 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.testframework.GridTestNode;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -43,7 +48,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstractTest {
     /** MAC prefix. */
     private static final String MAC_PREF = "MAC";
+    /** Max funcs. */
     private static final int MAX_FUNCS = 10;
+    /** Compatibility version. */
+    private static final IgniteProductVersion compatibilityVersion
+        = new IgniteProductVersion((byte)1, (byte)6, (byte)0, 0L, null);
     /** Ignite. */
     private static Ignite ignite;
     private static int MAX_EXPERIMENTS = 30;
@@ -77,7 +86,8 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         return nodes;
     }
 
-    GridAffinityFunctionContextImpl nodesModification(List<ClusterNode> nodes, int iter, int backups) {
+    GridAffinityFunctionContextImpl nodesModification(List<ClusterNode> nodes, int iter, int backups,
+        boolean newVersion) {
         DiscoveryEvent discoEvt;
 
         if (iter % 2 == 0) {
@@ -94,29 +104,30 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         }
 
         return new GridAffinityFunctionContextImpl(nodes,
-            null, discoEvt, new AffinityTopologyVersion(nodes.size()), backups);
+            null, discoEvt, new AffinityTopologyVersion(nodes.size()), backups,
+            (newVersion)? null : compatibilityVersion);
     }
 
     IgniteBiTuple<Long, List<List<ClusterNode>>> assignPartitions_old(RendezvousAffinityFunction aff,
         List<ClusterNode> nodes, int backups, int iter) {
-        GridAffinityFunctionContextImpl ctx = nodesModification(nodes, iter, backups);
+        GridAffinityFunctionContextImpl ctx = nodesModification(nodes, iter, backups, false);
 
         long start = System.currentTimeMillis();
-        List<List<ClusterNode>> assignments = aff.assignPartitions_old(ctx);
+        List<List<ClusterNode>> assignments = aff.assignPartitionsMd5Impl(ctx);
         return F.t(System.currentTimeMillis() - start, assignments);
     }
 
     IgniteBiTuple<Long, List<List<ClusterNode>>> assignPartitions_new(RendezvousAffinityFunction aff,
         List<ClusterNode> nodes, int backups, int iter) {
-        GridAffinityFunctionContextImpl ctx = nodesModification(nodes, iter, backups);
+        GridAffinityFunctionContextImpl ctx = nodesModification(nodes, iter, backups, true);
 
         long start = System.currentTimeMillis();
-        List<List<ClusterNode>> assignments = aff.assignPartitions_new(ctx);
+        List<List<ClusterNode>> assignments = aff.assignPartitions(ctx);
         return F.t(System.currentTimeMillis() - start, assignments);
     }
 
     protected RendezvousAffinityFunction affinityFunction() {
-        RendezvousAffinityFunction aff = new RendezvousAffinityFunction(true);
+        RendezvousAffinityFunction aff = new RendezvousAffinityFunction(true, 256);
 
         GridTestUtils.setFieldValue(aff, "ignite", ignite);
 
@@ -143,46 +154,74 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         return Math.sqrt((double)sum / results.size());
     }
 
-    private Map<ClusterNode, AtomicInteger> freqDistribution(List<List<ClusterNode>> lst) {
-        Map<ClusterNode, AtomicInteger> map = new HashMap<>();
-        for (List<ClusterNode> l : lst) {
-            ClusterNode node = l.get(0);
-            if (!map.containsKey(node))
-                map.put(node, new AtomicInteger(1));
-            else
-                map.get(node).incrementAndGet();
+    private List<List<Integer>> freqDistribution(List<List<ClusterNode>> lst, List<ClusterNode> nodes) {
+
+        List<Map<ClusterNode, AtomicInteger>> nodeMaps = new ArrayList<>();
+        int backups = lst.get(0).size();
+
+        for(int i = 0; i < backups; ++i) {
+            Map<ClusterNode, AtomicInteger> map = new HashMap<>();
+
+            for (List<ClusterNode> l : lst) {
+                ClusterNode node = l.get(i);
+                if (!map.containsKey(node))
+                    map.put(node, new AtomicInteger(1));
+                else
+                    map.get(node).incrementAndGet();
+            }
+            nodeMaps.add(map);
         }
-        return map;
+
+        List<List<Integer>> byNodes = new ArrayList<>(nodes.size());
+        for(int i = 0; i < nodes.size(); ++i) {
+            List<Integer> byBackups = new ArrayList<>(backups);
+            for(int j = 0; j < backups; ++j) {
+                if(nodeMaps.get(j).get(nodes.get(i)) == null)
+                    byBackups.add(0);
+                else
+                    byBackups.add(nodeMaps.get(j).get(nodes.get(i)).get());
+            }
+            byNodes.add(byBackups);
+        }
+        return byNodes;
     }
 
-    void printDistribution(Map<ClusterNode, AtomicInteger> map) {
-        for (Map.Entry<ClusterNode, AtomicInteger> e : map.entrySet())
-            System.out.println(e.getKey().id() + ", " + e.getValue().get());
+    void printDistribution(List<List<Integer>> byNodes, String suffix) throws IOException {
+        int nodes = byNodes.size();
+        try(PrintStream ps = new PrintStream(Files.newOutputStream(FileSystems.getDefault()
+            .getPath(String.format("%03d", nodes) + suffix)))){
+
+            for (int i = 0; i < byNodes.size(); ++i) {
+                for (int w : byNodes.get(i))
+                    ps.print(String.format("%05d ", w));
+
+                ps.println("");
+            }
+        }
     }
 
-    public void testDistribution() {
-        int[] nodesCnts = {2, 100, 200, 300, 400, 500, 600};
+    public void testDistribution() throws IOException {
+        int[] nodesCnts = {3, 64, 100, 128, 200, 256, 300, 400, 500, 600};
 
         for (int nodesCntIdx = 0; nodesCntIdx < nodesCnts.length; ++nodesCntIdx) {
             List<ClusterNode> nodes_old = createBaseNodes(nodesCnts[nodesCntIdx]);
             List<ClusterNode> nodes_new = createBaseNodes(nodesCnts[nodesCntIdx]);
 
-            List<List<ClusterNode>> lst_old = assignPartitions_old(affinityFunction(), nodes_old, nodesCnts[nodesCntIdx] / 10, 0).get2();
-            List<List<ClusterNode>> lst_new = assignPartitions_new(affinityFunction(), nodes_new, nodesCnts[nodesCntIdx] / 10, 0).get2();
+            assignPartitions_old(affinityFunction(), nodes_old, 2, 0).get2();
+            List<List<ClusterNode>> lst_old = assignPartitions_old(affinityFunction(), nodes_old, 2, 1).get2();
+            assignPartitions_new(affinityFunction(), nodes_new, 2, 0).get2();
+            List<List<ClusterNode>> lst_new = assignPartitions_new(affinityFunction(), nodes_new, 2, 1).get2();
 
-            Map<ClusterNode, AtomicInteger> old_map = freqDistribution(lst_old);
-            Map<ClusterNode, AtomicInteger> new_map = freqDistribution(lst_new);
+            List<List<Integer>> oldDist = freqDistribution(lst_old, nodes_old);
+            List<List<Integer>> newDist = freqDistribution(lst_new, nodes_new);
 
-            info(String.format("------------------------- Old DISTR %d", old_map.size()));
-//            printDistribution(old_map);
-            info(String.format("------------------------- New DISTR %d", new_map.size()));
-//            printDistribution(new_map);
+            printDistribution(oldDist, ".old");
+            printDistribution(newDist, ".new");
         }
     }
 
     public void testBench() {
-        int[] nodesCnts = {200, 100, 200, 300, 400, 500, 600};
-        int[] backupsCnts = {2, 3, 10};
+        int[] nodesCnts = {100, 63, 100, 200, 300, 400, 500, 600};
 
         List<RendezvousAffinityFunction> funcListMd5 = new ArrayList<>();
         List<RendezvousAffinityFunction> funcListWang = new ArrayList<>();
@@ -216,15 +255,4 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
                 nodesCnt, avr, var, avr_new, var_new));
         }
     }
-
-    public void testIntDistribution() {
-        List<List<Integer>> cls = RendezvousAffinityFunction.calculateBucketIdxs(1024, 64);
-
-        for(List<Integer> lst : cls) {
-            for(int i : lst)
-                System.out.print(String.format("%02d ", i));
-            System.out.println("");
-        }
-    }
 }
-
