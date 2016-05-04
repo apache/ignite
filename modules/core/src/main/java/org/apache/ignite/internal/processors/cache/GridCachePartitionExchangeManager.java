@@ -1376,6 +1376,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
 
+                            if (!cacheCtx.cache().state().active())
+                                continue;
+
                             int order = cacheCtx.config().getRebalanceOrder();
 
                             if (orderMap.get(order) == null)
@@ -1632,7 +1635,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (log.isDebugEnabled())
                 log.debug("Received message from node [node=" + nodeId + ", msg=" + msg + ']');
 
-            onMessage(node , msg);
+            onMessage(node, msg);
         }
 
         /**

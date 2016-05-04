@@ -71,6 +71,10 @@ public class CacheStateSelfTest extends GridCommonAbstractTest {
         return ccfg;
     }
 
+    @Override protected void afterTest() throws Exception {
+        G.stopAll(false);
+    }
+
     public void testStatePropagation() throws Exception {
         IgniteEx ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
         IgniteEx ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
@@ -215,5 +219,51 @@ public class CacheStateSelfTest extends GridCommonAbstractTest {
 
         assert cache1.get(1).equals(1);
         assert cache1.get(2).equals(2);
+    }
+
+    public void testNoRebalancingWhenInactive() throws Exception {
+        IgniteEx ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
+        IgniteEx ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
+
+        final IgniteCache cache1 = ignite1.cache(null);
+        final IgniteCache cache2 = ignite2.cache(null);
+
+        assert cache1.active();
+        assert cache2.active();
+
+        cache1.put(1, 1);
+        cache1.put(2, 2);
+
+        cache1.active(false);
+
+        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return !cache1.active() && !cache2.active();
+            }
+        }, 5000);
+
+        IgniteEx ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
+
+        final IgniteCache cache3 = ignite3.cache(null);
+
+        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return !cache1.active() && !cache2.active() && !cache3.active();
+            }
+        }, 5000);
+
+        ignite1.close();
+        ignite2.close();
+
+        cache3.active(true);
+
+        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return cache3.active();
+            }
+        }, 5000);
+
+        assert !cache3.containsKey(1);
+        assert !cache3.containsKey(2);
     }
 }
