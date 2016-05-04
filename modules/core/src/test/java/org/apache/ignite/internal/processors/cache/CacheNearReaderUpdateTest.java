@@ -328,7 +328,6 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
         log.info("Test cache [mode=" + ccfg.getCacheMode() +
             ", sync=" + ccfg.getWriteSynchronizationMode() +
             ", backups=" + ccfg.getBackups() +
-            ", memMode=" + ccfg.getMemoryMode() +
             ", near=" + (ccfg.getNearConfiguration() != null) +
             ", store=" + ccfg.isWriteThrough() +
             ", evictPlc=" + (ccfg.getEvictionPolicy() != null) +

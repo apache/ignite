@@ -19,6 +19,8 @@ package org.apache.ignite;
 
 import java.io.Serializable;
 import java.lang.management.RuntimeMXBean;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Properties;
 import javax.net.ssl.HostnameVerifier;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
@@ -186,6 +188,17 @@ public final class IgniteSystemProperties {
      * salvaged (i.e. invalidated and committed).
      */
     public static final String IGNITE_TX_SALVAGE_TIMEOUT = "IGNITE_TX_SALVAGE_TIMEOUT";
+
+    /**
+     * Specifies maximum number of iterations for deadlock detection procedure.
+     * If value of this property is less then or equal to zero then deadlock detection will be disabled.
+     */
+    public static final String IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS = "IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS";
+
+    /**
+     * Specifies timeout for deadlock detection procedure.
+     */
+    public static final String IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT = "IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT";
 
     /**
      * System property to override multicast group taken from configuration.
@@ -370,12 +383,25 @@ public final class IgniteSystemProperties {
     /** Long-long offheap map load factor. */
     public static final String IGNITE_LONG_LONG_HASH_MAP_LOAD_FACTOR = "IGNITE_LONG_LONG_HASH_MAP_LOAD_FACTOR";
 
+    /** Maximum number of nested listener calls before listener notification becomes asynchronous. */
+    public static final String IGNITE_MAX_NESTED_LISTENER_CALLS = "IGNITE_MAX_NESTED_LISTENER_CALLS";
+
     /**
      * Manages {@link OptimizedMarshaller} behavior of {@code serialVersionUID} computation for
      * {@link Serializable} classes.
-     * */
+     */
     public static final String IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID =
         "IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID";
+
+    /**
+     * If set to {@code true}, then default selected keys set is used inside
+     * {@code GridNioServer} which lead to some extra garbage generation when
+     * processing selected keys.
+     * <p>
+     * Default value is {@code false}. Should be switched to {@code true} if there are
+     * any problems in communication layer.
+     */
+    public static final String IGNITE_NO_SELECTOR_OPTS = "IGNITE_NO_SELECTOR_OPTS";
 
     /**
      * Enforces singleton.
@@ -532,10 +558,22 @@ public final class IgniteSystemProperties {
     /**
      * Gets snapshot of system properties.
      * Snapshot could be used for thread safe iteration over system properties.
+     * Non-string properties are removed before return.
      *
      * @return Snapshot of system properties.
      */
     public static Properties snapshot() {
-        return (Properties)System.getProperties().clone();
+        Properties sysProps = (Properties)System.getProperties().clone();
+
+        Iterator<Map.Entry<Object, Object>> iter = sysProps.entrySet().iterator();
+
+        while (iter.hasNext()) {
+            Map.Entry entry = iter.next();
+
+            if (!(entry.getValue() instanceof String) || !(entry.getKey() instanceof String))
+                iter.remove();
+        }
+
+        return sysProps;
     }
 }

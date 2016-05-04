@@ -26,9 +26,7 @@ import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.mem.DirectMemory;
-import org.apache.ignite.internal.mem.DirectMemoryFragment;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
-import org.apache.ignite.internal.mem.OutOfMemoryException;
 import org.apache.ignite.lifecycle.LifecycleAware;
 
 /**

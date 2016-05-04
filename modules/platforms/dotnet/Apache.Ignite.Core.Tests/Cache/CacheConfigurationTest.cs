@@ -22,10 +22,9 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Discovery.Tcp;
-    using Apache.Ignite.Core.Discovery.Tcp.Static;
     using NUnit.Framework;
 
     /// <summary>
@@ -49,24 +48,15 @@ namespace Apache.Ignite.Core.Tests.Cache
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
-            var cfg = new IgniteConfiguration
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 CacheConfiguration = new List<CacheConfiguration>
                 {
                     new CacheConfiguration(),
                     GetCustomCacheConfiguration()
                 },
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
                 GridName = CacheName,
-                BinaryConfiguration = new BinaryConfiguration(typeof(Entity)),
-                DiscoverySpi = new TcpDiscoverySpi
-                {
-                    IpFinder = new TcpDiscoveryStaticIpFinder
-                    {
-                        Endpoints = new[] { "127.0.0.1:47500", "127.0.0.1:47501" }
-                    }
-                }
+                BinaryConfiguration = new BinaryConfiguration(typeof (Entity))
             };
 
             _ignite = Ignition.Start(cfg);
@@ -248,6 +238,44 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(x.WriteBehindFlushSize, y.WriteBehindFlushSize);
 
             AssertConfigsAreEqual(x.QueryEntities, y.QueryEntities);
+            AssertConfigsAreEqual(x.NearConfiguration, y.NearConfiguration);
+        }
+
+        /// <summary>
+        /// Asserts that two configurations have the same properties.
+        /// </summary>
+        private static void AssertConfigsAreEqual(NearCacheConfiguration x, NearCacheConfiguration y)
+        {
+            if (x == null)
+            {
+                Assert.IsNull(y);
+                return;
+            }
+
+            Assert.AreEqual(x.NearStartSize, y.NearStartSize);
+
+            AssertConfigsAreEqual(x.EvictionPolicy, y.EvictionPolicy);
+        }
+
+        /// <summary>
+        /// Asserts that two configurations have the same properties.
+        /// </summary>
+        private static void AssertConfigsAreEqual(IEvictionPolicy x, IEvictionPolicy y)
+        {
+            if (x == null)
+            {
+                Assert.IsNull(y);
+                return;
+            }
+
+            Assert.AreEqual(x.GetType(), y.GetType());
+
+            var px = (EvictionPolicyBase) x;
+            var py = (EvictionPolicyBase) y;
+
+            Assert.AreEqual(px.BatchSize, py.BatchSize);
+            Assert.AreEqual(px.MaxSize, py.MaxSize);
+            Assert.AreEqual(px.MaxMemorySize, py.MaxMemorySize);
         }
 
         /// <summary>
@@ -445,6 +473,9 @@ namespace Apache.Ignite.Core.Tests.Cache
                 WriteBehindBatchSize = 18,
                 WriteBehindEnabled = false,
                 WriteSynchronizationMode = CacheWriteSynchronizationMode.PrimarySync,
+                CacheStoreFactory = new CacheStoreFactoryTest(),
+                ReadThrough = true,
+                WriteThrough = true,
                 QueryEntities = new[]
                 {
                     new QueryEntity
@@ -467,6 +498,16 @@ namespace Apache.Ignite.Core.Tests.Cache
                                 IndexType = QueryIndexType.FullText
                             }
                         }
+                    }
+                },
+                NearConfiguration = new NearCacheConfiguration
+                {
+                    NearStartSize = 456,
+                    EvictionPolicy = new LruEvictionPolicy
+                    {
+                        MaxSize = 25,
+                        MaxMemorySize = 2500,
+                        BatchSize = 3
                     }
                 }
             };

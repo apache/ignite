@@ -60,9 +60,30 @@ import org.apache.ignite.cache.affinity.AffinityKey;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.cache.binary.BinaryMetadataKey;
+import org.apache.ignite.internal.processors.closure.GridClosureProcessor;
 import org.apache.ignite.internal.processors.datastructures.CollocatedQueueItemKey;
 import org.apache.ignite.internal.processors.datastructures.CollocatedSetItemKey;
+import org.apache.ignite.internal.processors.igfs.IgfsBlockKey;
+import org.apache.ignite.internal.processors.igfs.IgfsDirectoryInfo;
+import org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange;
+import org.apache.ignite.internal.processors.igfs.IgfsFileInfo;
+import org.apache.ignite.internal.processors.igfs.IgfsFileMap;
+import org.apache.ignite.internal.processors.igfs.IgfsListingEntry;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryCreateProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingAddProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingRemoveProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingReplaceProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileCreateProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileLockProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileRangeDeleteProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileRangeUpdateProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileReserveSpaceProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileUnlockProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdatePropertiesProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdateTimesProcessor;
+import org.apache.ignite.internal.processors.platform.PlatformJavaObjectFactoryProxy;
 import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.typedef.F;
@@ -88,6 +109,47 @@ public class BinaryContext {
     /** */
     static final BinaryInternalMapper SIMPLE_NAME_LOWER_CASE_MAPPER =
         new BinaryInternalMapper(new BinaryBasicNameMapper(true), new BinaryBasicIdMapper(true), false);
+
+    /** Set of system classes that should be marshalled with BinaryMarshaller. */
+    private static final Set<String> BINARYLIZABLE_SYS_CLSS;
+
+    /** Binarylizable system classes set initialization. */
+    static {
+        Set<String> sysClss = new HashSet<>();
+
+        // IGFS classes.
+        sysClss.add(IgfsPath.class.getName());
+
+        sysClss.add(IgfsBlockKey.class.getName());
+        sysClss.add(IgfsDirectoryInfo.class.getName());
+        sysClss.add(IgfsFileAffinityRange.class.getName());
+        sysClss.add(IgfsFileInfo.class.getName());
+        sysClss.add(IgfsFileMap.class.getName());
+        sysClss.add(IgfsListingEntry.class.getName());
+
+        sysClss.add(IgfsMetaDirectoryCreateProcessor.class.getName());
+        sysClss.add(IgfsMetaDirectoryListingAddProcessor.class.getName());
+        sysClss.add(IgfsMetaDirectoryListingRemoveProcessor.class.getName());
+        sysClss.add(IgfsMetaDirectoryListingReplaceProcessor.class.getName());
+        sysClss.add(IgfsMetaFileCreateProcessor.class.getName());
+        sysClss.add(IgfsMetaFileLockProcessor.class.getName());
+        sysClss.add(IgfsMetaFileRangeDeleteProcessor.class.getName());
+        sysClss.add(IgfsMetaFileRangeUpdateProcessor.class.getName());
+        sysClss.add(IgfsMetaFileReserveSpaceProcessor.class.getName());
+        sysClss.add(IgfsMetaFileUnlockProcessor.class.getName());
+        sysClss.add(IgfsMetaUpdatePropertiesProcessor.class.getName());
+        sysClss.add(IgfsMetaUpdateTimesProcessor.class.getName());
+
+        // Closure processor classes.
+        sysClss.add(GridClosureProcessor.C1V2.class.getName());
+        sysClss.add(GridClosureProcessor.C1MLAV2.class.getName());
+        sysClss.add(GridClosureProcessor.C2V2.class.getName());
+        sysClss.add(GridClosureProcessor.C2MLAV2.class.getName());
+        sysClss.add(GridClosureProcessor.C4V2.class.getName());
+        sysClss.add(GridClosureProcessor.C4MLAV2.class.getName());
+
+        BINARYLIZABLE_SYS_CLSS = Collections.unmodifiableSet(sysClss);
+    }
 
     /** */
     private final ConcurrentMap<Class<?>, BinaryClassDescriptor> descByCls = new ConcurrentHashMap8<>();
@@ -214,10 +276,14 @@ public class BinaryContext {
         registerPredefinedType(IgniteBiTuple.class, 61);
         registerPredefinedType(T2.class, 62);
 
+        registerPredefinedType(PlatformJavaObjectFactoryProxy.class,
+            GridBinaryMarshaller.PLATFORM_JAVA_OBJECT_FACTORY_PROXY);
+
         registerPredefinedType(BinaryObjectImpl.class, 0);
         registerPredefinedType(BinaryObjectOffheapImpl.class, 0);
         registerPredefinedType(BinaryMetadataKey.class, 0);
         registerPredefinedType(BinaryMetadata.class, 0);
+        registerPredefinedType(BinaryEnumObjectImpl.class, 0);
 
         // IDs range [200..1000] is used by Ignite internal APIs.
     }
@@ -254,7 +320,7 @@ public class BinaryContext {
     /**
      * @return Ignite configuration.
      */
-    public IgniteConfiguration configuration(){
+    public IgniteConfiguration configuration() {
         return igniteCfg;
     }
 
@@ -586,6 +652,11 @@ public class BinaryContext {
         String clsName = cls.getName();
 
         if (marshCtx.isSystemType(clsName)) {
+            BinarySerializer serializer = null;
+
+            if (BINARYLIZABLE_SYS_CLSS.contains(clsName))
+                serializer = new BinaryReflectiveSerializer();
+
             desc = new BinaryClassDescriptor(this,
                 cls,
                 false,
@@ -593,7 +664,7 @@ public class BinaryContext {
                 clsName,
                 null,
                 SIMPLE_NAME_LOWER_CASE_MAPPER,
-                null,
+                serializer,
                 false,
                 true /* registered */
             );
@@ -774,7 +845,7 @@ public class BinaryContext {
 
         if (prevMap != null && !mapper.equals(prevMap))
             throw new IgniteException("Different mappers [clsName=" + clsName + ", newMapper=" + mapper
-            + ", prevMap=" + prevMap + "]");
+                + ", prevMap=" + prevMap + "]");
 
         prevMap = typeId2Mapper.putIfAbsent(mapper.typeId(clsName), mapper);
 

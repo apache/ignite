@@ -109,7 +109,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
                     e.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
 
-                    f.onResult(e);
+                    f.onNodeLeft(e, true);
 
                     found = true;
                 }
@@ -121,13 +121,14 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
     /**
      * @param e Error.
+     * @param discoThread {@code True} if executed from discovery thread.
      */
-    void onError(Throwable e) {
+    void onError(Throwable e, boolean discoThread) {
         if (X.hasCause(e, ClusterTopologyCheckedException.class) || X.hasCause(e, ClusterTopologyException.class)) {
             if (tx.onePhaseCommit()) {
                 tx.markForBackupCheck();
 
-                onComplete();
+                onComplete(discoThread);
 
                 return;
             }
@@ -147,7 +148,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 }
             }
 
-            onComplete();
+            onComplete(discoThread);
         }
     }
 
@@ -202,7 +203,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
         ERR_UPD.compareAndSet(this, null, err);
 
-        return onComplete();
+        return onComplete(false);
     }
 
     /**
@@ -216,9 +217,10 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     /**
      * Completeness callback.
      *
+     * @param discoThread {@code True} if executed from discovery thread.
      * @return {@code True} if future was finished by this call.
      */
-    private boolean onComplete() {
+    private boolean onComplete(boolean discoThread) {
         Throwable err0 = err;
 
         if (err0 == null || tx.needCheckBackup())
@@ -248,14 +250,14 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 if (tx.setRollbackOnly()) {
                     if (tx.timedOut())
                         onError(new IgniteTxTimeoutCheckedException("Transaction timed out and " +
-                            "was rolled back: " + this));
+                            "was rolled back: " + this), false);
                     else
                         onError(new IgniteCheckedException("Invalid transaction state for prepare " +
-                            "[state=" + tx.state() + ", tx=" + this + ']'));
+                            "[state=" + tx.state() + ", tx=" + this + ']'), false);
                 }
                 else
                     onError(new IgniteTxRollbackCheckedException("Invalid transaction state for " +
-                        "prepare [state=" + tx.state() + ", tx=" + this + ']'));
+                        "prepare [state=" + tx.state() + ", tx=" + this + ']'), false);
 
                 return;
             }
@@ -263,14 +265,14 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             IgniteTxEntry singleWrite = tx.singleWrite();
 
             if (singleWrite != null)
-                prepareSingle(singleWrite, topLocked);
+                prepareSingle(singleWrite, topLocked, remap);
             else
-                prepare(tx.writeEntries(), topLocked);
+                prepare(tx.writeEntries(), topLocked, remap);
 
             markInitialized();
         }
         catch (TransactionTimeoutException e) {
-            onError(e);
+            onError(e, false);
         }
     }
 
@@ -278,7 +280,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
      * @param write Write.
      * @param topLocked {@code True} if thread already acquired lock preventing topology change.
      */
-    private void prepareSingle(IgniteTxEntry write, boolean topLocked) {
+    private void prepareSingle(IgniteTxEntry write, boolean topLocked, boolean remap) {
         write.clearEntryReadVersion();
 
         AffinityTopologyVersion topVer = tx.topologyVersion();
@@ -287,7 +289,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
         txMapping = new GridDhtTxMapping();
 
-        GridDistributedTxMapping mapping = map(write, topVer, null, topLocked);
+        GridDistributedTxMapping mapping = map(write, topVer, null, topLocked, remap);
 
         if (mapping.node().isLocal()) {
             if (write.context().isNear())
@@ -325,7 +327,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
      */
     private void prepare(
         Iterable<IgniteTxEntry> writes,
-        boolean topLocked
+        boolean topLocked,
+        boolean remap
     ) {
         AffinityTopologyVersion topVer = tx.topologyVersion();
 
@@ -343,7 +346,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         for (IgniteTxEntry write : writes) {
             write.clearEntryReadVersion();
 
-            GridDistributedTxMapping updated = map(write, topVer, cur, topLocked);
+            GridDistributedTxMapping updated = map(write, topVer, cur, topLocked, remap);
 
             if (cur != updated) {
                 mappings.offer(updated);
@@ -436,7 +439,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 m.clientFirst(),
                 tx.activeCachesDeploymentEnabled());
 
-            for (IgniteTxEntry txEntry : m.writes()) {
+            for (IgniteTxEntry txEntry : m.entries()) {
                 if (txEntry.op() == TRANSFORM)
                     req.addDhtVersion(txEntry.txKey(), null);
             }
@@ -449,7 +452,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     tx.userPrepare();
                 }
                 catch (IgniteCheckedException e) {
-                    onError(e);
+                    onError(e, false);
                 }
             }
 
@@ -484,7 +487,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 catch (ClusterTopologyCheckedException e) {
                     e.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
 
-                    fut.onResult(e);
+                    fut.onNodeLeft(e, false);
                 }
                 catch (IgniteCheckedException e) {
                     fut.onResult(e);
@@ -508,7 +511,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         IgniteTxEntry entry,
         AffinityTopologyVersion topVer,
         @Nullable GridDistributedTxMapping cur,
-        boolean topLocked
+        boolean topLocked,
+        boolean remap
     ) {
         GridCacheContext cacheCtx = entry.context();
 
@@ -542,7 +546,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             entry.cached(cacheCtx.local().entryEx(entry.key(), topVer));
 
         if (cacheCtx.isNear() || cacheCtx.isLocal()) {
-            if (entry.explicitVersion() == null) {
+            if (entry.explicitVersion() == null && !remap) {
                 if (keyLockFut == null) {
                     keyLockFut = new KeyLockFuture();
 
@@ -584,7 +588,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                     break;
                 }
                 catch (GridCacheEntryRemovedException ignore) {
-                    entry.cached(cacheCtx.near().entryEx(entry.key()));
+                    entry.cached(cacheCtx.near().entryEx(entry.key(), topVer));
                 }
             }
         }
@@ -693,7 +697,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         /**
          * @param e Node failure.
          */
-        void onResult(ClusterTopologyCheckedException e) {
+        void onNodeLeft(ClusterTopologyCheckedException e, boolean discoThread) {
             if (isDone())
                 return;
 
@@ -703,7 +707,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
                 // Fail the whole future (make sure not to remap on different primary node
                 // to prevent multiple lock coordinators).
-                parent.onError(e);
+                parent.onError(e, discoThread);
             }
         }
 
@@ -719,7 +723,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             if (RCV_RES_UPD.compareAndSet(this, 0, 1)) {
                 if (res.error() != null) {
                     // Fail the whole compound future.
-                    parent.onError(res.error());
+                    parent.onError(res.error(), false);
                 }
                 else {
                     if (res.clientRemapVersion() != null) {

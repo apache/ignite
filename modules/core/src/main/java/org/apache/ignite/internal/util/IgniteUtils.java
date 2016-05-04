@@ -215,6 +215,7 @@ import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
+import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionHeuristicException;
 import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.apache.ignite.transactions.TransactionRollbackException;
@@ -292,6 +293,9 @@ public abstract class IgniteUtils {
 
     /** Secure socket protocol to use. */
     private static final String HTTPS_PROTOCOL = "TLS";
+
+    /** Correct Mbean cache name pattern. */
+    private static Pattern MBEAN_CACHE_NAME_PATTERN = Pattern.compile("^[a-zA-Z_0-9]+$");
 
     /** Project home directory. */
     private static volatile GridTuple<String> ggHome;
@@ -475,6 +479,15 @@ public abstract class IgniteUtils {
     /** */
     private static volatile Boolean hasShmem;
 
+    /** Object.hashCode() */
+    private static Method hashCodeMtd;
+
+    /** Object.equals(...) */
+    private static Method equalsMtd;
+
+    /** Object.toString() */
+    private static Method toStringMtd;
+
     /**
      * Initializes enterprise check.
      */
@@ -580,6 +593,7 @@ public abstract class IgniteUtils {
         primitiveMap.put("double", double.class);
         primitiveMap.put("char", char.class);
         primitiveMap.put("boolean", boolean.class);
+        primitiveMap.put("void", void.class);
 
         boxedClsMap.put(byte.class, Byte.class);
         boxedClsMap.put(short.class, Short.class);
@@ -589,6 +603,7 @@ public abstract class IgniteUtils {
         boxedClsMap.put(double.class, Double.class);
         boxedClsMap.put(char.class, Character.class);
         boxedClsMap.put(boolean.class, Boolean.class);
+        boxedClsMap.put(void.class, Void.class);
 
         try {
             OBJECT_CTOR = Object.class.getConstructor();
@@ -695,6 +710,15 @@ public abstract class IgniteUtils {
 
         // Set the http.strictPostRedirect property to prevent redirected POST from being mapped to a GET.
         System.setProperty("http.strictPostRedirect", "true");
+
+        for (Method mtd : Object.class.getMethods()) {
+            if ("hashCode".equals(mtd.getName()))
+                hashCodeMtd = mtd;
+            else if ("equals".equals(mtd.getName()))
+                equalsMtd = mtd;
+            else if ("toString".equals(mtd.getName()))
+                toStringMtd = mtd;
+        }
     }
 
     /**
@@ -785,6 +809,9 @@ public abstract class IgniteUtils {
 
         m.put(IgniteTxTimeoutCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
             @Override public IgniteException apply(IgniteCheckedException e) {
+                if (e.getCause() instanceof TransactionDeadlockException)
+                    return new TransactionTimeoutException(e.getMessage(), e.getCause());
+
                 return new TransactionTimeoutException(e.getMessage(), e);
             }
         });
@@ -2190,10 +2217,26 @@ public abstract class IgniteUtils {
     }
 
     /**
-     * @return Class loader passed as an argument or classloader used to load Ignite itself in case argument is null.
+     * @return ClassLoader at IgniteConfiguration in case it is not null or
+     * ClassLoader used to start Ignite.
      */
-    public static ClassLoader resolveClassLoader(ClassLoader ldr) {
-        return ldr != null ? ldr : gridClassLoader;
+    public static ClassLoader resolveClassLoader(IgniteConfiguration cfg) {
+        return resolveClassLoader(null, cfg);
+    }
+
+    /**
+     * @return ClassLoader passed as param in case it is not null or
+     * ClassLoader at IgniteConfiguration in case it is not null or
+     * ClassLoader used to start Ignite.
+     */
+    public static ClassLoader resolveClassLoader(ClassLoader ldr, IgniteConfiguration cfg) {
+        assert cfg != null;
+
+        return (ldr != null && ldr != gridClassLoader) ?
+            ldr :
+            cfg.getClassLoader() != null ?
+                cfg.getClassLoader() :
+                gridClassLoader;
     }
 
     /**
@@ -4297,7 +4340,10 @@ public abstract class IgniteUtils {
 
         cacheName = maskName(cacheName);
 
-        sb.a("group=").a(cacheName).a(',');
+        if (!MBEAN_CACHE_NAME_PATTERN.matcher(cacheName).matches())
+            sb.a("group=").a('\"').a(cacheName).a('\"').a(',');
+        else
+            sb.a("group=").a(cacheName).a(',');
 
         sb.a("name=").a(name);
 
@@ -5810,7 +5856,7 @@ public abstract class IgniteUtils {
                 Iterable<Field> fields = cached ? tup.get2() : Arrays.asList(cls.getDeclaredFields());
 
                 if (!cached) {
-                    tup = F.t2();
+                    tup = new IgniteBiTuple<>();
 
                     tup.set1(cls);
                 }
@@ -5888,7 +5934,9 @@ public abstract class IgniteUtils {
      * @return {@code True} if given class is of {@code Ignite} type.
      */
     public static boolean isIgnite(Class<?> cls) {
-        return cls.getName().startsWith("org.apache.ignite");
+        String name = cls.getName();
+
+        return name.startsWith("org.apache.ignite") || name.startsWith("org.jsr166");
     }
 
     /**
@@ -6489,7 +6537,7 @@ public abstract class IgniteUtils {
      * @return Short string representing the node.
      */
     public static String toShortString(ClusterNode n) {
-        return "GridNode [id=" + n.id() + ", order=" + n.order() + ", addr=" + n.addresses() +
+        return "ClusterNode [id=" + n.id() + ", order=" + n.order() + ", addr=" + n.addresses() +
             ", daemon=" + n.isDaemon() + ']';
     }
 
@@ -8532,7 +8580,7 @@ public abstract class IgniteUtils {
             throw new IgniteCheckedException("Addresses can not be resolved [addr=" + addrs +
                 ", hostNames=" + hostNames + ']');
 
-        return F.viewListReadOnly(res, F.<InetAddress>identity());
+        return Collections.unmodifiableList(res);
     }
 
     /**
@@ -8579,7 +8627,7 @@ public abstract class IgniteUtils {
             res.add(new InetSocketAddress(addr, port));
         }
 
-        return F.viewListReadOnly(res, F.<InetSocketAddress>identity());
+        return Collections.unmodifiableList(res);
     }
 
     /**
@@ -9218,12 +9266,13 @@ public abstract class IgniteUtils {
      * @param name Name of a field to get.
      * @return Field or {@code null}.
      */
-    @Nullable public static Field findNonPublicField(Class<?> cls, String name) {
+    @Nullable public static Field findField(Class<?> cls, String name) {
         while (cls != null) {
             try {
                 Field fld = cls.getDeclaredField(name);
 
-                fld.setAccessible(true);
+                if (!fld.isAccessible())
+                    fld.setAccessible(true);
 
                 return fld;
             }
@@ -9433,5 +9482,42 @@ public abstract class IgniteUtils {
             return rmtProtoVer;
         else
             return GridIoManager.DIRECT_PROTO_VER;
+    }
+
+    /**
+     * @return Whether provided method is {@code Object.hashCode()}.
+     */
+    public static boolean isHashCodeMethod(Method mtd) {
+        return hashCodeMtd.equals(mtd);
+    }
+
+    /**
+     * @return Whether provided method is {@code Object.equals(...)}.
+     */
+    public static boolean isEqualsMethod(Method mtd) {
+        return equalsMtd.equals(mtd);
+    }
+
+    /**
+     * @return Whether provided method is {@code Object.toString()}.
+     */
+    public static boolean isToStringMethod(Method mtd) {
+        return toStringMtd.equals(mtd);
+    }
+
+    /**
+     * @param threadId Thread ID.
+     * @return Thread name if found.
+     */
+    public static String threadName(long threadId) {
+        Thread[] threads = new Thread[Thread.activeCount()];
+
+        int cnt = Thread.enumerate(threads);
+
+        for (int i = 0; i < cnt; i++)
+            if (threads[i].getId() == threadId)
+                return threads[i].getName();
+
+        return "<failed to find active thread " + threadId + '>';
     }
 }

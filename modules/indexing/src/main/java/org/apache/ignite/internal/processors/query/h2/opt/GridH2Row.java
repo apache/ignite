@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.query.h2.opt;
 
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.h2.result.Row;
@@ -31,7 +32,7 @@ public class GridH2Row extends Row implements GridSearchRowPointer, CacheDataRow
     public long link; // TODO remove
 
     /** */
-    public CacheObject key; // TODO remove
+    public KeyCacheObject key; // TODO remove
 
     /** */
     public CacheObject val; // TODO remove
@@ -65,7 +66,7 @@ public class GridH2Row extends Row implements GridSearchRowPointer, CacheDataRow
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject key() {
+    @Override public KeyCacheObject key() {
         return key;
     }
 

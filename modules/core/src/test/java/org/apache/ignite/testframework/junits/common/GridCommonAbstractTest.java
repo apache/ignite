@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -69,15 +70,18 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.GridAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -417,15 +421,18 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     @SuppressWarnings("BusyWait")
     protected void awaitPartitionMapExchange() throws InterruptedException {
-        awaitPartitionMapExchange(false);
+        awaitPartitionMapExchange(false, false);
     }
 
     /**
      * @param waitEvicts If {@code true} will wait for evictions finished.
+     * @param waitNode2PartUpdate If {@code true} will wait for nodes node2part info update finished.
      * @throws InterruptedException If interrupted.
      */
     @SuppressWarnings("BusyWait")
-    protected void awaitPartitionMapExchange(boolean waitEvicts) throws InterruptedException {
+    protected void awaitPartitionMapExchange(boolean waitEvicts, boolean waitNode2PartUpdate) throws InterruptedException {
+        long timeout = 30_000;
+
         for (Ignite g : G.allGrids()) {
             IgniteKernal g0 = (IgniteKernal)g;
 
@@ -455,7 +462,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                             if (readyVer.topologyVersion() > 0 && c.context().started()) {
                                 // Must map on updated version of topology.
                                 Collection<ClusterNode> affNodes =
-                                    g0.affinity(cfg.getName()).mapPartitionToPrimaryAndBackups(p);
+                                    dht.context().affinity().assignment(readyVer).idealAssignment().get(p);
 
                                 int exp = affNodes.size();
 
@@ -469,18 +476,18 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                 GridDhtLocalPartition loc = top.localPartition(p, readyVer, false);
 
                                 if (affNodes.size() != owners.size() || !affNodes.containsAll(owners) ||
-                                    (waitEvicts && loc != null && loc.state() == GridDhtPartitionState.RENTING)) {
+                                    (waitEvicts && loc != null && loc.state() != GridDhtPartitionState.OWNING)) {
                                     LT.warn(log(), null, "Waiting for topology map update [" +
                                         "grid=" + g.name() +
                                         ", cache=" + cfg.getName() +
                                         ", cacheId=" + dht.context().cacheId() +
                                         ", topVer=" + top.topologyVersion() +
-                                        ", topFut=" + topFut +
                                         ", p=" + p +
                                         ", affNodesCnt=" + exp +
                                         ", ownersCnt=" + actual +
-                                        ", affNodes=" + affNodes +
-                                        ", owners=" + owners +
+                                        ", affNodes=" + F.nodeIds(affNodes) +
+                                        ", owners=" + F.nodeIds(owners) +
+                                        ", topFut=" + topFut +
                                         ", locNode=" + g.cluster().localNode() + ']');
                                 }
                                 else
@@ -502,7 +509,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                 if (i == 0)
                                     start = System.currentTimeMillis();
 
-                                if (System.currentTimeMillis() - start > 30_000) {
+                                if (System.currentTimeMillis() - start > timeout) {
                                     U.dumpThreads(log);
 
                                     throw new IgniteException("Timeout of waiting for topology map update [" +
@@ -525,6 +532,46 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
                                     ", p=" + p + ", duration=" + (System.currentTimeMillis() - start) + "ms]");
 
                             break;
+                        }
+                    }
+
+                    if (waitNode2PartUpdate) {
+                        long start = System.currentTimeMillis();
+
+                        boolean failed = true;
+
+                        while (failed) {
+                            failed = false;
+
+                            for (GridDhtPartitionMap2 pMap : top.partitionMap(true).values()) {
+                                if (failed)
+                                    break;
+
+                                for (Map.Entry entry : pMap.entrySet()) {
+                                    if (System.currentTimeMillis() - start > timeout) {
+                                        U.dumpThreads(log);
+
+                                        throw new IgniteException("Timeout of waiting for partition state update [" +
+                                            "grid=" + g.name() +
+                                            ", cache=" + cfg.getName() +
+                                            ", cacheId=" + dht.context().cacheId() +
+                                            ", topVer=" + top.topologyVersion() +
+                                            ", locNode=" + g.cluster().localNode() + ']');
+                                    }
+
+                                    if (entry.getValue() != GridDhtPartitionState.OWNING) {
+                                        LT.warn(log(), null,
+                                            "Waiting for correct partition state, should be OWNING [state=" +
+                                                entry.getValue() + "]");
+
+                                        Thread.sleep(200); // Busy wait.
+
+                                        failed = true;
+
+                                        break;
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -587,27 +634,67 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @return Collection of keys for which given cache is primary.
      */
     @SuppressWarnings("unchecked")
-    protected List<Integer> primaryKeys(IgniteCache<?, ?> cache, int cnt, int startFrom) {
+    protected List<Integer> primaryKeys(IgniteCache<?, ?> cache, final int cnt, final int startFrom) {
+        return findKeys(cache, cnt, startFrom, 0);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param cnt Keys count.
+     * @param startFrom Start value for keys search.
+     * @return Collection of keys for which given cache is primary.
+     */
+    @SuppressWarnings("unchecked")
+    protected List<Integer> findKeys(IgniteCache<?, ?> cache, final int cnt, final int startFrom, final int type) {
         assert cnt > 0 : cnt;
 
-        List<Integer> found = new ArrayList<>(cnt);
+        final List<Integer> found = new ArrayList<>(cnt);
 
-        ClusterNode locNode = localNode(cache);
+        final ClusterNode locNode = localNode(cache);
 
-        Affinity<Integer> aff = (Affinity<Integer>)affinity(cache);
+        final Affinity<Integer> aff = (Affinity<Integer>)affinity(cache);
 
-        for (int i = startFrom; i < startFrom + 100_000; i++) {
-            Integer key = i;
+        try {
+            GridTestUtils.waitForCondition(new PA() {
+                @Override public boolean apply() {
+                    for (int i = startFrom; i < startFrom + 100_000; i++) {
+                        Integer key = i;
 
-            if (aff.isPrimary(locNode, key)) {
-                found.add(key);
+                        boolean ok;
 
-                if (found.size() == cnt)
-                    return found;
-            }
+                        if (type == 0)
+                            ok = aff.isPrimary(locNode, key);
+                        else if (type == 1)
+                            ok = aff.isBackup(locNode, key);
+                        else if (type == 2)
+                            ok = !aff.isPrimaryOrBackup(locNode, key);
+                        else {
+                            fail();
+
+                            return false;
+                        }
+
+                        if (ok) {
+                            if (!found.contains(key))
+                                found.add(key);
+
+                            if (found.size() == cnt)
+                                return true;
+                        }
+                    }
+
+                    return false;
+                }
+            }, 5000);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
         }
 
-        throw new IgniteException("Unable to find " + cnt + " keys as primary for cache.");
+        if (found.size() != cnt)
+            throw new IgniteException("Unable to find " + cnt + " requied keys.");
+
+        return found;
     }
 
     /**
@@ -640,26 +727,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      */
     @SuppressWarnings("unchecked")
     protected List<Integer> backupKeys(IgniteCache<?, ?> cache, int cnt, int startFrom) {
-        assert cnt > 0 : cnt;
-
-        List<Integer> found = new ArrayList<>(cnt);
-
-        ClusterNode locNode = localNode(cache);
-
-        Affinity<Integer> aff = affinity((IgniteCache<Integer, ?>)cache);
-
-        for (int i = startFrom; i < startFrom + 100_000; i++) {
-            Integer key = i;
-
-            if (aff.isBackup(locNode, key)) {
-                found.add(key);
-
-                if (found.size() == cnt)
-                    return found;
-            }
-        }
-
-        throw new IgniteException("Unable to find " + cnt + " keys as backup for cache.");
+        return findKeys(cache, cnt, startFrom, 1);
     }
 
     /**
@@ -672,26 +740,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     @SuppressWarnings("unchecked")
     protected List<Integer> nearKeys(IgniteCache<?, ?> cache, int cnt, int startFrom)
         throws IgniteCheckedException {
-        assert cnt > 0 : cnt;
-
-        List<Integer> found = new ArrayList<>(cnt);
-
-        ClusterNode locNode = localNode(cache);
-
-        Affinity<Integer> aff = affinity((IgniteCache<Integer, ?>)cache);
-
-        for (int i = startFrom; i < startFrom + 100_000; i++) {
-            Integer key = i;
-
-            if (!aff.isPrimaryOrBackup(locNode, key)) {
-                found.add(key);
-
-                if (found.size() == cnt)
-                    return found;
-            }
-        }
-
-        throw new IgniteCheckedException("Unable to find " + cnt + " keys as near for cache.");
+        return findKeys(cache, cnt, startFrom, 2);
     }
 
     /**
@@ -942,7 +991,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
      * @param cacheName Cache name.
      * @return Near cache for key.
      */
-    protected IgniteCache<Integer, Integer> primaryCache(Integer key, String cacheName) {
+    protected <K, V> IgniteCache<K, V> primaryCache(Object key, String cacheName) {
         return primaryNode(key, cacheName).cache(cacheName);
     }
 

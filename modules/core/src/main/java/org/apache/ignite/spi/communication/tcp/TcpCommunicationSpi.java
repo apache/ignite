@@ -1380,6 +1380,29 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     }
 
     /** {@inheritDoc} */
+    @Override public void dumpStats() {
+        StringBuilder sb = new StringBuilder("Communication SPI recovery descriptors: ").append(U.nl());
+
+        for (Map.Entry<ClientKey, GridNioRecoveryDescriptor> entry : recoveryDescs.entrySet()) {
+            GridNioRecoveryDescriptor desc = entry.getValue();
+
+            sb.append("    [key=").append(entry.getKey())
+                .append(", msgsSent=").append(desc.sent())
+                .append(", msgsAckedByRmt=").append(desc.acked())
+                .append(", msgsRcvd=").append(desc.received())
+                .append(", descIdHash=").append(System.identityHashCode(desc))
+                .append(']').append(U.nl());
+        }
+
+        U.warn(log, sb.toString());
+
+        GridNioServer<Message> nioSrvr1 = nioSrvr;
+
+        if (nioSrvr1 != null)
+            nioSrvr1.dumpStats();
+    }
+
+    /** {@inheritDoc} */
     @Override public Map<String, Object> getNodeAttributes() throws IgniteSpiException {
         initFailureDetectionTimeout();
 
@@ -1441,12 +1464,15 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             Collection<InetSocketAddress> extAddrs = addrRslvr == null ? null :
                 U.resolveAddresses(addrRslvr, F.flat(Arrays.asList(addrs.get1(), addrs.get2())), boundTcpPort);
 
-            return F.asMap(
-                createSpiAttributeName(ATTR_ADDRS), addrs.get1(),
-                createSpiAttributeName(ATTR_HOST_NAMES), addrs.get2(),
-                createSpiAttributeName(ATTR_PORT), boundTcpPort,
-                createSpiAttributeName(ATTR_SHMEM_PORT), boundTcpShmemPort >= 0 ? boundTcpShmemPort : null,
-                createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs);
+            HashMap<String, Object> res = new HashMap<>(5);
+
+            res.put(createSpiAttributeName(ATTR_ADDRS), addrs.get1());
+            res.put(createSpiAttributeName(ATTR_HOST_NAMES), addrs.get2());
+            res.put(createSpiAttributeName(ATTR_PORT), boundTcpPort);
+            res.put(createSpiAttributeName(ATTR_SHMEM_PORT), boundTcpShmemPort >= 0 ? boundTcpShmemPort : null);
+            res.put(createSpiAttributeName(ATTR_EXT_ADDRS), extAddrs);
+
+            return res;
         }
         catch (IOException | IgniteCheckedException e) {
             throw new IgniteSpiException("Failed to resolve local host to addresses: " + locHost, e);
@@ -1565,7 +1591,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         IgniteCheckedException lastEx = null;
 
         // If configured TCP port is busy, find first available in range.
-        for (int port = locPort; port < locPort + locPortRange; port++) {
+        int lastPort = locPortRange == 0 ? locPort : locPort + locPortRange - 1;
+
+        for (int port = locPort; port <= lastPort; port++) {
             try {
                 MessageFactory msgFactory = new MessageFactory() {
                     private MessageFactory impl;
@@ -2394,7 +2422,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                         if (errs == null)
                             errs = new IgniteCheckedException("Failed to connect to node (is node still alive?). " +
-                                "Make sure that each GridComputeTask and GridCacheTransaction has a timeout set " +
+                                "Make sure that each ComputeTask and GridCacheTransaction has a timeout set " +
                                 "in order to prevent parties from waiting forever in case of network issues " +
                                 "[nodeId=" + node.id() + ", addrs=" + addrs + ']');
 
@@ -2422,7 +2450,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                         if (errs == null)
                             errs = new IgniteCheckedException("Failed to connect to node (is node still alive?). " +
-                                "Make sure that each GridComputeTask and GridCacheTransaction has a timeout set " +
+                                "Make sure that each ComputeTask and GridCacheTransaction has a timeout set " +
                                 "in order to prevent parties from waiting forever in case of network issues " +
                                 "[nodeId=" + node.id() + ", addrs=" + addrs + ']');
 
@@ -2462,7 +2490,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                     if (errs == null)
                         errs = new IgniteCheckedException("Failed to connect to node (is node still alive?). " +
-                            "Make sure that each GridComputeTask and GridCacheTransaction has a timeout set " +
+                            "Make sure that each ComputeTask and GridCacheTransaction has a timeout set " +
                             "in order to prevent parties from waiting forever in case of network issues " +
                             "[nodeId=" + node.id() + ", addrs=" + addrs + ']');
 
@@ -3415,6 +3443,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         /** {@inheritDoc} */
+        @Override public void onAckReceived() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
             if (buf.remaining() < 33)
                 return false;
@@ -3501,6 +3534,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         }
 
         /** {@inheritDoc} */
+        @Override public void onAckReceived() {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
         @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
             if (buf.remaining() < 9)
                 return false;
@@ -3570,6 +3608,11 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
             nodeIdBytesWithType[0] = NODE_ID_MSG_TYPE;
 
             System.arraycopy(nodeIdBytes, 0, nodeIdBytesWithType, 1, nodeIdBytes.length);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onAckReceived() {
+            // No-op.
         }
 
         /** {@inheritDoc} */

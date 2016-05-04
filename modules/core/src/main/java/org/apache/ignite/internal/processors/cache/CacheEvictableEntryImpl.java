@@ -103,14 +103,10 @@ public class CacheEvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
 
             byte[] valBytes = null;
 
-            if (cctx.useOffheapEntry())
-                valBytes = cctx.offheap().get(cctx.swap().spaceName(), cached.partition(), key, keyBytes);
-            else {
-                CacheObject cacheObj = cached.valueBytes();
+            CacheObject cacheObj = cached.valueBytes();
 
-                if (cacheObj != null)
-                    valBytes = cacheObj.valueBytes(cctx.cacheObjectContext());
-            }
+            if (cacheObj != null)
+                valBytes = cacheObj.valueBytes(cctx.cacheObjectContext());
 
             return valBytes == null ? keyBytes.length : keyBytes.length + valBytes.length;
         }
@@ -129,7 +125,7 @@ public class CacheEvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
             IgniteInternalTx tx = cached.context().tm().userTx();
 
             if (tx != null) {
-                GridTuple<CacheObject> peek = tx.peek(cached.context(), false, cached.key(), null);
+                GridTuple<CacheObject> peek = tx.peek(cached.context(), false, cached.key());
 
                 if (peek != null)
                     return peek.get().value(cached.context().cacheObjectContext(), false);
@@ -221,7 +217,7 @@ public class CacheEvictableEntryImpl<K, V> implements EvictableEntry<K, V> {
         if (obj instanceof CacheEvictableEntryImpl) {
             CacheEvictableEntryImpl<K, V> other = (CacheEvictableEntryImpl<K, V>)obj;
 
-            return cached.key().equals(other.getKey());
+            return cached.key().equals(other.cached.key());
         }
 
         return false;

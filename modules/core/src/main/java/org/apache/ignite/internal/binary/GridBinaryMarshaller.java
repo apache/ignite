@@ -144,6 +144,9 @@ public class GridBinaryMarshaller {
     /** Timestamp array. */
     public static final byte TIMESTAMP_ARR = 34;
 
+    /** Proxy. */
+    public static final byte PROXY = 35;
+
     /** */
     public static final byte NULL = (byte)101;
 
@@ -176,6 +179,9 @@ public class GridBinaryMarshaller {
 
     /** */
     public static final byte LINKED_HASH_MAP = 2;
+
+    /** */
+    public static final byte PLATFORM_JAVA_OBJECT_FACTORY_PROXY = 99;
 
     /** */
     public static final int OBJECT_TYPE_ID = -1;
@@ -289,7 +295,7 @@ public class GridBinaryMarshaller {
         BinaryContext oldCtx = pushContext(ctx);
 
         try {
-            return (T)new BinaryReaderExImpl(ctx, BinaryHeapInputStream.create(arr, 0), ldr).deserialize();
+            return (T)new BinaryReaderExImpl(ctx, BinaryHeapInputStream.create(arr, 0), ldr, true).deserialize();
         }
         finally {
             popContext(oldCtx);
@@ -337,7 +343,7 @@ public class GridBinaryMarshaller {
     public BinaryReaderExImpl reader(BinaryInputStream stream) {
         assert stream != null;
 
-        return new BinaryReaderExImpl(ctx, stream, null);
+        return new BinaryReaderExImpl(ctx, stream, null, true);
     }
 
     /**

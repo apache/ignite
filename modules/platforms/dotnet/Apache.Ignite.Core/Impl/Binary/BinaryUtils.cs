@@ -187,6 +187,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Type: stream receiver holder. */
         public const byte TypeStreamReceiverHolder = 94;
 
+        /** Type: platform object proxy. */
+        public const byte TypePlatformJavaObjectFactoryProxy = 99;
+
         /** Collection: custom. */
         public const byte CollectionCustom = 0;
 
@@ -242,6 +245,17 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Cached generic array read funcs. */
         private static readonly CopyOnWriteConcurrentDictionary<Type, Func<BinaryReader, bool, object>>
             ArrayReaders = new CopyOnWriteConcurrentDictionary<Type, Func<BinaryReader, bool, object>>();
+
+        /** Flag indicating whether Guid struct is sequential in current runtime. */
+        private static readonly bool IsGuidSequential = GetIsGuidSequential();
+
+        /** Guid writer. */
+        public static readonly Action<Guid, IBinaryStream> WriteGuid = IsGuidSequential
+            ? (Action<Guid, IBinaryStream>)WriteGuidFast : WriteGuidSlow;
+
+        /** Guid reader. */
+        public static readonly Func<IBinaryStream, Guid?> ReadGuid = IsGuidSequential
+            ? (Func<IBinaryStream, Guid?>)ReadGuidFast : ReadGuidSlow;
 
         /// <summary>
         /// Default marshaller.
@@ -900,12 +914,33 @@ namespace Apache.Ignite.Core.Impl.Binary
             return vals;
         }
 
-        /**
-         * <summary>Write GUID.</summary>
-         * <param name="val">GUID.</param>
-         * <param name="stream">Stream.</param>
-         */
-        public static unsafe void WriteGuid(Guid val, IBinaryStream stream)
+        /// <summary>
+        /// Gets a value indicating whether <see cref="Guid"/> fields are stored sequentially in memory.
+        /// </summary>
+        /// <returns></returns>
+        private static unsafe bool GetIsGuidSequential()
+        {
+            // Check that bitwise conversion returns correct result
+            var guid = Guid.NewGuid();
+
+            var bytes = guid.ToByteArray();
+
+            var bytes0 = (byte*) &guid;
+
+            for (var i = 0; i < bytes.Length; i++)
+                if (bytes[i] != bytes0[i])
+                    return false;
+
+            return true;
+        }
+
+        /// <summary>
+        /// Writes a guid with bitwise conversion, assuming that <see cref="Guid"/> 
+        /// is laid out in memory sequentially and without gaps between fields.
+        /// </summary>
+        /// <param name="val">The value.</param>
+        /// <param name="stream">The stream.</param>
+        public static unsafe void WriteGuidFast(Guid val, IBinaryStream stream)
         {
             var jguid = new JavaGuid(val);
 
@@ -913,13 +948,47 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             stream.Write((byte*) ptr, 16);
         }
-        
-        /**
-         * <summary>Read GUID.</summary>
-         * <param name="stream">Stream.</param>
-         * <returns>GUID</returns>
-         */
-        public static unsafe Guid? ReadGuid(IBinaryStream stream)
+
+        /// <summary>
+        /// Writes a guid byte by byte.
+        /// </summary>
+        /// <param name="val">The value.</param>
+        /// <param name="stream">The stream.</param>
+        public static unsafe void WriteGuidSlow(Guid val, IBinaryStream stream)
+        {
+            var bytes = val.ToByteArray();
+            byte* jBytes = stackalloc byte[16];
+
+            jBytes[0] = bytes[6]; // c1
+            jBytes[1] = bytes[7]; // c2
+
+            jBytes[2] = bytes[4]; // b1
+            jBytes[3] = bytes[5]; // b2
+
+            jBytes[4] = bytes[0]; // a1
+            jBytes[5] = bytes[1]; // a2
+            jBytes[6] = bytes[2]; // a3
+            jBytes[7] = bytes[3]; // a4
+
+            jBytes[8] = bytes[15]; // k
+            jBytes[9] = bytes[14]; // j
+            jBytes[10] = bytes[13]; // i
+            jBytes[11] = bytes[12]; // h
+            jBytes[12] = bytes[11]; // g
+            jBytes[13] = bytes[10]; // f
+            jBytes[14] = bytes[9]; // e
+            jBytes[15] = bytes[8]; // d
+            
+            stream.Write(jBytes, 16);
+        }
+
+        /// <summary>
+        /// Reads a guid with bitwise conversion, assuming that <see cref="Guid"/> 
+        /// is laid out in memory sequentially and without gaps between fields.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <returns>Guid.</returns>
+        public static unsafe Guid? ReadGuidFast(IBinaryStream stream)
         {
             JavaGuid jguid;
 
@@ -931,7 +1000,43 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             return *(Guid*) (&dotnetGuid);
         }
-        
+
+        /// <summary>
+        /// Reads a guid byte by byte.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <returns>Guid.</returns>
+        public static unsafe Guid? ReadGuidSlow(IBinaryStream stream)
+        {
+            byte* jBytes = stackalloc byte[16];
+
+            stream.Read(jBytes, 16);
+
+            var bytes = new byte[16];
+
+            bytes[0] = jBytes[4]; // a1
+            bytes[1] = jBytes[5]; // a2
+            bytes[2] = jBytes[6]; // a3
+            bytes[3] = jBytes[7]; // a4
+
+            bytes[4] = jBytes[2]; // b1
+            bytes[5] = jBytes[3]; // b2
+
+            bytes[6] = jBytes[0]; // c1
+            bytes[7] = jBytes[1]; // c2
+
+            bytes[8] = jBytes[15]; // d
+            bytes[9] = jBytes[14]; // e
+            bytes[10] = jBytes[13]; // f
+            bytes[11] = jBytes[12]; // g
+            bytes[12] = jBytes[11]; // h
+            bytes[13] = jBytes[10]; // i
+            bytes[14] = jBytes[9]; // j
+            bytes[15] = jBytes[8]; // k
+
+            return new Guid(bytes);
+        }
+
         /// <summary>
         /// Write GUID array.
         /// </summary>
@@ -1021,12 +1126,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             var stream = ctx.Stream;
 
+            var pos = stream.Position;
+
             if (typed)
                 stream.ReadInt();
 
             int len = stream.ReadInt();
 
             var vals = new T[len];
+
+            ctx.AddHandle(pos - 1, vals);
 
             for (int i = 0; i < len; i++)
                 vals[i] = ctx.Deserialize<T>();
@@ -1107,6 +1216,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             IBinaryStream stream = ctx.Stream;
 
+            int pos = stream.Position;
+
             int len = stream.ReadInt();
 
             byte colType = ctx.Stream.ReadByte();
@@ -1122,6 +1233,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
             else
                 res = factory.Invoke(len);
+
+            ctx.AddHandle(pos - 1, res);
 
             if (adder == null)
                 adder = (col, elem) => ((ArrayList) col).Add(elem);
@@ -1184,12 +1297,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             IBinaryStream stream = ctx.Stream;
 
+            int pos = stream.Position;
+
             int len = stream.ReadInt();
 
             // Skip dictionary type as we can do nothing with it here.
             ctx.Stream.ReadByte();
 
             var res = factory == null ? new Hashtable(len) : factory.Invoke(len);
+
+            ctx.AddHandle(pos - 1, res);
 
             for (int i = 0; i < len; i++)
             {
@@ -1556,7 +1673,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             err = reader.ReadBoolean()
                 ? reader.ReadObject<object>()
-                : ExceptionUtils.GetException(reader.ReadString(), reader.ReadString());
+                : ExceptionUtils.GetException(reader.Marshaller.Ignite, reader.ReadString(), reader.ReadString());
 
             return null;
         }
@@ -1689,7 +1806,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private struct GuidAccessor
         {
             public readonly ulong ABC;
-            public readonly ulong DEGHIJK;
+            public readonly ulong DEFGHIJK;
 
             /// <summary>
             /// Initializes a new instance of the <see cref="GuidAccessor"/> struct.
@@ -1699,21 +1816,28 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 var l = val.CBA;
 
-                ABC = ((l >> 32) & 0x00000000FFFFFFFF) | ((l << 48) & 0xFFFF000000000000) |
-                      ((l << 16) & 0x0000FFFF00000000);
+                if (BitConverter.IsLittleEndian)
+                    ABC = ((l >> 32) & 0x00000000FFFFFFFF) | ((l << 48) & 0xFFFF000000000000) |
+                          ((l << 16) & 0x0000FFFF00000000);
+                else
+                    ABC = ((l << 32) & 0xFFFFFFFF00000000) | ((l >> 48) & 0x000000000000FFFF) |
+                          ((l >> 16) & 0x00000000FFFF0000);
 
-                DEGHIJK = ReverseByteOrder(val.KJIHGED);
+                // This is valid in any endianness (symmetrical)
+                DEFGHIJK = ReverseByteOrder(val.KJIHGFED);
             }
         }
 
         /// <summary>
         /// Struct with Java-style Guid memory layout.
         /// </summary>
-        [StructLayout(LayoutKind.Sequential, Pack = 0)]
+        [StructLayout(LayoutKind.Explicit)]
         private struct JavaGuid
         {
-            public readonly ulong CBA;
-            public readonly ulong KJIHGED;
+            [FieldOffset(0)] public readonly ulong CBA;
+            [FieldOffset(8)] public readonly ulong KJIHGFED;
+            [SuppressMessage("Microsoft.Performance", "CA1823:AvoidUnusedPrivateFields")]
+            [FieldOffset(0)] public unsafe fixed byte Bytes [16];
 
             /// <summary>
             /// Initializes a new instance of the <see cref="JavaGuid"/> struct.
@@ -1721,17 +1845,22 @@ namespace Apache.Ignite.Core.Impl.Binary
             /// <param name="val">The value.</param>
             public unsafe JavaGuid(Guid val)
             {
-                // .Net returns bytes in the following order: _a(4), _b(2), _c(2), _d, _e, _g, _h, _i, _j, _k.
+                // .Net returns bytes in the following order: _a(4), _b(2), _c(2), _d, _e, _f, _g, _h, _i, _j, _k.
                 // And _a, _b and _c are always in little endian format irrespective of system configuration.
-                // To be compliant with Java we rearrange them as follows: _c, _b_, a_, _k, _j, _i, _h, _g, _e, _d.
+                // To be compliant with Java we rearrange them as follows: _c, _b_, a_, _k, _j, _i, _h, _g, _f, _e, _d.
                 var accessor = *((GuidAccessor*)&val);
 
                 var l = accessor.ABC;
 
-                CBA = ((l << 32) & 0xFFFFFFFF00000000) | ((l >> 48) & 0x000000000000FFFF) |
-                      ((l >> 16) & 0x00000000FFFF0000);
+                if (BitConverter.IsLittleEndian)
+                    CBA = ((l << 32) & 0xFFFFFFFF00000000) | ((l >> 48) & 0x000000000000FFFF) |
+                          ((l >> 16) & 0x00000000FFFF0000);
+                else
+                    CBA = ((l >> 32) & 0x00000000FFFFFFFF) | ((l << 48) & 0xFFFF000000000000) |
+                          ((l << 16) & 0x0000FFFF00000000);
 
-                KJIHGED = ReverseByteOrder(accessor.DEGHIJK);
+                // This is valid in any endianness (symmetrical)
+                KJIHGFED = ReverseByteOrder(accessor.DEFGHIJK);
             }
         }
     }

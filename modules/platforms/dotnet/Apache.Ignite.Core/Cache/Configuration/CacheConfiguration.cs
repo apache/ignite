@@ -135,6 +135,12 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary> Default value for 'copyOnRead' flag. </summary>
         public const bool DefaultCopyOnRead = true;
 
+        /// <summary> Default value for read-through behavior. </summary>
+        public const bool DefaultReadThrough = false;
+
+        /// <summary> Default value for write-through behavior. </summary>
+        public const bool DefaultWriteThrough = false;
+
         /// <summary>
         /// Gets or sets the cache name.
         /// </summary>
@@ -255,10 +261,14 @@ namespace Apache.Ignite.Core.Cache.Configuration
             WriteBehindFlushSize = reader.ReadInt();
             WriteBehindFlushThreadCount = reader.ReadInt();
             WriteSynchronizationMode = (CacheWriteSynchronizationMode) reader.ReadInt();
+            ReadThrough = reader.ReadBoolean();
+            WriteThrough = reader.ReadBoolean();
             CacheStoreFactory = reader.ReadObject<IFactory<ICacheStore>>();
 
             var count = reader.ReadInt();
             QueryEntities = count == 0 ? null : Enumerable.Range(0, count).Select(x => new QueryEntity(reader)).ToList();
+
+            NearConfiguration = reader.ReadBoolean() ? new NearCacheConfiguration(reader) : null;
         }
 
         /// <summary>
@@ -303,6 +313,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
             writer.WriteInt(WriteBehindFlushSize);
             writer.WriteInt(WriteBehindFlushThreadCount);
             writer.WriteInt((int) WriteSynchronizationMode);
+            writer.WriteBoolean(ReadThrough);
+            writer.WriteBoolean(WriteThrough);
             writer.WriteObject(CacheStoreFactory);
 
             if (QueryEntities != null)
@@ -319,6 +331,14 @@ namespace Apache.Ignite.Core.Cache.Configuration
             }
             else
                 writer.WriteInt(0);
+
+            if (NearConfiguration != null)
+            {
+                writer.WriteBoolean(true);
+                NearConfiguration.Write(writer);
+            }
+            else
+                writer.WriteBoolean(false);
         }
 
         /// <summary>
@@ -589,13 +609,44 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
         /// <summary>
         /// Gets or sets the factory for underlying persistent storage for read-through and write-through operations.
+        /// <para />
+        /// See <see cref="ReadThrough"/> and <see cref="WriteThrough"/> properties to enable read-through and 
+        /// write-through behavior so that cache store is invoked on get and/or put operations.
+        /// <para />
+        /// If both <see cref="ReadThrough"/> and <see cref="WriteThrough"/> are <code>false</code>, cache store 
+        /// will be invoked only on <see cref="ICache{TK,TV}.LoadCache"/> calls.
         /// </summary>
         public IFactory<ICacheStore> CacheStoreFactory { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether read-through should be enabled for cache operations.
+        /// <para />
+        /// When in read-through mode, cache misses that occur due to cache entries not existing 
+        /// as a result of performing a "get" operations will appropriately cause the 
+        /// configured <see cref="ICacheStore"/> (see <see cref="CacheStoreFactory"/>) to be invoked.
+        /// </summary>
+        [DefaultValue(DefaultReadThrough)]
+        public bool ReadThrough { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether write-through should be enabled for cache operations.
+        /// <para />
+        /// When in "write-through" mode, cache updates that occur as a result of performing "put" operations
+        /// will appropriately cause the configured 
+        /// <see cref="ICacheStore"/> (see <see cref="CacheStoreFactory"/>) to be invoked.
+        /// </summary>
+        [DefaultValue(DefaultWriteThrough)]
+        public bool WriteThrough { get; set; }
 
         /// <summary>
         /// Gets or sets the query entity configuration.
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<QueryEntity> QueryEntities { get; set; }
+
+        /// <summary>
+        /// Gets or sets the near cache configuration.
+        /// </summary>
+        public NearCacheConfiguration NearConfiguration { get; set; }
     }
 }

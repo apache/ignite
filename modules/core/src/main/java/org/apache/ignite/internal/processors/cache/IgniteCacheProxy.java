@@ -222,7 +222,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
-            return ctx.cache().metrics();
+            return ctx.cache().clusterMetrics();
         }
         finally {
             onLeave(gate, prev);
@@ -236,20 +236,20 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
-            List<CacheMetrics> metrics = new ArrayList<>(grp.nodes().size());
+            return ctx.cache().clusterMetrics(grp);
+        }
+        finally {
+            onLeave(gate, prev);
+        }
+    }
 
-            for (ClusterNode node : grp.nodes()) {
-                Map<Integer, CacheMetrics> nodeCacheMetrics = ((TcpDiscoveryNode)node).cacheMetrics();
+    @Override public CacheMetrics localMetrics() {
+        GridCacheGateway<K, V> gate = this.gate;
 
-                if (nodeCacheMetrics != null) {
-                    CacheMetrics e = nodeCacheMetrics.get(context().cacheId());
+        CacheOperationContext prev = onEnter(gate, opCtx);
 
-                    if (e != null)
-                        metrics.add(e);
-                }
-            }
-
-            return new CacheMetricsSnapshot(ctx.cache().metrics(), metrics);
+        try {
+            return ctx.cache().localMetrics();
         }
         finally {
             onLeave(gate, prev);
@@ -263,7 +263,20 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         CacheOperationContext prev = onEnter(gate, opCtx);
 
         try {
-            return ctx.cache().mxBean();
+            return ctx.cache().clusterMxBean();
+        }
+        finally {
+            onLeave(gate, prev);
+        }
+    }
+
+    @Override public CacheMetricsMXBean localMxBean() {
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
+
+        try {
+            return ctx.cache().localMxBean();
         }
         finally {
             onLeave(gate, prev);
@@ -565,10 +578,14 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         if (qry.getLocalListener() == null)
             throw new IgniteException("Mandatory local listener is not set for the query: " + qry);
 
+        if (qry.getRemoteFilter() != null && qry.getRemoteFilterFactory() != null)
+            throw new IgniteException("Should be used either RemoterFilter or RemoteFilterFactory.");
+
         try {
             final UUID routineId = ctx.continuousQueries().executeQuery(
                 qry.getLocalListener(),
                 qry.getRemoteFilter(),
+                qry.getRemoteFilterFactory(),
                 qry.getPageSize(),
                 qry.getTimeInterval(),
                 qry.isAutoUnsubscribe(),
@@ -750,21 +767,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public void localPromote(Set<? extends K> keys) throws CacheException {
-        try {
-            GridCacheGateway<K, V> gate = this.gate;
-
-            CacheOperationContext prev = onEnter(gate, opCtx);
-
-            try {
-                delegate.promoteAll(keys);
-            }
-            finally {
-                onLeave(gate, prev);
-            }
-        }
-        catch (IgniteCheckedException e) {
-            throw cacheException(e);
-        }
+        // TODO GG-10884.
+        throw new UnsupportedOperationException("localPromote will be removed");
     }
 
     /** {@inheritDoc} */

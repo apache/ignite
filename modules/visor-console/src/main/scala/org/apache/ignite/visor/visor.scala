@@ -17,6 +17,7 @@
 
 package org.apache.ignite.visor
 
+import org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER
 import org.apache.ignite._
 import org.apache.ignite.cluster.{ClusterGroup, ClusterGroupEmptyException, ClusterMetrics, ClusterNode}
 import org.apache.ignite.events.EventType._
@@ -243,7 +244,7 @@ object visor extends VisorTag {
      * Get grid node for specified ID.
      *
      * @param nid Node ID.
-     * @return GridNode instance.
+     * @return ClusterNode instance.
      * @throws IgniteException if Visor is disconnected or node not found.
      */
     def node(nid: UUID): ClusterNode = {
@@ -302,6 +303,9 @@ object visor extends VisorTag {
             }
         }
     })
+
+    // Make sure visor starts without version checker print.
+    System.setProperty(IGNITE_UPDATE_NOTIFIER, "false")
 
     addHelp(
         name = "mlist",

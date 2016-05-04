@@ -60,6 +60,12 @@ public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTes
         super.beforeTest();
 
         startGridsMultiThreaded(2);
+
+        assert GridTestUtils.waitForCondition(new PA() {
+            @Override public boolean apply() {
+                return grid(0).cluster().nodes().size() == 2;
+            }
+        }, 10000L);
     }
 
     /** {@inheritDoc} */
@@ -138,7 +144,15 @@ public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTes
         }, 2000L) : "Expected no create events, but got: " + lsnr2.createdCnt.get();
 
         // node2 now becomes the primary for the key.
-        grid(0).close();
+        stopGrid(0);
+
+        final int prevSize = grid(1).cluster().nodes().size();
+
+        GridTestUtils.waitForCondition(new PA() {
+            @Override public boolean apply() {
+                return prevSize - 1 == grid(1).cluster().nodes().size();
+            }
+        }, 5000L);
 
         cache2.put(key, "2");
 

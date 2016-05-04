@@ -18,13 +18,14 @@
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.io.Externalizable;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
@@ -72,12 +73,14 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
     /**
      * This constructor is meant for optimistic transactions.
      *
+     * @param topVer Transaction topology version.
      * @param ldr Class loader.
      * @param nodeId Node ID.
      * @param nearNodeId Near node ID.
      * @param xidVer XID version.
      * @param commitVer Commit version.
      * @param sys System flag.
+     * @param plc IO policy.
      * @param concurrency Concurrency level (should be pessimistic).
      * @param isolation Transaction isolation.
      * @param invalidate Invalidate flag.
@@ -85,10 +88,13 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
      * @param writeEntries Write entries.
      * @param ctx Cache registry.
      * @param txSize Expected transaction size.
+     * @param subjId Subject ID.
+     * @param taskNameHash Task name hash code.
      * @throws IgniteCheckedException If unmarshalling failed.
      */
     public GridNearTxRemote(
         GridCacheSharedContext ctx,
+        AffinityTopologyVersion topVer,
         ClassLoader ldr,
         UUID nodeId,
         UUID nearNodeId,
@@ -137,26 +143,35 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
                 addEntry(entry);
             }
         }
+
+        assert topVer != null && topVer.topologyVersion() > 0 : topVer;
+
+        topologyVersion(topVer);
     }
 
     /**
      * This constructor is meant for pessimistic transactions.
      *
+     * @param topVer Transaction topology version.
      * @param nodeId Node ID.
      * @param nearNodeId Near node ID.
      * @param nearXidVer Near transaction ID.
      * @param xidVer XID version.
      * @param commitVer Commit version.
      * @param sys System flag.
+     * @param plc IO policy.
      * @param concurrency Concurrency level (should be pessimistic).
      * @param isolation Transaction isolation.
      * @param invalidate Invalidate flag.
      * @param timeout Timeout.
      * @param ctx Cache registry.
      * @param txSize Expected transaction size.
+     * @param subjId Subject ID.
+     * @param taskNameHash Task name hash code.
      */
     public GridNearTxRemote(
         GridCacheSharedContext ctx,
+        AffinityTopologyVersion topVer,
         UUID nodeId,
         UUID nearNodeId,
         GridCacheVersion nearXidVer,
@@ -195,6 +210,10 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
 
         txState = new IgniteTxRemoteStateImpl(U.<IgniteTxKey, IgniteTxEntry>newLinkedHashMap(1),
             U.<IgniteTxKey, IgniteTxEntry>newLinkedHashMap(txSize));
+
+        assert topVer != null && topVer.topologyVersion() > 0 : topVer;
+
+        topologyVersion(topVer);
     }
 
     /** {@inheritDoc} */
@@ -205,11 +224,6 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
     /** {@inheritDoc} */
     @Override public UUID eventNodeId() {
         return nearNodeId;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean enforceSerializable() {
-        return false; // Serializable will be enforced on primary mode.
     }
 
     /** {@inheritDoc} */
@@ -255,7 +269,12 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
 
     /** {@inheritDoc} */
     @Override public Collection<UUID> masterNodeIds() {
-        return Arrays.asList(nodeId, nearNodeId);
+        Collection<UUID> res = new ArrayList<>(2);
+
+        res.add(nodeId);
+        res.add(nearNodeId);
+
+        return res;
     }
 
     /**
@@ -315,7 +334,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
 
                 CacheObject val = cached.peek(true, false, false, null);
 
-                if (val == null && cached.evictInternal(false, xidVer, null)) {
+                if (val == null && cached.evictInternal(xidVer, null)) {
                     evicted.add(entry.txKey());
 
                     return false;
@@ -376,7 +395,7 @@ public class GridNearTxRemote extends GridDistributedTxRemoteAdapter {
 
                 CacheObject peek = cached.peek(true, false, false, null);
 
-                if (peek == null && cached.evictInternal(false, xidVer, null)) {
+                if (peek == null && cached.evictInternal(xidVer, null)) {
                     cached.context().cache().removeIfObsolete(key.key());
 
                     evicted.add(key);

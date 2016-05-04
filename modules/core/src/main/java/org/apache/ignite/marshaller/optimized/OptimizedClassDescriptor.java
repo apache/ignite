@@ -26,9 +26,11 @@ import java.io.ObjectStreamField;
 import java.io.Serializable;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -79,6 +81,7 @@ import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.LO
 import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.LONG_ARR;
 import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.OBJ_ARR;
 import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.PROPS;
+import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.PROXY;
 import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.SERIALIZABLE;
 import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.SHORT;
 import static org.apache.ignite.marshaller.optimized.OptimizedMarshallerUtils.SHORT_ARR;
@@ -159,6 +162,9 @@ class OptimizedClassDescriptor {
 
     /** Access order field offset. */
     private long accessOrderFieldOff;
+
+    /** Proxy interfaces. */
+    private Class<?>[] proxyIntfs;
 
     /**
      * Creates descriptor for class.
@@ -328,6 +334,11 @@ class OptimizedClassDescriptor {
                 type = CLS;
 
                 isCls = true;
+            }
+            else if (Proxy.class.isAssignableFrom(cls)) {
+                type = PROXY;
+
+                proxyIntfs = cls.getInterfaces();
             }
             else {
                 Class<?> c = cls;
@@ -558,6 +569,13 @@ class OptimizedClassDescriptor {
     }
 
     /**
+     * @return {@code True} if descriptor is for {@link Proxy}.
+     */
+    boolean isProxy() {
+        return type == PROXY;
+    }
+
+    /**
      * Replaces object.
      *
      * @param obj Object.
@@ -735,6 +753,23 @@ class OptimizedClassDescriptor {
                 OptimizedClassDescriptor clsDesc = classDescriptor(clsMap, (Class<?>)obj, ctx, mapper);
 
                 clsDesc.writeTypeData(out);
+
+                break;
+
+            case PROXY:
+                out.writeInt(proxyIntfs.length);
+
+                for (Class<?> intf : proxyIntfs) {
+                    OptimizedClassDescriptor intfDesc = classDescriptor(clsMap, intf, ctx, mapper);
+
+                    intfDesc.writeTypeData(out);
+                }
+
+                InvocationHandler ih = Proxy.getInvocationHandler(obj);
+
+                assert ih != null;
+
+                out.writeObject(ih);
 
                 break;
 

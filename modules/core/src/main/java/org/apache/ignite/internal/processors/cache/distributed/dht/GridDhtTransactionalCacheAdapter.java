@@ -76,6 +76,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -867,6 +868,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                         tx = new GridDhtTxLocal(
                             ctx.shared(),
+                            req.topologyVersion(),
                             nearNode.id(),
                             req.version(),
                             req.futureId(),
@@ -888,7 +890,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             req.subjectId(),
                             req.taskNameHash());
 
-                        tx.syncCommit(req.syncCommit());
+                        if (req.syncCommit())
+                            tx.syncMode(FULL_SYNC);
 
                         tx = ctx.tm().onCreated(null, tx);
 
@@ -1123,14 +1126,12 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 CacheObject val = null;
 
                                 if (ret)
-                                    val = e.innerGet(tx,
-                                        /*swap*/true,
+                                    val = e.innerGet(
+                                        null,
+                                        tx,
                                         /*read-through*/false,
-                                        /*fail-fast.*/false,
-                                        /*unmarshal*/false,
                                         /*update-metrics*/true,
                                         /*event notification*/req.returnValue(i),
-                                        /*temporary*/false,
                                         CU.subjectId(tx, ctx.shared()),
                                         null,
                                         tx != null ? tx.resolveTaskName() : null,
@@ -1362,9 +1363,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         Map<ClusterNode, List<KeyCacheObject>> dhtMap,
         Map<ClusterNode, List<KeyCacheObject>> nearMap)
         throws IgniteCheckedException {
-        Collection<ClusterNode> dhtNodes = ctx.dht().topology().nodes(cached.partition(), topVer);
+        List<ClusterNode> dhtNodes = ctx.dht().topology().nodes(cached.partition(), topVer);
 
-        ClusterNode primary = F.first(dhtNodes);
+        ClusterNode primary = dhtNodes.get(0);
 
         assert primary != null;
 

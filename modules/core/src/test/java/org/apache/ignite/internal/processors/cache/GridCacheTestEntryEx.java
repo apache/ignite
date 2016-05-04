@@ -26,6 +26,7 @@ import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.eviction.EvictableEntry;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -321,11 +322,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** {@inheritDoc} */
-    @Override public CacheObject rawGetOrUnmarshal(boolean tmp) throws IgniteCheckedException {
-        return val;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean hasValue() {
         return val != null;
     }
@@ -400,7 +396,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Override public boolean evictInternal(boolean swap, GridCacheVersion obsoleteVer,
+    @Override public boolean evictInternal(GridCacheVersion obsoleteVer,
         @Nullable CacheEntryPredicate[] filter) {
         assert false;
 
@@ -426,14 +422,12 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Override public CacheObject innerGet(@Nullable IgniteInternalTx tx,
-        boolean readSwap,
+    @Override public CacheObject innerGet(
+        @Nullable GridCacheVersion ver,
+        @Nullable IgniteInternalTx tx,
         boolean readThrough,
-        boolean failFast,
-        boolean unmarshal,
         boolean updateMetrics,
         boolean evt,
-        boolean tmp,
         UUID subjId,
         Object transformClo,
         String taskName,
@@ -444,9 +438,8 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
 
     /** @inheritDoc */
     @Nullable @Override public T2<CacheObject, GridCacheVersion> innerGetVersioned(
+        @Nullable GridCacheVersion ver,
         IgniteInternalTx tx,
-        boolean readSwap,
-        boolean unmarshal,
         boolean updateMetrics,
         boolean evt,
         UUID subjId,
@@ -537,7 +530,8 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
         UUID subjId,
         String taskName,
         @Nullable CacheObject prevVal,
-        @Nullable Long updateCntr) throws IgniteCheckedException,
+        @Nullable Long updateCntr,
+        @Nullable GridDhtAtomicUpdateFuture fut) throws IgniteCheckedException,
         GridCacheEntryRemovedException {
         assert false;
 
@@ -572,8 +566,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Override public boolean clear(GridCacheVersion ver, boolean readers,
-        @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
+    @Override public boolean clear(GridCacheVersion ver, boolean readers) throws IgniteCheckedException {
         if (ver == null || ver.equals(this.ver)) {
             val = null;
 
@@ -678,7 +671,7 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     }
 
     /** @inheritDoc */
-    @Override public GridCacheVersionedEntryEx versionedEntry() throws IgniteCheckedException {
+    @Override public GridCacheVersionedEntryEx versionedEntry(final boolean keepBinary) throws IgniteCheckedException {
         return null;
     }
 
@@ -847,12 +840,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     /** {@inheritDoc} */
     @Override public CacheObject unswap() throws IgniteCheckedException {
         return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean offheapSwapEvict(byte[] vb, GridCacheVersion evictVer, GridCacheVersion obsoleteVer)
-        throws IgniteCheckedException, GridCacheEntryRemovedException {
-        return false;
     }
 
     /** {@inheritDoc} */

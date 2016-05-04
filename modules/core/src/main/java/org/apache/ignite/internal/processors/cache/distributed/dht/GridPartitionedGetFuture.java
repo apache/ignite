@@ -439,7 +439,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
             GridCacheEntryEx entry;
 
             try {
-                entry = cache.context().isSwapOrOffheapEnabled() ? cache.entryEx(key) : cache.peekEx(key);
+                entry = cache.entryEx(key);
 
                 // If our DHT cache do has value, then we peek it.
                 if (entry != null) {
@@ -451,8 +451,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     if (needVer) {
                         T2<CacheObject, GridCacheVersion> res = entry.innerGetVersioned(
                             null,
-                            /*swap*/true,
-                            /*unmarshal*/true,
+                            null,
                             /**update-metrics*/false,
                             /*event*/!skipVals,
                             subjId,
@@ -467,14 +466,12 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                         }
                     }
                     else {
-                        v = entry.innerGet(null,
-                            /*swap*/true,
+                        v = entry.innerGet(
+                            null,
+                            null,
                             /*read-through*/false,
-                            /*fail-fast*/true,
-                            /*unmarshal*/true,
                             /**update-metrics*/false,
                             /*event*/!skipVals,
-                            /*temporary*/false,
                             subjId,
                             null,
                             taskName,
@@ -487,7 +484,7 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                     // Entry was not in memory or in swap, so we remove it from cache.
                     if (v == null) {
                         if (isNew && entry.markObsoleteIfEmpty(ver))
-                            cache.removeIfObsolete(key);
+                            cache.removeEntry(entry);
                     }
                     else {
                         cctx.addResult(locVals,
@@ -741,12 +738,12 @@ public class GridPartitionedGetFuture<K, V> extends CacheDistributedGetFutureAda
                 }
 
                 // Need to wait for next topology version to remap.
-                IgniteInternalFuture<Long> topFut = cctx.discovery().topologyFuture(rmtTopVer.topologyVersion());
+                IgniteInternalFuture<AffinityTopologyVersion> topFut = cctx.affinity().affinityReadyFuture(rmtTopVer);
 
-                topFut.listen(new CIX1<IgniteInternalFuture<Long>>() {
+                topFut.listen(new CIX1<IgniteInternalFuture<AffinityTopologyVersion>>() {
                     @SuppressWarnings("unchecked")
-                    @Override public void applyx(IgniteInternalFuture<Long> fut) throws IgniteCheckedException {
-                        AffinityTopologyVersion topVer = new AffinityTopologyVersion(fut.get());
+                    @Override public void applyx(IgniteInternalFuture<AffinityTopologyVersion> fut) throws IgniteCheckedException {
+                        AffinityTopologyVersion topVer = fut.get();
 
                         // This will append new futures to compound list.
                         map(F.view(keys.keySet(), new P1<KeyCacheObject>() {

@@ -150,14 +150,7 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long getOverflowSize() {
-        try {
-            GridCacheAdapter<?, ?> cache = cctx.cache();
-
-            return cache != null ? cache.overflowSize() : -1;
-        }
-        catch (IgniteCheckedException ignored) {
-            return -1;
-        }
+        return 0;
     }
 
     /** {@inheritDoc} */
@@ -222,7 +215,7 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** {@inheritDoc} */
     @Override public long getOffHeapPrimaryEntriesCount() {
         try {
-            return cctx.swap().offheapEntriesCount(true, false, cctx.affinity().affinityTopologyVersion());
+            return cctx.offheap().entriesCount(true, false, cctx.affinity().affinityTopologyVersion());
         }
         catch (IgniteCheckedException e) {
             return 0;
@@ -232,7 +225,7 @@ public class CacheMetricsImpl implements CacheMetrics {
     /** {@inheritDoc} */
     @Override public long getOffHeapBackupEntriesCount() {
         try {
-            return cctx.swap().offheapEntriesCount(false, true, cctx.affinity().affinityTopologyVersion());
+            return cctx.offheap().entriesCount(false, true, cctx.affinity().affinityTopologyVersion());
         }
         catch (IgniteCheckedException e) {
             return 0;
@@ -278,22 +271,12 @@ public class CacheMetricsImpl implements CacheMetrics {
 
     /** {@inheritDoc} */
     @Override public long getSwapEntriesCount() {
-        try {
-            return cctx.cache().swapKeys();
-        }
-        catch (IgniteCheckedException e) {
-            return 0;
-        }
+        return 0;
     }
 
     /** {@inheritDoc} */
     @Override public long getSwapSize() {
-        try {
-            return cctx.cache().swapSize();
-        }
-        catch (IgniteCheckedException e) {
-            return 0;
-        }
+        return 0;
     }
 
     /** {@inheritDoc} */

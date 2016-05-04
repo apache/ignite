@@ -18,13 +18,14 @@
 package org.apache.ignite.internal.processors.cache.database;
 
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 
 /**
  *
  */
 public interface CacheDataRow {
-    public CacheObject key();
+    public KeyCacheObject key();
 
     public CacheObject value();
 

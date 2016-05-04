@@ -719,14 +719,14 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
     /**
      * Gets task name for a task class. It firstly checks
-     * {@link @GridComputeTaskName} annotation, then thread context
+     * {@link @ComputeTaskName} annotation, then thread context
      * map. If both are empty, class name is returned.
      *
      * @param dep Deployment.
      * @param cls Class.
      * @param map Thread context map.
      * @return Task name.
-     * @throws IgniteCheckedException If {@link @GridComputeTaskName} annotation is found, but has empty value.
+     * @throws IgniteCheckedException If {@link @ComputeTaskName} annotation is found, but has empty value.
      */
     private String taskName(GridDeployment dep, Class<?> cls,
         Map<GridTaskThreadContextKey, Object> map) throws IgniteCheckedException {
@@ -742,7 +742,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             taskName = ann.value();
 
             if (F.isEmpty(taskName))
-                throw new IgniteCheckedException("Task name specified by @GridComputeTaskName annotation" +
+                throw new IgniteCheckedException("Task name specified by @ComputeTaskName annotation" +
                     " cannot be empty for class: " + cls);
         }
         else
@@ -1029,7 +1029,8 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             boolean loc = ctx.localNodeId().equals(nodeId) && !ctx.config().isMarshalLocalJobs();
 
             Map<?, ?> attrs = loc ? msg.getAttributes() :
-                marsh.<Map<?, ?>>unmarshal(msg.getAttributesBytes(), task.getTask().getClass().getClassLoader());
+                marsh.<Map<?, ?>>unmarshal(msg.getAttributesBytes(),
+                    U.resolveClassLoader(task.getTask().getClass().getClassLoader(), ctx.config()));
 
             GridTaskSessionImpl ses = task.getSession();
 
@@ -1304,7 +1305,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     if (topic == null) {
                         assert req.topicBytes() != null;
 
-                        topic = marsh.unmarshal(req.topicBytes(), null);
+                        topic = marsh.unmarshal(req.topicBytes(), U.resolveClassLoader(ctx.config()));
                     }
 
                     boolean loc = ctx.localNodeId().equals(nodeId);

@@ -207,19 +207,4 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
 
         mgr.stop(true);
     }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testStopSwapSpaceManager() throws Exception {
-        SwapSpaceSpi spi = new FileSwapSpaceSpi();
-
-        injectLogger(spi);
-
-        ctx.config().setSwapSpaceSpi(spi);
-
-        GridSwapSpaceManager mgr = new GridSwapSpaceManager(ctx);
-
-        mgr.stop(true);
-    }
 }

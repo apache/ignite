@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Impl
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -239,6 +240,12 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration, NearCacheConfiguration nearConfiguration)
+        {
+            return _ignite.GetOrCreateCache<TK, TV>(configuration, nearConfiguration);
+        }
+
+        /** <inheritdoc /> */
         public ICache<TK, TV> CreateCache<TK, TV>(string name)
         {
             return _ignite.CreateCache<TK, TV>(name);
@@ -249,6 +256,14 @@ namespace Apache.Ignite.Core.Impl
         {
             return _ignite.CreateCache<TK, TV>(configuration);
         }
+
+        /** <inheritdoc /> */
+        public ICache<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration, NearCacheConfiguration nearConfiguration)
+        {
+            return _ignite.CreateCache<TK, TV>(configuration, nearConfiguration);
+        }
+
+        /** <inheritdoc /> */
         public void DestroyCache(string name)
         {
             _ignite.DestroyCache(name);
@@ -282,6 +297,12 @@ namespace Apache.Ignite.Core.Impl
         public void ResetMetrics()
         {
             _ignite.GetCluster().ResetMetrics();
+        }
+
+        /** <inheritdoc /> */
+        public Task<bool> ClientReconnectTask
+        {
+            get { return _ignite.GetCluster().ClientReconnectTask; }
         }
 
         /** <inheritdoc /> */
@@ -337,6 +358,36 @@ namespace Apache.Ignite.Core.Impl
         public IgniteConfiguration GetConfiguration()
         {
             return _ignite.GetConfiguration();
+        }
+
+        /** <inheritdoc /> */
+        public ICache<TK, TV> CreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration)
+        {
+            return _ignite.CreateNearCache<TK, TV>(name, configuration);
+        }
+
+        /** <inheritdoc /> */
+        public ICache<TK, TV> GetOrCreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration)
+        {
+            return _ignite.GetOrCreateNearCache<TK, TV>(name, configuration);
+        }
+
+        /** <inheritdoc /> */
+        public ICollection<string> GetCacheNames()
+        {
+            return _ignite.GetCacheNames();
+        }
+
+        /** <inheritdoc /> */
+        public IAtomicSequence GetAtomicSequence(string name, long initialValue, bool create)
+        {
+            return _ignite.GetAtomicSequence(name, initialValue, create);
+        }
+
+        /** <inheritdoc /> */
+        public IAtomicReference<T> GetAtomicReference<T>(string name, T initialValue, bool create)
+        {
+            return _ignite.GetAtomicReference(name, initialValue, create);
         }
 
         /** <inheritdoc /> */

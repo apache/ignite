@@ -26,7 +26,10 @@
     using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.DataStructures.Configuration;
     using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Events;
@@ -34,6 +37,7 @@
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Lifecycle;
+    using Apache.Ignite.Core.Transactions;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
 
@@ -45,12 +49,12 @@
         /// <summary>
         /// Default initial JVM memory in megabytes.
         /// </summary>
-        public const int DefaultJvmInitMem = 512;
+        public const int DefaultJvmInitMem = -1;
 
         /// <summary>
         /// Default maximum JVM memory in megabytes.
         /// </summary>
-        public const int DefaultJvmMaxMem = 1024;
+        public const int DefaultJvmMaxMem = -1;
 
         /// <summary>
         /// Default metrics expire time.
@@ -88,6 +92,11 @@
         public const int DefaultNetworkSendRetryCount = 3;
 
         /// <summary>
+        /// Default late affinity assignment mode.
+        /// </summary>
+        public const bool DefaultIsLateAffinityAssignment = true;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="IgniteConfiguration"/> class.
         /// </summary>
         public IgniteConfiguration()
@@ -102,6 +111,7 @@
             NetworkTimeout = DefaultNetworkTimeout;
             NetworkSendRetryCount = DefaultNetworkSendRetryCount;
             NetworkSendRetryDelay = DefaultNetworkSendRetryDelay;
+            IsLateAffinityAssignment = DefaultIsLateAffinityAssignment;
         }
 
         /// <summary>
@@ -177,6 +187,8 @@
             writer.WriteLong((long) NetworkTimeout.TotalMilliseconds);
             writer.WriteString(WorkDirectory);
             writer.WriteString(Localhost);
+            writer.WriteBoolean(IsDaemon);
+            writer.WriteBoolean(IsLateAffinityAssignment);
 
             // Cache config
             var caches = CacheConfiguration;
@@ -207,6 +219,56 @@
             }
             else
                 writer.WriteBoolean(false);
+
+            // Binary config
+            var isCompactFooterSet = BinaryConfiguration != null && BinaryConfiguration.CompactFooterInternal != null;
+
+            writer.WriteBoolean(isCompactFooterSet);
+
+            if (isCompactFooterSet)
+                writer.WriteBoolean(BinaryConfiguration.CompactFooter);
+
+            // User attributes
+            var attrs = UserAttributes;
+
+            if (attrs == null)
+                writer.WriteInt(0);
+            else
+            {
+                writer.WriteInt(attrs.Count);
+
+                foreach (var pair in attrs)
+                {
+                    writer.WriteString(pair.Key);
+                    writer.Write(pair.Value);
+                }
+            }
+
+            // Atomic
+            if (AtomicConfiguration != null)
+            {
+                writer.WriteBoolean(true);
+
+                writer.WriteInt(AtomicConfiguration.AtomicSequenceReserveSize);
+                writer.WriteInt(AtomicConfiguration.Backups);
+                writer.WriteInt((int) AtomicConfiguration.CacheMode);
+            }
+            else
+                writer.WriteBoolean(false);
+
+            // Tx
+            if (TransactionConfiguration != null)
+            {
+                writer.WriteBoolean(true);
+
+                writer.WriteInt(TransactionConfiguration.PessimisticTransactionLogSize);
+                writer.WriteInt((int) TransactionConfiguration.DefaultTransactionConcurrency);
+                writer.WriteInt((int) TransactionConfiguration.DefaultTransactionIsolation);
+                writer.WriteLong((long) TransactionConfiguration.DefaultTimeout.TotalMilliseconds);
+                writer.WriteLong((int) TransactionConfiguration.PessimisticTransactionLogLinger.TotalMilliseconds);
+            }
+            else
+                writer.WriteBoolean(false);
         }
 
         /// <summary>
@@ -228,6 +290,8 @@
             NetworkTimeout = r.ReadLongAsTimespan();
             WorkDirectory = r.ReadString();
             Localhost = r.ReadString();
+            IsDaemon = r.ReadBoolean();
+            IsLateAffinityAssignment = r.ReadBoolean();
 
             // Cache config
             var cacheCfgCount = r.ReadInt();
@@ -237,6 +301,41 @@
 
             // Discovery config
             DiscoverySpi = r.ReadBoolean() ? new TcpDiscoverySpi(r) : null;
+
+            // Binary config
+            if (r.ReadBoolean())
+            {
+                BinaryConfiguration = BinaryConfiguration ?? new BinaryConfiguration();
+                BinaryConfiguration.CompactFooter = r.ReadBoolean();
+            }
+
+            // User attributes
+            UserAttributes = Enumerable.Range(0, r.ReadInt())
+                .ToDictionary(x => r.ReadString(), x => r.ReadObject<object>());
+
+            // Atomic
+            if (r.ReadBoolean())
+            {
+                AtomicConfiguration = new AtomicConfiguration
+                {
+                    AtomicSequenceReserveSize = r.ReadInt(),
+                    Backups = r.ReadInt(),
+                    CacheMode = (CacheMode) r.ReadInt()
+                };
+            }
+
+            // Tx
+            if (r.ReadBoolean())
+            {
+                TransactionConfiguration = new TransactionConfiguration
+                {
+                    PessimisticTransactionLogSize = r.ReadInt(),
+                    DefaultTransactionConcurrency = (TransactionConcurrency) r.ReadInt(),
+                    DefaultTransactionIsolation = (TransactionIsolation) r.ReadInt(),
+                    DefaultTimeout = TimeSpan.FromMilliseconds(r.ReadLong()),
+                    PessimisticTransactionLogLinger = TimeSpan.FromMilliseconds(r.ReadInt())
+                };
+            }
         }
 
         /// <summary>
@@ -303,12 +402,14 @@
 
         /// <summary>
         /// URL to Spring configuration file.
+        /// <para />
+        /// Ignite.NET can be configured natively without Spring. 
+        /// Setting this property will ignore all other properties except <see cref="IgniteHome"/>, 
+        /// <see cref="Assemblies"/>, <see cref="SuppressWarnings"/>, <see cref="LifecycleBeans"/>, 
+        /// <see cref="JvmOptions"/>, <see cref="JvmDllPath"/>, <see cref="IgniteHome"/>, 
+        /// <see cref="JvmInitialMemoryMb"/>, <see cref="JvmMaxMemoryMb"/>.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1056:UriPropertiesShouldNotBeStrings")]
-        [Obsolete("Ignite.NET can be configured natively without Spring. " +
-                  "Setting this property will ignore all other properties except " +
-                  "IgniteHome, Assemblies, SuppressWarnings, LifecycleBeans, JvmOptions, JvmdllPath, IgniteHome, " +
-                  "JvmInitialMemoryMb, JvmMaxMemoryMb.")]
         public string SpringConfigUrl { get; set; }
 
         /// <summary>
@@ -356,6 +457,7 @@
 
         /// <summary>
         /// Initial amount of memory in megabytes given to JVM. Maps to -Xms Java option.
+        /// <code>-1</code> maps to JVM defaults.
         /// Defaults to <see cref="DefaultJvmInitMem"/>.
         /// </summary>
         [DefaultValue(DefaultJvmInitMem)]
@@ -363,6 +465,7 @@
 
         /// <summary>
         /// Maximum amount of memory in megabytes given to JVM. Maps to -Xmx Java option.
+        /// <code>-1</code> maps to JVM defaults.
         /// Defaults to <see cref="DefaultJvmMaxMem"/>.
         /// </summary>
         [DefaultValue(DefaultJvmMaxMem)]
@@ -377,7 +480,6 @@
         /// <summary>
         /// Gets or sets a value indicating whether node should start in client mode.
         /// Client node cannot hold data in the caches.
-        /// Default is null and takes this setting from Spring configuration.
         /// </summary>
         public bool ClientMode { get; set; }
 
@@ -448,5 +550,62 @@
         /// It is strongly recommended to set this parameter for all production environments.
         /// </summary>
         public string Localhost { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether this node should be a daemon node.
+        /// <para />
+        /// Daemon nodes are the usual grid nodes that participate in topology but not visible on the main APIs, 
+        /// i.e. they are not part of any cluster groups.
+        /// <para />
+        /// Daemon nodes are used primarily for management and monitoring functionality that is built on Ignite 
+        /// and needs to participate in the topology, but also needs to be excluded from the "normal" topology, 
+        /// so that it won't participate in the task execution or in-memory data grid storage.
+        /// </summary>
+        public bool IsDaemon { get; set; }
+
+        /// <summary>
+        /// Gets or sets the user attributes for this node.
+        /// <para />
+        /// These attributes can be retrieved later via <see cref="IClusterNode.GetAttributes"/>.
+        /// Environment variables are added to node attributes automatically.
+        /// NOTE: attribute names starting with "org.apache.ignite" are reserved for internal use.
+        /// </summary>
+        [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public IDictionary<string, object> UserAttributes { get; set; }
+
+        /// <summary>
+        /// Gets or sets the atomic data structures configuration.
+        /// </summary>
+        public AtomicConfiguration AtomicConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the transaction configuration.
+        /// </summary>
+        public TransactionConfiguration TransactionConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether late affinity assignment mode should be used.
+        /// <para />
+        /// On each topology change, for each started cache, partition-to-node mapping is
+        /// calculated using AffinityFunction for cache. When late
+        /// affinity assignment mode is disabled then new affinity mapping is applied immediately.
+        /// <para />
+        /// With late affinity assignment mode, if primary node was changed for some partition, but data for this
+        /// partition is not rebalanced yet on this node, then current primary is not changed and new primary 
+        /// is temporary assigned as backup. This nodes becomes primary only when rebalancing for all assigned primary 
+        /// partitions is finished. This mode can show better performance for cache operations, since when cache 
+        /// primary node executes some operation and data is not rebalanced yet, then it sends additional message 
+        /// to force rebalancing from other nodes.
+        /// <para />
+        /// Note, that <see cref="ICacheAffinity"/> interface provides assignment information taking late assignment
+        /// into account, so while rebalancing for new primary nodes is not finished it can return assignment 
+        /// which differs from assignment calculated by AffinityFunction.
+        /// <para />
+        /// This property should have the same value for all nodes in cluster.
+        /// <para />
+        /// If not provided, default value is <see cref="DefaultIsLateAffinityAssignment"/>.
+        /// </summary>
+        [DefaultValue(DefaultIsLateAffinityAssignment)]
+        public bool IsLateAffinityAssignment { get; set; }
     }
 }

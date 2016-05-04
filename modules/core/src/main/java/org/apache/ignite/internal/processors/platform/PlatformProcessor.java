@@ -208,9 +208,55 @@ public interface PlatformProcessor extends GridProcessor {
     public PlatformTarget atomicLong(String name, long initVal, boolean create) throws IgniteException;
 
     /**
+     * Get or create AtomicSequence.
+     * @param name Name.
+     * @param initVal Initial value.
+     * @param create Create flag.
+     * @return Platform atomic long.
+     * @throws IgniteException
+     */
+    public PlatformTarget atomicSequence(String name, long initVal, boolean create) throws IgniteException;
+
+    /**
+     * Get or create AtomicReference.
+     * @param name Name.
+     * @param memPtr Pointer to a stream with initial value. 0 for null initial value.
+     * @param create Create flag.
+     * @return Platform atomic long.
+     * @throws IgniteException
+     */
+    public PlatformTarget atomicReference(String name, long memPtr, boolean create) throws IgniteException;
+
+    /**
      * Gets the configuration of the current Ignite instance.
      *
      * @param memPtr Stream to write data to.
      */
     public void getIgniteConfiguration(long memPtr);
+
+    /**
+     * Gets the cache names.
+     *
+     * @param memPtr Stream to write data to.
+     */
+    public void getCacheNames(long memPtr);
+
+    /**
+     * Starts a near cache on local node if cache was previously started.
+     *
+     * @param cacheName Cache name.
+     * @param memPtr Pointer to a stream with near cache config. 0 for default config.
+     * @return Cache.
+     */
+    public PlatformTarget createNearCache(@Nullable String cacheName, long memPtr);
+
+    /**
+     * Gets existing near cache with the given name or creates a new one.
+     *
+     * @param cacheName Cache name.
+     * @param memPtr Pointer to a stream with near cache config. 0 for default config.
+     * @return Cache.
+     */
+    public PlatformTarget getOrCreateNearCache(@Nullable String cacheName, long memPtr);
+
 }

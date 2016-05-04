@@ -28,8 +28,15 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.eviction.EvictionPolicy;
+import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
+import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
+import org.apache.ignite.configuration.AtomicConfiguration;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
+import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.*;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration;
@@ -40,6 +47,8 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 
 import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
@@ -53,7 +62,8 @@ import java.util.Map;
 /**
  * Configuration utils.
  */
-@SuppressWarnings("unchecked") public class PlatformConfigurationUtils {
+@SuppressWarnings("unchecked")
+public class PlatformConfigurationUtils {
     /**
      * Write .Net configuration to the stream.
      *
@@ -139,6 +149,8 @@ import java.util.Map;
         ccfg.setWriteBehindFlushSize(in.readInt());
         ccfg.setWriteBehindFlushThreadCount(in.readInt());
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.fromOrdinal(in.readInt()));
+        ccfg.setReadThrough(in.readBoolean());
+        ccfg.setWriteThrough(in.readBoolean());
 
         Object storeFactory = in.readObjectDetached();
 
@@ -156,7 +168,83 @@ import java.util.Map;
             ccfg.setQueryEntities(entities);
         }
 
+        if (in.readBoolean())
+            ccfg.setNearConfiguration(readNearConfiguration(in));
+
         return ccfg;
+    }
+
+    /**
+     * Reads the near config.
+     *
+     * @param in Stream.
+     * @return NearCacheConfiguration.
+     */
+    public static NearCacheConfiguration readNearConfiguration(BinaryRawReader in) {
+        NearCacheConfiguration cfg = new NearCacheConfiguration();
+        cfg.setNearStartSize(in.readInt());
+
+        byte plcTyp = in.readByte();
+
+        switch (plcTyp) {
+            case 0:
+                break;
+            case 1: {
+                FifoEvictionPolicy p = new FifoEvictionPolicy();
+                p.setBatchSize(in.readInt());
+                p.setMaxSize(in.readInt());
+                p.setMaxMemorySize(in.readLong());
+                cfg.setNearEvictionPolicy(p);
+                break;
+            }
+            case 2: {
+                LruEvictionPolicy p = new LruEvictionPolicy();
+                p.setBatchSize(in.readInt());
+                p.setMaxSize(in.readInt());
+                p.setMaxMemorySize(in.readLong());
+                cfg.setNearEvictionPolicy(p);
+                break;
+            }
+            default:
+                assert false;
+        }
+
+        return cfg;
+    }
+
+    /**
+     * Reads the near config.
+     *
+     * @param out Stream.
+     * @param cfg NearCacheConfiguration.
+     */
+    @SuppressWarnings("TypeMayBeWeakened")
+    public static void writeNearConfiguration(BinaryRawWriter out, NearCacheConfiguration cfg) {
+        assert cfg != null;
+
+        out.writeInt(cfg.getNearStartSize());
+
+        EvictionPolicy p = cfg.getNearEvictionPolicy();
+
+        if (p instanceof FifoEvictionPolicy) {
+            out.writeByte((byte)1);
+
+            FifoEvictionPolicy p0 = (FifoEvictionPolicy)p;
+            out.writeInt(p0.getBatchSize());
+            out.writeInt(p0.getMaxSize());
+            out.writeLong(p0.getMaxMemorySize());
+        }
+        else if (p instanceof LruEvictionPolicy) {
+            out.writeByte((byte)2);
+
+            LruEvictionPolicy p0 = (LruEvictionPolicy)p;
+            out.writeInt(p0.getBatchSize());
+            out.writeInt(p0.getMaxSize());
+            out.writeLong(p0.getMaxMemorySize());
+        }
+        else {
+            out.writeByte((byte)0);
+        }
     }
 
     /**
@@ -256,9 +344,51 @@ import java.util.Map;
         cfg.setNetworkTimeout(in.readLong());
         cfg.setWorkDirectory(in.readString());
         cfg.setLocalHost(in.readString());
+        cfg.setDaemon(in.readBoolean());
+        cfg.setLateAffinityAssignment(in.readBoolean());
 
         readCacheConfigurations(in, cfg);
         readDiscoveryConfiguration(in, cfg);
+
+        if (in.readBoolean()) {
+            if (cfg.getBinaryConfiguration() == null)
+                cfg.setBinaryConfiguration(new BinaryConfiguration());
+
+            cfg.getBinaryConfiguration().setCompactFooter(in.readBoolean());
+        }
+
+        int attrCnt = in.readInt();
+
+        if (attrCnt > 0) {
+            Map<String, Object> attrs = new HashMap<>(attrCnt);
+
+            for (int i = 0; i < attrCnt; i++)
+                attrs.put(in.readString(), in.readObject());
+
+            cfg.setUserAttributes(attrs);
+        }
+
+        if (in.readBoolean()) {
+            AtomicConfiguration atomic = new AtomicConfiguration();
+
+            atomic.setAtomicSequenceReserveSize(in.readInt());
+            atomic.setBackups(in.readInt());
+            atomic.setCacheMode(CacheMode.fromOrdinal(in.readInt()));
+
+            cfg.setAtomicConfiguration(atomic);
+        }
+
+        if (in.readBoolean()) {
+            TransactionConfiguration tx = new TransactionConfiguration();
+
+            tx.setPessimisticTxLogSize(in.readInt());
+            tx.setDefaultTxConcurrency(TransactionConcurrency.fromOrdinal(in.readInt()));
+            tx.setDefaultTxIsolation(TransactionIsolation.fromOrdinal(in.readInt()));
+            tx.setDefaultTxTimeout(in.readLong());
+            tx.setPessimisticTxLogLinger(in.readInt());
+
+            cfg.setTransactionConfiguration(tx);
+        }
     }
 
     /**
@@ -411,6 +541,8 @@ import java.util.Map;
         writer.writeInt(ccfg.getWriteBehindFlushSize());
         writer.writeInt(ccfg.getWriteBehindFlushThreadCount());
         writer.writeInt(ccfg.getWriteSynchronizationMode() == null ? 0 : ccfg.getWriteSynchronizationMode().ordinal());
+        writer.writeBoolean(ccfg.isReadThrough());
+        writer.writeBoolean(ccfg.isWriteThrough());
 
         if (ccfg.getCacheStoreFactory() instanceof PlatformDotNetCacheStoreFactoryNative)
             writer.writeObject(((PlatformDotNetCacheStoreFactoryNative)ccfg.getCacheStoreFactory()).getNativeFactory());
@@ -419,8 +551,7 @@ import java.util.Map;
 
         Collection<QueryEntity> qryEntities = ccfg.getQueryEntities();
 
-        if (qryEntities != null)
-        {
+        if (qryEntities != null) {
             writer.writeInt(qryEntities.size());
 
             for (QueryEntity e : qryEntities)
@@ -428,6 +559,16 @@ import java.util.Map;
         }
         else
             writer.writeInt(0);
+
+        NearCacheConfiguration nearCfg = ccfg.getNearConfiguration();
+
+        if (nearCfg != null) {
+            writer.writeBoolean(true);
+
+            writeNearConfiguration(writer, nearCfg);
+        }
+        else
+            writer.writeBoolean(false);
     }
 
     /**
@@ -530,6 +671,8 @@ import java.util.Map;
         w.writeLong(cfg.getNetworkTimeout());
         w.writeString(cfg.getWorkDirectory());
         w.writeString(cfg.getLocalHost());
+        w.writeBoolean(cfg.isDaemon());
+        w.writeBoolean(cfg.isLateAffinityAssignment());
 
         CacheConfiguration[] cacheCfg = cfg.getCacheConfiguration();
 
@@ -543,6 +686,51 @@ import java.util.Map;
             w.writeInt(0);
 
         writeDiscoveryConfiguration(w, cfg.getDiscoverySpi());
+
+        BinaryConfiguration bc = cfg.getBinaryConfiguration();
+        w.writeBoolean(bc != null);
+
+        if (bc != null)
+            w.writeBoolean(bc.isCompactFooter());
+
+        Map<String, ?> attrs = cfg.getUserAttributes();
+
+        if (attrs != null) {
+            w.writeInt(attrs.size());
+
+            for (Map.Entry<String, ?> e : attrs.entrySet()) {
+                w.writeString(e.getKey());
+                w.writeObject(e.getValue());
+            }
+        }
+        else
+            w.writeInt(0);
+
+        AtomicConfiguration atomic = cfg.getAtomicConfiguration();
+
+        if (atomic != null) {
+            w.writeBoolean(true);
+
+            w.writeInt(atomic.getAtomicSequenceReserveSize());
+            w.writeInt(atomic.getBackups());
+            w.writeInt(atomic.getCacheMode().ordinal());
+        }
+        else
+            w.writeBoolean(false);
+
+        TransactionConfiguration tx = cfg.getTransactionConfiguration();
+
+        if (tx != null) {
+            w.writeBoolean(true);
+
+            w.writeInt(tx.getPessimisticTxLogSize());
+            w.writeInt(tx.getDefaultTxConcurrency().ordinal());
+            w.writeInt(tx.getDefaultTxIsolation().ordinal());
+            w.writeLong(tx.getDefaultTxTimeout());
+            w.writeInt(tx.getPessimisticTxLogLinger());
+        }
+        else
+            w.writeBoolean(false);
 
         w.writeString(cfg.getIgniteHome());
 
@@ -594,10 +782,10 @@ import java.util.Map;
                 w.writeInt(multiFinder.getAddressRequestAttempts());
                 w.writeInt(multiFinder.getResponseWaitTime());
 
-                Integer ttl = multiFinder.getTimeToLive();
-                w.writeBoolean(ttl != null);
+                int ttl = multiFinder.getTimeToLive();
+                w.writeBoolean(ttl != -1);
 
-                if (ttl != null)
+                if (ttl != -1)
                     w.writeInt(ttl);
             }
         }

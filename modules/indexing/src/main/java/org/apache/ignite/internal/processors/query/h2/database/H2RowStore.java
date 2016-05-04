@@ -24,6 +24,7 @@ import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.database.RowStore;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
@@ -66,11 +67,6 @@ public class H2RowStore extends RowStore<GridH2Row> {
             ByteBuffer buf = page.getForRead();
 
             try {
-                GridH2Row existing = rowDesc.cachedRow(link);
-
-                if (existing != null)
-                    return existing;
-
                 DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
 
                 int dataOff = io.getDataOffset(buf, dwordsOffset(link));
@@ -80,7 +76,7 @@ public class H2RowStore extends RowStore<GridH2Row> {
                 // Skip entry size.
                 buf.getShort();
 
-                CacheObject key = coctx.processor().toCacheObject(coctx, buf);
+                KeyCacheObject key = coctx.processor().toKeyCacheObject(coctx, buf);
                 CacheObject val = coctx.processor().toCacheObject(coctx, buf);
 
                 int topVer = buf.getInt();
@@ -102,8 +98,6 @@ public class H2RowStore extends RowStore<GridH2Row> {
                 }
 
                 assert row.ver != null;
-
-                rowDesc.cache(row);
 
                 return row;
             }

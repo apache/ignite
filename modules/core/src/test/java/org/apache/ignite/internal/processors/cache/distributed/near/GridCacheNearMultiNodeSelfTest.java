@@ -147,6 +147,8 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGrids(GRID_CNT);
+
+        awaitPartitionMapExchange();
     }
 
     /** {@inheritDoc} */
@@ -399,7 +401,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
                 GridDhtCacheEntry entry = (GridDhtCacheEntry)dht(primaryGrid(2)).peekEx(2);
 
                 if (entry != null)
-                    assertNull("Unexpected entry: " + entry, entry.rawGetOrUnmarshal(false));
+                    assertNull("Unexpected entry: " + entry, entry.rawGet());
 
                 assertNotNull(localPeek(dht(primaryGrid(3)), 3));
 
@@ -670,7 +672,7 @@ public class GridCacheNearMultiNodeSelfTest extends GridCommonAbstractTest {
         lock.lock();
 
         try {
-            AffinityTopologyVersion topVer = new AffinityTopologyVersion(grid(0).cluster().topologyVersion());
+            AffinityTopologyVersion topVer = grid(0).context().discovery().topologyVersionEx();
 
             GridNearCacheEntry nearEntry1 = nearEntry(0, key);
 

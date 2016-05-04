@@ -25,15 +25,20 @@
 #include "binary/binary_type_manager.h"
 
 namespace ignite 
-{    
+{
     namespace impl 
     {
         /**
          * Defines environment in which Ignite operates.
          */
         class IGNITE_IMPORT_EXPORT IgniteEnvironment
-        {                
+        {
         public:
+            /**
+             * Default memory block allocation size.
+             */
+            enum { DEFAULT_ALLOCATION_SIZE = 1024 };
+
             /**
              * Default constructor.
              */
@@ -51,7 +56,7 @@ namespace ignite
              * @return JNI handlers.
              */
             ignite::common::java::JniHandlers GetJniHandlers(ignite::common::concurrent::SharedPointer<IgniteEnvironment>* target);
-                
+
             /**
              * Perform initialization on successful start.
              *
@@ -64,8 +69,8 @@ namespace ignite
              *
              * @param memPtr Memory pointer.
              */
-            void OnStartCallback(long long memPtr);        
-            
+            void OnStartCallback(long long memPtr);
+
             /**
              * Get name of Ignite instance.
              *
@@ -120,11 +125,11 @@ namespace ignite
             char* name;
 
             /** Type manager. */
-            binary::BinaryTypeManager* metaMgr;       
+            binary::BinaryTypeManager* metaMgr;
 
             IGNITE_NO_COPY_ASSIGNMENT(IgniteEnvironment);
         };
-    }    
+    }
 }
 
 #endif

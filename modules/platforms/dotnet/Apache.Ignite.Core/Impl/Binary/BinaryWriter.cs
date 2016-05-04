@@ -907,13 +907,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             WriteFieldId(fieldName, BinaryUtils.TypeArray);
 
-            if (val == null)
-                WriteNullField();
-            else
-            {
-                _stream.WriteByte(BinaryUtils.TypeArray);
-                BinaryUtils.WriteArray(val, this);
-            }
+            WriteArray(val);
         }
 
         /// <summary>
@@ -936,6 +930,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                 WriteNullRawField();
             else
             {
+                if (WriteHandle(_stream.Position, val))
+                    return;
+
                 _stream.WriteByte(BinaryUtils.TypeArray);
                 BinaryUtils.WriteArray(val, this);
             }
@@ -950,10 +947,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             WriteFieldId(fieldName, BinaryUtils.TypeCollection);
 
-            if (val == null)
-                WriteNullField();
-            else
-                WriteCollection(val);
+            WriteCollection(val);
         }
 
         /// <summary>
@@ -962,8 +956,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Collection.</param>
         public void WriteCollection(ICollection val)
         {
-            WriteByte(BinaryUtils.TypeCollection);
-            BinaryUtils.WriteCollection(val, this);
+            if (val == null)
+                WriteNullField();
+            else
+            {
+                if (WriteHandle(_stream.Position, val))
+                    return;
+
+                WriteByte(BinaryUtils.TypeCollection);
+                BinaryUtils.WriteCollection(val, this);
+            }
         }
 
         /// <summary>
@@ -975,10 +977,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             WriteFieldId(fieldName, BinaryUtils.TypeDictionary);
 
-            if (val == null)
-                WriteNullField();
-            else
-                WriteDictionary(val);
+            WriteDictionary(val);
         }
 
         /// <summary>
@@ -987,8 +986,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="val">Dictionary.</param>
         public void WriteDictionary(IDictionary val)
         {
-            WriteByte(BinaryUtils.TypeDictionary);
-            BinaryUtils.WriteDictionary(val, this);
+            if (val == null)
+                WriteNullField();
+            else
+            {
+                if (WriteHandle(_stream.Position, val))
+                    return;
+
+                WriteByte(BinaryUtils.TypeDictionary);
+                BinaryUtils.WriteDictionary(val, this);
+            }
         }
 
         /// <summary>
@@ -1133,6 +1140,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                         ? BinaryObjectHeader.Flag.UserType
                         : BinaryObjectHeader.Flag.None;
 
+                    if (Marshaller.CompactFooter && desc.UserType)
+                        flags |= BinaryObjectHeader.Flag.CompactFooter;
+
                     var hasSchema = _schema.WriteSchema(_stream, schemaIdx, out schemaId, ref flags);
 
                     if (hasSchema)
@@ -1142,6 +1152,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                         // Calculate and write header.
                         if (_curRawPos > 0)
                             _stream.WriteInt(_curRawPos - pos); // raw offset is in the last 4 bytes
+
+                        // Update schema in type descriptor
+                        if (desc.Schema.Get(schemaId) == null)
+                            desc.Schema.Add(schemaId, _schema.GetSchema(schemaIdx));
                     }
                     else
                         schemaOffset = BinaryObjectHeader.Size;
@@ -1183,7 +1197,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                 if (handler == null)  // We did our best, object cannot be marshalled.
                     throw new BinaryObjectException("Unsupported object type [type=" + type + ", object=" + obj + ']');
                 
-                handler(this, obj);
+                if (handler.SupportsHandles && WriteHandle(_stream.Position, obj))
+                    return;
+
+                handler.Write(this, obj);
             }
         }
 
@@ -1315,7 +1332,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (_hnds == null)
             {
                 // Cache absolute handle position.
-                _hnds = new BinaryHandleDictionary<object, long>(obj, pos);
+                _hnds = new BinaryHandleDictionary<object, long>(obj, pos, ReferenceEqualityComparer<object>.Instance);
 
                 return false;
             }
@@ -1447,18 +1464,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 BinaryType meta;
 
                 if (_metas.TryGetValue(desc.TypeId, out meta))
-                {
-                    if (fields != null)
-                    {
-                        IDictionary<string, int> existingFields = meta.GetFieldsMap();
-
-                        foreach (KeyValuePair<string, int> field in fields)
-                        {
-                            if (!existingFields.ContainsKey(field.Key))
-                                existingFields[field.Key] = field.Value;
-                        }
-                    }
-                }
+                    meta.UpdateFields(fields);
                 else
                     _metas[desc.TypeId] = new BinaryType(desc, fields);
             }

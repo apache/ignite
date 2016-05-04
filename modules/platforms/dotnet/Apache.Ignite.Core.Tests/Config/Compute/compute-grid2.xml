@@ -47,7 +47,7 @@
 
         <property name="binaryConfiguration">
             <bean class="org.apache.ignite.configuration.BinaryConfiguration">
-                <property name="compactFooter" value="false"/>
+                <property name="compactFooter" value="true"/>
                 <property name="typeConfigurations">
                     <list>
                         <bean class="org.apache.ignite.binary.BinaryTypeConfiguration">
@@ -62,8 +62,21 @@
                         </bean>
                     </list>
                 </property>
-
+                <property name="idMapper">
+                    <bean class="org.apache.ignite.binary.BinaryBasicIdMapper">
+                        <constructor-arg value="true"/>
+                    </bean>
+                </property>
+                <property name="nameMapper">
+                    <bean class="org.apache.ignite.binary.BinaryBasicNameMapper">
+                        <constructor-arg value="true"/>
+                    </bean>
+                </property>
             </bean>
+        </property>
+
+        <property name="marshaller">
+            <bean class="org.apache.ignite.internal.binary.BinaryMarshaller" />
         </property>
 
         <property name="discoverySpi">
@@ -73,11 +86,12 @@
                         <property name="addresses">
                             <list>
                                 <!-- In distributed environment, replace with actual host IP address. -->
-                                <value>127.0.0.1:47500..47502</value>
+                                <value>127.0.0.1:47500</value>
                             </list>
                         </property>
                     </bean>
                 </property>
+                <property name="socketTimeout" value="300" />
             </bean>
         </property>
     </bean>

@@ -42,8 +42,8 @@ public class JmhIdeBenchmarkRunner {
     /** Output time unit. */
     private TimeUnit outputTimeUnit = TimeUnit.SECONDS;
 
-    /** Classes to run. */
-    private Class[] clss;
+    /** Benchmarks to run. */
+    private Object[] benchmarks;
 
     /** JVM arguments. */
     private String[] jvmArgs;
@@ -123,11 +123,11 @@ public class JmhIdeBenchmarkRunner {
     }
 
     /**
-     * @param clss Classes.
+     * @param benchmarks Benchmarks.
      * @return This instance.
      */
-    public JmhIdeBenchmarkRunner classes(Class... clss) {
-        this.clss = clss;
+    public JmhIdeBenchmarkRunner benchmarks(Object... benchmarks) {
+        this.benchmarks = benchmarks;
 
         return this;
     }
@@ -191,9 +191,13 @@ public class JmhIdeBenchmarkRunner {
                 builder.getBenchModes().add(benchmarkMode);
         }
 
-        if (clss != null) {
-            for (Class cls : clss)
-                builder.include(cls.getSimpleName());
+        if (benchmarks != null) {
+            for (Object benchmark : benchmarks) {
+                if (benchmark instanceof Class)
+                    builder.include(((Class)benchmark).getSimpleName());
+                else
+                    builder.include(benchmark.toString());
+            }
         }
 
         if (jvmArgs != null)

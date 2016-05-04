@@ -65,7 +65,6 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.IgnitionEx;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
@@ -231,8 +230,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                     Ignite ignite = grid(entry.getKey());
 
                     for (CacheConfiguration cfg : entry.getValue())
-                        ignite.createCache(cfg);
+                        ignite.getOrCreateCache(cfg);
                 }
+
+                awaitPartitionMapExchange();
             }
             else {
                 int cnt = gridCount();
@@ -259,6 +260,71 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < gridCount(); i++)
             info("Grid " + i + ": " + grid(i).localNode().id());
+    }
+
+    /**
+     * Checks that skipStore flag gets overriden inside a transaction.
+     *
+     * @throws Exception if failed.
+     */
+    public void testWriteThroughTx() {
+        if(isMultiJvm())
+            fail("https://issues.apache.org/jira/browse/IGNITE-1088");
+
+        String key = "writeThroughKey";
+
+        map.remove(key);
+
+        try (final Transaction transaction = grid(0).transactions().txStart()) {
+            IgniteCache<String, Integer> cache = jcache(0);
+
+            // retrieve market type from the grid
+            Integer old = cache.withSkipStore().get(key);
+
+            assertNull(old);
+
+            // update the grid
+            cache.put(key, 2);
+
+            // finally commit the transaction
+            transaction.commit();
+        }
+
+        assertEquals(2, map.get(key));
+    }
+
+    /**
+     * Checks that skipStore flag gets overriden inside a transaction.
+     *
+     * @throws Exception if failed.
+     */
+    public void testNoReadThroughTx() {
+        if(isMultiJvm())
+            fail("https://issues.apache.org/jira/browse/IGNITE-1088");
+
+        String key = "writeThroughKey";
+
+        IgniteCache<String, Integer> cache = jcache(0);
+
+        resetStore();
+
+        cache.put(key, 1);
+
+        putToStore(key, 2);
+
+        try (final Transaction transaction = grid(0).transactions().txStart()) {
+            Integer old = cache.get(key);
+
+            assertEquals((Integer)1, old);
+
+            // update the grid
+            cache.put(key, 2);
+
+            // finally commit the transaction
+            transaction.commit();
+        }
+
+        assertEquals(0, reads.get());
     }
 
     /** {@inheritDoc} */
@@ -5500,12 +5566,13 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      *
      */
     private static class CheckCacheSizeTask extends TestIgniteIdxRunnable {
+        /** */
         private final Map<String, Integer> map;
 
         /**
          * @param map Map.
          */
-        public CheckCacheSizeTask(Map<String, Integer> map) {
+        CheckCacheSizeTask(Map<String, Integer> map) {
             this.map = map;
         }
 
@@ -5516,7 +5583,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             int size = 0;
 
             for (String key : map.keySet())
-                if (ctx.affinity().localNode(key, new AffinityTopologyVersion(ctx.discovery().topologyVersion())))
+                if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx()))
                     size++;
 
             assertEquals("Incorrect key size on cache #" + idx, size, ignite.cache(ctx.name()).localSize(ALL));

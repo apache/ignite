@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery.tcp;
 
+import java.io.BufferedOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -51,7 +52,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
-import org.apache.ignite.internal.util.io.GridByteArrayOutputStream;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -676,6 +676,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      * Range for local ports. Local node will try to bind on first available port
      * starting from {@link #getLocalPort()} up until
      * <tt>{@link #getLocalPort()} {@code + locPortRange}</tt>.
+     * If port range value is <tt>0</tt>, then implementation will try bind only to the port provided by
+     * {@link #setLocalPort(int)} method and fail if binding to this port did not succeed.
      * <p>
      * If not specified, default is {@link #DFLT_PORT_RANGE}.
      * <p>
@@ -1265,7 +1267,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
         sock.connect(resolved, (int)timeoutHelper.nextTimeoutChunk(sockTimeout));
 
-        writeToSocket(sock, U.IGNITE_HEADER, timeoutHelper.nextTimeoutChunk(sockTimeout));
+        writeToSocket(sock, null, U.IGNITE_HEADER, timeoutHelper.nextTimeoutChunk(sockTimeout));
 
         return sock;
     }
@@ -1295,12 +1297,13 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      * Writes message to the socket.
      *
      * @param sock Socket.
+     * @param msg Message.
      * @param data Raw data to write.
      * @param timeout Socket write timeout.
      * @throws IOException If IO failed or write timed out.
      */
     @SuppressWarnings("ThrowFromFinallyBlock")
-    private void writeToSocket(Socket sock, byte[] data, long timeout) throws IOException {
+    protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] data, long timeout) throws IOException {
         assert sock != null;
         assert data != null;
 
@@ -1346,45 +1349,38 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      */
     protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException,
         IgniteCheckedException {
-        writeToSocket(sock, msg, new GridByteArrayOutputStream(8 * 1024), timeout); // 8K.
+        writeToSocket(sock, new BufferedOutputStream(sock.getOutputStream(), sock.getSendBufferSize()), msg, timeout);
     }
 
     /**
      * Writes message to the socket.
      *
      * @param sock Socket.
+     * @param out Stream to write to.
      * @param msg Message.
-     * @param bout Byte array output stream.
      * @param timeout Timeout.
      * @throws IOException If IO failed or write timed out.
      * @throws IgniteCheckedException If marshalling failed.
      */
     @SuppressWarnings("ThrowFromFinallyBlock")
     protected void writeToSocket(Socket sock,
+        OutputStream out,
         TcpDiscoveryAbstractMessage msg,
-        GridByteArrayOutputStream bout,
         long timeout) throws IOException, IgniteCheckedException {
         assert sock != null;
         assert msg != null;
-        assert bout != null;
-
-        // Marshall message first to perform only write after.
-        marsh.marshal(msg, bout);
+        assert out != null;
 
         SocketTimeoutObject obj = new SocketTimeoutObject(sock, U.currentTimeMillis() + timeout);
 
         addTimeoutObject(obj);
 
-        IOException err = null;
+        IgniteCheckedException err = null;
 
         try {
-            OutputStream out = sock.getOutputStream();
-
-            bout.writeTo(out);
-
-            out.flush();
+            marsh.marshal(msg, out);
         }
-        catch (IOException e) {
+        catch (IgniteCheckedException e) {
             err = e;
         }
         finally {
@@ -1466,7 +1462,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         try {
             sock.setSoTimeout((int)timeout);
 
-            T res = marsh.unmarshal(in == null ? sock.getInputStream() : in, U.gridClassLoader());
+            T res = marsh.unmarshal(in == null ? sock.getInputStream() : in,
+                U.resolveClassLoader(ignite.configuration()));
 
             return res;
         }
@@ -1700,6 +1697,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
      * @param joiningNodeID Joining node ID.
      * @param nodeId Remote node ID for which data is provided.
      * @param data Collection of marshalled discovery data objects from different components.
+     * @param clsLdr Class loader.
      */
     protected void onExchange(UUID joiningNodeID,
         UUID nodeId,

@@ -18,16 +18,18 @@
 package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteComputeImpl;
-import org.apache.ignite.internal.binary.*;
-import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
@@ -39,6 +41,8 @@ import org.apache.ignite.internal.processors.platform.cluster.PlatformClusterGro
 import org.apache.ignite.internal.processors.platform.compute.PlatformCompute;
 import org.apache.ignite.internal.processors.platform.datastreamer.PlatformDataStreamer;
 import org.apache.ignite.internal.processors.platform.datastructures.PlatformAtomicLong;
+import org.apache.ignite.internal.processors.platform.datastructures.PlatformAtomicReference;
+import org.apache.ignite.internal.processors.platform.datastructures.PlatformAtomicSequence;
 import org.apache.ignite.internal.processors.platform.dotnet.PlatformDotNetCacheStore;
 import org.apache.ignite.internal.processors.platform.events.PlatformEvents;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -50,6 +54,7 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformConfiguratio
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
@@ -116,7 +121,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
                 U.warn(log, w);
         }
 
-        platformCtx = new PlatformContextImpl(ctx, interopCfg.gate(), interopCfg.memory());
+        platformCtx = new PlatformContextImpl(ctx, interopCfg.gate(), interopCfg.memory(), interopCfg.platform());
     }
 
     /** {@inheritDoc} */
@@ -203,17 +208,26 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
-    public void releaseStart() {
+    @Override public void releaseStart() {
         startLatch.countDown();
     }
 
     /** {@inheritDoc} */
-    public void awaitStart() throws IgniteCheckedException {
+    @Override public void awaitStart() throws IgniteCheckedException {
         U.await(startLatch);
     }
 
     /** {@inheritDoc} */
     @Override public PlatformContext context() {
+        // This method is a single point of entry for all remote closures
+        // CPP platform does not currently support remote code execution
+        // Therefore, all remote execution attempts come from .NET
+        // Throw an error if current platform is not .NET
+        if (!PlatformUtils.PLATFORM_DOTNET.equals(interopCfg.platform())) {
+            throw new IgniteException(".NET platform is not available [nodeId=" + ctx.grid().localNode().id() + "] " +
+                "(Use Apache.Ignite.Core.Ignition.Start() or Apache.Ignite.exe to start Ignite.NET nodes).");
+        }
+
         return platformCtx;
     }
 
@@ -250,7 +264,9 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         BinaryRawReaderEx reader = platformCtx.reader(platformCtx.memory().get(memPtr));
         CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader);
 
-        IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().createCache(cfg);
+        IgniteCacheProxy cache = reader.readBoolean()
+            ? (IgniteCacheProxy)ctx.grid().createCache(cfg, PlatformConfigurationUtils.readNearConfiguration(reader))
+            : (IgniteCacheProxy)ctx.grid().createCache(cfg);
 
         return new PlatformCache(platformCtx, cache.keepBinary(), false);
     }
@@ -260,7 +276,10 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         BinaryRawReaderEx reader = platformCtx.reader(platformCtx.memory().get(memPtr));
         CacheConfiguration cfg = PlatformConfigurationUtils.readCacheConfiguration(reader);
 
-        IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().getOrCreateCache(cfg);
+        IgniteCacheProxy cache = reader.readBoolean()
+            ? (IgniteCacheProxy)ctx.grid().getOrCreateCache(cfg,
+                    PlatformConfigurationUtils.readNearConfiguration(reader))
+            : (IgniteCacheProxy)ctx.grid().getOrCreateCache(cfg);
 
         return new PlatformCache(platformCtx, cache.keepBinary(), false);
     }
@@ -299,9 +318,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     @Override public PlatformTarget compute(PlatformTarget grp) {
         PlatformClusterGroup grp0 = (PlatformClusterGroup)grp;
 
-        assert grp0.projection() instanceof ClusterGroupAdapter; // Safety for very complex ClusterGroup hierarchy.
-
-        return new PlatformCompute(platformCtx, (IgniteComputeImpl)((ClusterGroupAdapter)grp0.projection()).compute());
+        return new PlatformCompute(platformCtx, grp0.projection(), PlatformUtils.ATTR_PLATFORM);
     }
 
     /** {@inheritDoc} */
@@ -337,7 +354,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         try {
             if (stopped)
-                throw new IgniteCheckedException("Failed to initialize interop store becuase node is stopping: " +
+                throw new IgniteCheckedException("Failed to initialize interop store because node is stopping: " +
                     store);
 
             if (started)
@@ -361,6 +378,33 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
+    @Override public PlatformTarget atomicSequence(String name, long initVal, boolean create) throws IgniteException {
+        IgniteAtomicSequence atomicSeq = ignite().atomicSequence(name, initVal, create);
+
+        if (atomicSeq == null)
+            return null;
+
+        return new PlatformAtomicSequence(platformCtx, atomicSeq);
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget atomicReference(String name, long memPtr, boolean create) throws IgniteException {
+        return PlatformAtomicReference.createInstance(platformCtx, name, memPtr, create);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onDisconnected(IgniteFuture<?> reconnectFut) throws IgniteCheckedException {
+        platformCtx.gateway().onClientDisconnected();
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
+        platformCtx.gateway().onClientReconnected(clusterRestarted);
+
+        return null;
+    }
+
+    /** {@inheritDoc} */
     @Override public void getIgniteConfiguration(long memPtr) {
         PlatformOutputStream stream = platformCtx.memory().get(memPtr).output();
         BinaryRawWriterEx writer = platformCtx.writer(stream);
@@ -368,6 +412,52 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         PlatformConfigurationUtils.writeIgniteConfiguration(writer, ignite().configuration());
 
         stream.synchronize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void getCacheNames(long memPtr) {
+        PlatformOutputStream stream = platformCtx.memory().get(memPtr).output();
+        BinaryRawWriterEx writer = platformCtx.writer(stream);
+
+        Collection<String> names = ignite().cacheNames();
+
+        writer.writeInt(names.size());
+
+        for (String name : names)
+            writer.writeString(name);
+
+        stream.synchronize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget createNearCache(@Nullable String cacheName, long memPtr) {
+        NearCacheConfiguration cfg = getNearCacheConfiguration(memPtr);
+
+        IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().createNearCache(cacheName, cfg);
+
+        return new PlatformCache(platformCtx, cache.keepBinary(), false);
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget getOrCreateNearCache(@Nullable String cacheName, long memPtr) {
+        NearCacheConfiguration cfg = getNearCacheConfiguration(memPtr);
+
+        IgniteCacheProxy cache = (IgniteCacheProxy)ctx.grid().getOrCreateNearCache(cacheName, cfg);
+
+        return new PlatformCache(platformCtx, cache.keepBinary(), false);
+    }
+
+    /**
+     * Gets the near cache config.
+     *
+     * @param memPtr Memory pointer.
+     * @return Near config.
+     */
+    private NearCacheConfiguration getNearCacheConfiguration(long memPtr) {
+        assert memPtr != 0;
+
+        BinaryRawReaderEx reader = platformCtx.reader(platformCtx.memory().get(memPtr));
+        return PlatformConfigurationUtils.readNearConfiguration(reader);
     }
 
     /**

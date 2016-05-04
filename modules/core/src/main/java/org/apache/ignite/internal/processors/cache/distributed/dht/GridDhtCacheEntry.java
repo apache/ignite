@@ -88,7 +88,11 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
         super(ctx, key, hash, val);
 
         // Record this entry with partition.
-        locPart = ctx.dht().topology().onAdded(topVer, this);
+        int p = cctx.affinity().partition(key);
+
+        locPart = ctx.topology().localPartition(p, topVer, true);
+
+        assert locPart != null;
     }
 
     /** {@inheritDoc} */
@@ -182,8 +186,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
         boolean reenter,
         boolean tx,
         boolean implicitSingle)
-        throws GridCacheEntryRemovedException, GridDistributedLockCancelledException
-    {
+        throws GridCacheEntryRemovedException, GridDistributedLockCancelledException {
         assert serReadVer == null || serOrder != null;
         assert !reenter || serOrder == null;
 
@@ -331,12 +334,13 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * @throws GridCacheEntryRemovedException If entry has been removed.
      */
     @SuppressWarnings({"NonPrivateFieldAccessedInSynchronizedContext"})
-    @Nullable public synchronized IgniteBiTuple<GridCacheVersion, CacheObject> versionedValue(AffinityTopologyVersion topVer)
+    @Nullable public synchronized IgniteBiTuple<GridCacheVersion, CacheObject> versionedValue(
+        AffinityTopologyVersion topVer)
         throws GridCacheEntryRemovedException {
         if (isNew() || !valid(AffinityTopologyVersion.NONE) || deletedUnlocked())
             return null;
         else {
-            CacheObject val0 = valueBytesUnlocked();
+            CacheObject val0 = this.val;
 
             return F.t(ver, val0);
         }
@@ -577,17 +581,10 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
                 if (log.isDebugEnabled())
                     log.debug("Entry has been marked obsolete: " + this);
 
-                clearIndex(prev, ver);
+                removeValue(prev, ver);
 
                 // Give to GC.
-                update(null, 0L, 0L, ver);
-
-                if (swap) {
-                    releaseSwap();
-
-                    if (log.isDebugEnabled())
-                        log.debug("Entry has been cleared from swap storage: " + this);
-                }
+                update(null, 0L, 0L, ver, true);
 
                 if (cctx.store().isLocal())
                     cctx.store().remove(null, key);
@@ -599,7 +596,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
         }
         finally {
             if (rmv)
-                cctx.cache().removeIfObsolete(key); // Clear cache.
+                cctx.cache().removeEntry(this); // Clear cache.
         }
     }
 
@@ -713,6 +710,16 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
         return S.toString(GridDhtCacheEntry.class, this, "super", super.toString());
     }
 
+    /** {@inheritDoc} */
+    @Override protected void incrementMapPublicSize() {
+        locPart.incrementPublicSize(this);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void decrementMapPublicSize() {
+        locPart.decrementPublicSize(this);
+    }
+
     /**
      * Reader ID.
      */
@@ -792,7 +799,6 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
 
             return txFut;
         }
-
 
         /** {@inheritDoc} */
         @Override public boolean equals(Object o) {

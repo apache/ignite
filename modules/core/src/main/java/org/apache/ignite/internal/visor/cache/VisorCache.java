@@ -127,15 +127,6 @@ public class VisorCache implements Serializable {
 
         name = cacheName;
 
-        try {
-            swapSize = ca.swapSize();
-            swapKeys = ca.swapKeys();
-        }
-        catch (IgniteCheckedException ignored) {
-            swapSize = -1;
-            swapKeys = -1;
-        }
-
         primaryPartitions = Collections.emptyList();
         backupPartitions = Collections.emptyList();
 
@@ -215,7 +206,7 @@ public class VisorCache implements Serializable {
         offHeapAllocatedSize = ca.offHeapAllocatedSize();
         offHeapEntriesCnt = ca.offHeapEntriesCount();
         partitions = ca.affinity().partitions();
-        metrics = VisorCacheMetrics.from(ignite, cacheName);
+        metrics = new VisorCacheMetrics().from(ignite, cacheName);
 
         estimateMemorySize(ignite, ca, sample);
 
@@ -233,9 +224,9 @@ public class VisorCache implements Serializable {
     protected void estimateMemorySize(IgniteEx ignite, GridCacheAdapter ca, int sample) throws IgniteCheckedException {
         int size = ca.size();
 
-        Set<GridCacheEntryEx> set = ca.context().isNear()
-            ? ((GridNearCacheAdapter)ca).dht().map().entries0()
-            : ca.map().entries0();
+        Iterable<GridCacheEntryEx> set = ca.context().isNear()
+            ? ((GridNearCacheAdapter)ca).dht().entries()
+            : ca.entries();
 
         long memSz = 0;
 
@@ -298,6 +289,15 @@ public class VisorCache implements Serializable {
      */
     public String name() {
         return name;
+    }
+
+    /**
+     * Sets new value for cache name.
+     *
+     * @param name New cache name.
+     */
+    public void name(String name) {
+        this.name = name;
     }
 
     /**

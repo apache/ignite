@@ -3,7 +3,7 @@
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">x64</Platform>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{4CD2F726-7E2B-46C4-A5BA-057BB82EECB6}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
@@ -19,7 +19,7 @@
     <DefineConstants>DEBUG;CODE_ANALYSIS</DefineConstants>
     <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
     <DocumentationFile>bin\x64\Debug\Apache.Ignite.Core.XML</DocumentationFile>
-    <RunCodeAnalysis>true</RunCodeAnalysis>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
     <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
@@ -58,17 +58,42 @@
   <PropertyGroup>
     <DelaySign>false</DelaySign>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>CODE_ANALYSIS;DEBUG</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DocumentationFile>bin\Debug\Apache.Ignite.Core.XML</DocumentationFile>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <RunCodeAnalysis>true</RunCodeAnalysis>
+    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <OutputPath>bin\Release\</OutputPath>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DocumentationFile>bin\Release\Apache.Ignite.Core.XML</DocumentationFile>
+    <Optimize>true</Optimize>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <CodeAnalysisRuleSet>Apache.Ignite.Core.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Binary\BinaryReflectiveSerializer.cs" />
     <Compile Include="Binary\Package-Info.cs" />
+    <Compile Include="Cache\Affinity\AffinityKey.cs" />
+    <Compile Include="Cache\Affinity\AffinityKeyMappedAttribute.cs" />
     <Compile Include="Cache\CacheAtomicUpdateTimeoutException.cs" />
     <Compile Include="Cache\CacheEntryProcessorException.cs" />
     <Compile Include="Cache\CacheException.cs" />
     <Compile Include="Cache\CachePartialUpdateException.cs" />
     <Compile Include="Cache\CachePeekMode.cs" />
+    <Compile Include="Cache\Configuration\NearCacheConfiguration.cs" />
+    <Compile Include="DataStructures\Configuration\AtomicConfiguration.cs" />
     <Compile Include="Cache\Configuration\QueryAlias.cs" />
     <Compile Include="Cache\Configuration\QueryTextFieldAttribute.cs" />
     <Compile Include="Cache\Event\CacheEntryEventType.cs" />
@@ -76,6 +101,10 @@
     <Compile Include="Cache\Event\ICacheEntryEventFilter.cs" />
     <Compile Include="Cache\Event\ICacheEntryEventListener.cs" />
     <Compile Include="Cache\Event\Package-Info.cs" />
+    <Compile Include="Cache\Eviction\EvictionPolicyBase.cs" />
+    <Compile Include="Cache\Eviction\FifoEvictionPolicy.cs" />
+    <Compile Include="Cache\Eviction\IEvictionPolicy.cs" />
+    <Compile Include="Cache\Eviction\LruEvictionPolicy.cs" />
     <Compile Include="Cache\Expiry\ExpiryPolicy.cs" />
     <Compile Include="Cache\Expiry\IExpiryPolicy.cs" />
     <Compile Include="Cache\Expiry\Package-Info.cs" />
@@ -91,6 +120,7 @@
     <Compile Include="Cache\IMutableCacheEntry.cs" />
     <Compile Include="Cache\Package-Info.cs" />
     <Compile Include="Cache\Query\Continuous\ContinuousQuery.cs" />
+    <Compile Include="Cache\Query\Continuous\ContinuousQueryExtensions.cs" />
     <Compile Include="Cache\Query\Continuous\IContinuousQueryHandle.cs" />
     <Compile Include="Cache\Query\Continuous\Package-Info.cs" />
     <Compile Include="Cache\Query\IQueryCursor.cs" />
@@ -107,6 +137,7 @@
     <Compile Include="Common\IFactory.cs" />
     <Compile Include="Cache\Store\ICacheStoreSession.cs" />
     <Compile Include="Cache\Store\Package-Info.cs" />
+    <Compile Include="Common\ClientDisconnectedException.cs" />
     <Compile Include="Cluster\ClusterGroupEmptyException.cs" />
     <Compile Include="Cluster\ClusterTopologyException.cs" />
     <Compile Include="Cluster\ICluster.cs" />
@@ -119,6 +150,9 @@
     <Compile Include="Common\IgniteFutureCancelledException.cs" />
     <Compile Include="Common\IgniteGuid.cs" />
     <Compile Include="Common\Package-Info.cs" />
+    <Compile Include="Impl\Common\Platform.cs" />
+    <Compile Include="Impl\Cache\Event\JavaCacheEntryEventFilter.cs" />
+    <Compile Include="Impl\Common\PlatformJavaObjectFactoryProxy.cs" />
     <Compile Include="Compute\ComputeExecutionRejectedException.cs" />
     <Compile Include="Compute\ComputeJobAdapter.cs" />
     <Compile Include="Compute\ComputeJobFailoverException.cs" />
@@ -161,6 +195,8 @@
     <Compile Include="Datastream\StreamTransformer.cs" />
     <Compile Include="Datastream\StreamVisitor.cs" />
     <Compile Include="DataStructures\IAtomicLong.cs" />
+    <Compile Include="DataStructures\IAtomicReference.cs" />
+    <Compile Include="DataStructures\IAtomicSequence.cs" />
     <Compile Include="DataStructures\Package-Info.cs" />
     <Compile Include="Events\CacheEvent.cs" />
     <Compile Include="Events\CacheQueryExecutedEvent.cs" />
@@ -181,9 +217,12 @@
     <Compile Include="Events\TaskEvent.cs" />
     <Compile Include="GlobalSuppressions.cs" />
     <Compile Include="IgniteConfiguration.cs" />
+    <Compile Include="IgniteConfigurationSection.cs" />
     <Compile Include="Ignition.cs" />
     <Compile Include="IIgnite.cs" />
     <Compile Include="Impl\Binary\BinaryEnum.cs" />
+    <Compile Include="Impl\Binary\BinaryObjectSchemaSerializer.cs" />
+    <Compile Include="Impl\Binary\ReferenceEqualityComparer.cs" />
     <Compile Include="Impl\Binary\JavaTypes.cs" />
     <Compile Include="Impl\Cache\CacheAffinityImpl.cs" />
     <Compile Include="Impl\Cache\CacheEntry.cs" />
@@ -201,6 +240,7 @@
     <Compile Include="Impl\Cache\Event\CacheEntryCreateEvent.cs" />
     <Compile Include="Impl\Cache\Event\CacheEntryRemoveEvent.cs" />
     <Compile Include="Impl\Cache\Event\CacheEntryUpdateEvent.cs" />
+    <Compile Include="Impl\Cache\ICacheInternal.cs" />
     <Compile Include="Impl\Cache\MutableCacheEntry.cs" />
     <Compile Include="Impl\Cache\Query\AbstractQueryCursor.cs" />
     <Compile Include="Impl\Cache\Query\Continuous\ContinuousQueryFilter.cs" />
@@ -220,11 +260,14 @@
     <Compile Include="Impl\Collections\MultiValueDictionary.cs" />
     <Compile Include="Impl\Collections\ReadOnlyCollection.cs" />
     <Compile Include="Impl\Collections\ReadOnlyDictionary.cs" />
+    <Compile Include="Impl\Common\ObjectStringConverter.cs" />
+    <Compile Include="Impl\Common\BooleanLowerCaseConverter.cs" />
     <Compile Include="Impl\Common\CancelledTask.cs" />
     <Compile Include="Impl\Common\Classpath.cs" />
     <Compile Include="Impl\Common\CopyOnWriteConcurrentDictionary.cs" />
     <Compile Include="Impl\Common\DelegateConverter.cs" />
     <Compile Include="Impl\Common\DelegateTypeDescriptor.cs" />
+    <Compile Include="Impl\Events\EventTypeConverter.cs" />
     <Compile Include="Impl\Common\Fnv1Hash.cs" />
     <Compile Include="Impl\Common\Future.cs" />
     <Compile Include="Impl\Common\FutureConverter.cs" />
@@ -232,10 +275,13 @@
     <Compile Include="Impl\Common\IgniteArgumentCheck.cs" />
     <Compile Include="Impl\Common\IFutureConverter.cs" />
     <Compile Include="Impl\Common\IFutureInternal.cs" />
+    <Compile Include="Impl\Common\IgniteConfigurationXmlSerializer.cs" />
     <Compile Include="Impl\Common\IgniteHome.cs" />
     <Compile Include="Impl\Common\LoadedAssembliesResolver.cs" />
+    <Compile Include="Impl\Common\Logger.cs" />
     <Compile Include="Impl\Common\ResizeableArray.cs" />
     <Compile Include="Impl\Common\TypeCaster.cs" />
+    <Compile Include="Impl\Common\TypeStringConverter.cs" />
     <Compile Include="Impl\Compute\Closure\ComputeAbstractClosureTask.cs" />
     <Compile Include="Impl\Compute\Closure\ComputeActionJob.cs" />
     <Compile Include="Impl\Compute\Closure\ComputeFuncJob.cs" />
@@ -259,6 +305,8 @@
     <Compile Include="Impl\Datastream\DataStreamerRemoveEntry.cs" />
     <Compile Include="Impl\Datastream\StreamReceiverHolder.cs" />
     <Compile Include="Impl\DataStructures\AtomicLong.cs" />
+    <Compile Include="Impl\DataStructures\AtomicReference.cs" />
+    <Compile Include="Impl\DataStructures\AtomicSequence.cs" />
     <Compile Include="Impl\Events\Events.cs" />
     <Compile Include="Impl\Events\RemoteListenEventFilter.cs" />
     <Compile Include="Impl\ExceptionUtils.cs" />
@@ -316,7 +364,6 @@
     <Compile Include="Impl\Binary\BinaryReaderHandleDictionary.cs" />
     <Compile Include="Impl\Binary\BinaryReader.cs" />
     <Compile Include="Impl\Binary\BinaryReflectiveActions.cs" />
-    <Compile Include="Impl\Binary\BinaryReflectiveSerializer.cs" />
     <Compile Include="Impl\Binary\Binary.cs" />
     <Compile Include="Impl\Binary\Structure\BinaryStructureTracker.cs" />
     <Compile Include="Impl\Binary\BinarySurrogateTypeDescriptor.cs" />
@@ -355,6 +402,7 @@
     <Compile Include="Impl\Unmanaged\UnmanagedNonReleaseableTarget.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedTarget.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedUtils.cs" />
+    <Compile Include="Interop\JavaObject.cs" />
     <Compile Include="Lifecycle\Package-Info.cs" />
     <Compile Include="Messaging\Package-Info.cs" />
     <Compile Include="Package-Info.cs" />
@@ -394,6 +442,7 @@
     <Compile Include="Transactions\ITransactions.cs" />
     <Compile Include="Transactions\Package-Info.cs" />
     <Compile Include="Transactions\TransactionConcurrency.cs" />
+    <Compile Include="Transactions\TransactionConfiguration.cs" />
     <Compile Include="Transactions\TransactionHeuristicException.cs" />
     <Compile Include="Transactions\TransactionIsolation.cs" />
     <Compile Include="Transactions\TransactionOptimisticException.cs" />
@@ -427,13 +476,38 @@
       <Link>resources\release\x86\ignite.common.dll</Link>
     </EmbeddedResource>
   </ItemGroup>
+  <ItemGroup Condition="'$(Platform)' == 'AnyCPU'">
+    <EmbeddedResource Include="$(ProjectDir)..\..\cpp\common\project\vs\x64\$(Configuration)\ignite.common.dll">
+      <Link>resources\$(Configuration)\x64\ignite.common.dll</Link>
+    </EmbeddedResource>
+    <EmbeddedResource Include="$(ProjectDir)..\..\cpp\common\project\vs\Win32\$(Configuration)\ignite.common.dll" Condition="'$(Configuration)' == 'Release' Or Exists('$(ProjectDir)..\..\cpp\common\project\vs\Win32\$(Configuration)\ignite.common.dll')">
+      <Link>resources\$(Configuration)\x86\ignite.common.dll</Link>
+    </EmbeddedResource>
+  </ItemGroup>
   <ItemGroup>
     <None Include="Apache.Ignite.Core.ruleset" />
+    <None Include="Apache.Ignite.Core.nuspec" />
+    <None Include="build-common.ps1" />
+    <None Include="NuGet\Uninstall.ps1" />
+    <None Include="NuGet\PostBuild.ps1" />
+    <None Include="NuGet\Install.ps1" />
     <None Include="Apache.Ignite.Core.snk" />
+    <None Include="IgniteConfigurationSection.xsd">
+      <SubType>Designer</SubType>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Impl\Common\JavaObjects\" />
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+  <PropertyGroup Condition="'$(Platform)' == 'AnyCPU'">
+    <PreBuildEvent>cd "$(ProjectDir)"
+	set COMPLUS_ApplicationMigrationRuntimeActivationConfigPath=$(ProjectDir)
+	PowerShell.exe -executionpolicy remotesigned -File build-common.ps1 -Configuration $(ConfigurationName) -msbuildexe "$(MSBuildBinPath)\msbuild.exe"</PreBuildEvent>
+  </PropertyGroup>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
   </Target>

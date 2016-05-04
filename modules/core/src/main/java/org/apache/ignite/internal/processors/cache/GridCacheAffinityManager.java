@@ -17,18 +17,16 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.affinity.GridAffinityAssignment;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -36,12 +34,18 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
 /**
  * Cache affinity manager.
  */
 public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     /** */
-    private static final AffinityTopologyVersion TOP_FIRST = new AffinityTopologyVersion(1);
+    private static final AffinityTopologyVersion LOC_CACHE_TOP_VER = new AffinityTopologyVersion(1);
 
     /** */
     public static final String FAILED_TO_FIND_CACHE_ERR_MSG = "Failed to find cache (cache was not started " +
@@ -50,25 +54,45 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     /** Affinity cached function. */
     private GridAffinityAssignmentCache aff;
 
+    /** */
+    private AffinityFunction affFunction;
+
+    /** */
+    private AffinityKeyMapper affMapper;
+
     /** {@inheritDoc} */
     @Override public void start0() throws IgniteCheckedException {
-        aff = new GridAffinityAssignmentCache(cctx, cctx.namex(), cctx.config().getAffinity(),
-            cctx.config().getAffinityMapper(), cctx.config().getBackups());
+        affFunction = cctx.config().getAffinity();
+        affMapper = cctx.config().getAffinityMapper();
+
+        aff = new GridAffinityAssignmentCache(cctx.kernalContext(),
+            cctx.namex(),
+            affFunction,
+            cctx.config().getNodeFilter(),
+            cctx.config().getBackups(),
+            cctx.isLocal());
     }
 
     /** {@inheritDoc} */
     @Override protected void onKernalStart0() throws IgniteCheckedException {
         if (cctx.isLocal())
             // No discovery event needed for local affinity.
-            aff.calculate(TOP_FIRST, null);
+            aff.calculate(LOC_CACHE_TOP_VER, null);
     }
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
+        cancelFutures();
+    }
+
+    /**
+     *
+     */
+    public void cancelFutures() {
         IgniteCheckedException err =
             new IgniteCheckedException("Failed to wait for topology update, cache (or node) is stopping.");
 
-        aff.onKernalStop(err);
+        aff.cancelFutures(err);
     }
 
     /** {@inheritDoc} */
@@ -76,7 +100,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
         IgniteCheckedException err = new IgniteClientDisconnectedCheckedException(reconnectFut,
             "Failed to wait for topology update, client disconnected.");
 
-        aff.onKernalStop(err);
+        aff.cancelFutures(err);
     }
 
     /**
@@ -131,63 +155,23 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     }
 
     /**
-     * Clean up outdated cache items.
-     *
-     * @param topVer Actual topology version, older versions will be removed.
-     */
-    public void cleanUpCache(AffinityTopologyVersion topVer) {
-        assert !cctx.isLocal();
-
-        aff.cleanUpCache(topVer);
-    }
-
-    /**
-     * Initializes affinity for joined node.
-     *
-     * @param topVer Topology version.
-     * @param affAssignment Affinity assignment for this topology version.
-     */
-    public void initializeAffinity(AffinityTopologyVersion topVer, List<List<ClusterNode>> affAssignment) {
-        assert !cctx.isLocal();
-
-        aff.initialize(topVer, affAssignment);
-    }
-
-    /**
      * @param topVer Topology version.
      * @return Affinity assignments.
      */
     public List<List<ClusterNode>> assignments(AffinityTopologyVersion topVer) {
         if (cctx.isLocal())
-            topVer = new AffinityTopologyVersion(1);
+            topVer = LOC_CACHE_TOP_VER;
 
         return aff.assignments(topVer);
     }
 
     /**
-     * Calculates affinity cache for given topology version.
-     *
-     * @param topVer Topology version to calculate affinity for.
-     * @param discoEvt Discovery event that causes this topology change.
-     * @return Affinity assignments.
+     * @return Assignment.
      */
-    public List<List<ClusterNode>> calculateAffinity(AffinityTopologyVersion topVer, DiscoveryEvent discoEvt) {
+    public List<List<ClusterNode>> idealAssignment() {
         assert !cctx.isLocal();
 
-        return aff.calculate(topVer, discoEvt);
-    }
-
-    /**
-     * Copies previous affinity assignment when discovery event does not cause affinity assignment changes
-     * (e.g. client node joins on leaves).
-     *
-     * @param evt Event.
-     * @param topVer Topology version.
-     */
-    public void clientEventTopologyChange(DiscoveryEvent evt, AffinityTopologyVersion topVer) {
-        assert !cctx.isLocal();
-
-        aff.clientEventTopologyChange(evt, topVer);
+        return aff.idealAssignment();
     }
 
     /**
@@ -213,10 +197,32 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
     public int partition(Object key) {
         GridAffinityAssignmentCache aff0 = aff;
 
+        if (key instanceof KeyCacheObject && ((KeyCacheObject)key).partition() != -1)
+            return ((KeyCacheObject)key).partition();
+
         if (aff0 == null)
             throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
 
-        return aff0.partition(key);
+        int p = affFunction.partition(affinityKey(key));
+
+        if (key instanceof KeyCacheObject)
+            ((KeyCacheObject)key).partition(p);
+
+        return p;
+    }
+
+    /**
+     * If Key is {@link GridCacheInternal GridCacheInternal} entry when won't passed into user's mapper and
+     * will use {@link GridCacheDefaultAffinityKeyMapper default}.
+     *
+     * @param key Key.
+     * @return Affinity key.
+     */
+    private Object affinityKey(Object key) {
+        if (key instanceof CacheObject && !(key instanceof BinaryObject))
+            key = ((CacheObject)key).value(cctx.cacheObjectContext(), false);
+
+        return (key instanceof GridCacheInternal ? cctx.defaultAffMapper() : affMapper).affinityKey(key);
     }
 
     /**
@@ -235,7 +241,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
      */
     public List<ClusterNode> nodes(int part, AffinityTopologyVersion topVer) {
         if (cctx.isLocal())
-            topVer = new AffinityTopologyVersion(1);
+            topVer = LOC_CACHE_TOP_VER;
 
         GridAffinityAssignmentCache aff0 = aff;
 
@@ -243,6 +249,24 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
             throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
 
         return aff0.nodes(part, topVer);
+    }
+
+    /**
+     * Get affinity assignment for the given topology version.
+     *
+     * @param topVer Topology version.
+     * @return Affinity assignment.
+     */
+    public GridAffinityAssignment assignment(AffinityTopologyVersion topVer) {
+        if (cctx.isLocal())
+            topVer = LOC_CACHE_TOP_VER;
+
+        GridAffinityAssignmentCache aff0 = aff;
+
+        if (aff0 == null)
+            throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
+
+        return aff0.cachedAffinity(topVer);
     }
 
     /**
@@ -381,7 +405,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
      */
     public Set<Integer> primaryPartitions(UUID nodeId, AffinityTopologyVersion topVer) {
         if (cctx.isLocal())
-            topVer = new AffinityTopologyVersion(1);
+            topVer = LOC_CACHE_TOP_VER;
 
         GridAffinityAssignmentCache aff0 = aff;
 
@@ -398,7 +422,7 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
      */
     public Set<Integer> backupPartitions(UUID nodeId, AffinityTopologyVersion topVer) {
         if (cctx.isLocal())
-            topVer = new AffinityTopologyVersion(1);
+            topVer = LOC_CACHE_TOP_VER;
 
         GridAffinityAssignmentCache aff0 = aff;
 
@@ -428,5 +452,29 @@ public class GridCacheAffinityManager extends GridCacheManagerAdapter {
 
         if (aff0 != null)
             aff0.dumpDebugInfo();
+    }
+
+    /**
+     * @return Affinity cache.
+     */
+    public GridAffinityAssignmentCache affinityCache() {
+        return aff;
+    }
+
+    /**
+     * @param part Partition.
+     * @param startVer Start version.
+     * @param endVer End version.
+     * @return {@code True} if primary changed or required affinity version not found in history.
+     */
+    public boolean primaryChanged(int part, AffinityTopologyVersion startVer, AffinityTopologyVersion endVer) {
+        assert !cctx.isLocal() : cctx.name();
+
+        GridAffinityAssignmentCache aff0 = aff;
+
+        if (aff0 == null)
+            throw new IgniteException(FAILED_TO_FIND_CACHE_ERR_MSG + cctx.name());
+
+        return aff0.primaryChanged(part, startVer, endVer);
     }
 }

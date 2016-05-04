@@ -25,8 +25,6 @@ import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -51,6 +49,9 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionRollbackException;
 
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -94,9 +95,10 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     protected CacheConfiguration cacheConfiguration(String gridName) {
         CacheConfiguration ccfg = new CacheConfiguration();
 
-        ccfg.setCacheMode(CacheMode.PARTITIONED);
-        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        ccfg.setCacheMode(PARTITIONED);
+        ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setBackups(1);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         return ccfg;
     }
@@ -356,7 +358,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
         else {
             assertTrue("near=" + nearEntry + ", hc=" + System.identityHashCode(nearEntry), nearEntry == null);
             assertTrue("Invalid backup cache entry: " + dhtEntry,
-                dhtEntry == null || dhtEntry.rawGetOrUnmarshal(false) == null);
+                dhtEntry == null || dhtEntry.rawGet() == null);
         }
     }
 

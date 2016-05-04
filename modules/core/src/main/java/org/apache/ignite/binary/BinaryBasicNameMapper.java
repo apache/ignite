@@ -59,7 +59,7 @@ public class BinaryBasicNameMapper implements BinaryNameMapper {
      *
      * @param isSimpleName Whether to use simple name of class or not.
      */
-    public void setLowerCase(boolean isSimpleName) {
+    public void setSimpleName(boolean isSimpleName) {
         this.isSimpleName = isSimpleName;
     }
 

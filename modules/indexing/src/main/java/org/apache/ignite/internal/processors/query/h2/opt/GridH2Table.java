@@ -446,7 +446,7 @@ public class GridH2Table extends TableBase {
                     if (old2 != null) { // Row was replaced in index.
                         if (!eq(pk, old2, old))
                             throw new IllegalStateException("Row conflict should never happen, unique indexes are " +
-                                "not supported.");
+                                "not supported [idx=" + idx + ", old=" + old + ", old2=" + old2 + ']');
                     }
                     else if (old != null) // Row was not replaced, need to remove manually.
                         idx.remove(old);
@@ -464,14 +464,6 @@ public class GridH2Table extends TableBase {
                 }
 
                 if (old != null) {
-                    if (rowStore != null) {
-                        assert old.link != 0;
-
-                        rowStore.removeRow(old.link);
-                    }
-
-                    size.decrement();
-
                     // Remove row from all indexes.
                     // Start from 2 because 0 - Scan (don't need to update), 1 - PK (already updated).
                     for (int i = 2, len = idxs.size(); i < len; i++) {
@@ -479,6 +471,14 @@ public class GridH2Table extends TableBase {
 
                         assert eq(pk, res, old): "\n" + old + "\n" + res + "\n" + i + " -> " + index(i).getName();
                     }
+
+                    if (rowStore != null) {
+                        assert old.link != 0;
+
+                        rowStore.removeRow(old.link);
+                    }
+
+                    size.decrement();
                 }
                 else
                     return false;

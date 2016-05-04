@@ -137,6 +137,16 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
 
     /**
      * @param ctx Cache context.
+     * @param obj Key value.
+     * @param userObj If {@code true} then given object is object provided by user and should be copied
+     *        before stored in cache.
+     * @param partition ID of partition this key belongs to.
+     * @return Cache key object.
+     */
+    public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, Object obj, boolean userObj, int partition);
+
+    /**
+     * @param ctx Cache context.
      * @param obj Object.
      * @param userObj If {@code true} then given object is object provided by user and should be copied
      *        before stored in cache.
@@ -173,15 +183,6 @@ public interface IgniteCacheObjectProcessor extends GridProcessor {
      * @return Cache object.
      */
     public KeyCacheObject toKeyCacheObject(CacheObjectContext ctx, ByteBuffer buf) throws IgniteCheckedException;
-
-    /**
-     * @param ctx Context.
-     * @param valPtr Value pointer.
-     * @param tmp If {@code true} can return temporary instance which is valid while entry lock is held.
-     * @return Cache object.
-     * @throws IgniteCheckedException If failed.
-     */
-    public CacheObject toCacheObject(GridCacheContext ctx, long valPtr, boolean tmp) throws IgniteCheckedException;
 
     /**
      * @param obj Value.

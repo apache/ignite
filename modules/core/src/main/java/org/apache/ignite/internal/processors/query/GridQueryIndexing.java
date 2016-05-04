@@ -30,6 +30,8 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
@@ -187,8 +189,13 @@ public interface GridQueryIndexing {
      * @param expirationTime Expiration time or 0 if never expires.
      * @throws IgniteCheckedException If failed.
      */
-    public void store(@Nullable String spaceName, GridQueryTypeDescriptor type, KeyCacheObject key, int partId,
-        CacheObject val, GridCacheVersion ver, long expirationTime) throws IgniteCheckedException;
+    public boolean store(@Nullable String spaceName,
+        GridQueryTypeDescriptor type,
+        KeyCacheObject key,
+        int partId,
+        CacheObject val,
+        GridCacheVersion ver,
+        long expirationTime) throws IgniteCheckedException;
 
     /**
      * Removes index entry by key.
@@ -198,14 +205,22 @@ public interface GridQueryIndexing {
      * @param val Value.
      * @throws IgniteCheckedException If failed.
      */
-    public void remove(@Nullable String spaceName, KeyCacheObject key, int partId, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException;
+    public boolean remove(@Nullable String spaceName, KeyCacheObject key, int partId, CacheObject val, GridCacheVersion ver) throws IgniteCheckedException;
 
     /**
      * @param space Space name.
      * @param key Key.
+     * @param partId Partition.
      * @return Read versioned value.
      */
-    IgniteBiTuple<CacheObject,GridCacheVersion> read(String space, KeyCacheObject key, int partId) throws IgniteCheckedException;
+    IgniteBiTuple<CacheObject, GridCacheVersion> read(String space, KeyCacheObject key, int partId)
+        throws IgniteCheckedException;
+
+    /**
+     * @param space Space name.
+     * @return Primary key index.
+     */
+    public BPlusTree<?, ? extends CacheDataRow> pkIndex(String space);
 
     /**
      * Will be called when entry with given key is swapped.

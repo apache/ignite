@@ -29,6 +29,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -273,9 +274,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
             qryMgr.onUndeploy(ldr);
 
         // Examine swap for entries to undeploy.
-        int swapUndeployCnt = cacheCtx.isNear() ?
-            cacheCtx.near().dht().context().swap().onUndeploy(ldr) :
-            cacheCtx.swap().onUndeploy(ldr);
+        int swapUndeployCnt = cacheCtx.offheap().onUndeploy(ldr);
 
         if (cacheCtx.userCache() && (!keys.isEmpty() || swapUndeployCnt != 0)) {
             U.quietAndWarn(log, "");
@@ -303,7 +302,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     private void addEntries(ClassLoader ldr, Collection<KeyCacheObject> keys, GridCacheAdapter cache) {
         GridCacheContext cacheCtx = cache.context();
 
-        for (GridCacheEntryEx e : (Collection<GridCacheEntryEx>)cache.entries()) {
+        for (GridCacheEntryEx e : (Iterable<GridCacheEntryEx>)cache.entries()) {
             boolean undeploy = cacheCtx.isNear() ?
                 undeploy(ldr, e, cacheCtx.near()) || undeploy(ldr, e, cacheCtx.near().dht()) :
                 undeploy(ldr, e, cacheCtx.cache());
@@ -340,6 +339,11 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
             val0 = CU.value(v, cache.context(), false);
         }
         catch (GridCacheEntryRemovedException ignore) {
+            return false;
+        }
+        catch (BinaryInvalidTypeException ignore) {
+            log.error("An attempt to undeploy cache with binary objects.", ignore);
+
             return false;
         }
         catch (IgniteCheckedException | IgniteException ignore) {
@@ -848,6 +852,11 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                         return cls;
                 }
             }
+
+            Class cls = getParent().loadClass(name);
+
+            if (cls != null)
+                return cls;
 
             throw new ClassNotFoundException("Failed to load class [name=" + name+ ", ctx=" + deps + ']');
         }

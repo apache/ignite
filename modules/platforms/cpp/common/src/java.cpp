@@ -193,6 +193,8 @@ namespace ignite
             JniMethod M_PLATFORM_PROCESSOR_GET_OR_CREATE_CACHE = JniMethod("getOrCreateCache", "(Ljava/lang/String;)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
             JniMethod M_PLATFORM_PROCESSOR_CREATE_CACHE_FROM_CONFIG = JniMethod("createCacheFromConfig", "(J)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
             JniMethod M_PLATFORM_PROCESSOR_GET_OR_CREATE_CACHE_FROM_CONFIG = JniMethod("getOrCreateCacheFromConfig", "(J)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
+            JniMethod M_PLATFORM_PROCESSOR_CREATE_NEAR_CACHE = JniMethod("createNearCache", "(Ljava/lang/String;J)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
+            JniMethod M_PLATFORM_PROCESSOR_GET_OR_CREATE_NEAR_CACHE = JniMethod("getOrCreateNearCache", "(Ljava/lang/String;J)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
             JniMethod M_PLATFORM_PROCESSOR_DESTROY_CACHE = JniMethod("destroyCache", "(Ljava/lang/String;)V", false);
             JniMethod M_PLATFORM_PROCESSOR_AFFINITY = JniMethod("affinity", "(Ljava/lang/String;)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
             JniMethod M_PLATFORM_PROCESSOR_DATA_STREAMER = JniMethod("dataStreamer", "(Ljava/lang/String;Z)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
@@ -203,7 +205,10 @@ namespace ignite
             JniMethod M_PLATFORM_PROCESSOR_SERVICES = JniMethod("services", "(Lorg/apache/ignite/internal/processors/platform/PlatformTarget;)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
             JniMethod M_PLATFORM_PROCESSOR_EXTENSIONS = JniMethod("extensions", "()Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
             JniMethod M_PLATFORM_PROCESSOR_ATOMIC_LONG = JniMethod("atomicLong", "(Ljava/lang/String;JZ)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
+            JniMethod M_PLATFORM_PROCESSOR_ATOMIC_SEQUENCE = JniMethod("atomicSequence", "(Ljava/lang/String;JZ)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);
+            JniMethod M_PLATFORM_PROCESSOR_ATOMIC_REFERENCE = JniMethod("atomicReference", "(Ljava/lang/String;JZ)Lorg/apache/ignite/internal/processors/platform/PlatformTarget;", false);            
             JniMethod M_PLATFORM_PROCESSOR_GET_IGNITE_CONFIGURATION = JniMethod("getIgniteConfiguration", "(J)V", false);
+            JniMethod M_PLATFORM_PROCESSOR_GET_CACHE_NAMES = JniMethod("getCacheNames", "(J)V", false);
 
             const char* C_PLATFORM_TARGET = "org/apache/ignite/internal/processors/platform/PlatformTarget";
             JniMethod M_PLATFORM_TARGET_IN_STREAM_OUT_LONG = JniMethod("inStreamOutLong", "(IJ)J", false);
@@ -350,6 +355,9 @@ namespace ignite
             JniMethod M_PLATFORM_CALLBACK_UTILS_EXTENSION_CALLBACK_IN_LONG_OUT_LONG = JniMethod("extensionCallbackInLongOutLong", "(JIJ)J", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_EXTENSION_CALLBACK_IN_LONG_LONG_OUT_LONG = JniMethod("extensionCallbackInLongLongOutLong", "(JIJJ)J", true);
 
+            JniMethod M_PLATFORM_CALLBACK_UTILS_ON_CLIENT_DISCONNECTED = JniMethod("onClientDisconnected", "(J)V", true);
+            JniMethod M_PLATFORM_CALLBACK_UTILS_ON_CLIENT_RECONNECTED = JniMethod("onClientReconnected", "(JZ)V", true);
+
             const char* C_PLATFORM_UTILS = "org/apache/ignite/internal/processors/platform/utils/PlatformUtils";
             JniMethod M_PLATFORM_UTILS_REALLOC = JniMethod("reallocate", "(JI)V", true);
             JniMethod M_PLATFORM_UTILS_ERR_DATA = JniMethod("errorData", "(Ljava/lang/Throwable;)[B", true);
@@ -381,7 +389,7 @@ namespace ignite
 			JniMethod M_PLATFORM_SERVICES_WITH_SERVER_KEEP_PORTABLE = JniMethod("withServerKeepBinary", "()Lorg/apache/ignite/internal/processors/platform/services/PlatformServices;", false);
 			JniMethod M_PLATFORM_SERVICES_CANCEL = JniMethod("cancel", "(Ljava/lang/String;)V", false);
 			JniMethod M_PLATFORM_SERVICES_CANCEL_ALL = JniMethod("cancelAll", "()V", false);
-			JniMethod M_PLATFORM_SERVICES_SERVICE_PROXY = JniMethod("dotNetServiceProxy", "(Ljava/lang/String;Z)Ljava/lang/Object;", false);
+			JniMethod M_PLATFORM_SERVICES_SERVICE_PROXY = JniMethod("serviceProxy", "(Ljava/lang/String;Z)Ljava/lang/Object;", false);
 
             const char* C_PLATFORM_ATOMIC_LONG = "org/apache/ignite/internal/processors/platform/datastructures/PlatformAtomicLong";
             JniMethod M_PLATFORM_ATOMIC_LONG_GET = JniMethod("get", "()J", false);
@@ -395,6 +403,21 @@ namespace ignite
             JniMethod M_PLATFORM_ATOMIC_LONG_COMPARE_AND_SET_AND_GET = JniMethod("compareAndSetAndGet", "(JJ)J", false);
             JniMethod M_PLATFORM_ATOMIC_LONG_IS_CLOSED = JniMethod("isClosed", "()Z", false);
             JniMethod M_PLATFORM_ATOMIC_LONG_CLOSE = JniMethod("close", "()V", false);
+
+            const char* C_PLATFORM_ATOMIC_SEQUENCE = "org/apache/ignite/internal/processors/platform/datastructures/PlatformAtomicSequence";
+            JniMethod M_PLATFORM_ATOMIC_SEQUENCE_GET = JniMethod("get", "()J", false);
+            JniMethod M_PLATFORM_ATOMIC_SEQUENCE_INCREMENT_AND_GET = JniMethod("incrementAndGet", "()J", false);
+            JniMethod M_PLATFORM_ATOMIC_SEQUENCE_GET_AND_INCREMENT = JniMethod("getAndIncrement", "()J", false);
+            JniMethod M_PLATFORM_ATOMIC_SEQUENCE_ADD_AND_GET = JniMethod("addAndGet", "(J)J", false);
+            JniMethod M_PLATFORM_ATOMIC_SEQUENCE_GET_AND_ADD = JniMethod("getAndAdd", "(J)J", false);
+            JniMethod M_PLATFORM_ATOMIC_SEQUENCE_GET_BATCH_SIZE = JniMethod("getBatchSize", "()I", false);
+            JniMethod M_PLATFORM_ATOMIC_SEQUENCE_SET_BATCH_SIZE = JniMethod("setBatchSize", "(I)V", false);
+            JniMethod M_PLATFORM_ATOMIC_SEQUENCE_IS_CLOSED = JniMethod("isClosed", "()Z", false);
+            JniMethod M_PLATFORM_ATOMIC_SEQUENCE_CLOSE = JniMethod("close", "()V", false);
+
+            const char* C_PLATFORM_ATOMIC_REFERENCE = "org/apache/ignite/internal/processors/platform/datastructures/PlatformAtomicReference";
+            JniMethod M_PLATFORM_ATOMIC_REFERENCE_IS_CLOSED = JniMethod("isClosed", "()Z", false);
+            JniMethod M_PLATFORM_ATOMIC_REFERENCE_CLOSE = JniMethod("close", "()V", false);
 
             const char* C_PLATFORM_LISTENABLE = "org/apache/ignite/internal/processors/platform/utils/PlatformListenable";
             JniMethod M_PLATFORM_LISTENABLE_CANCEL = JniMethod("cancel", "()Z", false);
@@ -641,6 +664,8 @@ namespace ignite
                 m_PlatformProcessor_getOrCreateCache = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_GET_OR_CREATE_CACHE);
                 m_PlatformProcessor_createCacheFromConfig = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_CREATE_CACHE_FROM_CONFIG);
                 m_PlatformProcessor_getOrCreateCacheFromConfig = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_GET_OR_CREATE_CACHE_FROM_CONFIG);
+                m_PlatformProcessor_createNearCache = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_CREATE_NEAR_CACHE);
+                m_PlatformProcessor_getOrCreateNearCache = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_GET_OR_CREATE_NEAR_CACHE);
                 m_PlatformProcessor_destroyCache = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_DESTROY_CACHE);
                 m_PlatformProcessor_affinity = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_AFFINITY);
                 m_PlatformProcessor_dataStreamer = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_DATA_STREAMER);
@@ -652,7 +677,10 @@ namespace ignite
                 m_PlatformProcessor_services = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_SERVICES);
                 m_PlatformProcessor_extensions = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_EXTENSIONS);
                 m_PlatformProcessor_atomicLong = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_ATOMIC_LONG);
+                m_PlatformProcessor_atomicSequence = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_ATOMIC_SEQUENCE);
+                m_PlatformProcessor_atomicReference = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_ATOMIC_REFERENCE);
 				m_PlatformProcessor_getIgniteConfiguration = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_GET_IGNITE_CONFIGURATION);
+				m_PlatformProcessor_getCacheNames = FindMethod(env, c_PlatformProcessor, M_PLATFORM_PROCESSOR_GET_CACHE_NAMES);
 
                 c_PlatformTarget = FindClass(env, C_PLATFORM_TARGET);
                 m_PlatformTarget_inStreamOutLong = FindMethod(env, c_PlatformTarget, M_PLATFORM_TARGET_IN_STREAM_OUT_LONG);
@@ -694,6 +722,21 @@ namespace ignite
                 m_PlatformAtomicLong_compareAndSetAndGet = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_COMPARE_AND_SET_AND_GET);
                 m_PlatformAtomicLong_isClosed = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_IS_CLOSED);
                 m_PlatformAtomicLong_close = FindMethod(env, c_PlatformAtomicLong, M_PLATFORM_ATOMIC_LONG_CLOSE);
+
+                jclass c_PlatformAtomicSequence = FindClass(env, C_PLATFORM_ATOMIC_SEQUENCE);
+                m_PlatformAtomicSequence_get = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_GET);
+                m_PlatformAtomicSequence_incrementAndGet = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_INCREMENT_AND_GET);
+                m_PlatformAtomicSequence_getAndIncrement = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_GET_AND_INCREMENT);
+                m_PlatformAtomicSequence_addAndGet = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_ADD_AND_GET);
+                m_PlatformAtomicSequence_getAndAdd = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_GET_AND_ADD);
+                m_PlatformAtomicSequence_getBatchSize = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_GET_BATCH_SIZE);
+                m_PlatformAtomicSequence_setBatchSize = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_SET_BATCH_SIZE);
+                m_PlatformAtomicSequence_isClosed = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_IS_CLOSED);
+                m_PlatformAtomicSequence_close = FindMethod(env, c_PlatformAtomicSequence, M_PLATFORM_ATOMIC_SEQUENCE_CLOSE);
+
+                jclass c_PlatformAtomicReference = FindClass(env, C_PLATFORM_ATOMIC_REFERENCE);
+                m_PlatformAtomicReference_isClosed = FindMethod(env, c_PlatformAtomicReference, M_PLATFORM_ATOMIC_REFERENCE_IS_CLOSED);
+                m_PlatformAtomicReference_close = FindMethod(env, c_PlatformAtomicReference, M_PLATFORM_ATOMIC_REFERENCE_CLOSE);
 
                 c_PlatformListenable = FindClass(env, C_PLATFORM_LISTENABLE);
                 m_PlatformListenable_cancel = FindMethod(env, c_PlatformListenable, M_PLATFORM_LISTENABLE_CANCEL);                    
@@ -751,7 +794,7 @@ namespace ignite
             /**
              * Create JVM.
              */
-            void CreateJvm(char** opts, int optsLen, JavaVM** jvm, JNIEnv** env) {
+            jint CreateJvm(char** opts, int optsLen, JavaVM** jvm, JNIEnv** env) {
                 JavaVMOption* opts0 = new JavaVMOption[optsLen];
 
                 for (int i = 0; i < optsLen; i++)
@@ -768,13 +811,12 @@ namespace ignite
 
                 delete[] opts0;
 
-                if (res != JNI_OK)
-                    throw JvmException();
+                return res;
             }
 
             void RegisterNatives(JNIEnv* env) {
                 {
-					JNINativeMethod methods[52];
+					JNINativeMethod methods[54];
 
                     int idx = 0;
 
@@ -848,6 +890,9 @@ namespace ignite
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_EXTENSION_CALLBACK_IN_LONG_OUT_LONG, reinterpret_cast<void*>(JniExtensionCallbackInLongOutLong));
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_EXTENSION_CALLBACK_IN_LONG_LONG_OUT_LONG, reinterpret_cast<void*>(JniExtensionCallbackInLongLongOutLong));
 
+                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_ON_CLIENT_DISCONNECTED, reinterpret_cast<void*>(JniOnClientDisconnected));
+                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_ON_CLIENT_RECONNECTED, reinterpret_cast<void*>(JniOnClientReconnected));
+
                     jint res = env->RegisterNatives(FindClass(env, C_PLATFORM_CALLBACK_UTILS), methods, idx);
 
                     if (res != JNI_OK)
@@ -861,6 +906,40 @@ namespace ignite
 
             JniContext* JniContext::Create(char** opts, int optsLen, JniHandlers hnds) {
                 return Create(opts, optsLen, hnds, NULL);
+            }
+
+            void GetJniErrorMessage(std::string& errMsg, jint res)
+            {
+                switch (res)
+                {
+                    case JNI_ERR:
+                        errMsg = "Unknown error (JNI_ERR).";
+                        break;
+
+                    case JNI_EDETACHED:
+                        errMsg = "Thread detached from the JVM.";
+                        break;
+
+                    case JNI_EVERSION:
+                        errMsg = "JNI version error.";
+                        break;
+
+                    case JNI_ENOMEM:
+                        errMsg = "Could not reserve enough space for object heap. Check Xmx option.";
+                        break;
+
+                    case JNI_EEXIST:
+                        errMsg = "JVM already created.";
+                        break;
+
+                    case JNI_EINVAL:
+                        errMsg = "Invalid JVM arguments.";
+                        break;
+
+                    default:
+                        errMsg = "Unexpected JNI_CreateJavaVM result.";
+                        break;
+                }
             }
 
             JniContext* JniContext::Create(char** opts, int optsLen, JniHandlers hnds, JniErrorInfo* errInfo)
@@ -886,25 +965,36 @@ namespace ignite
                 int errMsgLen = 0;
 
                 try {
-                    if (!JVM.GetJvm()) {
+                    if (!JVM.GetJvm()) 
+                    {
                         // 1. Create JVM itself.
-                        CreateJvm(opts, optsLen, &jvm, &env);
+                        jint res = CreateJvm(opts, optsLen, &jvm, &env);
 
-                        // 2. Populate members;
-                        javaMembers.Initialize(env);
-                        members.Initialize(env);
+                        if (res == JNI_OK)
+                        {
+                            // 2. Populate members;
+                            javaMembers.Initialize(env);
+                            members.Initialize(env);
 
-                        // 3. Register native functions.
-                        RegisterNatives(env);
+                            // 3. Register native functions.
+                            RegisterNatives(env);
 
-                        // 4. Create JNI JVM.
-                        JVM = JniJvm(jvm, javaMembers, members);
+                            // 4. Create JNI JVM.
+                            JVM = JniJvm(jvm, javaMembers, members);
 
-                        char* printStack = getenv("IGNITE_CPP_PRINT_STACK");
-                        PRINT_EXCEPTION = printStack && strcmp("true", printStack) == 0;
+                            char* printStack = getenv("IGNITE_CPP_PRINT_STACK");
+                            PRINT_EXCEPTION = printStack && strcmp("true", printStack) == 0;
+                        }
+                        else
+                        {
+                            GetJniErrorMessage(errMsg, res);
+
+                            errMsgLen = errMsg.length();
+                        }
                     }
 
-                    ctx = new JniContext(&JVM, hnds);
+                    if (JVM.GetJvm())
+                        ctx = new JniContext(&JVM, hnds);
                 }
                 catch (JvmException)
                 {
@@ -1126,7 +1216,7 @@ namespace ignite
                 return LocalToGlobal(env, cache);
             }
 
-            jobject JniContext::ProcessorCacheFromConfig0(jobject obj, long memPtr, jmethodID mthd, JniErrorInfo* errInfo)
+            jobject JniContext::ProcessorCacheFromConfig0(jobject obj, long long memPtr, jmethodID mthd, JniErrorInfo* errInfo)
             {
                 JNIEnv* env = Attach();
 
@@ -1181,22 +1271,48 @@ namespace ignite
                 ExceptionCheck(env, errInfo);
             }
 
-            jobject JniContext::ProcessorCreateCacheFromConfig(jobject obj, long memPtr) {
+            jobject JniContext::ProcessorCreateCacheFromConfig(jobject obj, long long memPtr) {
                 return ProcessorCreateCacheFromConfig(obj, memPtr, NULL);
             }
 
-            jobject JniContext::ProcessorCreateCacheFromConfig(jobject obj, long memPtr, JniErrorInfo* errInfo)
+            jobject JniContext::ProcessorCreateCacheFromConfig(jobject obj, long long memPtr, JniErrorInfo* errInfo)
             {
                 return ProcessorCacheFromConfig0(obj, memPtr, jvm->GetMembers().m_PlatformProcessor_createCacheFromConfig, errInfo);
             }
 
-            jobject JniContext::ProcessorGetOrCreateCacheFromConfig(jobject obj, long memPtr) {
+            jobject JniContext::ProcessorGetOrCreateCacheFromConfig(jobject obj, long long memPtr) {
                 return ProcessorGetOrCreateCacheFromConfig(obj, memPtr, NULL);
             }
 
-            jobject JniContext::ProcessorGetOrCreateCacheFromConfig(jobject obj, long memPtr, JniErrorInfo* errInfo)
+            jobject JniContext::ProcessorGetOrCreateCacheFromConfig(jobject obj, long long memPtr, JniErrorInfo* errInfo)
             {
                 return ProcessorCacheFromConfig0(obj, memPtr, jvm->GetMembers().m_PlatformProcessor_getOrCreateCacheFromConfig, errInfo);
+            }
+
+            jobject JniContext::ProcessorCreateNearCache(jobject obj, const char* name, long long memPtr)
+            {
+                return ProcessorGetOrCreateNearCache0(obj, name, memPtr, jvm->GetMembers().m_PlatformProcessor_createNearCache);
+            }
+
+            jobject JniContext::ProcessorGetOrCreateNearCache(jobject obj, const char* name, long long memPtr)
+            {
+                return ProcessorGetOrCreateNearCache0(obj, name, memPtr, jvm->GetMembers().m_PlatformProcessor_getOrCreateNearCache);
+            }
+
+            jobject JniContext::ProcessorGetOrCreateNearCache0(jobject obj, const char* name, long long memPtr, jmethodID methodID)
+            {
+                JNIEnv* env = Attach();
+
+                jstring name0 = name != NULL ? env->NewStringUTF(name) : NULL;
+
+                jobject cache = env->CallObjectMethod(obj, methodID, name0, memPtr);
+
+                if (name0)
+                    env->DeleteLocalRef(name0);
+
+                ExceptionCheck(env);
+
+                return LocalToGlobal(env, cache);
             }
 
             jobject JniContext::ProcessorAffinity(jobject obj, const char* name) {
@@ -1307,11 +1423,52 @@ namespace ignite
                 return LocalToGlobal(env, res);
             }
 
-            void JniContext::ProcessorGetIgniteConfiguration(jobject obj, long memPtr)
+            jobject JniContext::ProcessorAtomicSequence(jobject obj, char* name, long long initVal, bool create)
+            {
+                JNIEnv* env = Attach();
+
+                jstring name0 = name != NULL ? env->NewStringUTF(name) : NULL;
+
+                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_atomicSequence, name0, initVal, create);
+
+                if (name0)
+                    env->DeleteLocalRef(name0);
+
+                ExceptionCheck(env);
+
+                return LocalToGlobal(env, res);
+            }
+
+            jobject JniContext::ProcessorAtomicReference(jobject obj, char* name, long long memPtr, bool create)
+            {
+                JNIEnv* env = Attach();
+
+                jstring name0 = name != NULL ? env->NewStringUTF(name) : NULL;
+
+                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_atomicReference, name0, memPtr, create);
+
+                if (name0)
+                    env->DeleteLocalRef(name0);
+
+                ExceptionCheck(env);
+
+                return LocalToGlobal(env, res);
+            }
+
+            void JniContext::ProcessorGetIgniteConfiguration(jobject obj, long long memPtr)
             {
                 JNIEnv* env = Attach();
 
                 env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformProcessor_getIgniteConfiguration, memPtr);
+
+                ExceptionCheck(env);
+            }
+
+            void JniContext::ProcessorGetCacheNames(jobject obj, long long memPtr)
+            {
+                JNIEnv* env = Attach();
+
+                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformProcessor_getCacheNames, memPtr);
 
                 ExceptionCheck(env);
             }
@@ -2139,6 +2296,121 @@ namespace ignite
                 ExceptionCheck(env);
             }
 
+            long long JniContext::AtomicSequenceGet(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_get);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            long long JniContext::AtomicSequenceIncrementAndGet(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_incrementAndGet);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            long long JniContext::AtomicSequenceGetAndIncrement(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_getAndIncrement);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            long long JniContext::AtomicSequenceAddAndGet(jobject obj, long long l)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_addAndGet, l);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            long long JniContext::AtomicSequenceGetAndAdd(jobject obj, long long l)
+            {
+                JNIEnv* env = Attach();
+
+                long long res = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_getAndAdd, l);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            int JniContext::AtomicSequenceGetBatchSize(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                int res = env->CallIntMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_getBatchSize);
+
+                ExceptionCheck(env);
+
+                return res;
+            }
+
+            void JniContext::AtomicSequenceSetBatchSize(jobject obj, int size)
+            {
+                JNIEnv* env = Attach();
+
+                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_setBatchSize, size);
+
+                ExceptionCheck(env);
+            }
+
+            bool JniContext::AtomicSequenceIsClosed(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_isClosed);
+
+                ExceptionCheck(env);
+
+                return res != 0;
+            }
+
+            void JniContext::AtomicSequenceClose(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformAtomicSequence_close);
+
+                ExceptionCheck(env);
+            }
+
+            bool JniContext::AtomicReferenceIsClosed(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformAtomicReference_isClosed);
+
+                ExceptionCheck(env);
+
+                return res != 0;
+            }
+
+            void JniContext::AtomicReferenceClose(jobject obj)
+            {
+                JNIEnv* env = Attach();
+
+                env->CallVoidMethod(obj, jvm->GetMembers().m_PlatformAtomicReference_close);
+
+                ExceptionCheck(env);
+            }
+
             bool JniContext::ListenableCancel(jobject obj)
             {
                 JNIEnv* env = Attach();
@@ -2534,6 +2806,14 @@ namespace ignite
 
             JNIEXPORT jlong JNICALL JniExtensionCallbackInLongLongOutLong(JNIEnv *env, jclass cls, jlong envPtr, jint typ, jlong arg1, jlong arg2) {
                 IGNITE_SAFE_FUNC(env, envPtr, ExtensionCallbackInLongLongOutLongHandler, extensionCallbackInLongLongOutLong, typ, arg1, arg2);
+            }
+            
+            JNIEXPORT void JNICALL JniOnClientDisconnected(JNIEnv *env, jclass cls, jlong envPtr) {
+                IGNITE_SAFE_PROC_NO_ARG(env, envPtr, OnClientDisconnectedHandler, onClientDisconnected);
+            }
+
+            JNIEXPORT void JNICALL JniOnClientReconnected(JNIEnv *env, jclass cls, jlong envPtr, jboolean clusterRestarted) {
+                IGNITE_SAFE_PROC(env, envPtr, OnClientReconnectedHandler, onClientReconnected, clusterRestarted);
             }
         }
     }

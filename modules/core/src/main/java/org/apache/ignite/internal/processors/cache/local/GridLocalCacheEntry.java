@@ -37,9 +37,6 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_UNLOCKED;
  */
 @SuppressWarnings({"NonPrivateFieldAccessedInSynchronizedContext", "TooBroadScope"})
 public class GridLocalCacheEntry extends GridCacheMapEntry {
-    /** Off-heap value pointer. */
-    private long valPtr;
-
     /**
      * @param ctx  Cache registry.
      * @param key  Cache key.
@@ -165,33 +162,6 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
                 prev = mvcc.localOwner();
 
                 owner = mvcc.readyLocal(cand);
-
-                if (mvcc.isEmpty())
-                    mvccExtras(null);
-            }
-        }
-
-        checkOwnerChanged(prev, owner);
-
-        return owner;
-    }
-
-    /**
-     *
-     * @param ver Candidate version.
-     * @return Current owner.
-     */
-    @Nullable public GridCacheMvccCandidate readyLocal(GridCacheVersion ver) {
-        GridCacheMvccCandidate prev = null;
-        GridCacheMvccCandidate owner = null;
-
-        synchronized (this) {
-            GridCacheMvcc mvcc = mvccExtras();
-
-            if (mvcc != null) {
-                prev = mvcc.localOwner();
-
-                owner = mvcc.readyLocal(ver);
 
                 if (mvcc.isEmpty())
                     mvccExtras(null);
@@ -416,21 +386,6 @@ public class GridLocalCacheEntry extends GridCacheMapEntry {
         checkOwnerChanged(prev, owner);
 
         return doomed != null;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected boolean hasOffHeapPointer() {
-        return valPtr != 0;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected long offHeapPointer() {
-        return valPtr;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void offHeapPointer(long valPtr) {
-        this.valPtr = valPtr;
     }
 
     /** {@inheritDoc} */

@@ -22,10 +22,12 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Diagnostics;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Binary.Metadata;
     using Apache.Ignite.Core.Impl.Cache;
     using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Impl.Compute;
     using Apache.Ignite.Core.Impl.Compute.Closure;
     using Apache.Ignite.Core.Impl.Datastream;
@@ -64,6 +66,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             // Validation.
             if (cfg == null)
                 cfg = new BinaryConfiguration();
+
+            CompactFooter = cfg.CompactFooter;
 
             if (cfg.TypeConfigurations == null)
                 cfg.TypeConfigurations = new List<BinaryTypeConfiguration>();
@@ -104,6 +108,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Gets or sets the backing grid.
         /// </summary>
         public Ignite Ignite { get; set; }
+
+        /// <summary>
+        /// Gets the compact footer flag.
+        /// </summary>
+        public bool CompactFooter { get; set; }
 
         /// <summary>
         /// Marshal object.
@@ -280,15 +289,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// Puts the binary type metadata to Ignite.
         /// </summary>
         /// <param name="desc">Descriptor.</param>
-        /// <param name="fields">Fields.</param>
-        public void PutBinaryType(IBinaryTypeDescriptor desc, IDictionary<string, int> fields = null)
+        public void PutBinaryType(IBinaryTypeDescriptor desc)
         {
             Debug.Assert(desc != null);
 
             GetBinaryTypeHandler(desc);  // ensure that handler exists
 
             if (Ignite != null)
-                Ignite.PutBinaryTypes(new[] {new BinaryType(desc, fields)});
+                Ignite.PutBinaryTypes(new[] {new BinaryType(desc)});
         }
 
         /// <summary>
@@ -434,8 +442,10 @@ namespace Apache.Ignite.Core.Impl.Binary
                             "Configuration value: IsEnum={0}, actual type: IsEnum={1}",
                             typeCfg.IsEnum, type.IsEnum));
 
+                var affKeyFld = typeCfg.AffinityKeyFieldName ?? GetAffinityKeyFieldNameFromAttribute(type);
+
                 AddType(type, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, serializer,
-                    typeCfg.AffinityKeyFieldName, type.IsEnum);
+                    affKeyFld, type.IsEnum);
             }
             else
             {
@@ -447,6 +457,24 @@ namespace Apache.Ignite.Core.Impl.Binary
                 AddType(null, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, null,
                     typeCfg.AffinityKeyFieldName, typeCfg.IsEnum);
             }
+        }
+
+        /// <summary>
+        /// Gets the affinity key field name from attribute.
+        /// </summary>
+        private static string GetAffinityKeyFieldNameFromAttribute(Type type)
+        {
+            var res = type.GetMembers()
+                .Where(x => x.GetCustomAttributes(false).OfType<AffinityKeyMappedAttribute>().Any())
+                .Select(x => x.Name).ToArray();
+
+            if (res.Length > 1)
+            {
+                throw new BinaryObjectException(string.Format("Multiple '{0}' attributes found on type '{1}'. " +
+                    "There can be only one affinity field.", typeof (AffinityKeyMappedAttribute).Name, type));
+            }
+
+            return res.SingleOrDefault();
         }
 
         /// <summary>
@@ -512,13 +540,18 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Adds a predefined system type.
         /// </summary>
-        private void AddSystemType<T>(byte typeId, Func<BinaryReader, T> ctor) where T : IBinaryWriteAware
+        private void AddSystemType<T>(int typeId, Func<BinaryReader, T> ctor, string affKeyFldName = null)
+            where T : IBinaryWriteAware
         {
             var type = typeof(T);
 
             var serializer = new BinarySystemTypeSerializer<T>(ctor);
 
-            AddType(type, typeId, BinaryUtils.GetTypeName(type), false, false, null, null, serializer, null, false);
+            if (typeId == 0)
+                typeId = BinaryUtils.TypeId(type.Name, null, null);
+
+            AddType(type, typeId, BinaryUtils.GetTypeName(type), false, false, null, null, serializer, affKeyFldName,
+                false);
         }
 
         /// <summary>
@@ -541,6 +574,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             AddSystemType(BinaryUtils.TypeCacheEntryPredicateHolder, w => new CacheEntryFilterHolder(w));
             AddSystemType(BinaryUtils.TypeMessageListenerHolder, w => new MessageListenerHolder(w));
             AddSystemType(BinaryUtils.TypeStreamReceiverHolder, w => new StreamReceiverHolder(w));
+            AddSystemType(0, w => new AffinityKey(w), "affKey");
+            AddSystemType(BinaryUtils.TypePlatformJavaObjectFactoryProxy, w => new PlatformJavaObjectFactoryProxy());
         }
     }
 }

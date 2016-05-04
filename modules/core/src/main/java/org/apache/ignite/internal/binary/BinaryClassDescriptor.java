@@ -22,6 +22,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -109,6 +110,9 @@ public class BinaryClassDescriptor {
     /** */
     private final boolean excluded;
 
+    /** */
+    private final Class<?>[] intfs;
+
     /**
      * @param ctx Context.
      * @param cls Class.
@@ -171,7 +175,7 @@ public class BinaryClassDescriptor {
         }
 
         if (useOptMarshaller && userType && !U.isIgnite(cls) && !U.isJdk(cls)) {
-            U.quietAndWarn(ctx.log(), "Class \"" + cls.getName() + "\" cannot be serialized using " +
+            U.warn(ctx.log(), "Class \"" + cls.getName() + "\" cannot be serialized using " +
                 BinaryMarshaller.class.getSimpleName() + " because it either implements Externalizable interface " +
                 "or have writeObject/readObject methods. " + OptimizedMarshaller.class.getSimpleName() + " will be " +
                 "used instead and class instances will be deserialized on the server. Please ensure that all nodes " +
@@ -229,6 +233,16 @@ public class BinaryClassDescriptor {
                 fields = null;
                 stableFieldsMeta = null;
                 stableSchema = null;
+                intfs = null;
+
+                break;
+
+            case PROXY:
+                ctor = null;
+                fields = null;
+                stableFieldsMeta = null;
+                stableSchema = null;
+                intfs = cls.getInterfaces();
 
                 break;
 
@@ -237,6 +251,7 @@ public class BinaryClassDescriptor {
                 fields = null;
                 stableFieldsMeta = null;
                 stableSchema = null;
+                intfs = null;
 
                 break;
 
@@ -290,6 +305,8 @@ public class BinaryClassDescriptor {
                 fields = fields0.toArray(new BinaryFieldAccessor[fields0.size()]);
 
                 stableSchema = schemaBuilder.build();
+
+                intfs = null;
 
                 break;
 
@@ -608,6 +625,11 @@ public class BinaryClassDescriptor {
 
             case CLASS:
                 writer.doWriteClass((Class)obj);
+
+                break;
+
+            case PROXY:
+                writer.doWriteProxy((Proxy)obj, intfs);
 
                 break;
 
