@@ -74,7 +74,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsNotNull(service);
 
             service.Start();  // see IGNITE_HOME\work\log for service instance logs
-            service.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(30));
+            service.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(300));
 
             using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
