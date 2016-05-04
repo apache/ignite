@@ -37,13 +37,11 @@ namespace Apache.Ignite.Core.Impl.Common
         /// </summary>
         /// <param name="cfg">The configuration.</param>
         /// <param name="forceTestClasspath">Append test directories even if
-        /// <see cref="EnvIgniteNativeTestClasspath" /> is not set.</param>
-        /// <param name="skipPrefix">Whether to skip '-Djava.class.path=' prefix.</param>
+        ///     <see cref="EnvIgniteNativeTestClasspath" /> is not set.</param>
         /// <returns>
         /// Classpath string.
         /// </returns>
-        internal static string CreateClasspath(IgniteConfiguration cfg = null, bool forceTestClasspath = false, 
-            bool skipPrefix = false)
+        internal static string CreateClasspath(IgniteConfiguration cfg = null, bool forceTestClasspath = false)
         {
             var cpStr = new StringBuilder();
 
@@ -60,7 +58,7 @@ namespace Apache.Ignite.Core.Impl.Common
             if (!string.IsNullOrWhiteSpace(ggHome))
                 AppendHomeClasspath(ggHome, forceTestClasspath, cpStr);
 
-            return skipPrefix ? cpStr.ToString() : ClasspathPrefix + cpStr;
+            return ClasspathPrefix + cpStr;
         }
 
         /// <summary>
