@@ -158,24 +158,7 @@ namespace ignite
              *
              * @return TransactionsImpl instance.
              */
-            TxsImplSharedPtr GetTransactions(IgniteError &err)
-            {
-                transactions::TransactionsImpl* tx = txImpl.Get();
-
-                if (!tx)
-                {
-                    ignite::common::java::JniErrorInfo jniErr;
-
-                    jobject txJavaRef = env.Get()->Context()->ProcessorTransactions(javaRef, &jniErr);
-
-                    if (txJavaRef)
-                        txImpl = TxsImplSharedPtr(new transactions::TransactionsImpl(env, txJavaRef));
-                    else
-                        IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
-                }
-
-                return txImpl;
-            }
+            TxsImplSharedPtr GetTransactions(IgniteError &err);
 
         private:
             /** Environment. */

@@ -24,7 +24,9 @@ namespace ignite
 {    
     namespace impl
     {
-        IgniteImpl::IgniteImpl(SharedPointer<IgniteEnvironment> env, jobject javaRef) : env(env), javaRef(javaRef)
+        IgniteImpl::IgniteImpl(SharedPointer<IgniteEnvironment> env, jobject javaRef) :
+            env(env),
+            javaRef(javaRef)
         {
             // No-op.
         }
@@ -43,5 +45,29 @@ namespace ignite
         {
             return env.Get()->Context();
         }
-    }    
+
+        IgniteImpl::TxsImplSharedPtr IgniteImpl::GetTransactions(IgniteError &err)
+        {
+            if (!txImpl.Get())
+            {
+                static ignite::common::concurrent::CriticalSection lock;
+
+                CsLockGuard guard(lock);
+
+                if (!txImpl.Get())
+                {
+                    ignite::common::java::JniErrorInfo jniErr;
+
+                    jobject txJavaRef = env.Get()->Context()->ProcessorTransactions(javaRef, &jniErr);
+
+                    if (txJavaRef)
+                        txImpl = TxsImplSharedPtr(new transactions::TransactionsImpl(env, txJavaRef));
+                    else
+                        IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+                }
+            }
+
+            return txImpl;
+        }
+    }
 }
