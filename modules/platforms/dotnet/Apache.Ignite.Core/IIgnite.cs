@@ -278,11 +278,13 @@ namespace Apache.Ignite.Core
 
         /// <summary>
         /// Occurs when node begins to stop. Node is fully functional at this point.
+        /// See also: <see cref="LifecycleEventType.BeforeNodeStop"/>.
         /// </summary>
         event EventHandler Stopping;
 
         /// <summary>
         /// Occurs when node has stopped. Node can't be used at this point.
+        /// See also: <see cref="LifecycleEventType.AfterNodeStop"/>.
         /// </summary>
         event EventHandler Stopped;
 
