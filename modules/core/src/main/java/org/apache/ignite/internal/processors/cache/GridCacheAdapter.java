@@ -3692,20 +3692,17 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     @Deprecated
     @Nullable public Cache.Entry<K, V> randomEntry() {
-        GridCloseableIterator<CacheDataRow> it;
+        GridCloseableIterator<Cache.Entry<K, V>> it;
 
         try {
-            it = ctx.offheap().iterator();
+            it = ctx.offheap().entriesIterator(true, true, ctx.affinity().affinityTopologyVersion());
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);
         }
 
-        if (it.hasNext()) {
-            CacheDataRow row = it.next();
-
-            return new CacheEntryImpl<>((K)row.key(), (V)row.value(), row.version());
-        }
+        if (it.hasNext())
+            return it.next();
 
         return null;
     }

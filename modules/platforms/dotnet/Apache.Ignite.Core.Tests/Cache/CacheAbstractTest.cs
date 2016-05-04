@@ -3062,8 +3062,10 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             // Can't get non-existent cache with Cache method
             Assert.Throws<ArgumentException>(() => GetIgnite(0).GetCache<int, int>(randomName));
+            Assert.IsFalse(GetIgnite(0).GetCacheNames().Contains(randomName));
 
             var cache = GetIgnite(0).CreateCache<int, int>(randomName);
+            Assert.IsTrue(GetIgnite(0).GetCacheNames().Contains(randomName));
 
             cache.Put(1, 10);
 
@@ -3111,14 +3113,30 @@ namespace Apache.Ignite.Core.Tests.Cache
             var cache = ignite.CreateCache<int, int>(cacheName);
 
             Assert.IsNotNull(ignite.GetCache<int, int>(cacheName));
+            Assert.IsTrue(GetIgnite(0).GetCacheNames().Contains(cacheName));
 
             ignite.DestroyCache(cache.Name);
+
+            Assert.IsFalse(GetIgnite(0).GetCacheNames().Contains(cacheName));
 
             var ex = Assert.Throws<ArgumentException>(() => ignite.GetCache<int, int>(cacheName));
 
             Assert.IsTrue(ex.Message.StartsWith("Cache doesn't exist"));
 
             Assert.Throws<InvalidOperationException>(() => cache.Get(1));
+        }
+
+        [Test]
+        public void TestCacheNames()
+        {
+            var cacheNames = GetIgnite(0).GetCacheNames();
+            var expectedNames = new[]
+            {
+                "local", "local_atomic", "partitioned", "partitioned_atomic",
+                "partitioned_near", "partitioned_atomic_near", "replicated", "replicated_atomic"
+            };
+
+            Assert.AreEqual(0, expectedNames.Except(cacheNames).Count());
         }
 
 

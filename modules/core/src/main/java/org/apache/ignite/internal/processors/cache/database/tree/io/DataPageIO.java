@@ -239,12 +239,15 @@ public class DataPageIO extends PageIO {
     public String printPageLayout(ByteBuffer buf) {
         int directCnt = getDirectCount(buf);
         int indirectCnt = getIndirectCount(buf);
+        int free = getFreeSpace(buf);
 
         boolean valid = directCnt >= indirectCnt;
 
         SB b = new SB();
 
         b.appendHex(PageIO.getPageId(buf)).a(" [");
+
+        int entriesSize = 0;
 
         for (int i = 0; i < directCnt; i++) {
             if (i != 0)
@@ -254,6 +257,8 @@ public class DataPageIO extends PageIO {
 
             if (item < ITEMS_OFF || item >= buf.capacity())
                 valid = false;
+
+            entriesSize += getEntrySize(buf, item, false);
 
             b.a(item);
         }
@@ -286,7 +291,17 @@ public class DataPageIO extends PageIO {
             b.a(itemId).a('^').a(directIdx);
         }
 
-        b.a("]");
+        b.a("][free=").a(free);
+
+        int actualFree = buf.capacity() - ITEMS_OFF - (entriesSize + (directCnt + indirectCnt) * ITEM_SIZE);
+
+        if (free != actualFree) {
+            b.a(", actualFree=").a(actualFree);
+
+            valid = false;
+        }
+        else
+            b.a("]");
 
         assert valid : b.toString();
 
@@ -457,8 +472,11 @@ public class DataPageIO extends PageIO {
     public void removeRow(ByteBuffer buf, int itemId) {
         assert check(itemId) : itemId;
 
-        int directCnt = getDirectCount(buf);
-        int indirectCnt = getIndirectCount(buf);
+        // Record original counts to calculate delta in free space in the end of remove.
+        final int directCnt = getDirectCount(buf);
+        final int indirectCnt = getIndirectCount(buf);
+
+        int curIndirectCnt = indirectCnt;
 
         assert directCnt > 0 : directCnt; // Direct count always represents overall number of live items.
 
@@ -496,7 +514,7 @@ public class DataPageIO extends PageIO {
                 if (dropLast)
                     moveItems(buf, directCnt, indirectCnt, -1);
                 else
-                    indirectCnt++;
+                    curIndirectCnt++;
             }
             else {
                 if (dropLast)
@@ -505,10 +523,10 @@ public class DataPageIO extends PageIO {
                 moveItems(buf, indirectId + 1, directCnt + indirectCnt - indirectId - 1, dropLast ? -2 : -1);
 
                 if (dropLast)
-                    indirectCnt--;
+                    curIndirectCnt--;
             }
 
-            setIndirectCount(buf, indirectCnt);
+            setIndirectCount(buf, curIndirectCnt);
             setDirectCount(buf, directCnt - 1);
 
             assert getIndirectCount(buf) <= getDirectCount(buf);
@@ -599,8 +617,8 @@ public class DataPageIO extends PageIO {
         assert check(itemId): itemId;
         assert getIndirectCount(buf) <= getDirectCount(buf);
 
-        // Update free space. If number of direct items did not change, then we were able to reuse item slot.
-        setFreeSpace(buf, getFreeSpace(buf) - entrySizeWithItem + (getDirectCount(buf) == directCnt ? ITEM_SIZE : 0));
+        // Update free space. If number of indirect items changed, then we were able to reuse an item slot.
+        setFreeSpace(buf, getFreeSpace(buf) - entrySizeWithItem + (getIndirectCount(buf) != indirectCnt ? ITEM_SIZE : 0));
 
         assert getFreeSpace(buf) >= 0;
 
@@ -692,6 +710,28 @@ public class DataPageIO extends PageIO {
     }
 
     /**
+     * Full-scan free space calculation procedure.
+     *
+     * @param buf Buffer to scan.
+     * @return Actual free space in the buffer.
+     */
+    private int actualFreeSpace(ByteBuffer buf) {
+        int directCnt = getDirectCount(buf);
+
+        int entriesSize = 0;
+
+        for (int i = 0; i < directCnt; i++) {
+            int off = toOffset(getItem(buf, i));
+
+            int entrySize = getEntrySize(buf, off, false);
+
+            entriesSize += entrySize;
+        }
+
+        return buf.capacity() - ITEMS_OFF - entriesSize - (directCnt + getIndirectCount(buf)) * ITEM_SIZE;
+    }
+
+    /**
      * @param buf Buffer.
      * @param off Offset.
      * @param cnt Count.
@@ -700,7 +740,8 @@ public class DataPageIO extends PageIO {
     private static void moveBytes(ByteBuffer buf, int off, int cnt, int step) {
         assert step != 0: step;
         assert off + step >= 0;
-        assert off + step + cnt < buf.capacity();
+        assert off + step + cnt <= buf.capacity() : "[off=" + off + ", step=" + step + ", cnt=" + cnt +
+            ", cap=" + buf.capacity() + ']';
 
         PageHandler.copyMemory(buf, buf, off, off + step, cnt);
     }

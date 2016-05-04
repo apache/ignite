@@ -421,7 +421,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     public IgniteBiTuple<CacheObject, GridCacheVersion> read(KeyCacheObject key, int partId) throws IgniteCheckedException {
         if (!enterBusy())
-            return null; // Ignore index update when node is stopping.
+            return null;
 
         try {
             return qryProc.read(space, key, partId);
@@ -431,8 +431,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
     }
 
-    public List<BPlusTree<?, ? extends CacheDataRow>> pkIndexes() {
-        return qryProc.pkIndexes(space);
+    public BPlusTree<?, ? extends CacheDataRow> pkIndex() {
+        return qryProc.pkIndex(space);
     }
 
     /**
@@ -827,6 +827,87 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     @SuppressWarnings({"unchecked"})
     private GridCloseableIterator<IgniteBiTuple<K, V>> scanIterator(final GridCacheQueryAdapter<?> qry)
+        throws IgniteCheckedException {
+        IgniteInternalCache<K, V> prj0 = cctx.cache();
+
+        prj0 = prj0.keepBinary();
+
+        final IgniteInternalCache prj = prj0;
+
+        final IgniteBiPredicate<K, V> keyValFilter = qry.scanFilter();
+
+        try {
+            injectResources(keyValFilter);
+
+            Integer part = qry.partition();
+
+            if (cctx.isLocal())
+                part = null;
+
+            if (part != null && (part < 0 || part >= cctx.affinity().partitions()))
+                return new GridEmptyCloseableIterator<>();
+
+            final ExpiryPolicy plc = cctx.expiry();
+
+            final AffinityTopologyVersion topVer = cctx.affinity().affinityTopologyVersion();
+
+            final boolean backups = qry.includeBackups() || cctx.isReplicated();
+
+            final GridDhtLocalPartition locPart;
+
+            final GridIterator<CacheDataRow> it;
+
+            if (part != null) {
+                final GridDhtCacheAdapter dht = cctx.isNear() ? cctx.near().dht() : cctx.dht();
+
+                GridDhtLocalPartition locPart0 = dht.topology().localPartition(part, topVer, false);
+
+                if (locPart0 == null || locPart0.state() != OWNING || !locPart0.reserve())
+                    throw new GridDhtUnreservedPartitionException(part, cctx.affinity().affinityTopologyVersion(),
+                        "Partition can not be reserved");
+
+                if (locPart0.state() != OWNING) {
+                    locPart0.release();
+
+                    throw new GridDhtUnreservedPartitionException(part, cctx.affinity().affinityTopologyVersion(),
+                        "Partition can not be reserved");
+                }
+
+                locPart = locPart0;
+
+                it = cctx.offheap().iterator(part);
+            }
+            else {
+                locPart = null;
+
+                it = cctx.offheap().iterator(backups, topVer);
+            }
+
+            return new PeekValueExpiryAwareIterator0(it, plc, topVer, keyValFilter, qry.keepBinary()) {
+                @Override protected void onClose() {
+                    super.onClose();
+
+                    if (locPart != null)
+                        locPart.release();
+
+                    closeScanFilter(keyValFilter);
+                }
+            };
+        }
+        catch (IgniteCheckedException | RuntimeException e) {
+            closeScanFilter(keyValFilter);
+
+            throw e;
+        }
+    }
+
+    /**
+     * @param qry Query.
+     * @return Full-scan row iterator.
+     * @throws IgniteCheckedException If failed to get iterator.
+     */
+    @SuppressWarnings({"unchecked"})
+    private GridCloseableIterator<IgniteBiTuple<K, V>> scanIterator0(final GridCacheQueryAdapter<?> qry)
         throws IgniteCheckedException {
         IgniteInternalCache<K, V> prj0 = cctx.cache();
 
@@ -3279,6 +3360,180 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             }
 
             return true;
+        }
+    }
+
+    /**
+     *
+     */
+    private class PeekValueExpiryAwareIterator0 extends GridCloseableIteratorAdapter<IgniteBiTuple<K, V>> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private final ExpiryPolicy plc;
+
+        /** */
+        private final GridCacheAdapter cache;
+
+        /** */
+        private final AffinityTopologyVersion topVer;
+
+        /** */
+        private final GridDhtCacheAdapter dht;
+
+        /** */
+        private final IgniteBiPredicate<K, V> keyValFilter;
+
+        /** */
+        private final boolean keepBinary;
+
+        /** */
+        private IgniteBiTuple<K, V> next;
+
+        /** */
+        private IgniteCacheExpiryPolicy expiryPlc;
+
+        /** */
+        private GridIterator<CacheDataRow> it;
+
+        /**
+         * @param it Iterator.
+         * @param plc Expiry policy.
+         * @param topVer Topology version.
+         * @param keyValFilter Key-value filter.
+         * @param keepBinary Keep binary flag from the query.
+         */
+        private PeekValueExpiryAwareIterator0(
+            GridIterator<CacheDataRow> it,
+            ExpiryPolicy plc,
+            AffinityTopologyVersion topVer,
+            IgniteBiPredicate<K, V> keyValFilter,
+            boolean keepBinary
+        ) {
+            this.it = it;
+            this.plc = plc;
+            this.topVer = topVer;
+            this.keyValFilter = keyValFilter;
+
+            dht = cctx.isLocal() ? null : (cctx.isNear() ? cctx.near().dht() : cctx.dht());
+            cache = dht != null ? dht : cctx.cache();
+
+            this.keepBinary = keepBinary;
+            expiryPlc = cctx.cache().expiryPolicy(plc);
+
+            advance();
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean onHasNext() {
+            return next != null;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgniteBiTuple<K, V> onNext() {
+            if (next == null)
+                throw new NoSuchElementException();
+
+            IgniteBiTuple<K, V> next0 = next;
+
+            advance();
+
+            return next0;
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void onClose() {
+            sendTtlUpdate();
+        }
+
+        /**
+         * Moves the iterator to the next cache entry.
+         */
+        private void advance() {
+            IgniteBiTuple<K, V> next0 = null;
+
+            while (it.hasNext()) {
+                CacheDataRow row = it.next();
+
+                KeyCacheObject key = row.key();
+
+                CacheObject val;
+
+                if (expiryPlc != null) {
+                    try {
+                        val = value(key);
+                    }
+                    catch (IgniteCheckedException e) {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to peek value: " + e);
+
+                        val = null;
+                    }
+
+                    if (dht != null && expiryPlc.readyToFlush(100)) {
+                        dht.sendTtlUpdateRequest(expiryPlc);
+
+                        expiryPlc = cctx.cache().expiryPolicy(plc);
+                    }
+                }
+                else
+                    val = row.value();
+
+                if (val != null) {
+                    if (keyValFilter != null) {
+                        K k0 = (K)cctx.unwrapBinaryIfNeeded(key, keepBinary);
+                        V v0 = (V)cctx.unwrapBinaryIfNeeded(val, keepBinary);
+
+                        if (!keyValFilter.apply(k0, v0))
+                            continue;
+                    }
+
+                    next0 = F.t((K)key, (V)val);
+
+                    break;
+                }
+            }
+
+            next = next0;
+
+            if (next == null)
+                sendTtlUpdate();
+        }
+
+        /**
+         * Sends TTL update.
+         */
+        private void sendTtlUpdate() {
+            if (dht != null && expiryPlc != null) {
+                dht.sendTtlUpdateRequest(expiryPlc);
+
+                expiryPlc = null;
+            }
+        }
+
+        /**
+         * @param key Key.
+         * @return Value.
+         * @throws IgniteCheckedException If failed to peek value.
+         */
+        private CacheObject value(KeyCacheObject key) throws IgniteCheckedException {
+            GridCacheEntryEx entry = null;
+
+            try {
+                entry = cache.entryEx(key);
+
+                entry.unswap();
+
+                return entry.peek(true, false, false, topVer, expiryPlc);
+            }
+            catch (GridCacheEntryRemovedException ignore) {
+                return null;
+            }
+            finally {
+                if (entry != null)
+                    cctx.evicts().touch(entry, topVer);
+            }
         }
     }
 }

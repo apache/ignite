@@ -132,3 +132,4 @@ IgniteAtomicReferenceIsClosed @129
 IgniteAtomicReferenceClose @130
 IgniteProcessorCreateNearCache @131
 IgniteProcessorGetOrCreateNearCache @132
+IgniteProcessorGetCacheNames @133

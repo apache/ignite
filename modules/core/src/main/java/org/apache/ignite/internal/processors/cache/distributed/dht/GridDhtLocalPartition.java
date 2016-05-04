@@ -583,6 +583,9 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * Clears swap entries for evicted partition.
      */
     private void clearSwap() {
+        if (true) // TODO GG-10884.
+            return;
+
         assert state() == EVICTED;
         assert !GridQueryProcessor.isEnabled(cctx.config()) : "Indexing needs to have unswapped values.";
 

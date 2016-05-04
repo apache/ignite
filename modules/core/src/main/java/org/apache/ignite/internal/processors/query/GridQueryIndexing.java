@@ -210,11 +210,17 @@ public interface GridQueryIndexing {
     /**
      * @param space Space name.
      * @param key Key.
+     * @param partId Partition.
      * @return Read versioned value.
      */
-    IgniteBiTuple<CacheObject,GridCacheVersion> read(String space, KeyCacheObject key, int partId) throws IgniteCheckedException;
+    IgniteBiTuple<CacheObject, GridCacheVersion> read(String space, KeyCacheObject key, int partId)
+        throws IgniteCheckedException;
 
-    public List<BPlusTree<?, ? extends CacheDataRow>> pkIndexes(String space);
+    /**
+     * @param space Space name.
+     * @return Primary key index.
+     */
+    public BPlusTree<?, ? extends CacheDataRow> pkIndex(String space);
 
     /**
      * Will be called when entry with given key is swapped.

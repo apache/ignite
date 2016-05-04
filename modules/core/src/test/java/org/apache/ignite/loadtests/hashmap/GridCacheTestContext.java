@@ -80,7 +80,6 @@ public class GridCacheTestContext<K, V> extends GridCacheContext<K, V> {
             true,
             true,
             new GridCacheEventManager(),
-            new GridCacheSwapManager(false),
             new CacheOsStoreManager(null, new CacheConfiguration()),
             new GridCacheEvictionManager(),
             new GridCacheLocalQueryManager<K, V>(),

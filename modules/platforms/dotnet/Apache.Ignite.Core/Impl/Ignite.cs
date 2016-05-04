@@ -622,6 +622,24 @@ namespace Apache.Ignite.Core.Impl
             return GetOrCreateNearCache0<TK, TV>(name, configuration, UU.ProcessorGetOrCreateNearCache);
         }
 
+        /** <inheritdoc /> */
+        public ICollection<string> GetCacheNames()
+        {
+            using (var stream = IgniteManager.Memory.Allocate(1024).GetStream())
+            {
+                UU.ProcessorGetCacheNames(_proc, stream.MemoryPointer);
+                stream.SynchronizeInput();
+
+                var reader = _marsh.StartUnmarshal(stream);
+                var res = new string[stream.ReadInt()];
+
+                for (int i = 0; i < res.Length; i++)
+                    res[i] = reader.ReadString();
+
+                return res;
+            }
+        }
+
         /// <summary>
         /// Gets or creates near cache.
         /// </summary>
