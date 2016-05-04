@@ -781,6 +781,10 @@ namespace Apache.Ignite.Core.Impl
         public void OnClientDisconnected()
         {
             _clientReconnectTaskCompletionSource = new TaskCompletionSource<bool>();
+
+            var handler = ClientDisconnected;
+            if (handler != null)
+                handler.Invoke(this, EventArgs.Empty);
         }
 
         /// <summary>
@@ -790,6 +794,10 @@ namespace Apache.Ignite.Core.Impl
         public void OnClientReconnected(bool clusterRestarted)
         {
             _clientReconnectTaskCompletionSource.TrySetResult(clusterRestarted);
+
+            var handler = ClientReconnected;
+            if (handler != null)
+                handler.Invoke(this, new ClientReconnectEventArgs(clusterRestarted));
         }
     }
 }
