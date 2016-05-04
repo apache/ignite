@@ -28,7 +28,10 @@ namespace Apache.Ignite.Service
     [RunInstaller(true)]
     public class IgniteServiceInstaller : Installer
     {
-        public static string Args = "";
+        /// <summary>
+        /// Gets or sets the service arguments.
+        /// </summary>
+        public static string Args { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteServiceInstaller"/> class.
@@ -39,7 +42,7 @@ namespace Apache.Ignite.Service
             {
                 StartType = ServiceStartMode.Automatic,
                 ServiceName = IgniteService.SvcName,
-                Description = "Apache Ignite.NET Service."
+                Description = IgniteService.SvcDesc
             });
 
             Installers.Add(new ServiceProcessInstaller {Account = ServiceAccount.LocalSystem});
@@ -48,7 +51,11 @@ namespace Apache.Ignite.Service
         /** <inheritdoc /> */
         protected override void OnBeforeInstall(IDictionary savedState)
         {
-            Context.Parameters["assemblyPath"] = string.Format("\"{0}\" {1}", Context.Parameters["assemblyPath"], Args);
+            if (!string.IsNullOrWhiteSpace(Args))
+            {
+                Context.Parameters["assemblyPath"] =
+                    string.Format("\"{0}\" {1}", Context.Parameters["assemblyPath"], Args);
+            }
 
             base.OnBeforeInstall(savedState);
         }

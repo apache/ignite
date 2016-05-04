@@ -35,7 +35,10 @@ namespace Apache.Ignite.Service
     internal class IgniteService : ServiceBase, ILifecycleBean
     {
         /** Service name. */
-        public static readonly string SvcName = "Apache Ignite.NET";
+        public const string SvcName = "Apache Ignite.NET";
+
+        /** Service description. */
+        public const string SvcDesc = "Apache Ignite.NET Service.";
 
         /** Current executable name. */
         private static readonly string ExeName =
