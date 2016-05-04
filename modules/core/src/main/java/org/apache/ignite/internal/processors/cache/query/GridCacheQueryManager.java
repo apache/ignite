@@ -469,7 +469,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      */
     @SuppressWarnings("unchecked")
     public CacheQueryFuture<?> queryLocal(GridCacheQueryBean qry) {
-        assert qry.query().type() != GridCacheQueryType.SCAN: "Wrong query processing: " + qry;
+        assert qry.query().type() != GridCacheQueryType.SCAN : qry;
 
         if (log.isDebugEnabled())
             log.debug("Executing query on local node: " + qry);
@@ -1026,7 +1026,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             locPart = dht.topology().localPartition(part, topVer, false);
 
-            // double check for owning state
+            // Double check for owning state.
             if (locPart == null || locPart.state() != OWNING || !locPart.reserve() || locPart.state() != OWNING)
                 throw new GridDhtUnreservedPartitionException(part, cctx.affinity().affinityTopologyVersion(),
                     "Partition can not be reserved.");
@@ -1423,7 +1423,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     @SuppressWarnings("unchecked")
     protected void runQuery(GridCacheQueryInfo qryInfo) {
         assert qryInfo != null;
-        assert qryInfo.query().type() != SCAN || !qryInfo.local(): "Wrong query processing: " + qryInfo;
+        assert qryInfo.query().type() != SCAN || !qryInfo.local() : qryInfo;
 
         if (!enterBusy()) {
             if (cctx.localNodeId().equals(qryInfo.senderId()))
@@ -1465,7 +1465,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 res = loc ?
                     executeQuery(qry, qryInfo.arguments(), loc, qry.subjectId(), taskName,
-                        recipient(qryInfo.senderId(), qryInfo.requestId())) :
+                    recipient(qryInfo.senderId(), qryInfo.requestId())) :
                     queryResult(qryInfo, taskName);
 
                 iter = res.iterator(recipient(qryInfo.senderId(), qryInfo.requestId()));

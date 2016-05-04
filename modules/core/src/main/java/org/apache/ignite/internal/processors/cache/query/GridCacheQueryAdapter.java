@@ -434,7 +434,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
     @SuppressWarnings({"IfMayBeConditional", "unchecked"})
     private <R> CacheQueryFuture<R> execute(@Nullable IgniteReducer<T, R> rmtReducer,
         @Nullable IgniteClosure<T, R> rmtTransform, @Nullable Object... args) {
-        assert type != SCAN: "Wrong processing of qyery: " + this;
+        assert type != SCAN : this;
 
         Collection<ClusterNode> nodes;
 
@@ -758,13 +758,10 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
             try {
                 IgniteInternalFuture<?> retryFut;
 
-                if (e.hasCause(GridDhtUnreservedPartitionException.class)) {
-                    AffinityTopologyVersion waitVer;
+                GridDhtUnreservedPartitionException partErr = X.cause(e, GridDhtUnreservedPartitionException.class);
 
-                    if (e instanceof GridDhtUnreservedPartitionException)
-                        waitVer = ((GridDhtUnreservedPartitionException)e).topologyVersion();
-                    else
-                        waitVer = ((GridDhtUnreservedPartitionException)e.getCause()).topologyVersion();
+                if (partErr != null) {
+                    AffinityTopologyVersion waitVer = partErr.topologyVersion();
 
                     assert waitVer != null;
 
