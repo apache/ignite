@@ -68,7 +68,7 @@ public class ClusterProperties {
     public static final String IGNITE_HTTP_SERVER_HOST = "IGNITE_HTTP_SERVER_HOST";
 
     /** Http server host. */
-    private String httpServerHost = null;
+    private String httpSrvHost = null;
 
     /** */
     public static final String IGNITE_HTTP_SERVER_PORT = "IGNITE_HTTP_SERVER_PORT";
@@ -77,7 +77,7 @@ public class ClusterProperties {
     public static final String DEFAULT_HTTP_SERVER_PORT = "48610";
 
     /** Http server host. */
-    private int httpServerPort = Integer.valueOf(DEFAULT_HTTP_SERVER_PORT);
+    private int httpSrvPort = Integer.valueOf(DEFAULT_HTTP_SERVER_PORT);
 
     /** */
     public static final String IGNITE_TOTAL_CPU = "IGNITE_TOTAL_CPU";
@@ -152,13 +152,13 @@ public class ClusterProperties {
     public static final String IGNITE_PACKAGE_URL = "IGNITE_PACKAGE_URL";
 
     /** Ignite package url. */
-    private String ignitePackageUrl = null;
+    private String ignitePkgUrl;
 
     /** */
     public static final String IGNITE_PACKAGE_PATH = "IGNITE_PACKAGE_PATH";
 
     /** Ignite package path. */
-    private String ignitePackagePath = null;
+    private String ignitePkgPath;
 
     /** */
     public static final String IGNITE_WORK_DIR = "IGNITE_WORK_DIR";
@@ -324,10 +324,10 @@ public class ClusterProperties {
     /**
      * Sets hostname constraint.
      *
-     * @param pattern Hostname pattern.
+     * @param ptrn Hostname pattern.
      */
-    public void hostnameConstraint(Pattern pattern) {
-        this.hostnameConstraint = pattern;
+    public void hostnameConstraint(Pattern ptrn) {
+        this.hostnameConstraint = ptrn;
     }
 
     /**
@@ -385,28 +385,28 @@ public class ClusterProperties {
      * @return Http server host.
      */
     public String httpServerHost() {
-        return httpServerHost;
+        return httpSrvHost;
     }
 
     /**
      * @return Http server port.
      */
     public int httpServerPort() {
-        return httpServerPort;
+        return httpSrvPort;
     }
 
     /**
      * @return Url to ignite package.
      */
     public String ignitePackageUrl() {
-        return ignitePackageUrl;
+        return ignitePkgUrl;
     }
 
     /**
      * @return Url to ignite package.
      */
     public String ignitePackagePath() {
-        return ignitePackagePath;
+        return ignitePkgPath;
     }
 
     /**
@@ -438,38 +438,38 @@ public class ClusterProperties {
     }
 
     /**
-     * @param config path to config file.
+     * @param cfg path to config file.
      * @return Cluster configuration.
      */
-    public static ClusterProperties from(String config) {
+    public static ClusterProperties from(String cfg) {
         try {
             Properties props = null;
 
-            if (config != null) {
+            if (cfg != null) {
                 props = new Properties();
 
-                props.load(new FileInputStream(config));
+                props.load(new FileInputStream(cfg));
             }
 
             ClusterProperties prop = new ClusterProperties();
 
             prop.mesosUrl = getStringProperty(MESOS_MASTER_URL, props, DEFAULT_MESOS_MASTER_URL);
 
-            prop.httpServerHost = getStringProperty(IGNITE_HTTP_SERVER_HOST, props, getNonLoopbackAddress());
+            prop.httpSrvHost = getStringProperty(IGNITE_HTTP_SERVER_HOST, props, getNonLoopbackAddress());
 
             String port = System.getProperty("PORT0");
 
             if (port != null && !port.isEmpty())
-                prop.httpServerPort = Integer.valueOf(port);
+                prop.httpSrvPort = Integer.valueOf(port);
             else
-                prop.httpServerPort = Integer.valueOf(getStringProperty(IGNITE_HTTP_SERVER_PORT, props,
+                prop.httpSrvPort = Integer.valueOf(getStringProperty(IGNITE_HTTP_SERVER_PORT, props,
                     DEFAULT_HTTP_SERVER_PORT));
 
             prop.clusterName = getStringProperty(IGNITE_CLUSTER_NAME, props, DEFAULT_CLUSTER_NAME);
 
             prop.userLibsUrl = getStringProperty(IGNITE_USERS_LIBS_URL, props, null);
-            prop.ignitePackageUrl = getStringProperty(IGNITE_PACKAGE_URL, props, null);
-            prop.ignitePackagePath = getStringProperty(IGNITE_PACKAGE_PATH, props, null);
+            prop.ignitePkgUrl = getStringProperty(IGNITE_PACKAGE_URL, props, null);
+            prop.ignitePkgPath = getStringProperty(IGNITE_PACKAGE_PATH, props, null);
             prop.licenceUrl = getStringProperty(LICENCE_URL, props, null);
             prop.igniteCfgUrl = getStringProperty(IGNITE_CONFIG_XML_URL, props, null);
 
@@ -490,11 +490,11 @@ public class ClusterProperties {
             prop.igniteCfg = getStringProperty(IGNITE_CONFIG_XML, props, null);
             prop.userLibs = getStringProperty(IGNITE_USERS_LIBS, props, null);
 
-            String pattern = getStringProperty(IGNITE_HOSTNAME_CONSTRAINT, props, null);
+            String ptrn = getStringProperty(IGNITE_HOSTNAME_CONSTRAINT, props, null);
 
-            if (pattern != null) {
+            if (ptrn != null) {
                 try {
-                    prop.hostnameConstraint = Pattern.compile(pattern);
+                    prop.hostnameConstraint = Pattern.compile(ptrn);
                 }
                 catch (PatternSyntaxException e) {
                     log.log(Level.WARNING, "IGNITE_HOSTNAME_CONSTRAINT has invalid pattern. It will be ignore.", e);
@@ -513,16 +513,16 @@ public class ClusterProperties {
      * @param fileProps Property file.
      * @return Property value.
      */
-    private static double getDoubleProperty(String name, Properties fileProps, Double defaultVal) {
+    private static double getDoubleProperty(String name, Properties fileProps, Double dfltVal) {
         if (fileProps != null && fileProps.containsKey(name))
             return Double.valueOf(fileProps.getProperty(name));
 
-        String property = System.getProperty(name);
+        String prop = System.getProperty(name);
 
-        if (property == null)
-            property = System.getenv(name);
+        if (prop == null)
+            prop = System.getenv(name);
 
-        return property == null ? defaultVal : Double.valueOf(property);
+        return prop == null ? dfltVal : Double.valueOf(prop);
     }
 
     /**
@@ -530,16 +530,16 @@ public class ClusterProperties {
      * @param fileProps Property file.
      * @return Property value.
      */
-    private static String getStringProperty(String name, Properties fileProps, String defaultVal) {
+    private static String getStringProperty(String name, Properties fileProps, String dfltVal) {
         if (fileProps != null && fileProps.containsKey(name))
             return fileProps.getProperty(name);
 
-        String property = System.getProperty(name);
+        String prop = System.getProperty(name);
 
-        if (property == null)
-            property = System.getenv(name);
+        if (prop == null)
+            prop = System.getenv(name);
 
-        return property == null ? defaultVal : property;
+        return prop == null ? dfltVal : prop;
     }
 
     /**
@@ -554,10 +554,10 @@ public class ClusterProperties {
         while (ifaces.hasMoreElements()) {
             NetworkInterface iface = ifaces.nextElement();
 
-            Enumeration<InetAddress> addresses = iface.getInetAddresses();
+            Enumeration<InetAddress> addrs = iface.getInetAddresses();
 
-            while (addresses.hasMoreElements()) {
-                InetAddress addr = addresses.nextElement();
+            while (addrs.hasMoreElements()) {
+                InetAddress addr = addrs.nextElement();
 
                 if (addr instanceof Inet4Address && !addr.isLoopbackAddress())
                     return addr.getHostAddress();

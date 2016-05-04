@@ -44,10 +44,10 @@ public class ResourceProvider {
     private Collection<String> libsUris;
 
     /** Url config. */
-    private String configUrl;
+    private String cfgUrl;
 
     /** Config name. */
-    private String configName;
+    private String cfgName;
 
     /**
      * @param props Cluster properties.
@@ -102,15 +102,15 @@ public class ResourceProvider {
             File cfg = new File(props.igniteCfg());
 
             if (cfg.isFile() && cfg.canRead()) {
-                configUrl = baseUrl + CONFIG_PREFIX + cfg.getName();
+                cfgUrl = baseUrl + CONFIG_PREFIX + cfg.getName();
 
-                configName = cfg.getName();
+                cfgName = cfg.getName();
             }
         }
         else {
-            configName = "ignite-default-config.xml";
+            cfgName = "ignite-default-config.xml";
 
-            configUrl = baseUrl + DEFAULT_CONFIG + configName;
+            cfgUrl = baseUrl + DEFAULT_CONFIG + cfgName;
         }
     }
 
@@ -118,7 +118,7 @@ public class ResourceProvider {
      * @return Config name.
      */
     public String configName() {
-        return configName;
+        return cfgName;
     }
 
     /**
@@ -139,6 +139,6 @@ public class ResourceProvider {
      * @return Url to config file.
      */
     public String igniteConfigUrl() {
-        return configUrl;
+        return cfgUrl;
     }
 }
