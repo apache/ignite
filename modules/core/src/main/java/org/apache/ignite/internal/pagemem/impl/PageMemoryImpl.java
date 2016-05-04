@@ -45,6 +45,8 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
+import org.apache.ignite.internal.pagemem.wal.StorageException;
+import org.apache.ignite.internal.pagemem.wal.record.PageWrapperRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
@@ -682,6 +684,21 @@ public class  PageMemoryImpl implements PageMemory {
             dirtyPages.add(pageId);
         else if (wasDirty && !dirty)
             dirtyPages.remove(pageId);
+    }
+
+    /**
+     * @param page Write-locked page about to be released.
+     */
+    void beforeReleaseWrite(PageImpl page) {
+        if (walMgr != null) {
+            try {
+                walMgr.log(new PageWrapperRecord(wrapPointer(page.pointer(), sysPageSize)), false);
+            }
+            catch (IgniteCheckedException | StorageException e) {
+                // TODO ignite-db.
+                throw new IgniteException(e);
+            }
+        }
     }
 
     /**

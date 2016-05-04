@@ -47,8 +47,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     /** */
     private ReadWriteLock txLock = new ReentrantReadWriteLock();
 
-    /** {@inheritDoc} */
-    @Override public void onKernalStart0(boolean reconnect) throws IgniteCheckedException {
+    @Override protected void start0() throws IgniteCheckedException {
         DatabaseConfiguration dbCfg = cctx.kernalContext().config().getDatabaseConfiguration();
 
         if (dbCfg != null && !cctx.kernalContext().clientNode()) {
@@ -132,7 +131,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (fragmentSize == 0)
             fragmentSize = dbCfg.getPageCacheSize();
 
-        String consId = String.valueOf(cctx.discovery().localNode().consistentId());
+        String consId = String.valueOf(cctx.discovery().consistentId());
 
         consId = consId.replaceAll("[:,\\.]", "_");
 

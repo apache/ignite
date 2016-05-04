@@ -48,7 +48,7 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager {
      * Makes sure that all log entries written to the log up until the specified pointer are actually persisted to
      * the underlying storage.
      *
-     * @param ptr Pointer to sync.
+     * @param ptr Optional pointer to sync. If {@code null}, will sync up to the latest record.
      * @throws IgniteCheckedException If
      * @throws StorageException
      */

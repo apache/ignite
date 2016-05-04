@@ -603,12 +603,16 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     "Deployment mode for cache is not CONTINUOUS or SHARED.");
         }
 
-        Set<String> internalCaches = internalCachesNames();
+        sharedCtx = createSharedContext(ctx, CU.startStoreSessionListeners(ctx,
+            ctx.config().getCacheStoreSessionListenerFactories()));
+
+        // Start shared managers.
+        for (GridCacheSharedManager mgr : sharedCtx.managers())
+            mgr.start(sharedCtx);
 
         CacheConfiguration[] cfgs = ctx.config().getCacheConfiguration();
 
-        sharedCtx = createSharedContext(ctx, CU.startStoreSessionListeners(ctx,
-            ctx.config().getCacheStoreSessionListenerFactories()));
+        Set<String> internalCaches = internalCachesNames();
 
         for (int i = 0; i < cfgs.length; i++) {
             if (ctx.config().isDaemon() && !CU.isMarshallerCache(cfgs[i].getName()))
@@ -693,10 +697,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 registeredTemplates.put(masked, desc0);
             }
         }
-
-        // Start shared managers.
-        for (GridCacheSharedManager mgr : sharedCtx.managers())
-            mgr.start(sharedCtx);
 
         transactions = new IgniteTransactionsImpl(sharedCtx);
 

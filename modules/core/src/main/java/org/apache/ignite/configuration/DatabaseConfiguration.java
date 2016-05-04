@@ -44,9 +44,6 @@ public class DatabaseConfiguration implements Serializable {
     /** Concurrency level. */
     private int concLvl;
 
-    /** Persistence enabled flag. */
-    private boolean persistenceEnabled;
-
     /**
      * @return Page size.
      */
@@ -59,20 +56,6 @@ public class DatabaseConfiguration implements Serializable {
      */
     public void setPageSize(int pageSize) {
         this.pageSize = pageSize;
-    }
-
-    /**
-     * @return Persistence enabled flag.
-     */
-    public boolean isPersistenceEnabled() {
-        return persistenceEnabled;
-    }
-
-    /**
-     * @param persistenceEnabled Persistence enabled flag.
-     */
-    public void setPersistenceEnabled(boolean persistenceEnabled) {
-        this.persistenceEnabled = persistenceEnabled;
     }
 
     /**

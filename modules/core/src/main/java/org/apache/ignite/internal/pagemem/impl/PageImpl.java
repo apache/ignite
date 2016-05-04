@@ -192,8 +192,11 @@ class PageImpl extends AbstractQueuedSynchronizer implements Page {
 
     /** {@inheritDoc} */
     @Override public void releaseWrite(boolean markDirty) {
-        if (markDirty)
+        if (markDirty) {
             markDirty();
+
+            pageMem.beforeReleaseWrite(this);
+        }
 
         assert getState() == -1;
         assert getExclusiveOwnerThread() == Thread.currentThread() : "illegal monitor state";
