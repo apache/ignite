@@ -80,7 +80,7 @@ public class CacheOffheapBatchIndexingTest extends GridCommonAbstractTest {
      * Loading date into cache
      * @param name
      */
-    private void loadingCacheAnyDate(String name) {
+    private void preload(String name) {
         try (IgniteDataStreamer<Object, Object> streamer = ignite(0).dataStreamer(name)) {
             for (int i = 0; i < 30_000; i++) {
                 if (i % 2 == 0)
@@ -176,7 +176,7 @@ public class CacheOffheapBatchIndexingTest extends GridCommonAbstractTest {
 
         try {
             if (preloadInStreamer)
-                loadingCacheAnyDate(cache.getName());
+                preload(cache.getName());
 
             while (iterations-- >= 0) {
                 Map<Integer, Person> putMap1 = new TreeMap<>();
@@ -219,7 +219,7 @@ public class CacheOffheapBatchIndexingTest extends GridCommonAbstractTest {
 
         try {
             if (preloadInStreamer)
-                loadingCacheAnyDate(cache.getName());
+                preload(cache.getName());
 
             while (iterations-- >= 0) {
                 int total = 1_000;
