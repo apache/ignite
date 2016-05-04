@@ -44,7 +44,7 @@ namespace Apache.Ignite.Core.Impl
     {
         /** */
         [NonSerialized]
-        private readonly IIgnite _ignite;
+        private readonly Ignite _ignite;
 
         /// <summary>
         /// Default ctor for marshalling.
@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Impl
         /// Constructor.
         /// </summary>
         /// <param name="ignite">Grid.</param>
-        public IgniteProxy(IIgnite ignite)
+        public IgniteProxy(Ignite ignite)
         {
             _ignite = ignite;
         }
@@ -428,7 +428,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Target grid.
         /// </summary>
-        internal IIgnite Target
+        internal Ignite Target
         {
             get
             {
@@ -439,7 +439,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IBinaryType GetBinaryType(int typeId)
         {
-            return ((IClusterGroupEx)_ignite).GetBinaryType(typeId);
+            return _ignite.GetBinaryType(typeId);
         }
     }
 }
