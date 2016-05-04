@@ -93,7 +93,14 @@ namespace Apache.Ignite.Core.Tests
             CheckEvent(AfterStartEvts[1], grid, grid, 0, null);
 
             // 2. Test stop events.
+            var stoppingCnt = 0;
+            var stoppedCnt = 0;
+            grid.Stopping += (sender, args) => { stoppingCnt++; };
+            grid.Stopped += (sender, args) => { stoppedCnt++; };
             Ignition.Stop(grid.Name, false);
+
+            Assert.AreEqual(1, stoppingCnt);
+            Assert.AreEqual(1, stoppedCnt);
 
             Assert.AreEqual(2, BeforeStartEvts.Count);
             Assert.AreEqual(2, AfterStartEvts.Count);
