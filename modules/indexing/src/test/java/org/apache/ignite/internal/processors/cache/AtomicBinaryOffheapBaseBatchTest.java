@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
@@ -34,29 +32,16 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
-
 /**
  * The test are checking batch operation onto atomic offheap cache with per certain key and value types.
  */
-public class AtomicBinaryOffheapBatchTest extends IgniteCacheAbstractTest {
-
-    /**
-     * Size of batch in operation
-     */
-    public static final int BATCH_SIZE = 500;
-
+public abstract class AtomicBinaryOffheapBaseBatchTest extends IgniteCacheAbstractTest {
     @Override
     protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         cfg.setMarshaller(new BinaryMarshaller());
+
         cfg.setPeerClassLoadingEnabled(false);
 
         return cfg;
@@ -68,11 +53,32 @@ public class AtomicBinaryOffheapBatchTest extends IgniteCacheAbstractTest {
 
         cfg.setMemoryMode(memoryMode());
 
-        cfg.setIndexedTypes(Integer.class, Person.class, Integer.class, Organization.class);
+        int size = onHeapRowCacheSize();
+
+        if (size > 0 )
+            cfg.setSqlOnheapRowCacheSize(size);
+
+        cfg.setIndexedTypes(indexedTypes());
 
         cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
 
         return cfg;
+    }
+
+    /**
+     * Row off-heap cache. Zero is used for default value (10_000).
+     * @return row heap cache size in bytes.
+     */
+    protected int onHeapRowCacheSize() {
+        return 0;
+    }
+
+    /**
+     * Indexed types for test.
+     * @return array of classes for indexing.
+     */
+    protected Class<?>[] indexedTypes() {
+        return new Class<?>[]{Integer.class, Person.class, Integer.class, Organization.class};
     }
 
     /** {@inheritDoc} */
@@ -117,65 +123,12 @@ public class AtomicBinaryOffheapBatchTest extends IgniteCacheAbstractTest {
      *
      * @throws Exception If fail.
      */
-    public void testBatchOperations() throws Exception {
-        try (IgniteCache defaultCache = ignite(0).cache(null)) {
-            loadingCacheAnyDate();
-
-            for (int cnt = 0; cnt < 200; cnt++) {
-                Map<Integer, Person> putMap1 = new TreeMap<>();
-                for (int i = 0; i < BATCH_SIZE; i++)
-                    putMap1.put(i, new Person(i, i + 1, String.valueOf(i), String.valueOf(i + 1), i / 0.99));
-
-                defaultCache.putAll(putMap1);
-
-                Map<Integer, Organization> putMap2 = new TreeMap<>();
-                for (int i = BATCH_SIZE / 2; i < BATCH_SIZE * 3 / 2; i++)
-                    putMap2.put(i, new Organization(i, String.valueOf(i)));
-
-                defaultCache.putAll(putMap2);
-
-                Set<Integer> keySet = new TreeSet<>();
-
-                for (int i = 0; i < BATCH_SIZE * 3 / 2; i += 2)
-                    keySet.add(i);
-
-                defaultCache.removeAll(keySet);
-
-                keySet = new TreeSet<>();
-
-                for (int i = 1; i < BATCH_SIZE * 3 / 2; i += 2)
-                    keySet.add(i);
-
-                defaultCache.invokeAll(keySet, new EntryProcessor() {
-                    @Override
-                    public Object process(MutableEntry entry, Object... arguments) throws EntryProcessorException {
-                        Object value = entry.getValue();
-                        entry.remove();
-                        return value;
-                    }
-                });
-            }
-        }
-    }
-
-    /**
-     * Loading date into cache
-     */
-    private void loadingCacheAnyDate() {
-        try (IgniteDataStreamer streamer = ignite(0).dataStreamer(null)) {
-            for (int i = 0; i < 30_000; i++) {
-                if (i % 2 == 0)
-                    streamer.addData(i, new Person(i, i + 1, String.valueOf(i), String.valueOf(i + 1), i / 0.99));
-                else
-                    streamer.addData(i, new Organization(i, String.valueOf(i)));
-            }
-        }
-    }
+    public abstract void testBatchOperations() throws Exception;
 
     /**
      * Ignite cache value class.
      */
-    private static class Person implements Binarylizable {
+    protected static class Person implements Binarylizable {
 
         /** Person ID. */
         @QuerySqlField(index = true)
@@ -313,7 +266,7 @@ public class AtomicBinaryOffheapBatchTest extends IgniteCacheAbstractTest {
     /**
      * Ignite cache value class with indexed field.
      */
-    private static class Organization implements Binarylizable {
+    protected static class Organization implements Binarylizable {
 
         /** Organization ID. */
         @QuerySqlField(index = true)
