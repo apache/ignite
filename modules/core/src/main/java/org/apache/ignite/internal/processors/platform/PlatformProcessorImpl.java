@@ -415,6 +415,21 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     }
 
     /** {@inheritDoc} */
+    @Override public void getCacheNames(long memPtr) {
+        PlatformOutputStream stream = platformCtx.memory().get(memPtr).output();
+        BinaryRawWriterEx writer = platformCtx.writer(stream);
+
+        Collection<String> names = ignite().cacheNames();
+
+        writer.writeInt(names.size());
+
+        for (String name : names)
+            writer.writeString(name);
+
+        stream.synchronize();
+    }
+
+    /** {@inheritDoc} */
     @Override public PlatformTarget createNearCache(@Nullable String cacheName, long memPtr) {
         NearCacheConfiguration cfg = getNearCacheConfiguration(memPtr);
 

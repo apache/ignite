@@ -70,7 +70,7 @@ public class VariationsTestsConfig {
      * @param factory Factory.
      * @param desc Config description.
      * @param stopNodes Stope nodes.
-     * @param gridCnt Grdi count.
+     * @param gridCnt Grid count.
      */
     public VariationsTestsConfig(
         ConfigFactory factory,
