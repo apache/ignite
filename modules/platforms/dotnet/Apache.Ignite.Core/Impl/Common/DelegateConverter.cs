@@ -181,6 +181,17 @@ namespace Apache.Ignite.Core.Impl.Common
             
             Expression callExpr = Expression.Call(targetParamConverted, method, argParams);
 
+            if (callExpr.Type == typeof(void))
+            {
+                // Convert action to function
+                var action = Expression.Lambda<Action<object, object[]>>(callExpr, targetParam, arrParam).Compile();
+                return (obj, args) =>
+                {
+                    action(obj, args);
+                    return null;
+                };
+            }
+
             callExpr = Expression.Convert(callExpr, typeof(object));
 
             return Expression.Lambda<Func<object, object[], object>>(callExpr, targetParam, arrParam).Compile();
