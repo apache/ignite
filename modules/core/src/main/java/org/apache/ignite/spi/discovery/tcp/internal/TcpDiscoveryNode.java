@@ -150,6 +150,9 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     @GridToStringExclude
     private transient boolean daemon;
 
+    @GridToStringExclude
+    private transient boolean active = false;
+
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
      */
@@ -538,6 +541,15 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         }
 
         return cacheCli;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean isActive() {
+        return active;
+    }
+
+    public void activate() {
+        active = true;
     }
 
     /** {@inheritDoc} */

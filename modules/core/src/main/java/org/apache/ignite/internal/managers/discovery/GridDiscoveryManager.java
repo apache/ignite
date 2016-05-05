@@ -112,6 +112,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiHistorySupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -120,6 +121,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
+import static org.apache.ignite.events.EventType.EVT_NODE_ACTIVATED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -624,6 +626,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     });
 
                     return;
+                }
+                else if (type == EVT_NODE_ACTIVATED) {
+                    if (locNode instanceof TcpDiscoveryNode) {
+                        ((TcpDiscoveryNode)locNode).activate();
+                    }
                 }
 
                 if (type == EVT_CLIENT_NODE_DISCONNECTED || type == EVT_NODE_SEGMENTED || !ctx.clientDisconnected())
@@ -1795,6 +1802,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
     }
 
+    public void sendNodeActivationEvent() throws IgniteCheckedException {
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
     /**
      * Gets first grid node start time, see {@link DiscoverySpi#getGridStartTime()}.
      *
@@ -2563,7 +2574,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 assert node.order() != 0 : "Invalid node order [locNode=" + loc + ", node=" + node + ']';
                 assert !node.isDaemon();
 
-                if (!CU.clientNode(node))
+                if (!CU.clientNode(node) && node.isActive())
                     srvNodes.add(node);
 
                 if (node.order() > maxOrder0)
@@ -2992,7 +3003,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @return {@code True} if this node is a data node for given cache.
          */
         public boolean dataNode(ClusterNode node) {
-            return !node.isDaemon() && CU.affinityNode(node, cacheFilter);
+            return !node.isDaemon() && node.isActive() && CU.affinityNode(node, cacheFilter);
         }
 
         /**
@@ -3000,7 +3011,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @return {@code True} if cache is accessible on the given node.
          */
         public boolean cacheNode(ClusterNode node) {
-            return !node.isDaemon() && (CU.affinityNode(node, cacheFilter) || clientNodes.containsKey(node.id()));
+            return !node.isDaemon() && node.isActive() &&
+                (CU.affinityNode(node, cacheFilter) || clientNodes.containsKey(node.id()));
         }
 
         /**

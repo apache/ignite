@@ -413,6 +413,11 @@ public class GridDiscoverySelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
+        @Override public boolean isActive() {
+            return true;
+        }
+
+        /** {@inheritDoc} */
         @Override public Collection<String> hostNames() {
             return null;
         }

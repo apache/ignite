@@ -459,6 +459,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 if (CU.clientNode(discoEvt.eventNode()))
                     exchange = onClientNodeEvent(crdNode);
+                else if (!discoEvt.eventNode().isActive())
+                    exchange = ExchangeType.NONE;
                 else
                     exchange = onServerNodeEvent(crdNode);
             }

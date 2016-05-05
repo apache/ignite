@@ -158,6 +158,8 @@ public interface EventType {
      */
     public static final int EVT_NODE_SEGMENTED = 14;
 
+    public static final int EVT_NODE_ACTIVATED = 128;
+
     /**
      * Built-in event type: client node disconnected.
      * <p>
@@ -941,6 +943,7 @@ public interface EventType {
         EVT_NODE_FAILED,
         EVT_NODE_SEGMENTED,
         EVT_NODE_METRICS_UPDATED,
+        EVT_NODE_ACTIVATED,
         EVT_CLIENT_NODE_DISCONNECTED,
         EVT_CLIENT_NODE_RECONNECTED
     };
