@@ -30,6 +30,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.util.typedef.F;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
@@ -432,7 +433,7 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
         for (Object ignored : keys)
             itSize++;
 
-        int valsSize = cache.values().size();
+        int valsSize = F.size(cache.values().iterator());
 
         info("cacheSize=" + cacheSize + ", keysSize=" + keySetSize + ", valsSize=" + valsSize +
             ", itSize=" + itSize + ']');

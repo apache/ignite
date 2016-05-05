@@ -1058,6 +1058,40 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If any error occurs.
+     */
+    public void testJoinTimeoutForIpFinder() throws Exception {
+        try {
+            // This start will fail as expected.
+            Throwable t = GridTestUtils.assertThrows(log, new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    IgniteConfiguration c = getConfiguration("test-grid");
+
+                    TcpDiscoverySpi disco = (TcpDiscoverySpi)c.getDiscoverySpi();
+
+                    disco.setJoinTimeout(3000);
+                    disco.setIpFinder(
+                        new TcpDiscoveryVmIpFinder(true) {
+                            @Override public void initializeLocalAddresses(Collection<InetSocketAddress> addrs)
+                                throws IgniteSpiException {
+                                throw new IgniteSpiException("Test exception.");
+                            }
+                        });
+
+                    startGrid("test-grid", c);
+
+                    return null;
+                }
+            }, IgniteException.class, null);
+
+            assert X.hasCause(t, IgniteSpiException.class) : "Unexpected exception: " + t;
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testDirtyIpFinder() throws Exception {

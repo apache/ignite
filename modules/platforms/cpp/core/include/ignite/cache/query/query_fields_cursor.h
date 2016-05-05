@@ -20,15 +20,15 @@
  * Declares ignite::cache::query::QueryFieldsCursor class.
  */
 
-#ifndef _IGNITE_CACHE_QUERY_FIELDS_CURSOR
-#define _IGNITE_CACHE_QUERY_FIELDS_CURSOR
+#ifndef _IGNITE_CACHE_QUERY_QUERY_FIELDS_CURSOR
+#define _IGNITE_CACHE_QUERY_QUERY_FIELDS_CURSOR
 
 #include <vector>
 
 #include <ignite/common/concurrent.h>
+#include <ignite/ignite_error.h>
 
 #include "ignite/cache/cache_entry.h"
-#include "ignite/ignite_error.h"
 #include "ignite/cache/query/query_fields_row.h"
 #include "ignite/impl/cache/query/query_impl.h"
 #include "ignite/impl/operations.h"
@@ -155,4 +155,4 @@ namespace ignite
     }    
 }
 
-#endif
+#endif //_IGNITE_CACHE_QUERY_QUERY_FIELDS_CURSOR
