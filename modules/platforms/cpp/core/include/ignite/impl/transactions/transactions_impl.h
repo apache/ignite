@@ -21,10 +21,10 @@
 #include <ignite/common/concurrent.h>
 #include <ignite/jni/java.h>
 #include <ignite/transactions/transaction_consts.h>
+#include <ignite/transactions/transaction_metrics.h>
 
 #include <ignite/impl/interop/interop_target.h>
 #include <ignite/impl/ignite_environment.h>
-#include <ignite/impl/transactions/transaction_metrics_impl.h>
 
 namespace ignite 
 {
@@ -126,9 +126,9 @@ namespace ignite
                  * Get metrics.
                  *
                  * @param err Error.
-                 * @return Metrics instance on success and null on failure.
+                 * @return Metrics instance.
                  */
-                TransactionMetricsImpl* GetMetrics(IgniteError& err);
+                ignite::transactions::TransactionMetrics GetMetrics(IgniteError& err);
 
             private:
                 /**

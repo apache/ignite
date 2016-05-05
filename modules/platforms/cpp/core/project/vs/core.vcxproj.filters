@@ -135,9 +135,6 @@
     <ClInclude Include="..\..\include\ignite\transactions\transaction_metrics.h">
       <Filter>Code\transactions</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\include\ignite\impl\transactions\transaction_metrics_impl.h">
-      <Filter>Code\impl\transactions</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\include\ignite\impl\interop\interop_target.h">
       <Filter>Code\impl\interop</Filter>
     </ClInclude>

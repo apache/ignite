@@ -148,14 +148,14 @@ namespace ignite
             TransactionsImpl* txImpl = impl.Get();
 
             if (txImpl)
-                return TransactionMetrics(txImpl->GetMetrics(err));
+                return txImpl->GetMetrics(err);
             else
             {
                 err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                     "Instance is not usable (did you check for error?).");
             }
 
-            return TransactionMetrics(0);
+            return TransactionMetrics();
         }
     }
 }

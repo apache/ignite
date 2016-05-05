@@ -23,10 +23,9 @@
 #ifndef _IGNITE_TRANSACTIONS_TRANSACTION_METRICS
 #define _IGNITE_TRANSACTIONS_TRANSACTION_METRICS
 
-#include <ignite/common/concurrent.h>
-#include <ignite/jni/java.h>
+#include <stdint.h>
 
-#include "ignite/impl/transactions/transaction_metrics_impl.h"
+#include <ignite/timestamp.h>
 
 namespace ignite
 {
@@ -39,17 +38,129 @@ namespace ignite
         {
         public:
             /**
-             * Constructor.
+             * Default constructor.
              */
-            TransactionMetrics(impl::transactions::TransactionMetricsImpl* impl) :
-                impl(impl)
+            TransactionMetrics() :
+                valid(false),
+                commitTime(),
+                rollbackTime(),
+                commits(),
+                rollbacks()
+            {
+                // No-op.
+            }
+
+            /**
+             * Constructor.
+             *
+             * @param commitTime The last time transaction was committed.
+             * @param rollbackTime The last time transaction was rolled back.
+             * @param commits The total number of transaction commits.
+             * @param rollbacks The total number of transaction rollbacks.
+             */
+            TransactionMetrics(const Timestamp& commitTime,
+                const Timestamp& rollbackTime, int32_t commits, int32_t rollbacks) :
+                valid(true),
+                commitTime(commitTime),
+                rollbackTime(rollbackTime),
+                commits(commits),
+                rollbacks(rollbacks)
             {
                 //No-op.
             }
 
+            /**
+             * Copy constructor.
+             */
+            TransactionMetrics(const TransactionMetrics& other) :
+                valid(other.valid),
+                commitTime(other.commitTime),
+                rollbackTime(other.rollbackTime),
+                commits(other.commits),
+                rollbacks(other.rollbacks)
+            {
+                // No-op.
+            }
+
+            /**
+             * Assignment operator.
+             */
+            TransactionMetrics& operator=(const TransactionMetrics& other)
+            {
+                valid = other.valid;
+                commitTime = other.commitTime;
+                rollbackTime = other.rollbackTime;
+                commits = other.commits;
+                rollbacks = other.rollbacks;
+
+                return *this;
+            }
+
+            /**
+             * Get commit time.
+             *
+             * @return The last time transaction was committed.
+             */
+            const Timestamp& GetCommitTime() const
+            {
+                return commitTime;
+            }
+            
+            /**
+             * Get rollback time.
+             *
+             * @return The last time transaction was rolled back.
+             */
+            const Timestamp& GetRollbackTime() const
+            {
+                return rollbackTime;
+            }
+
+            /**
+             * Get the total number of transaction commits.
+             *
+             * @return The total number of transaction commits.
+             */
+            int32_t GetCommits() const
+            {
+                return commits;
+            }
+
+            /**
+             * Get the total number of transaction rollbacks.
+             *
+             * @return The total number of transaction rollbacks.
+             */
+            int32_t GetRollbacks() const
+            {
+                return rollbacks;
+            }
+
+            /**
+             * Check wheather the instance is valid.
+             *
+             * @return True if the instance contains valid data.
+             */
+            bool IsValid() const
+            {
+                return valid;
+            }
+
         private:
-            /** Implementation delegate. */
-            common::concurrent::SharedPointer<impl::transactions::TransactionMetricsImpl> impl;
+            /** Wheather instance is valid. */
+            bool valid;
+
+            /** The last time transaction was committed. */
+            Timestamp commitTime;
+
+            /** The last time transaction was rolled back. */
+            Timestamp rollbackTime;
+
+            /** The total number of transaction commits. */
+            int32_t commits;
+
+            /** The total number of transaction rollbacks. */
+            int32_t rollbacks;
         };
     }
 }

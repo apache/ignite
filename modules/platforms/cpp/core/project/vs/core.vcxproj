@@ -219,7 +219,6 @@
     <ClInclude Include="..\..\include\ignite\impl\operations.h" />
     <ClInclude Include="..\..\include\ignite\impl\transactions\transactions_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\transactions\transaction_impl.h" />
-    <ClInclude Include="..\..\include\ignite\impl\transactions\transaction_metrics_impl.h" />
     <ClInclude Include="..\..\include\ignite\transactions\transaction.h" />
     <ClInclude Include="..\..\include\ignite\transactions\transactions.h" />
     <ClInclude Include="..\..\include\ignite\transactions\transaction_consts.h" />

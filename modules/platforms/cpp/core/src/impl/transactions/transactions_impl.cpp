@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-#include "ignite/impl/interop/interop_memory.h"
 #include "ignite/impl/transactions/transactions_impl.h"
 
 using namespace ignite::jni::java;
@@ -107,16 +106,16 @@ namespace ignite
                 return ToTransactionState(state);
             }
 
-            TransactionMetricsImpl* TransactionsImpl::GetMetrics(IgniteError& err)
+            ignite::transactions::TransactionMetrics TransactionsImpl::GetMetrics(IgniteError& err)
             {
-                //Out4Operation<Timestamp, Timestamp, int32_t, int32_t> op;
+                Out4Operation<Timestamp, Timestamp, int32_t, int32_t> op;
 
-                //InOp(OP_METRICS, op, &err);
+                InOp(OP_METRICS, op, &err);
 
-                //if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
-                //    return new TransactionMetricsImpl(op.Get1(), op.Get2(), op.Get3(), op.Get4());
+                if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
+                    return ignite::transactions::TransactionMetrics(op.Get1(), op.Get2(), op.Get3(), op.Get4());
 
-                return 0;
+                return ignite::transactions::TransactionMetrics();
             }
 
             TransactionsImpl::TransactionState TransactionsImpl::ToTransactionState(int state)
@@ -139,8 +138,6 @@ namespace ignite
                         return IGNITE_TX_STATE_UNKNOWN;
                 }
             }
-
-            
         }
     }
 }
