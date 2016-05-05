@@ -785,21 +785,14 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cacheStartedLatch.countDown();
         }
 
-        if (!ctx.config().isDaemon())
-            ctx.marshallerContext().onMarshallerCacheStarted(ctx);
-
-        marshallerCache().context().preloader().initialRebalanceFuture().listen(new CIX1<IgniteInternalFuture<?>>() {
-            @Override public void applyx(IgniteInternalFuture<?> f) throws IgniteCheckedException {
-                ctx.marshallerContext().onMarshallerCachePreloaded(ctx);
-            }
-        });
-
         // Must call onKernalStart on shared managers after creation of fetched caches.
         for (GridCacheSharedManager<?, ?> mgr : sharedCtx.managers())
             mgr.onKernalStart(false);
 
         for (GridCacheAdapter<?, ?> cache : caches.values())
             onKernalStart(cache);
+
+        ctx.marshallerContext().onMarshallerCacheStarted(ctx);
 
         if (!ctx.config().isDaemon())
             ctx.cacheObjects().onUtilityCacheStarted();
