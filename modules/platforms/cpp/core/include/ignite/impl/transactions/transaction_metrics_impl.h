@@ -20,7 +20,7 @@
 
 #include <ignite/common/common.h>
 #include <ignite/common/concurrent.h>
-#include <ignite/common/java.h>
+#include <ignite/jni/java.h>
 
 namespace ignite
 {

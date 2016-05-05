@@ -18,7 +18,7 @@
 #include "ignite/impl/transactions/transactions_impl.h"
 #include "ignite/impl/transactions/transaction_impl.h"
 
-using namespace ignite::common::java;
+using namespace ignite::jni::java;
 using namespace ignite::transactions;
 
 namespace ignite 

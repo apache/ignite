@@ -19,12 +19,11 @@
 #define _IGNITE_IMPL_TRANSACTIONS_TRANSACTIONS_IMPL
 
 #include <ignite/common/concurrent.h>
-#include <ignite/common/java.h>
+#include <ignite/jni/java.h>
 #include <ignite/transactions/transaction_consts.h>
 
 #include <ignite/impl/interop/interop_target.h>
 #include <ignite/impl/ignite_environment.h>
-#include <ignite/impl/utils.h>
 #include <ignite/impl/transactions/transaction_metrics_impl.h>
 
 namespace ignite 

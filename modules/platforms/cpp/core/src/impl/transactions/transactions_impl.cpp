@@ -18,7 +18,8 @@
 #include "ignite/impl/interop/interop_memory.h"
 #include "ignite/impl/transactions/transactions_impl.h"
 
-using namespace ignite::common::java;
+using namespace ignite::jni::java;
+using namespace ignite::java;
 
 namespace ignite 
 {

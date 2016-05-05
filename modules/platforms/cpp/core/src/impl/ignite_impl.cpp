@@ -56,7 +56,7 @@ namespace ignite
 
                 if (!txImpl.Get())
                 {
-                    ignite::common::java::JniErrorInfo jniErr;
+                    ignite::jni::java::JniErrorInfo jniErr;
 
                     jobject txJavaRef = env.Get()->Context()->ProcessorTransactions(javaRef, &jniErr);
 

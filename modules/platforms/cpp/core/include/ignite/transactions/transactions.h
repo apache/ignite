@@ -24,7 +24,7 @@
 #define _IGNITE_TRANSACTIONS_TRANSACTIONS
 
 #include <ignite/common/concurrent.h>
-#include <ignite/common/java.h>
+#include <ignite/jni/java.h>
 
 #include "ignite/transactions/transaction.h"
 #include "ignite/transactions/transaction_metrics.h"
