@@ -359,7 +359,6 @@ namespace ignite
 
             IGNITE_NO_COPY_ASSIGNMENT(Out2Operation)
         };
-        
 
         /**
          * Output operation returning four objects.

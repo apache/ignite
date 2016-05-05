@@ -75,6 +75,19 @@ struct TransactionsTestSuiteFixture {
 
 BOOST_FIXTURE_TEST_SUITE(TransactionsTestSuite, TransactionsTestSuiteFixture)
 
+BOOST_AUTO_TEST_CASE(TransactionsMetrics)
+{
+    Cache<int, int> cache = grid.GetCache<int, int>("partitioned");
+
+    Transactions transactions = grid.GetTransactions();
+
+    TransactionMetrics metrics = transactions.GetMetrics();
+    BOOST_REQUIRE(metrics.IsValid());
+
+    BOOST_CHECK_EQUAL(0, metrics.GetCommits());
+    BOOST_CHECK_EQUAL(0, metrics.GetRollbacks());
+}
+
 BOOST_AUTO_TEST_CASE(TransactionCommit)
 {
     Cache<int, int> cache = grid.GetCache<int, int>("partitioned");

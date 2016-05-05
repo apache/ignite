@@ -19,6 +19,7 @@
 
 using namespace ignite::jni::java;
 using namespace ignite::java;
+using namespace ignite::transactions;
 
 namespace ignite 
 {
@@ -115,14 +116,55 @@ namespace ignite
                 return ToTransactionState(state);
             }
 
-            ignite::transactions::TransactionMetrics TransactionsImpl::GetMetrics(IgniteError& err)
+            /**
+             * Output operation for Metrics.
+             */
+            class OutTransactionMetricsOperation : public OutputOperation
             {
-                Out4Operation<Timestamp, Timestamp, int32_t, int32_t> op;
+            public:
+                /**
+                 * Constructor.
+                 */
+                OutTransactionMetricsOperation()
+                {
+                    // No-op.
+                }
+
+                virtual void ProcessOutput(ignite::impl::binary::BinaryReaderImpl& reader)
+                {
+                    Timestamp commitTime = reader.ReadTopObject<Timestamp>();
+                    Timestamp rollbackTime = reader.ReadTopObject<Timestamp>();
+                    int32_t commits = reader.ReadInt32();
+                    int32_t rollbacks = reader.ReadInt32();
+
+                    val = TransactionMetrics(commitTime, rollbackTime, commits, rollbacks);
+                }
+
+                /**
+                 * Get value.
+                 *
+                 * @return Value.
+                 */
+                TransactionMetrics& Get()
+                {
+                    return val;
+                }
+
+            private:
+                /** Value */
+                TransactionMetrics val;
+
+                IGNITE_NO_COPY_ASSIGNMENT(OutTransactionMetricsOperation)
+            };
+
+            TransactionMetrics TransactionsImpl::GetMetrics(IgniteError& err)
+            {
+                OutTransactionMetricsOperation op;
 
                 InOp(OP_METRICS, op, &err);
 
                 if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
-                    return ignite::transactions::TransactionMetrics(op.Get1(), op.Get2(), op.Get3(), op.Get4());
+                    return op.Get();
 
                 return ignite::transactions::TransactionMetrics();
             }
