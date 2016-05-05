@@ -15,16 +15,16 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL
-#define _IGNITE_IMPL
+#ifndef _IGNITE_IMPL_IGNITE_IMPL
+#define _IGNITE_IMPL_IGNITE_IMPL
 
 #include <ignite/common/concurrent.h>
-#include <ignite/common/java.h>
+#include <ignite/jni/java.h>
+#include <ignite/common/utils.h>
 
 #include "ignite/impl/cache/cache_impl.h"
 #include "ignite/impl/transactions/transactions_impl.h"
 #include "ignite/impl/ignite_environment.h"
-#include "ignite/impl/utils.h"
 
 namespace ignite 
 {
@@ -63,7 +63,7 @@ namespace ignite
              *
              * @return JNI context for this instance.
              */
-            common::java::JniContext* GetContext();
+            jni::java::JniContext* GetContext();
 
             /**
              * Get cache.
@@ -74,7 +74,7 @@ namespace ignite
             template<typename K, typename V> 
             cache::CacheImpl* GetCache(const char* name, IgniteError& err)
             {
-                ignite::common::java::JniErrorInfo jniErr;
+                ignite::jni::java::JniErrorInfo jniErr;
 
                 jobject cacheJavaRef = env.Get()->Context()->ProcessorCache(javaRef, name, &jniErr);
 
@@ -85,7 +85,7 @@ namespace ignite
                     return NULL;
                 }
 
-                char* name0 = utils::CopyChars(name);
+                char* name0 = common::CopyChars(name);
 
                 return new cache::CacheImpl(name0, env, cacheJavaRef);
             }
@@ -99,7 +99,7 @@ namespace ignite
             template<typename K, typename V>
             cache::CacheImpl* GetOrCreateCache(const char* name, IgniteError& err)
             {
-                ignite::common::java::JniErrorInfo jniErr;
+                ignite::jni::java::JniErrorInfo jniErr;
 
                 jobject cacheJavaRef = env.Get()->Context()->ProcessorGetOrCreateCache(javaRef, name, &jniErr);
 
@@ -110,7 +110,7 @@ namespace ignite
                     return NULL;
                 }
 
-                char* name0 = utils::CopyChars(name);
+                char* name0 = common::CopyChars(name);
 
                 return new cache::CacheImpl(name0, env, cacheJavaRef);
             }
@@ -124,7 +124,7 @@ namespace ignite
             template<typename K, typename V>
             cache::CacheImpl* CreateCache(const char* name, IgniteError& err)
             {
-                ignite::common::java::JniErrorInfo jniErr;
+                ignite::jni::java::JniErrorInfo jniErr;
 
                 jobject cacheJavaRef = env.Get()->Context()->ProcessorCreateCache(javaRef, name, &jniErr);
 
@@ -135,7 +135,7 @@ namespace ignite
                     return NULL;
                 }
 
-                char* name0 = utils::CopyChars(name);
+                char* name0 = common::CopyChars(name);
 
                 return new cache::CacheImpl(name0, env, cacheJavaRef);
             }
@@ -175,4 +175,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_IMPL_IGNITE_IMPL

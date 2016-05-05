@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_COMMON_OS
-#define _IGNITE_COMMON_OS
+#ifndef _IGNITE_COMMON_COMMON
+#define _IGNITE_COMMON_COMMON
 
 #ifndef __has_attribute
 #   define __has_attribute(x) 0
@@ -50,38 +50,5 @@
 #define IGNITE_NO_COPY_ASSIGNMENT(cls) \
     cls(const cls& src); \
     cls& operator= (const cls& other);
-
-namespace ignite
-{
-    namespace common
-    {
-        /**
-         * Helper class to manage attached threads.
-         */
-        class AttachHelper 
-        {
-        public:            
-            /**
-             * Destructor.
-             */
-            ~AttachHelper();
-            
-            /**
-             * Callback invoked on successful thread attach ot JVM.
-             */
-            static void OnThreadAttach();
-        private:
-            /**
-             * Helper method to allocate attach key.
-             */
-            static void AllocateAttachKey();
-
-            /**
-             * Attach key destructor.
-             */
-            static void DestroyAttachKey(void* key);
-        };        
-    }
-}
 
 #endif

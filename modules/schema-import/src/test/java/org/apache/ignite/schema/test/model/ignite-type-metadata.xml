@@ -169,6 +169,14 @@
                                 <property name="javaFieldType" value="java.lang.Object"/>
                                 <property name="javaFieldName" value="arrcol"/>
                             </bean>
+                            <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                <property name="databaseFieldType">
+                                    <util:constant static-field="java.sql.Types.VARCHAR"/>
+                                </property>
+                                <property name="databaseFieldName" value="FIELD_WITH_ALIAS"/>
+                                <property name="javaFieldType" value="java.lang.String"/>
+                                <property name="javaFieldName" value="fieldWithAlias"/>
+                            </bean>
                         </list>
                     </property>
                 </bean>
@@ -310,6 +318,14 @@
                                 <property name="databaseFieldName" value="ARRCOL"/>
                                 <property name="javaFieldType" value="java.lang.Object"/>
                                 <property name="javaFieldName" value="arrcol"/>
+                            </bean>
+                            <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                <property name="databaseFieldType">
+                                    <util:constant static-field="java.sql.Types.VARCHAR"/>
+                                </property>
+                                <property name="databaseFieldName" value="FIELD_WITH_ALIAS"/>
+                                <property name="javaFieldType" value="java.lang.String"/>
+                                <property name="javaFieldName" value="fieldWithAlias"/>
                             </bean>
                         </list>
                     </property>
@@ -453,6 +469,14 @@
                                 <property name="javaFieldType" value="java.lang.Object"/>
                                 <property name="javaFieldName" value="arrcol"/>
                             </bean>
+                            <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                <property name="databaseFieldType">
+                                    <util:constant static-field="java.sql.Types.VARCHAR"/>
+                                </property>
+                                <property name="databaseFieldName" value="FIELD_WITH_ALIAS"/>
+                                <property name="javaFieldType" value="java.lang.String"/>
+                                <property name="javaFieldName" value="fieldWithAlias"/>
+                            </bean>
                         </list>
                     </property>
                 </bean>
@@ -479,6 +503,12 @@
                 <entry key="timecol" value="java.sql.Time"/>
                 <entry key="tscol" value="java.sql.Timestamp"/>
                 <entry key="arrcol" value="java.lang.Object"/>
+                <entry key="fieldWithAlias" value="java.lang.String"/>
+            </util:map>
+        </property>
+        <property name="aliases">
+            <util:map map-class="java.util.LinkedHashMap">
+                <entry key="fieldWithAlias" value="FIELD_WITH_ALIAS"/>
             </util:map>
         </property>
         <property name="indexes">
@@ -517,6 +547,12 @@
                 <entry key="timecol" value="java.sql.Time"/>
                 <entry key="tscol" value="java.sql.Timestamp"/>
                 <entry key="arrcol" value="java.lang.Object"/>
+                <entry key="fieldWithAlias" value="java.lang.String"/>
+            </util:map>
+        </property>
+        <property name="aliases">
+            <util:map map-class="java.util.LinkedHashMap">
+                <entry key="fieldWithAlias" value="FIELD_WITH_ALIAS"/>
             </util:map>
         </property>
         <property name="indexes">
@@ -555,6 +591,12 @@
                 <entry key="timecol" value="java.sql.Time"/>
                 <entry key="tscol" value="java.sql.Timestamp"/>
                 <entry key="arrcol" value="java.lang.Object"/>
+                <entry key="fieldWithAlias" value="java.lang.String"/>
+            </util:map>
+        </property>
+        <property name="aliases">
+            <util:map map-class="java.util.LinkedHashMap">
+                <entry key="fieldWithAlias" value="FIELD_WITH_ALIAS"/>
             </util:map>
         </property>
         <property name="indexes">

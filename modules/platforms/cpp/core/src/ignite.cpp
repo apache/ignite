@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-#include <ignite/common/java.h>
+#include <ignite/jni/java.h>
 
 #include "ignite/impl/ignite_impl.h"
 #include "ignite/ignite.h"

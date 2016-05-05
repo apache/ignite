@@ -476,6 +476,30 @@ BOOST_AUTO_TEST_CASE(TestGetOrCreateCache)
     BOOST_REQUIRE(7 == cache2.Get(5));
 }
 
+BOOST_AUTO_TEST_CASE(TestPutGetDate)
+{
+    // Get existing cache
+    cache::Cache<int, Date> cache = grid0.GetOrCreateCache<int, Date>("partitioned");
+
+    Date now = Date(time(NULL) * 1000);
+
+    cache.Put(5, now);
+
+    BOOST_REQUIRE(now == cache.Get(5));
+}
+
+BOOST_AUTO_TEST_CASE(TestPutGetTimestamp)
+{
+    // Get existing cache
+    cache::Cache<int, Timestamp> cache = grid0.GetOrCreateCache<int, Timestamp>("partitioned");
+
+    Timestamp now = Timestamp(time(NULL), 0);
+
+    cache.Put(42, now);
+
+    BOOST_REQUIRE(now == cache.Get(42));
+}
+
 BOOST_AUTO_TEST_CASE(TestGetBigString)
 {
     // Get existing cache

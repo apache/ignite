@@ -267,6 +267,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
             var count = reader.ReadInt();
             QueryEntities = count == 0 ? null : Enumerable.Range(0, count).Select(x => new QueryEntity(reader)).ToList();
+
+            NearConfiguration = reader.ReadBoolean() ? new NearCacheConfiguration(reader) : null;
         }
 
         /// <summary>
@@ -329,6 +331,14 @@ namespace Apache.Ignite.Core.Cache.Configuration
             }
             else
                 writer.WriteInt(0);
+
+            if (NearConfiguration != null)
+            {
+                writer.WriteBoolean(true);
+                NearConfiguration.Write(writer);
+            }
+            else
+                writer.WriteBoolean(false);
         }
 
         /// <summary>
@@ -633,5 +643,10 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         [SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public ICollection<QueryEntity> QueryEntities { get; set; }
+
+        /// <summary>
+        /// Gets or sets the near cache configuration.
+        /// </summary>
+        public NearCacheConfiguration NearConfiguration { get; set; }
     }
 }
