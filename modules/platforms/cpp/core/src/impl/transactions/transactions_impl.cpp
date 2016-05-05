@@ -26,6 +26,15 @@ namespace ignite
     {
         namespace transactions
         {
+            /**
+             * Transaction opertion.
+             */
+            enum Operation
+            {
+                /** Get metrics operation. */
+                OP_METRICS = 2
+            };
+
             TransactionsImpl::TransactionsImpl(IgniteEnvSharedPtr env, jobject javaRef) :
                 InteropTarget(env, javaRef)
             {

@@ -18,8 +18,8 @@
 #ifndef _IGNITE_IMPL_INTEROP_INTEROP_TARGET
 #define _IGNITE_IMPL_INTEROP_INTEROP_TARGET
 
-#include "ignite/impl/ignite_environment.h"
-#include "ignite/impl/operations.h"
+#include <ignite/impl/ignite_environment.h>
+#include <ignite/impl/operations.h>
 
 namespace ignite
 {    
@@ -77,6 +77,16 @@ namespace ignite
                 void OutInOp(int32_t opType, InputOperation& inOp, OutputOperation& outOp,
                     IgniteError* err);
 
+                /**
+                 * Get environment shared pointer.
+                 *
+                 * @return Environment shared pointer.
+                 */
+                ignite::common::concurrent::SharedPointer<IgniteEnvironment> GetEnvironmentPointer()
+                {
+                    return env;
+                }
+
             protected:
                 /**
                  * Get raw target.
@@ -89,9 +99,9 @@ namespace ignite
                 }
 
                 /**
-                 * Get environment shared pointer.
+                 * Get environment reference.
                  *
-                 * @return Environment shared pointer.
+                 * @return Environment reference.
                  */
                 IgniteEnvironment& GetEnvironment()
                 {

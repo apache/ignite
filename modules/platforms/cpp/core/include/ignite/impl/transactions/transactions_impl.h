@@ -24,7 +24,6 @@
 #include <ignite/transactions/transaction_metrics.h>
 
 #include <ignite/impl/interop/interop_target.h>
-#include <ignite/impl/ignite_environment.h>
 
 namespace ignite 
 {
@@ -32,15 +31,6 @@ namespace ignite
     {
         namespace transactions
         {
-            /**
-             * Transaction opertion.
-             */
-            enum Operation
-            {
-                /** Get metrics operation. */
-                OP_METRICS = 2
-            };
-
             /**
              * Transactions implementation.
              */

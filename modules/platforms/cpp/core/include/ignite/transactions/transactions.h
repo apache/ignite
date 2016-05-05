@@ -158,6 +158,8 @@ namespace ignite
              *
              * @param err Error.
              * @return Metrics instance.
+             * Returned instance is not valid if an error occurred during
+             * the operation.
              */
             TransactionMetrics GetMetrics(IgniteError& err);
 
