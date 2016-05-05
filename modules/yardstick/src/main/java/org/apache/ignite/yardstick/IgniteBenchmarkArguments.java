@@ -153,7 +153,7 @@ public class IgniteBenchmarkArguments {
     private boolean printPartStats;
 
     /** */
-    @Parameter(names = "--allow-operation", description = "List of cache operations")
+    @Parameter(names = "--allow-operation", variableArity = true, description = "List of cache operations")
     private List<String> allowOperations = new ArrayList<>();
 
     /**

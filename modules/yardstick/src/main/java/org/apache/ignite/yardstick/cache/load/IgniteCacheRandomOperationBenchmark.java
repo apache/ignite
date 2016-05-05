@@ -161,7 +161,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     @Override public void tearDown() throws Exception {
         BenchmarkUtils.println("Benchmark statistics");
         for (String cacheName : ignite().cacheNames()) {
-            BenchmarkUtils.println(cacheName);
+            BenchmarkUtils.println(String.format("Operations over cache '%s'", cacheName));
             for (Operation op : Operation.values())
                 BenchmarkUtils.println(cfg, String.format("%s: %s", op,
                     operationStatistics.get(String.format("%s_%s", op, cacheName))));
