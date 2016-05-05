@@ -219,7 +219,6 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
         ccfg.setCacheMode(cacheMode());
         ccfg.setAtomicityMode(atomicityMode());
         ccfg.setRebalanceMode(SYNC);
-        ccfg.setSwapEnabled(false);
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setEvictionPolicy(null);
 

@@ -427,7 +427,9 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
      * @return {@code True} if swap is enabled.
      */
     protected boolean swapEnabled() {
-        return cacheConfiguration().isSwapEnabled();
+        return false;
+        // TODO GG-10884.
+        // return cacheConfiguration().isSwapEnabled();
     }
 
     /**

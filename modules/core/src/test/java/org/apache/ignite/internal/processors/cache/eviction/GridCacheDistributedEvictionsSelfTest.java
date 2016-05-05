@@ -86,8 +86,6 @@ public class GridCacheDistributedEvictionsSelfTest extends GridCommonAbstractTes
             cc.setNearConfiguration(nearCfg);
         }
 
-        cc.setSwapEnabled(false);
-
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
         // Set only DHT policy, leave default near policy.

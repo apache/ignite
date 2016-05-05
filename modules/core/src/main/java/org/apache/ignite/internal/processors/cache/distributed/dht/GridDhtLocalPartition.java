@@ -583,36 +583,34 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * Clears swap entries for evicted partition.
      */
     private void clearSwap() {
-        if (true) // TODO GG-10884.
-            return;
-
-        assert state() == EVICTED;
-        assert !GridQueryProcessor.isEnabled(cctx.config()) : "Indexing needs to have unswapped values.";
-
-        try {
-            GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> it = cctx.swap().iterator(id);
-
-            boolean isLocStore = cctx.store().isLocal();
-
-            if (it != null) {
-                // We can safely remove these values because no entries will be created for evicted partition.
-                while (it.hasNext()) {
-                    Map.Entry<byte[], GridCacheSwapEntry> entry = it.next();
-
-                    byte[] keyBytes = entry.getKey();
-
-                    KeyCacheObject key = cctx.toCacheKeyObject(keyBytes);
-
-                    cctx.swap().remove(key);
-
-                    if (isLocStore)
-                        cctx.store().remove(null, key);
-                }
-            }
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to clear swap for evicted partition: " + this, e);
-        }
+// TODO GG-10884.
+//        assert state() == EVICTED;
+//        assert !GridQueryProcessor.isEnabled(cctx.config()) : "Indexing needs to have unswapped values.";
+//
+//        try {
+//            GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> it = cctx.swap().iterator(id);
+//
+//            boolean isLocStore = cctx.store().isLocal();
+//
+//            if (it != null) {
+//                // We can safely remove these values because no entries will be created for evicted partition.
+//                while (it.hasNext()) {
+//                    Map.Entry<byte[], GridCacheSwapEntry> entry = it.next();
+//
+//                    byte[] keyBytes = entry.getKey();
+//
+//                    KeyCacheObject key = cctx.toCacheKeyObject(keyBytes);
+//
+//                    cctx.swap().remove(key);
+//
+//                    if (isLocStore)
+//                        cctx.store().remove(null, key);
+//                }
+//            }
+//        }
+//        catch (IgniteCheckedException e) {
+//            U.error(log, "Failed to clear swap for evicted partition: " + this, e);
+//        }
     }
 
     /**

@@ -1668,8 +1668,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         if (schemas.putIfAbsent(schema, new Schema(
             ccfg.getName(),
             schema,
-            ccfg.getOffHeapMaxMemory() >= 0 || ccfg.getMemoryMode() == CacheMemoryMode.OFFHEAP_TIERED ?
-                new GridUnsafeMemory(0) : null,
+            ccfg.getOffHeapMaxMemory() >= 0 ? new GridUnsafeMemory(0) : null,
             ctx.config().getDatabaseConfiguration() != null,
             ccfg)) != null)
             throw new IgniteCheckedException("Schema for cache already registered: " + U.maskName(ccfg.getName()));
@@ -2521,7 +2520,10 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 props[i] = p;
             }
 
-            preferSwapVal = schema.ccfg.getMemoryMode() == CacheMemoryMode.OFFHEAP_TIERED;
+            // TODO GG-10884.
+//            preferSwapVal = schema.ccfg.getMemoryMode() == CacheMemoryMode.OFFHEAP_TIERED;
+            preferSwapVal = true;
+
             snapshotableIdx = schema.ccfg.isSnapshotableIndex() || schema.offheap != null;
         }
 
@@ -2657,19 +2659,21 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public Object readFromSwap(Object key) throws IgniteCheckedException {
-            IgniteInternalCache<Object, ?> cache = ctx.cache().cache(schema.spaceName);
-
-            GridCacheContext cctx = cache.context();
-
-            if (cctx.isNear())
-                cctx = cctx.near().dht().context();
-
-            CacheObject v = cctx.swap().readValue(cctx.toCacheKeyObject(key), true, true);
-
-            if (v == null)
-                return null;
-
-            return v;
+            return null;
+// TODO GG-10884.
+//            IgniteInternalCache<Object, ?> cache = ctx.cache().cache(schema.spaceName);
+//
+//            GridCacheContext cctx = cache.context();
+//
+//            if (cctx.isNear())
+//                cctx = cctx.near().dht().context();
+//
+//            CacheObject v = cctx.swap().readValue(cctx.toCacheKeyObject(key), true, true);
+//
+//            if (v == null)
+//                return null;
+//
+//            return v;
         }
 
         /** {@inheritDoc} */

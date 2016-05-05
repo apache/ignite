@@ -367,6 +367,11 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
         return 0;
     }
 
+    // TODO GG-10884: moved from GridCacheSwapManager.
+    void writeAll(Iterable<GridCacheBatchSwapEntry> swapped) throws IgniteCheckedException {
+
+    }
+
     /**
      * @param primary {@code True} if need return primary entries.
      * @param backup {@code True} if need return backup entries.

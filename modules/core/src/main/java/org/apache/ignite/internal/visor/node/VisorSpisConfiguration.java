@@ -153,7 +153,6 @@ public class VisorSpisConfiguration implements Serializable {
         cfg.cpSpis = collectSpiInfo(c.getCheckpointSpi());
         cfg.failSpis = collectSpiInfo(c.getFailoverSpi());
         cfg.loadBalancingSpis = collectSpiInfo(c.getLoadBalancingSpi());
-        cfg.swapSpaceSpis = collectSpiInfo(c.getSwapSpaceSpi());
         cfg.indexingSpis = F.asArray(collectSpiInfo(c.getIndexingSpi()));
 
         return cfg;

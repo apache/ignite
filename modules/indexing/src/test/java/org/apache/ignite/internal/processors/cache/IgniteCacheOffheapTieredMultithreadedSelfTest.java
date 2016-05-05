@@ -65,7 +65,6 @@ public class IgniteCacheOffheapTieredMultithreadedSelfTest extends GridCommonAbs
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setAtomicityMode(ATOMIC);
-        cacheCfg.setSwapEnabled(false);
         cacheCfg.setBackups(1);
         cacheCfg.setMemoryMode(CacheMemoryMode.OFFHEAP_TIERED);
         cacheCfg.setIndexedTypes(

@@ -33,7 +33,6 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -67,8 +66,6 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
-
         cfg.setCacheConfiguration(cacheConfiguration(ATOMIC_CACHE_NAME, ATOMIC),
             cacheConfiguration(TRANSACTIONAL_CACHE_NAME, TRANSACTIONAL));
 
@@ -84,8 +81,6 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setName(name);
-
-        ccfg.setSwapEnabled(true);
 
         ccfg.setMemoryMode(OFFHEAP_TIERED);
 
