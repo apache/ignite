@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#include "ignite/impl/interop/interop_memory.h"
 #include "ignite/impl/transactions/transactions_impl.h"
 
 using namespace ignite::common::java;
@@ -26,15 +27,14 @@ namespace ignite
         namespace transactions
         {
             TransactionsImpl::TransactionsImpl(IgniteEnvSharedPtr env, jobject javaRef) :
-                env(env),
-                javaRef(javaRef)
+                InteropTarget(env, javaRef)
             {
                 // No-op.
             }
 
             TransactionsImpl::~TransactionsImpl()
             {
-                JniContext::Release(javaRef);
+                // No-op.
             }
 
             int64_t TransactionsImpl::TxStart(int concurrency, int isolation,
@@ -42,7 +42,7 @@ namespace ignite
             {
                 JniErrorInfo jniErr;
 
-                int64_t id = env.Get()->Context()->TransactionsStart(javaRef,
+                int64_t id = GetEnvironment().Context()->TransactionsStart(GetTarget(),
                     concurrency, isolation, timeout, txSize, &jniErr);
 
                 if (jniErr.code != IGNITE_JNI_ERR_SUCCESS)
@@ -55,7 +55,7 @@ namespace ignite
             {
                 JniErrorInfo jniErr;
 
-                int state = env.Get()->Context()->TransactionsCommit(javaRef, id, &jniErr);
+                int state = GetEnvironment().Context()->TransactionsCommit(GetTarget(), id, &jniErr);
 
                 if (jniErr.code != IGNITE_JNI_ERR_SUCCESS)
                     IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
@@ -67,7 +67,7 @@ namespace ignite
             {
                 JniErrorInfo jniErr;
 
-                int state = env.Get()->Context()->TransactionsRollback(javaRef, id, &jniErr);
+                int state = GetEnvironment().Context()->TransactionsRollback(GetTarget(), id, &jniErr);
 
                 if (jniErr.code != IGNITE_JNI_ERR_SUCCESS)
                     IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
@@ -79,7 +79,7 @@ namespace ignite
             {
                 JniErrorInfo jniErr;
 
-                int state = env.Get()->Context()->TransactionsClose(javaRef, id, &jniErr);
+                int state = GetEnvironment().Context()->TransactionsClose(GetTarget(), id, &jniErr);
 
                 if (jniErr.code != IGNITE_JNI_ERR_SUCCESS)
                     IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
@@ -91,7 +91,7 @@ namespace ignite
             {
                 JniErrorInfo jniErr;
 
-                bool rollbackOnly = env.Get()->Context()->TransactionsSetRollbackOnly(javaRef, id, &jniErr);
+                bool rollbackOnly = GetEnvironment().Context()->TransactionsSetRollbackOnly(GetTarget(), id, &jniErr);
 
                 if (jniErr.code != IGNITE_JNI_ERR_SUCCESS)
                     IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
@@ -101,9 +101,21 @@ namespace ignite
 
             TransactionsImpl::TransactionState TransactionsImpl::TxState(int64_t id)
             {
-                int state = env.Get()->Context()->TransactionsState(javaRef, id);
+                int state = GetEnvironment().Context()->TransactionsState(GetTarget(), id);
 
                 return ToTransactionState(state);
+            }
+
+            TransactionMetricsImpl* TransactionsImpl::GetMetrics(IgniteError& err)
+            {
+                //Out4Operation<Timestamp, Timestamp, int32_t, int32_t> op;
+
+                //InOp(OP_METRICS, op, &err);
+
+                //if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
+                //    return new TransactionMetricsImpl(op.Get1(), op.Get2(), op.Get3(), op.Get4());
+
+                return 0;
             }
 
             TransactionsImpl::TransactionState TransactionsImpl::ToTransactionState(int state)
@@ -126,6 +138,8 @@ namespace ignite
                         return IGNITE_TX_STATE_UNKNOWN;
                 }
             }
+
+            
         }
     }
 }

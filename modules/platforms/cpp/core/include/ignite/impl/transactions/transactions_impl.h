@@ -22,9 +22,10 @@
 #include <ignite/common/java.h>
 #include <ignite/transactions/transaction_consts.h>
 
-#include "ignite/impl/cache/cache_impl.h"
-#include "ignite/impl/ignite_environment.h"
-#include "ignite/impl/utils.h"
+#include <ignite/impl/interop/interop_target.h>
+#include <ignite/impl/ignite_environment.h>
+#include <ignite/impl/utils.h>
+#include <ignite/impl/transactions/transaction_metrics_impl.h>
 
 namespace ignite 
 {
@@ -33,9 +34,18 @@ namespace ignite
         namespace transactions
         {
             /**
+             * Transaction opertion.
+             */
+            enum Operation
+            {
+                /** Get metrics operation. */
+                OP_METRICS = 2
+            };
+
+            /**
              * Transactions implementation.
              */
-            class IGNITE_FRIEND_EXPORT TransactionsImpl
+            class IGNITE_FRIEND_EXPORT TransactionsImpl : private interop::InteropTarget
             {
                 typedef ignite::common::concurrent::SharedPointer<ignite::impl::IgniteEnvironment> IgniteEnvSharedPtr;
                 typedef ignite::transactions::TransactionState TransactionState;
@@ -113,6 +123,14 @@ namespace ignite
                  */
                 TransactionState TxState(int64_t id);
 
+                /**
+                 * Get metrics.
+                 *
+                 * @param err Error.
+                 * @return Metrics instance on success and null on failure.
+                 */
+                TransactionMetricsImpl* GetMetrics(IgniteError& err);
+
             private:
                 /**
                  * Convert integer state constant to that of the TransactionState.
@@ -121,12 +139,6 @@ namespace ignite
                  * @return TransactionState constant.
                  */
                 TransactionState ToTransactionState(int state);
-
-                /** Environment. */
-                IgniteEnvSharedPtr env;
-
-                /** Native Java counterpart. */
-                jobject javaRef;
 
                 IGNITE_NO_COPY_ASSIGNMENT(TransactionsImpl)
             };

@@ -131,5 +131,31 @@ namespace ignite
 
             return Transaction(tx);
         }
+
+        TransactionMetrics Transactions::GetMetrics()
+        {
+            IgniteError err;
+
+            TransactionMetrics metrics = GetMetrics(err);
+
+            IgniteError::ThrowIfNeeded(err);
+
+            return metrics;
+        }
+
+        TransactionMetrics Transactions::GetMetrics(IgniteError& err)
+        {
+            TransactionsImpl* txImpl = impl.Get();
+
+            if (txImpl)
+                return TransactionMetrics(txImpl->GetMetrics(err));
+            else
+            {
+                err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                    "Instance is not usable (did you check for error?).");
+            }
+
+            return TransactionMetrics(0);
+        }
     }
 }

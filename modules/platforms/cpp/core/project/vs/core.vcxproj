@@ -216,6 +216,7 @@
     <ClInclude Include="..\..\include\ignite\impl\interop\interop_memory.h" />
     <ClInclude Include="..\..\include\ignite\impl\interop\interop_output_stream.h" />
     <ClInclude Include="..\..\include\ignite\impl\interop\interop_stream_position_guard.h" />
+    <ClInclude Include="..\..\include\ignite\impl\interop\interop_target.h" />
     <ClInclude Include="..\..\include\ignite\impl\operations.h" />
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_common.h" />
     <ClInclude Include="..\..\include\ignite\impl\binary\binary_id_resolver.h" />
@@ -238,9 +239,11 @@
     <ClInclude Include="..\..\include\ignite\binary\binary_writer.h" />
     <ClInclude Include="..\..\include\ignite\impl\transactions\transactions_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\transactions\transaction_impl.h" />
+    <ClInclude Include="..\..\include\ignite\impl\transactions\transaction_metrics_impl.h" />
     <ClInclude Include="..\..\include\ignite\transactions\transaction.h" />
     <ClInclude Include="..\..\include\ignite\transactions\transactions.h" />
     <ClInclude Include="..\..\include\ignite\transactions\transaction_consts.h" />
+    <ClInclude Include="..\..\include\ignite\transactions\transaction_metrics.h" />
     <ClInclude Include="..\..\os\win\include\ignite\impl\utils.h" />
   </ItemGroup>
   <ItemGroup>
@@ -272,6 +275,7 @@
     <ClCompile Include="..\..\src\binary\binary_raw_writer.cpp" />
     <ClCompile Include="..\..\src\binary\binary_reader.cpp" />
     <ClCompile Include="..\..\src\binary\binary_writer.cpp" />
+    <ClCompile Include="..\..\src\impl\interop\interop_target.cpp" />
     <ClCompile Include="..\..\src\impl\transactions\transactions_impl.cpp" />
     <ClCompile Include="..\..\src\impl\transactions\transaction_impl.cpp" />
     <ClCompile Include="..\..\src\transactions\transaction.cpp" />

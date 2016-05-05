@@ -27,6 +27,7 @@
 #include <ignite/common/java.h>
 
 #include "ignite/transactions/transaction.h"
+#include "ignite/transactions/transaction_metrics.h"
 #include "ignite/impl/transactions/transactions_impl.h"
 
 namespace ignite
@@ -144,6 +145,21 @@ namespace ignite
             Transaction TxStart(TransactionConcurrency concurrency,
                 TransactionIsolation isolation, int64_t timeout,
                 int32_t txSize, IgniteError& err);
+
+            /**
+             * Get metrics.
+             *
+             * @return Metrics instance.
+             */
+            TransactionMetrics GetMetrics();
+
+            /**
+             * Get metrics.
+             *
+             * @param err Error.
+             * @return Metrics instance.
+             */
+            TransactionMetrics GetMetrics(IgniteError& err);
 
         private:
             /** Implementation delegate. */

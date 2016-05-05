@@ -34,7 +34,7 @@ namespace ignite
     namespace transactions
     {
         /**
-         * Transactions.
+         * Transaction.
          */
         class IGNITE_FRIEND_EXPORT Transaction
         {

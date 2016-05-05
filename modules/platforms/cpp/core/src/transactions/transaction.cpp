@@ -168,6 +168,8 @@ namespace ignite
                 err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
                     "Instance is not usable (did you check for error?).");
             }
+
+            return false;
         }
     }
 }
