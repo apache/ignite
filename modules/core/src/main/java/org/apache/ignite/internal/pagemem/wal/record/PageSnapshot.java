@@ -17,24 +17,54 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
+import org.apache.ignite.internal.pagemem.FullPageId;
+
+import static org.apache.ignite.internal.pagemem.impl.PageMemoryImpl.PAGE_CACHE_ID_OFFSET;
+import static org.apache.ignite.internal.pagemem.impl.PageMemoryImpl.PAGE_ID_OFFSET;
+import static org.apache.ignite.internal.pagemem.impl.PageMemoryImpl.PAGE_MARKER;
+import static org.apache.ignite.internal.pagemem.impl.PageMemoryImpl.PAGE_OVERHEAD;
+import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
+import static org.apache.ignite.internal.util.GridUnsafe.copyMemory;
+import static org.apache.ignite.internal.util.GridUnsafe.getInt;
+import static org.apache.ignite.internal.util.GridUnsafe.getLong;
+
 /**
  *
  */
 public class PageSnapshot extends PageAbstractRecord {
     /** */
-    private byte[] arr;
+    private byte[] pageData;
+
+    /** */
+    private FullPageId fullPageId;
 
     /**
      * @param arr Backing array.
      */
     public PageSnapshot(byte[] arr) {
-        this.arr = arr;
+        if (getLong(arr, BYTE_ARR_OFF) != PAGE_MARKER)
+            throw new IllegalArgumentException("Invalid page marker.");
+
+        long pageId = getLong(arr, BYTE_ARR_OFF + PAGE_ID_OFFSET);
+        int cacheId = getInt(arr, BYTE_ARR_OFF + PAGE_CACHE_ID_OFFSET);
+
+        pageData = new byte[arr.length - PAGE_OVERHEAD];
+        copyMemory(arr, BYTE_ARR_OFF + PAGE_OVERHEAD, pageData, BYTE_ARR_OFF, pageData.length);
+
+        fullPageId = new FullPageId(pageId, cacheId);
     }
 
     /**
-     * @return Snapshot backing array.
+     * @return Snapshot of page data.
      */
-    public byte[] backingArray() {
-        return arr;
+    public byte[] pageData() {
+        return pageData;
+    }
+
+    /**
+     * @return Full page ID.
+     */
+    public FullPageId fullPageId() {
+        return fullPageId;
     }
 }

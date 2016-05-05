@@ -46,9 +46,11 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.PageWrapperRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleAware;
@@ -56,10 +58,34 @@ import sun.misc.JavaNioAccess;
 import sun.misc.SharedSecrets;
 
 /**
+ * Page header structure is described by the following diagram.
  *
+ * When page is not allocated (in a free list):
+ * <pre>
+ * +--------+------------------------------------------------------+
+ * |8 bytes |         PAGE_SIZE + PAGE_OVERHEAD - 8 bytes          |
+ * +--------+------------------------------------------------------+
+ * |Next ptr|                      Page data                       |
+ * +--------+------------------------------------------------------+
+ * </pre>
+ * <p/>
+ * When page is allocated and is in use:
+ * <pre>
+ * +--------+--------+--------+----+--------+----------------------+
+ * |8 bytes |8 bytes |8 bytes |4 b |8 bytes |       PAGE_SIZE      |
+ * +--------+--------+--------+----+--------+----------------------+
+ * | Marker |Rel ptr |Page ID |C ID| Tstamp |       Page data      |
+ * +--------+--------+--------+----+--------+----------------------+
+ * </pre>
+ *
+ * Note that first 8 bytes of page header are used either for page marker or for next relative pointer depending
+ * on whether the page is in use or not.
  */
 @SuppressWarnings({"LockAcquiredButNotSafelyReleased", "FieldAccessedSynchronizedAndUnsynchronized"})
 public class  PageMemoryImpl implements PageMemory {
+    /** */
+    public static final long PAGE_MARKER = 0x0000000000000001L;
+
     /** Relative pointer chunk index mask. */
     private static final long CHUNK_INDEX_MASK = 0xFFFFFF0000000000L;
 
@@ -954,11 +980,15 @@ public class  PageMemoryImpl implements PageMemory {
             long cnt = ((freePageRelPtrMasked & COUNTER_MASK) + COUNTER_INC) & COUNTER_MASK;
 
             if (freePageRelPtr != INVALID_REL_PTR) {
-                long nextFreePageRelPtr = mem.readLong(absolute(freePageRelPtr)) & ADDRESS_MASK;
+                long freePageAbsPtr = absolute(freePageRelPtr);
 
-                if (mem.compareAndSwapLong(freePageListPtr, freePageRelPtrMasked, nextFreePageRelPtr | cnt))
+                long nextFreePageRelPtr = mem.readLong(freePageAbsPtr) & ADDRESS_MASK;
+
+                if (mem.compareAndSwapLong(freePageListPtr, freePageRelPtrMasked, nextFreePageRelPtr | cnt)) {
+                    GridUnsafe.putLong(freePageAbsPtr, PAGE_MARKER);
+
                     return freePageRelPtr;
-
+                }
             }
             else
                 return INVALID_REL_PTR;
@@ -1220,6 +1250,8 @@ public class  PageMemoryImpl implements PageMemory {
                     assert relative != INVALID_REL_PTR;
 
                     writeRelative(absPtr, relative);
+
+                    GridUnsafe.putLong(absPtr, PAGE_MARKER);
 
                     return relative;
                 }

@@ -697,15 +697,5 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         @Override public boolean internal() {
             return false;
         }
-
-        /** {@inheritDoc} */
-        @Override public int partition() {
-            return -1;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void partition(int part) {
-            // No-op.
-        }
     }
 }

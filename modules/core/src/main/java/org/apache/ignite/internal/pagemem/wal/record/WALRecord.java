@@ -28,6 +28,9 @@ public abstract class WALRecord {
      */
     public enum RecordType {
         /** */
+        TX_RECORD,
+
+        /** */
         PAGE_RECORD,
 
         /** */
@@ -37,32 +40,10 @@ public abstract class WALRecord {
         STORE_OPERATION_RECORD,
 
         /** */
-        CHECKPOINT_RECORD,
-
-        /** */
-        TX_RECORD;
+        CHECKPOINT_RECORD;
 
         /** */
         private static final RecordType[] VALS = RecordType.values();
-
-        /** */
-        private ByteBuffer typeBuf;
-
-        /**
-         *
-         */
-        RecordType() {
-            typeBuf = ByteBuffer.allocateDirect(1);
-
-            typeBuf.put((byte)ordinal());
-        }
-
-        /**
-         * @return Type buffer.
-         */
-        public ByteBuffer typeBuffer() {
-            return typeBuf;
-        }
 
         /** */
         public static RecordType fromOrdinal(int ord) {
