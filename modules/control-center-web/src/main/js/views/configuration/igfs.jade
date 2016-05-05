@@ -24,7 +24,7 @@ include ../../app/helpers/jade/mixins.jade
             li Ignite File System (#[a(href='https://apacheignite-fs.readme.io/docs/in-memory-file-system' target='_blank') IGFS]) is an in-memory file system allowing work with files and directories over existing cache infrastructure
             li IGFS can either work as purely in-memory file system, or delegate to another file system (e.g. various Hadoop file system implementations) acting as a caching layer (see #[a(href='https://apacheignite-fs.readme.io/docs/secondary-file-system' target='_blank') secondary file system]  for more detail)
             li In addition IGFS provides API to execute map-reduce tasks over file system data
-    div(ignite-loading='loadingIgfsScreen' ignite-loading-text='Loading IGFS screen...')
+    div(ignite-loading='loadingIgfsScreen' ignite-loading-text='Loading IGFS screen...' ignite-loading-position='top')
         div(ng-show='ui.ready')
             hr
             +main-table('IGFS', 'igfss', 'igfsName', 'selectItem(row)', '{{$index + 1}}) {{row.name}}', 'name')

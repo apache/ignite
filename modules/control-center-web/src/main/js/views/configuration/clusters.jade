@@ -23,7 +23,7 @@ include ../../app/helpers/jade/mixins.jade
         ul
             li Configure #[a(href='https://apacheignite.readme.io/docs/clustering' target='_blank') clusters] properties
             li Associate clusters with caches and in-memory file systems
-    div(ignite-loading="loadingClustersScreen" ignite-loading-text="Loading clusters...")
+    div(ignite-loading='loadingClustersScreen' ignite-loading-text='Loading clusters...' ignite-loading-position='top')
         div(ng-show='ui.ready')
             hr
             +main-table('clusters', 'clusters', 'clusterName', 'selectItem(row)', '{{$index + 1}}) {{row.label}}', 'label')

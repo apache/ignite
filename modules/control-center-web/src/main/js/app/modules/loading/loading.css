@@ -35,13 +35,13 @@
     width: 100%;
 }
 
-.loading.loading-message-top .loading-wrapper {
+.loading.loading-top .loading-wrapper {
     position: absolute;
     top: 100px;
     display: block;
 }
 
-.loading .loading-wellcome {
+.loading .loading-text {
     font-size: 18px;
     margin: 20px 0;
     text-align: center;

@@ -22,7 +22,7 @@ include ../../app/helpers/jade/mixins.jade
     ignite-information
         ul: li Import database schemas
             li Configure indexed types
-    div(ignite-loading='loadingDomainModelsScreen' ignite-loading-text='Loading domain models...')
+    div(ignite-loading='loadingDomainModelsScreen' ignite-loading-text='Loading domain models...' ignite-loading-position='top')
         div(ng-show='ui.ready')
             hr
             .padding-bottom-dflt(ng-show='domains && domains.length > 0')

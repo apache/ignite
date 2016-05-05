@@ -19,17 +19,18 @@ import template from './loading.jade!';
 import './loading.css!';
 
 export default ['igniteLoading', ['$loading', '$compile', ($loading, $compile) => {
-    const compiledTemplate = $compile(template());
-
     const link = (scope, element, attrs) => {
+        const compiledTemplate = $compile(template());
+
         const build = () => {
+            scope.position = scope.position || 'middle';
+
             const loading = compiledTemplate(scope);
 
             if (!scope.loading) {
                 scope.loading = loading;
 
                 $loading.add(scope.key || 'defaultSpinnerKey', scope.loading);
-
                 element.append(scope.loading);
             }
         };
@@ -47,7 +48,8 @@ export default ['igniteLoading', ['$loading', '$compile', ($loading, $compile) =
         scope: {
             key: '@igniteLoading',
             text: '@?igniteLoadingText',
-            class: '@?igniteLoadingClass'
+            class: '@?igniteLoadingClass',
+            position: '@?igniteLoadingPosition'
         },
         restrict: 'A',
         link

@@ -14,10 +14,10 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
-.loading.loading-opacity-80(class='{{class}}')
+.loading.loading-opacity-80(ng-class='[class, "loading-" + position]')
     .loading-wrapper
         .spinner
             .bounce1
             .bounce2
             .bounce3
-        .loading-wellcome {{ text }}
+        .loading-text {{ text }}

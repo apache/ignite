@@ -34,7 +34,7 @@ mixin hard-link(ref, txt)
     .padding-dflt(ng-if='!clusters || clusters.length == 0')
         | You have no clusters configured. Please configure them #[a(ui-sref='base.configuration.clusters') here].
 
-    div(ng-show='clusters && clusters.length > 0' ignite-loading="summaryPage" ignite-loading-text="Loading summary screen...")
+    div(ng-show='clusters && clusters.length > 0' ignite-loading='summaryPage' ignite-loading-text='Loading summary screen...' ignite-loading-position='top')
         +main-table('clusters', 'clustersView', 'clusterName', 'selectItem(row)', '{{$index + 1}}) {{row.name}}', 'name')
         div(ng-show='selectedItem && contentVisible(displayedRows, selectedItem)')
             .padding-top-dflt(bs-affix)

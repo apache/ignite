@@ -18,29 +18,11 @@
 export default ['$loading', ['$timeout', ($timeout) => {
     const _overlays = {};
 
-    const isOnScreen = (element) => {
-        const viewport = {};
-        const $window = angular.element(window);
-        const bounds = {};
-
-        viewport.top = $window.scrollTop();
-        viewport.bottom = viewport.top + $window.height();
-
-        bounds.top = element.offset().top;
-        bounds.bottom = bounds.top + element.outerHeight();
-
-        return ((bounds.top <= viewport.bottom) && (bounds.bottom >= viewport.top));
-    };
-
     const start = (key) => {
         $timeout(() => {
             const loadingOverlay = _overlays[key];
 
-            if (loadingOverlay) {
-                !isOnScreen(loadingOverlay.children()) && loadingOverlay.addClass('loading-message-top');
-
-                loadingOverlay.addClass('loading-active');
-            }
+            loadingOverlay && loadingOverlay.addClass('loading-active');
         });
     };
 
@@ -48,7 +30,7 @@ export default ['$loading', ['$timeout', ($timeout) => {
         $timeout(() => {
             const loadingOverlay = _overlays[key];
 
-            loadingOverlay && loadingOverlay.removeClass('loading-active loading-message-top');
+            loadingOverlay && loadingOverlay.removeClass('loading-active');
         });
     };
 
