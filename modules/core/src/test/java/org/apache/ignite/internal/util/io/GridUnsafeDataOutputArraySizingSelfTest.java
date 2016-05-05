@@ -36,9 +36,12 @@ public class GridUnsafeDataOutputArraySizingSelfTest extends GridCommonAbstractT
     /** Buffer timeout. */
     private static final long BUFFER_TIMEOUT = 1000;
 
-    /** Wait timeout is bigger then buffer timeout to prevent failures due to time measurement error */
+    /** Wait timeout is bigger then buffer timeout to prevent failures due to time measurement error. */
     private static final long WAIT_BUFFER_TIMEOUT = BUFFER_TIMEOUT + BUFFER_TIMEOUT / 2;
 
+    /**
+     *
+     */
     static {
         System.setProperty(IGNITE_MARSHAL_BUFFERS_RECHECK, Long.toString(BUFFER_TIMEOUT));
     }
@@ -109,19 +112,24 @@ public class GridUnsafeDataOutputArraySizingSelfTest extends GridCommonAbstractT
      *
      */
     private static class WriteAndCheckPredicate implements GridAbsPredicate {
+        /** */
         final GridUnsafeDataOutput out;
+
+        /** */
         final byte [] bytes;
-        final int length;
+
+        /** */
+        final int len;
 
         /**
          * @param out Out.
          * @param bytes Bytes.
-         * @param length Length.
+         * @param len Length.
          */
-        WriteAndCheckPredicate(GridUnsafeDataOutput out, byte[] bytes, int length) {
+        WriteAndCheckPredicate(GridUnsafeDataOutput out, byte[] bytes, int len) {
             this.out = out;
             this.bytes = bytes;
-            this.length = length;
+            this.len = len;
         }
 
         /**
@@ -132,10 +140,9 @@ public class GridUnsafeDataOutputArraySizingSelfTest extends GridCommonAbstractT
                 out.write(bytes);
                 out.reset();
 
-                System.out.println("L="+out.internalArray().length);
-                if(out.internalArray().length == length)
-                    return true;
-                return false;
+                System.out.println("L=" + out.internalArray().length);
+
+                return out.internalArray().length == len;
             }
             catch (Exception e) {
                 assertTrue("Unexpected exception: " + e.getMessage(), false);
