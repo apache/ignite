@@ -33,6 +33,7 @@ import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.lang.IgniteUuid;
@@ -42,6 +43,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Task to run Visor tasks through http REST.
  */
+@GridInternal
 public class VisorGatewayTask implements ComputeTask<Object[], Object> {
     /** */
     private static final long serialVersionUID = 0L;
