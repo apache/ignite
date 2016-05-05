@@ -3666,7 +3666,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         if (replaceExisting) {
             if (ctx.store().isLocal())
-                return runLoadKeysCallable(keys, plc, keepBinary);
+                return runLoadKeysCallable(keys, plc, keepBinary, true);
             else {
                 return ctx.closures().callLocalSafe(new Callable<Void>() {
                     @Override public Void call() throws Exception {
@@ -3678,7 +3678,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
         }
         else
-            return runLoadKeysCallable(keys, plc, keepBinary);
+            return runLoadKeysCallable(keys, plc, keepBinary, false);
     }
 
     /**
@@ -3690,7 +3690,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @return Operation future.
      */
     private IgniteInternalFuture<?> runLoadKeysCallable(final Set<? extends K> keys, final ExpiryPolicy plc,
-        final boolean keepBinary) {
+        final boolean keepBinary, final boolean update) {
         Collection<ClusterNode> nodes = ctx.grid().cluster().forDataNodes(name()).nodes();
 
         Collection<ClusterNode> oldNodes = ctx.grid().cluster().forDataNodes(name()).forPredicate(
@@ -3705,13 +3705,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         if (oldNodes.isEmpty()) {
             return ctx.closures().callAsyncNoFailover(BROADCAST,
-                new LoadKeysCallableV2<>(ctx.name(), keys, true, plc, keepBinary),
+                new LoadKeysCallableV2<>(ctx.name(), keys, update, plc, keepBinary),
                 nodes,
                 true);
         }
 
         return ctx.closures().callAsyncNoFailover(BROADCAST,
-            new LoadKeysCallable<>(ctx.name(), keys, true, plc),
+            new LoadKeysCallable<>(ctx.name(), keys, update, plc),
             nodes,
             true);
     }
@@ -3846,6 +3846,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         ExpiryPolicy plc = opCtx != null ? opCtx.expiry() : null;
 
+        final boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
+
         GridCompoundFuture<Object, ?> fut = new GridCompoundFuture<>();
 
         if (!F.isEmpty(oldNodes.nodes())) {
@@ -3867,7 +3869,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (!F.isEmpty(newNodesV2.nodes())) {
             ComputeTaskInternalFuture newNodesV2Fut = ctx.kernalContext().closure().callAsync(BROADCAST,
                 Collections.singletonList(
-                    new LoadCacheJobV2<>(ctx.name(), ctx.affinity().affinityTopologyVersion(), p, args, opCtx)),
+                    new LoadCacheJobV2<>(ctx.name(), ctx.affinity().affinityTopologyVersion(), p, args, keepBinary)),
                 newNodesV2.nodes());
 
             fut.add(newNodesV2Fut);
@@ -5739,7 +5741,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         private final Object[] loadArgs;
 
         /** */
-        private final CacheOperationContext opCtx;
+        private final boolean keepBinary;
 
         /**
          * Constructor.
@@ -5748,16 +5750,16 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
          * @param topVer Affinity topology version.
          * @param p Predicate.
          * @param loadArgs Arguments.
-         * @param opCtx Cache operation context.
+         * @param keepBinary Keep binary flag.
          */
         public LoadCacheJobV2(final String cacheName, final AffinityTopologyVersion topVer,
             final IgniteBiPredicate<K, V> p, final Object[] loadArgs,
-            final CacheOperationContext opCtx) {
+            final boolean keepBinary) {
             super(cacheName, topVer);
 
             this.p = p;
             this.loadArgs = loadArgs;
-            this.opCtx = opCtx;
+            this.keepBinary = keepBinary;
         }
 
         /** {@inheritDoc} */
@@ -5765,8 +5767,15 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             try {
                 assert cache != null : "Failed to get a cache [cacheName=" + cacheName + ", topVer=" + topVer + "]";
 
-                if (opCtx != null)
-                    cache = new GridCacheProxyImpl<>(cache.context(), cache.cache(), opCtx);
+                CacheOperationContext opCtx = cache.context().operationContextPerCall();
+
+                if (opCtx == null)
+                    opCtx = new CacheOperationContext();
+
+                if (keepBinary)
+                    opCtx = opCtx.keepBinary();
+
+                cache = new GridCacheProxyImpl<>(cache.context(), cache.cache(), opCtx);
 
                 cache.localLoadCache(p, loadArgs);
 
@@ -5964,20 +5973,20 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         private static final long serialVersionUID = 0L;
 
         /** Cache name. */
-        private String cacheName;
+        protected String cacheName;
 
         /** Injected grid instance. */
         @IgniteInstanceResource
         private Ignite ignite;
 
         /** Keys to load. */
-        private Collection<? extends K> keys;
+        protected Collection<? extends K> keys;
 
         /** Update flag. */
-        private boolean update;
+        protected boolean update;
 
         /** */
-        private ExpiryPolicy plc;
+        protected ExpiryPolicy plc;
 
         /**
          * Required by {@link Externalizable}.
@@ -6057,6 +6066,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /** */
         private boolean keepBinary;
 
+        /** Injected grid instance. */
+        @IgniteInstanceResource
+        private Ignite ignite;
+
         /**
          * Required by {@link Externalizable}.
          */
@@ -6091,6 +6104,27 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             super.readExternal(in);
 
             keepBinary = in.readBoolean();
+        }
+
+        /** {@inheritDoc} */
+        @Override public Void call() throws Exception {
+            GridCacheAdapter<K, V> cache = ((IgniteKernal)ignite).context().cache().internalCache(cacheName);
+
+            assert cache != null : cacheName;
+
+            cache.context().gate().enter();
+
+            try {
+                if (update)
+                    cache.localLoadAndUpdate(keys);
+                else
+                    cache.localLoad(keys, plc, keepBinary);
+            }
+            finally {
+                cache.context().gate().leave();
+            }
+
+            return null;
         }
     }
 
