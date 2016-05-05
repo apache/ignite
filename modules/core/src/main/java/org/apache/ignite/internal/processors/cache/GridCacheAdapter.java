@@ -3869,7 +3869,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (!F.isEmpty(newNodesV2.nodes())) {
             ComputeTaskInternalFuture newNodesV2Fut = ctx.kernalContext().closure().callAsync(BROADCAST,
                 Collections.singletonList(
-                    new LoadCacheJobV2<>(ctx.name(), ctx.affinity().affinityTopologyVersion(), p, args, keepBinary)),
+                    new LoadCacheJobV2<>(ctx.name(), ctx.affinity().affinityTopologyVersion(), p, args, plc, keepBinary)),
                 newNodesV2.nodes());
 
             fut.add(newNodesV2Fut);
@@ -5743,6 +5743,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /** */
         private final boolean keepBinary;
 
+        /** */
+        private final ExpiryPolicy plc;
+
         /**
          * Constructor.
          *
@@ -5753,13 +5756,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
          * @param keepBinary Keep binary flag.
          */
         public LoadCacheJobV2(final String cacheName, final AffinityTopologyVersion topVer,
-            final IgniteBiPredicate<K, V> p, final Object[] loadArgs,
+            final IgniteBiPredicate<K, V> p, final Object[] loadArgs, final ExpiryPolicy plc,
             final boolean keepBinary) {
             super(cacheName, topVer);
 
             this.p = p;
             this.loadArgs = loadArgs;
             this.keepBinary = keepBinary;
+            this.plc = plc;
         }
 
         /** {@inheritDoc} */
@@ -5774,6 +5778,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                 if (keepBinary)
                     opCtx = opCtx.keepBinary();
+
+                if (plc != null)
+                    opCtx = opCtx.withExpiryPolicy(plc);
 
                 cache = new GridCacheProxyImpl<>(cache.context(), cache.cache(), opCtx);
 
