@@ -5676,13 +5676,13 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         private static final long serialVersionUID = 0L;
 
         /** */
-        private final IgniteBiPredicate<K, V> p;
+        protected final IgniteBiPredicate<K, V> p;
 
         /** */
-        private final Object[] loadArgs;
+        protected final Object[] loadArgs;
 
         /** */
-        private final ExpiryPolicy plc;
+        protected final ExpiryPolicy plc;
 
         /**
          * @param cacheName Cache name.
@@ -5724,27 +5724,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /**
-     * Load cache job that uses {@link CacheOperationContext} to track all settings, e.g.
-     * keepBinary, expiryPolicy, etc.
-     *
-     * @param <K>
-     * @param <V>
+     * Load cache job that with keepBinary flag.
      */
-    private static class LoadCacheJobV2<K, V> extends TopologyVersionAwareJob {
+    private static class LoadCacheJobV2<K, V> extends LoadCacheJob<K, V> {
         /** */
-        private static final long serialVersionUID = 5293248673124137931L;
-
-        /** */
-        private final IgniteBiPredicate<K, V> p;
-
-        /** */
-        private final Object[] loadArgs;
+        private static final long serialVersionUID = -978085412374548632L;
 
         /** */
         private final boolean keepBinary;
-
-        /** */
-        private final ExpiryPolicy plc;
 
         /**
          * Constructor.
@@ -5758,31 +5745,23 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         public LoadCacheJobV2(final String cacheName, final AffinityTopologyVersion topVer,
             final IgniteBiPredicate<K, V> p, final Object[] loadArgs, final ExpiryPolicy plc,
             final boolean keepBinary) {
-            super(cacheName, topVer);
+            super(cacheName, topVer, p, loadArgs, plc);
 
-            this.p = p;
-            this.loadArgs = loadArgs;
             this.keepBinary = keepBinary;
-            this.plc = plc;
         }
 
         /** {@inheritDoc} */
-        @Nullable @Override protected Object localExecute(@Nullable IgniteInternalCache cache) {
+        @Nullable @Override public Object localExecute(@Nullable IgniteInternalCache cache) {
             try {
                 assert cache != null : "Failed to get a cache [cacheName=" + cacheName + ", topVer=" + topVer + "]";
 
-                CacheOperationContext opCtx = cache.context().operationContextPerCall();
-
-                if (opCtx == null)
-                    opCtx = new CacheOperationContext();
+                assert cache instanceof GridCacheProxyImpl;
 
                 if (keepBinary)
-                    opCtx = opCtx.keepBinary();
+                    cache = cache.keepBinary();
 
                 if (plc != null)
-                    opCtx = opCtx.withExpiryPolicy(plc);
-
-                cache = new GridCacheProxyImpl<>(cache.context(), cache.cache(), opCtx);
+                    cache = cache.withExpiryPolicy(plc);
 
                 cache.localLoadCache(p, loadArgs);
 
@@ -5791,6 +5770,11 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             catch (IgniteCheckedException e) {
                 throw U.convertException(e);
             }
+        }
+
+        /** {@inheritDoc} */
+        public String toString() {
+            return S.toString(LoadCacheJobV2.class, this);
         }
     }
 
