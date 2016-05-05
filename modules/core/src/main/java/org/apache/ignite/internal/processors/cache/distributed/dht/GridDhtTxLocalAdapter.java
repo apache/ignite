@@ -690,10 +690,16 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         if (passedKeys.isEmpty())
             return new GridFinishedFuture<>(ret);
 
-        GridDhtTransactionalCacheAdapter<?, ?> dhtCache = cacheCtx.isNear() ? cacheCtx.nearTx().dht() : cacheCtx.dhtTx();
+        GridDhtTransactionalCacheAdapter<?, ?> dhtCache =
+            cacheCtx.isNear() ? cacheCtx.nearTx().dht() : cacheCtx.dhtTx();
+
+        long timeout = remainingTime();
+
+        if (timeout == -1)
+            return new GridFinishedFuture<>(timeoutException());
 
         IgniteInternalFuture<Boolean> fut = dhtCache.lockAllAsyncInternal(passedKeys,
-            lockTimeout(),
+            timeout,
             this,
             isInvalidate(),
             read,
