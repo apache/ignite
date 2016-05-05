@@ -31,6 +31,8 @@ const consoleModule = angular.module('ignite-console.legacy',
         /* endignite */
     ]);
 
+import alertTemplate from '../views/templates/alert.jade!';
+
 consoleModule.run(['$rootScope', '$http', '$state', '$common', 'Auth', 'User', 'gettingStarted',
     ($root, $http, $state, $common, Auth, User, gettingStarted) => {
     $root.gettingStarted = gettingStarted;
@@ -97,6 +99,7 @@ consoleModule.config(['$alertProvider', ($alertProvider) => {
         container: 'body',
         placement: 'top-right',
         duration: '5',
+        template: alertTemplate(),
         type: 'danger'
     });
 }]);
@@ -144,18 +147,18 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
             return 'Internal server error.';
         }
 
-        function showError(msg, placement, container, persistent) {
+        function showError(msg, placement, container, persistent, icon) {
             if (msgModal)
                 msgModal.hide();
 
             msgModal = $alert({
                 title: errorMessage(msg),
                 placement: placement ? placement : 'top-right',
-                container: container ? container : 'body'
+                container: container ? container : 'body',
+                duration: persistent ? false : 5
             });
 
-            if (persistent)
-                msgModal.$options.duration = false;
+            msgModal.$scope.icon = icon ? icon : 'fa-exclamation-triangle';
 
             return false;
         }
@@ -817,6 +820,8 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
                     title: msg,
                     duration: 2
                 });
+
+                msgModal.$scope.icon = 'fa-check-circle-o';
             },
             SUPPORTED_JDBC_TYPES: SUPPORTED_JDBC_TYPES,
             findJdbcType: function (jdbcType) {

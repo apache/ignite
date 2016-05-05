@@ -1316,64 +1316,34 @@ label.required:after {
 }
 
 .alert {
-    outline: 0
-}
-
-.alert.bottom, .alert.bottom-left, .alert.bottom-right, .alert.top,
-.alert.top-left, .alert.top-right {
+    outline: 0;
+    padding: 10px;
     position: fixed;
     z-index: 1050;
-    margin: 20px
-}
+    margin: 20px;
 
-.alert.top, .alert.top-left, .alert.top-right {
-    top: 50px
-}
+    &.top-right {
+        top: 50px;
+        right: 0;
 
-.alert.top {
-    right: 0;
-    left: 0
-}
+        .close {
+            padding-left: 10px;
+        }
+    }
 
-.alert.top-right {
-    right: 0
-}
+    .alert-icon {
+        padding-right: 10px;
+        font-size: 16px;
+    }
 
-.alert.top-right .close {
-    padding-left: 10px
-}
+    .alert-title {
+        color: $text-color;
+    }
 
-.alert.top-left {
-    left: 0
-}
-
-.alert.top-left .close {
-    padding-right: 10px
-}
-
-.alert.bottom, .alert.bottom-left, .alert.bottom-right {
-    bottom: 0
-}
-
-.alert.bottom {
-    right: 0;
-    left: 0
-}
-
-.alert.bottom-right {
-    right: 0
-}
-
-.alert.bottom-right .close {
-    padding-left: 10px
-}
-
-.alert.bottom-left {
-    left: 0
-}
-
-.alert.bottom-left .close {
-    padding-right: 10px
+    .close {
+        margin-right: 0;
+        line-height: 19px;
+    }
 }
 
 .summary-tabs {
