@@ -159,6 +159,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <returns>
         /// Compiled function that calls specified method.
         /// </returns>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public static Func<object, object[], object> CompileFuncFromArray(MethodInfo method)
         {
             Debug.Assert(method != null);
