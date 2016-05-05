@@ -1828,7 +1828,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             computed = ctx.unwrapTemporary(computed);
 
                             invokeRes.addEntryProcessResult(ctx, entry.key(), invokeEntry.key(), computed, null,
-                                ctx.keepBinary());
+                                req.keepBinary());
                         }
 
                         if (!invokeEntry.modified())
@@ -1842,7 +1842,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         if (invokeRes == null)
                             invokeRes = new GridCacheReturn(node.isLocal());
 
-                        invokeRes.addEntryProcessResult(ctx, entry.key(), invokeEntry.key(), null, e, ctx.keepBinary());
+                        invokeRes.addEntryProcessResult(ctx, entry.key(), invokeEntry.key(), null, e, req.keepBinary());
 
                         updated = old;
                     }
@@ -2321,7 +2321,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             null,
                             compRes.get1(),
                             compRes.get2(),
-                            ctx.keepBinary());
+                            req.keepBinary());
                     }
                 }
                 else {

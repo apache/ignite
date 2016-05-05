@@ -292,6 +292,8 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
 
         if (obj instanceof TestObject)
             return ((TestObject)obj).value();
+        else if (obj instanceof SerializableObject)
+            return ((SerializableObject)obj).value();
         else
             throw new IllegalArgumentException("Unknown type: " + obj);
     }
@@ -386,20 +388,69 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     }
 
     /**
-     * Can not be used by JdkMarshaller, because superclass {@link TestObject} is non-serializable.
+     *
      */
-    protected static class SerializableObject extends TestObject implements Serializable {
+    protected static class SerializableObject implements Serializable {
+        /** */
+        protected int val;
+
+        /** */
+        protected String strVal;
+
+        /** */
+        protected TestEnum enumVal;
+
         /**
          * Default constructor.
          */
         public SerializableObject() {
+            // No-op.
         }
 
         /**
          * @param val Value.
          */
         public SerializableObject(int val) {
-            super(val);
+            this.val = val;
+            strVal = "val" + val;
+
+            TestEnum[] values = TestEnum.values();
+            enumVal = values[Math.abs(val) % values.length];
+        }
+
+        /**
+         * @return Value.
+         */
+        public int value() {
+            return val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (!(o instanceof SerializableObject))
+                return false;
+
+            SerializableObject val = (SerializableObject)o;
+
+            return getClass().equals(o.getClass()) && this.val == val.val && enumVal == val.enumVal
+                && strVal.equals(val.strVal);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return getClass().getSimpleName() + "[" +
+                "val=" + val +
+                ", strVal='" + strVal + '\'' +
+                ", enumVal=" + enumVal +
+                ']';
         }
     }
 
@@ -517,7 +568,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         /** Serializable objects. */
         SERIALIZABLE,
 
-        /** Customly serializable objects. */
+        /** Serializable objects with custom serialization. */
         CUSTOM_SERIALIZABLE,
 
         /** Externalizable objects. */
@@ -556,8 +607,9 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
 
     /**
      * Check test compatibility with current data mode
-     * @return true if incompatible
-     * @throws Exception
+     *
+     * @return {@code True} if compatible.
+     * @throws Exception If failed.
      */
     protected boolean isCompatible() throws Exception {
         switch (dataMode) {
