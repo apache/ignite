@@ -68,20 +68,11 @@ namespace ignite
             /**
              * Get active transaction for the current thread.
              *
-             * Throws IgniteError if there is no active transaction for the
-             * thread.
-             */
-            Transaction GetTx();
-
-            /**
-             * Get active transaction for the current thread.
-             *
-             * @param err Error.
              * @return Active transaction for current thread.
              * Returned instance is not valid if there is no active transaction
              * for the thread.
              */
-            Transaction GetTx(IgniteError& err);
+            Transaction GetTx();
 
             /**
              * Start new transaction.
