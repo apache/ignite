@@ -52,6 +52,8 @@ namespace Apache.Ignite.Core.Impl.Services
 
             var method = GetMethodOrThrow(svc.GetType(), methodName, arguments);
 
+            var compiledMethod = DelegateConverter.CompileFuncFromArray(method);
+
             try
             {
                 return new KeyValuePair<object, Exception>(method.Invoke(svc, arguments), null);
@@ -69,7 +71,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <summary>
         /// Finds suitable method in the specified type, or throws an exception.
         /// </summary>
-        private static MethodBase GetMethodOrThrow(Type svcType, string methodName, object[] arguments)
+        private static MethodInfo GetMethodOrThrow(Type svcType, string methodName, object[] arguments)
         {
             Debug.Assert(svcType != null);
             Debug.Assert(!string.IsNullOrWhiteSpace(methodName));
