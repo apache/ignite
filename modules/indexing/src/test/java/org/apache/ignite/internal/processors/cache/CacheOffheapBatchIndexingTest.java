@@ -142,7 +142,7 @@ public class CacheOffheapBatchIndexingTest extends GridCommonAbstractTest {
      * The test fails in remove call.
      */
     public void testPutAllMultupleEntitiesAndStreamer() {
-        //fail("IGNITE-2982");
+        fail("IGNITE-2982");
         doStreamerBatchTest(50, 1_000, new Class<?>[] {Integer.class, Person.class, Integer.class, Organization.class}, 1, true);
     }
 
@@ -151,7 +151,7 @@ public class CacheOffheapBatchIndexingTest extends GridCommonAbstractTest {
      * The test fails on remove and often hangs in putAll call.
      */
     public void testPutAllMultupleEntitiesAndStreamerDfltOffHeapRowCacheSize() {
-        //fail("IGNITE-2982");
+        fail("IGNITE-2982");
         doStreamerBatchTest(50, 1_000, new Class<?>[] {Integer.class, Person.class, Integer.class, Organization.class},
             CacheConfiguration.DFLT_SQL_ONHEAP_ROW_CACHE_SIZE, true);
     }
@@ -161,7 +161,7 @@ public class CacheOffheapBatchIndexingTest extends GridCommonAbstractTest {
      * The test fails in putAll.
      */
     public void testPuAllSingleEntity() {
-        //fail("IGNITE-2982");
+        fail("IGNITE-2982");
         doStreamerBatchTest(50, 1_000, new Class<?>[] {Integer.class, Organization.class}, 1, false);
     }
 
