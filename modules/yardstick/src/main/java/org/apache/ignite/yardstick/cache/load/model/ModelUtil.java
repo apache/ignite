@@ -40,9 +40,9 @@ public class ModelUtil {
     private static Class[] keyClasses = {
         Double.class,
         Identifier.class,
-//        Mark.class,
+        Mark.class,
         Integer.class,
-//        UUID.class
+        UUID.class
     };
 
     /**
