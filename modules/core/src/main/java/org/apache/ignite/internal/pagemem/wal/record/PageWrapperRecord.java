@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
-import sun.nio.ch.DirectBuffer;
+import org.apache.ignite.internal.pagemem.FullPageId;
 
 import java.nio.ByteBuffer;
 
@@ -26,14 +26,16 @@ import java.nio.ByteBuffer;
  */
 public class PageWrapperRecord extends PageAbstractRecord {
     /** */
+    private FullPageId fullId;
+
+    /** */
     private ByteBuffer pageBuf;
 
     /**
      * @param pageBuf Page buf.
      */
-    public PageWrapperRecord(ByteBuffer pageBuf) {
-        assert pageBuf instanceof DirectBuffer;
-
+    public PageWrapperRecord(FullPageId fullId, ByteBuffer pageBuf) {
+        this.fullId = fullId;
         this.pageBuf = pageBuf;
     }
 
@@ -42,5 +44,12 @@ public class PageWrapperRecord extends PageAbstractRecord {
      */
     public ByteBuffer buffer() {
         return pageBuf;
+    }
+
+    /**
+     * @return Full page ID.
+     */
+    public FullPageId fullId() {
+        return fullId;
     }
 }

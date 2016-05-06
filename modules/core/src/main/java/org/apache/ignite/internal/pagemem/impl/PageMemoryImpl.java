@@ -387,7 +387,7 @@ public class  PageMemoryImpl implements PageMemory {
                 writeCurrentTimestamp(absPtr);
 
                 // We can clear dirty flag after the page has been allocated.
-                setDirty(fullId, absPtr, false);
+                setDirty(fullId, absPtr, false, false);
 
                 seg.loadedPages.put(fullId, relPtr);
 
@@ -430,6 +430,11 @@ public class  PageMemoryImpl implements PageMemory {
     /** {@inheritDoc} */
     @Override public int pageSize() {
         return sysPageSize - PAGE_OVERHEAD;
+    }
+
+    /** {@inheritDoc} */
+    @Override public int systemPageSize() {
+        return sysPageSize;
     }
 
     /** {@inheritDoc} */
@@ -489,13 +494,13 @@ public class  PageMemoryImpl implements PageMemory {
                     }
                     // else page was not modified since the checkpoint started.
                     else {
-                        checkpointPages.remove(pageId);
+                        clearCheckpoint(pageId);
 
                         long relPtr = seg.loadedPages.get(pageId, INVALID_REL_PTR);
 
                         assert relPtr != INVALID_REL_PTR;
 
-                        setDirty(pageId, absolute(relPtr), false);
+                        setDirty(pageId, absolute(relPtr), false, true);
                     }
                 }
             }
@@ -751,8 +756,10 @@ public class  PageMemoryImpl implements PageMemory {
      *
      * @param absPtr Absolute pointer.
      * @param dirty {@code True} dirty flag.
+     * @param flushCp If this flag is {@code true}, then the page will be added to the dirty set regardless whether
+     *      the old flag was dirty or not.
      */
-    void setDirty(FullPageId pageId, long absPtr, boolean dirty) {
+    void setDirty(FullPageId pageId, long absPtr, boolean dirty, boolean flushCp) {
         long relPtrWithFlags = mem.readLong(absPtr + RELATIVE_PTR_OFFSET);
 
         boolean wasDirty = (relPtrWithFlags & DIRTY_FLAG) != 0;
@@ -764,24 +771,26 @@ public class  PageMemoryImpl implements PageMemory {
 
         mem.writeLong(absPtr + RELATIVE_PTR_OFFSET, relPtrWithFlags);
 
-        if (!wasDirty && dirty)
+        if (dirty && (!wasDirty || flushCp))
             dirtyPages.add(pageId);
-        else if (wasDirty && !dirty)
+        else if (!dirty && wasDirty)
             dirtyPages.remove(pageId);
     }
 
     /**
-     * @param page Write-locked page about to be released.
+     *
      */
-    void beforeReleaseWrite(PageImpl page) {
+    void beforeReleaseWrite(FullPageId pageId, ByteBuffer buf) {
         if (walMgr != null) {
-//            try {
-//                walMgr.log(new PageWrapperRecord(wrapPointer(page.pointer(), sysPageSize)), false);
-//            }
-//            catch (IgniteCheckedException | StorageException e) {
-//                // TODO ignite-db.
-//                throw new IgniteException(e);
-//            }
+            assert buf.remaining() == sysPageSize : "remaining=" + buf.remaining() + ", sysPageSize=" + sysPageSize;
+
+            try {
+                walMgr.log(new PageWrapperRecord(pageId, buf), false);
+            }
+            catch (IgniteCheckedException | StorageException e) {
+                // TODO ignite-db.
+                throw new IgniteException(e);
+            }
         }
     }
 
@@ -1192,7 +1201,7 @@ public class  PageMemoryImpl implements PageMemory {
                 storeMgr.write(fullPageId.cacheId(), fullPageId.pageId(),
                     wrapPointer(absPtr + PAGE_OVERHEAD, pageSize()));
 
-                setDirty(fullPageId, absPtr, false);
+                setDirty(fullPageId, absPtr, false, true);
 
                 cpPages.remove(fullPageId);
 

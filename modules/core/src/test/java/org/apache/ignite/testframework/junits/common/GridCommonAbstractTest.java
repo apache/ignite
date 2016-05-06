@@ -1181,12 +1181,11 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
             for (File f : file.listFiles())
                 ok = deleteRecursively(f) & ok;
         }
-        else {
-            if (!file.delete()) {
-                info("Failed to delete: " + file);
 
-                ok = false;
-            }
+        if (!file.delete()) {
+            info("Failed to delete: " + file);
+
+            ok = false;
         }
 
         if (ok)

@@ -36,10 +36,8 @@ public class CheckpointRecord extends WALRecord {
     /**
      * @param end Checkpoint end flag.
      */
-    public CheckpointRecord(boolean end) {
-        cpId = IgniteUuid.randomUuid();
-
-        this.end = end;
+    public CheckpointRecord(WALPointer safeReplayPtr, boolean end) {
+        this(IgniteUuid.randomUuid(), safeReplayPtr, end);
     }
 
     /**
