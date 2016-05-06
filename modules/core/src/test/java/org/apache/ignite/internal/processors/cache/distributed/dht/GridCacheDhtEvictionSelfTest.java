@@ -77,7 +77,6 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setRebalanceMode(NONE);
         cacheCfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cacheCfg.setSwapEnabled(false);
         cacheCfg.setEvictSynchronized(true);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setBackups(1);

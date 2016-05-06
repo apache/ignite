@@ -38,10 +38,9 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.spi.IgniteSpiCloseableIterator;
-import org.apache.ignite.spi.swapspace.SwapSpaceSpi;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -74,17 +73,7 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setSwapSpaceSpi(spi());
-
         return cfg;
-    }
-
-    /**
-     * Creates a SwapSpaceSpi.
-     * @return the Spi
-     */
-    protected SwapSpaceSpi spi() {
-        return new FileSwapSpaceSpi();
     }
 
     /** {@inheritDoc} */
@@ -264,8 +253,6 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
 
             Ignite ignite = ignite(nodeIdx);
 
-            SwapSpaceSpi swap = ignite.configuration().getSwapSpaceSpi();
-
             GridCacheAdapter<Integer, String> internalCache =
                 ((IgniteKernal)ignite).context().cache().internalCache();
 
@@ -273,7 +260,12 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
 
             Set<Integer> swapKeys = new HashSet<>();
 
-            IgniteSpiCloseableIterator<KeyCacheObject> it = swap.keyIterator(SPACE_NAME, null);
+// TODO GG-10884.
+//            SwapSpaceSpi swap = ignite.configuration().getSwapSpaceSpi();
+//
+//            IgniteSpiCloseableIterator<KeyCacheObject> it = swap.keyIterator(SPACE_NAME, null);
+
+            IgniteSpiCloseableIterator<KeyCacheObject> it = new GridEmptyCloseableIterator<>();
 
             assertNotNull(it);
 
@@ -289,12 +281,13 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
 
             Set<Integer> offheapKeys = new HashSet<>();
 
-            Iterator<Map.Entry<Integer, String>> offheapIt;
+// TODO GG-10884.
+            Iterator<Map.Entry<Integer, String>> offheapIt = Collections.EMPTY_MAP.entrySet().iterator();
 
-            if (internalCache.context().isNear())
-                offheapIt = internalCache.context().near().dht().context().swap().lazyOffHeapIterator();
-            else
-                offheapIt = internalCache.context().swap().lazyOffHeapIterator();
+//            if (internalCache.context().isNear())
+//                offheapIt = internalCache.context().near().dht().context().swap().lazyOffHeapIterator();
+//            else
+//                offheapIt = internalCache.context().swap().lazyOffHeapIterator();
 
             while (offheapIt.hasNext()) {
                 Map.Entry<Integer, String> e = offheapIt.next();
@@ -652,9 +645,11 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
      * @return Tuple with primary and backup keys.
      */
     private T2<List<Integer>, List<Integer>> swapKeys(int nodeIdx) {
-        SwapSpaceSpi swap = ignite(nodeIdx).configuration().getSwapSpaceSpi();
-
-        IgniteSpiCloseableIterator<KeyCacheObject> it = swap.keyIterator(SPACE_NAME, null);
+// TODO: GG-10884.
+//        SwapSpaceSpi swap = ignite(nodeIdx).configuration().getSwapSpaceSpi();
+//
+//        IgniteSpiCloseableIterator<KeyCacheObject> it = swap.keyIterator(SPACE_NAME, null);
+        IgniteSpiCloseableIterator<KeyCacheObject> it = new GridEmptyCloseableIterator<>();
 
         assertNotNull(it);
 
@@ -701,12 +696,14 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
         GridCacheAdapter<Integer, String> internalCache =
             ((IgniteKernal)ignite(nodeIdx)).context().cache().internalCache();
 
-        Iterator<Map.Entry<Integer, String>> offheapIt;
-
-        if (internalCache.context().isNear())
-            offheapIt = internalCache.context().near().dht().context().swap().lazyOffHeapIterator();
-        else
-            offheapIt = internalCache.context().swap().lazyOffHeapIterator();
+// TODO GG-10884.
+        Iterator<Map.Entry<Integer, String>> offheapIt = Collections.EMPTY_MAP.entrySet().iterator();
+//        Iterator<Map.Entry<Integer, String>> offheapIt;
+//
+//        if (internalCache.context().isNear())
+//            offheapIt = internalCache.context().near().dht().context().swap().lazyOffHeapIterator();
+//        else
+//            offheapIt = internalCache.context().swap().lazyOffHeapIterator();
 
         Affinity aff = ignite(nodeIdx).affinity(null);
 

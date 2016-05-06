@@ -82,7 +82,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.jetbrains.annotations.Nullable;
@@ -144,9 +143,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         c.setDiscoverySpi(new TcpDiscoverySpi().setForceServerMode(true).setIpFinder(ipFinder));
 
-        // Otherwise noop swap space will be chosen on Windows.
-        c.setSwapSpaceSpi(new FileSwapSpaceSpi());
-
         if (!gridName.startsWith("client")) {
             CacheConfiguration[] ccs = new CacheConfiguration[2];
 
@@ -165,7 +161,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
                 cc.setWriteThrough(true);
                 cc.setLoadPreviousValue(true);
                 cc.setRebalanceMode(SYNC);
-                cc.setSwapEnabled(true);
                 cc.setSqlFunctionClasses(SqlFunctions.class);
                 cc.setIndexedTypes(
                     BadHashKeyObject.class, Byte.class,

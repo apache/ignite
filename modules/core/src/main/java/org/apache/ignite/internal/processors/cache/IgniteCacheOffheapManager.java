@@ -50,7 +50,6 @@ import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
@@ -365,6 +364,11 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
     public long offHeapAllocatedSize() {
         // TODO GG-10884.
         return 0;
+    }
+
+    // TODO GG-10884: moved from GridCacheSwapManager.
+    void writeAll(Iterable<GridCacheBatchSwapEntry> swapped) throws IgniteCheckedException {
+
     }
 
     /**

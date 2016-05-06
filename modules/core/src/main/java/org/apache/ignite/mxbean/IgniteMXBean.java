@@ -290,14 +290,6 @@ public interface IgniteMXBean {
     public String getCollisionSpiFormatted();
 
     /**
-     * Gets a formatted instance of configured swapspace SPI implementations.
-     *
-     * @return Grid swapspace SPI implementations.
-     */
-    @MXBeanDescription("Formatted instance of configured swapspace SPI implementations.")
-    public String getSwapSpaceSpiFormatted();
-
-    /**
      * Gets a formatted instance of fully configured event SPI implementation.
      *
      * @return Grid event SPI implementation.

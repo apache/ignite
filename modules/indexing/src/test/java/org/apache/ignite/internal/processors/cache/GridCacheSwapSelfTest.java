@@ -40,8 +40,6 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.SwapSpaceSpi;
-import org.apache.ignite.spi.swapspace.noop.NoopSwapSpaceSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -94,7 +92,6 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
 
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg.setCacheMode(REPLICATED);
-        cacheCfg.setSwapEnabled(swapEnabled);
         cacheCfg.setIndexedTypes(
             Integer.class, CacheValue.class
         );
@@ -115,44 +112,6 @@ public class GridCacheSwapSelfTest extends GridCommonAbstractTest {
         versions.clear();
 
         super.afterTestsStopped();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDisabledSwap() throws Exception {
-        swapEnabled = false;
-
-        try {
-            Ignite ignite = startGrids(1);
-
-            SwapSpaceSpi swapSpi = ignite.configuration().getSwapSpaceSpi();
-
-            assertNotNull(swapSpi);
-
-            assertTrue(swapSpi instanceof NoopSwapSpaceSpi);
-        }
-        finally {
-            stopAllGrids();
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testEnabledSwap() throws Exception {
-        try {
-            Ignite ignite = startGrids(1);
-
-            SwapSpaceSpi swapSpi = ignite.configuration().getSwapSpaceSpi();
-
-            assertNotNull(swapSpi);
-
-            assertFalse(swapSpi instanceof NoopSwapSpaceSpi);
-        }
-        finally {
-            stopAllGrids();
-        }
     }
 
     /**

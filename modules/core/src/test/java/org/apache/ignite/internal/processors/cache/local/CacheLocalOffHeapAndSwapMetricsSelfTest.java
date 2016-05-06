@@ -24,7 +24,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -56,8 +55,6 @@ public class CacheLocalOffHeapAndSwapMetricsSelfTest extends GridCommonAbstractT
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
-
         return cfg;
     }
 
@@ -75,7 +72,6 @@ public class CacheLocalOffHeapAndSwapMetricsSelfTest extends GridCommonAbstractT
         ccfg.setMemoryMode(CacheMemoryMode.ONHEAP_TIERED);
 
         ccfg.setOffHeapMaxMemory(offHeapSize);
-        ccfg.setSwapEnabled(swapEnabled);
 
         ccfg.setEvictionPolicy(new FifoEvictionPolicy(MAX_SIZE));
 
