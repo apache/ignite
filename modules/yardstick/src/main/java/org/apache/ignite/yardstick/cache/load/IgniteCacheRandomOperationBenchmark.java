@@ -84,6 +84,9 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     /** */
     public static final int operations = Operation.values().length;
 
+    /***/
+    public static final int CONTINUOUS_QUERY_PER_CACHE = 3;
+
     /** Scan query predicate. */
     private static BenchmarkIgniteBiPredicate igniteBiPred = new BenchmarkIgniteBiPredicate();
 
@@ -111,8 +114,8 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     /** List of SQL queries. */
     private List<String> queries;
 
-    /** List of allowable cache operations which will be executed. */
-    private List<Operation> allowOperations;
+    /** List of allowed cache operations which will be executed. */
+    private List<Operation> allowedLoadTestOps;
 
     /**
      * Replace value entry processor.
@@ -164,7 +167,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
             BenchmarkUtils.println(String.format("Operations over cache '%s'", cacheName));
             for (Operation op : Operation.values())
                 BenchmarkUtils.println(cfg, String.format("%s: %s", op,
-                    operationStatistics.get(String.format("%s_%s", op, cacheName))));
+                    operationStatistics.get(op + "_" + cacheName)));
         }
         super.tearDown();
     }
@@ -185,13 +188,13 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
         loadQueries();
 
-        loadAllowOperations();
+        loadAllowedOperations();
 
         for (String cacheName : ignite().cacheNames()) {
             IgniteCache<Object, Object> cache = ignite().cache(cacheName);
 
             for (Operation op : Operation.values())
-                operationStatistics.put(String.format("%s_%s", op, cacheName), new AtomicLong(0));
+                operationStatistics.put(op + "_" + cacheName, new AtomicLong(0));
 
             CacheConfiguration configuration = cache.getConfiguration(CacheConfiguration.class);
 
@@ -262,6 +265,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                     continue;
 
                 keysCacheClasses.put(cacheName, keys.toArray(new Class[] {}));
+
                 valuesCacheClasses.put(cacheName, values.toArray(new Class[] {}));
             }
             else
@@ -279,15 +283,15 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     }
 
     /**
-     * Load allowable operation from parameters.
+     * Load allowed operation from parameters.
      */
-    private void loadAllowOperations() {
-        allowOperations = new ArrayList<>();
-        if (args.allowOperations().isEmpty())
-            Collections.addAll(allowOperations, Operation.values());
+    private void loadAllowedOperations() {
+        allowedLoadTestOps = new ArrayList<>();
+        if (args.allowedLoadTestOps().isEmpty())
+            Collections.addAll(allowedLoadTestOps, Operation.values());
         else
-            for (String opName : args.allowOperations())
-                allowOperations.add(Operation.valueOf(opName.toUpperCase()));
+            for (String opName : args.allowedLoadTestOps())
+                allowedLoadTestOps.add(Operation.valueOf(opName.toUpperCase()));
     }
 
     /**
@@ -298,8 +302,8 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     private void loadQueries() throws Exception {
         queries = new ArrayList<>();
 
-        if (args.queriesFile() != null) {
-            try (FileReader fr = new FileReader(args.queriesFile())) {
+        if (args.loadTestQueriesFile() != null) {
+            try (FileReader fr = new FileReader(args.loadTestQueriesFile())) {
                 try (BufferedReader br = new BufferedReader(fr)) {
                     String line;
                     while ((line = br.readLine()) != null) {
@@ -422,6 +426,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
             if (nodeParts == null) {
                 nodeParts = new ArrayList<>();
+
                 nodesToPart.put(entry.getValue().id(), nodeParts);
             }
 
@@ -498,6 +503,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      */
     private void executeRandomOperation(Map<Object, Object> map, IgniteCache cache) throws Exception {
         Operation op = nextRandomOperation();
+
         switch (op) {
             case PUT:
                 doPut(cache);
@@ -558,7 +564,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      * @return Operation.
      */
     @NotNull private Operation nextRandomOperation() {
-        return allowOperations.get(nextRandom(allowOperations.size()));
+        return allowedLoadTestOps.get(nextRandom(allowedLoadTestOps.size()));
     }
 
     /**
@@ -567,10 +573,14 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      * @param op Operation.
      */
     private void storeStatistics(String cacheName, Map<Object, Object> map, Operation op) {
-        String opCacheKey = String.format("%s_%s", op, cacheName);
+        String opCacheKey = op + "_" + cacheName;
+
         Long opAmount = (Long)map.get("amount");
+
         opAmount = opAmount == null ? 1L : opAmount + 1;
+
         Integer opCacheCnt = (Integer)map.get(opCacheKey);
+
         opCacheCnt = opCacheCnt == null ? 1 : opCacheCnt + 1;
 
         if (opAmount % 100 == 0)
@@ -587,10 +597,13 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     private void updateStat(Map<Object, Object> map) {
         for (Operation op: Operation.values())
             for (String cacheName: ignite().cacheNames()) {
-                String opCacheKey = String.format("%s_%s", op, cacheName);
+                String opCacheKey = op + "_" + cacheName;
+
                 Integer val = (Integer)map.get(opCacheKey);
+
                 if (val != null) {
                     operationStatistics.get(opCacheKey).addAndGet(val.longValue());
+
                     map.put(opCacheKey, 0);
                 }
 
@@ -635,6 +648,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      */
     private void doPutAll(IgniteCache cache) throws Exception {
         Map putMap = new TreeMap();
+
         Class keyCass = randomKeyClass(cache.getName());
 
         for (int cnt = 0; cnt < args.batch(); cnt++) {
@@ -708,7 +722,9 @@ private static class BenchmarkReplaceValueEntryProcessor implements EntryProcess
     /** {@inheritDoc} */
     @Override public Object process(MutableEntry entry, Object... arguments) throws EntryProcessorException {
         Object newVal = arguments == null || arguments[0] == null ? this.newVal : arguments[0];
+
         Object oldVal = entry.getValue();
+
         entry.setValue(newVal);
 
         return oldVal;
@@ -740,6 +756,7 @@ private static class BenchmarkRemoveEntryProcessor implements EntryProcessor, Se
 
         for (int cnt = 0; cnt < args.batch(); cnt++) {
             int i = nextRandom(args.range());
+
             Object key = ModelUtil.create(keyCls, i);
 
             if (nextBoolean())
@@ -851,13 +868,26 @@ private static class BenchmarkRemoveEntryProcessor implements EntryProcessor, Se
      * @throws Exception If failed.
      */
     private void doContinuousQuery(IgniteCache cache, Map<Object, Object> map) throws Exception {
-        QueryCursor cursor = (QueryCursor)map.get(cache.getName());
-        if (cursor != null)
+        List<QueryCursor> cursors = (ArrayList<QueryCursor>)map.get(cache.getName());
+
+        if (cursors == null) {
+            cursors = new ArrayList<>(CONTINUOUS_QUERY_PER_CACHE);
+            map.put(cache.getName(), cursors);
+        }
+
+        if (cursors.size() == CONTINUOUS_QUERY_PER_CACHE) {
+            QueryCursor cursor = cursors.get(nextRandom(cursors.size()));
             cursor.close();
+            cursors.remove(cursor);
+        }
+
         ContinuousQuery qry = new ContinuousQuery();
+
         qry.setLocalListener(new ContinuousQueryUpdater());
-        qry.setRemoteFilterFactory(FactoryBuilder.factoryOf(new ContinuousQueryFilter(nextRandom(50, 100))));
-        map.put(cache.getName(), cache.query(qry));
+
+        qry.setRemoteFilterFactory(FactoryBuilder.factoryOf(new ContinuousQueryFilter()));
+
+        cursors.add(cache.query(qry));
     }
 
 /**
@@ -878,21 +908,13 @@ private static class ContinuousQueryUpdater implements CacheEntryUpdatedListener
 private static class ContinuousQueryFilter implements CacheEntryEventSerializableFilter, Serializable {
 
     /**
-     * Value.
+     * Flag.
      */
-    private int val;
-
-    /**
-     * @param val Value.
-     */
-    ContinuousQueryFilter(int val) {
-        this.val = val;
-    }
+    private boolean flag = true;
 
     /** {@inheritDoc} */
     @Override public boolean evaluate(CacheEntryEvent evt) throws CacheEntryListenerException {
-        return evt.getOldValue() != null && evt.getValue() != null
-            && ((evt.getOldValue().hashCode() - evt.getValue().hashCode()) % (val) == 0);
+        return flag =! flag;
     }
 }
 
@@ -933,12 +955,11 @@ private static class ScanQueryBroadcastClosure implements IgniteRunnable {
         List<Integer> myPartitions = cachePart.get(node.cluster().localNode().id());
 
         for (Integer part : myPartitions) {
-            if (ThreadLocalRandom.current().nextBoolean())
-                continue;
 
             ScanQuery scanQry = new ScanQuery();
 
             scanQry.setPartition(part);
+
             scanQry.setFilter(igniteBiPred);
 
             try (QueryCursor cursor = cache.query(scanQry)) {
@@ -961,7 +982,7 @@ private static class BenchmarkIgniteBiPredicate implements IgniteBiPredicate {
      * @return true If is hit.
      */
     @Override public boolean apply(Object key, Object val) {
-        return val.hashCode() % 45 == 0;
+        return true;
     }
 }
 

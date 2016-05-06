@@ -45,8 +45,8 @@ public class IgniteBenchmarkArguments {
     private String cfg = "config/ignite-localhost-config.xml";
 
     /** */
-    @Parameter(names = {"-qf", "--queryFile"}, description = "File of SQL queries")
-    private String qFile = null;
+    @Parameter(names = {"-ltqf", "--loadTestQueriesFile"}, description = "File with predefined SQL queries")
+    private String loadTestQueriesFile = null;
 
     /** */
     @Parameter(names = {"-sm", "--syncMode"}, description = "Synchronization mode")
@@ -153,14 +153,14 @@ public class IgniteBenchmarkArguments {
     private boolean printPartStats;
 
     /** */
-    @Parameter(names = "--allow-operation", variableArity = true, description = "List of cache operations")
-    private List<String> allowOperations = new ArrayList<>();
+    @Parameter(names = {"-ltops", "--allowedLoadTestOperations"}, variableArity = true, description = "List of enabled load test operations")
+    private List<String> allowedLoadTestOps = new ArrayList<>();
 
     /**
-     * @return List of cache operations.
+     * @return List of enabled load test operations.
      */
-    public List<String> allowOperations() {
-        return allowOperations;
+    public List<String> allowedLoadTestOps() {
+        return allowedLoadTestOps;
     }
 
     /**
@@ -297,10 +297,10 @@ public class IgniteBenchmarkArguments {
     }
 
     /**
-     * @return File contains SQL queries.
+     * @return File with predefined SQL queries.
      */
-    public String queriesFile() {
-        return qFile;
+    public String loadTestQueriesFile() {
+        return loadTestQueriesFile;
     }
 
     /**
