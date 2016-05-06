@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.service;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -23,8 +23,8 @@ import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -37,7 +37,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Tests that not all nodes in cluster need user's service definition (only nodes according to filter).
  */
-public class Service3056_2Test extends GridCommonAbstractTest {
+public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends GridCommonAbstractTest {
     /** */
     private static final String NOOP_SERVICE_CLS_NAME = "org.apache.ignite.tests.p2p.NoopService";
 
@@ -93,13 +93,12 @@ public class Service3056_2Test extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-//        cfg.setMarshaller(new OptimizedMarshaller(false));
-        cfg.setMarshaller(new BinaryMarshaller());
+        cfg.setMarshaller(marshaller());
 
         cfg.setUserAttributes(Collections.singletonMap(GRID_NAME_ATTR, gridName));
 
-//        if (getTestGridName(GRID_CNT - 1).equals(gridName) || getTestGridName(GRID_CNT - 2).equals(gridName))
-//            cfg.setClientMode(true);
+        if (getTestGridName(GRID_CNT - 1).equals(gridName) || getTestGridName(GRID_CNT - 2).equals(gridName))
+            cfg.setClientMode(true);
 
         if (grp1.contains(gridName))
             cfg.setClassLoader(extClsLdr1);
@@ -107,23 +106,14 @@ public class Service3056_2Test extends GridCommonAbstractTest {
         if (grp2.contains(gridName))
             cfg.setClassLoader(extClsLdr2);
 
-//        if (getTestGridName(0).equals(gridName)) {
-//            cfg.setClassLoader(extClsLdr);
-//
-//            cfg.setServiceConfiguration(serviceConfig(true));
-//        }
-//
-//        if (getTestGridName(1).equals(gridName)) {
-////            cfg.setClassLoader(extClsLdr2);
-//            cfg.setServiceConfiguration(serviceConfig(false));
-//        }
-//
-//        if (getTestGridName(2).equals(gridName)) {
-////            cfg.setClassLoader(extClsLdr1);
-//            cfg.setServiceConfiguration(serviceConfig(true));
-//        }
-
         return cfg;
+    }
+
+    /**
+     * @return Marshaller.
+     */
+    protected Marshaller marshaller() {
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -176,18 +166,7 @@ public class Service3056_2Test extends GridCommonAbstractTest {
     private ServiceConfiguration serviceConfig(final boolean firtsGrp) throws Exception {
         ServiceConfiguration srvCfg = new ServiceConfiguration();
 
-        final IgnitePredicate<ClusterNode> nodeFilter = new IgnitePredicate<ClusterNode>() {
-            @SuppressWarnings("SuspiciousMethodCalls")
-            @Override public boolean apply(ClusterNode node) {
-                Set<String> grp = firtsGrp ? grp1 : grp2;
-
-                Object gridName = node.attribute(GRID_NAME_ATTR);
-
-                return grp.contains(gridName) || gridName.equals(getTestGridName(0));
-            }
-        };
-
-        srvCfg.setNodeFilter(nodeFilter);
+        srvCfg.setNodeFilter(new TestNodeFilter(firtsGrp ? grp1 : grp2));
 
         Class<Service> srvcCls;
 
@@ -205,5 +184,28 @@ public class Service3056_2Test extends GridCommonAbstractTest {
         srvCfg.setMaxPerNodeCount(1);
 
         return srvCfg;
+    }
+
+    /**
+     *
+     */
+    private static class TestNodeFilter implements IgnitePredicate<ClusterNode> {
+        /** */
+        private Set<String> grp;
+
+        /**
+         * @param grp Group.
+         */
+        private TestNodeFilter(Set<String> grp) {
+            this.grp = grp;
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("SuspiciousMethodCalls")
+        @Override public boolean apply(ClusterNode node) {
+            Object gridName = node.attribute(GRID_NAME_ATTR);
+
+            return grp.contains(gridName);
+        }
     }
 }

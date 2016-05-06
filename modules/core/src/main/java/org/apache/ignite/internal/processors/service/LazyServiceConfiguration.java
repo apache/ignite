@@ -132,7 +132,13 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
         if (name != null ? !name.equals(that.getName()) : that.getName() != null)
             return false;
 
-        if (!Arrays.equals(srvcBytes, that.srvcBytes))
+        Service srvc = getService();
+        Service srvc2 = that.getService();
+
+        assert srvc != null: name;
+        assert srvc2 != null : that.name;
+
+        if (srvc != null ? !srvc.getClass().equals(srvc2.getClass()) : srvc2 != null)
             return false;
 
         return true;

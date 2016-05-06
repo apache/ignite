@@ -445,6 +445,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         new GridServiceDeployment(ctx.localNodeId(), cfg));
 
                     if (dep != null) {
+                        if (dep.configuration() instanceof LazyServiceConfiguration)
+                            ((LazyServiceConfiguration)dep.configuration()).context(ctx);
+
                         if (!dep.configuration().equalsIgnoreNodeFilter(cfg)) {
                             // Remove future from local map.
                             depFuts.remove(cfg.getName(), fut);
@@ -1463,6 +1466,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                             }
 
                             GridServiceDeploymentFuture fut = depFuts.get(assigns.name());
+
+                            if (assigns.configuration() instanceof LazyServiceConfiguration)
+                                ((LazyServiceConfiguration)assigns.configuration()).context(ctx);
 
                             if (fut != null && fut.configuration().equalsIgnoreNodeFilter(assigns.configuration())) {
                                 depFuts.remove(assigns.name(), fut);

@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.internal.processors.service;
 
 import java.util.Collections;
 import java.util.HashSet;
@@ -22,7 +22,7 @@ import java.util.Set;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.marshaller.jdk.JdkMarshaller;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -33,7 +33,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 /**
  * Tests that not all nodes in cluster need user's service definition (only nodes according to filter).
  */
-public class Service3056Test extends GridCommonAbstractTest {
+public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends GridCommonAbstractTest {
     /** */
     private static final String NOOP_SERVICE_CLS_NAME = "org.apache.ignite.tests.p2p.NoopService";
 
@@ -73,8 +73,7 @@ public class Service3056Test extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-//        cfg.setMarshaller(new OptimizedMarshaller(false));
-        cfg.setMarshaller(new JdkMarshaller());
+        cfg.setMarshaller(marshaller());
 
         cfg.setUserAttributes(Collections.singletonMap(GRID_NAME_ATTR, gridName));
 
@@ -86,6 +85,13 @@ public class Service3056Test extends GridCommonAbstractTest {
             cfg.setClassLoader(extClsLdr);
 
         return cfg;
+    }
+
+    /**
+     * @return Marshaller.
+     */
+    protected Marshaller marshaller() {
+        return null;
     }
 
     /** {@inheritDoc} */
