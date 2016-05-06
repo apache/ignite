@@ -234,8 +234,8 @@ class GridJettyJsonConfig extends JsonConfig {
                     if (mtd.getParameterTypes().length != 0 ||
                         retType == void.class ||
                         retType == cls ||
-                        retType == VisorCache.class ||
-                        exclMtds.contains(mtd.getName()))
+                        exclMtds.contains(mtd.getName()) ||
+                        (retType == VisorCache.class && mtd.getName().equals("history")))
                         continue;
 
                     mtd.setAccessible(true);
