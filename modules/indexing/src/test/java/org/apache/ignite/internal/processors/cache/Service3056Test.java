@@ -16,14 +16,14 @@
  */
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.UUID;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
@@ -36,22 +36,37 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class Service3056Test extends GridCommonAbstractTest {
     /** */
-    public static final String NOOP_SERVICE_CLS_NAME = "org.apache.ignite.tests.p2p.NoopService";
+    private static final String NOOP_SERVICE_CLS_NAME = "org.apache.ignite.tests.p2p.NoopService";
 
     /** IP finder. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Grid count. */
-    public static final int GRID_CNT = 3;
+    private static final int GRID_CNT = 4;
 
     /** */
-    public static final int NODE_WITH_EXT_CLASS_LOADER = 1;
+    private static final int SERVER_NODE = 0;
+
+    /** */
+    private static final int SERVER_NODE_WITH_EXT_CLASS_LOADER = 1;
+
+    /** */
+    private static final int CLIENT_IDX = 2;
+
+    /** */
+    private static final int CLIENT_NODE_WITH_EXT_CLASS_LOADER = 3;
+
+    /** */
+    private static final String GRID_NAME_ATTR = "GRID_NAME";
 
     /** */
     private static ClassLoader extClassLoader;
 
     /** */
     private Set<String> extClassLoaderGrids = new HashSet<>();
+
+    /** */
+    private boolean setServiceConfig;
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -65,13 +80,21 @@ public class Service3056Test extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(discoSpi);
 
-        cfg.setMarshaller(new OptimizedMarshaller(false));
+//        cfg.setMarshaller(new OptimizedMarshaller(false));
+        cfg.setMarshaller(new BinaryMarshaller());
 
-        if (getTestGridName(GRID_CNT - 1).equals(gridName))
+        cfg.setUserAttributes(Collections.singletonMap(GRID_NAME_ATTR, gridName));
+
+        if (getTestGridName(CLIENT_NODE_WITH_EXT_CLASS_LOADER).equals(gridName)
+            || getTestGridName(CLIENT_IDX).equals(gridName))
             cfg.setClientMode(true);
 
-        if (extClassLoaderGrids.contains(gridName))
+        if (extClassLoaderGrids.contains(gridName)) {
             cfg.setClassLoader(extClassLoader);
+
+            if (setServiceConfig)
+                cfg.setServiceConfiguration(serviceConfig());
+        }
 
         return cfg;
     }
@@ -82,8 +105,15 @@ public class Service3056Test extends GridCommonAbstractTest {
 
         extClassLoaderGrids.clear();
 
-        extClassLoaderGrids.add(getTestGridName(NODE_WITH_EXT_CLASS_LOADER));
-        extClassLoaderGrids.add(getTestGridName(GRID_CNT - 1)); // client.
+        extClassLoaderGrids.add(getTestGridName(SERVER_NODE_WITH_EXT_CLASS_LOADER));
+        extClassLoaderGrids.add(getTestGridName(CLIENT_NODE_WITH_EXT_CLASS_LOADER));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        setServiceConfig = false;
+
+        super.afterTest();
     }
 
     /** {@inheritDoc} */
@@ -100,29 +130,14 @@ public class Service3056Test extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testServiceDeployment() throws Exception {
-        check();
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    private void check() throws Exception {
         for (int i = 0; i < GRID_CNT; i++) {
-            startGrids(GRID_CNT);
-            
-            info("Testing service deploymnet from grid [i=" + i + ", id8="
-                + U.id8(grid(i).cluster().localNode().id()) + "]");
-
             try {
-                final UUID id0 = grid(NODE_WITH_EXT_CLASS_LOADER).cluster().localNode().id();
+                startGrids(GRID_CNT);
 
-                final IgnitePredicate<ClusterNode> nodeFilter = new IgnitePredicate<ClusterNode>() {
-                    @Override public boolean apply(ClusterNode node) {
-                        return node.id().equals(id0);
-                    }
-                };
+                info("Testing service deploymnet from grid [i=" + i + ", id8="
+                    + U.id8(grid(i).cluster().localNode().id()) + "]");
 
-                ServiceConfiguration srvCfg = serviceConfig(nodeFilter);
+                ServiceConfiguration srvCfg = serviceConfig();
 
                 grid(i).services().deploy(srvCfg);
             }
@@ -133,12 +148,69 @@ public class Service3056Test extends GridCommonAbstractTest {
     }
 
     /**
-     * @param nodeFilter Node filter.
+     * @throws Exception If failed.
+     */
+    public void testDeploymentOnNodeStart1() throws Exception {
+        setServiceConfig = true;
+
+        try {
+            startGrid(SERVER_NODE);
+            startGrid(SERVER_NODE_WITH_EXT_CLASS_LOADER);
+            startGrid(CLIENT_IDX);
+            startGrid(CLIENT_NODE_WITH_EXT_CLASS_LOADER);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDeploymentOnNodeStart2() throws Exception {
+        setServiceConfig = true;
+
+        try {
+            startGrid(SERVER_NODE_WITH_EXT_CLASS_LOADER);
+            startGrid(SERVER_NODE);
+            startGrid(CLIENT_NODE_WITH_EXT_CLASS_LOADER);
+            startGrid(CLIENT_IDX);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testDeploymentOnNodeStart3() throws Exception {
+        setServiceConfig = true;
+
+        try {
+            startGrid(SERVER_NODE);
+            startGrid(CLIENT_NODE_WITH_EXT_CLASS_LOADER);
+            startGrid(CLIENT_IDX);
+            startGrid(SERVER_NODE_WITH_EXT_CLASS_LOADER);
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
      * @return Service configuration.
      * @throws Exception If failed.
      */
-    private ServiceConfiguration serviceConfig(IgnitePredicate<ClusterNode> nodeFilter) throws Exception {
+    private ServiceConfiguration serviceConfig() throws Exception {
         ServiceConfiguration srvCfg = new ServiceConfiguration();
+
+        final IgnitePredicate<ClusterNode> nodeFilter = new IgnitePredicate<ClusterNode>() {
+            @SuppressWarnings("SuspiciousMethodCalls")
+            @Override public boolean apply(ClusterNode node) {
+                return extClassLoaderGrids.contains(node.attribute(GRID_NAME_ATTR));
+            }
+        };
 
         srvCfg.setNodeFilter(nodeFilter);
 
