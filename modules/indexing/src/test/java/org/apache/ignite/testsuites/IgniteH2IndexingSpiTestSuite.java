@@ -18,6 +18,7 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.*;
 import org.apache.ignite.internal.processors.query.h2.GridH2IndexRebuildTest;
 import org.apache.ignite.internal.processors.query.h2.GridH2IndexingInMemSelfTest;
 import org.apache.ignite.internal.processors.query.h2.GridH2IndexingOffheapSelfTest;
@@ -45,6 +46,9 @@ public class IgniteH2IndexingSpiTestSuite extends TestSuite {
 
         // Index rebuilding.
         suite.addTest(new TestSuite(GridH2IndexRebuildTest.class));
+
+        // Batch indexing.
+        suite.addTest(new TestSuite(CacheOffheapBatchIndexingTest.class));
 
         return suite;
     }
