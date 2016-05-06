@@ -19,15 +19,8 @@ package org.apache.ignite.internal.visor.compute;
 
 import java.lang.reflect.Constructor;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
+
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.compute.ComputeJob;
@@ -159,6 +152,9 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
 
             if (Set.class == cls)
                 return new HashSet<>(Arrays.asList(val.split(",")));
+
+            if (Map.class == cls)
+                return new HashMap<>(Integer.parseInt(val));
 
             if (Object[].class == cls)
                 return val.split(",");

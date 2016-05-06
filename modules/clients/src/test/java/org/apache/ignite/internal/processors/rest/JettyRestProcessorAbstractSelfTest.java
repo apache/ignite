@@ -36,31 +36,45 @@ import java.util.regex.Pattern;
 import net.sf.json.JSONNull;
 import net.sf.json.JSONObject;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.FileSystemConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
+import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandler;
+import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.typedef.P1;
-import org.apache.ignite.internal.visor.cache.VisorCacheClearTask;
-import org.apache.ignite.internal.visor.cache.VisorCacheLoadTask;
-import org.apache.ignite.internal.visor.cache.VisorCacheMetadataTask;
-import org.apache.ignite.internal.visor.cache.VisorCacheRebalanceTask;
-import org.apache.ignite.internal.visor.cache.VisorCacheResetMetricsTask;
-import org.apache.ignite.internal.visor.cache.VisorCacheSwapBackupsTask;
+import org.apache.ignite.internal.visor.cache.*;
+import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionsTask;
+import org.apache.ignite.internal.visor.compute.VisorComputeResetMetricsTask;
+import org.apache.ignite.internal.visor.compute.VisorComputeToggleMonitoringTask;
 import org.apache.ignite.internal.visor.compute.VisorGatewayTask;
-import org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTask;
-import org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTaskArg;
+import org.apache.ignite.internal.visor.debug.VisorThreadDumpTask;
+import org.apache.ignite.internal.visor.file.VisorFileBlockTask;
+import org.apache.ignite.internal.visor.file.VisorLatestTextFilesTask;
+import org.apache.ignite.internal.visor.igfs.*;
+import org.apache.ignite.internal.visor.log.VisorLogSearchTask;
+import org.apache.ignite.internal.visor.misc.VisorAckTask;
+import org.apache.ignite.internal.visor.misc.VisorLatestVersionTask;
+import org.apache.ignite.internal.visor.node.*;
+import org.apache.ignite.internal.visor.query.VisorQueryCleanupTask;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
@@ -1196,7 +1210,37 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         final String successRes = pattern(
             "\\{\\\"error\\\":\\\"\\\",\\\"finished\\\":true,\\\"id\\\":\\\"[^\\\"]+\\\",\\\"result\\\":.+}", true);
 
+        final IgniteUuid cid = grid(1).context().cache().internalCache("person").context().dynamicDeploymentId();
+
+//        String ret = content(new HashMap<String, String>(cmd) {{
+//            put("p1", grid(1).localNode().id().toString());
+//            put("p2", VisorCacheConfigurationCollectorTask.class.getName());
+//            put("p3", Collection.class.getName());
+//            put("p4", cid.toString());
+//        }});
+//
+//        info("Exe command result: " + ret);
+//
+//        assertNotNull(ret);
+//        assertTrue(!ret.isEmpty());
+//
+//        jsonEquals(ret, successRes);
+
         String ret = content(new HashMap<String, String>(cmd) {{
+            put("p1", grid(1).localNode().id().toString());
+            put("p2", VisorCacheNodesTask.class.getName());
+            put("p3", String.class.getName());
+            put("p4", "person");
+        }});
+
+        info("Exe command result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new HashMap<String, String>(cmd) {{
             put("p1", grid(1).localNode().id().toString());
             put("p2", VisorCacheLoadTask.class.getName());
             put("p3", GridTuple3.class.getName());
@@ -1282,6 +1326,278 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         jsonEquals(ret, successRes);
 
+//        ret = content(new HashMap<String, String>(cmd) {{
+//            put("p1", grid(1).localNode().id().toString());
+//            put("p2", VisorIgfsSamplingStateTask.class.getName());
+//            put("p3", IgniteBiTuple.class.getName());
+//            put("p4", "igfs");
+//            put("p5", "false");
+//        }});
+//
+//        info("Exe command result: " + ret);
+//
+//        assertNotNull(ret);
+//        assertTrue(!ret.isEmpty());
+//
+//        jsonEquals(ret, successRes);
+
+        ret = content(new HashMap<String, String>(cmd) {{
+            put("p1", grid(1).localNode().id().toString());
+            put("p2", VisorIgfsProfilerClearTask.class.getName());
+            put("p3", String.class.getName());
+            put("p4", "igfs");
+        }});
+
+        info("Exe command result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new HashMap<String, String>(cmd) {{
+            put("p1", grid(1).localNode().id().toString());
+            put("p2", VisorIgfsProfilerTask.class.getName());
+            put("p3", String.class.getName());
+            put("p4", "igfs");
+        }});
+
+        info("Exe command result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new HashMap<String, String>(cmd) {{
+            put("p1", grid(1).localNode().id().toString());
+            put("p2", VisorIgfsFormatTask.class.getName());
+            put("p3", String.class.getName());
+            put("p4", "igfs");
+        }});
+
+        info("Exe command result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new HashMap<String, String>(cmd) {{
+            put("p1", grid(1).localNode().id().toString());
+            put("p2", VisorIgfsResetMetricsTask.class.getName());
+            put("p3", Set.class.getName());
+            put("p4", "igfs");
+        }});
+
+        info("Exe command result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new HashMap<String, String>(cmd) {{
+            put("p1", grid(1).localNode().id().toString());
+            put("p2", VisorThreadDumpTask.class.getName());
+        }});
+
+        info("Exe command result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new HashMap<String, String>(cmd) {{
+            put("p1", grid(1).localNode().id().toString());
+            put("p2", VisorLatestTextFilesTask.class.getName());
+            put("p3", IgniteBiTuple.class.getName());
+            put("p4", "");
+            put("p5", "");
+        }});
+
+        info("Exe command result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new HashMap<String, String>(cmd) {{
+            put("p1", grid(1).localNode().id().toString());
+            put("p2", VisorLatestVersionTask.class.getName());
+        }});
+
+        info("Exe command result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new HashMap<String, String>(cmd) {{
+            put("p1", grid(1).localNode().id().toString());
+            put("p2", VisorFileBlockTask.class.getName());
+            put("p3", VisorFileBlockTask.VisorFileBlockArg.class.getName());
+            put("p4", "");
+            put("p5", "0");
+            put("p6", "1");
+            put("p7", "0");
+        }});
+
+        info("Exe command result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        final UUID id = grid(1).cluster().node().id();
+
+//        ret = content(new HashMap<String, String>(cmd) {{
+//            put("p1", grid(1).localNode().id().toString());
+//            put("p2", VisorFileBlockTask.class.getName());
+//            put("p3", IgniteBiTuple.class.getName());
+//            put("p4", id.toString());
+//            put("p5", "Pirate%20license");
+//        }});
+//
+//        info("Exe command result: " + ret);
+//
+//        assertNotNull(ret);
+//        assertTrue(!ret.isEmpty());
+//
+//        jsonEquals(ret, successRes);
+
+        ret = content(new HashMap<String, String>(cmd) {{
+            put("p1", grid(1).localNode().id().toString());
+            put("p2", VisorNodePingTask.class.getName());
+            put("p3", UUID.class.getName());
+            put("p4", id.toString());
+        }});
+
+        info("Exe command result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new HashMap<String, String>(cmd) {{
+            put("p1", grid(1).localNode().id().toString());
+            put("p2", VisorNodeConfigurationCollectorTask.class.getName());
+        }});
+
+        info("Exe command result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new HashMap<String, String>(cmd) {{
+            put("p1", grid(1).localNode().id().toString());
+            put("p2", VisorComputeResetMetricsTask.class.getName());
+        }});
+
+        info("Exe command result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        // Multinode tasks
+
+        ret = content(new HashMap<String, String>(cmd) {{
+            put("p1", "");
+            put("p2", VisorComputeCancelSessionsTask.class.getName());
+            put("p3", Map.class.getName());
+            put("p4", "0");
+        }});
+
+        info("Exe command result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+//        ret = content(new HashMap<String, String>(cmd) {{
+//            put("p1", "");
+//            put("p2", VisorCacheMetricsCollectorTask.class.getName());
+//            put("p3", IgniteBiTuple.class.getName());
+//            put("p4", "false");
+//            put("p4", "person");
+//        }});
+//
+//        info("Exe command result: " + ret);
+//
+//        assertNotNull(ret);
+//        assertTrue(!ret.isEmpty());
+//
+//        jsonEquals(ret, successRes);
+
+        ret = content(new HashMap<String, String>(cmd) {{
+            put("p1", "");
+            put("p2", VisorLogSearchTask.class.getName());
+            put("p3", VisorLogSearchTask.VisorLogSearchArg.class.getName());
+            put("p4", ".");
+            put("p5", ".");
+            put("p6", "abrakodabra.txt");
+            put("p7", "1");
+        }});
+
+        info("Exe command result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new HashMap<String, String>(cmd) {{
+            put("p1", "");
+            put("p2", VisorNodeGcTask.class.getName());
+        }});
+
+        info("Exe command result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new HashMap<String, String>(cmd) {{
+            put("p1", "");
+            put("p2", VisorAckTask.class.getName());
+            put("p3", String.class.getName());
+            put("p4", "MSG");
+        }});
+
+        info("Exe command result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+//        ret = content(new HashMap<String, String>(cmd) {{
+//            put("p1", "");
+//            put("p2", VisorNodeEventsCollectorTask.class.getName());
+//            put("p3", VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg.class.getName());
+//            put("p4", "null");
+//            put("p5", "taskName");
+//            put("p6", "null");
+//        }});
+//
+//        info("Exe command result: " + ret);
+//
+//        assertNotNull(ret);
+//        assertTrue(!ret.isEmpty());
+//
+//        jsonEquals(ret, successRes);
+
         ret = content(new HashMap<String, String>(cmd) {{
             put("p1", "");
             put("p2", VisorNodeDataCollectorTask.class.getName());
@@ -1299,6 +1615,35 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         assertTrue(!ret.isEmpty());
 
         jsonEquals(ret, successRes);
+
+        ret = content(new HashMap<String, String>(cmd) {{
+            put("p1", "");
+            put("p2", VisorComputeToggleMonitoringTask.class.getName());
+            put("p3", IgniteBiTuple.class.getName());
+            put("p4", UUID.randomUUID().toString());
+            put("p5", "false");
+        }});
+
+        info("Exe command result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+//        ret = content(new HashMap<String, String>(cmd) {{
+//            put("p1", "");
+//            put("p2", VisorQueryCleanupTask.class.getName());
+//            put("p3", Map.class.getName());
+//            put("p4", "0");
+//        }});
+//
+//        info("Exe command result: " + ret);
+//
+//        assertNotNull(ret);
+//        assertTrue(!ret.isEmpty());
+//
+//        jsonEquals(ret, successRes);
     }
 
     /**
@@ -1744,5 +2089,43 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         @Override public boolean apply(ClusterNode n) {
             return n.id().equals(nid);
         }
+    }
+
+    @Override
+    protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        CacheConfiguration cacheIgfs_data = new CacheConfiguration();
+
+        cacheIgfs_data.setName("igfs-data");
+        cacheIgfs_data.setCacheMode(CacheMode.PARTITIONED);
+        cacheIgfs_data.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        cacheIgfs_data.setBackups(0);
+
+        cacheIgfs_data.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+
+        cacheIgfs_data.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(512));
+
+        CacheConfiguration cacheIgfs_meta = new CacheConfiguration();
+
+        cacheIgfs_meta.setName("igfs-meta");
+        cacheIgfs_meta.setCacheMode(CacheMode.REPLICATED);
+        cacheIgfs_meta.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+
+        cacheIgfs_meta.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+
+        cfg.setCacheConfiguration(cfg.getCacheConfiguration()[0], cacheIgfs_data, cacheIgfs_meta);
+
+        FileSystemConfiguration igfs = new FileSystemConfiguration();
+
+        igfs.setName("igfs");
+        igfs.setDataCacheName("igfs-data");
+        igfs.setMetaCacheName("igfs-meta");
+
+        igfs.setIpcEndpointConfiguration(new IgfsIpcEndpointConfiguration());
+
+        cfg.setFileSystemConfiguration(igfs);
+
+        return cfg;
     }
 }
