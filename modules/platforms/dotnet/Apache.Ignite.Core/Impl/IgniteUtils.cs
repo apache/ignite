@@ -57,8 +57,8 @@ namespace Apache.Ignite.Core.Impl
         /** File: jvm.dll. */
         internal const string FileJvmDll = "jvm.dll";
 
-        /** File: Ignite.Common.dll. */
-        internal const string FileIgniteJniDll = "ignite.common.dll";
+        /** File: Ignite.Jni.dll. */
+        internal const string FileIgniteJniDll = "ignite.jni.dll";
         
         /** Prefix for temp directory names. */
         private const string DirIgniteTmp = "Ignite_";

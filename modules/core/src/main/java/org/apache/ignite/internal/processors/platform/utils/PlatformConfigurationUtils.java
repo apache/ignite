@@ -28,10 +28,14 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.eviction.EvictionPolicy;
+import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
+import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.*;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
@@ -58,7 +62,8 @@ import java.util.Map;
 /**
  * Configuration utils.
  */
-@SuppressWarnings("unchecked") public class PlatformConfigurationUtils {
+@SuppressWarnings("unchecked")
+public class PlatformConfigurationUtils {
     /**
      * Write .Net configuration to the stream.
      *
@@ -163,7 +168,83 @@ import java.util.Map;
             ccfg.setQueryEntities(entities);
         }
 
+        if (in.readBoolean())
+            ccfg.setNearConfiguration(readNearConfiguration(in));
+
         return ccfg;
+    }
+
+    /**
+     * Reads the near config.
+     *
+     * @param in Stream.
+     * @return NearCacheConfiguration.
+     */
+    public static NearCacheConfiguration readNearConfiguration(BinaryRawReader in) {
+        NearCacheConfiguration cfg = new NearCacheConfiguration();
+        cfg.setNearStartSize(in.readInt());
+
+        byte plcTyp = in.readByte();
+
+        switch (plcTyp) {
+            case 0:
+                break;
+            case 1: {
+                FifoEvictionPolicy p = new FifoEvictionPolicy();
+                p.setBatchSize(in.readInt());
+                p.setMaxSize(in.readInt());
+                p.setMaxMemorySize(in.readLong());
+                cfg.setNearEvictionPolicy(p);
+                break;
+            }
+            case 2: {
+                LruEvictionPolicy p = new LruEvictionPolicy();
+                p.setBatchSize(in.readInt());
+                p.setMaxSize(in.readInt());
+                p.setMaxMemorySize(in.readLong());
+                cfg.setNearEvictionPolicy(p);
+                break;
+            }
+            default:
+                assert false;
+        }
+
+        return cfg;
+    }
+
+    /**
+     * Reads the near config.
+     *
+     * @param out Stream.
+     * @param cfg NearCacheConfiguration.
+     */
+    @SuppressWarnings("TypeMayBeWeakened")
+    public static void writeNearConfiguration(BinaryRawWriter out, NearCacheConfiguration cfg) {
+        assert cfg != null;
+
+        out.writeInt(cfg.getNearStartSize());
+
+        EvictionPolicy p = cfg.getNearEvictionPolicy();
+
+        if (p instanceof FifoEvictionPolicy) {
+            out.writeByte((byte)1);
+
+            FifoEvictionPolicy p0 = (FifoEvictionPolicy)p;
+            out.writeInt(p0.getBatchSize());
+            out.writeInt(p0.getMaxSize());
+            out.writeLong(p0.getMaxMemorySize());
+        }
+        else if (p instanceof LruEvictionPolicy) {
+            out.writeByte((byte)2);
+
+            LruEvictionPolicy p0 = (LruEvictionPolicy)p;
+            out.writeInt(p0.getBatchSize());
+            out.writeInt(p0.getMaxSize());
+            out.writeLong(p0.getMaxMemorySize());
+        }
+        else {
+            out.writeByte((byte)0);
+        }
     }
 
     /**
@@ -264,6 +345,7 @@ import java.util.Map;
         cfg.setWorkDirectory(in.readString());
         cfg.setLocalHost(in.readString());
         cfg.setDaemon(in.readBoolean());
+        cfg.setLateAffinityAssignment(in.readBoolean());
 
         readCacheConfigurations(in, cfg);
         readDiscoveryConfiguration(in, cfg);
@@ -469,8 +551,7 @@ import java.util.Map;
 
         Collection<QueryEntity> qryEntities = ccfg.getQueryEntities();
 
-        if (qryEntities != null)
-        {
+        if (qryEntities != null) {
             writer.writeInt(qryEntities.size());
 
             for (QueryEntity e : qryEntities)
@@ -478,6 +559,16 @@ import java.util.Map;
         }
         else
             writer.writeInt(0);
+
+        NearCacheConfiguration nearCfg = ccfg.getNearConfiguration();
+
+        if (nearCfg != null) {
+            writer.writeBoolean(true);
+
+            writeNearConfiguration(writer, nearCfg);
+        }
+        else
+            writer.writeBoolean(false);
     }
 
     /**
@@ -581,6 +672,7 @@ import java.util.Map;
         w.writeString(cfg.getWorkDirectory());
         w.writeString(cfg.getLocalHost());
         w.writeBoolean(cfg.isDaemon());
+        w.writeBoolean(cfg.isLateAffinityAssignment());
 
         CacheConfiguration[] cacheCfg = cfg.getCacheConfiguration();
 

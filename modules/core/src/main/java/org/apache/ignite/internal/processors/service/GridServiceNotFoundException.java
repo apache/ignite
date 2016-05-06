@@ -30,7 +30,7 @@ public class GridServiceNotFoundException extends IgniteCheckedException {
      * @param name Service name.
      */
     public GridServiceNotFoundException(String name) {
-        super("Service node found: " + name);
+        super("Service not found: " + name);
     }
 
     /** {@inheritDoc} */

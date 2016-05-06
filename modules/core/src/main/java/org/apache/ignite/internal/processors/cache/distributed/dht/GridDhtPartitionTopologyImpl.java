@@ -788,10 +788,10 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<ClusterNode> nodes(int p, AffinityTopologyVersion topVer) {
+    @Override public List<ClusterNode> nodes(int p, AffinityTopologyVersion topVer) {
         GridAffinityAssignment affAssignment = cctx.affinity().assignment(topVer);
 
-        Collection<ClusterNode> affNodes = affAssignment.get(p);
+        List<ClusterNode> affNodes = affAssignment.get(p);
 
         lock.readLock().lock();
 
@@ -802,7 +802,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                 ", cache=" + cctx.name() +
                 ", node2part=" + node2part + ']';
 
-            Collection<ClusterNode> nodes = null;
+            List<ClusterNode> nodes = null;
 
             Collection<UUID> nodeIds = part2node.get(p);
 
