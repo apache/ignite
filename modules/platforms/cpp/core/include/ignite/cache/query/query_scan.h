@@ -20,8 +20,8 @@
  * Declares ignite::cache::query::ScanQuery class.
  */
 
-#ifndef _IGNITE_CACHE_QUERY_SCAN
-#define _IGNITE_CACHE_QUERY_SCAN
+#ifndef _IGNITE_CACHE_QUERY_QUERY_SCAN
+#define _IGNITE_CACHE_QUERY_QUERY_SCAN
 
 #include <stdint.h>
 #include <string>
@@ -153,4 +153,4 @@ namespace ignite
     }    
 }
 
-#endif
+#endif //_IGNITE_CACHE_QUERY_QUERY_SCAN

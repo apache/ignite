@@ -354,4 +354,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_COMMON_CONCURRENT

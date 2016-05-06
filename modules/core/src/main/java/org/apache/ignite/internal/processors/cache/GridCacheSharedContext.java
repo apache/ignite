@@ -483,7 +483,7 @@ public class GridCacheSharedContext<K, V> {
      * @param nodeId Node ID.
      * @return Node or {@code null}.
      */
-    public ClusterNode node(UUID nodeId) {
+    @Nullable public ClusterNode node(UUID nodeId) {
         return kernalCtx.discovery().node(nodeId);
     }
 
