@@ -34,9 +34,11 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfoCollectSwapListener;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheSwapEntry;
+import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.T3;
@@ -354,6 +356,99 @@ class GridDhtPartitionSupplier {
                                 part,
                                 loc,
                                 d.updateSequence());
+                        }
+                    }
+
+                    if (phase == SupplyContextPhase.SWAP) {
+                        GridIterator<CacheDataRow> iter = cctx.offheap().iterator(part);
+
+                        // Iterator may be null if space does not exist.
+                        if (iter != null) {
+                            boolean prepared = false;
+
+                            while (iter.hasNext()) {
+                                if (!cctx.affinity().belongs(node, part, d.topologyVersion())) {
+                                    // Demander no longer needs this partition,
+                                    // so we send '-1' partition and move on.
+                                    s.missed(part);
+
+                                    if (log.isDebugEnabled())
+                                        log.debug("Demanding node does not need requested partition " +
+                                            "[part=" + part + ", nodeId=" + id + ']');
+
+                                    partMissing = true;
+
+                                    break; // For.
+                                }
+
+                                if (s.messageSize() >= cctx.config().getRebalanceBatchSize()) {
+                                    if (++bCnt >= maxBatchesCnt) {
+                                        saveSupplyContext(scId,
+                                            phase,
+                                            partIt,
+                                            part,
+                                            iter,
+                                            null,
+                                            loc,
+                                            d.topologyVersion(),
+                                            d.updateSequence());
+
+                                        loc = null;
+
+                                        reply(node, d, s, scId);
+
+                                        return;
+                                    }
+                                    else {
+                                        if (!reply(node, d, s, scId))
+                                            return;
+
+                                        s = new GridDhtPartitionSupplyMessageV2(d.updateSequence(),
+                                            cctx.cacheId(), d.topologyVersion(), cctx.deploymentEnabled());
+                                    }
+                                }
+
+                                CacheDataRow row = iter.next();
+
+                                GridCacheEntryInfo info = new GridCacheEntryInfo();
+
+                                info.key(row.key());
+                                info.expireTime(0);
+                                info.version(row.version());
+                                info.value(row.value());
+
+                                if (preloadPred == null || preloadPred.apply(info))
+                                    s.addEntry0(part, info, cctx);
+                                else {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Rebalance predicate evaluated to false (will not send " +
+                                            "cache entry): " + info);
+
+                                    continue;
+                                }
+
+                                // Need to manually prepare cache message.
+// TODO GG-10884.
+//                                if (depEnabled && !prepared) {
+//                                    ClassLoader ldr = swapEntry.keyClassLoaderId() != null ?
+//                                        cctx.deploy().getClassLoader(swapEntry.keyClassLoaderId()) :
+//                                        swapEntry.valueClassLoaderId() != null ?
+//                                            cctx.deploy().getClassLoader(swapEntry.valueClassLoaderId()) :
+//                                            null;
+//
+//                                    if (ldr == null)
+//                                        continue;
+//
+//                                    if (ldr instanceof GridDeploymentInfo) {
+//                                        s.prepare((GridDeploymentInfo)ldr);
+//
+//                                        prepared = true;
+//                                    }
+//                                }
+                            }
+
+                            if (partMissing)
+                                continue;
                         }
                     }
 
