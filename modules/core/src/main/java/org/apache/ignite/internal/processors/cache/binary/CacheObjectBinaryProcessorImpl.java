@@ -773,20 +773,36 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @Override public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, Object obj, boolean userObj) {
-        if (!((CacheObjectBinaryContext)ctx).binaryEnabled())
-            return super.toCacheKeyObject(ctx, obj, userObj);
+        return toCacheKeyObject(ctx, obj, userObj, -1);
+    }
 
-        if (obj instanceof KeyCacheObject)
+    /** {@inheritDoc} */
+    @Override public KeyCacheObject toCacheKeyObject(
+        CacheObjectContext ctx,
+        Object obj,
+        boolean userObj,
+        int partition
+    ) {
+        if (!((CacheObjectBinaryContext)ctx).binaryEnabled())
+            return super.toCacheKeyObject(ctx, obj, userObj, partition);
+
+        if (obj instanceof KeyCacheObject) {
+            ((KeyCacheObject)obj).partition(partition);
+
             return (KeyCacheObject)obj;
+        }
 
         if (((CacheObjectBinaryContext)ctx).binaryEnabled()) {
             obj = toBinary(obj);
 
-            if (obj instanceof KeyCacheObject)
+            if (obj instanceof KeyCacheObject) {
+                ((KeyCacheObject)obj).partition(partition);
+
                 return (KeyCacheObject)obj;
+            }
         }
 
-        return toCacheKeyObject0(obj, userObj);
+        return toCacheKeyObject0(obj, userObj, partition);
     }
 
     /** {@inheritDoc} */

@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL_OPERATION
-#define _IGNITE_IMPL_OPERATION
+#ifndef _IGNITE_IMPL_OPERATIONS
+#define _IGNITE_IMPL_OPERATIONS
 
 #include <map>
 #include <set>
@@ -449,4 +449,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_IMPL_OPERATIONS
