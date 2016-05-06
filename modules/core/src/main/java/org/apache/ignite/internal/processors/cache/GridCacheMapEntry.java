@@ -2822,7 +2822,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheObject peek(boolean heap,
+    @Nullable @Override public CacheObject peek(
+        boolean heap,
         boolean offheap,
         boolean swap,
         AffinityTopologyVersion topVer,
@@ -2831,17 +2832,18 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert heap || offheap || swap;
 
         if (heap) {
-            GridTuple<CacheObject> val = peekGlobal(topVer, null, expiryPlc);
+            GridTuple<CacheObject> val = peekGlobal(topVer, expiryPlc);
 
             if (val != null)
                 return val.get();
         }
 
-        if (offheap || swap) {
-            GridCacheSwapEntry e = cctx.swap().read(this, false, offheap, swap, true);
-
-            return e != null ? e.value() : null;
-        }
+// TODO GG-10884.
+//        if (offheap || swap) {
+//            GridCacheSwapEntry e = cctx.swap().read(this, false, offheap, swap, true);
+//
+//            return e != null ? e.value() : null;
+//        }
 
         return null;
     }
@@ -2862,7 +2864,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /**
      * @param topVer Topology version.
-     * @param filter Filter.
      * @param expiryPlc Optional expiry policy.
      * @return Peeked value.
      * @throws GridCacheEntryRemovedException If entry got removed.
@@ -2871,7 +2872,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     @SuppressWarnings({"RedundantTypeArguments"})
     @Nullable private GridTuple<CacheObject> peekGlobal(
         AffinityTopologyVersion topVer,
-        CacheEntryPredicate[] filter,
         @Nullable IgniteCacheExpiryPolicy expiryPlc)
         throws GridCacheEntryRemovedException, IgniteCheckedException {
         if (!valid(topVer))
@@ -2880,34 +2880,21 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         boolean rmv = false;
 
         try {
-            while (true) {
-                GridCacheVersion ver;
-                CacheObject val;
+            synchronized (this) {
+                checkObsolete();
 
-                synchronized (this) {
-                    if (checkExpired()) {
-                        rmv = markObsolete0(cctx.versions().next(this.ver), true, null);
+                if (checkExpired()) {
+                    rmv = markObsolete0(cctx.versions().next(this.ver), true, null);
 
-                        return null;
-                    }
-
-                    checkObsolete();
-
-                    ver = this.ver;
-                    val = this.val;
-
-                    if (val != null && expiryPlc != null)
-                        updateTtl(expiryPlc);
+                    return null;
                 }
 
-                if (val == null)
-                    return null;
+                CacheObject val = this.val;
 
-                if (!cctx.isAll(this, filter))
-                    return null;
+                if (val != null && expiryPlc != null)
+                    updateTtl(expiryPlc);
 
-                if (F.isEmptyOrNulls(filter) || ver.equals(version()))
-                    return F.t(val);
+                return val == null ? null : F.t(val);
             }
         }
         finally {

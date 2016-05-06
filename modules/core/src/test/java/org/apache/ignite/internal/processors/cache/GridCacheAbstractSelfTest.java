@@ -250,7 +250,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
             cfg.setLoadPreviousValue(true);
         }
 
-        cfg.setSwapEnabled(swapEnabled());
         cfg.setCacheMode(cacheMode());
         cfg.setAtomicityMode(atomicityMode());
         cfg.setWriteSynchronizationMode(writeSynchronization());

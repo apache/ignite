@@ -96,7 +96,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
 import org.apache.ignite.ssl.SslContextFactory;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.jetbrains.annotations.NotNull;
@@ -1783,10 +1782,6 @@ public final class GridTestUtils {
         }
 
         ccfg.setMemoryMode(memMode);
-        ccfg.setSwapEnabled(swap);
-
-        if (swap && cfg != null)
-            cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
 
         if (evictionPlc) {
             LruEvictionPolicy plc = new LruEvictionPolicy();

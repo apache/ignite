@@ -197,7 +197,6 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
 
         cc.setCacheMode(PARTITIONED);
         cc.setAtomicityMode(transactional ? TRANSACTIONAL : ATOMIC);
-        cc.setSwapEnabled(false);
         cc.setWriteBehindEnabled(false);
 
         CacheJdbcPojoStoreFactory<Object, Object> storeFactory = new CacheJdbcPojoStoreFactory<>();

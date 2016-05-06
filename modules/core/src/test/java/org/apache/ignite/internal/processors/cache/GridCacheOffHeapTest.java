@@ -28,7 +28,6 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.noop.NoopSwapSpaceSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -66,12 +65,9 @@ public class GridCacheOffHeapTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setSwapSpaceSpi(new NoopSwapSpaceSpi());
-
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setWriteSynchronizationMode(FULL_ASYNC);
-        cacheCfg.setSwapEnabled(false);
         cacheCfg.setCacheMode(mode);
         cacheCfg.setNearConfiguration(null);
         cacheCfg.setStartSize(startSize);

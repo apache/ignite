@@ -59,7 +59,6 @@ public class GridCacheOffHeapValuesEvictionSelfTest extends GridCacheAbstractSel
         CacheConfiguration<Integer, Object> ccfg = cacheConfiguration(grid(0).name());
         ccfg.setName("testSingleEvictOffHeap");
         ccfg.setMemoryMode(CacheMemoryMode.OFFHEAP_VALUES);
-        ccfg.setSwapEnabled(false);
 
         LruEvictionPolicy plc = new LruEvictionPolicy();
         plc.setMaxMemorySize(200);
@@ -87,7 +86,6 @@ public class GridCacheOffHeapValuesEvictionSelfTest extends GridCacheAbstractSel
         FifoEvictionPolicy plc = new FifoEvictionPolicy();
         plc.setMaxMemorySize(MAX_MEMORY_SIZE);
 
-        ccfg.setSwapEnabled(true);
         ccfg.setMemoryMode(CacheMemoryMode.OFFHEAP_VALUES);
 
         ccfg.setEvictionPolicy(plc);
@@ -124,7 +122,6 @@ public class GridCacheOffHeapValuesEvictionSelfTest extends GridCacheAbstractSel
         plc.setMaxMemorySize(MAX_MEMORY_SIZE);
         plc.setMaxSize(PLC_MAX_SIZE);
 
-        ccfg.setSwapEnabled(false);
         ccfg.setMemoryMode(CacheMemoryMode.ONHEAP_TIERED);
 
         ccfg.setEvictionPolicy(plc);
@@ -164,7 +161,6 @@ public class GridCacheOffHeapValuesEvictionSelfTest extends GridCacheAbstractSel
         plc.setMaxMemorySize(MAX_MEMORY_SIZE);
         plc.setMaxSize(PLC_MAX_SIZE);
 
-        ccfg.setSwapEnabled(true);
         ccfg.setMemoryMode(CacheMemoryMode.ONHEAP_TIERED);
 
         ccfg.setEvictionPolicy(plc);

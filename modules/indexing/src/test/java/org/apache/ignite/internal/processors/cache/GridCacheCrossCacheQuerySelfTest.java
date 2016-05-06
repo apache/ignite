@@ -98,7 +98,6 @@ public class GridCacheCrossCacheQuerySelfTest extends GridCommonAbstractTest {
         cc.setCacheMode(mode);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setRebalanceMode(SYNC);
-        cc.setSwapEnabled(true);
         cc.setAtomicityMode(TRANSACTIONAL);
 
         if (mode == CacheMode.PARTITIONED)

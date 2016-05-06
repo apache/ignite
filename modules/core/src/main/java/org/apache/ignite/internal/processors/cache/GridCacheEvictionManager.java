@@ -1023,7 +1023,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
 
             // Batch write to swap.
             if (!swapped.isEmpty())
-                cctx.swap().writeAll(swapped);
+                cctx.offheap().writeAll(swapped);
         }
         finally {
             // Unlock entries in reverse order.

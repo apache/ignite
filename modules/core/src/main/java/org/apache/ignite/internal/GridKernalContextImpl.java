@@ -45,7 +45,6 @@ import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
-import org.apache.ignite.internal.managers.swapspace.GridSwapSpaceManager;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.CacheConflictResolutionManager;
 import org.apache.ignite.internal.processors.cache.GridCacheProcessor;
@@ -66,7 +65,6 @@ import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.odbc.OdbcProcessor;
-import org.apache.ignite.internal.processors.offheap.GridOffHeapProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
 import org.apache.ignite.internal.processors.port.GridPortProcessor;
@@ -146,10 +144,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** */
     @GridToStringExclude
     private GridSecurityProcessor authProc;
-
-    /** */
-    @GridToStringExclude
-    private GridSwapSpaceManager swapspaceMgr;
 
     /** */
     @GridToStringExclude
@@ -458,8 +452,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
             authProc = (GridSecurityProcessor)comp;
         else if (comp instanceof GridLoadBalancerManager)
             loadMgr = (GridLoadBalancerManager)comp;
-        else if (comp instanceof GridSwapSpaceManager)
-            swapspaceMgr = (GridSwapSpaceManager)comp;
         else if (comp instanceof GridIndexingManager)
             indexingMgr = (GridIndexingManager)comp;
 
@@ -678,11 +670,6 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public GridLoadBalancerManager loadBalancing() {
         return loadMgr;
-    }
-
-    /** {@inheritDoc} */
-    @Override public GridSwapSpaceManager swap() {
-        return swapspaceMgr;
     }
 
     /** {@inheritDoc} */

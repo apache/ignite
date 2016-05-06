@@ -33,7 +33,6 @@ import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.junit.Assert;
 
@@ -78,8 +77,6 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
 
         cfg.setNetworkTimeout(2000);
 
-        cfg.setSwapSpaceSpi(new FileSwapSpaceSpi());
-
         cfg.setCacheConfiguration(cacheConfiguration());
 
         return cfg;
@@ -95,7 +92,6 @@ public class GridCacheMemoryModeSelfTest extends GridCommonAbstractTest {
 
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
 
-        cacheCfg.setSwapEnabled(swapEnabled);
         cacheCfg.setCacheMode(mode);
         cacheCfg.setMemoryMode(memoryMode);
 
