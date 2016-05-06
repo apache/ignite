@@ -109,9 +109,14 @@ namespace ignite
                 return rollbackOnly;
             }
 
-            TransactionsImpl::TransactionState TransactionsImpl::TxState(int64_t id)
+            TransactionsImpl::TransactionState TransactionsImpl::TxState(int64_t id, IgniteError& err)
             {
-                int state = GetEnvironment().Context()->TransactionsState(GetTarget(), id);
+                JniErrorInfo jniErr;
+
+                int state = GetEnvironment().Context()->TransactionsState(GetTarget(), id, &jniErr);
+
+                if (jniErr.code != IGNITE_JNI_ERR_SUCCESS)
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
 
                 return ToTransactionState(state);
             }

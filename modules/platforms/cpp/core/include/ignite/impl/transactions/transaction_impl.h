@@ -117,9 +117,18 @@ namespace ignite
                  * only be rolled back. Error occurs if such transaction is
                  * being commited.
                  *
+                 * @param err Error.
                  * @return True if the transaction is rollback-only.
                  */
-                bool IsRollbackOnly();
+                bool IsRollbackOnly(IgniteError& err);
+
+                /**
+                 * Get state.
+                 *
+                 * @param err Error.
+                 * @return Current state.
+                 */
+                TransactionState GetState(IgniteError& err);
 
                 /**
                  * Get concurrency.
@@ -140,13 +149,6 @@ namespace ignite
                 {
                     return isolation;
                 }
-
-                /**
-                 * Get state.
-                 *
-                 * @return Current state.
-                 */
-                TransactionState GetState();
 
                 /**
                  * Get timeout.

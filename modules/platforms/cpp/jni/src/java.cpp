@@ -2061,12 +2061,12 @@ namespace ignite
                 return state;
             }
 
-            int JniContext::TransactionsState(jobject obj, long long id) {
+            int JniContext::TransactionsState(jobject obj, long long id, JniErrorInfo* errInfo) {
                 JNIEnv* env = Attach();
 
                 jint state = env->CallIntMethod(obj, jvm->GetMembers().m_PlatformTransactions_txState, id);
 
-                ExceptionCheck(env);
+                ExceptionCheck(env, errInfo);
 
                 return state;
             }

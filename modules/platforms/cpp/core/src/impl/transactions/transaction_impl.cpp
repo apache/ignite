@@ -163,23 +163,23 @@ namespace ignite
                 txs.Get()->TxSetRollbackOnly(id, err);
             }
 
-            bool TransactionImpl::IsRollbackOnly()
+            bool TransactionImpl::IsRollbackOnly(IgniteError& err)
             {
-                TransactionState state0 = GetState();
+                TransactionState state0 = GetState(err);
 
                 return state0 == IGNITE_TX_STATE_MARKED_ROLLBACK ||
                        state0 == IGNITE_TX_STATE_ROLLING_BACK ||
                        state0 == IGNITE_TX_STATE_ROLLED_BACK;
             }
 
-            TransactionState TransactionImpl::GetState()
+            TransactionState TransactionImpl::GetState(IgniteError& err)
             {
                 common::concurrent::CsLockGuard guard(accessLock);
 
                 if (closed)
                     return state;
 
-                return txs.Get()->TxState(id);
+                return txs.Get()->TxState(id, err);
             }
 
             IgniteError TransactionImpl::GetClosedError() const

@@ -144,6 +144,21 @@ namespace ignite
             bool IsRollbackOnly(IgniteError& err);
 
             /**
+             * Get current state.
+             *
+             * @return Transaction state.
+             */
+            TransactionState GetState();
+
+            /**
+             * Get current state.
+             *
+             * @param err Error.
+             * @return Transaction state.
+             */
+            TransactionState GetState(IgniteError& err);
+
+            /**
              * Get concurrency.
              *
              * @return Concurrency.
@@ -161,16 +176,6 @@ namespace ignite
             TransactionIsolation GetIsolation() const
             {
                 return static_cast<TransactionIsolation>(impl.Get()->GetIsolation());
-            }
-
-            /**
-             * Get current state.
-             *
-             * @return Transaction state.
-             */
-            TransactionState GetState()
-            {
-                return impl.Get()->GetState();
             }
 
             /**

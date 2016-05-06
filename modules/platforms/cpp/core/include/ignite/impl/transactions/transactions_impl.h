@@ -110,7 +110,7 @@ namespace ignite
                  * @param id Transaction ID.
                  * @return Resulting state.
                  */
-                TransactionState TxState(int64_t id);
+                TransactionState TxState(int64_t id, IgniteError& err);
 
                 /**
                  * Get metrics.

@@ -162,7 +162,7 @@ namespace ignite
             TransactionImpl* txImpl = impl.Get();
 
             if (txImpl)
-                return txImpl->IsRollbackOnly();
+                return txImpl->IsRollbackOnly(err);
             else
             {
                 err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
@@ -170,6 +170,34 @@ namespace ignite
             }
 
             return false;
+        }
+
+        TransactionState Transaction::GetState()
+        {
+            IgniteError err;
+
+            TransactionState res = GetState(err);
+
+            IgniteError::ThrowIfNeeded(err);
+
+            return res;
+        }
+
+        TransactionState Transaction::GetState(IgniteError& err)
+        {
+            err = IgniteError();
+
+            TransactionImpl* txImpl = impl.Get();
+
+            if (txImpl)
+                return txImpl->GetState(err);
+            else
+            {
+                err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                    "Instance is not usable (did you check for error?).");
+            }
+
+            return IGNITE_TX_STATE_UNKNOWN;
         }
     }
 }
