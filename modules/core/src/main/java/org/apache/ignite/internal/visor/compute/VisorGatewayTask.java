@@ -20,10 +20,13 @@ package org.apache.ignite.internal.visor.compute;
 import java.lang.reflect.Constructor;
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -34,8 +37,10 @@ import org.apache.ignite.compute.ComputeJobResultPolicy;
 import org.apache.ignite.compute.ComputeTask;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
+import org.apache.ignite.internal.visor.cache.VisorCacheLoadTask;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
@@ -152,6 +157,12 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
             if (BigDecimal.class == cls)
                 return new BigDecimal(val);
 
+            if (Set.class == cls)
+                return new HashSet<>(Arrays.asList(val.split(",")));
+
+            if (Object[].class == cls)
+                return val.split(",");
+
             return val;
         }
 
@@ -166,9 +177,19 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
         @Override public Object execute() throws IgniteException {
             String nidsArg = argument(0);
             String taskName = argument(1);
+
+            Class<? extends ComputeTask> taskCls;
+
+            try {
+                taskCls = (Class<? extends ComputeTask>)Class.forName(taskName);
+            }
+            catch (Exception e) {
+                throw new IgniteException("Missing task class", e);
+            }
 
             Object jobArgs = null;
 
@@ -201,6 +222,14 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
                         }
 
                         jobArgs = col;
+                    }
+                    else if (taskCls == VisorCacheLoadTask.class && argCls == GridTuple3.class) {
+                        String cacheNames = argument(3);
+                        String ttl = argument(4);
+                        String ldrArgs = argument(5);
+
+                        jobArgs = new GridTuple3<>(toObject(Set.class, cacheNames), toObject(Long.class, ttl),
+                            toObject(Object[].class, ldrArgs));
                     }
                     else {
                         int beanArgsCnt = argsCnt - 3;
