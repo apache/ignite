@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
@@ -45,9 +46,19 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandler;
+import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.visor.cache.VisorCacheClearTask;
+import org.apache.ignite.internal.visor.cache.VisorCacheLoadTask;
+import org.apache.ignite.internal.visor.cache.VisorCacheMetadataTask;
+import org.apache.ignite.internal.visor.cache.VisorCacheRebalanceTask;
+import org.apache.ignite.internal.visor.cache.VisorCacheResetMetricsTask;
+import org.apache.ignite.internal.visor.cache.VisorCacheSwapBackupsTask;
+import org.apache.ignite.internal.visor.compute.VisorGatewayTask;
+import org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTask;
+import org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTaskArg;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -1169,6 +1180,125 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         info("Exe command result: " + ret);
 
         jsonEquals(ret, pattern("null", false));
+    }
+
+    /**
+     * Tests {@code exe} command with {@link VisorGatewayTask}.
+     * <p>
+     * Note that attempt to execute unknown task (UNKNOWN_TASK) will result in exception on server.
+     *
+     * @throws Exception If failed.
+     */
+    public void testVisorGateway() throws Exception {
+        final Map<String, String> cmd = F.asMap("cmd", GridRestCommand.EXE.key(),
+            "name", VisorGatewayTask.class.getName());
+
+        final String successRes = pattern(
+            "\\{\\\"error\\\":\\\"\\\",\\\"finished\\\":true,\\\"id\\\":\\\"[^\\\"]+\\\",\\\"result\\\":.+}", true);
+
+        String ret = content(new HashMap<String, String>(cmd) {{
+            put("p1", grid(1).localNode().id().toString());
+            put("p2", VisorCacheLoadTask.class.getName());
+            put("p3", GridTuple3.class.getName());
+            put("p4", "person");
+            put("p5", "0");
+            put("p6", "");
+        }});
+
+        info("Exe command result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new HashMap<String, String>(cmd) {{
+            put("p1", grid(1).localNode().id().toString());
+            put("p2", VisorCacheSwapBackupsTask.class.getName());
+            put("p3", Set.class.getName());
+            put("p4", "person");
+        }});
+
+        info("Exe command result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new HashMap<String, String>(cmd) {{
+            put("p1", grid(1).localNode().id().toString());
+            put("p2", VisorCacheRebalanceTask.class.getName());
+            put("p3", Set.class.getName());
+            put("p4", "person");
+        }});
+
+        info("Exe command result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new HashMap<String, String>(cmd) {{
+            put("p1", grid(1).localNode().id().toString());
+            put("p2", VisorCacheMetadataTask.class.getName());
+            put("p3", String.class.getName());
+            put("p4", "person");
+        }});
+
+        info("Exe command result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new HashMap<String, String>(cmd) {{
+            put("p1", grid(1).localNode().id().toString());
+            put("p2", VisorCacheResetMetricsTask.class.getName());
+            put("p3", String.class.getName());
+            put("p4", "person");
+        }});
+
+        info("Exe command result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new HashMap<String, String>(cmd) {{
+            put("p1", grid(1).localNode().id().toString());
+            put("p2", VisorCacheClearTask.class.getName());
+            put("p3", String.class.getName());
+            put("p4", "person");
+        }});
+
+        info("Exe command result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new HashMap<String, String>(cmd) {{
+            put("p1", "");
+            put("p2", VisorNodeDataCollectorTask.class.getName());
+            put("p3", VisorNodeDataCollectorTaskArg.class.getName());
+            put("p4", "false");
+            put("p5", "CONSOLE_" + UUID.randomUUID());
+            put("p6", UUID.randomUUID().toString());
+            put("p7", "10");
+            put("p8", "false");
+        }});
+
+        info("Exe command result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
     }
 
     /**
