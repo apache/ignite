@@ -283,6 +283,48 @@ public interface IgniteServices extends IgniteAsyncSupport {
     public void deploy(ServiceConfiguration cfg) throws IgniteException;
 
     /**
+     * Deploys multiple instances of the service on the grid according to provided
+     * configuration. Ignite will deploy a maximum amount of services equal to
+     * {@link org.apache.ignite.services.ServiceConfiguration#getTotalCount() cfg.getTotalCount()}  parameter
+     * making sure that there are no more than {@link org.apache.ignite.services.ServiceConfiguration#getMaxPerNodeCount() cfg.getMaxPerNodeCount()}
+     * service instances running on each node. Whenever topology changes, Ignite will automatically rebalance
+     * the deployed services within cluster to make sure that each node will end up with
+     * about equal number of deployed instances whenever possible.
+     * <p>
+     * The method works like {@link #deploy(ServiceConfiguration)}, but it does not require to have a provided service
+     * class on all nodes if peer class deployment is disabled.
+     * <p>
+     * If {@link org.apache.ignite.services.ServiceConfiguration#getAffinityKey() cfg.getAffinityKey()} is not {@code null}, then Ignite
+     * will deploy the service on the primary node for given affinity key. The affinity will be calculated
+     * on the cache with {@link org.apache.ignite.services.ServiceConfiguration#getCacheName() cfg.getCacheName()} name.
+     * <p>
+     * If {@link org.apache.ignite.services.ServiceConfiguration#getNodeFilter() cfg.getNodeFilter()} is not {@code null}, then
+     * Ignite will deploy service on all grid nodes for which the provided filter evaluates to {@code true}.
+     * The node filter will be checked in addition to the underlying cluster group filter, or the
+     * whole grid, if the underlying cluster group includes all the cluster nodes.
+     * <p>
+     * Note that at least one of {@code 'totalCnt'} or {@code 'maxPerNodeCnt'} parameters must have
+     * value greater than {@code 0}.
+     * <p>
+     * Here is an example of creating service deployment configuration:
+     * <pre name="code" class="java">
+     *     GridServiceConfiguration cfg = new GridServiceConfiguration();
+     *
+     *     cfg.setName(name);
+     *     cfg.setService(svc);
+     *     cfg.setTotalCount(0); // Unlimited.
+     *     cfg.setMaxPerNodeCount(2); // Deploy 2 instances of service on each node.
+     *
+     *     grid.services().deploy(cfg);
+     * </pre>
+     *
+     * @param cfg Service configuration.
+     * @throws IgniteException If failed to deploy service.
+     */
+    @IgniteAsyncSupported
+    public void deployLazy(ServiceConfiguration cfg) throws IgniteException;
+
+    /**
      * Cancels service deployment. If a service with specified name was deployed on the grid,
      * then {@link org.apache.ignite.services.Service#cancel(org.apache.ignite.services.ServiceContext)} method will be called on it.
      * <p>

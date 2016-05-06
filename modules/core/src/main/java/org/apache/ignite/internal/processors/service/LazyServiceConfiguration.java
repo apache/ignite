@@ -20,12 +20,10 @@ package org.apache.ignite.internal.processors.service;
 import java.util.Arrays;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
@@ -36,35 +34,24 @@ import org.apache.ignite.services.ServiceConfiguration;
 public class LazyServiceConfiguration extends ServiceConfiguration {
     /** */
     private static final long serialVersionUID = 0L;
-    /** Service name. */
-    private String name;
 
     /** Service instance. */
     @GridToStringExclude
-    private transient volatile Service svc;
+    private transient Service srvc;
 
     /** */
-    private final byte[] srvcBytes;
-
-    /** Total count. */
-    private int totalCnt;
-
-    /** Max per-node count. */
-    private int maxPerNodeCnt;
-
-    /** Cache name. */
-    private String cacheName;
-
-    /** Affinity key. */
-    private Object affKey;
-
-    /** Node filter. */
-    @GridToStringExclude
-    private IgnitePredicate<ClusterNode> nodeFilter;
+    private byte[] srvcBytes;
 
     /** */
     @SuppressWarnings("TransientFieldNotInitialized")
     private transient volatile GridKernalContext ctx;
+
+    /**
+     * Default constructor.
+     */
+    public LazyServiceConfiguration() {
+        // No-op.
+    }
 
     /**
      * @param cfg Configuration.
@@ -78,34 +65,30 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
         affKey = cfg.getAffinityKey();
         nodeFilter = cfg.getNodeFilter();
 
+        srvc = cfg.getService();
+
         Marshaller marsh = ctx.config().getMarshaller();
 
-        svc = cfg.getService();
-
         try {
-            srvcBytes = marsh.marshal(svc);
+            srvcBytes = marsh.marshal(srvc);
         }
         catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to marshal service with configured masrhaller [srvc=" + svc
+            throw new IgniteException("Failed to marshal service with configured masrhaller [srvc=" + srvc
                 + ", marsh=" + marsh + "]", e);
         }
     }
 
     /** {@inheritDoc} */
-    @Override public String getName() {
-        return name;
-    }
-
-    /** {@inheritDoc} */
     @Override public Service getService() {
-        // TODO double check?
-        if (svc == null) {
+        if (srvc == null) {
             assert ctx != null: "Need to provide context before getting service.";
 
-            Marshaller marshaller = ctx.config().getMarshaller();
+            IgniteConfiguration cfg = ctx.config();
+
+            Marshaller marshaller = cfg.getMarshaller();
 
             try {
-                svc = marshaller.unmarshal(srvcBytes, ctx.config().getClassLoader());
+                srvc = marshaller.unmarshal(srvcBytes, ctx.config().getClassLoader());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to unmarshal service with configured masrhaller [marsh=" + marshaller
@@ -113,34 +96,7 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
             }
         }
 
-        U.dumpStack(">>>>> service: " + svc.getClass());
-
-        return svc;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getTotalCount() {
-        return totalCnt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int getMaxPerNodeCount() {
-        return maxPerNodeCnt;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getCacheName() {
-        return cacheName;
-    }
-
-    /** {@inheritDoc} */
-    @Override public Object getAffinityKey() {
-        return affKey;
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgnitePredicate<ClusterNode> getNodeFilter() {
-        return nodeFilter;
+        return srvc;
     }
 
     /**
@@ -151,25 +107,6 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings({"RedundantIfStatement", "EqualsWhichDoesntCheckParameterClass"})
-    @Override public boolean equals(Object o) {
-        if (!equalsIgnoreNodeFilter(o))
-            return false;
-
-        ServiceConfiguration that = (ServiceConfiguration)o;
-
-        if (nodeFilter != null && that.getNodeFilter() != null) {
-            if (!nodeFilter.getClass().equals(that.getNodeFilter().getClass()))
-                return false;
-        }
-        else if (nodeFilter != null || that.getNodeFilter() != null)
-            return false;
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    // TODO review.
     @SuppressWarnings("RedundantIfStatement")
     @Override public boolean equalsIgnoreNodeFilter(Object o) {
         if (this == o)
@@ -178,7 +115,7 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
         if (o == null || getClass() != o.getClass())
             return false;
 
-        ServiceConfiguration that = (ServiceConfiguration)o;
+        LazyServiceConfiguration that = (LazyServiceConfiguration)o;
 
         if (maxPerNodeCnt != that.getMaxPerNodeCount())
             return false;
@@ -195,22 +132,15 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
         if (name != null ? !name.equals(that.getName()) : that.getName() != null)
             return false;
 
-//        Service srvc = that.getService();
-//
-//        if (svc != null ? !svc.getClass().equals(srvc.getClass()) : srvc != null)
-//            return false;
+        if (!Arrays.equals(srvcBytes, that.srvcBytes))
+            return false;
 
         return true;
     }
 
     /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return name == null ? 0 : name.hashCode();
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
-        String svcCls = svc == null ? "" : svc.getClass().getSimpleName();
+        String svcCls = srvc == null ? "" : srvc.getClass().getSimpleName();
         String nodeFilterCls = nodeFilter == null ? "" : nodeFilter.getClass().getSimpleName();
 
         return S.toString(LazyServiceConfiguration.class, this, "svcCls", svcCls, "nodeFilterCls", nodeFilterCls);

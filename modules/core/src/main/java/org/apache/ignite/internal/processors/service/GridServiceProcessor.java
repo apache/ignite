@@ -394,6 +394,18 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param cfg Service configuration.
      * @return Future for deployment.
      */
+    public IgniteInternalFuture<?> deployLazy(ServiceConfiguration cfg) {
+        A.notNull(cfg, "cfg");
+
+        validate(cfg);
+
+        return deploy(new LazyServiceConfiguration(cfg, ctx));
+    }
+
+    /**
+     * @param cfg Service configuration.
+     * @return Future for deployment.
+     */
     public IgniteInternalFuture<?> deploy(ServiceConfiguration cfg) {
         A.notNull(cfg, "cfg");
 
@@ -928,6 +940,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             }
             else if (ctxs.size() < assignCnt) {
                 int createCnt = assignCnt - ctxs.size();
+
+                if (assigns.configuration() instanceof LazyServiceConfiguration)
+                    ((LazyServiceConfiguration)assigns.configuration()).context(ctx);
 
                 Service svc = assigns.service();
 
