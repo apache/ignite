@@ -98,6 +98,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
@@ -258,6 +259,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /** */
     private final CountDownLatch startLatch = new CountDownLatch(1);
+
+    private final Set<UUID> activatedNodes = Collections.newSetFromMap(new ConcurrentHashMap<UUID, Boolean>());
 
     /** @param ctx Context. */
     public GridDiscoveryManager(GridKernalContext ctx) {
@@ -628,9 +631,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     return;
                 }
                 else if (type == EVT_NODE_ACTIVATED) {
-                    if (locNode instanceof TcpDiscoveryNode) {
-                        ((TcpDiscoveryNode)locNode).activate();
-                    }
+                    activatedNodes.add(node.id());
+
+                    return;
                 }
 
                 if (type == EVT_CLIENT_NODE_DISCONNECTED || type == EVT_NODE_SEGMENTED || !ctx.clientDisconnected())
@@ -1852,6 +1855,36 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         finally {
             busyLock.leaveBusy();
         }
+    }
+
+    @Override public Serializable collectDiscoveryData(UUID nodeId) {
+        HashMap<String, Object> map = new HashMap<>();
+
+        map.put("activated", activatedNodes.contains(localNode().id()));
+
+        return map;
+    }
+
+    @Override public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Serializable data) {
+        if (data instanceof HashMap) {
+            HashMap<String, Object> map = (HashMap<String, Object>) data;
+
+            if (Boolean.TRUE.equals(map.get("activated")))
+                activatedNodes.add(rmtNodeId);
+        }
+    }
+
+    public boolean activated(UUID nodeId) {
+        return activatedNodes.contains(nodeId);
+    }
+
+    public void activate() {
+        locJoinEvt.listen(new IgniteInClosure<IgniteInternalFuture<DiscoveryEvent>>() {
+            @Override public void apply(IgniteInternalFuture<DiscoveryEvent> future) {
+                activatedNodes.add(localNode().id());
+                // TODO: Send message
+            }
+        });
     }
 
     /**

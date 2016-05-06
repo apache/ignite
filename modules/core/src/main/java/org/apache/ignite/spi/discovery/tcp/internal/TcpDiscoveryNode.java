@@ -35,6 +35,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -151,7 +152,9 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     private transient boolean daemon;
 
     @GridToStringExclude
-    private transient boolean active = false;
+    private transient volatile boolean activated = false;
+
+    private transient GridDiscoveryManager discoMgr = null;
 
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
@@ -177,8 +180,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         int discPort,
         DiscoveryMetricsProvider metricsProvider,
         IgniteProductVersion ver,
-        Serializable consistentId)
-    {
+        Serializable consistentId) {
         assert id != null;
         assert !F.isEmpty(addrs);
         assert metricsProvider != null;
@@ -545,11 +547,18 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
     /** {@inheritDoc} */
     @Override public boolean isActive() {
-        return active;
-    }
+        if (activated)
+            return true;
 
-    public void activate() {
-        active = true;
+        if (discoMgr == null)
+            return false;
+
+        boolean activated = discoMgr.activated(id);
+
+        if (activated)
+            this.activated = true;
+
+        return activated;
     }
 
     /** {@inheritDoc} */
@@ -632,7 +641,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
         for (int i = 0; i < size; i++) {
             int id = in.readInt();
-            CacheMetricsSnapshot m = (CacheMetricsSnapshot) in.readObject();
+            CacheMetricsSnapshot m = (CacheMetricsSnapshot)in.readObject();
 
             cacheMetrics.put(id, m);
         }
