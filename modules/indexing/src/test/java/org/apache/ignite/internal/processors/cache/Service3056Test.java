@@ -16,15 +16,12 @@
  */
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.ignite.IgniteServices;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.services.Service;
@@ -45,7 +42,10 @@ public class Service3056Test extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Grid count. */
-    public static final int GRID_CNT = 4;
+    public static final int GRID_CNT = 3;
+
+    /** */
+    public static final int NODE_WITH_EXT_CLASS_LOADER = 1;
 
     /** */
     private static ClassLoader extClassLoader;
@@ -82,8 +82,8 @@ public class Service3056Test extends GridCommonAbstractTest {
 
         extClassLoaderGrids.clear();
 
-        extClassLoaderGrids.add(getTestGridName(0));
-        extClassLoaderGrids.add(getTestGridName(GRID_CNT - 1));
+        extClassLoaderGrids.add(getTestGridName(NODE_WITH_EXT_CLASS_LOADER));
+        extClassLoaderGrids.add(getTestGridName(GRID_CNT - 1)); // client.
     }
 
     /** {@inheritDoc} */
@@ -99,124 +99,59 @@ public class Service3056Test extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testServiceGroupsDeployment1() throws Exception {
-        check(true);
+    public void testServiceDeployment() throws Exception {
+        check();
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testServiceGroupsDeployment2() throws Exception {
-        check(false);
-    }
+    private void check() throws Exception {
+        for (int i = 0; i < GRID_CNT; i++) {
+            startGrids(GRID_CNT);
+            
+            info("Testing service deploymnet from grid [i=" + i + ", id8="
+                + U.id8(grid(i).cluster().localNode().id()) + "]");
 
-    /**
-     * @param useGrpFilter Use cluster group filter or use service configuration node filter instead.
-     * @throws ClassNotFoundException
-     * @throws InstantiationException
-     * @throws IllegalAccessException
-     */
-    private void check(boolean useGrpFilter) throws Exception {
-        startGrids(GRID_CNT);
+            try {
+                final UUID id0 = grid(NODE_WITH_EXT_CLASS_LOADER).cluster().localNode().id();
 
-        try {
-            final UUID id0 = grid(0).cluster().localNode().id();
+                final IgnitePredicate<ClusterNode> nodeFilter = new IgnitePredicate<ClusterNode>() {
+                    @Override public boolean apply(ClusterNode node) {
+                        return node.id().equals(id0);
+                    }
+                };
 
-            IgniteEx client = grid(GRID_CNT - 1);
+                ServiceConfiguration srvCfg = serviceConfig(nodeFilter);
 
-            final IgnitePredicate<ClusterNode> nodeFilter = new IgnitePredicate<ClusterNode>() {
-                @Override public boolean apply(ClusterNode node) {
-//                    return node.id().equals(id0);
-                    return true;
-                }
-            };
-
-            IgniteServices srvs;
-
-            if (useGrpFilter)
-                srvs = client.services(client.cluster().forPredicate(nodeFilter));
-            else
-                srvs = client.services();
-
-            ServiceConfiguration srvCfg = new ServiceConfiguration();
-
-            if (!useGrpFilter)
-                srvCfg.setNodeFilter(nodeFilter);
-
-            Class<Service> srvcCls = (Class<Service>)extClassLoader.loadClass(NOOP_SERVICE_CLS_NAME);
-
-            Service srvc = srvcCls.newInstance();
-
-            srvCfg.setService(srvc);
-
-            srvCfg.setName("TestDeploymentService");
-
-            srvCfg.setMaxPerNodeCount(1);
-
-            srvs.deploy(srvCfg);
-        }
-        finally {
-            stopAllGrids();
+                grid(i).services().deploy(srvCfg);
+            }
+            finally {
+                stopAllGrids();
+            }
         }
     }
 
     /**
+     * @param nodeFilter Node filter.
+     * @return Service configuration.
      * @throws Exception If failed.
      */
-    public void testNodeStart1() throws Exception {
-        checkNodeStart(false);
-    }
+    private ServiceConfiguration serviceConfig(IgnitePredicate<ClusterNode> nodeFilter) throws Exception {
+        ServiceConfiguration srvCfg = new ServiceConfiguration();
 
-    /**
-     * @param useGrpFilter Use group filter or not.
-     * @throws Exception If failed.
-     */
-    public void checkNodeStart(boolean useGrpFilter) throws Exception {
-        for (int i = 0; i < GRID_CNT; i++)
-            extClassLoaderGrids.add(getTestGridName(i));
+        srvCfg.setNodeFilter(nodeFilter);
 
-        startGrids(GRID_CNT);
+        Class<Service> srvcCls = (Class<Service>)extClassLoader.loadClass(NOOP_SERVICE_CLS_NAME);
 
-        try {
-            final Collection<UUID> ids = F.nodeIds(grid(0).cluster().nodes());
+        Service srvc = srvcCls.newInstance();
 
-            IgniteEx client = grid(GRID_CNT - 1);
+        srvCfg.setService(srvc);
 
-            final IgnitePredicate<ClusterNode> nodeFilter = new IgnitePredicate<ClusterNode>() {
-                @Override public boolean apply(ClusterNode node) {
-                    return ids.contains(node.id());
-                }
-            };
+        srvCfg.setName("TestDeploymentService");
 
-            IgniteServices srvs;
+        srvCfg.setMaxPerNodeCount(1);
 
-            if (useGrpFilter)
-                srvs = client.services(client.cluster().forPredicate(nodeFilter));
-            else
-                srvs = client.services();
-
-            ServiceConfiguration srvCfg = new ServiceConfiguration();
-
-            if (!useGrpFilter)
-                srvCfg.setNodeFilter(nodeFilter);
-
-            Class<Service> srvcCls = (Class<Service>)extClassLoader.loadClass(NOOP_SERVICE_CLS_NAME);
-
-            Service srvc = srvcCls.newInstance();
-
-            srvCfg.setService(srvc);
-
-            srvCfg.setName("TestDeploymentService");
-
-            srvCfg.setMaxPerNodeCount(1);
-
-            srvs.deploy(srvCfg);
-
-            // Checks node without extclassloader.
-            startGrid(100500);
-        }
-        finally {
-            stopAllGrids();
-        }
+        return srvCfg;
     }
 }
