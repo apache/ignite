@@ -336,7 +336,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             perf.add("Disable near cache (set 'nearConfiguration' to null)", cfg.getNearConfiguration() == null);
 
             if (cfg.getAffinity() != null)
-                perf.add("Decrease number of backups (set 'keyBackups' to 0)", cfg.getBackups() == 0);
+                perf.add("Decrease number of backups (set 'Backups' to 0)", cfg.getBackups() == 0);
         }
 
         // Suppress warning if at least one ATOMIC cache found.
