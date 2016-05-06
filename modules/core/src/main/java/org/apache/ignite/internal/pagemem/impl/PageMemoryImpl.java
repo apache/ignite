@@ -46,7 +46,6 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.pagemem.wal.StorageException;
-import org.apache.ignite.internal.pagemem.wal.WALPointer;
 import org.apache.ignite.internal.pagemem.wal.record.PageWrapperRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -56,6 +55,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import sun.misc.JavaNioAccess;
 import sun.misc.SharedSecrets;
+import sun.nio.ch.DirectBuffer;
 
 /**
  * Page header structure is described by the following diagram.
@@ -170,6 +170,9 @@ public class  PageMemoryImpl implements PageMemory {
 
     /** Pages marked as dirty since the last checkpoint. */
     private Collection<FullPageId> dirtyPages = new GridConcurrentHashSet<>();
+
+    /** Pages captured for the checkpoint process. */
+    private Collection<FullPageId> checkpointPages;
 
     /**
      * @param directMemoryProvider Memory allocator to use.
@@ -431,17 +434,77 @@ public class  PageMemoryImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public Collection<FullPageId> beginCheckpoint() throws IgniteException {
-        Collection<FullPageId> checkpointIds = new ArrayList<>(dirtyPages.size());
+        if (checkpointPages != null)
+            throw new IgniteException("Failed to begin checkpoint (it is already in progress).");
 
-        checkpointIds.addAll(dirtyPages);
+        checkpointPages = dirtyPages;
 
-        return checkpointIds;
+        dirtyPages = new GridConcurrentHashSet<>();
+
+        return checkpointPages;
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public void finishCheckpoint() {
-        // No-op.
+        assert checkpointPages != null : "Checkpoint has not been started.";
+
+        // Split page IDs by segment.
+        Collection<FullPageId>[] segCols = new Collection[segments.length];
+
+        for (FullPageId pageId : checkpointPages) {
+            int segIdx = segmentIndex(pageId);
+
+            Collection<FullPageId> col = segCols[segIdx];
+
+            if (col == null) {
+                col = new ArrayList<>(checkpointPages.size() / segments.length + 1);
+
+                segCols[segIdx] = col;
+            }
+
+            col.add(pageId);
+        }
+
+        // Lock segment by segment and flush changes.
+        for (int i = 0; i < segCols.length; i++) {
+            Collection<FullPageId> col = segCols[i];
+
+            if (col == null)
+                continue;
+
+            Segment seg = segments[i];
+
+            seg.writeLock().lock();
+
+            try {
+                for (FullPageId pageId : col) {
+                    PageImpl page = seg.acquiredPages.get(pageId);
+
+                    if (page != null) {
+                        // We are in the segment write lock, so it is safe to remove the page if use counter is
+                        // equal to 0.
+                        if (page.flushCheckpoint(log))
+                            seg.acquiredPages.remove(pageId);
+                    }
+                    // else page was not modified since the checkpoint started.
+                    else {
+                        checkpointPages.remove(pageId);
+
+                        long relPtr = seg.loadedPages.get(pageId, INVALID_REL_PTR);
+
+                        assert relPtr != INVALID_REL_PTR;
+
+                        setDirty(pageId, absolute(relPtr), false);
+                    }
+                }
+            }
+            finally {
+                seg.writeLock().unlock();
+            }
+        }
+
+        checkpointPages = null;
     }
 
     /** {@inheritDoc} */
@@ -450,56 +513,32 @@ public class  PageMemoryImpl implements PageMemory {
 
         Segment seg = segment(pageId);
 
-        PageImpl page = null;
-
         seg.readLock().lock();
 
         try {
-            page = seg.acquiredPages.get(pageId);
+            long relPtr = seg.loadedPages.get(pageId, INVALID_REL_PTR);
 
-            if (page != null) {
-                if (!page.isDirty())
-                    return false;
+            assert relPtr != INVALID_REL_PTR : "Failed to get page checkpoint data (page has been evicted) " +
+                "[pageId=" + pageId + ']';
 
-                page.acquireReference();
+            long absPtr = absolute(relPtr);
+
+            if (tmpBuf.isDirect()) {
+                long tmpPtr = ((DirectBuffer)tmpBuf).address();
+
+                GridUnsafe.copyMemory(absPtr + PAGE_OVERHEAD, tmpPtr, pageSize());
             }
             else {
-                long relPtr = seg.loadedPages.get(pageId, INVALID_REL_PTR);
+                byte[] arr = tmpBuf.array();
 
-                if (relPtr == INVALID_REL_PTR)
-                    return false;
+                assert arr != null;
+                assert arr.length == pageSize();
 
-                long absPtr = absolute(relPtr);
-
-                ByteBuffer pageBuf = wrapPointer(absPtr + PAGE_OVERHEAD, pageSize());
-
-                tmpBuf.put(pageBuf);
-
-                setDirty(pageId, absPtr, false);
-
-                return true;
+                GridUnsafe.copyMemory(null, absPtr + PAGE_OVERHEAD, arr, GridUnsafe.BYTE_ARR_OFF, pageSize());
             }
         }
         finally {
             seg.readLock().unlock();
-        }
-
-        assert page != null;
-
-        try {
-            ByteBuffer pageBuf = page.getForRead();
-
-            try {
-                tmpBuf.put(pageBuf);
-
-                setDirty(pageId, page.pointer(), false);
-            }
-            finally {
-                page.releaseRead();
-            }
-        }
-        finally {
-            releasePage(page);
         }
 
         return true;
@@ -556,6 +595,25 @@ public class  PageMemoryImpl implements PageMemory {
         buf.order(ByteOrder.nativeOrder());
 
         return buf;
+    }
+
+    /**
+     * @param pageId Page ID to check if it was added to the checkpoint list.
+     * @return {@code True} if it was added to the checkpoint list.
+     */
+    boolean isInCheckpoint(FullPageId pageId) {
+        Collection<FullPageId> pages0 = checkpointPages;
+
+        return pages0 != null && pages0.contains(pageId);
+    }
+
+    /**
+     * @param fullPageId Page ID to clear.
+     */
+    void clearCheckpoint(FullPageId fullPageId) {
+        assert checkpointPages != null;
+
+        checkpointPages.remove(fullPageId);
     }
 
     /**
@@ -717,13 +775,13 @@ public class  PageMemoryImpl implements PageMemory {
      */
     void beforeReleaseWrite(PageImpl page) {
         if (walMgr != null) {
-            try {
-                walMgr.log(new PageWrapperRecord(wrapPointer(page.pointer(), sysPageSize)), false);
-            }
-            catch (IgniteCheckedException | StorageException e) {
-                // TODO ignite-db.
-                throw new IgniteException(e);
-            }
+//            try {
+//                walMgr.log(new PageWrapperRecord(wrapPointer(page.pointer(), sysPageSize)), false);
+//            }
+//            catch (IgniteCheckedException | StorageException e) {
+//                // TODO ignite-db.
+//                throw new IgniteException(e);
+//            }
         }
     }
 
@@ -1087,9 +1145,7 @@ public class  PageMemoryImpl implements PageMemory {
 
             final FullPageId fullPageId = readFullPageId(absEvictAddr);
 
-            final long metaPageId = mem.readLong(dbMetaPageIdPtr);
-
-            if (fullPageId.pageId() == metaPageId && fullPageId.cacheId() == 0) {
+            if (!prepareEvict(seg, fullPageId, absEvictAddr)) {
                 if (++iterations > 2) {
                     if (ignored == null)
                         ignored = new HashSet<>();
@@ -1100,30 +1156,54 @@ public class  PageMemoryImpl implements PageMemory {
                 continue;
             }
 
-            assert seg.writeLock().isHeldByCurrentThread();
-
-            if (!seg.acquiredPages.containsKey(fullPageId))
-                seg.loadedPages.remove(fullPageId);
-            else {
-                if (++iterations > 2) {
-                    if (ignored == null)
-                        ignored = new HashSet<>();
-
-                    ignored.add(relEvictAddr);
-                }
-
-                continue;
-            }
-
-            // Force flush data and free page.
-            if (isDirty(absEvictAddr)) {
-                storeMgr.write(fullPageId.cacheId(), fullPageId.pageId(), wrapPointer(absEvictAddr + PAGE_OVERHEAD, pageSize()));
-
-                setDirty(fullPageId, absEvictAddr, false);
-            }
+            seg.loadedPages.remove(fullPageId);
 
             return relEvictAddr;
         }
+    }
+
+    /**
+     * Prepares a page for eviction, if needed.
+     *
+     * @param seg Segment being operated on.
+     * @param fullPageId Candidate page full ID.
+     * @param absPtr Absolute pointer of the page to evict.
+     * @return {@code True} if it is ok to evict this page, {@code false} if another page should be selected.
+     * @throws IgniteCheckedException If failed to write page to the underlying store during eviction.
+     */
+    private boolean prepareEvict(Segment seg, FullPageId fullPageId, long absPtr) throws IgniteCheckedException {
+        assert seg.writeLock().isHeldByCurrentThread();
+
+        final long metaPageId = mem.readLong(dbMetaPageIdPtr);
+
+        if (fullPageId.pageId() == metaPageId && fullPageId.cacheId() == 0)
+            return false;
+
+        if (seg.acquiredPages.containsKey(fullPageId))
+            return false;
+
+        Collection<FullPageId> cpPages = checkpointPages;
+
+        if (isDirty(absPtr)) {
+            // Can evict a dirty page only if should be written by a checkpoint.
+            if (cpPages != null && cpPages.contains(fullPageId)) {
+                assert storeMgr != null;
+
+                storeMgr.write(fullPageId.cacheId(), fullPageId.pageId(),
+                    wrapPointer(absPtr + PAGE_OVERHEAD, pageSize()));
+
+                setDirty(fullPageId, absPtr, false);
+
+                cpPages.remove(fullPageId);
+
+                return true;
+            }
+
+            return false;
+        }
+        else
+            // Page was not modified, ok to evict.
+            return true;
     }
 
     /**

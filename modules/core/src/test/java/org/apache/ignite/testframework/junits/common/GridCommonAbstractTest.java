@@ -1174,14 +1174,24 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     /**
      * @param file File or directory to delete.
      */
-    protected void deleteRecursively(File file) {
+    protected boolean deleteRecursively(File file) {
+        boolean ok = true;
+
         if (file.isDirectory()) {
             for (File f : file.listFiles())
-                deleteRecursively(f);
+                ok = deleteRecursively(f) & ok;
         }
         else {
-            if (!file.delete())
+            if (!file.delete()) {
                 info("Failed to delete: " + file);
+
+                ok = false;
+            }
         }
+
+        if (ok)
+            info("Deleted OK: " + file.getAbsolutePath());
+
+        return ok;
     }
 }
