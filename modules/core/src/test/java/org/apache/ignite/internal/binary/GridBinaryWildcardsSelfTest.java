@@ -85,9 +85,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         BinaryContext ctx = binaryContext(marsh);
 
-        Map<ClassLoader, ConcurrentMap<Integer, BinaryClassDescriptor>> ldrMap = U.field(ctx, "cachedTypes");
-
-        ConcurrentMap<Integer, BinaryClassDescriptor> types = ldrMap.get(U.gridClassLoader());
+        ConcurrentMap<Integer, BinaryInternalMapper> types = U.field(ctx, "typeId2Mapper");
 
         assertEquals(3, types.size());
 
@@ -160,9 +158,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         BinaryContext ctx = binaryContext(marsh);
 
-        Map<ClassLoader, ConcurrentMap<Integer, BinaryClassDescriptor>> ldrMap = U.field(ctx, "cachedTypes");
-
-        ConcurrentMap<Integer, BinaryClassDescriptor> types = ldrMap.get(U.gridClassLoader());
+        ConcurrentMap<Integer, BinaryInternalMapper> types = U.field(ctx, "typeId2Mapper");
 
         assertEquals(3, types.size());
 
@@ -351,9 +347,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         BinaryContext ctx = binaryContext(marsh);
 
-        Map<ClassLoader, ConcurrentMap<Integer, BinaryClassDescriptor>> ldrMap = U.field(ctx, "cachedTypes");
-
-        ConcurrentMap<Integer, BinaryClassDescriptor> types = ldrMap.get(U.gridClassLoader());
+        ConcurrentMap<Integer, BinaryInternalMapper> types = U.field(ctx, "typeId2Mapper");
 
         assertEquals(3, types.size());
 
@@ -394,9 +388,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         BinaryContext ctx = binaryContext(marsh);
 
-        Map<ClassLoader, ConcurrentMap<Integer, BinaryClassDescriptor>> ldrMap = U.field(ctx, "cachedTypes");
-
-        ConcurrentMap<Integer, BinaryClassDescriptor> types = ldrMap.get(U.gridClassLoader());
+        ConcurrentMap<Integer, BinaryInternalMapper> types = U.field(ctx, "typeId2Mapper");
 
         assertEquals(3, types.size());
 
@@ -469,9 +461,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         BinaryContext ctx = binaryContext(marsh);
 
-        Map<ClassLoader, ConcurrentMap<Integer, BinaryClassDescriptor>> ldrMap = U.field(ctx, "cachedTypes");
-
-        ConcurrentMap<Integer, BinaryClassDescriptor> types = ldrMap.get(U.gridClassLoader());
+        ConcurrentMap<Integer, BinaryInternalMapper> types = U.field(ctx, "typeId2Mapper");
 
         assertEquals(3, types.size());
 
@@ -591,9 +581,7 @@ public class GridBinaryWildcardsSelfTest extends GridCommonAbstractTest {
 
         BinaryContext ctx = binaryContext(marsh);
 
-        Map<ClassLoader, ConcurrentMap<Integer, BinaryClassDescriptor>> ldrMap = U.field(ctx, "cachedTypes");
-
-        ConcurrentMap<Integer, BinaryClassDescriptor> types = ldrMap.get(U.gridClassLoader());
+        ConcurrentMap<Integer, BinaryInternalMapper> types = U.field(ctx, "typeId2Mapper");
 
         assertEquals(3, types.size());
 

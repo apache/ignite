@@ -38,7 +38,6 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -102,9 +101,6 @@ public class BinaryContext {
     /** System loader.*/
     private static final ClassLoader sysLdr = U.gridClassLoader();
 
-    /** Reference to class loader set in IgniteConfiguration.classLoader */
-    private final ClassLoader cfgLdr;
-
     /** */
     private static final BinaryInternalMapper DFLT_MAPPER =
         new BinaryInternalMapper(new BinaryBasicNameMapper(false), new BinaryBasicIdMapper(true), false);
@@ -156,10 +152,6 @@ public class BinaryContext {
 
     /** */
     private final ConcurrentMap<Class<?>, BinaryClassDescriptor> descByCls = new ConcurrentHashMap8<>();
-
-    /** Cached types for system and configuration class loader. */
-    private final ConcurrentMap<ClassLoader, ConcurrentMap<Integer, BinaryClassDescriptor>> cachedTypes =
-        new ConcurrentHashMap8<>();
 
     /** */
     private final Map<Integer, BinaryClassDescriptor> predefinedTypes = new HashMap<>();
@@ -218,7 +210,6 @@ public class BinaryContext {
         this.metaHnd = metaHnd;
         this.igniteCfg = igniteCfg;
         this.log = log;
-        this.cfgLdr = igniteCfg.getClassLoader();
 
         colTypes.put(ArrayList.class, GridBinaryMarshaller.ARR_LIST);
         colTypes.put(LinkedList.class, GridBinaryMarshaller.LINKED_LIST);
@@ -568,8 +559,13 @@ public class BinaryContext {
 
         BinaryClassDescriptor desc = descByCls.get(cls);
 
-        if (desc == null || !desc.registered())
+        if (desc == null)
             desc = registerClassDescriptor(cls, deserialize);
+        else if (!desc.registered()) {
+            assert desc.userType();
+
+            desc = registerUserClassDescriptor(desc);
+        }
 
         return desc;
     }
@@ -596,14 +592,6 @@ public class BinaryContext {
 
         if (ldr == null)
             ldr = sysLdr;
-
-        // Classes re-loading is unsupported for both system and configuration loaders.
-        if (userType && (ldr.equals(sysLdr) || ldr.equals(cfgLdr))) {
-            desc = descriptor(typeId, ldr);
-
-            if (desc != null)
-                return desc;
-        }
 
         Class cls;
 
@@ -724,14 +712,50 @@ public class BinaryContext {
                 new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), affFieldName, schemas, desc.isEnum()).wrap(this));
         }
 
-        ClassLoader ldr = IgniteUtils.detectClassLoader(cls);
-
-        if (ldr.equals(sysLdr) || ldr.equals(cfgLdr))
-            cacheDescriptor(typeId, desc, ldr);
-
         descByCls.put(cls, desc);
 
         typeId2Mapper.putIfAbsent(typeId, mapper);
+
+        return desc;
+    }
+
+    /**
+     * Creates and registers {@link BinaryClassDescriptor} for the given user {@code class}.
+     *
+     * @param desc Old descriptor that should be re-registered.
+     * @return Class descriptor.
+     */
+    private BinaryClassDescriptor registerUserClassDescriptor(BinaryClassDescriptor desc) {
+        boolean registered;
+
+        try {
+            registered = marshCtx.registerClass(desc.typeId(), desc.describedClass());
+        }
+        catch (IgniteCheckedException e) {
+            throw new BinaryObjectException("Failed to register class.", e);
+        }
+
+        if (registered) {
+            BinarySerializer serializer = desc.initialSerializer();
+
+            if (serializer == null)
+                serializer = serializerForClass(desc.describedClass());
+
+            desc = new BinaryClassDescriptor(
+                this,
+                desc.describedClass(),
+                true,
+                desc.typeId(),
+                desc.typeName(),
+                desc.affFieldKeyName(),
+                desc.mapper(),
+                serializer,
+                true,
+                true
+            );
+
+            descByCls.put(desc.describedClass(), desc);
+        }
 
         return desc;
     }
@@ -1039,16 +1063,11 @@ public class BinaryContext {
                 mapper,
                 serializer,
                 true,
-                true /* registered */
+                false
             );
 
             fieldsMeta = desc.fieldsMeta();
             schemas = desc.schema() != null ? Collections.singleton(desc.schema()) : null;
-
-            ClassLoader ldr = IgniteUtils.detectClassLoader(cls);
-
-            if (ldr.equals(sysLdr) || ldr.equals(cfgLdr))
-                cacheDescriptor(id, desc, ldr);
 
             descByCls.put(cls, desc);
         }
@@ -1171,30 +1190,6 @@ public class BinaryContext {
      */
     OptimizedMarshaller optimizedMarsh() {
         return optmMarsh;
-    }
-
-    private BinaryClassDescriptor descriptor(int typeId, ClassLoader ldr) {
-        ConcurrentMap<Integer, BinaryClassDescriptor> map = cachedTypes.get(ldr);
-
-        if (map != null)
-            return map.get(typeId);
-
-        return null;
-    }
-
-    private void cacheDescriptor(int typeId, BinaryClassDescriptor dsc, ClassLoader ldr) {
-        ConcurrentMap<Integer, BinaryClassDescriptor> ldrMap = cachedTypes.get(ldr);
-
-        if (ldrMap == null) {
-            ConcurrentMap<Integer, BinaryClassDescriptor> old = cachedTypes.putIfAbsent(ldr,
-                ldrMap = new ConcurrentHashMap<>());
-
-            if (old != null)
-                ldrMap = old;
-        }
-
-        // Don't use putIfAbsent because descriptor's "registered" flag might has been changed.
-        ldrMap.put(typeId, dsc);
     }
 
     /**
