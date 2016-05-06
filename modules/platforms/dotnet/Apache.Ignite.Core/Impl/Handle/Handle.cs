@@ -53,14 +53,18 @@ namespace Apache.Ignite.Core.Impl.Handle
             get { return _target; }
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Release the resource.
+        /// </summary>
         public void Release()
         {
             if (Interlocked.CompareExchange(ref _released, 1, 0) == 0)
                 _releaseAction(_target);
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Resource released flag.
+        /// </summary>
         public bool Released
         {
             get { return Thread.VolatileRead(ref _released) == 1; }

@@ -78,10 +78,6 @@ public class CacheStarSchemaExample {
             System.out.println();
             System.out.println(">>> Cache star schema example started.");
 
-            // Destroy caches to clean up the data if any left from previous runs.
-            ignite.destroyCache(PARTITIONED_CACHE_NAME);
-            ignite.destroyCache(REPLICATED_CACHE_NAME);
-
             CacheConfiguration<Integer, FactPurchase> factCacheCfg = new CacheConfiguration<>(PARTITIONED_CACHE_NAME);
 
             factCacheCfg.setCacheMode(CacheMode.PARTITIONED);
@@ -97,6 +93,7 @@ public class CacheStarSchemaExample {
                 Integer.class, DimProduct.class
             );
 
+            // Auto-close cache at the end of the example.
             try (IgniteCache<Integer, FactPurchase> factCache = ignite.getOrCreateCache(factCacheCfg);
                  IgniteCache<Integer, Object> dimCache = ignite.getOrCreateCache(dimCacheCfg)) {
                 populateDimensions(dimCache);
@@ -104,6 +101,11 @@ public class CacheStarSchemaExample {
 
                 queryStorePurchases();
                 queryProductPurchases();
+            }
+            finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
+                ignite.destroyCache(PARTITIONED_CACHE_NAME);
+                ignite.destroyCache(REPLICATED_CACHE_NAME);
             }
         }
     }

@@ -398,7 +398,7 @@ namespace ignite
                 template<typename T>
                 query::QueryCursorImpl* QueryInternal(const T& qry, int32_t typ, IgniteError* err)
                 {
-                    ignite::common::java::JniErrorInfo jniErr;
+                    ignite::jni::java::JniErrorInfo jniErr;
 
                     ignite::common::concurrent::SharedPointer<interop::InteropMemory> mem = env.Get()->AllocateMemory();
                     interop::InteropMemory* mem0 = mem.Get();
@@ -415,7 +415,7 @@ namespace ignite
 
                     IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
 
-                    if (jniErr.code == ignite::common::java::IGNITE_JNI_ERR_SUCCESS)
+                    if (jniErr.code == ignite::java::IGNITE_JNI_ERR_SUCCESS)
                         return new query::QueryCursorImpl(env, qryJavaRef);
                     else
                         return NULL;

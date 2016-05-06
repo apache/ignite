@@ -18,9 +18,12 @@
 package org.apache.ignite.internal.binary.streams;
 
 import java.util.Arrays;
+import org.apache.ignite.internal.util.GridUnsafe;
+
+import static org.apache.ignite.internal.util.GridUnsafe.BIG_ENDIAN;
 
 /**
- * Binary off-heap input stream.
+ * Binary heap input stream.
  */
 public final class BinaryHeapInputStream extends BinaryAbstractInputStream {
     /**
@@ -75,7 +78,7 @@ public final class BinaryHeapInputStream extends BinaryAbstractInputStream {
         if (data.length < len) {
             byte[] data0 = new byte[len];
 
-            UNSAFE.copyMemory(data, BYTE_ARR_OFF, data0, BYTE_ARR_OFF, data.length);
+            GridUnsafe.copyMemory(data, GridUnsafe.BYTE_ARR_OFF, data0, GridUnsafe.BYTE_ARR_OFF, data.length);
 
             data = data0;
         }
@@ -97,7 +100,7 @@ public final class BinaryHeapInputStream extends BinaryAbstractInputStream {
     @Override public byte[] arrayCopy() {
         byte[] res = new byte[len];
 
-        UNSAFE.copyMemory(data, BYTE_ARR_OFF, res, BYTE_ARR_OFF, res.length);
+        GridUnsafe.copyMemory(data, GridUnsafe.BYTE_ARR_OFF, res, GridUnsafe.BYTE_ARR_OFF, res.length);
 
         return res;
     }
@@ -114,53 +117,57 @@ public final class BinaryHeapInputStream extends BinaryAbstractInputStream {
 
     /** {@inheritDoc} */
     @Override protected void copyAndShift(Object target, long off, int len) {
-        UNSAFE.copyMemory(data, BYTE_ARR_OFF + pos, target, off, len);
+        GridUnsafe.copyMemory(data, GridUnsafe.BYTE_ARR_OFF + pos, target, off, len);
 
         shift(len);
     }
 
     /** {@inheritDoc} */
     @Override protected short readShortFast() {
-        return UNSAFE.getShort(data, BYTE_ARR_OFF + pos);
+        long off = GridUnsafe.BYTE_ARR_OFF + pos;
+
+        return BIG_ENDIAN ? GridUnsafe.getShortLE(data, off) : GridUnsafe.getShort(data, off);
+
     }
 
     /** {@inheritDoc} */
     @Override protected char readCharFast() {
-        return UNSAFE.getChar(data, BYTE_ARR_OFF + pos);
+        long off = GridUnsafe.BYTE_ARR_OFF + pos;
+
+        return BIG_ENDIAN ? GridUnsafe.getCharLE(data, off) : GridUnsafe.getChar(data, off);
     }
 
     /** {@inheritDoc} */
     @Override protected int readIntFast() {
-        return UNSAFE.getInt(data, BYTE_ARR_OFF + pos);
+        long off = GridUnsafe.BYTE_ARR_OFF + pos;
+
+        return BIG_ENDIAN ? GridUnsafe.getIntLE(data, off) : GridUnsafe.getInt(data, off);
     }
 
     /** {@inheritDoc} */
     @Override protected long readLongFast() {
-        return UNSAFE.getLong(data, BYTE_ARR_OFF + pos);
+        long off = GridUnsafe.BYTE_ARR_OFF + pos;
+
+        return BIG_ENDIAN ? GridUnsafe.getLongLE(data, off) : GridUnsafe.getLong(data, off);
     }
 
     /** {@inheritDoc} */
     @Override protected byte readBytePositioned0(int pos) {
-        return UNSAFE.getByte(data, BYTE_ARR_OFF + pos);
+        return GridUnsafe.getByte(data, GridUnsafe.BYTE_ARR_OFF + pos);
     }
 
     /** {@inheritDoc} */
     @Override protected short readShortPositioned0(int pos) {
-        short res = UNSAFE.getShort(data, BYTE_ARR_OFF + pos);
+        long off = GridUnsafe.BYTE_ARR_OFF + pos;
 
-        if (!LITTLE_ENDIAN)
-            res = Short.reverseBytes(res);
+        return BIG_ENDIAN ? GridUnsafe.getShortLE(data, off) : GridUnsafe.getShort(data, off);
 
-        return res;
     }
 
     /** {@inheritDoc} */
     @Override protected int readIntPositioned0(int pos) {
-        int res = UNSAFE.getInt(data, BYTE_ARR_OFF + pos);
+        long off = GridUnsafe.BYTE_ARR_OFF + pos;
 
-        if (!LITTLE_ENDIAN)
-            res = Integer.reverseBytes(res);
-
-        return res;
+        return BIG_ENDIAN ? GridUnsafe.getIntLE(data, off) : GridUnsafe.getInt(data, off);
     }
 }

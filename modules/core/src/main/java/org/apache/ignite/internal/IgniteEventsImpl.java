@@ -108,9 +108,16 @@ public class IgniteEventsImpl extends AsyncSupportAdapter<IgniteEvents> implemen
         guard();
 
         try {
+            GridEventConsumeHandler hnd = new GridEventConsumeHandler((IgniteBiPredicate<UUID, Event>)locLsnr,
+                (IgnitePredicate<Event>)rmtFilter, types);
+
             return saveOrGet(ctx.continuous().startRoutine(
-                new GridEventConsumeHandler((IgniteBiPredicate<UUID, Event>)locLsnr,
-                    (IgnitePredicate<Event>)rmtFilter, types), bufSize, interval, autoUnsubscribe, prj.predicate()));
+                hnd,
+                false,
+                bufSize,
+                interval,
+                autoUnsubscribe,
+                prj.predicate()));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

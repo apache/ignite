@@ -69,12 +69,17 @@ public class CacheEntryProcessorExample {
             System.out.println();
             System.out.println(">>> Entry processor example started.");
 
+            // Auto-close cache at the end of the example.
             try (IgniteCache<Integer, Integer> cache = ignite.getOrCreateCache(CACHE_NAME)) {
                 // Demonstrates usage of EntryProcessor.invoke(...) method.
                 populateEntriesWithInvoke(cache);
 
                 // Demonstrates usage of EntryProcessor.invokeAll(...) method.
                 incrementEntriesWithInvokeAll(cache);
+            }
+            finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
+                ignite.destroyCache(CACHE_NAME);
             }
         }
     }

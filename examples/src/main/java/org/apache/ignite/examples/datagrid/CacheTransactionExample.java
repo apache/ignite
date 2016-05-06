@@ -24,7 +24,6 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.examples.ExampleNodeStartup;
 import org.apache.ignite.transactions.Transaction;
 
@@ -59,6 +58,7 @@ public class CacheTransactionExample {
 
             cfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
+            // Auto-close cache at the end of the example.
             try (IgniteCache<Integer, Account> cache = ignite.getOrCreateCache(cfg)) {
                 // Initialize.
                 cache.put(1, new Account(1, 100));
@@ -79,6 +79,10 @@ public class CacheTransactionExample {
                 System.out.println(">>> " + cache.get(2));
 
                 System.out.println(">>> Cache transaction example finished.");
+            }
+            finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
+                ignite.destroyCache(CACHE_NAME);
             }
         }
     }

@@ -22,9 +22,10 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -39,16 +40,20 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.binary.BinaryTypeConfiguration;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryEnumObjectImpl;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryMetadata;
@@ -57,18 +62,17 @@ import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.binary.BinaryObjectImpl;
 import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
 import org.apache.ignite.internal.binary.BinaryTypeImpl;
-import org.apache.ignite.internal.binary.GridBinaryMarshaller;
-import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOffheapInputStream;
+import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicateAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
-import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
@@ -92,10 +96,14 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
-import sun.misc.Unsafe;
+
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 
 /**
  * Binary processor implementation.
@@ -103,7 +111,7 @@ import sun.misc.Unsafe;
 public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorImpl implements
     CacheObjectBinaryProcessor {
     /** */
-    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
+    public static final IgniteProductVersion BINARY_CFG_CHECK_SINCE = IgniteProductVersion.fromString("1.5.7");
 
     /** */
     private final CountDownLatch startLatch = new CountDownLatch(1);
@@ -204,16 +212,46 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 }
             };
 
-            BinaryMarshaller pMarh0 = (BinaryMarshaller)marsh;
+            BinaryMarshaller bMarsh0 = (BinaryMarshaller)marsh;
 
             binaryCtx = new BinaryContext(metaHnd, ctx.config(), ctx.log(BinaryContext.class));
 
-            IgniteUtils.invoke(BinaryMarshaller.class, pMarh0, "setBinaryContext", binaryCtx,
-                ctx.config());
+            IgniteUtils.invoke(BinaryMarshaller.class, bMarsh0, "setBinaryContext", binaryCtx, ctx.config());
 
             binaryMarsh = new GridBinaryMarshaller(binaryCtx);
 
             binaries = new IgniteBinaryImpl(ctx, this);
+
+            if (!getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK)) {
+                BinaryConfiguration bCfg = ctx.config().getBinaryConfiguration();
+
+                if (bCfg != null) {
+                    Map<String, Object> map = new HashMap<>();
+
+                    map.put("globIdMapper", bCfg.getIdMapper() != null ? bCfg.getIdMapper().getClass().getName() : null);
+                    map.put("globSerializer", bCfg.getSerializer() != null ? bCfg.getSerializer().getClass() : null);
+                    map.put("compactFooter", bCfg.isCompactFooter());
+
+                    if (bCfg.getTypeConfigurations() != null) {
+                        Map<Object, Object> typeCfgsMap = new HashMap<>();
+
+                        for (BinaryTypeConfiguration c : bCfg.getTypeConfigurations()) {
+                            typeCfgsMap.put(
+                                c.getTypeName() != null,
+                                Arrays.asList(
+                                    c.getIdMapper() != null ? c.getIdMapper().getClass() : null,
+                                    c.getSerializer() != null ? c.getSerializer().getClass() : null,
+                                    c.isEnum()
+                                )
+                            );
+                        }
+
+                        map.put("typeCfgs", typeCfgsMap);
+                    }
+
+                    ctx.addNodeAttribute(IgniteNodeAttributes.ATTR_BINARY_CONFIGURATION, map);
+                }
+            }
         }
     }
 
@@ -238,7 +276,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 new MetaDataEntryListener(),
                 new MetaDataEntryFilter(),
                 false,
-                true);
+                true,
+                false);
 
             while (true) {
                 ClusterNode oldestSrvNode =
@@ -291,6 +330,37 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         metaBuf.clear();
 
         startLatch.countDown();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onKernalStart() throws IgniteCheckedException {
+        super.onKernalStart();
+
+        if (!getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK) && marsh instanceof BinaryMarshaller) {
+            BinaryConfiguration bcfg = ctx.config().getBinaryConfiguration();
+
+            for (ClusterNode rmtNode : ctx.discovery().remoteNodes()) {
+                if (rmtNode.version().compareTo(BINARY_CFG_CHECK_SINCE) < 0) {
+                    if (bcfg == null || bcfg.getNameMapper() == null) {
+                        throw new IgniteCheckedException("When BinaryMarshaller is used and topology contains old " +
+                            "nodes, then " + BinaryBasicNameMapper.class.getName() + " mapper have to be set " +
+                            "explicitely into binary configuration and 'simpleName' property of the mapper " +
+                            "have to be set to 'true'.");
+                    }
+
+                    if (!(bcfg.getNameMapper() instanceof BinaryBasicNameMapper)
+                        || !((BinaryBasicNameMapper)bcfg.getNameMapper()).isSimpleName()) {
+                        U.quietAndWarn(log, "When BinaryMarshaller is used and topology contains old" +
+                            " nodes, it's strongly recommended, to set " + BinaryBasicNameMapper.class.getName() +
+                            " mapper into binary configuration explicitely " +
+                            " and 'simpleName' property of the mapper set to 'true' (fix configuration or set " +
+                            "-D" + IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK + "=true system property).");
+                    }
+
+                    break;
+                }
+            }
+        }
     }
 
     /** {@inheritDoc} */
@@ -356,11 +426,11 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     public Object unmarshal(long ptr, boolean forceHeap) throws BinaryObjectException {
         assert ptr > 0 : ptr;
 
-        int size = UNSAFE.getInt(ptr);
+        int size = GridUnsafe.getInt(ptr);
 
         ptr += 4;
 
-        byte type = UNSAFE.getByte(ptr++);
+        byte type = GridUnsafe.getByte(ptr++);
 
         if (type != CacheObject.TYPE_BYTE_ARR) {
             assert size > 0 : size;
@@ -402,31 +472,30 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             return new IgniteBiTuple<>(marshalToBinary(tup.get1()), marshalToBinary(tup.get2()));
         }
 
-        if (obj instanceof Collection) {
-            Collection<Object> col = (Collection<Object>)obj;
+        {
+            Collection<Object> pCol = BinaryUtils.newKnownCollection(obj);
 
-            Collection<Object> pCol;
+            if (pCol != null) {
+                Collection<?> col = (Collection<?>)obj;
 
-            if (col instanceof Set)
-                pCol = (Collection<Object>)BinaryUtils.newSet((Set<?>)col);
-            else
-                pCol = new ArrayList<>(col.size());
+                for (Object item : col)
+                    pCol.add(marshalToBinary(item));
 
-            for (Object item : col)
-                pCol.add(marshalToBinary(item));
-
-            return pCol;
+                return pCol;
+            }
         }
 
-        if (obj instanceof Map) {
-            Map<?, ?> map = (Map<?, ?>)obj;
+        {
+            Map<Object, Object> pMap = BinaryUtils.newKnownMap(obj);
 
-            Map<Object, Object> pMap = BinaryUtils.newMap((Map<Object, Object>)obj);
+            if (pMap != null) {
+                Map<?, ?> map = (Map<?, ?>)obj;
 
-            for (Map.Entry<?, ?> e : map.entrySet())
-                pMap.put(marshalToBinary(e.getKey()), marshalToBinary(e.getValue()));
+                for (Map.Entry<?, ?> e : map.entrySet())
+                    pMap.put(marshalToBinary(e.getKey()), marshalToBinary(e.getValue()));
 
-            return pMap;
+                return pMap;
+            }
         }
 
         if (obj instanceof Map.Entry) {
@@ -445,7 +514,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         Object obj0 = binaryMarsh.unmarshal(arr, null);
 
         // Possible if a class has writeObject method.
-        if (obj0 instanceof BinaryObject)
+        if (obj0 instanceof BinaryObjectImpl)
             ((BinaryObjectImpl)obj0).detachAllowed(true);
 
         return obj0;
@@ -579,9 +648,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @Override public BinaryObject buildEnum(String typeName, int ord) throws IgniteException {
-        typeName = BinaryContext.typeName(typeName);
-
         int typeId = binaryCtx.typeId(typeName);
+
+        typeName = binaryCtx.userTypeName(typeName);
 
         updateMetadata(typeId, typeName, null, null, true);
 
@@ -704,20 +773,36 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** {@inheritDoc} */
     @Override public KeyCacheObject toCacheKeyObject(CacheObjectContext ctx, Object obj, boolean userObj) {
-        if (!((CacheObjectBinaryContext)ctx).binaryEnabled())
-            return super.toCacheKeyObject(ctx, obj, userObj);
+        return toCacheKeyObject(ctx, obj, userObj, -1);
+    }
 
-        if (obj instanceof KeyCacheObject)
+    /** {@inheritDoc} */
+    @Override public KeyCacheObject toCacheKeyObject(
+        CacheObjectContext ctx,
+        Object obj,
+        boolean userObj,
+        int partition
+    ) {
+        if (!((CacheObjectBinaryContext)ctx).binaryEnabled())
+            return super.toCacheKeyObject(ctx, obj, userObj, partition);
+
+        if (obj instanceof KeyCacheObject) {
+            ((KeyCacheObject)obj).partition(partition);
+
             return (KeyCacheObject)obj;
+        }
 
         if (((CacheObjectBinaryContext)ctx).binaryEnabled()) {
             obj = toBinary(obj);
 
-            if (obj instanceof BinaryObject)
-                return (BinaryObjectImpl)obj;
+            if (obj instanceof KeyCacheObject) {
+                ((KeyCacheObject)obj).partition(partition);
+
+                return (KeyCacheObject)obj;
+            }
         }
 
-        return toCacheKeyObject0(obj, userObj);
+        return toCacheKeyObject0(obj, userObj, partition);
     }
 
     /** {@inheritDoc} */
@@ -731,8 +816,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
         obj = toBinary(obj);
 
-        if (obj instanceof BinaryObject)
-            return (BinaryObjectImpl)obj;
+        if (obj instanceof CacheObject)
+            return (CacheObject)obj;
 
         return toCacheObject0(obj, userObj);
     }
@@ -741,6 +826,8 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     @Override public CacheObject toCacheObject(CacheObjectContext ctx, byte type, byte[] bytes) {
         if (type == BinaryObjectImpl.TYPE_BINARY)
             return new BinaryObjectImpl(binaryContext(), bytes, 0);
+        else if (type == BinaryObjectImpl.TYPE_BINARY_ENUM)
+            return new BinaryEnumObjectImpl(binaryContext(), bytes);
 
         return super.toCacheObject(ctx, type, bytes);
     }
@@ -753,10 +840,10 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
         Object val = unmarshal(valPtr, !tmp);
 
-        if (val instanceof BinaryObjectOffheapImpl)
-            return (BinaryObjectOffheapImpl)val;
+        if (val instanceof CacheObject)
+            return (CacheObject)val;
 
-        return new CacheObjectImpl(val, null);
+        return toCacheObject(ctx.cacheObjectContext(), val, false);
     }
 
     /** {@inheritDoc} */
@@ -783,6 +870,37 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
             return obj;
 
         return marshalToBinary(obj);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode rmtNode) {
+        IgniteNodeValidationResult res = super.validateNode(rmtNode);
+
+        if (res != null)
+            return res;
+
+        if (getBoolean(IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK) || !(marsh instanceof BinaryMarshaller))
+            return null;
+
+        Object rmtBinaryCfg = rmtNode.attribute(IgniteNodeAttributes.ATTR_BINARY_CONFIGURATION);
+
+        if (rmtNode.version().compareTo(BINARY_CFG_CHECK_SINCE) < 0)
+            return null;
+
+        ClusterNode locNode = ctx.discovery().localNode();
+
+        Object locBinaryCfg = locNode.attribute(IgniteNodeAttributes.ATTR_BINARY_CONFIGURATION);
+
+        if (!F.eq(locBinaryCfg, rmtBinaryCfg)) {
+            String msg = "Local node's binary configuration is not equal to remote node's binary configuration " +
+                "[locNodeId=%s, rmtNodeId=%s, locBinaryCfg=%s, rmtBinaryCfg=%s]";
+
+            return new IgniteNodeValidationResult(rmtNode.id(),
+                String.format(msg, locNode.id(), rmtNode.id(), locBinaryCfg, rmtBinaryCfg),
+                String.format(msg, rmtNode.id(), locNode.id(), rmtBinaryCfg, locBinaryCfg));
+        }
+
+        return null;
     }
 
     /**

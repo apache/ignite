@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Impl.Memory
     [SuppressMessage("Microsoft.Design", "CA1001:TypesThatOwnDisposableFieldsShouldBeDisposable",
         Justification = "This class instance usually lives as long as the app runs.")]
     [CLSCompliant(false)]
+    // ReSharper disable once ClassWithVirtualMembersNeverInherited.Global
     public class PlatformMemoryManager
     {
         /** Default capacity. */
@@ -80,6 +81,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         /// Gets or creates thread-local memory pool.
         /// </summary>
         /// <returns>Memory pool.</returns>
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         public PlatformMemoryPool Pool()
         {
             PlatformMemoryPool pool = _threadLocPool.Value;

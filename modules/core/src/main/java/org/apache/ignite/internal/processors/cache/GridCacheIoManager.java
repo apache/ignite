@@ -36,6 +36,7 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.CacheGetFuture;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
@@ -122,6 +123,45 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             IgniteInternalFuture<?> fut = null;
 
             if (cacheMsg.partitionExchangeMessage()) {
+                if (cacheMsg instanceof GridDhtAffinityAssignmentRequest) {
+                    assert cacheMsg.topologyVersion() != null : cacheMsg;
+
+                    AffinityTopologyVersion startTopVer = new AffinityTopologyVersion(cctx.localNode().order());
+
+                    DynamicCacheDescriptor cacheDesc = cctx.cache().cacheDescriptor(cacheMsg.cacheId());
+
+                    if (cacheDesc != null) {
+                        if (cacheDesc.startTopologyVersion() != null)
+                            startTopVer = cacheDesc.startTopologyVersion();
+                        else if (cacheDesc.receivedFromStartVersion() != null)
+                            startTopVer = cacheDesc.receivedFromStartVersion();
+                    }
+
+                    // Need to wait for exchange to avoid race between cache start and affinity request.
+                    fut = cctx.exchange().affinityReadyFuture(startTopVer);
+
+                    if (fut != null && !fut.isDone()) {
+                        if (log.isDebugEnabled()) {
+                            log.debug("Wait for exchange before processing message [msg=" + msg +
+                                ", node=" + nodeId +
+                                ", waitVer=" + startTopVer +
+                                ", cacheDesc=" + cacheDesc + ']');
+                        }
+
+                        fut.listen(new CI1<IgniteInternalFuture<?>>() {
+                            @Override public void apply(IgniteInternalFuture<?> fut) {
+                                cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                                    @Override public void run() {
+                                       handleMessage(nodeId, cacheMsg);
+                                    }
+                                });
+                            }
+                        });
+
+                        return;
+                    }
+                }
+
                 long locTopVer = cctx.discovery().topologyVersion();
                 long rmtTopVer = cacheMsg.topologyVersion().topologyVersion();
 

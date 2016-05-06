@@ -458,7 +458,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         nearCfg = cc.getNearConfiguration();
         nodeFilter = cc.getNodeFilter();
         pluginCfgs = cc.getPluginConfigurations();
-        qryEntities = cc.getQueryEntities();
+        qryEntities = cc.getQueryEntities() == Collections.<QueryEntity>emptyList() ? null : cc.getQueryEntities();
         readFromBackup = cc.isReadFromBackup();
         rebalanceBatchSize = cc.getRebalanceBatchSize();
         rebalanceBatchesPrefetchCount = cc.getRebalanceBatchesPrefetchCount();
@@ -544,6 +544,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     }
 
     /**
+     * Sets the near cache configuration to use on all cache nodes.
+     *
      * @param nearCfg Near cache configuration.
      * @return {@code this} for chaining.
      */
@@ -565,6 +567,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /**
      * Sets write synchronization mode.
+     * <p>
+     * Default synchronization mode is {@link CacheWriteSynchronizationMode#PRIMARY_SYNC}.
      *
      * @param writeSync Write synchronization mode.
      * @return {@code this} for chaining.

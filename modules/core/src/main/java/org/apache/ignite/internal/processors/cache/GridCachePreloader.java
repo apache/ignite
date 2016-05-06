@@ -73,18 +73,6 @@ public interface GridCachePreloader {
     public void onInitialExchangeComplete(@Nullable Throwable err);
 
     /**
-     * Callback by exchange manager when new exchange future is added to worker.
-     */
-    public void onExchangeFutureAdded();
-
-    /**
-     * Updates last exchange future.
-     *
-     * @param lastFut Last future.
-     */
-    public void updateLastExchangeFuture(GridDhtPartitionsExchangeFuture lastFut);
-
-    /**
      * @param exchFut Exchange future to assign.
      * @return Assignments or {@code null} if detected that there are pending exchanges.
      */
@@ -137,6 +125,12 @@ public interface GridCachePreloader {
     public IgniteInternalFuture<Boolean> rebalanceFuture();
 
     /**
+     * @return {@code true} if there is no need to force keys preloading
+     *      (e.g. rebalancing has been completed).
+     */
+    public boolean needForceKeys();
+
+    /**
      * Requests that preloader sends the request for the key.
      *
      * @param keys Keys to request.
@@ -144,11 +138,6 @@ public interface GridCachePreloader {
      * @return Future to complete when all keys are preloaded.
      */
     public IgniteInternalFuture<Object> request(Collection<KeyCacheObject> keys, AffinityTopologyVersion topVer);
-
-    /**
-     * @return Future completed when rebalance on node start topology finished.
-     */
-    public IgniteInternalFuture<?> initialRebalanceFuture();
 
     /**
      * Force preload process.
@@ -186,11 +175,9 @@ public interface GridCachePreloader {
     public void evictPartitionAsync(GridDhtLocalPartition part);
 
     /**
-     * Handles new topology.
-     *
-     * @param topVer Topology version.
+     * @param lastFut Last future.
      */
-    public void onTopologyChanged(AffinityTopologyVersion topVer);
+    public void onTopologyChanged(GridDhtPartitionsExchangeFuture lastFut);
 
     /**
      * Dumps debug information.

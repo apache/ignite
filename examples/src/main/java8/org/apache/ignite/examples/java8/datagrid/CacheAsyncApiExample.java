@@ -57,6 +57,7 @@ public class CacheAsyncApiExample {
             cfg.setCacheMode(CacheMode.PARTITIONED);
             cfg.setName(CACHE_NAME);
 
+            // Auto-close cache at the end of the example.
             try (IgniteCache<Integer, String> cache = ignite.getOrCreateCache(cfg)) {
                 // Enable asynchronous mode.
                 IgniteCache<Integer, String> asyncCache = cache.withAsync();
@@ -79,6 +80,10 @@ public class CacheAsyncApiExample {
                 // Asynchronously wait for result.
                 asyncCache.<String>future().listen(fut ->
                     System.out.println("Get operation completed [value=" + fut.get() + ']'));
+            }
+            finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
+                ignite.destroyCache(CACHE_NAME);
             }
         }
     }

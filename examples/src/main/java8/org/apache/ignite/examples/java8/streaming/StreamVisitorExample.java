@@ -121,6 +121,11 @@ public class StreamVisitorExample {
                 // Print top 10 words.
                 ExamplesUtils.printQueryResults(top3);
             }
+            finally {
+                // Distributed cache could be removed from cluster only by #destroyCache() call.
+                ignite.destroyCache(mktDataCfg.getName());
+                ignite.destroyCache(instCfg.getName());
+            }
         }
     }
 

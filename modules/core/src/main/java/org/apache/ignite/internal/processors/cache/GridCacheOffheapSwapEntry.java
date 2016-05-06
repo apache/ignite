@@ -23,7 +23,6 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
-import sun.misc.Unsafe;
 
 /**
  * GridCacheSwapEntry over offheap pointer.
@@ -40,9 +39,6 @@ import sun.misc.Unsafe;
  * </ul>
  */
 public class GridCacheOffheapSwapEntry implements GridCacheSwapEntry {
-    /** */
-    private static final Unsafe UNSAFE = GridUnsafe.unsafe();
-
     /** */
     private final long ptr;
 
@@ -70,17 +66,17 @@ public class GridCacheOffheapSwapEntry implements GridCacheSwapEntry {
 
         long readPtr = ptr + GridCacheSwapEntryImpl.VERSION_OFFSET;
 
-        boolean verEx = UNSAFE.getByte(readPtr++) != 0;
+        boolean verEx = GridUnsafe.getByte(readPtr++) != 0;
 
         ver = U.readVersion(readPtr, verEx);
 
         readPtr += verEx ? GridCacheSwapEntryImpl.VERSION_EX_SIZE : GridCacheSwapEntryImpl.VERSION_SIZE;
 
-        type = UNSAFE.getByte(readPtr + 4);
+        type = GridUnsafe.getByte(readPtr + 4);
 
         valPtr = readPtr;
 
-        assert (ptr + size) > (UNSAFE.getInt(valPtr) + valPtr + 5);
+        assert (ptr + size) > (GridUnsafe.getInt(valPtr) + valPtr + 5);
     }
 
     /**
@@ -94,11 +90,11 @@ public class GridCacheOffheapSwapEntry implements GridCacheSwapEntry {
 
         ptr += GridCacheSwapEntryImpl.VERSION_OFFSET; // Skip ttl, expire time.
 
-        boolean verEx = UNSAFE.getByte(ptr++) != 0;
+        boolean verEx = GridUnsafe.getByte(ptr++) != 0;
 
         ptr += verEx ? GridCacheSwapEntryImpl.VERSION_EX_SIZE : GridCacheSwapEntryImpl.VERSION_SIZE;
 
-        assert (ptr + size) > (UNSAFE.getInt(ptr) + ptr + 5);
+        assert (ptr + size) > (GridUnsafe.getInt(ptr) + ptr + 5);
 
         return ptr;
     }
@@ -108,7 +104,7 @@ public class GridCacheOffheapSwapEntry implements GridCacheSwapEntry {
      * @return TTL.
      */
     public static long timeToLive(long ptr) {
-        return UNSAFE.getLong(ptr);
+        return GridUnsafe.getLong(ptr);
     }
 
     /**
@@ -116,7 +112,7 @@ public class GridCacheOffheapSwapEntry implements GridCacheSwapEntry {
      * @return Expire time.
      */
     public static long expireTime(long ptr) {
-        return UNSAFE.getLong(ptr + GridCacheSwapEntryImpl.EXPIRE_TIME_OFFSET);
+        return GridUnsafe.getLong(ptr + GridCacheSwapEntryImpl.EXPIRE_TIME_OFFSET);
     }
 
     /**
@@ -126,7 +122,7 @@ public class GridCacheOffheapSwapEntry implements GridCacheSwapEntry {
     public static GridCacheVersion version(long ptr) {
         long addr = ptr + GridCacheSwapEntryImpl.VERSION_OFFSET;
 
-        boolean verEx = UNSAFE.getByte(addr) != 0;
+        boolean verEx = GridUnsafe.getByte(addr) != 0;
 
         addr++;
 
@@ -165,12 +161,12 @@ public class GridCacheOffheapSwapEntry implements GridCacheSwapEntry {
 
     /** {@inheritDoc} */
     @Override public long ttl() {
-        return UNSAFE.getLong(ptr);
+        return GridUnsafe.getLong(ptr);
     }
 
     /** {@inheritDoc} */
     @Override public long expireTime() {
-        return UNSAFE.getLong(ptr + GridCacheSwapEntryImpl.EXPIRE_TIME_OFFSET);
+        return GridUnsafe.getLong(ptr + GridCacheSwapEntryImpl.EXPIRE_TIME_OFFSET);
     }
 
     /** {@inheritDoc} */

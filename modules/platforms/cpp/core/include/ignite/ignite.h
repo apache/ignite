@@ -20,8 +20,8 @@
  * Declares ignite::Ignite class.
  */
 
-#ifndef _IGNITE
-#define _IGNITE
+#ifndef _IGNITE_IGNITE
+#define _IGNITE_IGNITE
 
 #include "ignite/cache/cache.h"
 #include "ignite/impl/ignite_impl.h"
@@ -168,4 +168,4 @@ namespace ignite
     };
 }
 
-#endif
+#endif //_IGNITE_IGNITE

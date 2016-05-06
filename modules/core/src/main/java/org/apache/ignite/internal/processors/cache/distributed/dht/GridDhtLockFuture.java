@@ -132,7 +132,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
     private LockTimeoutObject timeoutObj;
 
     /** Lock timeout. */
-    private long timeout;
+    private final long timeout;
 
     /** Filter. */
     private CacheEntryPredicate[] filter;
@@ -194,11 +194,12 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
         CacheEntryPredicate[] filter,
         boolean skipStore,
         boolean keepBinary) {
-        super(cctx.kernalContext(), CU.boolReducer());
+        super(CU.boolReducer());
 
         assert nearNodeId != null;
         assert nearLockVer != null;
         assert topVer.topologyVersion() > 0;
+        assert (tx != null && timeout >= 0) || tx == null;
 
         this.cctx = cctx;
         this.nearNodeId = nearNodeId;
@@ -301,13 +302,6 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
      */
     @Override public IgniteUuid futureId() {
         return futId;
-    }
-
-    /**
-     * @return Near lock version.
-     */
-    public GridCacheVersion nearLockVersion() {
-        return nearLockVer;
     }
 
     /** {@inheritDoc} */
@@ -482,7 +476,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
     private void onFailed(boolean dist) {
         undoLocks(dist);
 
-        onComplete(false, false);
+        onComplete(false, false, true);
     }
 
     /**
@@ -494,14 +488,12 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
         boolean found = false;
 
         for (IgniteInternalFuture<?> fut : futures()) {
-            if (isMini(fut)) {
-                MiniFuture f = (MiniFuture)fut;
+            MiniFuture f = (MiniFuture)fut;
 
-                if (f.node().id().equals(nodeId)) {
-                    f.onResult(new ClusterTopologyCheckedException("Remote node left grid (will ignore): " + nodeId));
+            if (f.node().id().equals(nodeId)) {
+                f.onResult(new ClusterTopologyCheckedException("Remote node left grid (will ignore): " + nodeId));
 
-                    found = true;
-                }
+                found = true;
             }
         }
 
@@ -551,12 +543,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
         synchronized (futs) {
             // Avoid iterator creation.
             for (int i = 0; i < futs.size(); i++) {
-                IgniteInternalFuture<Boolean> fut = futs.get(i);
-
-                if (!isMini(fut))
-                    continue;
-
-                MiniFuture mini = (MiniFuture)fut;
+                MiniFuture mini = (MiniFuture)futs.get(i);
 
                 if (mini.futureId().equals(miniId)) {
                     if (!mini.isDone())
@@ -628,7 +615,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
             err = t;
         }
 
-        onComplete(false, false);
+        onComplete(false, false, true);
     }
 
     /**
@@ -691,7 +678,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
     /** {@inheritDoc} */
     @Override public boolean cancel() {
         if (onCancelled())
-            onComplete(false, false);
+            onComplete(false, false, true);
 
         return isCancelled();
     }
@@ -721,7 +708,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                 this.err = err;
         }
 
-        return onComplete(success, err instanceof NodeStoppingException);
+        return onComplete(success, err instanceof NodeStoppingException, true);
     }
 
     /**
@@ -729,13 +716,14 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
      *
      * @param success {@code True} if lock was acquired.
      * @param stopping {@code True} if node is stopping.
+     * @param unlock {@code True} if locks should be released.
      * @return {@code True} if complete by this operation.
      */
-    private boolean onComplete(boolean success, boolean stopping) {
+    private boolean onComplete(boolean success, boolean stopping, boolean unlock) {
         if (log.isDebugEnabled())
             log.debug("Received onComplete(..) callback [success=" + success + ", fut=" + this + ']');
 
-        if (!success && !stopping)
+        if (!success && !stopping && unlock)
             undoLocks(true);
 
         boolean set = false;
@@ -772,19 +760,11 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
     }
 
     /**
-     * @param f Future.
-     * @return {@code True} if mini-future.
-     */
-    private boolean isMini(IgniteInternalFuture<?> f) {
-        return f.getClass().equals(MiniFuture.class);
-    }
-
-    /**
      *
      */
     public void map() {
         if (F.isEmpty(entries)) {
-            onComplete(true, false);
+            onComplete(true, false, true);
 
             return;
         }
@@ -1006,7 +986,24 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(GridDhtLockFuture.class, this, super.toString());
+        Collection<String> futs = F.viewReadOnly(futures(), new C1<IgniteInternalFuture<?>, String>() {
+            @Override public String apply(IgniteInternalFuture<?> f) {
+                MiniFuture m = (MiniFuture)f;
+
+                return "[node=" + m.node().id() + ", loc=" + m.node().isLocal() + ", done=" + f.isDone() + "]";
+            }
+        });
+
+        Collection<KeyCacheObject> locks;
+
+        synchronized (this) {
+            locks = new HashSet<>(pendingLocks);
+        }
+
+        return S.toString(GridDhtLockFuture.class, this,
+            "innerFuts", futs,
+            "pendingLocks", locks,
+            "super", super.toString());
     }
 
     /**
@@ -1019,8 +1016,21 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
             final GridCacheVersion ver = version();
 
             for (GridDhtCacheEntry entry : entries) {
-                if (!entry.hasValue())
-                    loadMap.put(entry.key(), entry);
+                try {
+                    entry.unswap(false);
+
+                    if (!entry.hasValue())
+                        loadMap.put(entry.key(), entry);
+                }
+                catch (GridCacheEntryRemovedException e) {
+                    assert false : "Should not get removed exception while holding lock on entry " +
+                        "[entry=" + entry + ", e=" + e + ']';
+                }
+                catch (IgniteCheckedException e) {
+                    onDone(e);
+
+                    return;
+                }
             }
 
             try {
@@ -1075,7 +1085,9 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
 
             timedOut = true;
 
-            onComplete(false, false);
+            boolean releaseLocks = !(inTx() && cctx.tm().deadlockDetectionEnabled());
+
+            onComplete(false, false, releaseLocks);
         }
 
         /** {@inheritDoc} */

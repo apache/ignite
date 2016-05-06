@@ -22,100 +22,100 @@ namespace Apache.Ignite.Core.Binary
     /// </summary>
     public static class BinaryTypeNames
     {
-        /** Type name: boolean. */
+        /// <summary> Type name: boolean. </summary>
         public const string TypeNameBool = "boolean";
 
-        /** Type name: byte. */
+        /// <summary> Type name: byte. </summary>
         public const string TypeNameByte = "byte";
 
-        /** Type name: short. */
+        /// <summary> Type name: short. </summary>
         public const string TypeNameShort = "short";
 
-        /** Type name: char. */
+        /// <summary> Type name: char. </summary>
         public const string TypeNameChar = "char";
 
-        /** Type name: int. */
+        /// <summary> Type name: int. </summary>
         public const string TypeNameInt = "int";
 
-        /** Type name: long. */
+        /// <summary> Type name: long. </summary>
         public const string TypeNameLong = "long";
 
-        /** Type name: float. */
+        /// <summary> Type name: float. </summary>
         public const string TypeNameFloat = "float";
 
-        /** Type name: double. */
+        /// <summary> Type name: double. </summary>
         public const string TypeNameDouble = "double";
 
-        /** Type name: decimal. */
+        /// <summary> Type name: decimal. </summary>
         public const string TypeNameDecimal = "decimal";
 
-        /** Type name: String. */
+        /// <summary> Type name: String. </summary>
         public const string TypeNameString = "String";
 
-        /** Type name: UUID. */
+        /// <summary> Type name: UUID. </summary>
         public const string TypeNameGuid = "UUID";
 
-        /** Type name: date. */
+        /// <summary> Type name: date. </summary>
         public const string TypeNameDate = "Date";
 
-        /** Type name: timestamp. */
+        /// <summary> Type name: timestamp. </summary>
         public const string TypeNameTimestamp = "Timestamp";
 
-        /** Type name: Enum. */
+        /// <summary> Type name: Enum. </summary>
         public const string TypeNameEnum = "Enum";
 
-        /** Type name: Object. */
+        /// <summary> Type name: Object. </summary>
         public const string TypeNameObject = "Object";
 
-        /** Type name: boolean array. */
+        /// <summary> Type name: boolean array. </summary>
         public const string TypeNameArrayBool = "boolean[]";
 
-        /** Type name: byte array. */
+        /// <summary> Type name: byte array. </summary>
         public const string TypeNameArrayByte = "byte[]";
 
-        /** Type name: short array. */
+        /// <summary> Type name: short array. </summary>
         public const string TypeNameArrayShort = "short[]";
 
-        /** Type name: char array. */
+        /// <summary> Type name: char array. </summary>
         public const string TypeNameArrayChar = "char[]";
 
-        /** Type name: int array. */
+        /// <summary> Type name: int array. </summary>
         public const string TypeNameArrayInt = "int[]";
 
-        /** Type name: long array. */
+        /// <summary> Type name: long array. </summary>
         public const string TypeNameArrayLong = "long[]";
 
-        /** Type name: float array. */
+        /// <summary> Type name: float array. </summary>
         public const string TypeNameArrayFloat = "float[]";
 
-        /** Type name: double array. */
+        /// <summary> Type name: double array. </summary>
         public const string TypeNameArrayDouble = "double[]";
 
-        /** Type name: decimal array. */
+        /// <summary> Type name: decimal array. </summary>
         public const string TypeNameArrayDecimal = "decimal[]";
 
-        /** Type name: String array. */
+        /// <summary> Type name: String array. </summary>
         public const string TypeNameArrayString = "String[]";
 
-        /** Type name: UUID array. */
+        /// <summary> Type name: UUID array. </summary>
         public const string TypeNameArrayGuid = "UUID[]";
 
-        /** Type name: timestamp array. */
+        /// <summary> Type name: timestamp array. </summary>
         public const string TypeNameArrayDate = "Date[]";
 
-        /** Type name: timestamp array. */
+        /// <summary> Type name: timestamp array. </summary>
         public const string TypeNameArrayTimestamp = "Timestamp[]";
 
-        /** Type name: Enum array. */
+        /// <summary> Type name: Enum array. </summary>
         public const string TypeNameArrayEnum = "Enum[]";
 
-        /** Type name: Object array. */
+        /// <summary> Type name: Object array. </summary>
         public const string TypeNameArrayObject = "Object[]";
 
-        /** Type name: Collection. */
+        /// <summary> Type name: Collection. </summary>
         public const string TypeNameCollection = "Collection";
 
-        /** Type name: Map. */
+        /// <summary> Type name: Map. </summary>
         public const string TypeNameMap = "Map";
     }
 }

@@ -133,6 +133,11 @@ public class GridDeploymentInfoBean implements Message, GridDeploymentInfo, Exte
     }
 
     /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
     @Override public int hashCode() {
         return clsLdrId.hashCode();
     }

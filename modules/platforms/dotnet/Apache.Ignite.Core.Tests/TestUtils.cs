@@ -22,6 +22,9 @@ namespace Apache.Ignite.Core.Tests
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
+    using Apache.Ignite.Core.Discovery;
+    using Apache.Ignite.Core.Discovery.Tcp;
+    using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Tests.Process;
@@ -212,7 +215,7 @@ namespace Apache.Ignite.Core.Tests
         /// <returns>
         ///   <c>True</c> if topology took required size.
         /// </returns>
-        public static bool WaitTopology(this IIgnite grid, int size, int timeout)
+        public static bool WaitTopology(this IIgnite grid, int size, int timeout = 30000)
         {
             int left = timeout;
 
@@ -301,6 +304,35 @@ namespace Apache.Ignite.Core.Tests
             }
 
             return false;
+        }
+
+        /// <summary>
+        /// Gets the static discovery.
+        /// </summary>
+        public static IDiscoverySpi GetStaticDiscovery()
+        {
+            return new TcpDiscoverySpi
+            {
+                IpFinder = new TcpDiscoveryStaticIpFinder
+                {
+                    Endpoints = new[] { "127.0.0.1:47500" }
+                },
+                SocketTimeout = TimeSpan.FromSeconds(0.3)
+            };
+        }
+
+        /// <summary>
+        /// Gets the default code-based test configuration.
+        /// </summary>
+        public static IgniteConfiguration GetTestConfiguration()
+        {
+            return new IgniteConfiguration
+            {
+                DiscoverySpi = GetStaticDiscovery(),
+                Localhost = "127.0.0.1",
+                JvmOptions = TestJavaOptions(),
+                JvmClasspath = CreateTestClasspath()
+            };
         }
     }
 }

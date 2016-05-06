@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.InteropServices;
     using Apache.Ignite.Core.Common;
-
     using JNI = IgniteJniNativeMethods;
 
     /// <summary>
@@ -38,7 +37,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [SuppressMessage("Microsoft.Design", "CA1065:DoNotRaiseExceptionsInUnexpectedLocations")]
         static UnmanagedUtils()
         {
-            var path = IgniteUtils.UnpackEmbeddedResource(IgniteUtils.FileIgniteJniDll);
+            var platfrom = Environment.Is64BitProcess ? "x64" : "x86";
+
+            var resName = string.Format("{0}.{1}", platfrom, IgniteUtils.FileIgniteJniDll);
+
+            var path = IgniteUtils.UnpackEmbeddedResource(resName, IgniteUtils.FileIgniteJniDll);
 
             var ptr = NativeMethods.LoadLibrary(path);
 
@@ -57,7 +60,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region NATIVE METHODS: PROCESSOR
 
-        internal static IUnmanagedTarget IgnitionStart(UnmanagedContext ctx, string cfgPath, string gridName,
+        internal static void IgnitionStart(UnmanagedContext ctx, string cfgPath, string gridName,
             bool clientMode)
         {
             using (var mem = IgniteManager.Memory.Allocate().GetStream())
@@ -69,10 +72,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 try
                 {
+                    // OnStart receives the same InteropProcessor as here (just as another GlobalRef) and stores it.
+                    // Release current reference immediately.
                     void* res = JNI.IgnitionStart(ctx.NativeContext, cfgPath0, gridName0, InteropFactoryId,
                         mem.SynchronizeOutput());
 
-                    return new UnmanagedTarget(ctx, res);
+                    JNI.Release(res);
                 }
                 finally
                 {
@@ -100,7 +105,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             JNI.IgnitionStopAll(ctx, cancel);
         }
-        
+
         internal static void ProcessorReleaseStart(IUnmanagedTarget target)
         {
             JNI.ProcessorReleaseStart(target.Context, target.Target);
@@ -145,6 +150,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
+        internal static IUnmanagedTarget ProcessorCreateCache(IUnmanagedTarget target, long memPtr)
+        {
+            void* res = JNI.ProcessorCreateCacheFromConfig(target.Context, target.Target, memPtr);
+
+            return target.ChangeTarget(res);
+        }
+
         internal static IUnmanagedTarget ProcessorGetOrCreateCache(IUnmanagedTarget target, string name)
         {
             sbyte* name0 = IgniteUtils.StringToUtf8Unmanaged(name);
@@ -154,6 +166,59 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 void* res = JNI.ProcessorGetOrCreateCache(target.Context, target.Target, name0);
 
                 return target.ChangeTarget(res);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(new IntPtr(name0));
+            }
+        }
+
+        internal static IUnmanagedTarget ProcessorGetOrCreateCache(IUnmanagedTarget target, long memPtr)
+        {
+            void* res = JNI.ProcessorGetOrCreateCacheFromConfig(target.Context, target.Target, memPtr);
+
+            return target.ChangeTarget(res);
+        }
+
+        internal static IUnmanagedTarget ProcessorCreateNearCache(IUnmanagedTarget target, string name, long memPtr)
+        {
+            sbyte* name0 = IgniteUtils.StringToUtf8Unmanaged(name);
+
+            try
+            {
+                void* res = JNI.ProcessorCreateNearCache(target.Context, target.Target, name0, memPtr);
+
+                return target.ChangeTarget(res);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(new IntPtr(name0));
+            }
+        }
+
+        internal static IUnmanagedTarget ProcessorGetOrCreateNearCache(IUnmanagedTarget target, string name, long memPtr)
+        {
+            sbyte* name0 = IgniteUtils.StringToUtf8Unmanaged(name);
+
+            try
+            {
+                void* res = JNI.ProcessorGetOrCreateNearCache(target.Context, target.Target, name0, memPtr);
+
+                return target.ChangeTarget(res);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(new IntPtr(name0));
+            }
+        }
+
+        internal static void ProcessorDestroyCache(IUnmanagedTarget target, string name)
+        {
+            sbyte* name0 = IgniteUtils.StringToUtf8Unmanaged(name);
+
+            try
+            {
+                JNI.ProcessorDestroyCache(target.Context, target.Target, name0);
             }
             finally
             {
@@ -252,6 +317,50 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
+        internal static IUnmanagedTarget ProcessorAtomicSequence(IUnmanagedTarget target, string name, long initialValue, 
+            bool create)
+        {
+            var name0 = IgniteUtils.StringToUtf8Unmanaged(name);
+
+            try
+            {
+                var res = JNI.ProcessorAtomicSequence(target.Context, target.Target, name0, initialValue, create);
+
+                return res == null ? null : target.ChangeTarget(res);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(new IntPtr(name0));
+            }
+        }
+
+        internal static IUnmanagedTarget ProcessorAtomicReference(IUnmanagedTarget target, string name, long memPtr, 
+            bool create)
+        {
+            var name0 = IgniteUtils.StringToUtf8Unmanaged(name);
+
+            try
+            {
+                var res = JNI.ProcessorAtomicReference(target.Context, target.Target, name0, memPtr, create);
+
+                return res == null ? null : target.ChangeTarget(res);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(new IntPtr(name0));
+            }
+        }
+
+        internal static void ProcessorGetIgniteConfiguration(IUnmanagedTarget target, long memPtr)
+        {
+            JNI.ProcessorGetIgniteConfiguration(target.Context, target.Target, memPtr);
+        }
+
+        internal static void ProcessorGetCacheNames(IUnmanagedTarget target, long memPtr)
+        {
+            JNI.ProcessorGetCacheNames(target.Context, target.Target, memPtr);
+        }
+
         #endregion
 
         #region NATIVE METHODS: TARGET
@@ -303,6 +412,21 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         internal static void TargetListenFutureForOperation(IUnmanagedTarget target, long futId, int typ, int opId)
         {
             JNI.TargetListenFutForOp(target.Context, target.Target, futId, typ, opId);
+        }
+
+        internal static IUnmanagedTarget TargetListenFutureAndGet(IUnmanagedTarget target, long futId, int typ)
+        {
+            var res = JNI.TargetListenFutAndGet(target.Context, target.Target, futId, typ);
+
+            return target.ChangeTarget(res);
+        }
+
+        internal static IUnmanagedTarget TargetListenFutureForOperationAndGet(IUnmanagedTarget target, long futId,
+            int typ, int opId)
+        {
+            var res = JNI.TargetListenFutForOpAndGet(target.Context, target.Target, futId, typ, opId);
+
+            return target.ChangeTarget(res);
         }
 
         #endregion
@@ -440,9 +564,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             JNI.ComputeWithTimeout(target.Context, target.Target, timeout);
         }
 
-        internal static void ComputeExecuteNative(IUnmanagedTarget target, long taskPtr, long topVer)
+        internal static IUnmanagedTarget ComputeExecuteNative(IUnmanagedTarget target, long taskPtr, long topVer)
         {
-            JNI.ComputeExecuteNative(target.Context, target.Target, taskPtr, topVer);
+            void* res = JNI.ComputeExecuteNative(target.Context, target.Target, taskPtr, topVer);
+
+            return target.ChangeTarget(res);
         }
 
         #endregion
@@ -814,6 +940,61 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         internal static void AtomicLongClose(IUnmanagedTarget target)
         {
             JNI.AtomicLongClose(target.Context, target.Target);
+        }
+
+        internal static long AtomicSequenceGet(IUnmanagedTarget target)
+        {
+            return JNI.AtomicSequenceGet(target.Context, target.Target);
+        }
+
+        internal static long AtomicSequenceIncrementAndGet(IUnmanagedTarget target)
+        {
+            return JNI.AtomicSequenceIncrementAndGet(target.Context, target.Target);
+        }
+
+        internal static long AtomicSequenceAddAndGet(IUnmanagedTarget target, long value)
+        {
+            return JNI.AtomicSequenceAddAndGet(target.Context, target.Target, value);
+        }
+
+        internal static int AtomicSequenceGetBatchSize(IUnmanagedTarget target)
+        {
+            return JNI.AtomicSequenceGetBatchSize(target.Context, target.Target);
+        }
+
+        internal static void AtomicSequenceSetBatchSize(IUnmanagedTarget target, int size)
+        {
+            JNI.AtomicSequenceSetBatchSize(target.Context, target.Target, size);
+        }
+
+        internal static bool AtomicSequenceIsClosed(IUnmanagedTarget target)
+        {
+            return JNI.AtomicSequenceIsClosed(target.Context, target.Target);
+        }
+
+        internal static void AtomicSequenceClose(IUnmanagedTarget target)
+        {
+            JNI.AtomicSequenceClose(target.Context, target.Target);
+        }
+
+        internal static bool AtomicReferenceIsClosed(IUnmanagedTarget target)
+        {
+            return JNI.AtomicReferenceIsClosed(target.Context, target.Target);
+        }
+
+        internal static void AtomicReferenceClose(IUnmanagedTarget target)
+        {
+            JNI.AtomicReferenceClose(target.Context, target.Target);
+        }
+
+        internal static bool ListenableCancel(IUnmanagedTarget target)
+        {
+            return JNI.ListenableCancel(target.Context, target.Target);
+        }
+
+        internal static bool ListenableIsCancelled(IUnmanagedTarget target)
+        {
+            return JNI.ListenableIsCancelled(target.Context, target.Target);
         }
 
         #endregion

@@ -25,6 +25,13 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.util.io.GridFilenameUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -42,7 +49,7 @@ import org.jetbrains.annotations.Nullable;
  *     IgfsFile file = igfs.info(filePath);
  * </pre>
  */
-public final class IgfsPath implements Comparable<IgfsPath>, Externalizable {
+public final class IgfsPath implements Comparable<IgfsPath>, Externalizable, Binarylizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -159,6 +166,15 @@ public final class IgfsPath implements Comparable<IgfsPath>, Externalizable {
     }
 
     /**
+     * Get components in array form.
+     *
+     * @return Components array.
+     */
+    public String[] componentsArray() {
+        return path.length() == 1 ? new String[0] : path.substring(1).split(SLASH);
+    }
+
+    /**
      * Returns the parent of a path or {@code null} if at root.
      *
      * @return The parent of a path or {@code null} if at root.
@@ -248,6 +264,20 @@ public final class IgfsPath implements Comparable<IgfsPath>, Externalizable {
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException {
         path = U.readString(in);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+        BinaryRawWriter out = writer.rawWriter();
+
+        out.writeString(path);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+        BinaryRawReader in = reader.rawReader();
+
+        path = in.readString();
     }
 
     /** {@inheritDoc} */

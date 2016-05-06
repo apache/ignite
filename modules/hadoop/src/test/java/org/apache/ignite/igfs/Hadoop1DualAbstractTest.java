@@ -19,12 +19,13 @@ package org.apache.ignite.igfs;
 
 import java.io.IOException;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
+import org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.processors.igfs.IgfsDualAbstractSelfTest;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 
-import static org.apache.ignite.igfs.HadoopSecondaryFileSystemConfigurationTest.IGFS_SCHEME;
+import static org.apache.ignite.IgniteFileSystem.IGFS_SCHEME;
 import static org.apache.ignite.igfs.HadoopSecondaryFileSystemConfigurationTest.SECONDARY_CFG_PATH;
 import static org.apache.ignite.igfs.HadoopSecondaryFileSystemConfigurationTest.configuration;
 import static org.apache.ignite.igfs.HadoopSecondaryFileSystemConfigurationTest.mkUri;
@@ -74,12 +75,16 @@ public abstract class Hadoop1DualAbstractTest extends IgfsDualAbstractSelfTest {
 
         prepareConfiguration();
 
-        IgniteHadoopIgfsSecondaryFileSystem second =
-            new IgniteHadoopIgfsSecondaryFileSystem(secondaryUri, secondaryConfFullPath);
+        CachingHadoopFileSystemFactory factory = new CachingHadoopFileSystemFactory();
 
-        FileSystem fileSystem = second.fileSystem();
+        factory.setUri(secondaryUri);
+        factory.setConfigPaths(secondaryConfFullPath);
 
-        igfsSecondary = new HadoopFileSystemUniversalFileSystemAdapter(fileSystem);
+        IgniteHadoopIgfsSecondaryFileSystem second = new IgniteHadoopIgfsSecondaryFileSystem();
+
+        second.setFileSystemFactory(factory);
+
+        igfsSecondary = new HadoopFileSystemUniversalFileSystemAdapter(factory);
 
         return second;
     }
@@ -89,7 +94,7 @@ public abstract class Hadoop1DualAbstractTest extends IgfsDualAbstractSelfTest {
      * @throws IOException On failure.
      */
     protected void startUnderlying() throws Exception {
-        startGridWithIgfs(GRID_NAME, IGFS_NAME, PRIMARY, null, SECONDARY_REST_CFG);
+        startGridWithIgfs(GRID_NAME, IGFS_NAME, PRIMARY, null, SECONDARY_REST_CFG, new TcpDiscoveryVmIpFinder(true));
     }
 
     /**
