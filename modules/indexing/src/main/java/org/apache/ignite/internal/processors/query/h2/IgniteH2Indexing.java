@@ -2659,21 +2659,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
         @Override public Object readFromSwap(Object key) throws IgniteCheckedException {
+            assert false : "'readFromSwap' to be removed";
+
             return null;
-// TODO GG-10884.
-//            IgniteInternalCache<Object, ?> cache = ctx.cache().cache(schema.spaceName);
-//
-//            GridCacheContext cctx = cache.context();
-//
-//            if (cctx.isNear())
-//                cctx = cctx.near().dht().context();
-//
-//            CacheObject v = cctx.swap().readValue(cctx.toCacheKeyObject(key), true, true);
-//
-//            if (v == null)
-//                return null;
-//
-//            return v;
         }
 
         /** {@inheritDoc} */
