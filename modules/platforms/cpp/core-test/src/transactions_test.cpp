@@ -281,6 +281,102 @@ BOOST_AUTO_TEST_CASE(TransactionAttributes)
     BOOST_CHECK(!tx.IsValid());
 }
 
+BOOST_AUTO_TEST_CASE(CrossCacheCommit)
+{
+    Cache<int, int> cache1 = grid.GetCache<int, int>("partitioned");
+    Cache<int, int> cache2 = grid.GetCache<int, int>("partitioned2");
+
+    cache1.Put(1, 1);
+    cache1.Put(2, 1);
+
+    cache2.Put(1, 2);
+    cache2.Put(2, 2);
+
+    Transactions transactions = grid.GetTransactions();
+
+    Transaction tx = transactions.GetTx();
+    BOOST_REQUIRE(!tx.IsValid());
+
+    tx = transactions.TxStart();
+
+    BOOST_REQUIRE(transactions.GetTx().IsValid());
+
+    cache1.Put(1, 10);
+    cache1.Put(2, 10);
+
+    cache2.Put(1, 20);
+    cache2.Put(2, 20);
+
+    tx.Commit();
+
+    BOOST_CHECK_EQUAL(10, cache1.Get(1));
+    BOOST_CHECK_EQUAL(10, cache1.Get(2));
+
+    BOOST_CHECK_EQUAL(20, cache2.Get(1));
+    BOOST_CHECK_EQUAL(20, cache2.Get(2));
+
+    tx = transactions.GetTx();
+
+    BOOST_CHECK(!tx.IsValid());
+}
+
+BOOST_AUTO_TEST_CASE(CrossCacheRollback)
+{
+    Cache<int, int> cache1 = grid.GetCache<int, int>("partitioned");
+    Cache<int, int> cache2 = grid.GetCache<int, int>("partitioned2");
+
+    cache1.Put(1, 1);
+    cache1.Put(2, 1);
+
+    cache2.Put(1, 2);
+    cache2.Put(2, 2);
+
+    Transactions transactions = grid.GetTransactions();
+
+    Transaction tx = transactions.GetTx();
+    BOOST_REQUIRE(!tx.IsValid());
+
+    tx = transactions.TxStart();
+
+    BOOST_REQUIRE(transactions.GetTx().IsValid());
+
+    cache1.Put(1, 10);
+    cache1.Put(2, 10);
+
+    cache2.Put(1, 20);
+    cache2.Put(2, 20);
+
+    tx.Rollback();
+
+    BOOST_CHECK_EQUAL(1, cache1.Get(1));
+    BOOST_CHECK_EQUAL(1, cache1.Get(2));
+
+    BOOST_CHECK_EQUAL(2, cache2.Get(1));
+    BOOST_CHECK_EQUAL(2, cache2.Get(2));
+
+    tx = transactions.GetTx();
+
+    BOOST_CHECK(!tx.IsValid());
+}
+
+BOOST_AUTO_TEST_CASE(TransactionsMetricsNe)
+{
+    Cache<int, int> cache = grid.GetCache<int, int>("partitioned");
+
+    Transactions transactions = grid.GetTransactions();
+
+    IgniteError err;
+
+    TransactionMetrics metrics = transactions.GetMetrics(err);
+    if (!err.GetCode() == IgniteError::IGNITE_SUCCESS)
+        BOOST_ERROR(err.GetText());
+
+    BOOST_REQUIRE(metrics.IsValid());
+
+    BOOST_CHECK_EQUAL(0, metrics.GetCommits());
+    BOOST_CHECK_EQUAL(0, metrics.GetRollbacks());
+}
+
 BOOST_AUTO_TEST_CASE(TransactionCommitNe)
 {
     Cache<int, int> cache = grid.GetCache<int, int>("partitioned");

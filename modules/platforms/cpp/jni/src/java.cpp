@@ -992,7 +992,7 @@ namespace ignite
                         {
                             GetJniErrorMessage(errMsg, res);
 
-                            errMsgLen = errMsg.length();
+                            errMsgLen = static_cast<int>(errMsg.length());
                         }
                     }
 

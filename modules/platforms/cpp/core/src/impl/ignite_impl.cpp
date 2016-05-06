@@ -28,7 +28,11 @@ namespace ignite
             env(env),
             javaRef(javaRef)
         {
-            // No-op.
+            IgniteError err;
+
+            txImpl = InternalGetTransactions(err);
+
+            IgniteError::ThrowIfNeeded(err);
         }
 
         IgniteImpl::~IgniteImpl()
@@ -46,28 +50,20 @@ namespace ignite
             return env.Get()->Context();
         }
 
-        IgniteImpl::TxsImplSharedPtr IgniteImpl::GetTransactions(IgniteError &err)
+        IgniteImpl::TxsImplSharedPtr IgniteImpl::InternalGetTransactions(IgniteError &err)
         {
-            if (!txImpl.Get())
-            {
-                static ignite::common::concurrent::CriticalSection lock;
+            IgniteImpl::TxsImplSharedPtr res;
 
-                CsLockGuard guard(lock);
+            ignite::jni::java::JniErrorInfo jniErr;
 
-                if (!txImpl.Get())
-                {
-                    ignite::jni::java::JniErrorInfo jniErr;
+            jobject txJavaRef = env.Get()->Context()->ProcessorTransactions(javaRef, &jniErr);
 
-                    jobject txJavaRef = env.Get()->Context()->ProcessorTransactions(javaRef, &jniErr);
+            if (txJavaRef)
+                res = TxsImplSharedPtr(new transactions::TransactionsImpl(env, txJavaRef));
+            else
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
 
-                    if (txJavaRef)
-                        txImpl = TxsImplSharedPtr(new transactions::TransactionsImpl(env, txJavaRef));
-                    else
-                        IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
-                }
-            }
-
-            return txImpl;
+            return res;
         }
     }
 }

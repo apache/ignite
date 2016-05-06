@@ -158,9 +158,19 @@ namespace ignite
              *
              * @return TransactionsImpl instance.
              */
-            TxsImplSharedPtr GetTransactions(IgniteError &err);
+            TxsImplSharedPtr GetTransactions()
+            {
+                return txImpl;
+            }
 
         private:
+            /**
+             * Get transactions internal call.
+             *
+             * @return TransactionsImpl instance.
+             */
+            TxsImplSharedPtr InternalGetTransactions(IgniteError &err);
+
             /** Environment. */
             IgniteEnvSharedPtr env;
 

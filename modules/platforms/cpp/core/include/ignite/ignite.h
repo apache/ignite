@@ -161,13 +161,6 @@ namespace ignite
         transactions::Transactions GetTransactions();
 
         /**
-         * Get transactions.
-         *
-         * @return Transaction class instance.
-         */
-        transactions::Transactions GetTransactions(IgniteError* err);
-
-        /**
          * Check if the instance is valid.
          * 
          * @return True if the instance is valid and can be used.
