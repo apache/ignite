@@ -856,6 +856,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         if (!empty) {
             batchStoreCommit(writeMap().values());
 
+            cctx.database().checkpointReadLock();
+
             try {
                 cctx.tm().txContext(this);
 
@@ -1186,6 +1188,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                 }
             }
             finally {
+                cctx.database().checkpointReadUnlock();
+
                 cctx.tm().resetContext();
             }
         }

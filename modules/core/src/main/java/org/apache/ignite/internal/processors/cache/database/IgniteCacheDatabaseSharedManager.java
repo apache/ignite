@@ -45,8 +45,9 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     private MetadataStorage meta;
 
     /** */
-    private ReadWriteLock txLock = new ReentrantReadWriteLock();
+    private ReadWriteLock checkpointLock = new ReentrantReadWriteLock();
 
+    /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         DatabaseConfiguration dbCfg = cctx.kernalContext().config().getDatabaseConfiguration();
 
@@ -80,36 +81,40 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Callback invoked before transaction is committed.
-     *
-     * @param xidVer Transaction version.
+     * Gets the checkpoint read lock. While this lock is held, checkpoint thread will not acquire memory state.
      */
     @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-    public void txCommitBegin(GridCacheVersion xidVer) {
-        txLock.readLock().lock();
+    public void checkpointReadLock() {
+        checkpointLock.readLock().lock();
     }
 
     /**
-     * Callback invoked after transaction has been committed.
-     *
-     * @param xidVer Transaction version.
+     * Releases the checkpoint read lock.
      */
-    public void txCommitEnd(GridCacheVersion xidVer) {
-        txLock.readLock().unlock();
+    public void checkpointReadUnlock() {
+        checkpointLock.readLock().unlock();
+    }
+
+    /**
+     * Gets the checkpoint write lock. While this lock is held, no page memory updates are allowed.
+     */
+    @SuppressWarnings("LockAcquiredButNotSafelyReleased")
+    public void checkpointWriteLock() {
+        checkpointLock.writeLock().lock();
+    }
+
+    /**
+     * Releases the checkpoint write lock.
+     */
+    public void checkpointWriteUnlock() {
+        checkpointLock.writeLock().unlock();
     }
 
     /**
      * Marks checkpoint begin.
      */
     public Collection<FullPageId> snapshotCheckpoint() {
-        txLock.writeLock().lock();
-
-        try {
-            return pageMem.beginCheckpoint();
-        }
-        finally {
-            txLock.writeLock().unlock();
-        }
+        return pageMem.beginCheckpoint();
     }
 
     /**
