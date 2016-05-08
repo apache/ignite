@@ -25,6 +25,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.management.JMException;
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
@@ -102,6 +103,9 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
      */
     private long failureDetectionTimeout;
 
+    /** spi state */
+    private AtomicBoolean initialized = new AtomicBoolean();
+
     /**
      * Creates new adapter and initializes it from the current (this) class.
      * SPI name will be initialized to the simple name of the class
@@ -116,6 +120,19 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
      */
     protected void startStopwatch() {
         startTstamp = U.currentTimeMillis();
+    }
+
+    /**
+     * Gets the initializing state.
+     *
+     * @return true if initialized, false otherwise.
+     */
+    public boolean initialized(){
+        return initialized.get();
+    }
+
+    public void setInitialized(boolean state){
+        initialized.set(state);
     }
 
     /** {@inheritDoc} */
@@ -253,7 +270,6 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     @IgniteInstanceResource
     protected void injectResources(Ignite ignite) {
         this.ignite = ignite;
-
         if (ignite != null)
             gridName = ignite.name();
     }

@@ -48,17 +48,23 @@ import org.apache.ignite.spi.swapspace.SwapSpaceSpi;
 import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.testframework.junits.GridTestKernalContext;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.testframework.GridTestUtils;
+import org.apache.ignite.spi.IgniteSpiAdapter;
+import org.apache.ignite.spi.IgniteSpiException;
+import org.jetbrains.annotations.Nullable;
+import java.util.concurrent.Callable;
+
 
 /**
  * Managers stop test.
- *
  */
-public class GridManagerStopSelfTest extends GridCommonAbstractTest {
+public class GridManagerStartStopSelfTest extends GridCommonAbstractTest {
     /** Kernal context. */
     private GridTestKernalContext ctx;
 
     /** */
-    public GridManagerStopSelfTest() {
+    public GridManagerStartStopSelfTest() {
         super(/*startGrid*/false);
     }
 
@@ -221,5 +227,60 @@ public class GridManagerStopSelfTest extends GridCommonAbstractTest {
         GridSwapSpaceManager mgr = new GridSwapSpaceManager(ctx);
 
         mgr.stop(true);
+    }
+
+
+    /**
+     * Test-stub of {@code IgniteSpiAdapter}.
+     */
+    private static class TestIgniteSpi extends IgniteSpiAdapter {
+
+        /** {@inheritDoc} */
+        @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+            startStopwatch();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void spiStop() throws IgniteSpiException {
+
+        }
+    }
+
+    /**
+     * Test-stub of {@code GridManagerAdapter}.
+     */
+    private static class TestGridManagerAdapterImpl extends GridManagerAdapter<TestIgniteSpi> {
+
+        /** {@inheritDoc} */
+        TestGridManagerAdapterImpl(GridKernalContext ctx, TestIgniteSpi... spis) {
+            super(ctx, spis);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void start() throws IgniteCheckedException {
+            startSpi();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void stop(boolean cancel) throws IgniteCheckedException {
+
+        }
+    }
+
+    public void testStartSpiTwice() throws Exception {
+
+        GridTestUtils.assertThrows(log, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                TestIgniteSpi spi = new TestIgniteSpi();
+
+                TestGridManagerAdapterImpl mgr1 = new TestGridManagerAdapterImpl(ctx, spi);
+                mgr1.start();
+
+                TestGridManagerAdapterImpl mgr2 = new TestGridManagerAdapterImpl(ctx, spi);
+                mgr2.start();
+                return null;
+            }
+        }, IgniteCheckedException.class, null);
+
     }
 }
