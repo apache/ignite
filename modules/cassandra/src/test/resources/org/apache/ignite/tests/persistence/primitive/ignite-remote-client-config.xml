@@ -38,6 +38,8 @@
         <!-- Turn on client mode -->
         <property name="clientMode" value="true"/>
 
+        <property name="metricsLogFrequency" value="0"/>
+
         <property name="cacheConfiguration">
             <list>
                 <!-- Configuring persistence for "cache1" cache -->
