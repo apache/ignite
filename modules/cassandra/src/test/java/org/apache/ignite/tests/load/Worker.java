@@ -67,6 +67,9 @@ public abstract class Worker extends Thread {
     private volatile int msgProcessed = 0;
 
     /** */
+    private volatile int msgFailed = 0;
+
+    /** */
     private volatile int sleepCnt = 0;
 
     /** */
@@ -140,6 +143,19 @@ public abstract class Worker extends Thread {
         long duration = (finish - startTime - sleepCnt * TestsHelper.getLoadTestsRequestsLatency()) / 1000;
 
         return duration == 0 ? msgProcessed : msgProcessed / (int)duration;
+    }
+
+    /** */
+    public int getErrorsCount() {
+        return msgFailed;
+    }
+
+    /** */
+    public float getErrorsPercent() {
+        if (msgFailed == 0)
+            return 0;
+
+        return msgProcessed + msgFailed == 0 ? 0 : (float)(msgFailed * 100 ) / (float)(msgProcessed + msgFailed);
     }
 
     /** */
@@ -249,27 +265,51 @@ public abstract class Worker extends Thread {
     }
 
     /** */
-    private void doWork(CacheEntryImpl entry) throws InterruptedException {
-        process(cacheStore, entry);
-        updateMetrics(1);
+    private void doWork(CacheEntryImpl entry) {
+        try {
+            process(cacheStore, entry);
+            updateMetrics(1);
+        }
+        catch (Throwable e) {
+            log.error("Failed to perform single operation", e);
+            updateErrorMetrics(1);
+        }
     }
 
     /** */
-    private void doWork(Object key, Object val) throws InterruptedException {
-        process(igniteCache, key, val);
-        updateMetrics(1);
+    private void doWork(Object key, Object val) {
+        try {
+            process(igniteCache, key, val);
+            updateMetrics(1);
+        }
+        catch (Throwable e) {
+            log.error("Failed to perform single operation", e);
+            updateErrorMetrics(1);
+        }
     }
 
     /** */
-    private void doWork(Collection<CacheEntryImpl> entries) throws InterruptedException {
-        process(cacheStore, entries);
-        updateMetrics(entries.size());
+    private void doWork(Collection<CacheEntryImpl> entries) {
+        try {
+            process(cacheStore, entries);
+            updateMetrics(entries.size());
+        }
+        catch (Throwable e) {
+            log.error("Failed to perform batch operation", e);
+            updateErrorMetrics(entries.size());
+        }
     }
 
     /** */
-    private void doWork(Map entries) throws InterruptedException {
-        process(igniteCache, entries);
-        updateMetrics(entries.size());
+    private void doWork(Map entries) {
+        try {
+            process(igniteCache, entries);
+            updateMetrics(entries.size());
+        }
+        catch (Throwable e) {
+            log.error("Failed to perform batch operation", e);
+            updateErrorMetrics(entries.size());
+        }
     }
 
     /** */
@@ -284,19 +324,29 @@ public abstract class Worker extends Thread {
     }
 
     /** */
-    private void updateMetrics(int itemsProcessed) throws InterruptedException {
+    private void updateMetrics(int itemsProcessed) {
         if (warmup)
             warmupMsgProcessed += itemsProcessed;
         else
             msgProcessed += itemsProcessed;
 
-        if (TestsHelper.getLoadTestsRequestsLatency() > 0)
-            Thread.sleep(TestsHelper.getLoadTestsRequestsLatency());
+        if (TestsHelper.getLoadTestsRequestsLatency() > 0) {
+            try {
+                Thread.sleep(TestsHelper.getLoadTestsRequestsLatency());
 
-        if (warmup)
-            warmupSleepCnt++;
-        else
-            sleepCnt++;
+                if (warmup)
+                    warmupSleepCnt++;
+                else
+                    sleepCnt++;
+            }
+            catch (Throwable ignored) {
+            }
+        }
+    }
+
+    private void updateErrorMetrics(int itemsFailed) {
+        if (!warmup)
+            msgFailed += itemsFailed;
     }
 
     /** */
@@ -315,7 +365,8 @@ public abstract class Worker extends Thread {
         }
         else {
             log.info("Messages processed " + msgProcessed + ", " +
-                "speed " + getSpeed() + " msg/sec, " + completed + "% completed");
+                "speed " + getSpeed() + " msg/sec, " + completed + "% completed, " +
+                "errors " + msgFailed + " / " + String.format("%.2f", getErrorsPercent()).replace(",", ".") + "%");
         }
     }
 

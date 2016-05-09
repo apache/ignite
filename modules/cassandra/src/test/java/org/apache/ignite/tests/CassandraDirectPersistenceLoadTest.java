@@ -83,6 +83,9 @@ public class CassandraDirectPersistenceLoadTest extends LoadTestDriver {
 
             LOGGER.info("Cassandra load tests execution completed");
         }
+        catch (Throwable e) {
+            LOGGER.error("Cassandra load tests execution failed", e);
+        }
         finally {
             CassandraHelper.releaseCassandraResources();
         }

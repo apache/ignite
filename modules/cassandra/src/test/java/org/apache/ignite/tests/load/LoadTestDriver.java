@@ -30,11 +30,47 @@ import org.apache.log4j.Logger;
  * Basic load test driver to be inherited by specific implementation for particular use-case
  */
 public abstract class LoadTestDriver {
+    /** Number of attempts to setup load test */
+    private static final int NUMBER_OF_SETUP_ATTEMPTS = 10;
+
+    /** Timeout between load test setup attempts */
+    private static final int SETUP_ATTEMPT_TIMEOUT = 1000;
+
     /** */
     public void runTest(String testName, Class<? extends Worker> clazz, String logName) {
         logger().info("Running " + testName + " test");
 
-        Object cfg = setup(logName);
+        Object cfg = null;
+        int attempt;
+
+        logger().info("Setting up load tests driver");
+
+        for (attempt = 0; attempt < NUMBER_OF_SETUP_ATTEMPTS; attempt++) {
+            try {
+                cfg = setup(logName);
+                break;
+            }
+            catch (Throwable e) {
+                logger().error((attempt + 1) + " attempt to setup load test '" + testName + "' failed", e);
+            }
+
+            if (attempt + 1 != NUMBER_OF_SETUP_ATTEMPTS) {
+                logger().info("Sleeping for " + SETUP_ATTEMPT_TIMEOUT + " seconds before trying next attempt " +
+                        "to setup '" + testName + "' load test");
+
+                try {
+                    Thread.sleep(SETUP_ATTEMPT_TIMEOUT);
+                } catch (InterruptedException ignored) {
+                }
+            }
+        }
+
+        if (cfg == null && attempt == NUMBER_OF_SETUP_ATTEMPTS) {
+            throw new RuntimeException("All " + NUMBER_OF_SETUP_ATTEMPTS + " attempts to setup load test '" +
+                    testName+ "' have failed");
+        }
+
+        logger().info("Load tests driver setup successfully completed");
 
         try {
 
@@ -134,20 +170,30 @@ public abstract class LoadTestDriver {
     @SuppressWarnings("StringBufferReplaceableByString")
     private void printTestResultsStatistics(String testName, List<Worker> workers) {
         int cnt = 0;
+        int errCnt = 0;
         int speed = 0;
+
 
         for (Worker worker : workers) {
             cnt += worker.getMsgCountTotal();
+            errCnt += worker.getErrorsCount();
             speed += worker.getSpeed();
         }
+
+        float errPercent = errCnt == 0 ?
+                0 :
+                cnt + errCnt ==  0 ? 0 : (float)(errCnt * 100 ) / (float)(cnt + errCnt);
 
         StringBuilder builder = new StringBuilder();
         builder.append(SystemHelper.LINE_SEPARATOR);
         builder.append("-------------------------------------------------");
         builder.append(SystemHelper.LINE_SEPARATOR);
         builder.append(testName).append(" test statistics").append(SystemHelper.LINE_SEPARATOR);
-        builder.append("Messages: ").append(cnt).append(SystemHelper.LINE_SEPARATOR);
-        builder.append("Speed: ").append(speed).append(" msg/sec").append(SystemHelper.LINE_SEPARATOR);
+        builder.append(testName).append(" messages: ").append(cnt).append(SystemHelper.LINE_SEPARATOR);
+        builder.append(testName).append(" errors: ").append(errCnt).append(", ").
+                append(String.format("%.2f", errPercent).replace(",", ".")).
+                append("%").append(SystemHelper.LINE_SEPARATOR);
+        builder.append(testName).append(" speed: ").append(speed).append(" msg/sec").append(SystemHelper.LINE_SEPARATOR);
         builder.append("-------------------------------------------------");
 
         logger().info(builder.toString());
