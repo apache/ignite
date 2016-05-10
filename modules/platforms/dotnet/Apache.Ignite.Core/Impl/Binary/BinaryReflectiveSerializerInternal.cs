@@ -77,14 +77,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             Debug.Assert(_rActions != null);
 
-            var obj = (T) FormatterServices.GetUninitializedObject(type);
+            var obj = FormatterServices.GetUninitializedObject(type);
 
             reader.AddHandle(pos, obj);
 
             foreach (var action in _rActions)
                 action(obj, reader);
 
-            return obj;
+            return (T) obj;
         }
 
         /** <inheritdoc /> */
