@@ -424,7 +424,7 @@ class GridDhtPartitionSupplier {
                                 }
 
                                 // Need to manually prepare cache message.
-// TODO GG-10884.
+// TODO GG-11141.
 //                                if (depEnabled && !prepared) {
 //                                    ClassLoader ldr = swapEntry.keyClassLoaderId() != null ?
 //                                        cctx.deploy().getClassLoader(swapEntry.keyClassLoaderId()) :

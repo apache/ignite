@@ -483,31 +483,27 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                 GridCacheEntryEx entry = null;
 
-                if (cctx.isOffHeapEnabled()) {
-                    while (true) {
-                        try {
-                            entry = cctx.dht().entryEx(k);
+                while (true) {
+                    try {
+                        entry = cctx.dht().entryEx(k);
 
-                            entry.unswap();
+                        entry.unswap();
 
-                            break;
-                        }
-                        catch (GridCacheEntryRemovedException ignore) {
-                            if (log.isDebugEnabled())
-                                log.debug("Got removed entry: " + k);
-                        }
-                        catch (GridDhtInvalidPartitionException ignore) {
-                            if (log.isDebugEnabled())
-                                log.debug("Local node is no longer an owner: " + p);
+                        break;
+                    }
+                    catch (GridCacheEntryRemovedException ignore) {
+                        if (log.isDebugEnabled())
+                            log.debug("Got removed entry: " + k);
+                    }
+                    catch (GridDhtInvalidPartitionException ignore) {
+                        if (log.isDebugEnabled())
+                            log.debug("Local node is no longer an owner: " + p);
 
-                            res.addMissed(k);
+                        res.addMissed(k);
 
-                            break;
-                        }
+                        break;
                     }
                 }
-                else
-                    entry = cctx.dht().peekEx(k);
 
                 // If entry is null, then local partition may have left
                 // after the message was received. In that case, we are
@@ -518,8 +514,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     if (info != null && !info.isNew())
                         res.addInfo(info);
 
-                    if (cctx.isOffHeapEnabled())
-                        cctx.evicts().touch(entry, msg.topologyVersion());
+                    cctx.evicts().touch(entry, msg.topologyVersion());
                 }
                 else if (log.isDebugEnabled())
                     log.debug("Key is not present in DHT cache: " + k);

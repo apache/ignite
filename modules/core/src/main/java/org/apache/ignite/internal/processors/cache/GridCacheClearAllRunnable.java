@@ -84,25 +84,9 @@ public class GridCacheClearAllRunnable<K, V> implements Runnable {
         while (iter.hasNext())
             clearEntry(iter.next());
 
-        // Clear swapped entries.
         if (!ctx.isNear()) {
-            // TODO GG-10884: need pass old value to indexing + honor 'owns(key)'.
-            ctx.offheap().clear(readers);
-
-//            if (ctx.swap().offHeapEnabled()) {
-//                if (GridQueryProcessor.isEnabled(ctx.config())) {
-//                    for (Iterator<KeyCacheObject> it =
-//                        ctx.swap().offHeapKeyIterator(true, true, AffinityTopologyVersion.NONE); it.hasNext();) {
-//                        KeyCacheObject key = it.next();
-//
-//                        if (owns(key))
-//                            clearEntry(cache.entryEx(key));
-//
-//                    }
-//                }
-//                else if (id == 0)
-//                    ctx.swap().clearOffHeap();
-//            }
+            if (id == 0)
+                ctx.offheap().clear(readers);
         }
     }
 

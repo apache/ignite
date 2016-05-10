@@ -1244,9 +1244,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         U.startLifecycleAware(lifecycleAwares(cfg, cfgStore));
 
+        boolean nearEnabled = GridCacheUtils.isNearEnabled(cfg);
+
         GridCacheAffinityManager affMgr = new GridCacheAffinityManager();
         GridCacheEventManager evtMgr = new GridCacheEventManager();
-        GridCacheEvictionManager evictMgr = new GridCacheEvictionManager();
+        CacheEvictionManager evictMgr = nearEnabled ? new GridCacheEvictionManager() : new CacheOfheapEvictionManager();
         GridCacheQueryManager qryMgr = queryManager(cfg);
         CacheContinuousQueryManager contQryMgr = new CacheContinuousQueryManager();
         CacheDataStructuresManager dataStructuresMgr = new CacheDataStructuresManager();
@@ -1317,7 +1319,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
             case PARTITIONED:
             case REPLICATED: {
-                if (GridCacheUtils.isNearEnabled(cfg)) {
+                if (nearEnabled) {
                     switch (cfg.getAtomicityMode()) {
                         case TRANSACTIONAL: {
                             cache = new GridNearTransactionalCache(cacheCtx);
@@ -1374,7 +1376,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
          * Create DHT cache.
          * ================
          */
-        if (cfg.getCacheMode() != LOCAL && GridCacheUtils.isNearEnabled(cfg)) {
+        if (cfg.getCacheMode() != LOCAL && nearEnabled) {
             /*
              * Specifically don't create the following managers
              * here and reuse the one from Near cache:
@@ -1387,7 +1389,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
              * 7. GridCacheTtlManager.
              * ===============================================
              */
-            evictMgr = new GridCacheEvictionManager();
+            evictMgr = new CacheOfheapEvictionManager();
             evtMgr = new GridCacheEventManager();
             pluginMgr = new CachePluginManager(ctx, cfg);
             drMgr = pluginMgr.createComponent(GridCacheDrManager.class);

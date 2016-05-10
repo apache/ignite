@@ -330,7 +330,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
         Object val0;
 
         try {
-            CacheObject v = entry.peek(true, false, false, null);
+            CacheObject v = entry.peek(null);
 
             key0 = key.value(cache.context().cacheObjectContext(), false);
 

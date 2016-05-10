@@ -151,7 +151,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private CacheContinuousQueryManager contQryMgr;
 
     /** Evictions manager. */
-    private GridCacheEvictionManager evictMgr;
+    private CacheEvictionManager evictMgr;
 
     /** Data structures manager. */
     private CacheDataStructuresManager dataStructuresMgr;
@@ -279,7 +279,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         GridCacheEventManager evtMgr,
         CacheStoreManager storeMgr,
-        GridCacheEvictionManager evictMgr,
+        CacheEvictionManager evictMgr,
         GridCacheQueryManager<K, V> qryMgr,
         CacheContinuousQueryManager contQryMgr,
         CacheDataStructuresManager dataStructuresMgr,
@@ -992,7 +992,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Eviction manager.
      */
-    public GridCacheEvictionManager evicts() {
+    public CacheEvictionManager evicts() {
         return evictMgr;
     }
 
@@ -1353,13 +1353,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public boolean deploymentEnabled() {
         return depEnabled;
-    }
-
-    /**
-     * @return {@code True} if offheap storage is enabled.
-     */
-    public boolean isOffHeapEnabled() {
-        return true;
     }
 
     /**
