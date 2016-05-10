@@ -21,6 +21,8 @@ import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import java.lang.reflect.Field;
+
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHAL_BUFFERS_RECHECK;
 
 /**
@@ -37,7 +39,7 @@ public class GridUnsafeDataOutputArraySizingSelfTest extends GridCommonAbstractT
     private static final long BUFFER_TIMEOUT = 1000;
 
     /** Wait timeout is bigger then buffer timeout to prevent failures due to time measurement error. */
-    private static final long WAIT_BUFFER_TIMEOUT = BUFFER_TIMEOUT + BUFFER_TIMEOUT / 2;
+    private static final long WAIT_BUFFER_TIMEOUT = BUFFER_TIMEOUT * 2;
 
     /**
      *
@@ -52,6 +54,7 @@ public class GridUnsafeDataOutputArraySizingSelfTest extends GridCommonAbstractT
     @SuppressWarnings("BusyWait")
     public void testSmall() throws Exception {
         final GridUnsafeDataOutput out = new GridUnsafeDataOutput(512);
+        checkGridUnsafeDataOutputCHECK_FREQ();
 
         assertTrue(GridTestUtils.waitForCondition(new WriteAndCheckPredicate(out, SMALL, 256), WAIT_BUFFER_TIMEOUT));
         assertTrue(GridTestUtils.waitForCondition(new WriteAndCheckPredicate(out, SMALL, 128), WAIT_BUFFER_TIMEOUT));
@@ -97,6 +100,7 @@ public class GridUnsafeDataOutputArraySizingSelfTest extends GridCommonAbstractT
     @SuppressWarnings("BusyWait")
     public void testChanged2() throws Exception {
         final GridUnsafeDataOutput out = new GridUnsafeDataOutput(512);
+        checkGridUnsafeDataOutputCHECK_FREQ();
 
         assertTrue(GridTestUtils.waitForCondition(new WriteAndCheckPredicate(out, SMALL, 256), WAIT_BUFFER_TIMEOUT));
 
@@ -106,6 +110,16 @@ public class GridUnsafeDataOutputArraySizingSelfTest extends GridCommonAbstractT
 
         assertTrue(GridTestUtils.waitForCondition(new WriteAndCheckPredicate(out, SMALL, 4096), WAIT_BUFFER_TIMEOUT));
         assertTrue(GridTestUtils.waitForCondition(new WriteAndCheckPredicate(out, SMALL, 2048), 2 * WAIT_BUFFER_TIMEOUT));
+    }
+
+    /**
+     * Check the IGNITE_MARSHAL_BUFFERS_RECHECK property setting. The GridUnsafeDataOutput class may be created before.
+     */
+    private static void checkGridUnsafeDataOutputCHECK_FREQ() throws NoSuchFieldException, IllegalAccessException {
+        Class<?> cls = GridUnsafeDataOutput.class;
+        Field fieldCHECK_FREQ = cls.getDeclaredField("CHECK_FREQ");
+        fieldCHECK_FREQ.setAccessible(true);
+        assertEquals(BUFFER_TIMEOUT, ((Long)fieldCHECK_FREQ.get(null)).longValue());
     }
 
     /**
@@ -139,8 +153,6 @@ public class GridUnsafeDataOutputArraySizingSelfTest extends GridCommonAbstractT
             try {
                 out.write(bytes);
                 out.reset();
-
-                System.out.println("L=" + out.internalArray().length);
 
                 return out.internalArray().length == len;
             }
