@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -50,6 +51,9 @@ import org.apache.ignite.logger.log4j.Log4JLogger;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
+import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.log4j.Logger;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
@@ -107,10 +111,26 @@ public class AgentSqlDemo {
     private static final AtomicInteger THREAD_CNT = new AtomicInteger(0);
 
     /**
+     * Create base cache configuration.
+     *
+     * @param name cache name.
+     * @return Cache configuration with basic properties set.
+     */
+    private static <K, V> CacheConfiguration<K, V> cacheConfiguration(String name) {
+        CacheConfiguration<K, V> ccfg = new CacheConfiguration<>(name);
+
+        ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
+        ccfg.setStartSize(100);
+        ccfg.setStatisticsEnabled(true);
+
+        return ccfg;
+    }
+
+    /**
      * Configure cacheCountry.
      */
     private static <K, V> CacheConfiguration<K, V> cacheCountry() {
-        CacheConfiguration<K, V> ccfg = new CacheConfiguration<>(COUNTRY_CACHE_NAME);
+        CacheConfiguration<K, V> ccfg = cacheConfiguration(COUNTRY_CACHE_NAME);
 
         // Configure cacheCountry types.
         Collection<QueryEntity> qryEntities = new ArrayList<>();
@@ -132,14 +152,7 @@ public class AgentSqlDemo {
 
         type.setFields(qryFlds);
 
-        // Indexes for COUNTRY.
-        type.setIndexes(Collections.singletonList(new QueryIndex("id", QueryIndexType.SORTED, false, "PRIMARY_KEY_6")));
-
         ccfg.setQueryEntities(qryEntities);
-
-        ccfg.setStartSize(100);
-
-        ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
 
         return ccfg;
     }
@@ -148,7 +161,7 @@ public class AgentSqlDemo {
      * Configure cacheEmployee.
      */
     private static <K, V> CacheConfiguration<K, V> cacheDepartment() {
-        CacheConfiguration<K, V> ccfg = new CacheConfiguration<>(DEPARTMENT_CACHE_NAME);
+        CacheConfiguration<K, V> ccfg = cacheConfiguration(DEPARTMENT_CACHE_NAME);
 
         // Configure cacheDepartment types.
         Collection<QueryEntity> qryEntities = new ArrayList<>();
@@ -170,14 +183,7 @@ public class AgentSqlDemo {
 
         type.setFields(qryFlds);
 
-        // Indexes for DEPARTMENT.
-        type.setIndexes(Collections.singletonList(new QueryIndex("id", QueryIndexType.SORTED, false, "PRIMARY_KEY_4")));
-
         ccfg.setQueryEntities(qryEntities);
-
-        ccfg.setStartSize(100);
-
-        ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
 
         return ccfg;
     }
@@ -186,7 +192,9 @@ public class AgentSqlDemo {
      * Configure cacheEmployee.
      */
     private static <K, V> CacheConfiguration<K, V> cacheEmployee() {
-        CacheConfiguration<K, V> ccfg = new CacheConfiguration<>(EMPLOYEE_CACHE_NAME);
+        CacheConfiguration<K, V> ccfg = cacheConfiguration(EMPLOYEE_CACHE_NAME);
+
+        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
 
         // Configure cacheEmployee types.
         Collection<QueryEntity> qryEntities = new ArrayList<>();
@@ -218,8 +226,6 @@ public class AgentSqlDemo {
         // Indexes for EMPLOYEE.
         Collection<QueryIndex> indexes = new ArrayList<>();
 
-        indexes.add(new QueryIndex("id", QueryIndexType.SORTED, false, "PRIMARY_KEY_7"));
-
         QueryIndex idx = new QueryIndex();
 
         idx.setName("EMP_NAMES");
@@ -238,10 +244,6 @@ public class AgentSqlDemo {
 
         ccfg.setQueryEntities(qryEntities);
 
-        ccfg.setStartSize(100);
-
-        ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
-
         return ccfg;
     }
 
@@ -249,7 +251,7 @@ public class AgentSqlDemo {
      * Configure cacheEmployee.
      */
     private static <K, V> CacheConfiguration<K, V> cacheParking() {
-        CacheConfiguration<K, V> ccfg = new CacheConfiguration<>(PARKING_CACHE_NAME);
+        CacheConfiguration<K, V> ccfg = cacheConfiguration(PARKING_CACHE_NAME);
 
         // Configure cacheParking types.
         Collection<QueryEntity> qryEntities = new ArrayList<>();
@@ -271,14 +273,7 @@ public class AgentSqlDemo {
 
         type.setFields(qryFlds);
 
-        // Indexes for PARKING.
-        type.setIndexes(Collections.singletonList(new QueryIndex("id", QueryIndexType.SORTED, false, "PRIMARY_KEY_F")));
-
         ccfg.setQueryEntities(qryEntities);
-
-        ccfg.setStartSize(100);
-
-        ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
 
         return ccfg;
     }
@@ -287,7 +282,7 @@ public class AgentSqlDemo {
      * Configure cacheEmployee.
      */
     private static <K, V> CacheConfiguration<K, V> cacheCar() {
-        CacheConfiguration<K, V> ccfg = new CacheConfiguration<>(CAR_CACHE_NAME);
+        CacheConfiguration<K, V> ccfg = cacheConfiguration(CAR_CACHE_NAME);
 
         // Configure cacheCar types.
         Collection<QueryEntity> qryEntities = new ArrayList<>();
@@ -309,12 +304,7 @@ public class AgentSqlDemo {
 
         type.setFields(qryFlds);
 
-        // Indexes for CAR.
-        type.setIndexes(Collections.singletonList(new QueryIndex("id", QueryIndexType.SORTED, false, "PRIMARY_KEY_1")));
-
         ccfg.setQueryEntities(qryEntities);
-
-        ccfg.setAffinity(new RendezvousAffinityFunction(false, 32));
 
         return ccfg;
     }
@@ -492,21 +482,36 @@ public class AgentSqlDemo {
                 try {
                     IgniteCache<Integer, Employee> cacheEmployee = ignite.cache(EMPLOYEE_CACHE_NAME);
 
-                    if (cacheEmployee != null)
-                        for (int i = 0, n = 1; i < cnt; i++, n++) {
-                            Integer id = rnd.nextInt(EMPL_CNT);
+                    if (cacheEmployee != null) {
+                        Transaction tx = ignite.transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
 
-                            Integer depId = rnd.nextInt(DEP_CNT);
+                        try {
+                            for (int i = 0, n = 1; i < cnt; i++, n++) {
+                                Integer id = rnd.nextInt(EMPL_CNT);
 
-                            double r = rnd.nextDouble();
+                                Integer depId = rnd.nextInt(DEP_CNT);
 
-                            cacheEmployee.put(id, new Employee(id, depId, depId, "First name employee #" + n,
-                                "Last name employee #" + n, "Email employee #" + n, "Phone number employee #" + n,
-                                new java.sql.Date((long)(r * diff)), "Job employee #" + n, 500 + round(r * 2000, 2)));
+                                double r = rnd.nextDouble();
 
-                            if (rnd.nextBoolean())
-                                cacheEmployee.remove(rnd.nextInt(EMPL_CNT));
+                                cacheEmployee.put(id, new Employee(id, depId, depId, "First name employee #" + n,
+                                    "Last name employee #" + n, "Email employee #" + n, "Phone number employee #" + n,
+                                    new java.sql.Date((long)(r * diff)), "Job employee #" + n, 500 + round(r * 2000, 2)));
+
+                                if (rnd.nextBoolean())
+                                    cacheEmployee.remove(rnd.nextInt(EMPL_CNT));
+
+                                cacheEmployee.get(rnd.nextInt(EMPL_CNT));
+                            }
+
+                            if (rnd.nextInt(100) < 20)
+                                throw new IllegalStateException("Rollback changes");
+
+                            tx.commit();
                         }
+                        catch (Exception e) {
+                            tx.rollback();
+                        }
+                    }
                 }
                 catch (IllegalStateException ignored) {
                     // No-op.
