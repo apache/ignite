@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         private readonly IBinaryIdMapper _idMapper;
 
         /** Serializer. */
-        private readonly IBinarySerializer _serializer;
+        private readonly IBinarySerializerInternal _serializer;
 
         /** Whether to cache deserialized value in IBinaryObject */
         private readonly bool _keepDeserialized;
@@ -85,8 +85,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             string typeName, 
             bool userType, 
             IBinaryNameMapper nameMapper, 
-            IBinaryIdMapper idMapper, 
-            IBinarySerializer serializer, 
+            IBinaryIdMapper idMapper,
+            IBinarySerializerInternal serializer, 
             bool keepDeserialized, 
             string affKeyFieldName,
             bool isEnum)
@@ -162,7 +162,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Serializer.
         /// </summary>
-        public IBinarySerializer Serializer
+        public IBinarySerializerInternal Serializer
         {
             get { return _serializer; }
         }

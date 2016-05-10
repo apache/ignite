@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,20 +15,29 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Binary
+namespace Apache.Ignite.Core.Binary
 {
-    using Apache.Ignite.Core.Binary;
+    using System;
+    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
-    /// Serializer for system types that can create instances directly from a stream and does not support handles.
+    /// Internal generic serializer interface.
     /// </summary>
-    internal interface IBinarySystemTypeSerializer : IBinarySerializer
+    internal interface IBinarySerializerInternal
     {
         /// <summary>
-        /// Reads the instance from a reader.
+        /// Write binary object.
         /// </summary>
-        /// <param name="reader">The reader.</param>
-        /// <returns>Deserialized instance.</returns>
-        object ReadInstance(BinaryReader reader);
+        void WriteBinary<T>(T obj, BinaryWriter writer);
+
+        /// <summary>
+        /// Read binary object.
+        /// </summary>
+        T ReadBinary<T>(BinaryReader reader, Type type, Action<int, object> addHandle);
+
+        /// <summary>
+        /// Gets a value indicating whether this serializer supports handles.
+        /// </summary>
+        bool SupportsHandles { get; }
     }
 }

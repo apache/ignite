@@ -113,9 +113,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritDoc /> */
-        public IBinarySerializer Serializer
+        public IBinarySerializerInternal Serializer
         {
-            get { return _cfg.DefaultSerializer; }
+            get { return new UserSerializerProxy(_cfg.DefaultSerializer); }
         }
 
         /** <inheritDoc /> */

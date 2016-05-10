@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Binary
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Reflection;
+    using System.Runtime.Serialization;
     using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
@@ -42,38 +43,22 @@ namespace Apache.Ignite.Core.Binary
     /// </summary>
     public sealed class BinaryReflectiveSerializer : IBinarySerializer
     {
-        /** Cached binding flags. */
-        private const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public | 
-            BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
-
         /** Raw mode flag. */
         private bool _rawMode;
 
-        /** Write actions to be performed. */
-        private readonly BinaryReflectiveWriteAction[] _wActions;
+        /** In use flag. */
+        private bool _isInUse;
 
-        /** Read actions to be performed. */
-        private readonly BinaryReflectiveReadAction[] _rActions;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="BinaryReflectiveSerializer"/> class.
-        /// </summary>
-        public BinaryReflectiveSerializer()
+        /** <inheritdoc /> */
+        public void WriteBinary(object obj, IBinaryWriter writer)
         {
-            // No-op.
+            throw new NotSupportedException(GetType() + ".WriteBinary should not be called directly.");
         }
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="BinaryReflectiveSerializer"/> class.
-        /// </summary>
-        private BinaryReflectiveSerializer(BinaryReflectiveWriteAction[] wActions, BinaryReflectiveReadAction[] rActions, bool raw)
+        /** <inheritdoc /> */
+        public void ReadBinary(object obj, IBinaryReader reader)
         {
-            Debug.Assert(wActions != null);
-            Debug.Assert(rActions != null);
-
-            _wActions = wActions;
-            _rActions = rActions;
-            _rawMode = raw;
+            throw new NotSupportedException(GetType() + ".ReadBinary should not be called directly.");
         }
 
         /// <summary>
@@ -87,21 +72,66 @@ namespace Apache.Ignite.Core.Binary
             get { return _rawMode; }
             set
             {
-                if (_wActions != null)
-                    throw new InvalidOperationException(typeof (BinarizableSerializer).Name +
+                if (_isInUse)
+                    throw new InvalidOperationException(typeof(BinarizableSerializer).Name +
                         ".RawMode cannot be changed after first serialization.");
 
                 _rawMode = value;
             }
         }
 
+        internal IBinarySerializerInternal Register(Type type, int typeId, IBinaryNameMapper converter,
+            IBinaryIdMapper idMapper)
+        {
+            _isInUse = true;
+
+            return new BinaryReflectiveSerializerInternal(_rawMode).Register(type, typeId, converter, idMapper);
+        }
+
+    }
+
+
+    /// <summary>
+    /// Internal reflective serializer.
+    /// </summary>
+    internal sealed class BinaryReflectiveSerializerInternal : IBinarySerializerInternal
+    {
+        /** Cached binding flags. */
+        private const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public |
+            BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
+
+        /** Raw mode flag. */
+        private readonly bool _rawMode;
+
+        /** Write actions to be performed. */
+        private readonly BinaryReflectiveWriteAction[] _wActions;
+
+        /** Read actions to be performed. */
+        private readonly BinaryReflectiveReadAction[] _rActions;
+
         /// <summary>
-        /// Write portalbe object.
+        /// Initializes a new instance of the <see cref="BinaryReflectiveSerializer"/> class.
         /// </summary>
-        /// <param name="obj">Object.</param>
-        /// <param name="writer">Writer.</param>
-        /// <exception cref="BinaryObjectException">Type is not registered in serializer:  + type.Name</exception>
-        public void WriteBinary(object obj, IBinaryWriter writer)
+        public BinaryReflectiveSerializerInternal(bool raw)
+        {
+            _rawMode = raw;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BinaryReflectiveSerializer"/> class.
+        /// </summary>
+        private BinaryReflectiveSerializerInternal(BinaryReflectiveWriteAction[] wActions, BinaryReflectiveReadAction[] rActions, bool raw)
+        {
+            Debug.Assert(wActions != null);
+            Debug.Assert(rActions != null);
+
+            _wActions = wActions;
+            _rActions = rActions;
+            _rawMode = raw;
+        }
+
+        /** <inheritdoc /> */
+        void IBinarySerializerInternal.WriteBinary<T>(T obj, BinaryWriter writer)
         {
             Debug.Assert(_wActions != null);
 
@@ -109,18 +139,23 @@ namespace Apache.Ignite.Core.Binary
                 action(obj, writer);
         }
 
-        /// <summary>
-        /// Read binary object.
-        /// </summary>
-        /// <param name="obj">Instantiated empty object.</param>
-        /// <param name="reader">Reader.</param>
-        /// <exception cref="BinaryObjectException">Type is not registered in serializer:  + type.Name</exception>
-        public void ReadBinary(object obj, IBinaryReader reader)
+        /** <inheritdoc /> */
+        T IBinarySerializerInternal.ReadBinary<T>(BinaryReader reader, Type type, Action<int, object> addHandle)
         {
             Debug.Assert(_rActions != null);
 
+            var obj = FormatterServices.GetUninitializedObject(type);
+
             foreach (var action in _rActions)
                 action(obj, reader);
+
+            return (T)obj;
+        }
+
+        /** <inheritdoc /> */
+        bool IBinarySerializerInternal.SupportsHandles
+        {
+            get { return true; }
         }
 
         /// <summary>Register type.</summary>
@@ -128,7 +163,7 @@ namespace Apache.Ignite.Core.Binary
         /// <param name="typeId">Type ID.</param>
         /// <param name="converter">Name converter.</param>
         /// <param name="idMapper">ID mapper.</param>
-        internal BinaryReflectiveSerializer Register(Type type, int typeId, IBinaryNameMapper converter,
+        internal BinaryReflectiveSerializerInternal Register(Type type, int typeId, IBinaryNameMapper converter,
             IBinaryIdMapper idMapper)
         {
             Debug.Assert(_wActions == null && _rActions == null);
@@ -162,7 +197,7 @@ namespace Apache.Ignite.Core.Binary
                         type.Name + ", field1=" + idMap[fieldId] + ", field2=" + fieldName +
                         ", fieldId=" + fieldId + ']');
                 }
-                
+
                 idMap[fieldId] = fieldName;
             }
 
@@ -182,13 +217,14 @@ namespace Apache.Ignite.Core.Binary
                 rActions[i] = readAction;
             }
 
-            return new BinaryReflectiveSerializer(wActions, rActions, _rawMode);
+            return new BinaryReflectiveSerializerInternal(wActions, rActions, _rawMode);
         }
 
         /// <summary>
         /// Compare two FieldInfo instances. 
         /// </summary>
-        private static int Compare(FieldInfo info1, FieldInfo info2) {
+        private static int Compare(FieldInfo info1, FieldInfo info2)
+        {
             string name1 = BinaryUtils.CleanFieldName(info1.Name);
             string name2 = BinaryUtils.CleanFieldName(info2.Name);
 
