@@ -52,8 +52,6 @@ import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.log4j.Logger;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
@@ -62,6 +60,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_ASCII;
 import static org.apache.ignite.events.EventType.EVTS_DISCOVERY;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_JETTY_ADDRS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_REST_JETTY_PORT;
+import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
+import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * Demo for SQL.
@@ -482,39 +482,30 @@ public class AgentSqlDemo {
                 try {
                     IgniteCache<Integer, Employee> cacheEmployee = ignite.cache(EMPLOYEE_CACHE_NAME);
 
-                    if (cacheEmployee != null) {
-                        Transaction tx = ignite.transactions().txStart(TransactionConcurrency.PESSIMISTIC, TransactionIsolation.REPEATABLE_READ);
+                    if (cacheEmployee == null)
+                        return;
 
-                        try {
-                            for (int i = 0, n = 1; i < cnt; i++, n++) {
-                                Integer id = rnd.nextInt(EMPL_CNT);
+                    try(Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                        for (int i = 0, n = 1; i < cnt; i++, n++) {
+                            Integer id = rnd.nextInt(EMPL_CNT);
 
-                                Integer depId = rnd.nextInt(DEP_CNT);
+                            Integer depId = rnd.nextInt(DEP_CNT);
 
-                                double r = rnd.nextDouble();
+                            double r = rnd.nextDouble();
 
-                                cacheEmployee.put(id, new Employee(id, depId, depId, "First name employee #" + n,
-                                    "Last name employee #" + n, "Email employee #" + n, "Phone number employee #" + n,
-                                    new java.sql.Date((long)(r * diff)), "Job employee #" + n, 500 + round(r * 2000, 2)));
+                            cacheEmployee.put(id, new Employee(id, depId, depId, "First name employee #" + n,
+                                "Last name employee #" + n, "Email employee #" + n, "Phone number employee #" + n,
+                                new java.sql.Date((long)(r * diff)), "Job employee #" + n, 500 + round(r * 2000, 2)));
 
-                                if (rnd.nextBoolean())
-                                    cacheEmployee.remove(rnd.nextInt(EMPL_CNT));
+                            if (rnd.nextBoolean())
+                                cacheEmployee.remove(rnd.nextInt(EMPL_CNT));
 
-                                cacheEmployee.get(rnd.nextInt(EMPL_CNT));
-                            }
+                            cacheEmployee.get(rnd.nextInt(EMPL_CNT));
+                        }
 
-                            if (rnd.nextInt(100) < 20)
-                                throw new IllegalStateException("Rollback changes");
-
+                        if (rnd.nextInt(100) > 20)
                             tx.commit();
-                        }
-                        catch (Exception e) {
-                            tx.rollback();
-                        }
                     }
-                }
-                catch (IllegalStateException ignored) {
-                    // No-op.
                 }
                 catch (Throwable e) {
                     if (!e.getMessage().contains("cache is stopped"))
