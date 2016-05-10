@@ -1791,7 +1791,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         GridCacheVersionManager verMgr = new GridCacheVersionManager();
         GridCacheDeploymentManager depMgr = new GridCacheDeploymentManager();
         GridCachePartitionExchangeManager exchMgr = new GridCachePartitionExchangeManager();
-        IgniteCacheDatabaseSharedManager dbMgr = new IgniteCacheDatabaseSharedManager();
+
+        IgniteCacheDatabaseSharedManager dbMgr = ctx.plugins().createComponent(IgniteCacheDatabaseSharedManager.class);
+
+        if (dbMgr == null)
+            dbMgr = new IgniteCacheDatabaseSharedManager();
+
         IgnitePageStoreManager pageStoreMgr = ctx.plugins().createComponent(IgnitePageStoreManager.class);
         IgniteWriteAheadLogManager walMgr = ctx.plugins().createComponent(IgniteWriteAheadLogManager.class);
 

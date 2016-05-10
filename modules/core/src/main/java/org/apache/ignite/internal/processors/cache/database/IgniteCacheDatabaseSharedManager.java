@@ -79,6 +79,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     * @throws IgniteCheckedException If failed to restore state.
+     */
+    public void restoreState() throws IgniteCheckedException {
+        // No-op.
+    }
+
+    /**
      * No-op for non-persistent storage.
      */
     public void checkpointReadLock() {
