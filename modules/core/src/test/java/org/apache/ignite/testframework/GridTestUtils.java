@@ -1070,7 +1070,6 @@ public final class GridTestUtils {
      */
     @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
     public static <T> T getFieldValue(Object obj, Class cls, String fieldName) throws IgniteException {
-        assert obj != null;
         assert fieldName != null;
 
         try {
