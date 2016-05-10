@@ -38,8 +38,6 @@ import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.jetbrains.annotations.Nullable;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 /**
  * Binary writer implementation.
  */
@@ -379,7 +377,7 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            byte[] strArr = val.getBytes(UTF_8);
+            byte[] strArr = BinaryUtils.toUtf8Bytes(val);
 
             out.unsafeEnsure(1 + 4);
             out.unsafeWriteByte(GridBinaryMarshaller.STRING);
