@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.Serializable;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
@@ -69,8 +70,12 @@ import org.apache.ignite.internal.visor.igfs.*;
 import org.apache.ignite.internal.visor.log.VisorLogSearchTask;
 import org.apache.ignite.internal.visor.misc.VisorAckTask;
 import org.apache.ignite.internal.visor.misc.VisorLatestVersionTask;
+import org.apache.ignite.internal.visor.misc.VisorResolveHostNameTask;
 import org.apache.ignite.internal.visor.node.*;
+import org.apache.ignite.internal.visor.query.VisorQueryArg;
 import org.apache.ignite.internal.visor.query.VisorQueryCleanupTask;
+import org.apache.ignite.internal.visor.query.VisorQueryNextPageTask;
+import org.apache.ignite.internal.visor.query.VisorQueryTask;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
@@ -137,9 +142,9 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         for (Map.Entry<String, String> e : params.entrySet())
             addr += e.getKey() + '=' + e.getValue() + '&';
 
-        URL url = new URL(addr);
+        URI uri = new URI(addr);
 
-        URLConnection conn = url.openConnection();
+        URLConnection conn = uri.toURL().openConnection();
 
         String signature = signature();
 
@@ -1508,6 +1513,50 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         jsonEquals(ret, successRes);
 
+//        ret = content(new HashMap<String, String>(cmd) {{
+//            put("p1", grid(1).localNode().id().toString());
+//            put("p2", VisorQueryTask.class.getName());
+//            put("p3", VisorQueryArg.class.getName());
+//            put("p4", "person");
+//            put("p5", "SELECT%20%2A%20FROM%20PERSON");
+//            put("p6", "false");
+//            put("p7", "50");
+//        }});
+//
+//        info("Exe command result: " + ret);
+//
+//        assertNotNull(ret);
+//        assertTrue(!ret.isEmpty());
+//
+//        jsonEquals(ret, successRes);
+
+//        ret = content(new HashMap<String, String>(cmd) {{
+//            put("p1", grid(1).localNode().id().toString());
+//            put("p2", VisorQueryNextPageTask.class.getName());
+//            put("p3", IgniteBiTuple.class.getName());
+//            put("p4", "");
+//            put("p5", "0");
+//        }});
+//
+//        info("Exe command result: " + ret);
+//
+//        assertNotNull(ret);
+//        assertTrue(!ret.isEmpty());
+//
+//        jsonEquals(ret, successRes);
+
+        ret = content(new HashMap<String, String>(cmd) {{
+            put("p1", grid(1).localNode().id().toString());
+            put("p2", VisorResolveHostNameTask.class.getName());
+        }});
+
+        info("Exe command result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
         // Multinode tasks
 
         ret = content(new HashMap<String, String>(cmd) {{
@@ -1636,6 +1685,46 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 //            put("p2", VisorQueryCleanupTask.class.getName());
 //            put("p3", Map.class.getName());
 //            put("p4", "0");
+//        }});
+//
+//        info("Exe command result: " + ret);
+//
+//        assertNotNull(ret);
+//        assertTrue(!ret.isEmpty());
+//
+//        jsonEquals(ret, successRes);
+
+        ret = content(new HashMap<String, String>(cmd) {{
+            put("p1", "");
+            put("p2", VisorNodeSuppressedErrorsTask.class.getName());
+            put("p3", Map.class.getName());
+            put("p4", "0");
+        }});
+
+        info("Exe command result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+//        /** Spring XML to start cache via Visor task. */
+//        final String START_CACHE =
+//            "<beans xmlns=\"http://www.springframework.org/schema/beans\"\n" +
+//                    "    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
+//                    "    xsi:schemaLocation=\"http://www.springframework.org/schema/beans\n" +
+//                    "        http://www.springframework.org/schema/beans/spring-beans-2.5.xsd\">\n" +
+//                    "    <bean id=\"cacheConfiguration\" class=\"org.apache.ignite.configuration.CacheConfiguration\">\n" +
+//                    "        <property name=\"cacheMode\" value=\"PARTITIONED\"/>\n" +
+//                    "        <property name=\"name\" value=\"c\"/>\n" +
+//                    "   </bean>\n" +
+//                    "</beans>";
+//        ret = content(new HashMap<String, String>(cmd) {{
+//            put("p1", "");
+//            put("p2", VisorCacheStartTask.class.getName());
+//            put("p3", VisorCacheStartTask.VisorCacheStartArg.class.getName());
+//            put("p4", "person");
+//            put("p4", START_CACHE);
 //        }});
 //
 //        info("Exe command result: " + ret);
