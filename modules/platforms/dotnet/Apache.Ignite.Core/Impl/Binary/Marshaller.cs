@@ -82,24 +82,19 @@ namespace Apache.Ignite.Core.Impl.Binary
             AddSystemTypes();
 
             // 2. Define user types.
-            var dfltSerializer = cfg.DefaultSerializer == null ? new BinaryReflectiveSerializer() : null;
-
             var typeResolver = new TypeResolver();
 
             ICollection<BinaryTypeConfiguration> typeCfgs = cfg.TypeConfigurations;
 
             if (typeCfgs != null)
                 foreach (BinaryTypeConfiguration typeCfg in typeCfgs)
-                    AddUserType(cfg, typeCfg, typeResolver, dfltSerializer);
+                    AddUserType(cfg, typeCfg, typeResolver);
 
             var typeNames = cfg.Types;
 
             if (typeNames != null)
                 foreach (string typeName in typeNames)
-                    AddUserType(cfg, new BinaryTypeConfiguration(typeName), typeResolver, dfltSerializer);
-
-            if (cfg.DefaultSerializer == null)
-                cfg.DefaultSerializer = dfltSerializer;
+                    AddUserType(cfg, new BinaryTypeConfiguration(typeName), typeResolver);
 
             _cfg = cfg;
         }
@@ -406,9 +401,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="cfg">Configuration.</param>
         /// <param name="typeCfg">Type configuration.</param>
         /// <param name="typeResolver">The type resolver.</param>
-        /// <param name="dfltSerializer">The default serializer.</param>
         private void AddUserType(BinaryConfiguration cfg, BinaryTypeConfiguration typeCfg, 
-            TypeResolver typeResolver, IBinarySerializer dfltSerializer)
+            TypeResolver typeResolver)
         {
             // Get converter/mapper/serializer.
             IBinaryNameMapper nameMapper = typeCfg.NameMapper ?? cfg.DefaultNameMapper;
@@ -428,12 +422,12 @@ namespace Apache.Ignite.Core.Impl.Binary
                 int typeId = BinaryUtils.TypeId(typeName, nameMapper, idMapper);
 
                 var serializer = typeCfg.Serializer ?? cfg.DefaultSerializer
-                                 ?? GetBinarizableSerializer(type) ?? dfltSerializer;
+                                 ?? GetBinarizableSerializer(type) ?? new BinaryReflectiveSerializer();
 
                 var refSerializer = serializer as BinaryReflectiveSerializer;
 
                 if (refSerializer != null)
-                    refSerializer.Register(type, typeId, nameMapper, idMapper);
+                    serializer = refSerializer.Register(type, typeId, nameMapper, idMapper);
 
                 if (typeCfg.IsEnum != type.IsEnum)
                     throw new BinaryObjectException(

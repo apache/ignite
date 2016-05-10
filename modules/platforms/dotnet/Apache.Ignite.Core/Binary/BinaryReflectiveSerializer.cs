@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Binary
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Reflection;
     using Apache.Ignite.Core.Impl.Binary;
 
@@ -45,11 +46,28 @@ namespace Apache.Ignite.Core.Binary
         private const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public | 
             BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
 
-        /** Cached type descriptors. */
-        private readonly IDictionary<Type, Descriptor> _types = new Dictionary<Type, Descriptor>();
+        /** Type descriptor. */
+        private readonly Descriptor _desc;
 
         /** Raw mode flag. */
         private bool _rawMode;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BinaryReflectiveSerializer"/> class.
+        /// </summary>
+        public BinaryReflectiveSerializer()
+        {
+            // No-op.
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BinaryReflectiveSerializer"/> class.
+        /// </summary>
+        private BinaryReflectiveSerializer(Descriptor desc, bool raw)
+        {
+            _desc = desc;
+            _rawMode = raw;
+        }
 
         /// <summary>
         /// Gets or value indicating whether raw mode serialization should be used.
@@ -62,7 +80,7 @@ namespace Apache.Ignite.Core.Binary
             get { return _rawMode; }
             set
             {
-                if (_types.Count > 0)
+                if (_desc != null)
                     throw new InvalidOperationException(typeof (BinarizableSerializer).Name +
                         ".RawMode cannot be changed after first serialization.");
 
@@ -78,12 +96,9 @@ namespace Apache.Ignite.Core.Binary
         /// <exception cref="BinaryObjectException">Type is not registered in serializer:  + type.Name</exception>
         public void WriteBinary(object obj, IBinaryWriter writer)
         {
-            var binarizable = obj as IBinarizable;
+            Debug.Assert(_desc != null);
 
-            if (binarizable != null)
-                binarizable.WriteBinary(writer);
-            else
-                GetDescriptor(obj).Write(obj, writer);
+            _desc.Write(obj, writer);
         }
 
         /// <summary>
@@ -94,12 +109,9 @@ namespace Apache.Ignite.Core.Binary
         /// <exception cref="BinaryObjectException">Type is not registered in serializer:  + type.Name</exception>
         public void ReadBinary(object obj, IBinaryReader reader)
         {
-            var binarizable = obj as IBinarizable;
-            
-            if (binarizable != null)
-                binarizable.ReadBinary(reader);
-            else
-                GetDescriptor(obj).Read(obj, reader);
+            Debug.Assert(_desc != null);
+
+            _desc.Read(obj, reader);
         }
 
         /// <summary>Register type.</summary>
@@ -107,11 +119,10 @@ namespace Apache.Ignite.Core.Binary
         /// <param name="typeId">Type ID.</param>
         /// <param name="converter">Name converter.</param>
         /// <param name="idMapper">ID mapper.</param>
-        internal void Register(Type type, int typeId, IBinaryNameMapper converter,
+        internal BinaryReflectiveSerializer Register(Type type, int typeId, IBinaryNameMapper converter,
             IBinaryIdMapper idMapper)
         {
-            if (type.GetInterface(typeof(IBinarizable).Name) != null)
-                return;
+            Debug.Assert(_desc == null);
 
             List<FieldInfo> fields = new List<FieldInfo>();
 
@@ -148,26 +159,9 @@ namespace Apache.Ignite.Core.Binary
 
             fields.Sort(Compare);
 
-            Descriptor desc = new Descriptor(fields, _rawMode);
-
-            _types[type] = desc;
+            return new BinaryReflectiveSerializer(new Descriptor(fields, _rawMode), _rawMode);
         }
 
-        /// <summary>
-        /// Gets the descriptor for an object.
-        /// </summary>
-        private Descriptor GetDescriptor(object obj)
-        {
-            var type = obj.GetType();
-
-            Descriptor desc;
-
-            if (!_types.TryGetValue(type, out desc))
-                throw new BinaryObjectException("Type is not registered in serializer: " + type.Name);
-
-            return desc;
-        }
-        
         /// <summary>
         /// Compare two FieldInfo instances. 
         /// </summary>
