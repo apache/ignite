@@ -37,14 +37,13 @@
                             th(st-sort='company') Company
                             th(st-sort='country') Country
                             th.col-xs-2(st-sort='lastLogin' st-sort-default='reverse') Last login
-                            //th(width='1%'  st-sort='admin') Admin
-                            th.text-nowrap(st-sort='counters.clusters' bs-tooltip='' data-title='Clusters count')
+                            th.text-nowrap(st-sort='counters.clusters' st-descending-first bs-tooltip='"Clusters count"' data-placement='top')
                                 i.fa.fa-sitemap()
-                            th.text-nowrap(st-sort='counters.caches' bs-tooltip='' data-title='Caches count')
+                            th.text-nowrap(st-sort='counters.caches' st-descending-first bs-tooltip='"Caches count"' data-placement='top')
                                 i.fa.fa-database()
-                            th.text-nowrap(st-sort='counters.models' bs-tooltip='' data-title='Models count')
+                            th.text-nowrap(st-sort='counters.models' st-descending-first bs-tooltip='"Models count"' data-placement='top')
                                 i.fa.fa-object-group()
-                            th.text-nowrap(st-sort='counters.igfs' bs-tooltip='' data-title='IGFS count')
+                            th.text-nowrap(st-sort='counters.igfs' st-descending-first bs-tooltip='"IGFS count"' data-placement='top')
                                 i.fa.fa-folder-o()
                             th(width='1%') Actions
                     tbody
@@ -57,9 +56,6 @@
                             td {{::row.countryCode}}
                             td
                                 span {{::row.lastLogin | date:'medium'}}
-                            //td(style='text-align: center;')
-                                input(type='checkbox' ng-disabled='row.adminChanging || row._id == user._id'
-                                    ng-model='row.admin' ng-change='toggleAdmin(row)')
                             td.text-center
                                     span {{::row.counters.clusters}}
                             td.text-center
