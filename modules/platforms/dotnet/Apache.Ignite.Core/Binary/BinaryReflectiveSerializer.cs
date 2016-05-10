@@ -50,10 +50,10 @@ namespace Apache.Ignite.Core.Binary
         private bool _rawMode;
 
         /** Write actions to be performed. */
-        private readonly List<BinaryReflectiveWriteAction> _wActions;
+        private readonly BinaryReflectiveWriteAction[] _wActions;
 
         /** Read actions to be performed. */
-        private readonly List<BinaryReflectiveReadAction> _rActions;
+        private readonly BinaryReflectiveReadAction[] _rActions;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BinaryReflectiveSerializer"/> class.
@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Binary
         /// <summary>
         /// Initializes a new instance of the <see cref="BinaryReflectiveSerializer"/> class.
         /// </summary>
-        private BinaryReflectiveSerializer(List<BinaryReflectiveWriteAction> wActions, List<BinaryReflectiveReadAction> rActions, bool raw)
+        private BinaryReflectiveSerializer(BinaryReflectiveWriteAction[] wActions, BinaryReflectiveReadAction[] rActions, bool raw)
         {
             Debug.Assert(wActions != null);
             Debug.Assert(rActions != null);
@@ -105,10 +105,9 @@ namespace Apache.Ignite.Core.Binary
         {
             Debug.Assert(_wActions != null);
 
-            int cnt = _wActions.Count;
-
-            for (int i = 0; i < cnt; i++)
-                _wActions[i](obj, writer);
+            var actions = _wActions;  // speed up field access
+            for (int i = 0; i < actions.Length; i++)
+                actions[i](obj, writer);
         }
 
         /// <summary>
@@ -121,10 +120,9 @@ namespace Apache.Ignite.Core.Binary
         {
             Debug.Assert(_rActions != null);
 
-            int cnt = _rActions.Count;
-
-            for (int i = 0; i < cnt; i++)
-                _rActions[i](obj, reader);
+            var actions = _rActions;  // speed up field access
+            for (int i = 0; i < actions.Length; i++)
+                actions[i](obj, reader);
         }
 
         /// <summary>Register type.</summary>
@@ -172,18 +170,18 @@ namespace Apache.Ignite.Core.Binary
 
             fields.Sort(Compare);
 
-            var wActions = new List<BinaryReflectiveWriteAction>(fields.Count);
-            var rActions = new List<BinaryReflectiveReadAction>(fields.Count);
+            var wActions = new BinaryReflectiveWriteAction[fields.Count];
+            var rActions = new BinaryReflectiveReadAction[fields.Count];
 
-            foreach (var field in fields)
+            for (int i = 0; i < fields.Count; i++)
             {
                 BinaryReflectiveWriteAction writeAction;
                 BinaryReflectiveReadAction readAction;
 
-                BinaryReflectiveActions.GetTypeActions(field, out writeAction, out readAction, _rawMode);
+                BinaryReflectiveActions.GetTypeActions(fields[i], out writeAction, out readAction, _rawMode);
 
-                wActions.Add(writeAction);
-                rActions.Add(readAction);
+                wActions[i] = writeAction;
+                rActions[i] = readAction;
             }
 
             return new BinaryReflectiveSerializer(wActions, rActions, _rawMode);
