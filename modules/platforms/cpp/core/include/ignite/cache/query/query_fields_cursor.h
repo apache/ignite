@@ -48,7 +48,7 @@ namespace ignite
                 /**
                  * Default constructor.
                  */
-                QueryFieldsCursor() : impl(NULL)
+                QueryFieldsCursor() : impl(0)
                 {
                     // No-op.
                 }

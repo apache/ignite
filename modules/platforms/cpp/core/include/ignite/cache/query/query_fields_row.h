@@ -47,7 +47,7 @@ namespace ignite
                 /**
                  * Default constructor.
                  */
-                QueryFieldsRow() : impl(NULL)
+                QueryFieldsRow() : impl(0)
                 {
                     // No-op.
                 }
