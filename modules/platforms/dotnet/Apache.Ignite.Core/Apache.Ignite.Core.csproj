@@ -84,6 +84,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Binary\BinaryReflectiveSerializer.cs" />
+    <Compile Include="Impl\Binary\BinaryReflectiveSerializerInternal.cs" />
     <Compile Include="Binary\IBinarySerializerInternal.cs" />
     <Compile Include="Binary\Package-Info.cs" />
     <Compile Include="Binary\UserSerializerProxy.cs" />
