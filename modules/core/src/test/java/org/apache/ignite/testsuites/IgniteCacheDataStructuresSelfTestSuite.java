@@ -110,7 +110,7 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCacheLocalAtomicQueueApiSelfTest.class));
         suite.addTest(new TestSuite(IgniteLocalCountDownLatchSelfTest.class));
         suite.addTest(new TestSuite(IgniteLocalSemaphoreSelfTest.class));
-        suite.addTest(new TestSuite(IgniteLocalLockSelfTest.class));
+        //suite.addTest(new TestSuite(IgniteLocalLockSelfTest.class));
 
         suite.addTest(new TestSuite(GridCacheReplicatedSequenceApiSelfTest.class));
         suite.addTest(new TestSuite(GridCacheReplicatedSequenceMultiNodeSelfTest.class));
@@ -121,7 +121,7 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCacheReplicatedDataStructuresFailoverSelfTest.class));
         suite.addTest(new TestSuite(IgniteReplicatedCountDownLatchSelfTest.class));
         suite.addTest(new TestSuite(IgniteReplicatedSemaphoreSelfTest.class));
-        suite.addTest(new TestSuite(IgniteReplicatedLockSelfTest.class));
+        //suite.addTest(new TestSuite(IgniteReplicatedLockSelfTest.class));
         suite.addTest(new TestSuite(IgniteCacheAtomicReplicatedNodeRestartSelfTest.class));
 
         suite.addTest(new TestSuite(GridCachePartitionedSequenceApiSelfTest.class));
@@ -144,7 +144,7 @@ public class IgniteCacheDataStructuresSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(IgnitePartitionedCountDownLatchSelfTest.class));
         suite.addTest(new TestSuite(IgniteDataStructureWithJobTest.class));
         suite.addTest(new TestSuite(IgnitePartitionedSemaphoreSelfTest.class));
-        suite.addTest(new TestSuite(IgnitePartitionedLockSelfTest.class));
+        //suite.addTest(new TestSuite(IgnitePartitionedLockSelfTest.class));
 
         suite.addTest(new TestSuite(GridCachePartitionedSetFailoverSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedOffheapSetFailoverSelfTest.class));

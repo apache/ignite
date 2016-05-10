@@ -1367,9 +1367,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         Map<ClusterNode, List<KeyCacheObject>> dhtMap,
         Map<ClusterNode, List<KeyCacheObject>> nearMap)
         throws IgniteCheckedException {
-        Collection<ClusterNode> dhtNodes = ctx.dht().topology().nodes(cached.partition(), topVer);
+        List<ClusterNode> dhtNodes = ctx.dht().topology().nodes(cached.partition(), topVer);
 
-        ClusterNode primary = F.first(dhtNodes);
+        ClusterNode primary = dhtNodes.get(0);
 
         assert primary != null;
 

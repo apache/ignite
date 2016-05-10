@@ -31,7 +31,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
@@ -655,6 +654,25 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
 
         if (log.isDebugEnabled())
             log.debug("Failed to find future in futures map [ver=" + ver + ", futId=" + futId + ']');
+
+        return null;
+    }
+
+    /**
+     * Gets futures for given lock ID.
+     *
+     * @param ver Lock ID.
+     * @return Futures.
+     */
+    @SuppressWarnings({"unchecked"})
+    @Nullable public Collection<GridCacheMvccFuture<?>> mvccFutures(GridCacheVersion ver) {
+        Collection<GridCacheMvccFuture<?>> futs = this.mvccFuts.get(ver);
+
+        if (futs != null) {
+            synchronized (futs) {
+                return new ArrayList<>(futs);
+            }
+        }
 
         return null;
     }
