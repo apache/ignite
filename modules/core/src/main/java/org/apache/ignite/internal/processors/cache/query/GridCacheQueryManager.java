@@ -2782,7 +2782,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 entry.unswap();
 
-                return entry.peek(true, false, false, topVer, expiryPlc);
+                return entry.peek(true, false, topVer, expiryPlc);
             }
             catch (GridCacheEntryRemovedException ignore) {
                 return null;

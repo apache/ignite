@@ -1505,10 +1505,6 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         return false;
                     }
 
-// TODO GG-10884.
-//                    if (!cacheCtx.isDatabaseEnabled())
-//                        entry1.unswap();
-
                     break;
                 }
                 catch (GridCacheEntryRemovedException ignored) {

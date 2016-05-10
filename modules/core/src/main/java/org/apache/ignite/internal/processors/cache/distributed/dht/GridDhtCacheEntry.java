@@ -552,13 +552,11 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
      * from swap storage.
      *
      * @param ver Obsolete version.
-     * @param swap If {@code true} then remove from swap.
      * @return {@code True} if entry was not being used, passed the filter and could be removed.
      * @throws IgniteCheckedException If failed to remove from swap.
      */
     public boolean clearInternal(
         GridCacheVersion ver,
-        boolean swap,
         GridCacheObsoleteEntryExtras extras
     ) throws IgniteCheckedException {
         boolean rmv = false;
