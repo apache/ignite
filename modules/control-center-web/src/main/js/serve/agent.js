@@ -300,7 +300,7 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
                 .addParam('p1', '')
                 .addParam('p2', 'org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTask')
                 .addParam('p3', 'org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTaskArg')
-                .addParam('p4', false)
+                .addParam('p4', true)
                 .addParam('p5', 'CONSOLE_' + evtOrderKey)
                 .addParam('p6', evtThrottleCntrKey)
                 .addParam('p7', 10)
