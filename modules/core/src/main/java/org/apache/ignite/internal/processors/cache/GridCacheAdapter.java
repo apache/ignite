@@ -799,7 +799,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                             // Swap and offheap are disabled for near cache.
                             modes.offheap = false;
-                            modes.swap = false;
                         }
                     }
                 }
@@ -809,7 +808,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     if (nearKey) {
                         // Swap and offheap are disabled for near cache.
                         modes.offheap = false;
-                        modes.swap = false;
                     }
                 }
 
@@ -4835,9 +4833,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /** */
         private boolean offheap;
 
-        /** */
-        private boolean swap;
-
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(PeekModes.class, this);
@@ -4862,7 +4857,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
             modes.heap = true;
             modes.offheap = true;
-            modes.swap = true;
         }
         else {
             for (CachePeekMode peekMode : peekModes) {
@@ -4876,7 +4870,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                         modes.heap = true;
                         modes.offheap = true;
-                        modes.swap = true;
 
                         break;
 
@@ -4905,21 +4898,15 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                         break;
 
-                    case SWAP:
-                        modes.swap = true;
-
-                        break;
-
                     default:
                         assert false : peekMode;
                 }
             }
         }
 
-        if (!(modes.heap || modes.offheap || modes.swap)) {
+        if (!(modes.heap || modes.offheap)) {
             modes.heap = true;
             modes.offheap = true;
-            modes.swap = true;
         }
 
         if (!(modes.primary || modes.backup || modes.near)) {
@@ -4931,7 +4918,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
         }
 
-        assert modes.heap || modes.offheap || modes.swap;
+        assert modes.heap || modes.offheap;
         assert modes.primary || modes.backup || modes.near;
 
         return modes;
