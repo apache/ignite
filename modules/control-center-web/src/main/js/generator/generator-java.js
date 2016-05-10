@@ -2468,8 +2468,8 @@ $generatorJava.igfsMisc = function(igfs, varName, res) {
     $generatorJava.property(res, varName, igfs, 'prefetchBlocks', null, null, 0);
     $generatorJava.property(res, varName, igfs, 'sequentialReadsBeforePrefetch', null, null, 0);
     $generatorJava.property(res, varName, igfs, 'trashPurgeTimeout', null, null, 1000);
-    $generatorJava.property(res, varName, igfs, 'colocateMetadata', null, true);
-    $generatorJava.property(res, varName, igfs, 'relaxedConsistency', null, true);
+    $generatorJava.property(res, varName, igfs, 'colocateMetadata', null, null, true);
+    $generatorJava.property(res, varName, igfs, 'relaxedConsistency', null, null, true);
 
     if (igfs.pathModes && igfs.pathModes.length > 0) {
         res.needEmptyLine = true;
