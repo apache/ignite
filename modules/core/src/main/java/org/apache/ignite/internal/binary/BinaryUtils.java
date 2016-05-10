@@ -2015,7 +2015,7 @@ public class BinaryUtils {
     }
 
     /**
-     * Read string form UTF-8 bytes.
+     * Read string from UTF-8 bytes.
      * @param arr array
      * @param off offset
      * @param len length
