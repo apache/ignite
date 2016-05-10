@@ -36,7 +36,7 @@ namespace ignite
                 OP_METRICS = 2
             };
 
-            TransactionsImpl::TransactionsImpl(IgniteEnvSharedPtr env, jobject javaRef) :
+            TransactionsImpl::TransactionsImpl(SP_IgniteEnvironment env, jobject javaRef) :
                 InteropTarget(env, javaRef)
             {
                 // No-op.

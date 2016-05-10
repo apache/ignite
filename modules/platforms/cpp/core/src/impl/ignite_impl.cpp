@@ -50,16 +50,16 @@ namespace ignite
             return env.Get()->Context();
         }
 
-        IgniteImpl::TxsImplSharedPtr IgniteImpl::InternalGetTransactions(IgniteError &err)
+        IgniteImpl::SP_TransactionsImpl IgniteImpl::InternalGetTransactions(IgniteError &err)
         {
-            IgniteImpl::TxsImplSharedPtr res;
+            IgniteImpl::SP_TransactionsImpl res;
 
             ignite::jni::java::JniErrorInfo jniErr;
 
             jobject txJavaRef = env.Get()->Context()->ProcessorTransactions(javaRef, &jniErr);
 
             if (txJavaRef)
-                res = TxsImplSharedPtr(new transactions::TransactionsImpl(env, txJavaRef));
+                res = SP_TransactionsImpl(new transactions::TransactionsImpl(env, txJavaRef));
             else
                 IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
 

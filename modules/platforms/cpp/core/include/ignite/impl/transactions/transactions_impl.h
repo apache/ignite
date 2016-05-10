@@ -36,7 +36,7 @@ namespace ignite
              */
             class IGNITE_FRIEND_EXPORT TransactionsImpl : private interop::InteropTarget
             {
-                typedef ignite::common::concurrent::SharedPointer<ignite::impl::IgniteEnvironment> IgniteEnvSharedPtr;
+                typedef ignite::common::concurrent::SharedPointer<ignite::impl::IgniteEnvironment> SP_IgniteEnvironment;
                 typedef ignite::transactions::TransactionState TransactionState;
             public:
                 /**
@@ -45,7 +45,7 @@ namespace ignite
                  * @param env Environment.
                  * @param javaRef Reference to java object.
                  */
-                TransactionsImpl(IgniteEnvSharedPtr env, jobject javaRef);
+                TransactionsImpl(SP_IgniteEnvironment env, jobject javaRef);
 
                 /**
                  * Destructor.

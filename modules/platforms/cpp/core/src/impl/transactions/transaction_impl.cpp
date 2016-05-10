@@ -27,9 +27,9 @@ namespace ignite
     {
         namespace transactions
         {
-            TransactionImpl::TxImplSharedPtrTli TransactionImpl::threadTx;
+            TransactionImpl::TL_SP_TransactionsImpl TransactionImpl::threadTx;
 
-            TransactionImpl::TransactionImpl(TxsImplSharedPtr txs, int64_t id,
+            TransactionImpl::TransactionImpl(SP_TransactionsImpl txs, int64_t id,
                 int concurrency, int isolation, int64_t timeout, int32_t txSize) :
                 txs(txs),
                 id(id),
@@ -43,16 +43,16 @@ namespace ignite
                 // No-op.
             }
 
-            TransactionImpl::TxImplSharedPtr TransactionImpl::Create(TxsImplSharedPtr txs,
+            TransactionImpl::SP_TransactionImpl TransactionImpl::Create(SP_TransactionsImpl txs,
                 int concurrency, int isolation, int64_t timeout, int32_t txSize, IgniteError& err)
             {
                 int64_t id = txs.Get()->TxStart(concurrency, isolation, timeout, txSize, err);
 
-                TxImplSharedPtr tx;
+                SP_TransactionImpl tx;
 
                 if (err.GetCode() == IgniteError::IGNITE_SUCCESS)
                 {
-                    tx = TxImplSharedPtr(new TransactionImpl(txs, id, concurrency,
+                    tx = SP_TransactionImpl(new TransactionImpl(txs, id, concurrency,
                         isolation, timeout, txSize));
 
                     threadTx.Set(tx);
@@ -66,14 +66,14 @@ namespace ignite
                 // No-op.
             }
 
-            TransactionImpl::TxImplSharedPtr TransactionImpl::GetCurrent()
+            TransactionImpl::SP_TransactionImpl TransactionImpl::GetCurrent()
             {
-                TxImplSharedPtr tx = threadTx.Get();
+                SP_TransactionImpl tx = threadTx.Get();
                 TransactionImpl* ptr = tx.Get();
 
                 if (ptr && ptr->IsClosed())
                 {
-                    tx = TxImplSharedPtr();
+                    tx = SP_TransactionImpl();
 
                     threadTx.Remove();
                 }

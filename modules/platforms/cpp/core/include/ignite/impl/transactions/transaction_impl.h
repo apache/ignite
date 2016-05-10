@@ -36,9 +36,9 @@ namespace ignite
              */
             class IGNITE_FRIEND_EXPORT TransactionImpl
             {
-                typedef ignite::common::concurrent::SharedPointer<TransactionImpl> TxImplSharedPtr;
-                typedef ignite::common::concurrent::SharedPointer<TransactionsImpl> TxsImplSharedPtr;
-                typedef ignite::common::concurrent::ThreadLocalInstance<TxImplSharedPtr> TxImplSharedPtrTli;
+                typedef ignite::common::concurrent::SharedPointer<TransactionImpl> SP_TransactionImpl;
+                typedef ignite::common::concurrent::SharedPointer<TransactionsImpl> SP_TransactionsImpl;
+                typedef ignite::common::concurrent::ThreadLocalInstance<SP_TransactionImpl> TL_SP_TransactionsImpl;
                 typedef ignite::common::concurrent::CriticalSection CriticalSection;
                 typedef ignite::transactions::TransactionState TransactionState;
             public:
@@ -59,7 +59,7 @@ namespace ignite
                  *
                  * @return Shared pointer to new instance.
                  */
-                static TxImplSharedPtr Create(TxsImplSharedPtr txs, int concurrency,
+                static SP_TransactionImpl Create(SP_TransactionsImpl txs, int concurrency,
                     int isolation, int64_t timeout, int32_t txSize, IgniteError& err);
 
                 /**
@@ -69,7 +69,7 @@ namespace ignite
                  * or null pointer if there is no active transaction for
                  * the thread.
                  */
-                static TxImplSharedPtr GetCurrent();
+                static SP_TransactionImpl GetCurrent();
 
                 /**
                  * Check if the transaction has been closed.
@@ -171,7 +171,7 @@ namespace ignite
                  * @param timeout Timeout in milliseconds.
                  * @param txSize Transaction size.
                  */
-                TransactionImpl(TxsImplSharedPtr txs, int64_t id, int concurrency,
+                TransactionImpl(SP_TransactionsImpl txs, int64_t id, int concurrency,
                     int isolation, int64_t timeout, int32_t txSize);
 
                 /**
@@ -182,13 +182,13 @@ namespace ignite
                 IgniteError GetClosedError() const;
 
                 /** Thread local instance of the transaction. */
-                static TxImplSharedPtrTli threadTx;
+                static TL_SP_TransactionsImpl threadTx;
 
                 /** Access lock. */
                 CriticalSection accessLock;
 
                 /** Transactions. */
-                TxsImplSharedPtr txs;
+                SP_TransactionsImpl txs;
 
                 /** Transaction ID. */
                 int64_t id;

@@ -35,8 +35,8 @@ namespace ignite
          */
         class IGNITE_FRIEND_EXPORT IgniteImpl
         {
-            typedef ignite::common::concurrent::SharedPointer<IgniteEnvironment> IgniteEnvSharedPtr;
-            typedef ignite::common::concurrent::SharedPointer<impl::transactions::TransactionsImpl> TxsImplSharedPtr;
+            typedef ignite::common::concurrent::SharedPointer<IgniteEnvironment> SP_IgniteEnvironment;
+            typedef ignite::common::concurrent::SharedPointer<impl::transactions::TransactionsImpl> SP_TransactionsImpl;
         public:
             /**
              * Constructor used to create new instance.
@@ -44,7 +44,7 @@ namespace ignite
              * @param env Environment.
              * @param javaRef Reference to java object.
              */
-            IgniteImpl(IgniteEnvSharedPtr env, jobject javaRef);
+            IgniteImpl(SP_IgniteEnvironment env, jobject javaRef);
             
             /**
              * Destructor.
@@ -158,7 +158,7 @@ namespace ignite
              *
              * @return TransactionsImpl instance.
              */
-            TxsImplSharedPtr GetTransactions()
+            SP_TransactionsImpl GetTransactions()
             {
                 return txImpl;
             }
@@ -169,16 +169,16 @@ namespace ignite
              *
              * @return TransactionsImpl instance.
              */
-            TxsImplSharedPtr InternalGetTransactions(IgniteError &err);
+            SP_TransactionsImpl InternalGetTransactions(IgniteError &err);
 
             /** Environment. */
-            IgniteEnvSharedPtr env;
+            SP_IgniteEnvironment env;
 
             /** Native Java counterpart. */
             jobject javaRef;
 
             /** Transactions implementaion. */
-            TxsImplSharedPtr txImpl;
+            SP_TransactionsImpl txImpl;
 
             IGNITE_NO_COPY_ASSIGNMENT(IgniteImpl)
         };
