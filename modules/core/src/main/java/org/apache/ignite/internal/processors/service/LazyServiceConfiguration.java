@@ -17,14 +17,9 @@
 
 package org.apache.ignite.internal.processors.service;
 
-import java.util.Arrays;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 
@@ -40,11 +35,10 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
     private transient Service srvc;
 
     /** */
-    private byte[] srvcBytes;
+    private String srvcClsName;
 
     /** */
-    @SuppressWarnings("TransientFieldNotInitialized")
-    private transient volatile GridKernalContext ctx;
+    private byte[] srvcBytes;
 
     /**
      * Default constructor.
@@ -55,55 +49,42 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
 
     /**
      * @param cfg Configuration.
+     * @param srvcBytes Marshaller service.
      */
-    public LazyServiceConfiguration(ServiceConfiguration cfg, GridKernalContext ctx) {
-        this.ctx = ctx;
+    public LazyServiceConfiguration(ServiceConfiguration cfg, byte[] srvcBytes) {
+        assert cfg.getService() != null : cfg;
+        assert srvcBytes != null;
+
         name = cfg.getName();
         totalCnt = cfg.getTotalCount();
         maxPerNodeCnt = cfg.getMaxPerNodeCount();
         cacheName = cfg.getCacheName();
         affKey = cfg.getAffinityKey();
         nodeFilter = cfg.getNodeFilter();
-
+        this.srvcBytes = srvcBytes;
         srvc = cfg.getService();
+        srvcClsName = srvc.getClass().getName();
+    }
 
-        Marshaller marsh = ctx.config().getMarshaller();
+    /**
+     * @return Service bytes.
+     */
+    public byte[] serviceBytes() {
+        return srvcBytes;
+    }
 
-        try {
-            srvcBytes = marsh.marshal(srvc);
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException("Failed to marshal service with configured masrhaller [srvc=" + srvc
-                + ", marsh=" + marsh + "]", e);
-        }
+    /**
+     * @return Service class name.
+     */
+    public String serviceClassName() {
+        return srvcClsName;
     }
 
     /** {@inheritDoc} */
     @Override public Service getService() {
-        if (srvc == null) {
-            assert ctx != null: "Need to provide context before getting service.";
-
-            IgniteConfiguration cfg = ctx.config();
-
-            Marshaller marshaller = cfg.getMarshaller();
-
-            try {
-                srvc = marshaller.unmarshal(srvcBytes, ctx.config().getClassLoader());
-            }
-            catch (IgniteCheckedException e) {
-                throw new IgniteException("Failed to unmarshal service with configured masrhaller [marsh=" + marshaller
-                    + ", srvcBytes=" + Arrays.toString(srvcBytes) + "]", e);
-            }
-        }
+        assert srvc != null : this;
 
         return srvc;
-    }
-
-    /**
-     * @param ctx Context.
-     */
-    public void context(GridKernalContext ctx) {
-        this.ctx = ctx;
     }
 
     /** {@inheritDoc} */
@@ -132,13 +113,7 @@ public class LazyServiceConfiguration extends ServiceConfiguration {
         if (name != null ? !name.equals(that.getName()) : that.getName() != null)
             return false;
 
-        Service srvc = getService();
-        Service srvc2 = that.getService();
-
-        assert srvc != null: name;
-        assert srvc2 != null : that.name;
-
-        if (srvc != null ? !srvc.getClass().equals(srvc2.getClass()) : srvc2 != null)
+        if (!F.eq(srvcClsName, that.srvcClsName))
             return false;
 
         return true;

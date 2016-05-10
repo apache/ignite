@@ -403,7 +403,23 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         validate(cfg);
 
-        return deploy(new LazyServiceConfiguration(cfg, ctx));
+        Marshaller marsh = ctx.config().getMarshaller();
+
+        LazyServiceConfiguration cfg0;
+
+        try {
+            byte[] srvcBytes = marsh.marshal(cfg.getService());
+
+            cfg0 = new LazyServiceConfiguration(cfg, srvcBytes);
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to marshal service with configured marshaller [srvc=" + cfg.getService()
+                + ", marsh=" + marsh + "]", e);
+
+            return new GridFinishedFuture<>(e);
+        }
+
+        return deploy(cfg0);
     }
 
     /**
@@ -449,9 +465,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                         new GridServiceDeployment(ctx.localNodeId(), cfg));
 
                     if (dep != null) {
-                        if (dep.configuration() instanceof LazyServiceConfiguration)
-                            ((LazyServiceConfiguration)dep.configuration()).context(ctx);
-
                         if (!dep.configuration().equalsIgnoreNodeFilter(cfg)) {
                             // Remove future from local map.
                             depFuts.remove(cfg.getName(), fut);
@@ -970,11 +983,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             else if (ctxs.size() < assignCnt) {
                 int createCnt = assignCnt - ctxs.size();
 
-                if (assigns.configuration() instanceof LazyServiceConfiguration)
-                    ((LazyServiceConfiguration)assigns.configuration()).context(ctx);
-
-                Service svc = assigns.service();
-
                 for (int i = 0; i < createCnt; i++) {
                     ServiceContextImpl svcCtx = new ServiceContextImpl(assigns.name(),
                         UUID.randomUUID(),
@@ -990,16 +998,18 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         }
 
         for (final ServiceContextImpl svcCtx : toInit) {
-            final Service svc = copyAndInject(assigns.service());
+            final Service svc;
 
             try {
+                svc = copyAndInject(assigns.configuration());
+
                 // Initialize service.
                 svc.init(svcCtx);
 
                 svcCtx.service(svc);
             }
             catch (Throwable e) {
-                log.error("Failed to initialize service (service will not be deployed): " + assigns.name(), e);
+                U.error(log, "Failed to initialize service (service will not be deployed): " + assigns.name(), e);
 
                 synchronized (ctxs) {
                     ctxs.removeAll(toInit);
@@ -1060,26 +1070,36 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param svc Service.
+     * @param cfg Service configuration.
      * @return Copy of service.
+     * @throws IgniteCheckedException If failed.
      */
-    private Service copyAndInject(Service svc) {
+    private Service copyAndInject(ServiceConfiguration cfg) throws IgniteCheckedException {
         Marshaller m = ctx.config().getMarshaller();
 
-        try {
-            byte[] bytes = m.marshal(svc);
+        if (cfg instanceof LazyServiceConfiguration) {
+            byte[] bytes = ((LazyServiceConfiguration)cfg).serviceBytes();
 
-            Service cp = m.unmarshal(bytes,
-                U.resolveClassLoader(svc.getClass().getClassLoader(), ctx.config()));
-
-            ctx.resource().inject(cp);
-
-            return cp;
+            return m.unmarshal(bytes, U.resolveClassLoader(null, ctx.config()));
         }
-        catch (IgniteCheckedException e) {
-            log.error("Failed to copy service (will reuse same instance): " + svc.getClass(), e);
+        else {
+            Service svc = cfg.getService();
 
-            return svc;
+            try {
+                byte[] bytes = m.marshal(svc);
+
+                Service cp = m.unmarshal(bytes,
+                    U.resolveClassLoader(svc.getClass().getClassLoader(), ctx.config()));
+
+                ctx.resource().inject(cp);
+
+                return cp;
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to copy service (will reuse same instance): " + svc.getClass(), e);
+
+                return svc;
+            }
         }
     }
 
@@ -1507,9 +1527,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                             }
 
                             GridServiceDeploymentFuture fut = depFuts.get(assigns.name());
-
-                            if (assigns.configuration() instanceof LazyServiceConfiguration)
-                                ((LazyServiceConfiguration)assigns.configuration()).context(ctx);
 
                             if (fut != null && fut.configuration().equalsIgnoreNodeFilter(assigns.configuration())) {
                                 depFuts.remove(assigns.name(), fut);

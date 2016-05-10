@@ -47,13 +47,13 @@ public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends Gr
     private static final int SERVER_NODE_WITH_EXT_CLASS_LOADER = 1;
 
     /** */
-    private static final int CLIENT_IDX = 2;
+    private static final int CLIENT_NODE = 2;
 
     /** */
     private static final int CLIENT_NODE_WITH_EXT_CLASS_LOADER = 3;
 
     /** */
-    private static final String GRID_NAME_ATTR = "GRID_NAME";
+    private static final String NODE_NAME_ATTR = "NODE_NAME";
 
     /** */
     private static ClassLoader extClsLdr;
@@ -75,10 +75,10 @@ public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends Gr
 
         cfg.setMarshaller(marshaller());
 
-        cfg.setUserAttributes(Collections.singletonMap(GRID_NAME_ATTR, gridName));
+        cfg.setUserAttributes(Collections.singletonMap(NODE_NAME_ATTR, gridName));
 
         if (getTestGridName(CLIENT_NODE_WITH_EXT_CLASS_LOADER).equals(gridName)
-            || getTestGridName(CLIENT_IDX).equals(gridName))
+            || getTestGridName(CLIENT_NODE).equals(gridName))
             cfg.setClientMode(true);
 
         if (extClsLdrGrids.contains(gridName))
@@ -105,6 +105,13 @@ public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends Gr
     }
 
     /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTest();
+    }
+
+    /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         extClsLdr = getExternalClassLoader();
     }
@@ -118,54 +125,43 @@ public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends Gr
      * @throws Exception If failed.
      */
     public void testServiceDeployment1() throws Exception {
-        try {
-            startGrid(SERVER_NODE);
+        startGrid(SERVER_NODE);
 
-            startGrid(SERVER_NODE_WITH_EXT_CLASS_LOADER).services().deployLazy(serviceConfig());
+        startGrid(SERVER_NODE_WITH_EXT_CLASS_LOADER).services().deployLazy(serviceConfig());
 
-            startGrid(CLIENT_IDX);
+        startGrid(CLIENT_NODE);
 
-            startGrid(CLIENT_NODE_WITH_EXT_CLASS_LOADER).services().deployLazy(serviceConfig());
-        }
-        finally {
-            stopAllGrids();
-        }
+        startGrid(CLIENT_NODE_WITH_EXT_CLASS_LOADER).services().deployLazy(serviceConfig());
+
+        ignite(SERVER_NODE).services().serviceDescriptors();
+
+        ignite(SERVER_NODE_WITH_EXT_CLASS_LOADER).services().serviceDescriptors();
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testServiceDeployment2() throws Exception {
-        try {
-            startGrid(SERVER_NODE);
+        startGrid(SERVER_NODE);
 
-            startGrid(CLIENT_NODE_WITH_EXT_CLASS_LOADER).services().deployLazy(serviceConfig());
+        startGrid(CLIENT_NODE_WITH_EXT_CLASS_LOADER).services().deployLazy(serviceConfig());
 
-            startGrid(CLIENT_IDX);
+        startGrid(CLIENT_NODE);
 
-            startGrid(SERVER_NODE_WITH_EXT_CLASS_LOADER).services().deployLazy(serviceConfig());
-        }
-        finally {
-            stopAllGrids();
-        }
+        startGrid(SERVER_NODE_WITH_EXT_CLASS_LOADER).services().deployLazy(serviceConfig());
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testServiceDeployment3() throws Exception {
-        try {
-            startGrid(SERVER_NODE_WITH_EXT_CLASS_LOADER).services().deployLazy(serviceConfig());
+        startGrid(SERVER_NODE_WITH_EXT_CLASS_LOADER).services().deployLazy(serviceConfig());
 
-            startGrid(SERVER_NODE);
+        startGrid(SERVER_NODE);
 
-            startGrid(CLIENT_IDX);
+        startGrid(CLIENT_NODE);
 
-            startGrid(CLIENT_NODE_WITH_EXT_CLASS_LOADER).services().deployLazy(serviceConfig());
-        }
-        finally {
-            stopAllGrids();
-        }
+        startGrid(CLIENT_NODE_WITH_EXT_CLASS_LOADER).services().deployLazy(serviceConfig());
     }
 
     /**
@@ -210,7 +206,7 @@ public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends Gr
         /** {@inheritDoc} */
         @SuppressWarnings("SuspiciousMethodCalls")
         @Override public boolean apply(ClusterNode node) {
-            return grids.contains(node.attribute(GRID_NAME_ATTR));
+            return grids.contains(node.attribute(NODE_NAME_ATTR));
         }
     }
 }

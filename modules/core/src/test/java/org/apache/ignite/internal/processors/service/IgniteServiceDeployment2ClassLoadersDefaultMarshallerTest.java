@@ -48,10 +48,10 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    private static final int GRID_CNT = 4;
+    private static final int GRID_CNT = 6;
 
     /** */
-    private static final String GRID_NAME_ATTR = "GRID_NAME";
+    private static final String NODE_NAME_ATTR = "NODE_NAME";
 
     /** */
     private static final URL[] URLS;
@@ -67,6 +67,9 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
 
     /** */
     private Set<String> grp2 = new HashSet<>();
+
+    /** */
+    private boolean client;
 
     /**
      * Initialize URLs.
@@ -95,16 +98,15 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
 
         cfg.setMarshaller(marshaller());
 
-        cfg.setUserAttributes(Collections.singletonMap(GRID_NAME_ATTR, gridName));
-
-        if (getTestGridName(GRID_CNT - 1).equals(gridName) || getTestGridName(GRID_CNT - 2).equals(gridName))
-            cfg.setClientMode(true);
+        cfg.setUserAttributes(Collections.singletonMap(NODE_NAME_ATTR, gridName));
 
         if (grp1.contains(gridName))
             cfg.setClassLoader(extClsLdr1);
 
         if (grp2.contains(gridName))
             cfg.setClassLoader(extClsLdr2);
+
+        cfg.setClientMode(client);
 
         return cfg;
     }
@@ -120,13 +122,10 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        grp1.clear();
-        grp2.clear();
-
-        for (int i = 0; i < GRID_CNT; i+=2)
+        for (int i = 0; i < GRID_CNT; i += 2)
             grp1.add(getTestGridName(i));
 
-        for (int i = 1; i < GRID_CNT; i+=2)
+        for (int i = 1; i < GRID_CNT; i += 2)
             grp2.add(getTestGridName(i));
     }
 
@@ -134,7 +133,6 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
     @Override protected void beforeTestsStarted() throws Exception {
         extClsLdr1 = new GridTestExternalClassLoader(URLS, NOOP_SERVICE_2_CLS_NAME);
         extClsLdr2 = new GridTestExternalClassLoader(URLS, NOOP_SERVICE_CLS_NAME);
-
     }
 
     /** {@inheritDoc} */
@@ -143,34 +141,84 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
         extClsLdr2 = null;
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testServiceDeployment() throws Exception {
-        try {
-            startGrid(0).services().deployLazy(serviceConfig(true));
-            startGrid(1).services().deployLazy(serviceConfig(false));
-            startGrid(2).services().deployLazy(serviceConfig(true));
-            startGrid(3).services().deployLazy(serviceConfig(false));
-        }
-        finally {
-            stopAllGrids();
-        }
+    /** {@inheritDoc} */
+    @Override protected void afterTest() throws Exception {
+        stopAllGrids();
+
+        super.afterTest();
     }
 
     /**
-     * @param firtsGrp First group flag.
+     * @throws Exception If failed.
+     */
+    public void testServiceDeployment1() throws Exception {
+        startGrid(0).services().deployLazy(serviceConfig(true));
+
+        startGrid(1).services().deployLazy(serviceConfig(false));
+
+        client = true;
+
+        startGrid(2).services().deployLazy(serviceConfig(true));
+
+        startGrid(3).services().deployLazy(serviceConfig(false));
+
+        for (int i = 0; i < 4; i++)
+            ignite(i).services().serviceDescriptors();
+
+        ignite(0).services().cancel("TestDeploymentService1");
+
+        ignite(1).services().cancel("TestDeploymentService2");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testServiceDeployment2() throws Exception {
+        for (int i = 0 ; i < 4; i++)
+            startGrid(i);
+
+        client = true;
+
+        for (int i = 4 ; i < 6; i++)
+            startGrid(i);
+
+        ignite(4).services().deployLazy(serviceConfig(true));
+
+        ignite(5).services().deployLazy(serviceConfig(false));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testServiceDeployment3() throws Exception {
+        startGrid(0).services().deployLazy(serviceConfig(true));
+
+        startGrid(1);
+
+        startGrid(2);
+
+        stopGrid(0);
+
+        awaitPartitionMapExchange();
+
+        ignite(1).services().deployLazy(serviceConfig(false));
+
+        startGrid(0);
+    }
+
+    /**
+     * @param firstGrp First group flag.
      * @return Service configuration.
      * @throws Exception If failed.
      */
-    private ServiceConfiguration serviceConfig(final boolean firtsGrp) throws Exception {
+    private ServiceConfiguration serviceConfig(final boolean firstGrp) throws Exception {
         ServiceConfiguration srvCfg = new ServiceConfiguration();
 
-        srvCfg.setNodeFilter(new TestNodeFilter(firtsGrp ? grp1 : grp2));
+        srvCfg.setNodeFilter(new TestNodeFilter(firstGrp ? grp1 : grp2));
 
         Class<Service> srvcCls;
 
-        if (firtsGrp)
+        if (firstGrp)
             srvcCls = (Class<Service>)extClsLdr1.loadClass(NOOP_SERVICE_CLS_NAME);
         else
             srvcCls = (Class<Service>)extClsLdr2.loadClass(NOOP_SERVICE_2_CLS_NAME);
@@ -179,7 +227,7 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
 
         srvCfg.setService(srvc);
 
-        srvCfg.setName("TestDeploymentService" + (firtsGrp ? 1 : 2));
+        srvCfg.setName("TestDeploymentService" + (firstGrp ? 1 : 2));
 
         srvCfg.setMaxPerNodeCount(1);
 
@@ -203,7 +251,7 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
         /** {@inheritDoc} */
         @SuppressWarnings("SuspiciousMethodCalls")
         @Override public boolean apply(ClusterNode node) {
-            Object gridName = node.attribute(GRID_NAME_ATTR);
+            Object gridName = node.attribute(NODE_NAME_ATTR);
 
             return grp.contains(gridName);
         }
