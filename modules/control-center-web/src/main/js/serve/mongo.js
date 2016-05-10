@@ -302,7 +302,9 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
             uri: String,
             cfgPath: String,
             userName: String
-        }
+        },
+        colocateMetadata: Boolean,
+        relaxedConsistency: Boolean
     });
 
     // Define IGFS model.

@@ -1074,7 +1074,7 @@ $generatorJava.cacheGeneral = function (cache, varName, res) {
         res = $generatorCommon.builder();
 
     if (!varName)
-        varName = $generatorJava.cacheVariableName(cache, []);
+        varName = $generatorJava.nextVariableName('cache', cache);
 
     $generatorJava.property(res, varName, cache, 'name');
 
@@ -1099,7 +1099,7 @@ $generatorJava.cacheMemory = function (cache, varName, res) {
         res = $generatorCommon.builder();
 
     if (!varName)
-        varName = $generatorJava.cacheVariableName(cache, []);
+        varName = $generatorJava.nextVariableName('cache', cache);
 
     $generatorJava.enumProperty(res, varName, cache, 'memoryMode', 'org.apache.ignite.cache.CacheMemoryMode', null, 'ONHEAP_TIERED');
     $generatorJava.property(res, varName, cache, 'offHeapMaxMemory', null, null, -1);
@@ -1122,7 +1122,7 @@ $generatorJava.cacheQuery = function (cache, varName, res) {
         res = $generatorCommon.builder();
 
     if (!varName)
-        varName = $generatorJava.cacheVariableName(cache, []);
+        varName = $generatorJava.nextVariableName('cache', cache);
 
     $generatorJava.property(res, varName, cache, 'sqlSchema');
     $generatorJava.property(res, varName, cache, 'sqlOnheapRowCacheSize', null, null, 10240);
@@ -1271,7 +1271,7 @@ $generatorJava.cacheStore = function (cache, domains, cacheVarName, res) {
         res = $generatorCommon.builder();
 
     if (!cacheVarName)
-        cacheVarName = $generatorJava.cacheVariableName(cache, []);
+        cacheVarName = $generatorJava.nextVariableName('cache', cache);
 
     if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind) {
         var factoryKind = cache.cacheStoreFactory.kind;
@@ -1406,7 +1406,7 @@ $generatorJava.cacheConcurrency = function (cache, varName, res) {
         res = $generatorCommon.builder();
 
     if (!varName)
-        varName = $generatorJava.cacheVariableName(cache, []);
+        varName = $generatorJava.nextVariableName('cache', cache);
 
     $generatorJava.property(res, varName, cache, 'maxConcurrentAsyncOperations', null, null, 500);
     $generatorJava.property(res, varName, cache, 'defaultLockTimeout', null, null, 0);
@@ -1424,7 +1424,7 @@ $generatorJava.cacheRebalance = function (cache, varName, res) {
         res = $generatorCommon.builder();
 
     if (!varName)
-        varName = $generatorJava.cacheVariableName(cache, []);
+        varName = $generatorJava.nextVariableName('cache', cache);
 
     if (cache.cacheMode !== 'LOCAL') {
         $generatorJava.enumProperty(res, varName, cache, 'rebalanceMode', 'org.apache.ignite.cache.CacheRebalanceMode', null, 'ASYNC');
@@ -1454,7 +1454,7 @@ $generatorJava.cacheServerNearCache = function (cache, varName, res) {
         res = $generatorCommon.builder();
 
     if (!varName)
-        varName = $generatorJava.cacheVariableName(cache, []);
+        varName = $generatorJava.nextVariableName('cache', cache);
 
     if (cache.cacheMode === 'PARTITIONED' && cache.nearCacheEnabled) {
         res.needEmptyLine = true;
@@ -1491,7 +1491,7 @@ $generatorJava.cacheStatistics = function (cache, varName, res) {
         res = $generatorCommon.builder();
 
     if (!varName)
-        varName = $generatorJava.cacheVariableName(cache, []);
+        varName = $generatorJava.nextVariableName('cache', cache);
 
     $generatorJava.property(res, varName, cache, 'statisticsEnabled', null, null, false);
     $generatorJava.property(res, varName, cache, 'managementEnabled', null, null, false);
@@ -1826,24 +1826,28 @@ $generatorJava.clusterDomains = function (caches, res) {
     });
 };
 
-// Generate next available cache variable name.
-$generatorJava.cacheVariableName = function (cache, names) {
-    var checkIndexedCacheName = function (name) {
-        return name === cacheName + (ix === 0 ? '' : '_' + ix);
-    };
+/**
+ * @param prefix Variable prefix.
+ * @param obj Object to process.
+ * @param names Known names to generate next unique name.
+ */
+$generatorJava.nextVariableName = function (prefix, obj, names) {
+    var nextName = $generatorCommon.toJavaName(prefix, obj.name);
 
-    var cacheName = $generatorCommon.toJavaName('cache', cache.name);
+    var checkNextName = function (name) {
+        return name === nextName + (ix === 0 ? '' : '_' + ix);
+    };
 
     var ix = 0;
 
-    while (_.find(names, checkIndexedCacheName)) {
+    while (_.find(names, checkNextName)) {
         ix ++;
     }
 
     if (ix > 0)
-        cacheName = cacheName + '_' + ix;
+        nextName = nextName + '_' + ix;
 
-    return cacheName;
+    return nextName;
 };
 
 // Generate cluster caches.
@@ -1851,7 +1855,7 @@ $generatorJava.clusterCaches = function (caches, igfss, isSrvCfg, res) {
     function clusterCache(res, cache, names) {
         res.emptyLineIfNeeded();
 
-        var cacheName = $generatorJava.cacheVariableName(cache, names);
+        var cacheName = $generatorJava.nextVariableName('cache', cache, names);
 
         $generatorJava.resetVariables(res);
 
@@ -1912,7 +1916,7 @@ $generatorJava.clusterCaches = function (caches, igfss, isSrvCfg, res) {
 // Generate cluster caches.
 $generatorJava.clusterCacheUse = function (caches, igfss, res) {
     function clusterCacheInvoke(cache, names) {
-        names.push($generatorJava.cacheVariableName(cache, names) + '()');
+        names.push($generatorJava.nextVariableName('cache', cache, names) + '()');
     }
 
     if (!res)
@@ -2313,6 +2317,9 @@ $generatorJava.igfsIPC = function(igfs, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
+    if (!varName)
+        varName = $generatorJava.nextVariableName('igfs', igfs);
+
     if (igfs.ipcEndpointEnabled) {
         var desc = $generatorCommon.IGFS_IPC_CONFIGURATION;
 
@@ -2336,6 +2343,9 @@ $generatorJava.igfsIPC = function(igfs, varName, res) {
 $generatorJava.igfsFragmentizer = function(igfs, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
+
+    if (!varName)
+        varName = $generatorJava.nextVariableName('igfs', igfs);
 
     if (igfs.fragmentizerEnabled) {
         $generatorJava.property(res, varName, igfs, 'fragmentizerConcurrentFiles', null, null, 0);
@@ -2362,6 +2372,9 @@ $generatorJava.igfsDualMode = function(igfs, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
+    if (!varName)
+        varName = $generatorJava.nextVariableName('igfs', igfs);
+
     $generatorJava.property(res, varName, igfs, 'dualModeMaxPendingPutsSize', null, null, 0);
 
     if ($generatorCommon.isDefinedAndNotEmpty(igfs.dualModePutExecutorService))
@@ -2377,6 +2390,9 @@ $generatorJava.igfsDualMode = function(igfs, varName, res) {
 $generatorJava.igfsSecondFS = function(igfs, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
+
+    if (!varName)
+        varName = $generatorJava.nextVariableName('igfs', igfs);
 
     if (igfs.secondaryFileSystemEnabled) {
         var secondFs = igfs.secondaryFileSystem || {};
@@ -2409,6 +2425,9 @@ $generatorJava.igfsGeneral = function(igfs, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
+    if (!varName)
+        varName = $generatorJava.nextVariableName('igfs', igfs);
+
     if ($generatorCommon.isDefinedAndNotEmpty(igfs.name)) {
         igfs.dataCacheName = $generatorCommon.igfsDataCache(igfs).name;
         igfs.metaCacheName = $generatorCommon.igfsMetaCache(igfs).name;
@@ -2436,11 +2455,21 @@ $generatorJava.igfsMisc = function(igfs, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
+    if (!varName)
+        varName = $generatorJava.nextVariableName('igfs', igfs);
+
     $generatorJava.property(res, varName, igfs, 'blockSize', null, null, 65536);
     $generatorJava.property(res, varName, igfs, 'streamBufferSize', null, null, 65536);
     $generatorJava.property(res, varName, igfs, 'maxSpaceSize', null, null, 0);
     $generatorJava.property(res, varName, igfs, 'maximumTaskRangeLength', null, null, 0);
     $generatorJava.property(res, varName, igfs, 'managementPort', null, null, 11400);
+    $generatorJava.property(res, varName, igfs, 'perNodeBatchSize', null, null, 100);
+    $generatorJava.property(res, varName, igfs, 'perNodeParallelBatchCount', null, null, 8);
+    $generatorJava.property(res, varName, igfs, 'prefetchBlocks', null, null, 0);
+    $generatorJava.property(res, varName, igfs, 'sequentialReadsBeforePrefetch', null, null, 0);
+    $generatorJava.property(res, varName, igfs, 'trashPurgeTimeout', null, null, 1000);
+    $generatorJava.property(res, varName, igfs, 'colocateMetadata', null, true);
+    $generatorJava.property(res, varName, igfs, 'relaxedConsistency', null, true);
 
     if (igfs.pathModes && igfs.pathModes.length > 0) {
         res.needEmptyLine = true;
@@ -2455,12 +2484,6 @@ $generatorJava.igfsMisc = function(igfs, varName, res) {
 
         res.line(varName + '.setPathModes(pathModes);');
     }
-
-    $generatorJava.property(res, varName, igfs, 'perNodeBatchSize', null, null, 100);
-    $generatorJava.property(res, varName, igfs, 'perNodeParallelBatchCount', null, null, 8);
-    $generatorJava.property(res, varName, igfs, 'prefetchBlocks', null, null, 0);
-    $generatorJava.property(res, varName, igfs, 'sequentialReadsBeforePrefetch', null, null, 0);
-    $generatorJava.property(res, varName, igfs, 'trashPurgeTimeout', null, null, 1000);
 
     res.needEmptyLine = true;
 
@@ -3123,10 +3146,10 @@ $generatorJava.nodeStartup = function (cluster, pkg, cls, cfg, factoryCls, clien
             var names = [];
 
             _.forEach(cluster.caches, function (cache) {
-                $generatorJava.cacheVariableName(cache, names);
+                $generatorJava.nextVariableName('cache', cache, names);
 
                 res.line('ignite.getOrCreateCache(' + res.importClass(factoryCls) + '.' +
-                    $generatorJava.cacheVariableName(cache, names[names.length - 1]) + '(), ' +
+                    $generatorJava.nextVariableName('cache', cache, names[names.length - 1]) + '(), ' +
                     res.importClass(factoryCls) + '.createNearCacheConfiguration());');
             });
 

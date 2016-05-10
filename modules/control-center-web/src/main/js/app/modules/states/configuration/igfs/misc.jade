@@ -72,6 +72,13 @@ form.panel.panel-default(name=form novalidate)
                     +number('Sequential reads before prefetch:', model + '.sequentialReadsBeforePrefetch', 'sequentialReadsBeforePrefetch', 'true', '0', '0', 'Amount of sequential block reads before prefetch is triggered')
                 .settings-row
                     +number('Trash purge timeout:', model + '.trashPurgeTimeout', 'trashPurgeTimeout', 'true', '1000', '0', 'Maximum timeout awaiting for trash purging in case data cache oversize is detected')
+                .settings-row
+                    +checkbox('Colocate metadata', model + '.colocateMetadata', 'colocateMetadata', 'Whether to co-locate metadata on a single node')
+                .settings-row
+                    +checkbox('Relaxed consistency ', model + '.relaxedConsistency', 'relaxedConsistency',
+                        'If value of this flag is <b>true</b>, IGFS will skip expensive consistency checks. It is recommended to set\
+                        this flag to <b>false</b>b> if your application has conflicting operations, or you do not how exactly users will\
+                        use your system.')
                 .settings-row(ng-init='tblPathModes={type: "pathModes", model: "pathModes", focusId: "PathMode", ui: "table-pair", keyName: "path", valueName: "mode"}')
                     ignite-form-group(ng-model=pathModes ng-form=pathModesForm)
                         ignite-form-field-label

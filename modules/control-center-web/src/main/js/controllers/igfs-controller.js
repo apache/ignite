@@ -142,6 +142,15 @@ consoleModule.controller('igfsController', [
 
                 $scope.igfss = data.igfss || [];
 
+                // For backward compatibility set colocateMetadata and relaxedConsistency default values.
+                _.forEach($scope.igfss, function (igfs) {
+                   if (_.isUndefined(igfs.colocateMetadata))
+                       igfs.colocateMetadata = true;
+
+                   if (_.isUndefined(igfs.relaxedConsistency))
+                       igfs.relaxedConsistency = true;
+                });
+
                 $scope.clusters = _.map(data.clusters  || [], function (cluster) {
                     return {
                         value: cluster._id,
@@ -234,6 +243,8 @@ consoleModule.controller('igfsController', [
                 space: $scope.spaces[0]._id,
                 ipcEndpointEnabled: true,
                 fragmentizerEnabled: true,
+                colocateMetadata: true,
+                relaxedConsistency: true,
                 clusters: id && _.find($scope.clusters, {value: id}) ? [id] :
                     (!_.isEmpty($scope.clusters) ? [$scope.clusters[0].value] : [])
             };

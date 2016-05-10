@@ -544,7 +544,7 @@ $generatorXml.clusterBinary = function (binary, res) {
                 $generatorXml.simpleBeanProperty(res, type, 'idMapper');
                 $generatorXml.simpleBeanProperty(res, type, 'nameMapper');
                 $generatorXml.simpleBeanProperty(res, type, 'serializer');
-                $generatorXml.property(res, type, 'enum', undefined, false);
+                $generatorXml.property(res, type, 'enum', null, false);
 
                 res.endBlock('</bean>');
             });
@@ -553,7 +553,7 @@ $generatorXml.clusterBinary = function (binary, res) {
             res.endBlock('</property>');
         }
 
-        $generatorXml.property(res, binary, 'compactFooter', undefined, true);
+        $generatorXml.property(res, binary, 'compactFooter', null, true);
 
         res.endBlock('</bean>');
         res.endBlock('</property>');
@@ -571,12 +571,12 @@ $generatorXml.clusterCommunication = function (cluster, res) {
 
     $generatorXml.beanProperty(res, cluster.communication, 'communicationSpi', $generatorCommon.COMMUNICATION_CONFIGURATION);
 
-    $generatorXml.property(res, cluster, 'networkTimeout', undefined, 5000);
-    $generatorXml.property(res, cluster, 'networkSendRetryDelay', undefined, 1000);
-    $generatorXml.property(res, cluster, 'networkSendRetryCount', undefined, 3);
+    $generatorXml.property(res, cluster, 'networkTimeout', null, 5000);
+    $generatorXml.property(res, cluster, 'networkSendRetryDelay', null, 1000);
+    $generatorXml.property(res, cluster, 'networkSendRetryCount', null, 3);
     $generatorXml.property(res, cluster, 'segmentCheckFrequency');
     $generatorXml.property(res, cluster, 'waitForSegmentOnStart', null, false);
-    $generatorXml.property(res, cluster, 'discoveryStartupDelay', undefined, 60000);
+    $generatorXml.property(res, cluster, 'discoveryStartupDelay', null, 60000);
 
     res.needEmptyLine = true;
 
@@ -1485,9 +1485,9 @@ $generatorXml.igfsFragmentizer = function(igfs, res) {
         res = $generatorCommon.builder();
 
     if (igfs.fragmentizerEnabled) {
-        $generatorXml.property(res, igfs, 'fragmentizerConcurrentFiles', undefined, 0);
-        $generatorXml.property(res, igfs, 'fragmentizerThrottlingBlockLength', undefined, 16777216);
-        $generatorXml.property(res, igfs, 'fragmentizerThrottlingDelay', undefined, 200);
+        $generatorXml.property(res, igfs, 'fragmentizerConcurrentFiles', null, 0);
+        $generatorXml.property(res, igfs, 'fragmentizerThrottlingBlockLength', null, 16777216);
+        $generatorXml.property(res, igfs, 'fragmentizerThrottlingDelay', null, 200);
 
         res.needEmptyLine = true;
     }
@@ -1502,7 +1502,7 @@ $generatorXml.igfsDualMode = function(igfs, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorXml.property(res, igfs, 'dualModeMaxPendingPutsSize', undefined, 0);
+    $generatorXml.property(res, igfs, 'dualModeMaxPendingPutsSize', null, 0);
 
     if ($generatorCommon.isDefinedAndNotEmpty(igfs.dualModePutExecutorService)) {
         res.startBlock('<property name="dualModePutExecutorService">');
@@ -1510,7 +1510,7 @@ $generatorXml.igfsDualMode = function(igfs, res) {
         res.endBlock('</property>');
     }
 
-    $generatorXml.property(res, igfs, 'dualModePutExecutorServiceShutdown', undefined, false);
+    $generatorXml.property(res, igfs, 'dualModePutExecutorServiceShutdown', null, false);
 
     res.needEmptyLine = true;
 
@@ -1559,7 +1559,7 @@ $generatorXml.igfsGeneral = function(igfs, res) {
         $generatorXml.property(res, igfs, 'name');
         $generatorXml.property(res, igfs, 'dataCacheName');
         $generatorXml.property(res, igfs, 'metaCacheName');
-        $generatorXml.property(res, igfs, 'defaultMode', undefined, "DUAL_ASYNC");
+        $generatorXml.property(res, igfs, 'defaultMode', null, "DUAL_ASYNC");
 
         res.needEmptyLine = true;
     }
@@ -1572,11 +1572,18 @@ $generatorXml.igfsMisc = function(igfs, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorXml.property(res, igfs, 'blockSize', undefined, 65536);
-    $generatorXml.property(res, igfs, 'streamBufferSize', undefined, 65536);
-    $generatorXml.property(res, igfs, 'maxSpaceSize', undefined, 0);
-    $generatorXml.property(res, igfs, 'maximumTaskRangeLength', undefined, 0);
-    $generatorXml.property(res, igfs, 'managementPort', undefined, 11400);
+    $generatorXml.property(res, igfs, 'blockSize', null, 65536);
+    $generatorXml.property(res, igfs, 'streamBufferSize', null, 65536);
+    $generatorXml.property(res, igfs, 'maxSpaceSize', null, 0);
+    $generatorXml.property(res, igfs, 'maximumTaskRangeLength', null, 0);
+    $generatorXml.property(res, igfs, 'managementPort', null, 11400);
+    $generatorXml.property(res, igfs, 'perNodeBatchSize', null, 100);
+    $generatorXml.property(res, igfs, 'perNodeParallelBatchCount', null, 8);
+    $generatorXml.property(res, igfs, 'prefetchBlocks', null, 0);
+    $generatorXml.property(res, igfs, 'sequentialReadsBeforePrefetch', null, 0);
+    $generatorXml.property(res, igfs, 'trashPurgeTimeout', null, 1000);
+    $generatorXml.property(res, igfs, 'colocateMetadata', null, true);
+    $generatorXml.property(res, igfs, 'relaxedConsistency', null, true);
 
     res.softEmptyLine();
 
@@ -1591,14 +1598,6 @@ $generatorXml.igfsMisc = function(igfs, res) {
         res.endBlock('</map>');
         res.endBlock('</property>');
     }
-
-    res.softEmptyLine();
-
-    $generatorXml.property(res, igfs, 'perNodeBatchSize', undefined, 100);
-    $generatorXml.property(res, igfs, 'perNodeParallelBatchCount', undefined, 8);
-    $generatorXml.property(res, igfs, 'prefetchBlocks', undefined, 0);
-    $generatorXml.property(res, igfs, 'sequentialReadsBeforePrefetch', undefined, 0);
-    $generatorXml.property(res, igfs, 'trashPurgeTimeout', undefined, 1000);
 
     return res;
 };
