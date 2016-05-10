@@ -46,11 +46,14 @@ namespace Apache.Ignite.Core.Binary
         private const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public | 
             BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
 
-        /** Type descriptor. */
-        private readonly Descriptor _desc;
-
         /** Raw mode flag. */
         private bool _rawMode;
+
+        /** Write actions to be performed. */
+        private readonly List<BinaryReflectiveWriteAction> _wActions;
+
+        /** Read actions to be performed. */
+        private readonly List<BinaryReflectiveReadAction> _rActions;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BinaryReflectiveSerializer"/> class.
@@ -63,9 +66,13 @@ namespace Apache.Ignite.Core.Binary
         /// <summary>
         /// Initializes a new instance of the <see cref="BinaryReflectiveSerializer"/> class.
         /// </summary>
-        private BinaryReflectiveSerializer(Descriptor desc, bool raw)
+        private BinaryReflectiveSerializer(List<BinaryReflectiveWriteAction> wActions, List<BinaryReflectiveReadAction> rActions, bool raw)
         {
-            _desc = desc;
+            Debug.Assert(wActions != null);
+            Debug.Assert(rActions != null);
+
+            _wActions = wActions;
+            _rActions = rActions;
             _rawMode = raw;
         }
 
@@ -80,7 +87,7 @@ namespace Apache.Ignite.Core.Binary
             get { return _rawMode; }
             set
             {
-                if (_desc != null)
+                if (_wActions != null)
                     throw new InvalidOperationException(typeof (BinarizableSerializer).Name +
                         ".RawMode cannot be changed after first serialization.");
 
@@ -96,9 +103,12 @@ namespace Apache.Ignite.Core.Binary
         /// <exception cref="BinaryObjectException">Type is not registered in serializer:  + type.Name</exception>
         public void WriteBinary(object obj, IBinaryWriter writer)
         {
-            Debug.Assert(_desc != null);
+            Debug.Assert(_wActions != null);
 
-            _desc.Write(obj, writer);
+            int cnt = _wActions.Count;
+
+            for (int i = 0; i < cnt; i++)
+                _wActions[i](obj, writer);
         }
 
         /// <summary>
@@ -109,9 +119,12 @@ namespace Apache.Ignite.Core.Binary
         /// <exception cref="BinaryObjectException">Type is not registered in serializer:  + type.Name</exception>
         public void ReadBinary(object obj, IBinaryReader reader)
         {
-            Debug.Assert(_desc != null);
+            Debug.Assert(_rActions != null);
 
-            _desc.Read(obj, reader);
+            int cnt = _rActions.Count;
+
+            for (int i = 0; i < cnt; i++)
+                _rActions[i](obj, reader);
         }
 
         /// <summary>Register type.</summary>
@@ -122,7 +135,7 @@ namespace Apache.Ignite.Core.Binary
         internal BinaryReflectiveSerializer Register(Type type, int typeId, IBinaryNameMapper converter,
             IBinaryIdMapper idMapper)
         {
-            Debug.Assert(_desc == null);
+            Debug.Assert(_wActions == null && _rActions == null);
 
             List<FieldInfo> fields = new List<FieldInfo>();
 
@@ -159,7 +172,21 @@ namespace Apache.Ignite.Core.Binary
 
             fields.Sort(Compare);
 
-            return new BinaryReflectiveSerializer(new Descriptor(fields, _rawMode), _rawMode);
+            var wActions = new List<BinaryReflectiveWriteAction>(fields.Count);
+            var rActions = new List<BinaryReflectiveReadAction>(fields.Count);
+
+            foreach (var field in fields)
+            {
+                BinaryReflectiveWriteAction writeAction;
+                BinaryReflectiveReadAction readAction;
+
+                BinaryReflectiveActions.GetTypeActions(field, out writeAction, out readAction, _rawMode);
+
+                wActions.Add(writeAction);
+                rActions.Add(readAction);
+            }
+
+            return new BinaryReflectiveSerializer(wActions, rActions, _rawMode);
         }
 
         /// <summary>
@@ -170,66 +197,6 @@ namespace Apache.Ignite.Core.Binary
             string name2 = BinaryUtils.CleanFieldName(info2.Name);
 
             return string.Compare(name1, name2, StringComparison.OrdinalIgnoreCase);
-        }
-
-        /// <summary>
-        /// Type descriptor. 
-        /// </summary>
-        private class Descriptor
-        {
-            /** Write actions to be performed. */
-            private readonly List<BinaryReflectiveWriteAction> _wActions;
-
-            /** Read actions to be performed. */
-            private readonly List<BinaryReflectiveReadAction> _rActions;
-
-            /// <summary>
-            /// Constructor.
-            /// </summary>
-            /// <param name="fields">Fields.</param>
-            /// <param name="raw">Raw mode.</param>
-            public Descriptor(List<FieldInfo> fields, bool raw)
-            {
-                _wActions = new List<BinaryReflectiveWriteAction>(fields.Count);
-                _rActions = new List<BinaryReflectiveReadAction>(fields.Count);
-
-                foreach (FieldInfo field in fields)
-                {
-                    BinaryReflectiveWriteAction writeAction;
-                    BinaryReflectiveReadAction readAction;
-
-                    BinaryReflectiveActions.GetTypeActions(field, out writeAction, out readAction, raw);
-
-                    _wActions.Add(writeAction);
-                    _rActions.Add(readAction);
-                }
-            }
-
-            /// <summary>
-            /// Write object.
-            /// </summary>
-            /// <param name="obj">Object.</param>
-            /// <param name="writer">Writer.</param>
-            public void Write(object obj, IBinaryWriter writer)
-            {
-                int cnt = _wActions.Count;
-
-                for (int i = 0; i < cnt; i++)
-                    _wActions[i](obj, writer);                   
-            }
-
-            /// <summary>
-            /// Read object.
-            /// </summary>
-            /// <param name="obj">Object.</param>
-            /// <param name="reader">Reader.</param>
-            public void Read(object obj, IBinaryReader reader)
-            {
-                int cnt = _rActions.Count;
-
-                for (int i = 0; i < cnt; i++ )
-                    _rActions[i](obj, reader);
-            }
         }
     }
 }
