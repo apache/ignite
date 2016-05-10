@@ -40,6 +40,9 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     /** */
     private static final Long CHECK_FREQ = Long.getLong(IGNITE_MARSHAL_BUFFERS_RECHECK, 10000);
 
+    /** */
+    private final Long checkFreq;
+
     /** Length of char buffer (for writing strings). */
     private static final int CHAR_BUF_SIZE = 256;
 
@@ -65,14 +68,19 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
      *
      */
     public GridUnsafeDataOutput() {
-        // No-op.
+        checkFreq = CHECK_FREQ;
     }
 
     /**
      * @param size Size
      */
     public GridUnsafeDataOutput(int size) {
+        this(size, CHECK_FREQ);
+    }
+
+    public GridUnsafeDataOutput(int size, long checkFreq) {
         bytes = new byte[size];
+        this.checkFreq = checkFreq;
     }
 
     /**
@@ -134,7 +142,7 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
 
             bytes = newBytes;
         }
-        else if (now - lastCheck > CHECK_FREQ) {
+        else if (now - lastCheck > checkFreq) {
             int halfSize = bytes.length >> 1;
 
             if (maxOff < halfSize) {
