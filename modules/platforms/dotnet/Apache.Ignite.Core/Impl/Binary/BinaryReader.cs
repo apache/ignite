@@ -737,18 +737,6 @@ namespace Apache.Ignite.Core.Impl.Binary
                     _curSchema = oldSchema;
                     _curSchemaMap = oldSchemaMap;
 
-                    // Process wrappers. We could introduce a common interface, but for only 2 if-else is faster.
-                    // TODO: Wrappers should be handled by serializer instead
-                    var wrappedSerializable = obj as SerializableObjectHolder;
-
-                    if (wrappedSerializable != null) 
-                        return (T) wrappedSerializable.Item;
-
-                    var wrappedDateTime = obj as DateTimeHolder;
-
-                    if (wrappedDateTime != null)
-                        return TypeCaster<T>.Cast(wrappedDateTime.Item);
-                    
                     return obj;
                 }
             }
