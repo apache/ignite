@@ -1357,6 +1357,13 @@ public final class GridCacheMvcc {
     }
 
     /**
+     * @return Local MVCC candidates.
+     */
+    @Nullable public List<GridCacheMvccCandidate> allLocal() {
+        return locs;
+    }
+
+    /**
      * @param ver Version to check for ownership.
      * @return {@code True} if lock is owned by the specified version.
      */

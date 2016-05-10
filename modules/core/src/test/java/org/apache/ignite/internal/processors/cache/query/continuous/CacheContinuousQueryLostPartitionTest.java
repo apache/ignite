@@ -60,6 +60,12 @@ public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTes
         super.beforeTest();
 
         startGridsMultiThreaded(2);
+
+        assert GridTestUtils.waitForCondition(new PA() {
+            @Override public boolean apply() {
+                return grid(0).cluster().nodes().size() == 2;
+            }
+        }, 10000L);
     }
 
     /** {@inheritDoc} */
@@ -139,6 +145,14 @@ public class CacheContinuousQueryLostPartitionTest extends GridCommonAbstractTes
 
         // node2 now becomes the primary for the key.
         stopGrid(0);
+
+        final int prevSize = grid(1).cluster().nodes().size();
+
+        GridTestUtils.waitForCondition(new PA() {
+            @Override public boolean apply() {
+                return prevSize - 1 == grid(1).cluster().nodes().size();
+            }
+        }, 5000L);
 
         cache2.put(key, "2");
 

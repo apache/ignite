@@ -39,7 +39,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -47,6 +47,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.services.Service;
 import org.jsr166.ThreadLocalRandom8;
 
 import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
@@ -170,32 +171,36 @@ class GridServiceProxy<T> implements Serializable {
                         if (node.isLocal()) {
                             ServiceContextImpl svcCtx = ctx.service().serviceContext(name);
 
-                            if (svcCtx != null)
-                                return mtd.invoke(svcCtx.service(), args);
-                        }
-                        else {
-                            // Execute service remotely.
-                            return ctx.closure().callAsyncNoFailover(
-                                BALANCE,
-                                new ServiceProxyCallable(mtd.getName(), name, mtd.getParameterTypes(), args),
-                                Collections.singleton(node),
-                                false
-                            ).get();
+                        if (svcCtx != null) {
+                            Service svc = svcCtx.service();
+
+                            if (svc != null)
+                                return mtd.invoke(svc, args);
                         }
                     }
-                    catch (GridServiceNotFoundException | ClusterTopologyCheckedException e) {
-                        if (log.isDebugEnabled())
-                            log.debug("Service was not found or topology changed (will retry): " + e.getMessage());
+                    else {
+                        // Execute service remotely.
+                        return ctx.closure().callAsyncNoFailover(
+                            BALANCE,
+                            new ServiceProxyCallable(mtd.getName(), name, mtd.getParameterTypes(), args),
+                            Collections.singleton(node),
+                            false
+                        ).get();
                     }
-                    catch (RuntimeException | Error e) {
-                        throw e;
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw U.convertException(e);
-                    }
-                    catch (Exception e) {
-                        throw new IgniteException(e);
-                    }
+                }
+                catch (GridServiceNotFoundException | ClusterTopologyCheckedException e) {
+                    if (log.isDebugEnabled())
+                        log.debug("Service was not found or topology changed (will retry): " + e.getMessage());
+                }
+                catch (RuntimeException | Error e) {
+                    throw e;
+                }
+                catch (IgniteCheckedException e) {
+                    throw U.convertException(e);
+                }
+                catch (Exception e) {
+                    throw new IgniteException(e);
+                }
 
                     // If we are here, that means that service was not found
                     // or topology was changed. In this case, we erase the
@@ -367,9 +372,9 @@ class GridServiceProxy<T> implements Serializable {
 
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
-            ServiceContextImpl svcCtx = ((IgniteKernal) ignite).context().service().serviceContext(svcName);
+            ServiceContextImpl svcCtx = ((IgniteEx)ignite).context().service().serviceContext(svcName);
 
-            if (svcCtx == null)
+            if (svcCtx == null || svcCtx.service() == null)
                 throw new GridServiceNotFoundException(svcName);
 
             GridServiceMethodReflectKey key = new GridServiceMethodReflectKey(mtdName, argTypes);

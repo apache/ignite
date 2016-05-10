@@ -51,6 +51,9 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
     private static volatile boolean deserialized = false;
 
     /** */
+    private static volatile boolean useWrappingLoader = false;
+
+    /** */
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
@@ -74,7 +77,8 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
 
         cfg.setMarshaller(new BinaryMarshaller());
 
-        cfg.setClassLoader(getExternalClassLoader());
+        cfg.setClassLoader(useWrappingLoader ? new WrappingClassLoader(getExternalClassLoader()) :
+            getExternalClassLoader());
 
         if (customBinaryConf) {
             BinarySerializer bs = new BinarySerializer() {
@@ -132,10 +136,29 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
         return cacheCfg;
     }
 
+
     /**
      * @throws Exception If test failed.
      */
     public void testConfigurationRegistration() throws Exception {
+        useWrappingLoader = false;
+
+        doTestConfigurationRegistration();
+    }
+
+    /**
+     * @throws Exception If test failed.
+     */
+    public void testConfigurationRegistrationWithWrappingLoader() throws Exception {
+        useWrappingLoader = true;
+
+        doTestConfigurationRegistration();
+    }
+
+    /**
+     * @throws Exception If test failed.
+     */
+    private void doTestConfigurationRegistration() throws Exception {
         try {
             customBinaryConf = true;
 
@@ -145,7 +168,9 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
             IgniteCache<Integer, Object> cache1 = i1.cache(null);
             IgniteCache<Integer, Object> cache2 = i2.cache(null);
 
-            ClassLoader ldr = i1.configuration().getClassLoader();
+            ClassLoader ldr = useWrappingLoader ?
+                ((WrappingClassLoader)i1.configuration().getClassLoader()).getParent() :
+                i1.configuration().getClassLoader();
 
             Object v1 = ldr.loadClass("org.apache.ignite.tests.p2p.CacheDeploymentTestValue").newInstance();
             Object v2 = ldr.loadClass("org.apache.ignite.tests.p2p.CacheDeploymentTestValue2").newInstance();
@@ -235,6 +260,15 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(TestValue2.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class WrappingClassLoader extends ClassLoader {
+        public WrappingClassLoader(ClassLoader parent) {
+            super(parent);
         }
     }
 }

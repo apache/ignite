@@ -40,6 +40,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionAware;
 import org.apache.ignite.internal.processors.offheap.GridOffHeapProcessor;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
@@ -106,8 +107,8 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     /** Soft iterator set. */
     private final Collection<GridWeakIterator<Map.Entry>> itSet = new GridConcurrentHashSet<>();
 
-    /** {@code True} if offheap to swap eviction is possible. */
-    private boolean offheapToSwapEvicts;
+    /** {@code True} if need process evictions from offheap. */
+    private boolean unwindOffheapEvicts;
 
     /** Values to be evicted from offheap to swap. */
     private ThreadLocal<Collection<IgniteBiTuple<byte[], byte[]>>> offheapEvicts = new ThreadLocal<>();
@@ -141,7 +142,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      *
      */
     public void unwindOffheapEvicts() {
-        if (!offheapToSwapEvicts)
+        if (!unwindOffheapEvicts)
             return;
 
         Collection<IgniteBiTuple<byte[], byte[]>> evicts = offheapEvicts.get();
@@ -162,7 +163,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
                         GridCacheEntryEx entry = cctx.cache().entryEx(key);
 
                         try {
-                            if (entry.offheapSwapEvict(vb, evictVer, obsoleteVer))
+                            if (entry.onOffheapEvict(vb, evictVer, obsoleteVer))
                                 cctx.cache().removeEntry(entry);
 
                             break;
@@ -199,12 +200,12 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
         GridOffHeapEvictListener lsnr;
 
-        if (swapEnabled) {
-            offheapToSwapEvicts = true;
+        if (swapEnabled || GridQueryProcessor.isEnabled(cctx.config())) {
+            unwindOffheapEvicts = true;
 
             lsnr = new GridOffHeapEvictListener() {
                 @Override public void onEvict(int part, int hash, byte[] kb, byte[] vb) {
-                    assert offheapToSwapEvicts;
+                    assert unwindOffheapEvicts;
 
                     onOffheapEvict();
 
@@ -1100,7 +1101,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * @return {@code True} if removed.
      * @throws IgniteCheckedException If failed.
      */
-    boolean offheapSwapEvict(final KeyCacheObject key, byte[] entry, int part, final GridCacheVersion ver)
+    boolean onOffheapEvict(final KeyCacheObject key, byte[] entry, int part, final GridCacheVersion ver)
         throws IgniteCheckedException {
         assert offheapEnabled;
 
@@ -1120,13 +1121,14 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
             Collection<GridCacheSwapListener> lsnrs = offheapLsnrs.get(part);
 
             if (lsnrs != null) {
-                GridCacheSwapEntry e = swapEntry(GridCacheSwapEntryImpl.unmarshal(entry, false));
+                GridCacheSwapEntry e = swapEntry(unmarshalSwapEntry(entry, false));
 
                 for (GridCacheSwapListener lsnr : lsnrs)
                     lsnr.onEntryUnswapped(part, key, e);
             }
 
-            cctx.swap().writeToSwap(part, key, entry);
+            if (swapEnabled)
+                cctx.swap().writeToSwap(part, key, entry);
         }
 
         return rmv;
@@ -2166,6 +2168,19 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
     /**
      * @param bytes Bytes to unmarshal.
+     * @return Unmarshalled values.
+     * @throws IgniteCheckedException If failed.
+     */
+    public CacheObject unmarshalSwapEntryValue(byte[] bytes) throws IgniteCheckedException {
+        GridCacheSwapEntry swapEntry = swapEntry(GridCacheSwapEntryImpl.unmarshal(bytes, true));
+
+        assert swapEntry != null && swapEntry.value() != null : swapEntry;
+
+        return swapEntry.value();
+    }
+
+    /**
+     * @param bytes Bytes to unmarshal.
      * @param valOnly If {@code true} unmarshalls only value.
      * @return Unmarshalled entry.
      */
@@ -2216,9 +2231,9 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         @Override protected Map.Entry<byte[], GridCacheSwapEntry> onNext() throws IgniteCheckedException {
             Map.Entry<byte[], byte[]> e = iter.nextX();
 
-            GridCacheSwapEntry unmarshalled = unmarshalSwapEntry(e.getValue(), false);
+            GridCacheSwapEntry unmarshalled = swapEntry(unmarshalSwapEntry(e.getValue(), false));
 
-            return F.t(e.getKey(), swapEntry(unmarshalled));
+            return F.t(e.getKey(), unmarshalled);
         }
 
         /** {@inheritDoc} */
@@ -2524,9 +2539,9 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         /** {@inheritDoc} */
         @Override public V getValue() {
             try {
-                GridCacheSwapEntry e = unmarshalSwapEntry(entry.getValue(), false);
+                GridCacheSwapEntry e = swapEntry(unmarshalSwapEntry(entry.getValue(), false));
 
-                swapEntry(e);
+                assert e != null;
 
                 return e.value().value(cctx.cacheObjectContext(), false);
             }
