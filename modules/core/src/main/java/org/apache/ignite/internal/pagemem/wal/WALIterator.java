@@ -15,42 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.pagemem.wal.record;
+package org.apache.ignite.internal.pagemem.wal;
+
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
- * Log entry abstract class.
+ *
  */
-public abstract class WALRecord {
-    /**
-     * Record type.
-     */
-    public enum RecordType {
-        /** */
-        TX_RECORD,
-
-        /** */
-        PAGE_RECORD,
-
-        /** */
-        DATA_RECORD,
-
-        /** */
-        STORE_OPERATION_RECORD,
-
-        /** */
-        CHECKPOINT_RECORD;
-
-        /** */
-        private static final RecordType[] VALS = RecordType.values();
-
-        /** */
-        public static RecordType fromOrdinal(int ord) {
-            return ord < 0 || ord >= VALS.length ? null : VALS[ord];
-        }
-    }
-
-    /**
-     * @return Entry type.
-     */
-    public abstract RecordType type();
+public interface WALIterator extends GridCloseableIterator<IgniteBiTuple<WALPointer, WALRecord>> {
+    // Iterator alias.
 }

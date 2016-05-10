@@ -17,6 +17,10 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
+import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
+
+import java.util.ArrayList;
 import java.util.Collection;
 
 /**
@@ -29,5 +33,43 @@ public class DataRecord extends WALRecord {
     /** {@inheritDoc} */
     @Override public RecordType type() {
         return RecordType.DATA_RECORD;
+    }
+
+    /**
+     * @param tx Transaction to build WAL record from.
+     * @return WAL data record.
+     */
+    public static DataRecord fromTransaction(IgniteInternalTx tx) {
+        DataRecord rec = new DataRecord();
+
+        Collection<IgniteTxEntry> writes = tx.writeEntries();
+
+        Collection<DataEntry> entries = new ArrayList<>(writes.size());
+
+        for (IgniteTxEntry write : writes)
+            entries.add(DataEntry.fromTxEntry(write, tx));
+
+        return rec;
+    }
+
+    /**
+     *
+     */
+    private DataRecord() {
+        // No-op, used from builder methods.
+    }
+
+    /**
+     * @param writeEntries Write entries.
+     */
+    public DataRecord(Collection<DataEntry> writeEntries) {
+        this.writeEntries = writeEntries;
+    }
+
+    /**
+     * @return Collection of write entries.
+     */
+    public Collection<DataEntry> writeEntries() {
+        return writeEntries;
     }
 }

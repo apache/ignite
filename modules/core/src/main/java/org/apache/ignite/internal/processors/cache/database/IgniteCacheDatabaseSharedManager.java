@@ -31,6 +31,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -39,13 +40,10 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdapter {
     /** */
-    private PageMemory pageMem;
+    protected PageMemory pageMem;
 
     /** */
-    private MetadataStorage meta;
-
-    /** */
-    private ReadWriteLock checkpointLock = new ReentrantReadWriteLock();
+    protected MetadataStorage meta;
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
@@ -81,54 +79,31 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Gets the checkpoint read lock. While this lock is held, checkpoint thread will not acquire memory state.
+     * No-op for non-persistent storage.
      */
-    @SuppressWarnings("LockAcquiredButNotSafelyReleased")
     public void checkpointReadLock() {
-        checkpointLock.readLock().lock();
+        // No-op.
     }
 
     /**
-     * Releases the checkpoint read lock.
+     * No-op for non-persistent storage.
      */
     public void checkpointReadUnlock() {
-        checkpointLock.readLock().unlock();
-    }
-
-    /**
-     * Gets the checkpoint write lock. While this lock is held, no page memory updates are allowed.
-     */
-    @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-    public void checkpointWriteLock() {
-        checkpointLock.writeLock().lock();
-    }
-
-    /**
-     * Releases the checkpoint write lock.
-     */
-    public void checkpointWriteUnlock() {
-        checkpointLock.writeLock().unlock();
+        // No-op.
     }
 
     /**
      * Marks checkpoint begin.
      */
     public Collection<FullPageId> snapshotCheckpoint() {
-        return pageMem.beginCheckpoint();
-    }
-
-    /**
-     * Marks checkpoint end.
-     */
-    public void checkpointEnd() {
-        pageMem.finishCheckpoint();
+        return Collections.emptyList();
     }
 
     /**
      * @param dbCfg Database configuration.
      * @return Page memory instance.
      */
-    private PageMemory createPageMemory(DatabaseConfiguration dbCfg) {
+    protected PageMemory createPageMemory(DatabaseConfiguration dbCfg) {
         String path = dbCfg.getFileCacheAllocationPath();
 
         long fragmentSize = dbCfg.getFragmentSize();

@@ -32,6 +32,12 @@ import java.util.Iterator;
  */
 public interface IgniteWriteAheadLogManager extends GridCacheSharedManager {
     /**
+     * Resumes logging after start. When WAL manager is started, it will skip logging any updates until this
+     * method is called to avoid logging changes induced by the state restore procedure.
+     */
+    public void resumeLogging() throws IgniteCheckedException;
+
+    /**
      * Appends the given log entry to the write-ahead log.
      *
      * @param entry entry to log.
@@ -62,8 +68,7 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager {
      * @throws IgniteException If failed to start iteration.
      * @throws StorageException If IO error occurred while reading WAL entries.
      */
-    public GridCloseableIterator<IgniteBiTuple<WALPointer, WALRecord>> replay(WALPointer start)
-        throws IgniteCheckedException, StorageException;
+    public WALIterator replay(WALPointer start) throws IgniteCheckedException, StorageException;
 
     /**
      * Given WAL a hint to clear entries logged before the given pointer.

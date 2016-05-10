@@ -18,35 +18,39 @@
 package org.apache.ignite.internal.pagemem.wal.record;
 
 import org.apache.ignite.internal.pagemem.wal.WALPointer;
-import org.apache.ignite.lang.IgniteUuid;
+
+import java.util.UUID;
 
 /**
  *
  */
 public class CheckpointRecord extends WALRecord {
     /** Checkpoint ID. */
-    private IgniteUuid cpId;
+    private UUID cpId;
 
     /** */
     private boolean end;
 
     /** Safe replay pointer. */
-    private WALPointer safeReplayPtr;
+    private WALPointer cpMark;
 
     /**
+     * @param cpMark Checkpoint mark.
      * @param end Checkpoint end flag.
      */
-    public CheckpointRecord(WALPointer safeReplayPtr, boolean end) {
-        this(IgniteUuid.randomUuid(), safeReplayPtr, end);
+    public CheckpointRecord(WALPointer cpMark, boolean end) {
+        this(UUID.randomUUID(), cpMark, end);
     }
 
     /**
+     * @param cpId Checkpoint ID.
+     * @param cpMark Checkpoint mark.
      * @param end Checkpoint end flag.
      */
-    public CheckpointRecord(IgniteUuid cpId, WALPointer safeReplayPtr, boolean end) {
+    public CheckpointRecord(UUID cpId, WALPointer cpMark, boolean end) {
         this.cpId = cpId;
         this.end = end;
-        this.safeReplayPtr = safeReplayPtr;
+        this.cpMark = cpMark;
     }
 
     /** {@inheritDoc} */
@@ -57,7 +61,7 @@ public class CheckpointRecord extends WALRecord {
     /**
      * @return Checkpoint ID.
      */
-    public IgniteUuid checkpointId() {
+    public UUID checkpointId() {
         return cpId;
     }
 
@@ -71,7 +75,7 @@ public class CheckpointRecord extends WALRecord {
     /**
      * @return Safe replay pointer.
      */
-    public WALPointer safeReplayPointer() {
-        return safeReplayPtr;
+    public WALPointer checkpointMark() {
+        return cpMark;
     }
 }
