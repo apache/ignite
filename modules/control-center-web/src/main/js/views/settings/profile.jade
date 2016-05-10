@@ -44,7 +44,7 @@ mixin lbl(txt)
                     .details-row
                         +lbl('Country:')
                         .col-xs-5.col-sm-4
-                            button#profile-country.select-toggle.form-control(bs-select bs-options='item for item in countries' type='text' ng-model='user.country' placeholder='Choose your country' required)
+                            button#profile-country.select-toggle.form-control(bs-select bs-options='item.name as item.name for item in countries' type='text' ng-model='user.country' placeholder='Choose your country' required)
                     .details-row
                         .advanced-options
                             i.fa(

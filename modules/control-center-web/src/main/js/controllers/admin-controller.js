@@ -19,32 +19,29 @@
 import consoleModule from 'controllers/common-module';
 
 consoleModule.controller('adminController', [
-    '$rootScope', '$scope', '$http', '$q', '$common', '$confirm', '$state', 'User',
-    function ($rootScope, $scope, $http, $q, $common, $confirm, $state, User) {
+    '$rootScope', '$scope', '$http', '$q', '$common', '$confirm', '$state', 'User', 'IgniteCountries',
+    ($rootScope, $scope, $http, $q, $common, $confirm, $state, User, Countries) => {
         $scope.users = null;
 
-        function reload() {
+        const _reloadUsers = () => {
             $http.post('/api/v1/admin/list')
-                .success(function (data) {
+                .then(({data}) => {
                     $scope.users = data;
 
-                    _.forEach($scope.users, function(user) {
+                    _.forEach($scope.users, (user) => {
                         user.userName = user.firstName + ' ' + user.lastName;
-
+                        user.countryCode = Countries.getByName(user.country).code;
                         user.label = user.userName + ' ' + user.email + ' ' +
                             (user.company || '') + ' ' + (user.country || '');
                     })
                 })
-                .error(function (errMsg) {
-                    $common.showError($common.errorMessage(errMsg));
-                });
-        }
+                .catch((err) => $common.showError(err));
+        };
 
-        reload();
+        _reloadUsers();
 
         $scope.becomeUser = function (user) {
-            $http
-                .get('/api/v1/admin/become', { params: {viewedUserId: user._id}})
+            $http.get('/api/v1/admin/become', { params: {viewedUserId: user._id}})
                 .then(User.read)
                 .then((user) => {
                     $rootScope.$broadcast('user', user);
@@ -54,44 +51,42 @@ consoleModule.controller('adminController', [
                 .catch((errMsg) => $common.showError($common.errorMessage(errMsg)));
         };
 
-        $scope.removeUser = function (user) {
+        $scope.removeUser = (user) => {
             $confirm.confirm('Are you sure you want to remove user: "' + user.userName + '"?')
-                .then(function () {
-                    $http.post('/api/v1/admin/remove', {userId: user._id}).success(
-                        function () {
-                            var i = _.findIndex($scope.users, function (u) {
-                                return u._id == user._id;
-                            });
+                .then(() => {
+                    $http.post('/api/v1/admin/remove', {userId: user._id})
+                        .success(() => {
+                            const i = _.findIndex($scope.users, (u) => u._id === user._id);
 
                             if (i >= 0)
                                 $scope.users.splice(i, 1);
 
                             $common.showInfo('User has been removed: "' + user.userName + '"');
-                        }).error(function (errMsg, status) {
-                        if (status == 503)
-                            $common.showInfo(errMsg);
-                        else
-                            $common.showError('Failed to remove user: "' + $common.errorMessage(errMsg) + '"');
-                    });
+                        })
+                        .error((errMsg, status) => {
+                            if (status == 503)
+                                $common.showInfo(errMsg);
+                            else
+                                $common.showError('Failed to remove user: "' + $common.errorMessage(errMsg) + '"');
+                        });
                 });
         };
 
-        $scope.toggleAdmin = function (user) {
+        $scope.toggleAdmin = (user) => {
             if (user.adminChanging)
                 return;
 
             user.adminChanging = true;
 
-            $http.post('/api/v1/admin/save', {userId: user._id, adminFlag: user.admin}).success(
-                function () {
+            $http.post('/api/v1/admin/save', {userId: user._id, adminFlag: !user.admin})
+                .success(() => {
+                    user.admin = !user.admin;
+
                     $common.showInfo('Admin right was successfully toggled for user: "' + user.userName + '"');
-
-                    user.adminChanging = false;
-                }).error(function (errMsg) {
-                $common.showError('Failed to toggle admin right for user: "' + $common.errorMessage(errMsg) + '"');
-
-                user.adminChanging = false;
-            });
-        }
+                }).error((err) => {
+                    $common.showError('Failed to toggle admin right for user: "' + $common.errorMessage(err) + '"');
+                })
+                .finally(() => user.adminChanging = false);
+        };
     }]
 );

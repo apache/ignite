@@ -20,10 +20,10 @@ import consoleModule from 'controllers/common-module';
 
 consoleModule.controller('profileController', [
     '$rootScope', '$scope', '$http', '$common', '$focus', '$confirm', 'IgniteCountries',
-    function ($root, $scope, $http, $common, $focus, $confirm, countries) {
+    function ($root, $scope, $http, $common, $focus, $confirm, Countries) {
         $scope.user = angular.copy($root.user);
 
-        $scope.countries = countries;
+        $scope.countries = Countries.getAll();
 
         $scope.generateToken = () => {
             $confirm.confirm('Are you sure you want to change security token?')

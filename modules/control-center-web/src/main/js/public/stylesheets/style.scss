@@ -91,6 +91,10 @@ hr {
     text-align: center;
 }
 
+.table.table-vertical-middle tbody > tr > td {
+  vertical-align: middle;
+}
+
 ul.navbar-nav, .sidebar-nav {
     li.active > a {
         color: $link-color;
@@ -843,6 +847,12 @@ button.form-control {
         cursor: default;
     }
 
+    thead {
+        .pagination {
+            margin: 0;
+        }
+    }
+
     thead > tr th.header {
         padding: 0 0 10px;
 
@@ -872,16 +882,21 @@ button.form-control {
 
     tfoot > tr > td {
         padding: 0;
+    }
 
-        .pagination {
-            margin: 10px 0;
+    .pagination {
+        margin: 10px 0;
+        font-weight: normal;
 
-            > .active > a {
-                border-color: $table-border-color;
-                background-color: $gray-lighter;
-            }
+        > .active > a {
+            border-color: $table-border-color;
+            background-color: $gray-lighter;
         }
     }
+}
+
+.admin-summary {
+    padding-bottom: 10px;
 }
 
 .import-domain-model-wizard-page {

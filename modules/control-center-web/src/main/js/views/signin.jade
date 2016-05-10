@@ -60,7 +60,7 @@ header#header.header
                             .settings-row(ng-show='action == "signup"')
                                 +lblRequired('Country:')
                                 .col-xs-9.col-md-8
-                                    button#country.select-toggle.form-control(bs-select bs-options='item for item in countries' enter-focus-next='user_password' type='search' ng-model='ui.country' placeholder='Choose your country' ng-required='action=="signup"')
+                                    button#country.select-toggle.form-control(bs-select bs-options='item.name as item.name for item in countries' enter-focus-next='user_password' type='search' ng-model='ui.country' placeholder='Choose your country' ng-required='action=="signup"')
                             .settings-row(ng-show='action != "password/forgot"')
                                 +lblRequired('Password:')
                                 .col-xs-9.col-md-8

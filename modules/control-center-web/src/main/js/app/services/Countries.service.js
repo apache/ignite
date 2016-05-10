@@ -15,9 +15,17 @@
  * limitations under the License.
  */
 
-// Java built-in short class names.
 import COUNTRIES from 'app/data/countries.json!';
 
 export default ['IgniteCountries', function() {
-    return COUNTRIES;
+    const indexByName = _.keyBy(COUNTRIES, 'name');
+    const UNDEFINED_COUNTRY = {name: '', code: ''};
+
+    const getByName = (name) => (indexByName[name] || UNDEFINED_COUNTRY);
+    const getAll = () => (COUNTRIES);
+
+    return {
+        getByName,
+        getAll
+    };
 }];

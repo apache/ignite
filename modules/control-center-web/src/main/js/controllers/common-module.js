@@ -1691,11 +1691,11 @@ consoleModule.controller('resetPassword', [
 
 // Sign in controller.
 // TODO IGNITE-1936 Refactor this controller.
-consoleModule.controller('auth', ['$scope', '$focus', 'Auth', 'IgniteCountries', ($scope, $focus, Auth, countries) => {
+consoleModule.controller('auth', ['$scope', '$focus', 'Auth', 'IgniteCountries', ($scope, $focus, Auth, Countries) => {
     $scope.auth = Auth.auth;
 
     $scope.action = 'signin';
-    $scope.countries = countries;
+    $scope.countries = Countries.getAll();
 
     $focus('user_email');
 }]);

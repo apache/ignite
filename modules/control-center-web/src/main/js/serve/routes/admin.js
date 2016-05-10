@@ -32,9 +32,36 @@ module.exports.factory = function(_, express, settings, mail, mongo) {
          * Get list of user accounts.
          */
         router.post('/list', (req, res) => {
-            mongo.Account.find({}).sort('firstName lastName').lean().exec()
-                .then((users) => res.json(users))
-                .catch((err) => mongo.handleError(res, err));
+
+            Promise.all([
+                mongo.Space.aggregate([
+                    {$match: {demo: false}},
+                    {$lookup: {from: 'clusters', localField: '_id', foreignField: 'space', as: 'clusters'}},
+                    {$lookup: {from: 'caches', localField: '_id', foreignField: 'space', as: 'caches'}},
+                    {$lookup: {from: 'domainmodels', localField: '_id', foreignField: 'space', as: 'domainmodels'}},
+                    {$lookup: {from: 'igfs', localField: '_id', foreignField: 'space', as: 'igfs'}},
+                    {$project: {
+                        owner: 1,
+                        clusters: {$size: '$clusters'},
+                        models: {$size: '$domainmodels'},
+                        caches: {$size: '$caches'},
+                        igfs: {$size: '$igfs'}
+                    }}
+                ]).exec(),
+                mongo.Account.find({}).sort('firstName lastName').lean().exec()
+            ])
+            .then((values) => {
+                const counters = _.keyBy(values[0], 'owner');
+                const accounts = values[1];
+
+                return accounts.map((account) => {
+                    account.counters = _.omit(counters[account._id], '_id', 'owner');
+
+                    return account;
+                });
+            })
+            .then((users) => res.json(users))
+            .catch((err) => mongo.handleError(res, err));
         });
 
         // Remove user.
