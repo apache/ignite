@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -22,20 +22,20 @@ namespace Apache.Ignite.Core.Impl.Binary
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
-    /// DateTime serializer.
+    /// Serializable serializer.
     /// </summary>
-    internal class BinaryDateTimeSerializer : IBinarySerializerInternal
+    internal class SerializableSerializer : IBinarySerializerInternal
     {
         /** <inheritdoc /> */
         public void WriteBinary<T>(T obj, BinaryWriter writer)
         {
-            TypeCaster<DateTimeHolder>.Cast(obj).WriteBinary(writer);
+            TypeCaster<SerializableObjectHolder>.Cast(obj).WriteBinary(writer);
         }
 
         /** <inheritdoc /> */
-        public T ReadBinary<T>(BinaryReader reader, Type type, Action<int, object> addHandle)
+        public T ReadBinary<T>(BinaryReader reader, Type type, Action<int, object> addHandle, int pos)
         {
-            var holder = new DateTimeHolder(reader);
+            var holder = new SerializableObjectHolder(reader);
 
             return TypeCaster<T>.Cast(holder.Item);
         }
