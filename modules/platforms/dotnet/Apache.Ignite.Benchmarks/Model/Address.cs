@@ -22,7 +22,7 @@ namespace Apache.Ignite.Benchmarks.Model
     /// <summary>
     /// Address.
     /// </summary>
-    internal class Address //: IBinarizable
+    internal class Address : IBinarizable
     {
         /// <summary>
         /// City.
