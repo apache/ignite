@@ -416,20 +416,6 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (type != null)
             {
-                // Type is found.
-                var typeName = BinaryUtils.GetTypeName(type);
-
-                int typeId = BinaryUtils.TypeId(typeName, nameMapper, idMapper);
-
-                var serializer = typeCfg.Serializer ?? cfg.DefaultSerializer
-                                 ?? GetBinarizableSerializer(type) ?? new BinaryReflectiveSerializer();
-
-                var refSerializer = serializer as BinaryReflectiveSerializer;
-
-                var intSerializer = refSerializer != null
-                    ? refSerializer.Register(type, typeId, nameMapper, idMapper)
-                    : new UserSerializerProxy(serializer);
-
                 if (typeCfg.IsEnum != type.IsEnum)
                     throw new BinaryObjectException(
                         string.Format(
@@ -437,9 +423,13 @@ namespace Apache.Ignite.Core.Impl.Binary
                             "Configuration value: IsEnum={0}, actual type: IsEnum={1}",
                             typeCfg.IsEnum, type.IsEnum));
 
+                // Type is found.
+                var typeName = BinaryUtils.GetTypeName(type);
+                int typeId = BinaryUtils.TypeId(typeName, nameMapper, idMapper);
                 var affKeyFld = typeCfg.AffinityKeyFieldName ?? GetAffinityKeyFieldNameFromAttribute(type);
+                var serializer = GetSerializer(cfg, typeCfg, type, typeId, nameMapper, idMapper);
 
-                AddType(type, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, intSerializer,
+                AddType(type, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, serializer,
                     affKeyFld, type.IsEnum);
             }
             else
@@ -452,6 +442,29 @@ namespace Apache.Ignite.Core.Impl.Binary
                 AddType(null, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, null,
                     typeCfg.AffinityKeyFieldName, typeCfg.IsEnum);
             }
+        }
+
+        /// <summary>
+        /// Gets the serializer.
+        /// </summary>
+        private static IBinarySerializerInternal GetSerializer(BinaryConfiguration cfg, BinaryTypeConfiguration typeCfg,
+            Type type, int typeId, IBinaryNameMapper nameMapper, IBinaryIdMapper idMapper)
+        {
+            var serializer = typeCfg.Serializer ?? cfg.DefaultSerializer;
+
+            if (serializer == null)
+            {
+                if (type.GetInterfaces().Contains(typeof(IBinarizable)))
+                    return BinarizableSerializer.Instance;
+
+                serializer = new BinaryReflectiveSerializer();
+            }
+
+            var refSerializer = serializer as BinaryReflectiveSerializer;
+
+            return refSerializer != null
+                ? refSerializer.Register(type, typeId, nameMapper, idMapper)
+                : new UserSerializerProxy(serializer);
         }
 
         /// <summary>
@@ -470,18 +483,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
 
             return res.SingleOrDefault();
-        }
-
-        /// <summary>
-        /// Gets the <see cref="BinarizableSerializer"/> for a type if it is compatible.
-        /// </summary>
-        /// <param name="type">The type.</param>
-        /// <returns>Resulting <see cref="BinarizableSerializer"/>, or null.</returns>
-        private static IBinarySerializer GetBinarizableSerializer(Type type)
-        {
-            return type.GetInterfaces().Contains(typeof (IBinarizable)) 
-                ? BinarizableSerializer.Instance 
-                : null;
         }
 
         /// <summary>
