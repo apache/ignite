@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Binary
+namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
-    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// Internal generic serializer interface.
