@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Binary
         /// <summary>
         /// Read binary object.
         /// </summary>
-        T ReadBinary<T>(BinaryReader reader, Type type, Action<int, object> addHandle, int pos);
+        T ReadBinary<T>(BinaryReader reader, Type type, int pos);
 
         /// <summary>
         /// Gets a value indicating whether this serializer supports handles.

@@ -140,18 +140,18 @@ namespace Apache.Ignite.Core.Binary
         }
 
         /** <inheritdoc /> */
-        T IBinarySerializerInternal.ReadBinary<T>(BinaryReader reader, Type type, Action<int, object> addHandle, int pos)
+        T IBinarySerializerInternal.ReadBinary<T>(BinaryReader reader, Type type, int pos)
         {
             Debug.Assert(_rActions != null);
 
-            var obj = FormatterServices.GetUninitializedObject(type);
+            var obj = (T) FormatterServices.GetUninitializedObject(type);
 
-            addHandle(pos, obj);
+            reader.AddHandle(pos, obj);
 
             foreach (var action in _rActions)
                 action(obj, reader);
 
-            return (T)obj;
+            return obj;
         }
 
         /** <inheritdoc /> */

@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /** <inheritdoc /> */
-        public T ReadBinary<T>(BinaryReader reader, Type type, Action<int, object> addHandle, int pos)
+        public T ReadBinary<T>(BinaryReader reader, Type type, int pos)
         {
             var holder = new SerializableObjectHolder(reader);
 
