@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-export default ['Auth', ['$http', '$rootScope', '$state', '$window', '$common', 'gettingStarted', 'User',
-    ($http, $root, $state, $window, $common, gettingStarted, User) => {
+export default ['Auth', ['$http', '$rootScope', '$state', '$window', '$common', 'gettingStarted', 'User', 'IgniteAgentMonitor',
+    ($http, $root, $state, $window, $common, gettingStarted, User, agentMonitor) => {
         let _auth = false;
 
         try {
@@ -53,6 +53,8 @@ export default ['Auth', ['$http', '$rootScope', '$state', '$window', '$common', 
                             $state.go('base.configuration.clusters');
 
                             $root.gettingStarted.tryShow();
+
+                            agentMonitor.init();
                         } else
                             $state.go('password.send');
                     })
@@ -65,7 +67,7 @@ export default ['Auth', ['$http', '$rootScope', '$state', '$window', '$common', 
 
                         $window.open($state.href('signin'), '_self');
                     })
-                    .catch((errMsg) => $common.showError(errMsg));
+                    .catch((err) => $common.showError(err));
             }
         };
     }]];

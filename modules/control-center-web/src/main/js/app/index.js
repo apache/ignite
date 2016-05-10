@@ -235,7 +235,7 @@ angular
     if (Auth.authorized) {
         User.read()
             .then((user) => $root.$broadcast('user', user))
-            .then(() => agentMonitor.init());
+            .then(() => Auth.authorized && agentMonitor.init());
     }
 }])
 .run(['$rootScope', ($root) => {
