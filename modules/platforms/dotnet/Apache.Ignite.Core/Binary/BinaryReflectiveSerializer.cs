@@ -105,9 +105,8 @@ namespace Apache.Ignite.Core.Binary
         {
             Debug.Assert(_wActions != null);
 
-            var actions = _wActions;  // speed up field access
-            for (int i = 0; i < actions.Length; i++)
-                actions[i](obj, writer);
+            foreach (var action in _wActions)
+                action(obj, writer);
         }
 
         /// <summary>
@@ -120,9 +119,8 @@ namespace Apache.Ignite.Core.Binary
         {
             Debug.Assert(_rActions != null);
 
-            var actions = _rActions;  // speed up field access
-            for (int i = 0; i < actions.Length; i++)
-                actions[i](obj, reader);
+            foreach (var action in _rActions)
+                action(obj, reader);
         }
 
         /// <summary>Register type.</summary>
