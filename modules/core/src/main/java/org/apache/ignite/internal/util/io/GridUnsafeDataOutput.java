@@ -38,7 +38,7 @@ import static org.apache.ignite.internal.util.GridUnsafe.SHORT_ARR_OFF;
  */
 public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput {
     /** */
-    private static final Long CHECK_FREQ = getChechFreq();
+    private static final Long CHECK_FREQ = Long.getLong(IGNITE_MARSHAL_BUFFERS_RECHECK, 10000);
 
     /** */
     private final Long checkFreq;
@@ -568,14 +568,5 @@ public class GridUnsafeDataOutput extends OutputStream implements GridDataOutput
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridUnsafeDataOutput.class, this);
-    }
-
-    private static Long getChechFreq() {
-        try{
-            throw new Exception("+++ GridUnsafeDataOutput.CHECK_FREQ is setup here");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return Long.getLong(IGNITE_MARSHAL_BUFFERS_RECHECK, 10000);
     }
 }

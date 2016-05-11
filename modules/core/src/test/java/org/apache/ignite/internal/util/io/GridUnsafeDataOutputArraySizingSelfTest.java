@@ -37,10 +37,6 @@ public class GridUnsafeDataOutputArraySizingSelfTest extends GridCommonAbstractT
     /** Wait timeout is bigger then buffer timeout to prevent failures due to time measurement error. */
     private static final long WAIT_BUFFER_TIMEOUT = BUFFER_TIMEOUT + BUFFER_TIMEOUT / 2;
 
-
-    static {
-        System.out.println("GridUnsafeDataOutputArraySizingSelfTest static block");
-    }
     /**
      * @throws Exception If failed.
      */
