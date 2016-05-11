@@ -37,6 +37,10 @@ namespace Apache.Ignite.Service
         /** Service name. */
         public const string SvcName = "Apache Ignite.NET";
 
+        /** Service display name. */
+        public static readonly string SvcDisplayName = SvcName + " " +
+            Assembly.GetExecutingAssembly().GetName().Version.ToString(4);
+
         /** Service description. */
         public const string SvcDesc = "Apache Ignite.NET Service.";
 

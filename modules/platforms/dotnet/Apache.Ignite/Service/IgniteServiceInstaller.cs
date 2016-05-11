@@ -42,7 +42,8 @@ namespace Apache.Ignite.Service
             {
                 StartType = ServiceStartMode.Automatic,
                 ServiceName = IgniteService.SvcName,
-                Description = IgniteService.SvcDesc
+                Description = IgniteService.SvcDesc,
+                DisplayName = IgniteService.SvcDisplayName
             });
 
             Installers.Add(new ServiceProcessInstaller {Account = ServiceAccount.LocalSystem});
