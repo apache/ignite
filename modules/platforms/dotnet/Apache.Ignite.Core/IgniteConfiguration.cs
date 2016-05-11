@@ -133,15 +133,6 @@
         {
             JvmInitialMemoryMb = DefaultJvmInitMem;
             JvmMaxMemoryMb = DefaultJvmMaxMem;
-
-            MetricsExpireTime = DefaultMetricsExpireTime;
-            MetricsHistorySize = DefaultMetricsHistorySize;
-            MetricsLogFrequency = DefaultMetricsLogFrequency;
-            MetricsUpdateFrequency = DefaultMetricsUpdateFrequency;
-            NetworkTimeout = DefaultNetworkTimeout;
-            NetworkSendRetryCount = DefaultNetworkSendRetryCount;
-            NetworkSendRetryDelay = DefaultNetworkSendRetryDelay;
-            IsLateAffinityAssignment = DefaultIsLateAffinityAssignment;
         }
 
         /// <summary>
