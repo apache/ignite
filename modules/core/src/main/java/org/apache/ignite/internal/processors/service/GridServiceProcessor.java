@@ -1078,7 +1078,11 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         if (cfg instanceof LazyServiceConfiguration) {
             byte[] bytes = ((LazyServiceConfiguration)cfg).serviceBytes();
 
-            return m.unmarshal(bytes, U.resolveClassLoader(null, ctx.config()));
+            Service srvc = m.unmarshal(bytes, U.resolveClassLoader(null, ctx.config()));
+
+            ctx.resource().inject(srvc);
+
+            return srvc;
         }
         else {
             Service svc = cfg.getService();
