@@ -426,7 +426,7 @@ namespace Apache.Ignite.Core.Tests
                     TcpNoDelay = false,
                     SlowClientQueueLimit = 98,
                     SocketSendBufferSize = 2045,
-                    UnacknowledgedMessagesBufferSize = 345
+                    UnacknowledgedMessagesBufferSize = 3450
                 }
             };
         }
