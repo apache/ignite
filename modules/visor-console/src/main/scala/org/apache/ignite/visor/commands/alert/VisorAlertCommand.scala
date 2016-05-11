@@ -194,7 +194,7 @@ class VisorAlertCommand extends VisorConsoleCommand {
      * @param f Node filter
      * @param value Value generator.
      */
-    private def makeNodeFilter(exprStr: String, f: ClusterNode => Boolean, value: ClusterNode => Long):
+    private def makeNodeFilter(exprStr: String, f: (ClusterNode) => Boolean, value: (ClusterNode) => Long):
         ClusterNode => Boolean = {
         assert(exprStr != null)
         assert(f != null)
@@ -247,31 +247,28 @@ class VisorAlertCommand extends VisorConsoleCommand {
                 var freq = DFLT_FREQ
 
                 try {
-                    args foreach (arg => {
-                        val (n, v) = arg
+                    args.foreach(arg => {
+                        val (alertName, v) = arg
 
-                        n match {
+                        alertName match {
                             // Grid-wide metrics (not node specific).
-                            case "cc" if v != null => gf = makeGridFilter(v, gf, ignite.cluster.metrics().getTotalCpus)
-                            case "nc" if v != null => gf = makeGridFilter(v, gf, ignite.cluster.nodes().size)
-                            case "hc" if v != null => gf = makeGridFilter(v, gf,
-                                U.neighborhood(ignite.cluster.nodes()).size)
-                            case "cl" if v != null => gf = makeGridFilter(v, gf,
-                                () => (ignite.cluster.metrics().getAverageCpuLoad * 100).toLong)
+                            case "cc" if v != null => gf = makeGridFilter(v, gf, () => ignite.cluster.metrics().getTotalCpus)
+                            case "nc" if v != null => gf = makeGridFilter(v, gf, () => ignite.cluster.nodes().size)
+                            case "hc" if v != null => gf = makeGridFilter(v, gf, () => U.neighborhood(ignite.cluster.nodes()).size)
+                            case "cl" if v != null => gf = makeGridFilter(v, gf, () => (ignite.cluster.metrics().getAverageCpuLoad * 100).toLong)
 
                             // Per-node current metrics.
-                            case "aj" if v != null => nf = makeNodeFilter(v, nf, _.metrics().getCurrentActiveJobs)
-                            case "cj" if v != null => nf = makeNodeFilter(v, nf, _.metrics().getCurrentCancelledJobs)
-                            case "tc" if v != null => nf = makeNodeFilter(v, nf, _.metrics().getCurrentThreadCount)
-                            case "ut" if v != null => nf = makeNodeFilter(v, nf, _.metrics().getUpTime)
-                            case "je" if v != null => nf = makeNodeFilter(v, nf, _.metrics().getCurrentJobExecuteTime)
-                            case "jw" if v != null => nf = makeNodeFilter(v, nf, _.metrics().getCurrentJobWaitTime)
-                            case "wj" if v != null => nf = makeNodeFilter(v, nf, _.metrics().getCurrentWaitingJobs)
-                            case "rj" if v != null => nf = makeNodeFilter(v, nf, _.metrics().getCurrentRejectedJobs)
-                            case "hu" if v != null => nf = makeNodeFilter(v, nf, _.metrics().getHeapMemoryUsed)
-                            case "hm" if v != null => nf = makeNodeFilter(v, nf, _.metrics().getHeapMemoryMaximum)
-                            case "cd" if v != null => nf = makeNodeFilter(v, nf,
-                                (n: ClusterNode) => (n.metrics().getCurrentCpuLoad * 100).toLong)
+                            case "aj" if v != null => nf = makeNodeFilter(v, nf, (n: ClusterNode) => n.metrics().getCurrentActiveJobs)
+                            case "cj" if v != null => nf = makeNodeFilter(v, nf, (n: ClusterNode) => n.metrics().getCurrentCancelledJobs)
+                            case "tc" if v != null => nf = makeNodeFilter(v, nf, (n: ClusterNode) => n.metrics().getCurrentThreadCount)
+                            case "ut" if v != null => nf = makeNodeFilter(v, nf, (n: ClusterNode) => n.metrics().getUpTime)
+                            case "je" if v != null => nf = makeNodeFilter(v, nf, (n: ClusterNode) => n.metrics().getCurrentJobExecuteTime)
+                            case "jw" if v != null => nf = makeNodeFilter(v, nf, (n: ClusterNode) => n.metrics().getCurrentJobWaitTime)
+                            case "wj" if v != null => nf = makeNodeFilter(v, nf, (n: ClusterNode) => n.metrics().getCurrentWaitingJobs)
+                            case "rj" if v != null => nf = makeNodeFilter(v, nf, (n: ClusterNode) => n.metrics().getCurrentRejectedJobs)
+                            case "hu" if v != null => nf = makeNodeFilter(v, nf, (n: ClusterNode) => n.metrics().getHeapMemoryUsed)
+                            case "hm" if v != null => nf = makeNodeFilter(v, nf, (n: ClusterNode) => n.metrics().getHeapMemoryMaximum)
+                            case "cd" if v != null => nf = makeNodeFilter(v, nf, (n: ClusterNode) => (n.metrics().getCurrentCpuLoad * 100).toLong)
 
                             // Other tags.
                             case "t" if v != null => freq = v.toLong
@@ -337,7 +334,7 @@ class VisorAlertCommand extends VisorConsoleCommand {
 
                     val node = ignite.cluster.node(discoEvt.eventNode().id())
 
-                    if (node != null)
+                    if (node != null && !node.isDaemon)
                         alerts foreach (t => {
                             val (id, alert) = t
 

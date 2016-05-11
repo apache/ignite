@@ -22,10 +22,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -40,6 +43,7 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory;
 import org.apache.ignite.cache.store.jdbc.JdbcType;
 import org.apache.ignite.cache.store.jdbc.JdbcTypeField;
+import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.schema.model.PojoDescriptor;
 import org.apache.ignite.schema.model.PojoField;
 import org.apache.ignite.schema.ui.ConfirmCallable;
@@ -199,7 +203,33 @@ public class XmlGenerator {
             Element map = addElement(doc, prop, "util:map", "map-class", "java.util.LinkedHashMap");
 
             for (PojoField field : fields)
-                addElement(doc, map, "entry", "key", field.javaName(), "value", field.javaTypeName());
+                addElement(doc, map, "entry", "key", field.javaName(), "value",
+                    GeneratorUtils.boxPrimitiveType(field.javaTypeName()));
+        }
+    }
+
+    /**
+     * Add query field aliases to xml document.
+     *
+     * @param doc XML document.
+     * @param parent Parent XML node.
+     * @param fields Map with fields.
+     */
+    private static void addQueryFieldAliases(Document doc, Node parent, Collection<PojoField> fields) {
+        Collection<PojoField> aliases = new ArrayList<>();
+
+        for (PojoField field : fields) {
+            if (!field.javaName().equalsIgnoreCase(field.dbName()))
+                aliases.add(field);
+        }
+
+        if (!aliases.isEmpty()) {
+            Element prop = addProperty(doc, parent, "aliases", null);
+
+            Element map = addElement(doc, prop, "map");
+
+            for (PojoField alias : aliases)
+                addElement(doc, map, "entry", "key", alias.javaName(), "value", alias.dbName());
         }
     }
 
@@ -210,28 +240,53 @@ public class XmlGenerator {
      * @param parent Parent XML node.
      * @param idxs Indexes.
      */
-    private static void addQueryIndexes(Document doc, Node parent, Collection<QueryIndex> idxs) {
+    private static void addQueryIndexes(Document doc, Node parent, Collection<PojoField> fields,
+        Collection<QueryIndex> idxs) {
         if (!idxs.isEmpty()) {
-            Element prop = addProperty(doc, parent, "indexes", null);
+            boolean firstIdx = true;
 
-            Element list = addElement(doc, prop, "list");
+            Element list = null;
 
             for (QueryIndex idx : idxs) {
-                Element idxBean = addBean(doc, list, QueryIndex.class);
+                Set<Map.Entry<String, Boolean>> dbIdxFlds = idx.getFields().entrySet();
 
-                addProperty(doc, idxBean, "name", idx.getName());
+                int sz = dbIdxFlds.size();
 
-                Element idxType = addProperty(doc, idxBean, "indexType", null);
-                addElement(doc, idxType, "util:constant", "static-field", "org.apache.ignite.cache.QueryIndexType." + idx.getIndexType());
+                List<T2<String, Boolean>> idxFlds = new ArrayList<>(sz);
 
-                Element flds = addProperty(doc, idxBean, "fields", null);
+                for (Map.Entry<String, Boolean> idxFld : dbIdxFlds) {
+                    PojoField field = GeneratorUtils.findFieldByName(fields, idxFld.getKey());
 
-                Element fldsMap = addElement(doc, flds, "map");
+                    if (field != null)
+                        idxFlds.add(new T2<>(field.javaName(), idxFld.getValue()));
+                    else
+                        break;
+                }
 
-                Map<String, Boolean> idxFlds = idx.getFields();
+                // Only if all fields present, add index description.
+                if (idxFlds.size() == sz) {
+                    if (firstIdx) {
+                        Element prop = addProperty(doc, parent, "indexes", null);
 
-                for (Map.Entry<String, Boolean> fld : idxFlds.entrySet())
-                    addElement(doc, fldsMap, "entry", "key", fld.getKey(), "value", fld.getValue().toString());
+                        list = addElement(doc, prop, "list");
+
+                        firstIdx = false;
+                    }
+
+                    Element idxBean = addBean(doc, list, QueryIndex.class);
+
+                    addProperty(doc, idxBean, "name", idx.getName());
+
+                    Element idxType = addProperty(doc, idxBean, "indexType", null);
+                    addElement(doc, idxType, "util:constant", "static-field", "org.apache.ignite.cache.QueryIndexType." + idx.getIndexType());
+
+                    Element flds = addProperty(doc, idxBean, "fields", null);
+
+                    Element fldsMap = addElement(doc, flds, "map");
+
+                    for (T2<String, Boolean> fld : idxFlds)
+                        addElement(doc, fldsMap, "entry", "key", fld.getKey(), "value", fld.getValue().toString());
+                }
             }
         }
     }
@@ -268,17 +323,23 @@ public class XmlGenerator {
      * @param parent Parent XML node.
      * @param pkg Package fo types.
      * @param pojo POJO descriptor.
+     * @param generateAliases {@code true} if aliases should be generated for query fields.
      */
-    private static void addQueryEntity(Document doc, Node parent, String pkg, PojoDescriptor pojo) {
+    private static void addQueryEntity(Document doc, Node parent, String pkg, PojoDescriptor pojo, boolean generateAliases) {
         Element bean = addBean(doc, parent, QueryEntity.class);
 
         addProperty(doc, bean, "keyType", pkg + "." + pojo.keyClassName());
 
         addProperty(doc, bean, "valueType", pkg + "." + pojo.valueClassName());
 
-        addQueryFields(doc, bean, pojo.fields());
+        Collection<PojoField> fields = pojo.valueFields(true);
 
-        addQueryIndexes(doc, bean, pojo.indexes());
+        addQueryFields(doc, bean, fields);
+
+        if (generateAliases)
+            addQueryFieldAliases(doc, bean, fields);
+
+        addQueryIndexes(doc, bean, fields, pojo.indexes());
     }
 
     /**
@@ -286,12 +347,14 @@ public class XmlGenerator {
      *
      * @param pkg Package fo types.
      * @param pojo POJO descriptor.
+     * @param includeKeys {@code true} if key fields should be included into value class.
+     * @param generateAliases {@code true} if aliases should be generated for query fields.
      * @param out File to output result.
      * @param askOverwrite Callback to ask user to confirm file overwrite.
      */
-    public static void generate(String pkg, PojoDescriptor pojo, boolean includeKeys, File out,
+    public static void generate(String pkg, PojoDescriptor pojo, boolean includeKeys, boolean generateAliases, File out,
         ConfirmCallable askOverwrite) {
-        generate(pkg, Collections.singleton(pojo), includeKeys, out, askOverwrite);
+        generate(pkg, Collections.singleton(pojo), includeKeys, generateAliases, out, askOverwrite);
     }
 
     /**
@@ -299,11 +362,13 @@ public class XmlGenerator {
      *
      * @param pkg Package fo types.
      * @param pojos POJO descriptors.
+     * @param includeKeys {@code true} if key fields should be included into value class.
+     * @param generateAliases {@code true} if aliases should be generated for query fields.
      * @param out File to output result.
      * @param askOverwrite Callback to ask user to confirm file overwrite.
      */
-    public static void generate(String pkg, Collection<PojoDescriptor> pojos, boolean includeKeys, File out,
-        ConfirmCallable askOverwrite) {
+    public static void generate(String pkg, Collection<PojoDescriptor> pojos, boolean includeKeys,
+        boolean generateAliases, File out, ConfirmCallable askOverwrite) {
 
         File outFolder = out.getParentFile();
 
@@ -351,7 +416,7 @@ public class XmlGenerator {
                 addJdbcPojoStoreFactory(doc, typesItemsElem, pkg, pojo, includeKeys);
 
             for (PojoDescriptor pojo : pojos)
-                addQueryEntity(doc, beans, pkg, pojo);
+                addQueryEntity(doc, beans, pkg, pojo, generateAliases);
 
             TransformerFactory transformerFactory = TransformerFactory.newInstance();
 

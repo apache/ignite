@@ -425,6 +425,10 @@
                                 <title>OSGi integration</title>
                                 <packages>org.apache.ignite.osgi*</packages>
                             </group>
+                            <group>
+                                <title>Flink integration</title>
+                                <packages>org.apache.ignite.sink.flink*</packages>
+                            </group>
                         </groups>
                         <header>
                             <![CDATA[
@@ -766,6 +770,7 @@
                                         <exclude>**/*.gar</exclude><!--bin-files-->
                                         <exclude>**/licenses/*.txt</exclude><!--files of licenses-->
                                         <exclude>**/*readme*.txt</exclude><!--readme files-->
+                                        <exclude>**/*.sql</exclude><!--sql files-->
                                         <exclude>**/*README*.txt</exclude><!--readme files-->
                                         <exclude>**/*README*.md</exclude><!--readme files-->
                                         <exclude>**/*.timestamp</exclude><!--tmp-files-->
@@ -834,10 +839,13 @@
                                         <exclude>**/META-INF/services/*.PlatformBootstrapFactory</exclude>
                                         <exclude>**/Makefile.am</exclude>
                                         <exclude>**/configure.ac</exclude>
+                                        <exclude>**/Makefile.amrel</exclude>
+                                        <exclude>**/configure.acrel</exclude>
                                         <exclude>**/*.pc.in</exclude>
                                         <exclude>**/*.sln</exclude>
                                         <exclude>**/*.snk</exclude>
                                         <exclude>**/*.slnrel</exclude>
+                                        <exclude>**/*.ini</exclude>
                                         <exclude>**/*.DotSettings</exclude>
                                         <exclude>**/*.FxCop</exclude>
                                         <exclude>**/*.ruleset</exclude>

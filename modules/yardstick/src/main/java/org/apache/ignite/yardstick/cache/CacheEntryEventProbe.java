@@ -45,9 +45,6 @@ public class CacheEntryEventProbe implements BenchmarkProbe {
     /** */
     private BenchmarkConfiguration cfg;
 
-    /** Counter. */
-    private AtomicLong cnt = new AtomicLong(0);
-
     /** Collected points. */
     private Collection<BenchmarkProbePoint> collected = new ArrayList<>();
 
@@ -67,17 +64,9 @@ public class CacheEntryEventProbe implements BenchmarkProbe {
             if (drv0.cache() != null) {
                 ContinuousQuery<Integer, Integer> qry = new ContinuousQuery<>();
 
-                qry.setLocalListener(new CacheEntryUpdatedListener<Integer, Integer>() {
-                    @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>>
-                        events) throws CacheEntryListenerException {
-                        int size = 0;
+                final AtomicLong cnt = new AtomicLong();
 
-                        for (CacheEntryEvent<? extends Integer, ? extends Integer> e : events)
-                            ++size;
-
-                        cnt.addAndGet(size);
-                    }
-                });
+                qry.setLocalListener(localListener(cnt));
 
                 qryCur = drv0.cache().query(qry);
 
@@ -111,6 +100,24 @@ public class CacheEntryEventProbe implements BenchmarkProbe {
         if (qryCur == null)
             errorHelp(cfg, "Can not start " + getClass().getSimpleName()
                 + " probe. Probably, the driver doesn't provide \"cache()\" method.");
+    }
+
+    /**
+     * @param cntr Received event counter.
+     * @return Local listener.
+     */
+    protected CacheEntryUpdatedListener<Integer, Integer> localListener(final AtomicLong cntr) {
+        return new CacheEntryUpdatedListener<Integer, Integer>() {
+            @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends Integer>> events)
+                throws CacheEntryListenerException {
+                int size = 0;
+
+                for (CacheEntryEvent<? extends Integer, ? extends Integer> e : events)
+                    ++size;
+
+                cntr.addAndGet(size);
+            }
+        };
     }
 
     /** {@inheritDoc} */

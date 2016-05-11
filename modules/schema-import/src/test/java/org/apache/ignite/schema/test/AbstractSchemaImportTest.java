@@ -79,7 +79,8 @@ public abstract class AbstractSchemaImportTest extends TestCase {
             " dateCol DATE," +
             " timeCol TIME," +
             " tsCol TIMESTAMP, " +
-            " arrCol BINARY(10))");
+            " arrCol BINARY(10)," +
+            " FIELD_WITH_ALIAS VARCHAR(10))");
 
         stmt.executeUpdate("CREATE TABLE IF NOT EXISTS OBJECTS (pk INTEGER PRIMARY KEY, " +
             " boolCol BOOLEAN," +
@@ -95,7 +96,8 @@ public abstract class AbstractSchemaImportTest extends TestCase {
             " dateCol DATE," +
             " timeCol TIME," +
             " tsCol TIMESTAMP," +
-            " arrCol BINARY(10))");
+            " arrCol BINARY(10)," +
+            " FIELD_WITH_ALIAS VARCHAR(10))");
 
         stmt.executeUpdate("CREATE SCHEMA IF NOT EXISTS TESTSCHEMA");
 
@@ -113,7 +115,8 @@ public abstract class AbstractSchemaImportTest extends TestCase {
             " dateCol DATE," +
             " timeCol TIME," +
             " tsCol TIMESTAMP, " +
-            " arrCol BINARY(10))");
+            " arrCol BINARY(10)," +
+            " FIELD_WITH_ALIAS VARCHAR(10))");
 
         conn.commit();
 
@@ -144,6 +147,7 @@ public abstract class AbstractSchemaImportTest extends TestCase {
 
                     if (!baseLine.equals(generatedLine) && !baseLine.contains(excludePtrn)
                             && !generatedLine.contains(excludePtrn)) {
+                        System.out.println("Generated file: " + generated.toString());
                         System.out.println("Expected: " + baseLine);
                         System.out.println("Generated: " + generatedLine);
 

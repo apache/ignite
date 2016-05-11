@@ -20,8 +20,8 @@
  * Declares ignite::cache::query::SqlFieldsQuery class.
  */
 
-#ifndef _IGNITE_CACHE_QUERY_SQL_FIELDS
-#define _IGNITE_CACHE_QUERY_SQL_FIELDS
+#ifndef _IGNITE_CACHE_QUERY_QUERY_SQL_FIELDS
+#define _IGNITE_CACHE_QUERY_QUERY_SQL_FIELDS
 
 #include <stdint.h>
 #include <string>
@@ -212,4 +212,4 @@ namespace ignite
     }    
 }
 
-#endif
+#endif //_IGNITE_CACHE_QUERY_QUERY_SQL_FIELDS

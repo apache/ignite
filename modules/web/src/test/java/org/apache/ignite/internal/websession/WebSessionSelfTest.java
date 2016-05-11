@@ -20,6 +20,7 @@ package org.apache.ignite.internal.websession;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.Serializable;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Random;
@@ -27,6 +28,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import javax.servlet.ServletException;
@@ -81,6 +83,13 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
      */
     public void testSingleRequestMetaInf() throws Exception {
         testSingleRequest("ignite-webapp-config.xml");
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testImplicitlyAttributeModification() throws Exception {
+        testImplicitlyModification("ignite-webapp-config.xml");
     }
 
     /**
@@ -155,7 +164,50 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests single request to a server. Checks the presence of session in cache.
+     * Tests implicitly modification attribute in session. Checks the presence of session in cache.
+     *
+     * @param cfg Configuration.
+     * @throws Exception If failed.
+     */
+    private void testImplicitlyModification(String cfg) throws Exception {
+        Server srv = null;
+
+        try {
+            srv = startServer(TEST_JETTY_PORT, cfg, null, new SessionCreateServlet());
+
+            String sesId = sendRequestAndCheckMarker("marker1", null);
+            sendRequestAndCheckMarker("test_string", sesId);
+            sendRequestAndCheckMarker("ignite_test_attribute", sesId);
+        }
+        finally {
+            stopServer(srv);
+        }
+    }
+
+    private String sendRequestAndCheckMarker(String reqMarker, String sesId) throws IOException {
+        URLConnection conn = new URL("http://localhost:" + TEST_JETTY_PORT +
+            "/ignitetest/test?marker=" + reqMarker).openConnection();
+        conn.addRequestProperty("Cookie", "JSESSIONID=" + sesId);
+
+        conn.connect();
+
+        try (BufferedReader rdr = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+            sesId = rdr.readLine();
+
+            IgniteCache<String, HttpSession> cache = G.ignite().cache(getCacheName());
+
+            assertNotNull(cache);
+
+            HttpSession ses = cache.get(sesId);
+
+            assertNotNull(ses);
+            assertEquals(reqMarker, ((Profile)ses.getAttribute("profile")).getMarker());
+        }
+        return sesId;
+    }
+
+    /**
+     * Tests single request to a server. Checks modification attribute in cache.
      *
      * @param cfg Configuration.
      * @throws Exception If failed.
@@ -533,11 +585,45 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
             ses.setAttribute("key1", "val1");
             ses.setAttribute("key2", "val2");
 
+            Profile p = (Profile)ses.getAttribute("profile");
+
+            if (p == null) {
+                p = new Profile();
+                ses.setAttribute("profile", p);
+            }
+
+            p.setMarker(req.getParameter("marker"));
+
             X.println(">>>", "Created session: " + ses.getId(), ">>>");
 
             res.getWriter().write(ses.getId());
 
             res.getWriter().flush();
+        }
+    }
+
+    /**
+     * Complex class for stored in session.
+     */
+    private static class Profile implements Serializable {
+
+        /**
+         * Marker string.
+         */
+        String marker;
+
+        /**
+         * @return marker
+         */
+        public String getMarker() {
+            return marker;
+        }
+
+        /**
+         * @param marker
+         */
+        public void setMarker(String marker) {
+            this.marker = marker;
         }
     }
 

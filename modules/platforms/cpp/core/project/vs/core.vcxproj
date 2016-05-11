@@ -5,13 +5,13 @@
       <Configuration>Debug</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="Debug|x64">
-      <Configuration>Debug</Configuration>
-      <Platform>x64</Platform>
-    </ProjectConfiguration>
     <ProjectConfiguration Include="Release|Win32">
       <Configuration>Release</Configuration>
       <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Release|x64">
       <Configuration>Release</Configuration>
@@ -69,6 +69,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <TargetName>ignite.core</TargetName>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <TargetName>ignite.core</TargetName>
@@ -77,6 +79,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <TargetName>ignite.core</TargetName>
+    <OutDir>$(SolutionDir)$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <TargetName>ignite.core</TargetName>
@@ -88,7 +92,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
-      <AdditionalIncludeDirectories>$(JAVA_HOME)\include;$(JAVA_HOME)\include\win32;$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(JAVA_HOME)\include;$(JAVA_HOME)\include\win32;$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\..\jni\include;$(ProjectDir)\..\..\..\jni\os\win\include;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win\include</AdditionalIncludeDirectories>
       <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
@@ -116,7 +120,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>false</SDLCheck>
-      <AdditionalIncludeDirectories>$(JAVA_HOME)\include;$(JAVA_HOME)\include\win32;$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(JAVA_HOME)\include;$(JAVA_HOME)\include\win32;$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\..\jni\include;$(ProjectDir)\..\..\..\jni\os\win\include;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win\include</AdditionalIncludeDirectories>
       <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
       <IntrinsicFunctions>false</IntrinsicFunctions>
       <FavorSizeOrSpeed>Neither</FavorSizeOrSpeed>
@@ -146,7 +150,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <AdditionalIncludeDirectories>$(JAVA_HOME)\include;$(JAVA_HOME)\include\win32;$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(JAVA_HOME)\include;$(JAVA_HOME)\include\win32;$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\..\jni\include;$(ProjectDir)\..\..\..\jni\os\win\include;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win\include</AdditionalIncludeDirectories>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
@@ -170,7 +174,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>false</SDLCheck>
-      <AdditionalIncludeDirectories>$(JAVA_HOME)\include;$(JAVA_HOME)\include\win32;$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(JAVA_HOME)\include;$(JAVA_HOME)\include\win32;$(ProjectDir)\..\..\..\common\include;$(ProjectDir)\..\..\..\common\os\win\include;$(ProjectDir)\..\..\..\jni\include;$(ProjectDir)\..\..\..\jni\os\win\include;$(ProjectDir)\..\..\..\binary\include;$(ProjectDir)\..\..\..\binary\os\win\include;$(ProjectDir)\..\..\include;$(ProjectDir)\..\..\os\win\include</AdditionalIncludeDirectories>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
@@ -202,74 +206,48 @@
     <ClInclude Include="..\..\include\ignite\cache\query\query_text.h" />
     <ClInclude Include="..\..\include\ignite\ignite.h" />
     <ClInclude Include="..\..\include\ignite\ignite_configuration.h" />
-    <ClInclude Include="..\..\include\ignite\ignite_error.h" />
     <ClInclude Include="..\..\include\ignite\ignition.h" />
-    <ClInclude Include="..\..\include\ignite\guid.h" />
+    <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_updater_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\cache\cache_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\cache\query\query_fields_row_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\cache\query\query_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\ignite_environment.h" />
     <ClInclude Include="..\..\include\ignite\impl\ignite_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\handle_registry.h" />
-    <ClInclude Include="..\..\include\ignite\impl\interop\interop.h" />
-    <ClInclude Include="..\..\include\ignite\impl\interop\interop_input_stream.h" />
-    <ClInclude Include="..\..\include\ignite\impl\interop\interop_memory.h" />
-    <ClInclude Include="..\..\include\ignite\impl\interop\interop_output_stream.h" />
-    <ClInclude Include="..\..\include\ignite\impl\interop\interop_stream_position_guard.h" />
+    <ClInclude Include="..\..\include\ignite\impl\interop\interop_external_memory.h" />
+    <ClInclude Include="..\..\include\ignite\impl\interop\interop_target.h" />
     <ClInclude Include="..\..\include\ignite\impl\operations.h" />
-    <ClInclude Include="..\..\include\ignite\impl\binary\binary_common.h" />
-    <ClInclude Include="..\..\include\ignite\impl\binary\binary_id_resolver.h" />
-    <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_handler.h" />
-    <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_manager.h" />
-    <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_snapshot.h" />
-    <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_updater.h" />
-    <ClInclude Include="..\..\include\ignite\impl\binary\binary_type_updater_impl.h" />
-    <ClInclude Include="..\..\include\ignite\impl\binary\binary_reader_impl.h" />
-    <ClInclude Include="..\..\include\ignite\impl\binary\binary_schema.h" />
-    <ClInclude Include="..\..\include\ignite\impl\binary\binary_utils.h" />
-    <ClInclude Include="..\..\include\ignite\impl\binary\binary_writer_impl.h" />
-    <ClInclude Include="..\..\include\ignite\binary\binary.h" />
-    <ClInclude Include="..\..\include\ignite\binary\binary_consts.h" />
-    <ClInclude Include="..\..\include\ignite\binary\binary_containers.h" />
-    <ClInclude Include="..\..\include\ignite\binary\binary_type.h" />
-    <ClInclude Include="..\..\include\ignite\binary\binary_raw_reader.h" />
-    <ClInclude Include="..\..\include\ignite\binary\binary_raw_writer.h" />
-    <ClInclude Include="..\..\include\ignite\binary\binary_reader.h" />
-    <ClInclude Include="..\..\include\ignite\binary\binary_writer.h" />
-    <ClInclude Include="..\..\os\win\include\ignite\impl\utils.h" />
+    <ClInclude Include="..\..\include\ignite\impl\transactions\transactions_impl.h" />
+    <ClInclude Include="..\..\include\ignite\impl\transactions\transaction_impl.h" />
+    <ClInclude Include="..\..\include\ignite\transactions\transaction.h" />
+    <ClInclude Include="..\..\include\ignite\transactions\transactions.h" />
+    <ClInclude Include="..\..\include\ignite\transactions\transaction_consts.h" />
+    <ClInclude Include="..\..\include\ignite\transactions\transaction_metrics.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\os\win\src\impl\utils.cpp" />
     <ClCompile Include="..\..\src\ignite.cpp" />
-    <ClCompile Include="..\..\src\ignite_error.cpp" />
     <ClCompile Include="..\..\src\ignition.cpp" />
-    <ClCompile Include="..\..\src\guid.cpp" />
+    <ClCompile Include="..\..\src\impl\binary\binary_type_updater_impl.cpp" />
     <ClCompile Include="..\..\src\impl\cache\cache_impl.cpp" />
     <ClCompile Include="..\..\src\impl\cache\query\query_impl.cpp" />
     <ClCompile Include="..\..\src\impl\ignite_environment.cpp" />
     <ClCompile Include="..\..\src\impl\ignite_impl.cpp" />
     <ClCompile Include="..\..\src\impl\handle_registry.cpp" />
-    <ClCompile Include="..\..\src\impl\interop\interop_input_stream.cpp" />
-    <ClCompile Include="..\..\src\impl\interop\interop_memory.cpp" />
-    <ClCompile Include="..\..\src\impl\interop\interop_output_stream.cpp" />
-    <ClCompile Include="..\..\src\impl\binary\binary_type_handler.cpp" />
-    <ClCompile Include="..\..\src\impl\binary\binary_type_manager.cpp" />
-    <ClCompile Include="..\..\src\impl\binary\binary_type_snapshot.cpp" />
-    <ClCompile Include="..\..\src\impl\binary\binary_type_updater.cpp" />
-    <ClCompile Include="..\..\src\impl\binary\binary_type_updater_impl.cpp" />
-    <ClCompile Include="..\..\src\impl\binary\binary_reader_impl.cpp" />
-    <ClCompile Include="..\..\src\impl\binary\binary_schema.cpp" />
-    <ClCompile Include="..\..\src\impl\binary\binary_utils.cpp" />
-    <ClCompile Include="..\..\src\impl\binary\binary_writer_impl.cpp" />
-    <ClCompile Include="..\..\src\binary\binary_containers.cpp" />
-    <ClCompile Include="..\..\src\binary\binary_type.cpp" />
-    <ClCompile Include="..\..\src\binary\binary_raw_reader.cpp" />
-    <ClCompile Include="..\..\src\binary\binary_raw_writer.cpp" />
-    <ClCompile Include="..\..\src\binary\binary_reader.cpp" />
-    <ClCompile Include="..\..\src\binary\binary_writer.cpp" />
+    <ClCompile Include="..\..\src\impl\interop\interop_external_memory.cpp" />
+    <ClCompile Include="..\..\src\impl\interop\interop_target.cpp" />
+    <ClCompile Include="..\..\src\impl\transactions\transactions_impl.cpp" />
+    <ClCompile Include="..\..\src\impl\transactions\transaction_impl.cpp" />
+    <ClCompile Include="..\..\src\transactions\transaction.cpp" />
+    <ClCompile Include="..\..\src\transactions\transactions.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\binary\project\vs\binary.vcxproj">
+      <Project>{4f15669b-92eb-49f0-b774-8f19bae0b960}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\common\project\vs\common.vcxproj">
+      <Project>{b63f2e01-5157-4719-8491-0e1c7cd3b701}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\jni\project\vs\jni.vcxproj">
       <Project>{4f7e4917-4612-4b96-9838-025711ade391}</Project>
     </ProjectReference>
   </ItemGroup>

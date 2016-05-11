@@ -28,10 +28,9 @@ namespace ignite
     {
         struct Organization 
         {
-            Organization()
+            Organization() : name(), addr()
             {
-                name = "";
-                addr = Address();
+                // No-op.
             }
             
             Organization(std::string name, Address addr) : name(name), addr(addr) 
@@ -47,10 +46,10 @@ namespace ignite
 
                 return oss.str();
             }
-            
+
             std::string name;
             Address addr;
-        };    
+        };
     }
 }
 
@@ -101,11 +100,11 @@ namespace ignite
             {
                 std::string name = reader.ReadString("name");
                 ignite::examples::Address addr = reader.ReadObject<ignite::examples::Address>("addr");
-                                
+
                 return ignite::examples::Organization(name, addr);
             }
-        };    
-    }    
+        };
+    }
 }
 
 #endif

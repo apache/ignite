@@ -132,7 +132,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
     private LockTimeoutObject timeoutObj;
 
     /** Lock timeout. */
-    private long timeout;
+    private final long timeout;
 
     /** Filter. */
     private CacheEntryPredicate[] filter;
@@ -199,6 +199,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
         assert nearNodeId != null;
         assert nearLockVer != null;
         assert topVer.topologyVersion() > 0;
+        assert (tx != null && timeout >= 0) || tx == null;
 
         this.cctx = cctx;
         this.nearNodeId = nearNodeId;
@@ -301,13 +302,6 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
      */
     @Override public IgniteUuid futureId() {
         return futId;
-    }
-
-    /**
-     * @return Near lock version.
-     */
-    public GridCacheVersion nearLockVersion() {
-        return nearLockVer;
     }
 
     /** {@inheritDoc} */
@@ -482,7 +476,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
     private void onFailed(boolean dist) {
         undoLocks(dist);
 
-        onComplete(false, false);
+        onComplete(false, false, true);
     }
 
     /**
@@ -621,7 +615,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
             err = t;
         }
 
-        onComplete(false, false);
+        onComplete(false, false, true);
     }
 
     /**
@@ -684,7 +678,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
     /** {@inheritDoc} */
     @Override public boolean cancel() {
         if (onCancelled())
-            onComplete(false, false);
+            onComplete(false, false, true);
 
         return isCancelled();
     }
@@ -714,7 +708,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                 this.err = err;
         }
 
-        return onComplete(success, err instanceof NodeStoppingException);
+        return onComplete(success, err instanceof NodeStoppingException, true);
     }
 
     /**
@@ -722,13 +716,14 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
      *
      * @param success {@code True} if lock was acquired.
      * @param stopping {@code True} if node is stopping.
+     * @param unlock {@code True} if locks should be released.
      * @return {@code True} if complete by this operation.
      */
-    private boolean onComplete(boolean success, boolean stopping) {
+    private boolean onComplete(boolean success, boolean stopping, boolean unlock) {
         if (log.isDebugEnabled())
             log.debug("Received onComplete(..) callback [success=" + success + ", fut=" + this + ']');
 
-        if (!success && !stopping)
+        if (!success && !stopping && unlock)
             undoLocks(true);
 
         boolean set = false;
@@ -769,7 +764,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
      */
     public void map() {
         if (F.isEmpty(entries)) {
-            onComplete(true, false);
+            onComplete(true, false, true);
 
             return;
         }
@@ -1090,7 +1085,9 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
 
             timedOut = true;
 
-            onComplete(false, false);
+            boolean releaseLocks = !(inTx() && cctx.tm().deadlockDetectionEnabled());
+
+            onComplete(false, false, releaseLocks);
         }
 
         /** {@inheritDoc} */

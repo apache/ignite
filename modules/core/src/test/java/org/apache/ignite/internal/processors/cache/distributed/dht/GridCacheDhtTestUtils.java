@@ -85,7 +85,12 @@ public class GridCacheDhtTestUtils {
         for (int i = 0; i < keyCnt; i++) {
             KeyCacheObject cacheKey = ctx.toCacheKeyObject(i);
 
-            cacheMap.putEntry(AffinityTopologyVersion.NONE, cacheKey, ctx.toCacheKeyObject("value" + i));
+            cacheMap.putEntryIfObsoleteOrAbsent(
+                AffinityTopologyVersion.NONE,
+                cacheKey,
+                ctx.toCacheKeyObject("value" + i),
+                false,
+                false);
 
             dht.preloader().request(Collections.singleton(cacheKey), AffinityTopologyVersion.NONE);
 
