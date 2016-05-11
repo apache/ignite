@@ -42,6 +42,7 @@ import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactoryNative;
 import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -349,6 +350,29 @@ public class PlatformConfigurationUtils {
 
         readCacheConfigurations(in, cfg);
         readDiscoveryConfiguration(in, cfg);
+
+        if (in.readBoolean()) {
+            TcpCommunicationSpi comm = new TcpCommunicationSpi();
+
+            comm.setAckSendThreshold(in.readInt());
+            comm.setDirectBuffer(in.readBoolean());
+            comm.setDirectSendBuffer(in.readBoolean());
+            comm.setIdleConnectionTimeout(in.readLong());
+            comm.setLocalAddress(in.readString());
+            comm.setLocalPort(in.readInt());
+            comm.setLocalPortRange(in.readInt());
+            comm.setMaxConnectTimeout(in.readLong());
+            comm.setMessageQueueLimit(in.readInt());
+            comm.setReconnectCount(in.readInt());
+            comm.setSelectorsCount(in.readInt());
+            comm.setSlowClientQueueLimit(in.readInt());
+            comm.setSocketReceiveBuffer(in.readInt());
+            comm.setSocketSendBuffer(in.readInt());
+            comm.setTcpNoDelay(in.readBoolean());
+            comm.setUnacknowledgedMessagesBufferSize(in.readInt());
+
+            cfg.setCommunicationSpi(comm);
+        }
 
         if (in.readBoolean()) {
             if (cfg.getBinaryConfiguration() == null)

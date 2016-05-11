@@ -104,7 +104,6 @@ namespace Apache.Ignite.Core.Communication.Tcp
         {
             AckSendThreshold = reader.ReadInt();
             ConnectTimeout = reader.ReadLongAsTimespan();
-            ConnectTimeout = reader.ReadLongAsTimespan();
             DirectBuffer = reader.ReadBoolean();
             DirectSendBuffer = reader.ReadBoolean();
             IdleConnectionTimeout = reader.ReadLongAsTimespan();
