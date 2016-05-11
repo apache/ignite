@@ -37,7 +37,7 @@
 	 }
 
 	 /**
-	  * %Ignite Transaction API.
+	  * %Ignite %Transaction API.
 	  */
 	 namespace transactions
 	 {
