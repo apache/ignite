@@ -56,6 +56,9 @@ namespace Apache.Ignite.Core.Communication.Tcp
         /// <summary> Default value of <see cref="LocalPortRange"/> property. </summary>
         public const int DefaultLocalPortRange = 100;
 
+        /// <summary> Default value of <see cref="MaxConnectTimeout"/> property. </summary>
+        public static readonly TimeSpan DefaultMaxConnectTimeout = TimeSpan.FromMinutes(10);
+
         /// <summary>
         /// Gets or sets the number of received messages per connection to node 
         /// after which acknowledgment message is sent.
@@ -100,7 +103,7 @@ namespace Apache.Ignite.Core.Communication.Tcp
         public int LocalPort { get; set; }
 
         /// <summary>
-        /// Sets local port range for local host ports (value must greater than or equal to <tt>0</tt>).
+        /// Gets or sets local port range for local host ports (value must greater than or equal to <tt>0</tt>).
         /// If provided local port <see cref="LocalPort"/> is occupied,
         /// implementation will try to increment the port number for as long as it is less than
         /// initial value plus this range.
@@ -110,5 +113,16 @@ namespace Apache.Ignite.Core.Communication.Tcp
         /// </summary>
         [DefaultValue(DefaultLocalPortRange)]
         public int LocalPortRange { get; set; }
+
+        /// <summary>
+        /// Gets or sets maximum connect timeout. If handshake is not established within connect timeout,
+        /// then SPI tries to repeat handshake procedure with increased connect timeout.
+        /// Connect timeout can grow till maximum timeout value,
+        /// if maximum timeout value is reached then the handshake is considered as failed.
+        /// <para />
+        /// <c>0</c> is interpreted as infinite timeout.
+        /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:10:00")]
+        public TimeSpan MaxConnectTimeout { get; set; }
     }
 }
