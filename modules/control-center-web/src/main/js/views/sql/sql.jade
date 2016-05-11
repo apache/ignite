@@ -33,7 +33,7 @@ mixin chart-settings(mdl)
         .col-xs-4
             .chart-settings-link(ng-show='paragraph.chart && paragraph.chartColumns.length > 0')
                 a(title='Click to show chart settings dialog' ng-click='$event.stopPropagation()' bs-popover data-template-url='/sql/chart-settings.html' data-placement='bottom' data-auto-close='1' data-trigger='click')
-                    i.fa.fa-chevron-circle-right
+                    i.fa.fa-cog
                     | Chart settings
                 div(ng-show='paragraphTimeSpanVisible(paragraph)')
                     label Show

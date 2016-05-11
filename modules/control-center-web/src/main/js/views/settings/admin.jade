@@ -39,10 +39,10 @@
                             th.col-xs-2(st-sort='lastLogin' st-sort-default='reverse') Last login
                             th.text-nowrap(st-sort='counters.clusters' st-descending-first bs-tooltip='"Clusters count"' data-placement='top')
                                 i.fa.fa-sitemap()
-                            th.text-nowrap(st-sort='counters.caches' st-descending-first bs-tooltip='"Caches count"' data-placement='top')
-                                i.fa.fa-database()
                             th.text-nowrap(st-sort='counters.models' st-descending-first bs-tooltip='"Models count"' data-placement='top')
                                 i.fa.fa-object-group()
+                            th.text-nowrap(st-sort='counters.caches' st-descending-first bs-tooltip='"Caches count"' data-placement='top')
+                                i.fa.fa-database()
                             th.text-nowrap(st-sort='counters.igfs' st-descending-first bs-tooltip='"IGFS count"' data-placement='top')
                                 i.fa.fa-folder-o()
                             th(width='1%') Actions
@@ -51,19 +51,13 @@
                             td {{::row.userName}}
                             td
                                 a(ng-href='mailto:{{::row.email}}') {{::row.email}}
-
                             td {{::row.company}}
                             td {{::row.countryCode}}
-                            td
-                                span {{::row.lastLogin | date:'medium'}}
-                            td.text-center
-                                    span {{::row.counters.clusters}}
-                            td.text-center
-                                    span {{::row.counters.caches}}
-                            td.text-center
-                                    span {{::row.counters.models}}
-                            td.text-center
-                                    span {{::row.counters.igfs}}
+                            td {{::row.lastLogin | date:'medium'}}
+                            td {{::row.counters.clusters}}
+                            td {{::row.counters.models}}
+                            td {{::row.counters.caches}}
+                            td {{::row.counters.igfs}}
                             td.text-center
                                 a.btn.btn-default.dropdown-toggle(bs-dropdown='' ng-show='row._id != user._id' data-placement='bottom-right')
                                     i.fa.fa-gear &nbsp;
