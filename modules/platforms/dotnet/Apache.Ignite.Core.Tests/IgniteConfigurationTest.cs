@@ -136,16 +136,19 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestSpringXml()
         {
-            // When Spring XML is used, all properties are ignored.
-            var cfg = GetCustomConfig();
-
-            cfg.SpringConfigUrl = "config\\marshaller-default.xml";
+            // When Spring XML is used, .NET overrides Spring.
+            var cfg = new IgniteConfiguration
+            {
+                SpringConfigUrl = @"config\spring-test.xml",
+                NetworkSendRetryDelay = TimeSpan.FromSeconds(45)
+            };
 
             using (var ignite = Ignition.Start(cfg))
             {
                 var resCfg = ignite.GetConfiguration();
 
-                CheckDefaultProperties(resCfg);
+                Assert.AreEqual(45, resCfg.NetworkSendRetryDelay.TotalSeconds);  // .NET overrides XML
+                Assert.AreEqual(2999, resCfg.NetworkTimeout.TotalMilliseconds);  // Not set in .NET -> comes from XML
             }
         }
 
