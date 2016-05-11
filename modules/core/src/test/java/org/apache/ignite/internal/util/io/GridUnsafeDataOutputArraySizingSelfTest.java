@@ -131,7 +131,6 @@ public class GridUnsafeDataOutputArraySizingSelfTest extends GridCommonAbstractT
             try {
                 out.write(bytes);
                 out.reset();
-//                System.out.println("L=" + out.internalArray().length);
 
                 return out.internalArray().length == len;
             }
