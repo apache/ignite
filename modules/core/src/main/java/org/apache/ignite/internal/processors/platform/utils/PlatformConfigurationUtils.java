@@ -715,6 +715,7 @@ public class PlatformConfigurationUtils {
         CommunicationSpi comm = cfg.getCommunicationSpi();
 
         if (comm instanceof TcpCommunicationSpi) {
+            w.writeBoolean(true);
             TcpCommunicationSpi tcp = (TcpCommunicationSpi) comm;
 
             w.writeInt(tcp.getAckSendThreshold());
