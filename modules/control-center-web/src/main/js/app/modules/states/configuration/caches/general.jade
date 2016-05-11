@@ -57,7 +57,7 @@ form.panel.panel-default(name='general' novalidate)
                     +checkbox('Copy on read', model + '.copyOnRead', 'copyOnRead',
                         'Flag indicating whether copy of the value stored in cache should be created for cache operation implying return value<br/>\
                         Also if this flag is set copies are created for values passed to CacheInterceptor and to CacheEntryProcessor')
-                .settings-row
+                .settings-row(ng-show='#{model}.cacheMode === "PARTITIONED" && #{model}.atomicityMode === "TRANSACTIONAL"')
                     +checkbox('Invalidate near cache', model + '.invalidate', 'invalidate',
                         'Invalidation flag for near cache entries in transaction<br/>\
                         If set then values will be invalidated (nullified) upon commit in near cache')
