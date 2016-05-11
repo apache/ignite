@@ -397,9 +397,14 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                     "(it does not belong to affinity): " + locPart);
                         }
                     }
+                    else
+                        locPart.own();
                 }
-                else if (belongs)
-                    createPartition(p);
+                else if (belongs) {
+                    locPart = createPartition(p);
+
+                    locPart.own();
+                }
             }
         }
 
