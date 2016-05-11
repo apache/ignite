@@ -356,6 +356,7 @@ public class PlatformConfigurationUtils {
             TcpCommunicationSpi comm = new TcpCommunicationSpi();
 
             comm.setAckSendThreshold(in.readInt());
+            comm.setConnectTimeout(in.readLong());
             comm.setDirectBuffer(in.readBoolean());
             comm.setDirectSendBuffer(in.readBoolean());
             comm.setIdleConnectionTimeout(in.readLong());
