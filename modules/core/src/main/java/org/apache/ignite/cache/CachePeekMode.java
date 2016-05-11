@@ -35,7 +35,6 @@ import org.jetbrains.annotations.Nullable;
  * <li>{@link #BACKUP}</li>
  * <li>{@link #ONHEAP}</li>
  * <li>{@link #OFFHEAP}</li>
- * <li>{@link #SWAP}</li>
  * </ul>
  */
 public enum CachePeekMode {

@@ -436,8 +436,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      * @return Value.
      */
     @Nullable protected <K, V> V peek(IgniteCache<K, V> cache, K key) {
-        return offheapTiered(cache) ? cache.localPeek(key, CachePeekMode.SWAP, CachePeekMode.OFFHEAP) :
-            cache.localPeek(key, CachePeekMode.ONHEAP);
+        return cache.localPeek(key);
     }
 
     /**

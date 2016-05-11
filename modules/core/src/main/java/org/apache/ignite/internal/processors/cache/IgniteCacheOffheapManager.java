@@ -244,7 +244,7 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
      * @return Number of undeployed entries.
      */
     public int onUndeploy(ClassLoader ldr) {
-        // TODO: GG-10884.
+        // TODO: GG-11141.
         return 0;
     }
 
@@ -385,7 +385,7 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
 
     // TODO GG-10884: moved from GridCacheSwapManager.
     void writeAll(Iterable<GridCacheBatchSwapEntry> swapped) throws IgniteCheckedException {
-
+        // No-op.
     }
 
     /**

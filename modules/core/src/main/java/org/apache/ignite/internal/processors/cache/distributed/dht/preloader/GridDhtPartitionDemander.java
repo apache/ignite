@@ -698,8 +698,7 @@ public class GridDhtPartitionDemander {
                                 false, null, null, null, true);
                     }
                     else {
-                        if (cctx.isOffHeapEnabled())
-                            cctx.evicts().touch(cached, topVer); // Start tracking.
+                        cctx.evicts().touch(cached, topVer); // Start tracking.
 
                         if (log.isDebugEnabled())
                             log.debug("Rebalancing entry is already in cache (will ignore) [key=" + cached.key() +

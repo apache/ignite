@@ -82,7 +82,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.affinity.GridCacheAffinityImpl;
-import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
@@ -800,7 +799,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                             // Swap and offheap are disabled for near cache.
                             modes.offheap = false;
-                            modes.swap = false;
                         }
                     }
                 }
@@ -810,33 +808,35 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     if (nearKey) {
                         // Swap and offheap are disabled for near cache.
                         modes.offheap = false;
-                        modes.swap = false;
                     }
                 }
 
                 if (nearKey && !ctx.isNear())
                     return null;
 
-                if (modes.heap) {
-                    GridCacheEntryEx e = nearKey ? peekEx(cacheKey) :
-                        (ctx.isNear() ? ctx.near().dht().peekEx(cacheKey) : peekEx(cacheKey));
+                GridCacheEntryEx e;
+                GridCacheContext ctx0;
 
-                    if (e != null) {
-                        cacheVal = e.peek(modes.heap, modes.offheap, modes.swap, topVer, plc);
-
-                        modes.offheap = false;
-                        modes.swap = false;
-                    }
+                if (nearKey) {
+                    ctx0 = context();
+                    e = peekEx(key);
+                }
+                else {
+                    ctx0 = ctx.isNear() ? ctx.near().dht().context() : ctx;
+                    e = modes.offheap ? ctx0.cache().entryEx(key) : ctx0.cache().peekEx(key);
                 }
 
-                if (modes.offheap || modes.swap) {
-                    IgniteCacheOffheapManager offheapMgr = ctx.isNear() ? ctx.near().dht().context().offheap() : ctx.offheap();
-
-                    cacheVal = offheapMgr.readValue(cacheKey, part);
+                if (e != null) {
+                    try {
+                        cacheVal = e.peek(modes.heap, modes.offheap, topVer, plc);
+                    }
+                    finally {
+                        ctx0.evicts().touch(e, null);
+                    }
                 }
             }
             else
-                cacheVal = localCachePeek0(cacheKey, modes.heap, modes.offheap, modes.swap, plc);
+                cacheVal = localCachePeek0(cacheKey, modes.heap, modes.offheap, plc);
 
             Object val = ctx.unwrapBinaryIfNeeded(cacheVal, ctx.keepBinary(), false);
 
@@ -854,7 +854,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param key Key.
      * @param heap Read heap flag.
      * @param offheap Read offheap flag.
-     * @param swap Read swap flag.
      * @param plc Optional expiry policy.
      * @return Value.
      * @throws GridCacheEntryRemovedException If entry removed.
@@ -864,23 +863,20 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Nullable private CacheObject localCachePeek0(KeyCacheObject key,
         boolean heap,
         boolean offheap,
-        boolean swap,
         IgniteCacheExpiryPolicy plc)
         throws GridCacheEntryRemovedException, IgniteCheckedException {
         assert ctx.isLocal();
-        assert heap || offheap || swap;
+        assert heap || offheap;
 
-        if (heap) {
-            GridCacheEntryEx e = peekEx(key);
+        GridCacheEntryEx e = offheap ? entryEx(key) : peekEx(key);
 
-            if (e != null)
-                return e.peek(heap, offheap, swap, AffinityTopologyVersion.NONE, plc);
-        }
-
-        if (offheap || swap) {
-            IgniteCacheOffheapManager offheapMgr = ctx.isNear() ? ctx.near().dht().context().offheap() : ctx.offheap();
-
-            return offheapMgr.readValue(key, ctx.affinity().partition(key));
+        if (e != null) {
+            try {
+                return e.peek(heap, offheap, AffinityTopologyVersion.NONE, plc);
+            }
+            finally {
+                ctx.evicts().touch(e, null);
+            }
         }
 
         return null;
@@ -4837,9 +4833,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /** */
         private boolean offheap;
 
-        /** */
-        private boolean swap;
-
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(PeekModes.class, this);
@@ -4864,7 +4857,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
             modes.heap = true;
             modes.offheap = true;
-            modes.swap = true;
         }
         else {
             for (CachePeekMode peekMode : peekModes) {
@@ -4878,7 +4870,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                         modes.heap = true;
                         modes.offheap = true;
-                        modes.swap = true;
 
                         break;
 
@@ -4907,21 +4898,15 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                         break;
 
-                    case SWAP:
-                        modes.swap = true;
-
-                        break;
-
                     default:
                         assert false : peekMode;
                 }
             }
         }
 
-        if (!(modes.heap || modes.offheap || modes.swap)) {
+        if (!(modes.heap || modes.offheap)) {
             modes.heap = true;
             modes.offheap = true;
-            modes.swap = true;
         }
 
         if (!(modes.primary || modes.backup || modes.near)) {
@@ -4933,7 +4918,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             }
         }
 
-        assert modes.heap || modes.offheap || modes.swap;
+        assert modes.heap || modes.offheap;
         assert modes.primary || modes.backup || modes.near;
 
         return modes;

@@ -396,9 +396,14 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                                     "(it does not belong to affinity): " + locPart);
                         }
                     }
+                    else
+                        locPart.own();
                 }
-                else if (belongs)
-                    createPartition(p);
+                else if (belongs) {
+                    locPart = createPartition(p);
+
+                    locPart.own();
+                }
             }
         }
 

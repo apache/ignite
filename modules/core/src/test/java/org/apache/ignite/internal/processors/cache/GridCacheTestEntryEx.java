@@ -870,7 +870,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
     /** {@inheritDoc} */
     @Nullable @Override public CacheObject peek(boolean heap,
         boolean offheap,
-        boolean swap,
         AffinityTopologyVersion topVer,
         @Nullable IgniteCacheExpiryPolicy plc)
     {
@@ -879,9 +878,6 @@ public class GridCacheTestEntryEx extends GridMetadataAwareAdapter implements Gr
 
     /** {@inheritDoc} */
     @Nullable @Override public CacheObject peek(
-        boolean heap,
-        boolean offheap,
-        boolean swap,
         @Nullable IgniteCacheExpiryPolicy plc)
         throws GridCacheEntryRemovedException, IgniteCheckedException {
         return null;

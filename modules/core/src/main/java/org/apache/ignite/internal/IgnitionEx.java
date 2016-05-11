@@ -1949,7 +1949,7 @@ public class IgnitionEx {
 
                 dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
                 dbCfg.setPageSize(32 * 1024);
-                dbCfg.setPageCacheSize(100 * 1024 * 1024);
+                dbCfg.setPageCacheSize(512 * 1024 * 1024);
 
                 myCfg.setDatabaseConfiguration(dbCfg);
             }

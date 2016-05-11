@@ -75,9 +75,6 @@ public class VisorCacheConfiguration implements Serializable {
     /** Max concurrent async operations. */
     private int maxConcurrentAsyncOps;
 
-    /** Memory mode. */
-    private CacheMemoryMode memoryMode;
-
     /** Cache interceptor. */
     private String interceptor;
 
@@ -253,7 +250,7 @@ public class VisorCacheConfiguration implements Serializable {
      * @return Memory mode.
      */
     public CacheMemoryMode memoryMode() {
-        return memoryMode;
+        return null;
     }
 
     /**

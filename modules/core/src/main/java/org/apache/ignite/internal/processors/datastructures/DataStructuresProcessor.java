@@ -914,7 +914,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
         ccfg.setName(name);
         ccfg.setBackups(cfg.getBackups());
         ccfg.setCacheMode(cfg.getCacheMode());
-        ccfg.setMemoryMode(cfg.getMemoryMode());
         ccfg.setAtomicityMode(cfg.getAtomicityMode());
         ccfg.setOffHeapMaxMemory(cfg.getOffHeapMaxMemory());
         ccfg.setNodeFilter(cfg.getNodeFilter());
@@ -1774,7 +1773,6 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
 
         for (CacheCollectionInfo col : infos) {
             if (col.cfg.getAtomicityMode() == cfg.getAtomicityMode() &&
-                col.cfg.getMemoryMode() == cfg.getMemoryMode() &&
                 col.cfg.getCacheMode() == cfg.getCacheMode() &&
                 col.cfg.getBackups() == cfg.getBackups() &&
                 col.cfg.getOffHeapMaxMemory() == cfg.getOffHeapMaxMemory() &&
