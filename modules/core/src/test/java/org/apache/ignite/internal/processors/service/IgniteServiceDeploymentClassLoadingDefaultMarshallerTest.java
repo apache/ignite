@@ -127,11 +127,11 @@ public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends Gr
     public void testServiceDeployment1() throws Exception {
         startGrid(SERVER_NODE);
 
-        startGrid(SERVER_NODE_WITH_EXT_CLASS_LOADER).services().deployLazy(serviceConfig());
+        startGrid(SERVER_NODE_WITH_EXT_CLASS_LOADER).services().deploy(serviceConfig());
 
         startGrid(CLIENT_NODE);
 
-        startGrid(CLIENT_NODE_WITH_EXT_CLASS_LOADER).services().deployLazy(serviceConfig());
+        startGrid(CLIENT_NODE_WITH_EXT_CLASS_LOADER).services().deploy(serviceConfig());
 
         ignite(SERVER_NODE).services().serviceDescriptors();
 
@@ -144,24 +144,24 @@ public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends Gr
     public void testServiceDeployment2() throws Exception {
         startGrid(SERVER_NODE);
 
-        startGrid(CLIENT_NODE_WITH_EXT_CLASS_LOADER).services().deployLazy(serviceConfig());
+        startGrid(CLIENT_NODE_WITH_EXT_CLASS_LOADER).services().deploy(serviceConfig());
 
         startGrid(CLIENT_NODE);
 
-        startGrid(SERVER_NODE_WITH_EXT_CLASS_LOADER).services().deployLazy(serviceConfig());
+        startGrid(SERVER_NODE_WITH_EXT_CLASS_LOADER).services().deploy(serviceConfig());
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testServiceDeployment3() throws Exception {
-        startGrid(SERVER_NODE_WITH_EXT_CLASS_LOADER).services().deployLazy(serviceConfig());
+        startGrid(SERVER_NODE_WITH_EXT_CLASS_LOADER).services().deploy(serviceConfig());
 
         startGrid(SERVER_NODE);
 
         startGrid(CLIENT_NODE);
 
-        startGrid(CLIENT_NODE_WITH_EXT_CLASS_LOADER).services().deployLazy(serviceConfig());
+        startGrid(CLIENT_NODE_WITH_EXT_CLASS_LOADER).services().deploy(serviceConfig());
     }
 
     /**

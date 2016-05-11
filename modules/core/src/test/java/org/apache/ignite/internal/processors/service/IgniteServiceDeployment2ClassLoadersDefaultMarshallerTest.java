@@ -152,15 +152,15 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
      * @throws Exception If failed.
      */
     public void testServiceDeployment1() throws Exception {
-        startGrid(0).services().deployLazy(serviceConfig(true));
+        startGrid(0).services().deploy(serviceConfig(true));
 
-        startGrid(1).services().deployLazy(serviceConfig(false));
+        startGrid(1).services().deploy(serviceConfig(false));
 
         client = true;
 
-        startGrid(2).services().deployLazy(serviceConfig(true));
+        startGrid(2).services().deploy(serviceConfig(true));
 
-        startGrid(3).services().deployLazy(serviceConfig(false));
+        startGrid(3).services().deploy(serviceConfig(false));
 
         for (int i = 0; i < 4; i++)
             ignite(i).services().serviceDescriptors();
@@ -182,16 +182,16 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
         for (int i = 4 ; i < 6; i++)
             startGrid(i);
 
-        ignite(4).services().deployLazy(serviceConfig(true));
+        ignite(4).services().deploy(serviceConfig(true));
 
-        ignite(5).services().deployLazy(serviceConfig(false));
+        ignite(5).services().deploy(serviceConfig(false));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testServiceDeployment3() throws Exception {
-        startGrid(0).services().deployLazy(serviceConfig(true));
+        startGrid(0).services().deploy(serviceConfig(true));
 
         startGrid(1);
 
@@ -201,7 +201,7 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
 
         awaitPartitionMapExchange();
 
-        ignite(1).services().deployLazy(serviceConfig(false));
+        ignite(1).services().deploy(serviceConfig(false));
 
         startGrid(0);
     }

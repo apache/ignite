@@ -164,23 +164,6 @@ public class IgniteServicesImpl extends AsyncSupportAdapter implements IgniteSer
     }
 
     /** {@inheritDoc} */
-    @Override public void deployLazy(ServiceConfiguration cfg) {
-        A.notNull(cfg, "cfg");
-
-        guard();
-
-        try {
-            saveOrGet(ctx.service().deployLazy(cfg));
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
-        finally {
-            unguard();
-        }
-    }
-
-    /** {@inheritDoc} */
     @Override public void cancel(String name) {
         A.notNull(name, "name");
 

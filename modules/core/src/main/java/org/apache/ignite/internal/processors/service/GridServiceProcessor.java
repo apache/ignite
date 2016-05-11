@@ -38,6 +38,7 @@ import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DeploymentMode;
@@ -92,6 +93,7 @@ import org.apache.ignite.thread.IgniteThreadFactory;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICE_COMPATIBILITY_ENABLED;
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
@@ -103,6 +105,10 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "ConstantConditions"})
 public class GridServiceProcessor extends GridProcessorAdapter {
+    /** */
+    public static final boolean SERVICE_COMPATIBILITY_ENABLED =
+        IgniteSystemProperties.getBoolean(IGNITE_SERVICE_COMPATIBILITY_ENABLED, false);
+
     /** Time to wait before reassignment retries. */
     private static final long RETRY_TIMEOUT = 1000;
 
@@ -398,38 +404,30 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param cfg Service configuration.
      * @return Future for deployment.
      */
-    public IgniteInternalFuture<?> deployLazy(ServiceConfiguration cfg) {
-        A.notNull(cfg, "cfg");
-
-        validate(cfg);
-
-        Marshaller marsh = ctx.config().getMarshaller();
-
-        LazyServiceConfiguration cfg0;
-
-        try {
-            byte[] srvcBytes = marsh.marshal(cfg.getService());
-
-            cfg0 = new LazyServiceConfiguration(cfg, srvcBytes);
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to marshal service with configured marshaller [srvc=" + cfg.getService()
-                + ", marsh=" + marsh + "]", e);
-
-            return new GridFinishedFuture<>(e);
-        }
-
-        return deploy(cfg0);
-    }
-
-    /**
-     * @param cfg Service configuration.
-     * @return Future for deployment.
-     */
     public IgniteInternalFuture<?> deploy(ServiceConfiguration cfg) {
         A.notNull(cfg, "cfg");
 
         validate(cfg);
+
+        if (!SERVICE_COMPATIBILITY_ENABLED) {
+            Marshaller marsh = ctx.config().getMarshaller();
+
+            LazyServiceConfiguration cfg0;
+
+            try {
+                byte[] srvcBytes = marsh.marshal(cfg.getService());
+
+                cfg0 = new LazyServiceConfiguration(cfg, srvcBytes);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to marshal service with configured marshaller [srvc=" + cfg.getService()
+                    + ", marsh=" + marsh + "]", e);
+
+                return new GridFinishedFuture<>(e);
+            }
+
+            cfg = cfg0;
+        }
 
         GridServiceDeploymentFuture fut = new GridServiceDeploymentFuture(cfg);
 
