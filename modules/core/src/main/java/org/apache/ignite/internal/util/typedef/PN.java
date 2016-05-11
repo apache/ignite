@@ -22,7 +22,7 @@ import org.apache.ignite.internal.util.lang.GridFunc;
 import org.apache.ignite.lang.IgnitePredicate;
 
 /**
- * Defines {@code alias} for <tt>GridPredicate&lt;GridNode&gt;</tt> by extending
+ * Defines {@code alias} for <tt>GridPredicate&lt;ClusterNode&gt;</tt> by extending
  * {@link org.apache.ignite.lang.IgnitePredicate}. Since Java doesn't provide type aliases (like Scala, for example) we resort
  * to these types of measures. This is intended to provide for more concise code without sacrificing
  * readability. For more information see {@link org.apache.ignite.lang.IgnitePredicate} and {@link org.apache.ignite.cluster.ClusterNode}.

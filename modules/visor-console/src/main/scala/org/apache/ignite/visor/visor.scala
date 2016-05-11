@@ -244,7 +244,7 @@ object visor extends VisorTag {
      * Get grid node for specified ID.
      *
      * @param nid Node ID.
-     * @return GridNode instance.
+     * @return ClusterNode instance.
      * @throws IgniteException if Visor is disconnected or node not found.
      */
     def node(nid: UUID): ClusterNode = {

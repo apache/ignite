@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -3192,7 +3194,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (rmv) {
                 onMarkedObsolete();
 
-                cctx.cache().map().removeEntry(this);
+                cctx.cache().removeEntry(this);
             }
         }
     }
@@ -4229,7 +4231,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (rmv) {
                 onMarkedObsolete();
 
-                cctx.cache().map().removeEntry(this);
+                cctx.cache().removeEntry(this);
             }
         }
 
@@ -4287,15 +4289,29 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             flags |= IS_DELETED_MASK;
 
-            cctx.decrementPublicSize(this);
+            decrementMapPublicSize();
         }
         else {
             assert deletedUnlocked() : this;
 
             flags &= ~IS_DELETED_MASK;
 
-            cctx.incrementPublicSize(this);
+            incrementMapPublicSize();
         }
+    }
+
+    /**
+     *  Increments public size of map.
+     */
+    protected void incrementMapPublicSize() {
+        cctx.incrementPublicSize(this);
+    }
+
+    /**
+     * Decrements public size of map.
+     */
+    protected void decrementMapPublicSize() {
+        cctx.decrementPublicSize(this);
     }
 
     /**
@@ -4303,6 +4319,20 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      */
     @Nullable protected GridCacheMvcc mvccExtras() {
         return extras != null ? extras.mvcc() : null;
+    }
+
+    /**
+     * @return All MVCC local candidates.
+     */
+    @Nullable public synchronized List<GridCacheMvccCandidate> mvccAllLocal() {
+        GridCacheMvcc mvcc = extras != null ? extras.mvcc() : null;
+
+        if (mvcc == null)
+            return null;
+
+        List<GridCacheMvccCandidate> locs = mvcc.allLocal();
+
+        return (locs == null || locs.isEmpty()) ? null : new ArrayList<>(locs);
     }
 
     /**

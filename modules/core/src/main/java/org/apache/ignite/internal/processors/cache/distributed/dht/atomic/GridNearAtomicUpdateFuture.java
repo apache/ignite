@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import javax.cache.expiry.ExpiryPolicy;
@@ -789,6 +790,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
      * @return Mapping.
      * @throws Exception If failed.
      */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     private Map<UUID, GridNearAtomicUpdateRequest> mapUpdate(Collection<ClusterNode> topNodes,
         AffinityTopologyVersion topVer,
         GridCacheVersion futVer,
@@ -854,7 +856,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             if (val == null && op != GridCacheOperation.DELETE)
                 continue;
 
-            KeyCacheObject cacheKey = cctx.toCacheKeyObject(key);
+            KeyCacheObject cacheKey = cctx.toCacheKeyObject(key, true);
 
             if (remapKeys != null && !remapKeys.contains(cacheKey))
                 continue;
@@ -862,7 +864,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             if (op != TRANSFORM)
                 val = cctx.toCacheObject(val);
 
-            Collection<ClusterNode> affNodes = mapKey(cacheKey, topVer);
+            List<ClusterNode> affNodes = mapKey(cacheKey, topVer);
 
             if (affNodes.isEmpty())
                 throw new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
@@ -870,7 +872,9 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
 
             int i = 0;
 
-            for (ClusterNode affNode : affNodes) {
+            for (int n = 0; n < affNodes.size(); n++) {
+                ClusterNode affNode = affNodes.get(n);
+
                 if (affNode == null)
                     throw new ClusterTopologyServerNotFoundException("Failed to map keys for cache " +
                         "(all partition nodes left the grid).");
@@ -969,12 +973,12 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         if (val == null && op != GridCacheOperation.DELETE)
             throw new NullPointerException("Null value.");
 
-        KeyCacheObject cacheKey = cctx.toCacheKeyObject(key);
+        KeyCacheObject cacheKey = cctx.toCacheKeyObject(key, true);
 
         if (op != TRANSFORM)
             val = cctx.toCacheObject(val);
 
-        ClusterNode primary = cctx.affinity().primary(cacheKey, topVer);
+        ClusterNode primary = cctx.affinity().primary(cacheKey.partition(), topVer);
 
         if (primary == null)
             throw new ClusterTopologyServerNotFoundException("Failed to map keys for cache (all partition nodes " +
@@ -1020,7 +1024,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
      * @param topVer Topology version to map.
      * @return Collection of nodes to which key is mapped.
      */
-    private Collection<ClusterNode> mapKey(KeyCacheObject key, AffinityTopologyVersion topVer) {
+    private List<ClusterNode> mapKey(KeyCacheObject key, AffinityTopologyVersion topVer) {
         GridCacheAffinityManager affMgr = cctx.affinity();
 
         // If we can send updates in parallel - do it.

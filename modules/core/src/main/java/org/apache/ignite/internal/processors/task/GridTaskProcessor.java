@@ -719,14 +719,14 @@ public class GridTaskProcessor extends GridProcessorAdapter {
 
     /**
      * Gets task name for a task class. It firstly checks
-     * {@link @GridComputeTaskName} annotation, then thread context
+     * {@link @ComputeTaskName} annotation, then thread context
      * map. If both are empty, class name is returned.
      *
      * @param dep Deployment.
      * @param cls Class.
      * @param map Thread context map.
      * @return Task name.
-     * @throws IgniteCheckedException If {@link @GridComputeTaskName} annotation is found, but has empty value.
+     * @throws IgniteCheckedException If {@link @ComputeTaskName} annotation is found, but has empty value.
      */
     private String taskName(GridDeployment dep, Class<?> cls,
         Map<GridTaskThreadContextKey, Object> map) throws IgniteCheckedException {
@@ -742,7 +742,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             taskName = ann.value();
 
             if (F.isEmpty(taskName))
-                throw new IgniteCheckedException("Task name specified by @GridComputeTaskName annotation" +
+                throw new IgniteCheckedException("Task name specified by @ComputeTaskName annotation" +
                     " cannot be empty for class: " + cls);
         }
         else

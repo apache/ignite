@@ -64,22 +64,25 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
     public static final String ADDRS_TABLE_NAME = "TBL_ADDRS";
     
     /** Query to get addresses. */
-    public static final String GET_ADDRS_QRY = "select hostname, port from tbl_addrs";
+    public static final String GET_ADDRS_QRY = "select hostname, port from \"" + ADDRS_TABLE_NAME
+            + "\"";
 
     /** Query to register address. */
-    public static final String REG_ADDR_QRY = "insert into tbl_addrs values (?, ?)";
+    public static final String REG_ADDR_QRY = "insert into \"" + ADDRS_TABLE_NAME
+            + "\" values (?, ?)";
 
     /** Query to unregister address. */
-    public static final String UNREG_ADDR_QRY = "delete from tbl_addrs where hostname = ? and port = ?";
+    public static final String UNREG_ADDR_QRY = "delete from \"" + ADDRS_TABLE_NAME
+            + "\" where hostname = ? and port = ?";
 
     /** Query to create addresses table. */
     public static final String CREATE_ADDRS_TABLE_QRY =
-        "create table tbl_addrs (" +
+        "create table \"" + ADDRS_TABLE_NAME + "\" (" +
         "hostname VARCHAR(1024), " +
         "port INT)";
 
     /** Query to check database validity. */
-    public static final String CHK_QRY = "select count(*) from tbl_addrs";
+    public static final String CHK_QRY = "select count(*) from \"" + ADDRS_TABLE_NAME + "\"";
 
     /** Grid logger. */
     @LoggerResource
