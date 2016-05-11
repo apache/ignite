@@ -138,12 +138,14 @@ namespace Apache.Ignite.Core.Communication.Tcp
         /// Gets or sets a value indicating whether to allocate direct (ByteBuffer.allocateDirect) 
         /// or heap (ByteBuffer.allocate) buffer.
         /// </summary>
+        [DefaultValue(DefaultDirectBuffer)]
         public bool DirectBuffer { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether to allocate direct (ByteBuffer.allocateDirect) 
         /// or heap (ByteBuffer.allocate) send buffer.
         /// </summary>
+        [DefaultValue(DefaultDirectSendBuffer)]
         public bool DirectSendBuffer { get; set; }
 
         /// <summary>
