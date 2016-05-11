@@ -215,6 +215,8 @@ public class IgniteTxHandler {
         final GridNearTxLocal locTx,
         final GridNearTxPrepareRequest req
     ) {
+        req.txState(locTx.txState());
+
         IgniteInternalFuture<GridNearTxPrepareResponse> fut = locTx.prepareAsyncLocal(
             req.reads(),
             req.writes(),
@@ -287,7 +289,7 @@ public class IgniteTxHandler {
 
         assert firstEntry != null : req;
 
-        GridDhtTxLocal tx;
+        GridDhtTxLocal tx = null;
 
         GridCacheVersion mappedVer = ctx.tm().mappedVersion(req.version());
 
@@ -384,6 +386,9 @@ public class IgniteTxHandler {
                         req.version() + ", req=" + req + ']');
             }
             finally {
+                if (tx != null)
+                    req.txState(tx.txState());
+
                 if (top != null)
                     top.readUnlock();
             }
