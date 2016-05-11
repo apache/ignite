@@ -71,6 +71,9 @@ namespace Apache.Ignite.Core.Communication.Tcp
         /// <summary> Default socket buffer size. </summary>
         public const int DefaultSocketBufferSize = 32 * 1024;
 
+        /// <summary> Default value of <see cref="TcpNoDelay"/> property. </summary>
+        public const bool DefaultTcpNoDelay = true;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="TcpCommunicationSpi"/> class.
         /// </summary>
@@ -203,5 +206,24 @@ namespace Apache.Ignite.Core.Communication.Tcp
         /// </summary>
         [DefaultValue(DefaultSocketBufferSize)]
         public int SocketSendBufferSize { get; set; }
+
+        /// <summary>
+        /// Gets or sets the value for <c>TCP_NODELAY</c> socket option. Each
+        /// socket will be opened using provided value.
+        /// <para />
+        /// Setting this option to <c>true</c> disables Nagle's algorithm
+        /// for socket decreasing latency and delivery time for small messages.
+        /// <para />
+        /// For systems that work under heavy network load it is advisable to set this value to <c>false</c>.
+        /// </summary>
+        [DefaultValue(DefaultTcpNoDelay)]
+        public bool TcpNoDelay { get; set; }
+
+        /// <summary>
+        /// Gets or sets the maximum number of stored unacknowledged messages per connection to node. 
+        /// If number of unacknowledged messages exceeds this number 
+        /// then connection to node is closed and reconnect is attempted.
+        /// </summary>
+        public int UnacknowledgedMessagesBufferSize { get; set; }
     }
 }
