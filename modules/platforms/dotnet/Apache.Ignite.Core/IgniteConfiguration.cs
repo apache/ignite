@@ -30,6 +30,7 @@
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Communication;
+    using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.DataStructures.Configuration;
     using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Discovery.Tcp;
@@ -221,6 +222,21 @@
             else
                 writer.WriteBoolean(false);
 
+            // Communication config
+            var comm = CommunicationSpi;
+
+            if (comm != null)
+            {
+                writer.WriteBoolean(true);
+
+                var tcpComm = comm as TcpCommunicationSpi;
+
+                if (tcpComm == null)
+                    throw new InvalidOperationException("Unsupported communication SPI: " + comm.GetType());
+
+                tcpComm.Write(writer);
+            }
+
             // Binary config
             var isCompactFooterSet = BinaryConfiguration != null && BinaryConfiguration.CompactFooterInternal != null;
 
@@ -302,6 +318,9 @@
 
             // Discovery config
             DiscoverySpi = r.ReadBoolean() ? new TcpDiscoverySpi(r) : null;
+
+            // Communication config
+            CommunicationSpi = r.ReadBoolean() ? new TcpCommunicationSpi(r) : null;
 
             // Binary config
             if (r.ReadBoolean())
