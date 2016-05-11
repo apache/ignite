@@ -1302,6 +1302,10 @@ label {
     cursor: pointer;
 }
 
+.fa-cursor-default {
+    cursor: default !important;
+}
+
 .fa-remove {
     color: $brand-primary;
 }

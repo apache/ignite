@@ -22,6 +22,24 @@
                 h4.modal-title {{title}}
             .modal-body
                 div(ng-bind-html='message')
+                div(ng-hide='hasAgents')
+                    p &nbsp;
+                    div
+                        h4
+                            i.fa.fa-download.fa-cursor-default
+                            | &nbsp;How To Start Demo
+                        ul
+                            li
+                                a(ng-click='downloadAgent()') #[b Download]
+                                | &nbsp; and unzip ignite-web-agent archive
+                            li #[b Run] shell file ignite-web-agent.{sh|bat}
+                div(ng-show='hasAgents')
+                    h4
+                        i.fa.fa-star-o.fa-cursor-default
+                        | &nbsp;Start Demo
+                    ul
+                        li Web Agent is already started
+                        li Close dialog and try Web Console
             .modal-footer
                 button.btn.btn-default(ng-class='hasAgents ? "btn-primary" : "btn-default"' ng-click='close()') Close
                 button.btn.btn-primary(ng-hide='hasAgents' ng-click='downloadAgent()') Download agent

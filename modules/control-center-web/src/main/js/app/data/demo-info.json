@@ -2,19 +2,13 @@
     {
         "title": "Apache Ignite Web Console Demo",
         "message": [
-            " <div><h4>What Can You Do</h4>",
-            "  <ul>",
-            "   <li><b>Configuration</b> to checkout predefined clusters, caches, domain models and IGFS</li>",
-            "   <li><b>SQL</b> to run various SQL queries on the demo database</li>",
-            "  </ul>",
-            " </div>",
-            " <p>&nbsp;</p>",
-            " <div><h4>How To Start Demo</h4>",
-            "  <ul>",
-            "   <li><b>Download</b> and unzip ignite-web-agent archive</li> ",
-            "   <li><b>Run</b> shell file ignite-web-agent.{sh|bat}</li> ",
-            "  </ul>",
-            " </div>"
+            "<div>",
+            " <h4><i class='fa fa-cogs fa-cursor-default'></i>&nbsp;What Can You Do</h4>",
+            " <ul>",
+            "  <li><b>Configuration</b> to checkout predefined clusters, caches, domain models and IGFS</li>",
+            "  <li><b>SQL</b> to run various SQL queries on the demo database</li>",
+            " </ul>",
+            "</div>"
         ]
     }
 ]
