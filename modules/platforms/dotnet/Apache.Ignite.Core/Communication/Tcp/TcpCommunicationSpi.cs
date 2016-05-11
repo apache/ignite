@@ -59,6 +59,15 @@ namespace Apache.Ignite.Core.Communication.Tcp
         /// <summary> Default value of <see cref="MaxConnectTimeout"/> property. </summary>
         public static readonly TimeSpan DefaultMaxConnectTimeout = TimeSpan.FromMinutes(10);
 
+        /// <summary> Default value of <see cref="MessageQueueLimit"/> property. </summary>
+        public const int DefaultMessageQueueLimit = 1024;
+
+        /// <summary> Default value of <see cref="ReconnectCount"/> property. </summary>
+        public const int DefaultReconnectCount = 10;
+
+        /// <summary> Default value of <see cref="SelectorsCount"/> property. </summary>
+        public static readonly int DefaultSelectorsCount = Math.Min(4, Environment.ProcessorCount);
+
         /// <summary>
         /// Gets or sets the number of received messages per connection to node 
         /// after which acknowledgment message is sent.
@@ -124,5 +133,28 @@ namespace Apache.Ignite.Core.Communication.Tcp
         /// </summary>
         [DefaultValue(typeof(TimeSpan), "00:10:00")]
         public TimeSpan MaxConnectTimeout { get; set; }
+
+        /// <summary>
+        /// Gets or sets the message queue limit for incoming and outgoing messages.
+        /// <para />
+        /// When set to positive number send queue is limited to the configured value. 
+        /// <c>0</c> disables the limitation.
+        /// </summary>
+        [DefaultValue(DefaultMessageQueueLimit)]
+        public int MessageQueueLimit { get; set; }
+
+        /// <summary>
+        /// Gets or sets the maximum number of reconnect attempts used when establishing connection with remote nodes.
+        /// </summary>
+        [DefaultValue(DefaultReconnectCount)]
+        public int ReconnectCount { get; set; }
+
+        /// <summary>
+        /// Gets or sets the count of selectors te be used in TCP server.
+        /// <para />
+        /// Default value is <see cref="DefaultSelectorsCount"/>, which is calculated as
+        /// <c>Math.Min(4, Environment.ProcessorCount)</c>
+        /// </summary>
+        public int SelectorsCount { get; set; }
     }
 }
