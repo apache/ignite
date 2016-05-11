@@ -38,6 +38,9 @@ public class GridUnsafeDataOutputArraySizingSelfTest extends GridCommonAbstractT
     private static final long WAIT_BUFFER_TIMEOUT = BUFFER_TIMEOUT + BUFFER_TIMEOUT / 2;
 
 
+    static {
+        System.out.println("GridUnsafeDataOutputArraySizingSelfTest static block");
+    }
     /**
      * @throws Exception If failed.
      */
