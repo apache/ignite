@@ -158,7 +158,7 @@
             {
                 var marsh = new Marshaller(configuration.BinaryConfiguration);
 
-                configuration.WriteCore(marsh.StartMarshal(stream));
+                configuration.Write(marsh.StartMarshal(stream));
 
                 stream.SynchronizeOutput();
 
@@ -185,34 +185,21 @@
         {
             Debug.Assert(writer != null);
 
-            // TODO: Inline
-            WriteCore(writer);
-        }
-
-        /// <summary>
-        /// Writes this instance to a writer.
-        /// </summary>
-        /// <param name="writer">The writer.</param>
-        private void WriteCore(BinaryWriter writer)
-        {
-            // TODO: Nullables
-
             // Simple properties
-            writer.WriteBoolean(ClientMode);
+            writer.WriteBoolean(_clientMode);
             writer.WriteIntArray(IncludedEventTypes == null ? null : IncludedEventTypes.ToArray());
 
-            writer.WriteLong((long) MetricsExpireTime.TotalMilliseconds);
-            writer.WriteInt(MetricsHistorySize);
-            writer.WriteLong((long) MetricsLogFrequency.TotalMilliseconds);
-            var metricsUpdateFreq = (long) MetricsUpdateFrequency.TotalMilliseconds;
-            writer.WriteLong(metricsUpdateFreq >= 0 ? metricsUpdateFreq : -1);
-            writer.WriteInt(NetworkSendRetryCount);
-            writer.WriteLong((long) NetworkSendRetryDelay.TotalMilliseconds);
-            writer.WriteLong((long) NetworkTimeout.TotalMilliseconds);
+            writer.WriteTimeSpan(_metricsExpireTime);
+            writer.WriteInt(_metricsHistorySize);
+            writer.WriteTimeSpan(_metricsLogFrequency);
+            writer.WriteTimeSpan(_metricsUpdateFrequency);
+            writer.WriteInt(_networkSendRetryCount);
+            writer.WriteTimeSpan(_networkSendRetryDelay);
+            writer.WriteTimeSpan(_networkTimeout);
             writer.WriteString(WorkDirectory);
             writer.WriteString(Localhost);
-            writer.WriteBoolean(IsDaemon);
-            writer.WriteBoolean(IsLateAffinityAssignment);
+            writer.WriteBoolean(_isDaemon);
+            writer.WriteBoolean(_isLateAffinityAssignment);
 
             // Cache config
             var caches = CacheConfiguration;
