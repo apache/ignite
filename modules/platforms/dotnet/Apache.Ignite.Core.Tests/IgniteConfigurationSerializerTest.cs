@@ -66,6 +66,7 @@ namespace Apache.Ignite.Core.Tests
                             <discoverySpi type='TcpDiscoverySpi' joinTimeout='0:1:0'>
                                 <ipFinder type='TcpDiscoveryMulticastIpFinder' addressRequestAttempts='7' />
                             </discoverySpi>
+                            <communicationSpi type='TcpCommunicationSpi' ackSendThreshold='33' idleConnectionTimeout='0:1:2' />
                             <jvmOptions><string>-Xms1g</string><string>-Xmx4g</string></jvmOptions>
                             <lifecycleBeans>
                                 <iLifecycleBean type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+LifecycleBean, Apache.Ignite.Core.Tests' foo='15' />
@@ -155,6 +156,11 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(new TimeSpan(0,1,2), tx.DefaultTimeout);
             Assert.AreEqual(15, tx.PessimisticTransactionLogSize);
             Assert.AreEqual(TimeSpan.FromSeconds(33), tx.PessimisticTransactionLogLinger);
+
+            var comm = cfg.CommunicationSpi as TcpCommunicationSpi;
+            Assert.IsNotNull(comm);
+            Assert.AreEqual(33, comm.AckSendThreshold);
+            Assert.AreEqual(new TimeSpan(0, 1, 2), comm.IdleConnectionTimeout);
         }
 
         /// <summary>
