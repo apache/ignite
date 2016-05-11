@@ -31,7 +31,40 @@
 
                     <property name="atomicityMode" value="ATOMIC"/>
                 </bean>
+
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="tx"/>
+
+                    <property name="cacheMode" value="PARTITIONED"/>
+
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                </bean>
             </list>
+        </property>
+
+        <property name="transactionConfiguration">
+            <bean class="org.apache.ignite.configuration.TransactionConfiguration">
+                <property name="txManagerFactory">
+                    <bean class="org.apache.ignite.cache.jta.websphere.WebSphereTmFactory"/>
+                </property>
+
+                <property name="defaultTxIsolation" value="REPEATABLE_READ"/>
+                <property name="defaultTxConcurrency" value="PESSIMISTIC"/>
+            </bean>
+        </property>
+
+        <property name="discoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+                <property name="ipFinder">
+                    <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                        <property name="addresses">
+                            <list>
+                                <value>127.0.0.1:47500..47509</value>
+                            </list>
+                        </property>
+                    </bean>
+                </property>
+            </bean>
         </property>
     </bean>
 </beans>

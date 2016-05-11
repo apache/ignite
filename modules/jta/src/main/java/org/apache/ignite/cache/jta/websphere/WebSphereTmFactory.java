@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.webtest;
+package org.apache.ignite.cache.jta.websphere;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -33,11 +33,42 @@ import javax.transaction.Transaction;
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAResource;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.jta.reflect.CacheReflectionTmFactory;
 
 /**
+ * Implementation of Transaction Manager factory that should be used to work Ignite's transactions inside
+ * WebSphere Application Servser ("poor" / "ordinary" WS AS).
+ * <p>
+ * Note: {@link CacheReflectionTmFactory} should be used with WebSphere Liberty.
+ * <h2 class="header">Java Configuration</h2>
+ * <pre name="code" class="java">
+ * IgniteConfiguration cfg = new IgniteConfiguration();
  *
+ * TransactionConfiguration txCfg = new TransactionConfiguration();
+ *
+ * txCfg.setTxManagerFactory(new WebSphereTmFactory());
+ *
+ * cfg.setTransactionConfiguration(new txCfg);
+ * </pre>
+ * <h2 class="header">Spring Configuration</h2>
+ * <pre name="code" class="xml">
+ * &lt;bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"&gt;
+ *         ...
+ *         &lt;property name="transactionConfiguration"&gt;
+ *             &lt;bean class="org.apache.ignite.cache.jta.websphere.WebSphereTmFactory"/&gt;
+ *         &lt;/property&gt;
+ *         ...
+ * &lt;/bean&gt;
+ * </pre>
+ * <p>
+ * <img src="http://ignite.apache.org/images/spring-small.png">
+ * <br>
+ * For information about Spring framework visit <a href="http://www.springframework.org/">www.springframework.org</a>*
  */
 public class WebSphereTmFactory implements Factory<TransactionManager> {
+    /** */
+    private static final long serialVersionUID = 0;
+
     /** */
     private static final Class<?> onePhaseXAResourceCls;
 
@@ -49,9 +80,6 @@ public class WebSphereTmFactory implements Factory<TransactionManager> {
             throw new IgniteException(e);
         }
     }
-
-    /** */
-    private static final long serialVersionUID = 0;
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")

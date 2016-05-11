@@ -49,4 +49,14 @@
         <param-value>atomic</param-value>
     </context-param>
 
+    <servlet>
+        <servlet-name>TestJtaTxServlet</servlet-name>
+        <servlet-class>org.apache.ignite.webtest.TestJtaTxServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>TestJtaTxServlet</servlet-name>
+        <url-pattern>jta-test</url-pattern>
+    </servlet-mapping>
+
 </web-app>

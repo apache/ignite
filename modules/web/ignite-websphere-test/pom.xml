@@ -29,7 +29,7 @@
         <relativePath>../../../parent</relativePath>
     </parent>
 
-    <artifactId>ignite-weblogic-test</artifactId>
+    <artifactId>ignite-websphere-test</artifactId>
     <packaging>war</packaging>
     <version>1.6.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
@@ -38,6 +38,12 @@
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-jta</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -58,10 +64,16 @@
             <artifactId>ignite-spring</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.ibm.websphere.appserver.api</groupId>
+            <artifactId>com.ibm.websphere.appserver.api.transaction</artifactId>
+            <version>1.1.10</version>
+        </dependency>
     </dependencies>
 
     <build>
-        <finalName>ignite-weblogic-test</finalName>
+        <finalName>ignite-websphere-test</finalName>
 
         <plugins>
             <plugin>
