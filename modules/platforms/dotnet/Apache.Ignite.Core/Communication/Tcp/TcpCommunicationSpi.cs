@@ -68,6 +68,9 @@ namespace Apache.Ignite.Core.Communication.Tcp
         /// <summary> Default value of <see cref="SelectorsCount"/> property. </summary>
         public static readonly int DefaultSelectorsCount = Math.Min(4, Environment.ProcessorCount);
 
+        /// <summary> Default value of <see cref="SocketReceiveBufferSize"/> property. </summary>
+        public const int DefaultSocketReceiveBufferSize = 32 * 1024;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="TcpCommunicationSpi"/> class.
         /// </summary>
@@ -174,5 +177,23 @@ namespace Apache.Ignite.Core.Communication.Tcp
         /// <c>Math.Min(4, Environment.ProcessorCount)</c>
         /// </summary>
         public int SelectorsCount { get; set; }
+
+        /// <summary>
+        /// Gets or sets slow client queue limit.
+        /// <para/>
+        /// When set to a positive number, communication SPI will monitor clients outbound message queue sizes 
+        /// and will drop those clients whose queue exceeded this limit.
+        /// <para/>
+        /// Usually this value should be set to the same value as <see cref="MessageQueueLimit"/> which controls
+        /// message back-pressure for server nodes. The default value for this parameter is <c>0</c> 
+        /// which means unlimited.
+        /// </summary>
+        public int SlowClientQueueLimit { get; set; }
+
+        /// <summary>
+        /// Gets or sets the size of the socket receive buffer.
+        /// </summary>
+        [DefaultValue(DefaultSocketReceiveBufferSize)]
+        public int SocketReceiveBufferSize { get; set; }
     }
 }
