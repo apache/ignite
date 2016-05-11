@@ -87,6 +87,8 @@ namespace Apache.Ignite.Core.Communication.Tcp
             MessageQueueLimit = DefaultMessageQueueLimit;
             ReconnectCount = DefaultReconnectCount;
             SelectorsCount = DefaultSelectorsCount;
+            SocketReceiveBufferSize = DefaultSocketBufferSize;
+            SocketSendBufferSize = DefaultSocketBufferSize;
         }
 
         /// <summary>
