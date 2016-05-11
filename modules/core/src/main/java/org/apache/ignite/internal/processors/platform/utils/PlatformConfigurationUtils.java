@@ -330,19 +330,19 @@ public class PlatformConfigurationUtils {
      * @param cfg Configuration.
      */
     public static void readIgniteConfiguration(BinaryRawReaderEx in, IgniteConfiguration cfg) {
-        cfg.setClientMode(in.readBoolean());
-        cfg.setIncludeEventTypes(in.readIntArray());
-        cfg.setMetricsExpireTime(in.readLong());
-        cfg.setMetricsHistorySize(in.readInt());
-        cfg.setMetricsLogFrequency(in.readLong());
-        cfg.setMetricsUpdateFrequency(in.readLong());
-        cfg.setNetworkSendRetryCount(in.readInt());
-        cfg.setNetworkSendRetryDelay(in.readLong());
-        cfg.setNetworkTimeout(in.readLong());
-        cfg.setWorkDirectory(in.readString());
-        cfg.setLocalHost(in.readString());
-        cfg.setDaemon(in.readBoolean());
-        cfg.setLateAffinityAssignment(in.readBoolean());
+        if (in.readBoolean()) cfg.setClientMode(in.readBoolean());
+        int[] eventTypes = in.readIntArray(); if (eventTypes != null) cfg.setIncludeEventTypes(eventTypes);
+        if (in.readBoolean()) cfg.setMetricsExpireTime(in.readLong());
+        if (in.readBoolean()) cfg.setMetricsHistorySize(in.readInt());
+        if (in.readBoolean()) cfg.setMetricsLogFrequency(in.readLong());
+        if (in.readBoolean()) cfg.setMetricsUpdateFrequency(in.readLong());
+        if (in.readBoolean()) cfg.setNetworkSendRetryCount(in.readInt());
+        if (in.readBoolean()) cfg.setNetworkSendRetryDelay(in.readLong());
+        if (in.readBoolean()) cfg.setNetworkTimeout(in.readLong());
+        String workDir = in.readString(); if (workDir != null) cfg.setWorkDirectory(workDir);
+        String localHost = in.readString(); if (localHost != null) cfg.setLocalHost(localHost);
+        if (in.readBoolean()) cfg.setDaemon(in.readBoolean());
+        if (in.readBoolean()) cfg.setLateAffinityAssignment(in.readBoolean());
 
         readCacheConfigurations(in, cfg);
         readDiscoveryConfiguration(in, cfg);
