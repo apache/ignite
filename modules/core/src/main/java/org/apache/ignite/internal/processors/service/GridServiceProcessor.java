@@ -38,6 +38,7 @@ import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DeploymentMode;
@@ -92,6 +93,7 @@ import org.apache.ignite.thread.IgniteThreadFactory;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICE_COMPATIBILITY_ENABLED;
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
@@ -103,6 +105,10 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "ConstantConditions"})
 public class GridServiceProcessor extends GridProcessorAdapter {
+    /** */
+    public static final boolean SERVICE_COMPATIBILITY_ENABLED =
+        IgniteSystemProperties.getBoolean(IGNITE_SERVICE_COMPATIBILITY_ENABLED, false);
+
     /** Time to wait before reassignment retries. */
     private static final long RETRY_TIMEOUT = 1000;
 
@@ -402,6 +408,26 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         A.notNull(cfg, "cfg");
 
         validate(cfg);
+
+        if (!SERVICE_COMPATIBILITY_ENABLED) {
+            Marshaller marsh = ctx.config().getMarshaller();
+
+            LazyServiceConfiguration cfg0;
+
+            try {
+                byte[] srvcBytes = marsh.marshal(cfg.getService());
+
+                cfg0 = new LazyServiceConfiguration(cfg, srvcBytes);
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to marshal service with configured marshaller [srvc=" + cfg.getService()
+                    + ", marsh=" + marsh + "]", e);
+
+                return new GridFinishedFuture<>(e);
+            }
+
+            cfg = cfg0;
+        }
 
         GridServiceDeploymentFuture fut = new GridServiceDeploymentFuture(cfg);
 
@@ -970,16 +996,18 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         }
 
         for (final ServiceContextImpl svcCtx : toInit) {
-            final Service svc = copyAndInject(assigns.service());
+            final Service svc;
 
             try {
+                svc = copyAndInject(assigns.configuration());
+
                 // Initialize service.
                 svc.init(svcCtx);
 
                 svcCtx.service(svc);
             }
             catch (Throwable e) {
-                log.error("Failed to initialize service (service will not be deployed): " + assigns.name(), e);
+                U.error(log, "Failed to initialize service (service will not be deployed): " + assigns.name(), e);
 
                 synchronized (ctxs) {
                     ctxs.removeAll(toInit);
@@ -1040,26 +1068,36 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param svc Service.
+     * @param cfg Service configuration.
      * @return Copy of service.
+     * @throws IgniteCheckedException If failed.
      */
-    private Service copyAndInject(Service svc) {
+    private Service copyAndInject(ServiceConfiguration cfg) throws IgniteCheckedException {
         Marshaller m = ctx.config().getMarshaller();
 
-        try {
-            byte[] bytes = m.marshal(svc);
+        if (cfg instanceof LazyServiceConfiguration) {
+            byte[] bytes = ((LazyServiceConfiguration)cfg).serviceBytes();
 
-            Service cp = m.unmarshal(bytes,
-                U.resolveClassLoader(svc.getClass().getClassLoader(), ctx.config()));
-
-            ctx.resource().inject(cp);
-
-            return cp;
+            return m.unmarshal(bytes, U.resolveClassLoader(null, ctx.config()));
         }
-        catch (IgniteCheckedException e) {
-            log.error("Failed to copy service (will reuse same instance): " + svc.getClass(), e);
+        else {
+            Service svc = cfg.getService();
 
-            return svc;
+            try {
+                byte[] bytes = m.marshal(svc);
+
+                Service cp = m.unmarshal(bytes,
+                    U.resolveClassLoader(svc.getClass().getClassLoader(), ctx.config()));
+
+                ctx.resource().inject(cp);
+
+                return cp;
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to copy service (will reuse same instance): " + svc.getClass(), e);
+
+                return svc;
+            }
         }
     }
 

@@ -153,6 +153,9 @@ public final class IgniteNodeAttributes {
     /** Late affinity assignment mode. */
     public static final String ATTR_LATE_AFFINITY_ASSIGNMENT = ATTR_PREFIX + ".cache.lateAffinity";
 
+    /** Service compatibility enabled. */
+    public static final String ATTR_SERVICE_COMPATIBILITY_ENABLED = ATTR_PREFIX + ".service.compatibility.enabled";
+
     /**
      * Enforces singleton.
      */

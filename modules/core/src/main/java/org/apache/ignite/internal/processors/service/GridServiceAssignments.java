@@ -75,13 +75,6 @@ public class GridServiceAssignments implements Serializable, GridCacheInternal {
     }
 
     /**
-     * @return Service.
-     */
-    public Service service() {
-        return cfg.getService();
-    }
-
-    /**
      * @return Topology version.
      */
     public long topologyVersion() {

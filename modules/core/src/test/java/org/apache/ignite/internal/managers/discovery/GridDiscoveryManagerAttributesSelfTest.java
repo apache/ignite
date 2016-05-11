@@ -28,6 +28,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICE_COMPATIBILITY_ENABLED;
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 
@@ -154,6 +155,56 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
             catch (Exception e) {
                 if (!fail)
                     fail("Node should join");
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testServiceCompatibilityEnabled() throws Exception {
+        String backup = System.getProperty(IGNITE_SERVICE_COMPATIBILITY_ENABLED);
+
+        try {
+            doTestServiceCompatibilityEnabled(true, false, true);
+            doTestServiceCompatibilityEnabled(false, true, true);
+
+            doTestServiceCompatibilityEnabled(true, true, false);
+            doTestServiceCompatibilityEnabled(false, false, false);
+        }
+        finally {
+            if (backup != null)
+                System.setProperty(IGNITE_SERVICE_COMPATIBILITY_ENABLED, backup);
+            else
+                System.clearProperty(IGNITE_SERVICE_COMPATIBILITY_ENABLED);        }
+    }
+
+    /**
+     * @param first Service compatibility enabled flag for first node.
+     * @param second Service compatibility enabled flag for second node.
+     * @param fail Fail flag.
+     * @throws Exception If failed.
+     */
+    private void doTestServiceCompatibilityEnabled(boolean first, boolean second, boolean fail) throws Exception {
+        try {
+            System.setProperty(IGNITE_SERVICE_COMPATIBILITY_ENABLED, String.valueOf(first));
+
+            startGrid(0);
+
+            System.setProperty(IGNITE_SERVICE_COMPATIBILITY_ENABLED, String.valueOf(second));
+
+            try {
+                startGrid(1);
+
+                if (fail)
+                    fail("Node must not join");
+            }
+            catch (Exception e) {
+                if (!fail)
+                    fail("Node must join");
             }
         }
         finally {
