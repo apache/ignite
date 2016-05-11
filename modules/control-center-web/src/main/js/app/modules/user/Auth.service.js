@@ -58,7 +58,7 @@ export default ['Auth', ['$http', '$rootScope', '$state', '$window', '$common', 
                         } else
                             $state.go('password.send');
                     })
-                    .catch((errMsg) => $common.showPopoverMessage(null, null, 'email', errMsg.data));
+                    .catch((errMsg) => $common.showPopoverMessage(null, null, action === 'signup' ? 'signup_email' : 'signin_email', errMsg.data));
             },
             logout() {
                 $http.post('/api/v1/logout')

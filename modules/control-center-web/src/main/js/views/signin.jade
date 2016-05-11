@@ -49,10 +49,14 @@ header#header.header
                                 +lblRequired('Last Name:')
                                 .col-xs-9.col-md-8
                                     input#last_name.form-control(enter-focus-next='email' type='text' ng-model='ui.lastName' placeholder='Input last name' ng-required='action=="signup"')
-                            .settings-row
+                            .settings-row(ng-show='action != "signup"')
                                 +lblRequired('Email:')
                                 .col-xs-9.col-md-8
-                                    input#email.form-control(enter-focus-next='company' type='email' ng-model='ui.email' placeholder='Input email' required)
+                                    input#signin_email.form-control(enter-focus-next='company' type='email' ng-model='ui.email' placeholder='Input email' required)
+                            .settings-row(ng-show='action == "signup"')
+                                +lblRequired('Email:')
+                                .col-xs-9.col-md-8
+                                    input#signup_email.form-control(enter-focus-next='company' type='email' ng-model='ui.email' placeholder='Input email' required)
                             .settings-row(ng-show='action == "signup"')
                                 +lblRequired('Company:')
                                 .col-xs-9.col-md-8
