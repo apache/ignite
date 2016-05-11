@@ -69,6 +69,24 @@ namespace Apache.Ignite.Core.Communication.Tcp
         public static readonly int DefaultSelectorsCount = Math.Min(4, Environment.ProcessorCount);
 
         /// <summary>
+        /// Initializes a new instance of the <see cref="TcpCommunicationSpi"/> class.
+        /// </summary>
+        public TcpCommunicationSpi()
+        {
+            AckSendThreshold = DefaultAckSendThreshold;
+            ConnectTimeout = DefaultConnectTimeout;
+            DirectBuffer = DefaultDirectBuffer;
+            DirectSendBuffer = DefaultDirectSendBuffer;
+            IdleConnectionTimeout = DefaultIdleConnectionTimeout;
+            LocalPort = DefaultLocalPort;
+            LocalPortRange = DefaultLocalPortRange;
+            MaxConnectTimeout = DefaultMaxConnectTimeout;
+            MessageQueueLimit = DefaultMessageQueueLimit;
+            ReconnectCount = DefaultReconnectCount;
+            SelectorsCount = DefaultSelectorsCount;
+        }
+
+        /// <summary>
         /// Gets or sets the number of received messages per connection to node 
         /// after which acknowledgment message is sent.
         /// </summary>
