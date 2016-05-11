@@ -260,7 +260,6 @@ namespace Apache.Ignite.Core.Communication.Tcp
         {
             writer.WriteInt(AckSendThreshold);
             writer.WriteLong((long) ConnectTimeout.TotalMilliseconds);
-            writer.WriteLong((long) ConnectTimeout.TotalMilliseconds);
             writer.WriteBoolean(DirectBuffer);
             writer.WriteBoolean(DirectSendBuffer);
             writer.WriteLong((long) IdleConnectionTimeout.TotalMilliseconds);
