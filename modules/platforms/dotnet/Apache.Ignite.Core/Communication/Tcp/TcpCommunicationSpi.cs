@@ -39,13 +39,22 @@ namespace Apache.Ignite.Core.Communication.Tcp
         public const int DefaultAckSendThreshold = 16;
 
         /// <summary> Default value of <see cref="ConnectTimeout"/> property. </summary>
-        public static readonly TimeSpan DefaultConnectTimeout = TimeSpan.FromMilliseconds(5000);
+        public static readonly TimeSpan DefaultConnectTimeout = TimeSpan.FromSeconds(5);
 
         /// <summary> Default value of <see cref="DirectBuffer"/> property. </summary>
         public const bool DefaultDirectBuffer = true;
 
         /// <summary> Default value of <see cref="DirectSendBuffer"/> property. </summary>
         public const bool DefaultDirectSendBuffer = false;
+
+        /// <summary> Default value of <see cref="IdleConnectionTimeout"/> property. </summary>
+        public static readonly TimeSpan DefaultIdleConnectionTimeout = TimeSpan.FromSeconds(30);
+
+        /// <summary> Default value of <see cref="LocalPort"/> property. </summary>
+        public const int DefaultLocalPort = 47100;
+
+        /// <summary> Default value of <see cref="LocalPortRange"/> property. </summary>
+        public const int DefaultLocalPortRange = 100;
 
         /// <summary>
         /// Gets or sets the number of received messages per connection to node 
@@ -72,8 +81,34 @@ namespace Apache.Ignite.Core.Communication.Tcp
         /// </summary>
         public bool DirectSendBuffer { get; set; }
 
+        /// <summary>
+        /// Sets maximum idle connection timeout upon which a connection to client will be closed.
+        /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:30")]
+        public TimeSpan IdleConnectionTimeout { get; set; }
 
+        /// <summary>
+        /// Gets or sets the local host address for socket binding. Note that one node could have 
+        /// additional addresses beside the loopback one. This configuration parameter is optional.
+        /// </summary>
+        public string LocalAddress { get; set; }
+
+        /// <summary>
+        /// Gets or sets the local port for socket binding.
+        /// </summary>
+        [DefaultValue(DefaultLocalPort)]
         public int LocalPort { get; set; }
+
+        /// <summary>
+        /// Sets local port range for local host ports (value must greater than or equal to <tt>0</tt>).
+        /// If provided local port <see cref="LocalPort"/> is occupied,
+        /// implementation will try to increment the port number for as long as it is less than
+        /// initial value plus this range.
+        /// <para />
+        /// If port range value is <c>0</c>, then implementation will try bind only to the port provided by
+        /// <see cref="LocalPort"/> method and fail if binding to this port did not succeed.
+        /// </summary>
+        [DefaultValue(DefaultLocalPortRange)]
         public int LocalPortRange { get; set; }
     }
 }
