@@ -57,8 +57,8 @@ terminate()
         echo "[ERROR] Failed drop report folder: $reportFolder"
     fi
 
-    if [ -d "/opt/$TESTS_PACKAGE_UNZIP_DIR/logs" ]; then
-        aws s3 sync --sse AES256 /opt/$TESTS_PACKAGE_UNZIP_DIR/logs $reportFolder
+    if [ -d "/opt/ignite-cassandra-tests/logs" ]; then
+        aws s3 sync --sse AES256 /opt/ignite-cassandra-tests/logs $reportFolder
         if [ $? -ne 0 ]; then
             echo "[ERROR] Failed to export tests logs to: $reportFolder"
         fi
@@ -77,7 +77,8 @@ terminate()
     if [ "$FIRST_NODE" == "true" ]; then
         waitAllTestNodesCompleted
         removeFirstNodeLock
-        reportTestsSummary
+        reportScript=$(readlink -m $( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/tests-report.sh)
+        $reportScript
     fi
 
     if [ -n "$1" ]; then
@@ -87,7 +88,7 @@ terminate()
     exit 0
 }
 
-cleanupTestsMetadata()
+cleanupMetadata()
 {
     echo "[INFO] Running cleanup"
     aws s3 rm $S3_TESTS_SUMMARY_URL
@@ -160,243 +161,6 @@ dropTestsSummary()
     if [ $? -ne 0 ]; then
         terminate "Failed to drop tests summary info: $S3_TESTS_SUMMARY_URL"
     fi
-}
-
-reportTestsSummary()
-{
-    echo "[INFO] Preparing tests results summary"
-
-    TESTS_SUMMARY_DIR=/opt/ignite-cassandra-tests/tests-summary
-    SUCCEED_NODES_FILE=$TESTS_SUMMARY_DIR/succeed-nodes
-    SUCCEED_NODES_DIR=$TESTS_SUMMARY_DIR/succeed
-    FAILED_NODES_FILE=$TESTS_SUMMARY_DIR/failed-nodes
-    FAILED_NODES_DIR=$TESTS_SUMMARY_DIR/failed
-    REPORT_FILE=$TESTS_SUMMARY_DIR/report
-
-    rm -Rf $TESTS_SUMMARY_DIR
-    mkdir -p $TESTS_SUMMARY_DIR
-    mkdir -p $SUCCEED_NODES_DIR
-    mkdir -p $FAILED_NODES_DIR
-
-    aws s3 ls $S3_TESTS_SUCCESS_URL > $SUCCEED_NODES_FILE
-    if [ $? -ne 0 ]; then
-        echo "[ERROR] Failed to get succeed nodes"
-        return 1
-    fi
-
-    aws s3 ls $S3_TESTS_FAILURE_URL > $FAILED_NODES_FILE
-    if [ $? -ne 0 ]; then
-        echo "[ERROR] Failed to get failed nodes"
-        return 1
-    fi
-
-    succeedCount=$(cat $SUCCEED_NODES_FILE | wc -l)
-    failedCount=$(cat $FAILED_NODES_FILE | wc -l)
-    count=$(( $successCount+$failureCount ))
-
-    echo "Test type         : $TESTS_TYPE" > $REPORT_FILE
-    echo "Test nodes count  : $count" >> $REPORT_FILE
-    echo "Test nodes succeed: $successCount" >> $REPORT_FILE
-    echo "Test nodes failed : $failureCount" >> $REPORT_FILE
-    echo "-----------------------------------------------" >> $REPORT_FILE
-
-    if [ $failedCount -gt 0 ]; then
-        echo "Failed test nodes |" >> $REPORT_FILE
-        echo "------------------" >> $REPORT_FILE
-        cat $FAILED_NODES_FILE >> $REPORT_FILE
-        echo "-----------------------------------------------" >> $REPORT_FILE
-
-        aws sync --delete $S3_TESTS_FAILURE_URL $FAILED_NODES_DIR
-        if [ $? -ne 0 ]; then
-            echo "[ERROR] Failed to get failed tests details"
-            return 1
-        fi
-    fi
-
-    if [ $succeedCount -gt 0 ]; then
-        echo "Succeed test nodes |" >> $REPORT_FILE
-        echo "-------------------" >> $REPORT_FILE
-        cat $SUCCEED_NODES_FILE >> $REPORT_FILE
-        echo "-----------------------------------------------" >> $REPORT_FILE
-
-        aws sync --delete $S3_TESTS_SUCCESS_URL $SUCCEED_NODES_DIR
-        if [ $? -ne 0 ]; then
-            echo "[ERROR] Failed to get succeed tests details"
-            return 1
-        fi
-
-        reportSucceedTestsStatistics "$REPORT_FILE" "$SUCCEED_NODES_DIR"
-    fi
-
-    if [ $failedCount -gt 0 ]; then
-        reportFailedTestsDetailes "$REPORT_FILE" "$SUCCEED_NODES_DIR"
-    fi
-
-    aws s3 cp --sse AES256 $REPORT_FILE $S3_TESTS_SUMMARY_URL
-    if [ $? -ne 0 ]; then
-        echo "[ERROR] Failed to report tests summary to: $S3_TESTS_SUMMARY_URL"
-    fi
-
-    rm -Rf $TESTS_SUMMARY_DIR
-}
-
-reportSucceedTestsStatistics()
-{
-    writeMsg=0
-    writeSpeed=0
-    writeErrors=0
-    blkWriteMsg=0
-    blkWriteSpeed=0
-    blkWriteErrors=0
-    readMsg=0
-    readSpeed=0
-    readErrors=0
-    blkReadMsg=0
-    blkReadSpeed=0
-    blkReadErrors=0
-
-    for dir in $2/*
-    do
-        node=$(echo $dir | sed -r "s/^.*\///g")
-        logFile=$(ls $dir | grep "load-tests.log" | head -1)
-        if [ -z "$logFile" ]; then
-            echo "-----------------------------------------------" >> $1
-            echo "WARNING |" >> $1
-            echo "--------" >> $1
-            echo "Node $node marked as succeeded, but it doesn't" >> $1
-            echo "have any tests results summary file" >> $1
-            continue
-        fi
-
-        cnt=$(cat $logFile | grep "WRITE messages" | sed -r "s/WRITE messages: //g")
-        if [ -n "$cnt" ]; then
-            writeMsg=$(( $writeMsg+$cnt ))
-        fi
-
-        cnt=$(cat $logFile | grep "WRITE errors" | sed -r "s/WRITE errors: //g" | sed -r "s/,.*//g")
-        if [ -n "$cnt" ]; then
-            writeSpeed=$(( $writeSpeed+$cnt ))
-        fi
-
-        cnt=$(cat $logFile | grep "WRITE speed" | sed -r "s/WRITE speed: //g" | sed -r "s/ msg\/sec//g")
-        if [ -n "$cnt" ]; then
-            writeErrors=$(( $writeErrors+$cnt ))
-        else
-            echo "-----------------------------------------------" >> $1
-            echo "WARNING |" >> $1
-            echo "--------" >> $1
-            echo "WRITE test failed for $node node" >> $1
-        fi
-
-        cnt=$(cat $logFile | grep "BULK_WRITE messages" | sed -r "s/BULK_WRITE messages: //g")
-        if [ -n "$cnt" ]; then
-            blkWriteMsg=$(( $blkWriteMsg+$cnt ))
-        fi
-
-        cnt=$(cat $logFile | grep "BULK_WRITE errors" | sed -r "s/BULK_WRITE errors: //g" | sed -r "s/,.*//g")
-        if [ -n "$cnt" ]; then
-            blkWriteSpeed=$(( $blkWriteSpeed+$cnt ))
-        fi
-
-        cnt=$(cat $logFile | grep "BULK_WRITE speed" | sed -r "s/BULK_WRITE speed: //g" | sed -r "s/ msg\/sec//g")
-        if [ -n "$cnt" ]; then
-            blkWriteErrors=$(( $blkWriteErrors+$cnt ))
-        else
-            echo "-----------------------------------------------" >> $1
-            echo "WARNING |" >> $1
-            echo "--------" >> $1
-            echo "BULK_WRITE test failed for $node node" >> $1
-        fi
-
-        cnt=$(cat $logFile | grep "READ messages" | sed -r "s/READ messages: //g")
-        if [ -n "$cnt" ]; then
-            readMsg=$(( $readMsg+$cnt ))
-        fi
-
-        cnt=$(cat $logFile | grep "READ errors" | sed -r "s/READ errors: //g" | sed -r "s/,.*//g")
-        if [ -n "$cnt" ]; then
-            readSpeed=$(( $readSpeed+$cnt ))
-        fi
-
-        cnt=$(cat $logFile | grep "READ speed" | sed -r "s/READ speed: //g" | sed -r "s/ msg\/sec//g")
-        if [ -n "$cnt" ]; then
-            readErrors=$(( $readErrors+$cnt ))
-        else
-            echo "-----------------------------------------------" >> $1
-            echo "WARNING |" >> $1
-            echo "--------" >> $1
-            echo "READ test failed for $node node" >> $1
-        fi
-
-        cnt=$(cat $logFile | grep "BULK_READ messages" | sed -r "s/BULK_READ messages: //g")
-        if [ -n "$cnt" ]; then
-            blkReadMsg=$(( $blkReadMsg+$cnt ))
-        fi
-
-        cnt=$(cat $logFile | grep "BULK_READ errors" | sed -r "s/BULK_READ errors: //g" | sed -r "s/,.*//g")
-        if [ -n "$cnt" ]; then
-            blkReadSpeed=$(( $blkReadSpeed+$cnt ))
-        fi
-
-        cnt=$(cat $logFile | grep "BULK_READ speed" | sed -r "s/BULK_READ speed: //g" | sed -r "s/ msg\/sec//g")
-        if [ -n "$cnt" ]; then
-            blkReadErrors=$(( $blkReadErrors+$cnt ))
-        else
-            echo "-----------------------------------------------" >> $1
-            echo "WARNING |" >> $1
-            echo "--------" >> $1
-            echo "BULK_READ test failed for $node node" >> $1
-        fi
-    done
-
-    echo "-----------------------------------------------" >> $1
-    echo "Summary WRITE test metrics |" >> $1
-    echo "---------------------------" >> $1
-    echo "Messages: $writeMsg" >> $1
-    echo "Speed   : $writeSpeed" >> $1
-    echo "Errors  : $writeErrors" >> $1
-
-    echo "-----------------------------------------------" >> $1
-    echo "Summary BULK_WRITE test metrics |" >> $1
-    echo "--------------------------------" >> $1
-    echo "Messages: $blkWriteMsg" >> $1
-    echo "Speed   : $blkWriteSpeed" >> $1
-    echo "Errors  : $blkWriteErrors" >> $1
-
-    echo "-----------------------------------------------" >> $1
-    echo "Summary READ test metrics |" >> $1
-    echo "--------------------------" >> $1
-    echo "Messages: $readMsg" >> $1
-    echo "Speed   : $readSpeed" >> $1
-    echo "Errors  : $readErrors" >> $1
-
-    echo "-----------------------------------------------" >> $1
-    echo "Summary BULK_READ test metrics |" >> $1
-    echo "-------------------------------" >> $1
-    echo "Messages: $blkReadMsg" >> $1
-    echo "Speed   : $blkReadSpeed" >> $1
-    echo "Errors  : $blkReadErrors" >> $1
-}
-
-reportFailedTestsDetailes()
-{
-    for dir in $2/*
-    do
-        node=$(echo $dir | sed -r "s/^.*\///g")
-        if [ -z "$node" ]; then
-            continue
-        fi
-
-        echo "-----------------------------------------------" >> $1
-        echo "Error details for node: $node" >> $1
-        echo "-----------------------------------------------" >> $1
-
-        if [ -f "$dir/__error__" ]; then
-            cat $dir/__error__ >> $1
-        else
-            echo "N/A" >> $1
-        fi
-    done
 }
 
 validate()
@@ -771,6 +535,8 @@ waitFirstTestNodeRegistered()
             fi
 
             first_host=$(cat /opt/ignite-cassandra-tests/first-node-lock)
+
+            rm -Rf /opt/ignite-cassandra-tests/first-node-lock
         fi
 
         if [ -n "$first_host" ]; then
@@ -899,7 +665,7 @@ setupIgniteSeeds
 if [ "$FIRST_NODE" != "true" ]; then
     waitFirstTestNodeRegistered
 else
-    cleanupTestsMetadata
+    cleanupMetadata
 fi
 
 registerTestNode

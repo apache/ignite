@@ -269,7 +269,7 @@ if [ $? -ne 0 ]; then
     terminate "Failed to unzip Ignite package"
 fi
 
-rm -f /opt/$IGNITE_ZIP /opt/ignite-start.sh /opt/ignite
+rm -Rf /opt/$IGNITE_ZIP /opt/ignite-start.sh /opt/ignite-env.sh /opt/ignite
 mv /opt/$IGNITE_UNZIP_DIR /opt/ignite
 chown -R ignite:ignite /opt/ignite
 
@@ -313,6 +313,12 @@ fi
 
 mv -f /opt/$TESTS_PACKAGE_UNZIP_DIR/bootstrap/aws/ignite/ignite-start.sh /opt
 mv -f /opt/$TESTS_PACKAGE_UNZIP_DIR/bootstrap/aws/ignite/ignite-cassandra-server-template.xml /opt/ignite/config
+
+if [ -f "/opt/$TESTS_PACKAGE_UNZIP_DIR/bootstrap/aws/ignite/ignite-env.sh" ]; then
+    mv -f /opt/$TESTS_PACKAGE_UNZIP_DIR/bootstrap/aws/ignite/ignite-env.sh /opt
+    chown -R ignite:ignite /opt/ignite-env.sh
+fi
+
 rm -Rf /opt/$TESTS_PACKAGE_UNZIP_DIR
 chown -R ignite:ignite /opt/ignite-start.sh /opt/ignite/config/ignite-cassandra-server-template.xml
 

@@ -78,6 +78,35 @@ terminate()
     exit 0
 }
 
+registerNode()
+{
+    echo "[INFO] Registering Cassandra node seed: ${S3_CASSANDRA_NODES_DISCOVERY_URL}$HOST_NAME"
+
+    aws s3 cp --sse AES256 /opt/cassandra/join-lock ${S3_CASSANDRA_NODES_DISCOVERY_URL}$HOST_NAME
+    if [ $? -ne 0 ]; then
+        terminate "Failed to register Cassandra seed info in: ${S3_CASSANDRA_NODES_DISCOVERY_URL}$HOST_NAME"
+    fi
+
+    echo "[INFO] Cassandra node seed successfully registered"
+}
+
+unregisterNode()
+{
+    echo "[INFO] Removing Cassandra node registration from: ${S3_CASSANDRA_NODES_DISCOVERY_URL}$HOST_NAME"
+    aws s3 rm ${S3_CASSANDRA_NODES_DISCOVERY_URL}$HOST_NAME
+    echo "[INFO] Cassandra node registration removed"
+}
+
+cleanupMetadata()
+{
+    echo "[INFO] Running cleanup"
+    aws s3 rm $S3_CASSANDRA_NODES_JOIN_LOCK_URL
+    aws s3 rm --recursive $S3_CASSANDRA_NODES_DISCOVERY_URL
+    aws s3 rm --recursive $S3_BOOTSTRAP_SUCCESS_URL
+    aws s3 rm --recursive $S3_BOOTSTRAP_FAILURE_URL
+    echo "[INFO] Cleanup completed"
+}
+
 setupCassandraSeeds()
 {
     echo "[INFO] Setting up Cassandra seeds"
@@ -313,6 +342,52 @@ waitToJoinCassandraCluster()
     done
 }
 
+waitFirstCassandraNodeRegistered()
+{
+    echo "[INFO] Waiting for the first Cassandra node to register"
+
+    startTime=$(date +%s)
+
+    while true; do
+        first_host=
+
+        exists=$(aws s3 ls $S3_CASSANDRA_FIRST_NODE_LOCK_URL)
+        if [ -n "$exists" ]; then
+            rm -Rf /opt/cassandra/first-node-lock
+
+            aws s3 cp $S3_CASSANDRA_FIRST_NODE_LOCK_URL /opt/cassandra/first-node-lock
+            if [ $? -ne 0 ]; then
+                terminate "Failed to check existing first node lock"
+            fi
+
+            first_host=$(cat /opt/cassandra/first-node-lock)
+
+            rm -Rf /opt/cassandra/first-node-lock
+        fi
+
+        if [ -n "$first_host" ]; then
+            exists=$(aws s3 ls ${S3_CASSANDRA_NODES_DISCOVERY_URL}${first_host})
+            if [ -n "$exists" ]; then
+                break
+            fi
+        fi
+
+        currentTime=$(date +%s)
+        duration=$(( $currentTime-$startTime ))
+        duration=$(( $duration/60 ))
+
+        if [ $duration -gt $NODE_STARTUP_TIME ]; then
+            terminate "${NODE_STARTUP_TIME}min timeout expired, but first Cassandra node is still not up and running"
+        fi
+
+        echo "[INFO] Waiting extra 1min"
+
+        sleep 1m
+    done
+
+    echo "[INFO] First Cassandra node registered"
+}
+
 startCassandra()
 {
     echo "[INFO]-------------------------------------------------------------"
@@ -358,6 +433,8 @@ START_ATTEMPT=0
 
 FIRST_NODE="false"
 
+unregisterNode
+
 tryToGetFirstNodeLock
 
 if [ $? -eq 0 ]; then
@@ -389,6 +466,12 @@ fi
 
 if [[ "$S3_CASSANDRA_NODES_DISCOVERY_URL" != */ ]]; then
     S3_CASSANDRA_NODES_DISCOVERY_URL=${S3_CASSANDRA_NODES_DISCOVERY_URL}/
+fi
+
+if [ "$FIRST_NODE" != "true" ]; then
+    waitFirstCassandraNodeRegistered
+else
+    cleanupMetadata
 fi
 
 startCassandra
@@ -462,12 +545,6 @@ while true; do
     sleep 30s
 done
 
-echo "[INFO] Publishing Cassandra node seed info into: ${S3_CASSANDRA_NODES_DISCOVERY_URL}$HOST_NAME"
-
-aws s3 cp --sse AES256 /opt/cassandra/join-lock ${S3_CASSANDRA_NODES_DISCOVERY_URL}$HOST_NAME
-
-if [ $? -ne 0 ]; then
-    terminate "Failed to publish Cassandra seed info into: ${S3_CASSANDRA_NODES_DISCOVERY_URL}$HOST_NAME"
-fi
+registerNode
 
 terminate

@@ -78,6 +78,35 @@ terminate()
     exit 0
 }
 
+registerNode()
+{
+    echo "[INFO] Registering Ignite node seed: ${S3_IGNITE_NODES_DISCOVERY_URL}$HOST_NAME"
+
+    aws s3 cp --sse AES256 /opt/ignite/join-lock ${S3_IGNITE_NODES_DISCOVERY_URL}$HOST_NAME
+    if [ $? -ne 0 ]; then
+        terminate "Failed to register Ignite node seed: ${S3_IGNITE_NODES_DISCOVERY_URL}$HOST_NAME"
+    fi
+
+    echo "[INFO] Ignite node seed successfully registered"
+}
+
+unregisterNode()
+{
+    echo "[INFO] Removing Ignite node registration from: ${S3_IGNITE_NODES_DISCOVERY_URL}$HOST_NAME"
+    aws s3 rm ${S3_IGNITE_NODES_DISCOVERY_URL}$HOST_NAME
+    echo "[INFO] Ignite node registration removed"
+}
+
+cleanupMetadata()
+{
+    echo "[INFO] Running cleanup"
+    aws s3 rm $S3_IGNITE_NODES_JOIN_LOCK_URL
+    aws s3 rm --recursive $S3_IGNITE_NODES_DISCOVERY_URL
+    aws s3 rm --recursive $S3_BOOTSTRAP_SUCCESS_URL
+    aws s3 rm --recursive $S3_BOOTSTRAP_FAILURE_URL
+    echo "[INFO] Cleanup completed"
+}
+
 setupCassandraSeeds()
 {
     echo "[INFO] Setting up Cassandra seeds"
@@ -390,6 +419,52 @@ checkIgniteStatus()
     return 1
 }
 
+waitFirstIgniteNodeRegistered()
+{
+    echo "[INFO] Waiting for the first Ignite node to register"
+
+    startTime=$(date +%s)
+
+    while true; do
+        first_host=
+
+        exists=$(aws s3 ls $S3_IGNITE_FIRST_NODE_LOCK_URL)
+        if [ -n "$exists" ]; then
+            rm -Rf /opt/ignite/first-node-lock
+
+            aws s3 cp $S3_IGNITE_FIRST_NODE_LOCK_URL /opt/ignite/first-node-lock
+            if [ $? -ne 0 ]; then
+                terminate "Failed to check existing first node lock"
+            fi
+
+            first_host=$(cat /opt/ignite/first-node-lock)
+
+            rm -Rf /opt/ignite/first-node-lock
+        fi
+
+        if [ -n "$first_host" ]; then
+            exists=$(aws s3 ls ${S3_IGNITE_NODES_DISCOVERY_URL}${first_host})
+            if [ -n "$exists" ]; then
+                break
+            fi
+        fi
+
+        currentTime=$(date +%s)
+        duration=$(( $currentTime-$startTime ))
+        duration=$(( $duration/60 ))
+
+        if [ $duration -gt $NODE_STARTUP_TIME ]; then
+            terminate "${NODE_STARTUP_TIME}min timeout expired, but first Ignite node is still not up and running"
+        fi
+
+        echo "[INFO] Waiting extra 1min"
+
+        sleep 1m
+    done
+
+    echo "[INFO] First Ignite node registered"
+}
+
 startIgnite()
 {
     echo "[INFO]-------------------------------------------------------------"
@@ -441,6 +516,8 @@ START_ATTEMPT=0
 
 FIRST_NODE="false"
 
+unregisterNode
+
 tryToGetFirstNodeLock
 
 if [ $? -eq 0 ]; then
@@ -480,6 +557,17 @@ fi
 
 if [[ "$S3_IGNITE_NODES_DISCOVERY_URL" != */ ]]; then
     S3_IGNITE_NODES_DISCOVERY_URL=${S3_IGNITE_NODES_DISCOVERY_URL}/
+fi
+
+if [ "$FIRST_NODE" != "true" ]; then
+    waitFirstIgniteNodeRegistered
+else
+    cleanupMetadata
+fi
+
+envScript=$(readlink -m $( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/ignite-env.sh)
+if [ -f "$envScript" ]; then
+    . $envScript
 fi
 
 startIgnite
@@ -544,12 +632,6 @@ while true; do
     sleep 30s
 done
 
-echo "[INFO] Publishing Ignite node info into: ${S3_IGNITE_NODES_DISCOVERY_URL}$HOST_NAME"
-
-aws s3 cp --sse AES256 /opt/ignite/join-lock ${S3_IGNITE_NODES_DISCOVERY_URL}$HOST_NAME
-
-if [ $? -ne 0 ]; then
-    terminate "Failed to publish Ignite node info into: ${S3_IGNITE_NODES_DISCOVERY_URL}$HOST_NAME"
-fi
+registerNode
 
 terminate
