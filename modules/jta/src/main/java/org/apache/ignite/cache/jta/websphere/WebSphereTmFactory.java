@@ -39,7 +39,15 @@ import org.apache.ignite.cache.jta.reflect.CacheReflectionTmFactory;
  * Implementation of Transaction Manager factory that should be used to work Ignite's transactions inside
  * WebSphere Application Servser ("poor" / "ordinary" WS AS).
  * <p>
- * Note: {@link CacheReflectionTmFactory} should be used with WebSphere Liberty.
+ * Notes:
+ * <ul>
+ * <li>
+ *     {@link CacheReflectionTmFactory} should be used with WebSphere Liberty.
+ * </li>
+ * <li>
+ *      The implementation has been tested with WebSphere Application Server 8.5.5.
+ * </li>
+ * </ul>
  * <h2 class="header">Java Configuration</h2>
  * <pre name="code" class="java">
  * IgniteConfiguration cfg = new IgniteConfiguration();
