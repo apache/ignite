@@ -657,19 +657,19 @@ public class PlatformConfigurationUtils {
         assert w != null;
         assert cfg != null;
 
-        w.writeBoolean(cfg.isClientMode());
+        w.writeBoolean(true); w.writeBoolean(cfg.isClientMode());
         w.writeIntArray(cfg.getIncludeEventTypes());
-        w.writeLong(cfg.getMetricsExpireTime());
-        w.writeInt(cfg.getMetricsHistorySize());
-        w.writeLong(cfg.getMetricsLogFrequency());
-        w.writeLong(cfg.getMetricsUpdateFrequency());
-        w.writeInt(cfg.getNetworkSendRetryCount());
-        w.writeLong(cfg.getNetworkSendRetryDelay());
-        w.writeLong(cfg.getNetworkTimeout());
+        w.writeBoolean(true); w.writeLong(cfg.getMetricsExpireTime());
+        w.writeBoolean(true); w.writeInt(cfg.getMetricsHistorySize());
+        w.writeBoolean(true); w.writeLong(cfg.getMetricsLogFrequency());
+        w.writeBoolean(true); w.writeLong(cfg.getMetricsUpdateFrequency());
+        w.writeBoolean(true); w.writeInt(cfg.getNetworkSendRetryCount());
+        w.writeBoolean(true); w.writeLong(cfg.getNetworkSendRetryDelay());
+        w.writeBoolean(true); w.writeLong(cfg.getNetworkTimeout());
         w.writeString(cfg.getWorkDirectory());
-        w.writeString(cfg.getLocalHost());
-        w.writeBoolean(cfg.isDaemon());
-        w.writeBoolean(cfg.isLateAffinityAssignment());
+        w.writeBoolean(true); w.writeString(cfg.getLocalHost());
+        w.writeBoolean(true); w.writeBoolean(cfg.isDaemon());
+        w.writeBoolean(true); w.writeBoolean(cfg.isLateAffinityAssignment());
 
         CacheConfiguration[] cacheCfg = cfg.getCacheConfiguration();
 

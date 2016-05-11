@@ -292,17 +292,17 @@
             ClientMode = r.ReadBoolean();
             IncludedEventTypes = r.ReadIntArray();
 
-            MetricsExpireTime = r.ReadLongAsTimespan();
-            MetricsHistorySize = r.ReadInt();
-            MetricsLogFrequency = r.ReadLongAsTimespan();
-            MetricsUpdateFrequency = r.ReadLongAsTimespan();
-            NetworkSendRetryCount = r.ReadInt();
-            NetworkSendRetryDelay = r.ReadLongAsTimespan();
-            NetworkTimeout = r.ReadLongAsTimespan();
+            _metricsExpireTime = r.ReadTimeSpanNullable();
+            _metricsHistorySize = r.ReadIntNullable();
+            _metricsLogFrequency = r.ReadTimeSpanNullable();
+            _metricsUpdateFrequency = r.ReadTimeSpanNullable();
+            _networkSendRetryCount = r.ReadIntNullable();
+            _networkSendRetryDelay = r.ReadTimeSpanNullable();
+            _networkTimeout = r.ReadTimeSpanNullable();
             WorkDirectory = r.ReadString();
             Localhost = r.ReadString();
-            IsDaemon = r.ReadBoolean();
-            IsLateAffinityAssignment = r.ReadBoolean();
+            _isDaemon = r.ReadBooleanNullable();
+            _isLateAffinityAssignment = r.ReadBooleanNullable();
 
             // Cache config
             var cacheCfgCount = r.ReadInt();
