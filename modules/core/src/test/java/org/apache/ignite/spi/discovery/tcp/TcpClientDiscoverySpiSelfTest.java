@@ -1736,8 +1736,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         final AtomicBoolean err = new AtomicBoolean(false);
 
         client.events().localListen(new IgnitePredicate<Event>() {
-            @Override
-            public boolean apply(Event evt) {
+            @Override public boolean apply(Event evt) {
                 if (evt.type() == EVT_CLIENT_NODE_DISCONNECTED) {
                     log.info("Disconnected event.");
 
@@ -2158,17 +2157,49 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg,
+        @Override protected void writeToSocket(Socket sock,
+            OutputStream out,
+            TcpDiscoveryAbstractMessage msg,
             long timeout) throws IOException, IgniteCheckedException {
             waitFor(writeLock);
 
+            if (!onMessage(sock, msg))
+                return;
+
+            super.writeToSocket(sock, out, msg, timeout);
+
+            if (afterWrite != null)
+                afterWrite.apply(msg, sock);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, byte[] msgBytes,
+            long timeout) throws IOException {
+            waitFor(writeLock);
+
+            if (!onMessage(sock, msg))
+                return;
+
+            super.writeToSocket(sock, msg, msgBytes, timeout);
+
+            if (afterWrite != null)
+                afterWrite.apply(msg, sock);
+        }
+
+        /**
+         * @param sock Socket.
+         * @param msg Message.
+         * @return {@code False} if should not further process message.
+         * @throws IOException If failed.
+         */
+        private boolean onMessage(Socket sock, TcpDiscoveryAbstractMessage msg) throws IOException {
             boolean fail = false;
 
             if (skipNodeAdded &&
                 (msg instanceof TcpDiscoveryNodeAddedMessage || msg instanceof TcpDiscoveryNodeAddFinishedMessage)) {
                 log.info("Skip message: " + msg);
 
-                return;
+                return false;
             }
 
             if (msg instanceof TcpDiscoveryNodeAddedMessage)
@@ -2184,10 +2215,7 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
                 sock.close();
             }
 
-            super.writeToSocket(sock, out, msg, timeout);
-
-            if (afterWrite != null)
-                afterWrite.apply(msg, sock);
+            return true;
         }
 
         /** {@inheritDoc} */

@@ -222,6 +222,9 @@ public class SchemaImportApp extends Application {
     private static final String PREF_POJO_CONSTRUCTOR = "pojo.constructor";
 
     /** */
+    private static final String PREF_GENERATE_ALIASES = "sql.aliases";
+
+    /** */
     private static final String PREF_XML_SINGLE = "xml.single";
 
     /** */
@@ -303,6 +306,9 @@ public class SchemaImportApp extends Application {
 
     /** */
     private CheckBox pojoConstructorCh;
+
+    /** */
+    private CheckBox generateAliasesCh;
 
     /** */
     private CheckBox pojoIncludeKeysCh;
@@ -604,9 +610,11 @@ public class SchemaImportApp extends Application {
 
         final File destFolder = new File(outFolder);
 
+        final boolean includeKeys = pojoIncludeKeysCh.isSelected();
+
         final boolean constructor = pojoConstructorCh.isSelected();
 
-        final boolean includeKeys = pojoIncludeKeysCh.isSelected();
+        final boolean generateAliases = generateAliasesCh.isSelected();
 
         final boolean singleXml = xmlSingleFileCh.isSelected();
 
@@ -656,16 +664,17 @@ public class SchemaImportApp extends Application {
 
                 for (PojoDescriptor pojo : all) {
                     if (!singleXml)
-                        XmlGenerator.generate(pkg, pojo, includeKeys, new File(destFolder, pojo.table() + ".xml"),
-                            askOverwrite);
+                        XmlGenerator.generate(pkg, pojo, includeKeys, generateAliases,
+                            new File(destFolder, pojo.table() + ".xml"), askOverwrite);
 
                     CodeGenerator.pojos(pojo, outFolder, pkg, constructor, includeKeys, askOverwrite);
                 }
 
                 if (singleXml)
-                    XmlGenerator.generate(pkg, all, includeKeys, new File(outFolder, "ignite-type-metadata.xml"), askOverwrite);
+                    XmlGenerator.generate(pkg, all, includeKeys, generateAliases,
+                        new File(outFolder, "ignite-type-metadata.xml"), askOverwrite);
 
-                CodeGenerator.snippet(all, pkg, includeKeys, outFolder, askOverwrite);
+                CodeGenerator.snippet(all, pkg, includeKeys, generateAliases, outFolder, askOverwrite);
 
                 perceptualDelay(started);
 
@@ -778,7 +787,7 @@ public class SchemaImportApp extends Application {
                     String p1 = part1[idx];
                     String p2 = part2[idx];
 
-                    int cmp = p1.matches("\\d+") && p2.matches("\\d+") ? new Integer(p1).compareTo(new Integer(p2)) :
+                    int cmp = p1.matches("\\d+") && p2.matches("\\d+") ? Integer.valueOf(p1).compareTo(Integer.valueOf(p2)) :
                             part1[idx].compareTo(part2[idx]);
 
                     if (cmp != 0)
@@ -796,7 +805,7 @@ public class SchemaImportApp extends Application {
                     while (idx < parts.length) {
                         String p = parts[idx];
 
-                        int cmp = p.matches("\\d+") ? new Integer(p).compareTo(0) : 1;
+                        int cmp = p.matches("\\d+") ? Integer.valueOf(p).compareTo(0) : 1;
 
                         if (cmp != 0) return left ? cmp : -cmp;
 
@@ -1228,7 +1237,7 @@ public class SchemaImportApp extends Application {
         genPnl.addColumn(35, 35, 35, Priority.NEVER);
 
         genPnl.addRow(100, 100, Double.MAX_VALUE, Priority.ALWAYS);
-        genPnl.addRows(7);
+        genPnl.addRows(8);
 
         TableColumn<PojoDescriptor, Boolean> useCol = customColumn("Schema / Table", "use",
             "If checked then this table will be used for XML and POJOs generation", PojoDescriptorCell.cellFactory());
@@ -1342,6 +1351,9 @@ public class SchemaImportApp extends Application {
 
         pojoConstructorCh = genPnl.add(checkBox("Generate constructors for POJOs",
             "If selected then generate empty and full constructors for POJOs", false), 3);
+
+        generateAliasesCh = genPnl.add(checkBox("Generate aliases for SQL fields",
+            "If selected then generate aliases for SQL fields with db names", true), 3);
 
         xmlSingleFileCh = genPnl.add(checkBox("Write all configurations to a single XML file",
             "If selected then all configurations will be saved into the file 'ignite-type-metadata.xml'", true), 3);
@@ -1836,6 +1848,7 @@ public class SchemaImportApp extends Application {
         pkgTf.setText(getStringProp(PREF_POJO_PACKAGE, "org.apache.ignite"));
         pojoIncludeKeysCh.setSelected(getBoolProp(PREF_POJO_INCLUDE, true));
         pojoConstructorCh.setSelected(getBoolProp(PREF_POJO_CONSTRUCTOR, false));
+        generateAliasesCh.setSelected(getBoolProp(PREF_GENERATE_ALIASES, true));
 
         xmlSingleFileCh.setSelected(getBoolProp(PREF_XML_SINGLE, true));
 
@@ -1901,6 +1914,7 @@ public class SchemaImportApp extends Application {
         setStringProp(PREF_POJO_PACKAGE, pkgTf.getText());
         setBoolProp(PREF_POJO_INCLUDE, pojoIncludeKeysCh.isSelected());
         setBoolProp(PREF_POJO_CONSTRUCTOR, pojoConstructorCh.isSelected());
+        setBoolProp(PREF_GENERATE_ALIASES, generateAliasesCh.isSelected());
 
         setBoolProp(PREF_XML_SINGLE, xmlSingleFileCh.isSelected());
 

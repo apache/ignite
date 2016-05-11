@@ -240,7 +240,11 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         for (ServiceContextImpl ctx : ctxs) {
             ctx.setCancelled(true);
-            ctx.service().cancel(ctx);
+
+            Service svc = ctx.service();
+
+            if (svc != null)
+                svc.cancel(ctx);
 
             ctx.executor().shutdownNow();
         }
@@ -653,7 +657,14 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             if (ctxs.isEmpty())
                 return null;
 
-            return (T)ctxs.iterator().next().service();
+            for (ServiceContextImpl ctx : ctxs) {
+                Service svc = ctx.service();
+
+                if (svc != null)
+                    return (T)svc;
+            }
+
+            return null;
         }
     }
 
@@ -675,7 +686,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             if (ctxs.isEmpty())
                 return null;
 
-            return ctxs.iterator().next();
+            for (ServiceContextImpl ctx : ctxs) {
+                if (ctx.service() != null)
+                    return ctx;
+            }
+
+            return null;
         }
     }
 
@@ -695,11 +711,15 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             ServiceContextImpl ctx = serviceContext(name);
 
             if (ctx != null) {
-                if (!svcItf.isAssignableFrom(ctx.service().getClass()))
-                    throw new IgniteException("Service does not implement specified interface [svcItf=" +
-                        svcItf.getName() + ", svcCls=" + ctx.service().getClass().getName() + ']');
+                Service svc = ctx.service();
 
-                return (T)ctx.service();
+                if (svc != null) {
+                    if (!svcItf.isAssignableFrom(svc.getClass()))
+                        throw new IgniteException("Service does not implement specified interface [svcItf=" +
+                            svcItf.getName() + ", svcCls=" + svc.getClass().getName() + ']');
+
+                    return (T)svc;
+                }
             }
         }
 
@@ -738,8 +758,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         synchronized (ctxs) {
             Collection<T> res = new ArrayList<>(ctxs.size());
 
-            for (ServiceContextImpl ctx : ctxs)
-                res.add((T)ctx.service());
+            for (ServiceContextImpl ctx : ctxs) {
+                Service svc = ctx.service();
+
+                if (svc != null)
+                    res.add((T)svc);
+            }
 
             return res;
         }
@@ -911,8 +935,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         if (assignCnt == null)
             assignCnt = 0;
 
-        Service svc = assigns.service();
-
         Collection<ServiceContextImpl> ctxs;
 
         synchronized (locSvcs) {
@@ -921,6 +943,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             if (ctxs == null)
                 locSvcs.put(svcName, ctxs = new ArrayList<>());
         }
+
+        Collection<ServiceContextImpl> toInit = new ArrayList<>();
 
         synchronized (ctxs) {
             if (ctxs.size() > assignCnt) {
@@ -932,75 +956,86 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 int createCnt = assignCnt - ctxs.size();
 
                 for (int i = 0; i < createCnt; i++) {
-                    final Service cp = copyAndInject(svc);
-
-                    final ExecutorService exe = Executors.newSingleThreadExecutor(threadFactory);
-
-                    final ServiceContextImpl svcCtx = new ServiceContextImpl(assigns.name(),
-                        UUID.randomUUID(), assigns.cacheName(), assigns.affinityKey(), cp, exe);
+                    ServiceContextImpl svcCtx = new ServiceContextImpl(assigns.name(),
+                        UUID.randomUUID(),
+                        assigns.cacheName(),
+                        assigns.affinityKey(),
+                        Executors.newSingleThreadExecutor(threadFactory));
 
                     ctxs.add(svcCtx);
 
+                    toInit.add(svcCtx);
+                }
+            }
+        }
+
+        for (final ServiceContextImpl svcCtx : toInit) {
+            final Service svc = copyAndInject(assigns.service());
+
+            try {
+                // Initialize service.
+                svc.init(svcCtx);
+
+                svcCtx.service(svc);
+            }
+            catch (Throwable e) {
+                log.error("Failed to initialize service (service will not be deployed): " + assigns.name(), e);
+
+                synchronized (ctxs) {
+                    ctxs.removeAll(toInit);
+                }
+
+                if (e instanceof Error)
+                    throw (Error)e;
+
+                if (e instanceof RuntimeException)
+                    throw (RuntimeException)e;
+
+                return;
+            }
+
+            if (log.isInfoEnabled())
+                log.info("Starting service instance [name=" + svcCtx.name() + ", execId=" +
+                    svcCtx.executionId() + ']');
+
+            // Start service in its own thread.
+            final ExecutorService exe = svcCtx.executor();
+
+            exe.submit(new Runnable() {
+                @Override public void run() {
                     try {
-                        // Initialize service.
-                        cp.init(svcCtx);
+                        svc.execute(svcCtx);
+                    }
+                    catch (InterruptedException | IgniteInterruptedCheckedException ignore) {
+                        if (log.isDebugEnabled())
+                            log.debug("Service thread was interrupted [name=" + svcCtx.name() + ", execId=" +
+                                svcCtx.executionId() + ']');
+                    }
+                    catch (IgniteException e) {
+                        if (e.hasCause(InterruptedException.class) ||
+                            e.hasCause(IgniteInterruptedCheckedException.class)) {
+                            if (log.isDebugEnabled())
+                                log.debug("Service thread was interrupted [name=" + svcCtx.name() +
+                                    ", execId=" + svcCtx.executionId() + ']');
+                        }
+                        else {
+                            U.error(log, "Service execution stopped with error [name=" + svcCtx.name() +
+                                ", execId=" + svcCtx.executionId() + ']', e);
+                        }
                     }
                     catch (Throwable e) {
-                        log.error("Failed to initialize service (service will not be deployed): " + assigns.name(), e);
-
-                        ctxs.remove(svcCtx);
+                        log.error("Service execution stopped with error [name=" + svcCtx.name() +
+                            ", execId=" + svcCtx.executionId() + ']', e);
 
                         if (e instanceof Error)
                             throw (Error)e;
-
-                        if (e instanceof RuntimeException)
-                            throw (RuntimeException)e;
-
-                        return;
                     }
-
-                    if (log.isInfoEnabled())
-                        log.info("Starting service instance [name=" + svcCtx.name() + ", execId=" +
-                            svcCtx.executionId() + ']');
-
-                    // Start service in its own thread.
-                    exe.submit(new Runnable() {
-                        @Override public void run() {
-                            try {
-                                cp.execute(svcCtx);
-                            }
-                            catch (InterruptedException | IgniteInterruptedCheckedException ignore) {
-                                if (log.isDebugEnabled())
-                                    log.debug("Service thread was interrupted [name=" + svcCtx.name() + ", execId=" +
-                                        svcCtx.executionId() + ']');
-                            }
-                            catch (IgniteException e) {
-                                if (e.hasCause(InterruptedException.class) ||
-                                    e.hasCause(IgniteInterruptedCheckedException.class)) {
-                                    if (log.isDebugEnabled())
-                                        log.debug("Service thread was interrupted [name=" + svcCtx.name() +
-                                            ", execId=" + svcCtx.executionId() + ']');
-                                }
-                                else {
-                                    U.error(log, "Service execution stopped with error [name=" + svcCtx.name() +
-                                        ", execId=" + svcCtx.executionId() + ']', e);
-                                }
-                            }
-                            catch (Throwable e) {
-                                log.error("Service execution stopped with error [name=" + svcCtx.name() +
-                                    ", execId=" + svcCtx.executionId() + ']', e);
-
-                                if (e instanceof Error)
-                                    throw (Error)e;
-                            }
-                            finally {
-                                // Suicide.
-                                exe.shutdownNow();
-                            }
-                        }
-                    });
+                    finally {
+                        // Suicide.
+                        exe.shutdownNow();
+                    }
                 }
-            }
+            });
         }
     }
 
@@ -1040,22 +1075,26 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             svcCtx.setCancelled(true);
 
             // Notify service about cancellation.
-            try {
-                svcCtx.service().cancel(svcCtx);
-            }
-            catch (Throwable e) {
-                log.error("Failed to cancel service (ignoring) [name=" + svcCtx.name() +
-                    ", execId=" + svcCtx.executionId() + ']', e);
+            Service svc = svcCtx.service();
 
-                if (e instanceof Error)
-                    throw e;
-            }
-            finally {
+            if (svc != null) {
                 try {
-                    ctx.resource().cleanup(svcCtx.service());
+                    svc.cancel(svcCtx);
                 }
-                catch (IgniteCheckedException e) {
-                    log.error("Failed to clean up service (will ignore): " + svcCtx.name(), e);
+                catch (Throwable e) {
+                    log.error("Failed to cancel service (ignoring) [name=" + svcCtx.name() +
+                        ", execId=" + svcCtx.executionId() + ']', e);
+
+                    if (e instanceof Error)
+                        throw e;
+                }
+                finally {
+                    try {
+                        ctx.resource().cleanup(svc);
+                    }
+                    catch (IgniteCheckedException e) {
+                        U.error(log, "Failed to clean up service (will ignore): " + svcCtx.name(), e);
+                    }
                 }
             }
 

@@ -414,7 +414,7 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                     // Entry was not in memory or in swap, so we remove it from cache.
                     if (v == null) {
                         if (isNew && entry.markObsoleteIfEmpty(ver))
-                            colocated.removeIfObsolete(key);
+                            colocated.removeEntry(entry);
                     }
                     else {
                         if (!skipVals && cctx.config().isStatisticsEnabled())
