@@ -68,8 +68,8 @@ namespace Apache.Ignite.Core.Communication.Tcp
         /// <summary> Default value of <see cref="SelectorsCount"/> property. </summary>
         public static readonly int DefaultSelectorsCount = Math.Min(4, Environment.ProcessorCount);
 
-        /// <summary> Default value of <see cref="SocketReceiveBufferSize"/> property. </summary>
-        public const int DefaultSocketReceiveBufferSize = 32 * 1024;
+        /// <summary> Default socket buffer size. </summary>
+        public const int DefaultSocketBufferSize = 32 * 1024;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TcpCommunicationSpi"/> class.
@@ -193,7 +193,13 @@ namespace Apache.Ignite.Core.Communication.Tcp
         /// <summary>
         /// Gets or sets the size of the socket receive buffer.
         /// </summary>
-        [DefaultValue(DefaultSocketReceiveBufferSize)]
+        [DefaultValue(DefaultSocketBufferSize)]
         public int SocketReceiveBufferSize { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the size of the socket send buffer.
+        /// </summary>
+        [DefaultValue(DefaultSocketBufferSize)]
+        public int SocketSendBufferSize { get; set; }
     }
 }
