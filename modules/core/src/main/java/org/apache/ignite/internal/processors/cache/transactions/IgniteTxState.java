@@ -45,9 +45,10 @@ public interface IgniteTxState {
     @Nullable public Integer firstCacheId();
 
     /**
-     * @return Cache IDs involved in this tx.
+     * Unwind evicts for caches involved in this transaction.
+     * @param cctx Grid cache shared context.
      */
-    public Collection<Integer> cacheIds();
+    public void unwindEvicts(GridCacheSharedContext cctx);
 
     /**
      * @param cctx Context.

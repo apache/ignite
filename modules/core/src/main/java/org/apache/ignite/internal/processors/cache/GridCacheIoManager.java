@@ -640,43 +640,28 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             cctx.tm().resetContext();
             cctx.mvcc().contextReset();
 
+            IgniteTxState txState = null;
+
             // Unwind eviction notifications.
-            if (msg instanceof GridDistributedTxPrepareRequest) {
-                IgniteTxState txState = ((GridDistributedTxPrepareRequest)msg).txState();
 
-                unwindEvicts(txState);
-            }
-            else if (msg instanceof GridDistributedTxPrepareResponse) {
-                IgniteTxState txState = ((GridDistributedTxPrepareResponse)msg).txState();
+            if (msg instanceof GridDistributedTxPrepareRequest)
+                txState = ((GridDistributedTxPrepareRequest)msg).txState();
 
-                unwindEvicts(txState);
-            }
-            else if (msg instanceof GridDistributedTxFinishRequest) {
-                IgniteTxState txState = ((GridDistributedTxFinishRequest)msg).txState();
+            else if (msg instanceof GridDistributedTxPrepareResponse)
+                txState = ((GridDistributedTxPrepareResponse)msg).txState();
 
-                unwindEvicts(txState);
-            }
+            else if (msg instanceof GridDistributedTxFinishRequest)
+                txState = ((GridDistributedTxFinishRequest)msg).txState();
+
             else {
                 GridCacheContext ctx = cctx.cacheContext(msg.cacheId());
 
                 if (ctx != null)
                     CU.unwindEvicts(ctx);
             }
-        }
-    }
 
-    /**
-     * Unwind evicts.
-     * @param txState TX state.
-     */
-    private void unwindEvicts(IgniteTxState txState) {
-        if (txState != null) {
-            for (Integer cacheId : txState.cacheIds()) {
-                GridCacheContext ctx = cctx.cacheContext(cacheId);
-
-                if (ctx != null)
-                    CU.unwindEvicts(ctx);
-            }
+            if (txState != null)
+                txState.unwindEvicts(cctx);
         }
     }
 

@@ -25,8 +25,10 @@ import java.util.Set;
 
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -34,7 +36,6 @@ import org.jsr166.ConcurrentHashMap8;
  *
  */
 public class IgniteTxRemoteStateImpl extends IgniteTxRemoteStateAdapter {
-
     /** Cache IDs */
     private final Set<Integer> cacheIds = Collections.newSetFromMap(new ConcurrentHashMap8<Integer, Boolean>());
 
@@ -57,8 +58,15 @@ public class IgniteTxRemoteStateImpl extends IgniteTxRemoteStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Integer> cacheIds() {
-        return Collections.unmodifiableSet(cacheIds);
+    @Override public void unwindEvicts(GridCacheSharedContext cctx) {
+        assert readMap == null || readMap.isEmpty();
+
+        for (Integer cacheId : cacheIds) {
+            GridCacheContext ctx = cctx.cacheContext(cacheId);
+
+            if (ctx != null)
+                CU.unwindEvicts(ctx);
+        }
     }
 
     /** {@inheritDoc} */

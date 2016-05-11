@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
@@ -75,12 +74,15 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<Integer> cacheIds() {
-        Set<Integer> set = new HashSet<>();
-        for (int i = 0; i < activeCacheIds.size(); i++)
-            set.add((int) activeCacheIds.get(i));
+    @Override public void unwindEvicts(GridCacheSharedContext cctx) {
+        for (int i = 0; i < activeCacheIds.size(); i++) {
+            int cacheId = (int) activeCacheIds.get(i);
 
-        return set;
+            GridCacheContext ctx = cctx.cacheContext(cacheId);
+
+            if (ctx != null)
+                CU.unwindEvicts(ctx);
+        }
     }
 
     /** {@inheritDoc} */
