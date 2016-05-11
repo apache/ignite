@@ -734,11 +734,6 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /** {@inheritDoc} */
-    public void sendActivationEvent() {
-        msgWorker.addMessage(new TcpDiscoveryNodeActivatedMessage());
-    }
-
-    /** {@inheritDoc} */
     @Override public void sendCustomEvent(DiscoverySpiCustomMessage evt) {
         try {
             msgWorker.addMessage(new TcpDiscoveryCustomEventMessage(getLocalNodeId(), evt, spi.marsh.marshal(evt)));

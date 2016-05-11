@@ -418,10 +418,6 @@ class ClientImpl extends TcpDiscoveryImpl {
         rmtNodes.clear();
     }
 
-    @Override public void sendActivationEvent() {
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
     /** {@inheritDoc} */
     @Override public void sendCustomEvent(DiscoverySpiCustomMessage evt) {
         State state = this.state;

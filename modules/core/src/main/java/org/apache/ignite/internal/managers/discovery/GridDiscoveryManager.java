@@ -113,7 +113,7 @@ import org.apache.ignite.spi.discovery.DiscoverySpiHistorySupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
-import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeActivatedMessage;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -122,7 +122,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
-import static org.apache.ignite.events.EventType.EVT_NODE_ACTIVATED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -630,11 +629,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     return;
                 }
-                else if (type == EVT_NODE_ACTIVATED) {
-                    activatedNodes.add(node.id());
-
-                    return;
-                }
 
                 if (type == EVT_CLIENT_NODE_DISCONNECTED || type == EVT_NODE_SEGMENTED || !ctx.clientDisconnected())
                     discoWrk.addEvent(type, nextTopVer, node, topSnapshot, customMsg);
@@ -703,6 +697,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         locNode = spi.getLocalNode();
 
         checkAttributes(discoCache().remoteNodes());
+
+        setCustomEventListener(TcpDiscoveryNodeActivatedMessage.class, new CustomEventListener<TcpDiscoveryNodeActivatedMessage>() {
+            @Override
+            public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd,
+                TcpDiscoveryNodeActivatedMessage msg) {
+                activatedNodes.add(snd.id());
+            }
+        });
 
         // Start discovery worker.
         new IgniteThread(discoWrk).start();
@@ -1882,7 +1884,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         locJoinEvt.listen(new IgniteInClosure<IgniteInternalFuture<DiscoveryEvent>>() {
             @Override public void apply(IgniteInternalFuture<DiscoveryEvent> future) {
                 activatedNodes.add(localNode().id());
-                // TODO: Send message
+
+                try {
+                    sendCustomEvent(new TcpDiscoveryNodeActivatedMessage());
+                }
+                catch (IgniteCheckedException e) {
+                    if (future instanceof GridFutureAdapter)
+                        ((GridFutureAdapter)future).onDone(e);
+
+                    locJoinEvt.onDone(e);
+                }
             }
         });
     }

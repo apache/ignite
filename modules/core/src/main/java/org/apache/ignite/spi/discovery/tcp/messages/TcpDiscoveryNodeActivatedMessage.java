@@ -18,18 +18,21 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
-import java.util.UUID;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
-public class TcpDiscoveryNodeActivatedMessage extends TcpDiscoveryAbstractMessage {
+public class TcpDiscoveryNodeActivatedMessage implements DiscoveryCustomMessage {
 
-    public TcpDiscoveryNodeActivatedMessage() {
+    @Override public IgniteUuid id() {
+        throw new UnsupportedOperationException("Not implemented");
     }
 
-    public TcpDiscoveryNodeActivatedMessage(UUID creatorNodeId) {
-        super(creatorNodeId);
+    @Nullable @Override public DiscoveryCustomMessage ackMessage() {
+        throw new UnsupportedOperationException("Not implemented");
     }
 
-    public TcpDiscoveryNodeActivatedMessage(TcpDiscoveryAbstractMessage msg) {
-        super(msg);
+    @Override public boolean isMutable() {
+        throw new UnsupportedOperationException("Not implemented");
     }
 }

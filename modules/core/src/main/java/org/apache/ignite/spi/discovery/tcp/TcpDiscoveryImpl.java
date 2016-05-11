@@ -192,8 +192,6 @@ abstract class TcpDiscoveryImpl {
      */
     public abstract void disconnect() throws IgniteSpiException;
 
-    public abstract void sendActivationEvent();
-
     /**
      * @param msg Message.
      * @throws IgniteException If failed.
