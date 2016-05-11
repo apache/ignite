@@ -86,6 +86,36 @@
         /// </summary>
         public static readonly TimeSpan DefaultNetworkSendRetryDelay = TimeSpan.FromMilliseconds(1000);
 
+        /** */
+        private TimeSpan? _metricsExpireTime;
+
+        /** */
+        private int? _metricsHistorySize;
+
+        /** */
+        private TimeSpan? _metricsLogFrequency;
+
+        /** */
+        private TimeSpan? _metricsUpdateFrequency;
+
+        /** */
+        private int? _networkSendRetryCount;
+
+        /** */
+        private TimeSpan? _networkSendRetryDelay;
+
+        /** */
+        private TimeSpan? _networkTimeout;
+
+        /** */
+        private bool? _isDaemon;
+
+        /** */
+        private bool? _isLateAffinityAssignment;
+
+        /** */
+        private bool? _clientMode;
+
         /// <summary>
         /// Default network retry count.
         /// </summary>
@@ -155,15 +185,7 @@
         {
             Debug.Assert(writer != null);
 
-            if (!string.IsNullOrEmpty(SpringConfigUrl))
-            {
-                // Do not write details when there is Spring config.
-                writer.WriteBoolean(false);
-                return;
-            }
-
-            writer.WriteBoolean(true);  // details are present
-
+            // TODO: Inline
             WriteCore(writer);
         }
 
@@ -173,6 +195,8 @@
         /// <param name="writer">The writer.</param>
         private void WriteCore(BinaryWriter writer)
         {
+            // TODO: Nullables
+
             // Simple properties
             writer.WriteBoolean(ClientMode);
             writer.WriteIntArray(IncludedEventTypes == null ? null : IncludedEventTypes.ToArray());
@@ -481,7 +505,11 @@
         /// Gets or sets a value indicating whether node should start in client mode.
         /// Client node cannot hold data in the caches.
         /// </summary>
-        public bool ClientMode { get; set; }
+        public bool ClientMode
+        {
+            get { return _clientMode ?? default(bool); }
+            set { _clientMode = value; }
+        }
 
         /// <summary>
         /// Gets or sets a set of event types (<see cref="EventType" />) to be recorded by Ignite. 
@@ -493,20 +521,32 @@
         /// Gets or sets the time after which a certain metric value is considered expired.
         /// </summary>
         [DefaultValue(typeof(TimeSpan), "10675199.02:48:05.4775807")]
-        public TimeSpan MetricsExpireTime { get; set; }
+        public TimeSpan MetricsExpireTime
+        {
+            get { return _metricsExpireTime ?? DefaultMetricsExpireTime; }
+            set { _metricsExpireTime = value; }
+        }
 
         /// <summary>
         /// Gets or sets the number of metrics kept in history to compute totals and averages.
         /// </summary>
         [DefaultValue(DefaultMetricsHistorySize)]
-        public int MetricsHistorySize { get; set; }
+        public int MetricsHistorySize
+        {
+            get { return _metricsHistorySize ?? DefaultMetricsHistorySize; }
+            set { _metricsHistorySize = value; }
+        }
 
         /// <summary>
         /// Gets or sets the frequency of metrics log print out.
         /// <see cref="TimeSpan.Zero"/> to disable metrics print out.
         /// </summary>
         [DefaultValue(typeof(TimeSpan), "00:01:00")]
-        public TimeSpan MetricsLogFrequency { get; set; }
+        public TimeSpan MetricsLogFrequency
+        {
+            get { return _metricsLogFrequency ?? DefaultMetricsLogFrequency; }
+            set { _metricsLogFrequency = value; }
+        }
 
         /// <summary>
         /// Gets or sets the job metrics update frequency.
@@ -514,25 +554,41 @@
         /// Negative value to never update metrics.
         /// </summary>
         [DefaultValue(typeof(TimeSpan), "00:00:02")]
-        public TimeSpan MetricsUpdateFrequency { get; set; }
+        public TimeSpan MetricsUpdateFrequency
+        {
+            get { return _metricsUpdateFrequency ?? DefaultMetricsUpdateFrequency; }
+            set { _metricsUpdateFrequency = value; }
+        }
 
         /// <summary>
         /// Gets or sets the network send retry count.
         /// </summary>
         [DefaultValue(DefaultNetworkSendRetryCount)]
-        public int NetworkSendRetryCount { get; set; }
+        public int NetworkSendRetryCount
+        {
+            get { return _networkSendRetryCount ?? DefaultNetworkSendRetryCount; }
+            set { _networkSendRetryCount = value; }
+        }
 
         /// <summary>
         /// Gets or sets the network send retry delay.
         /// </summary>
         [DefaultValue(typeof(TimeSpan), "00:00:01")]
-        public TimeSpan NetworkSendRetryDelay { get; set; }
+        public TimeSpan NetworkSendRetryDelay
+        {
+            get { return _networkSendRetryDelay ?? DefaultNetworkSendRetryDelay; }
+            set { _networkSendRetryDelay = value; }
+        }
 
         /// <summary>
         /// Gets or sets the network timeout.
         /// </summary>
         [DefaultValue(typeof(TimeSpan), "00:00:05")]
-        public TimeSpan NetworkTimeout { get; set; }
+        public TimeSpan NetworkTimeout
+        {
+            get { return _networkTimeout ?? DefaultNetworkTimeout; }
+            set { _networkTimeout = value; }
+        }
 
         /// <summary>
         /// Gets or sets the work directory.
@@ -561,7 +617,11 @@
         /// and needs to participate in the topology, but also needs to be excluded from the "normal" topology, 
         /// so that it won't participate in the task execution or in-memory data grid storage.
         /// </summary>
-        public bool IsDaemon { get; set; }
+        public bool IsDaemon
+        {
+            get { return _isDaemon ?? default(bool); }
+            set { _isDaemon = value; }
+        }
 
         /// <summary>
         /// Gets or sets the user attributes for this node.
@@ -606,6 +666,10 @@
         /// If not provided, default value is <see cref="DefaultIsLateAffinityAssignment"/>.
         /// </summary>
         [DefaultValue(DefaultIsLateAffinityAssignment)]
-        public bool IsLateAffinityAssignment { get; set; }
+        public bool IsLateAffinityAssignment
+        {
+            get { return _isLateAffinityAssignment ?? DefaultIsLateAffinityAssignment; }
+            set { _isLateAffinityAssignment = value; }
+        }
     }
 }

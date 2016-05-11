@@ -330,9 +330,6 @@ public class PlatformConfigurationUtils {
      * @param cfg Configuration.
      */
     public static void readIgniteConfiguration(BinaryRawReaderEx in, IgniteConfiguration cfg) {
-        if (!in.readBoolean())
-            return;  // there is no config
-
         cfg.setClientMode(in.readBoolean());
         cfg.setIncludeEventTypes(in.readIntArray());
         cfg.setMetricsExpireTime(in.readLong());
