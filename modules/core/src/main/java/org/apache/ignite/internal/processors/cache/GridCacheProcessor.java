@@ -1257,9 +1257,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         GridCacheDrManager drMgr = pluginMgr.createComponent(GridCacheDrManager.class);
         CacheStoreManager storeMgr = pluginMgr.createComponent(CacheStoreManager.class);
 
-        boolean cacheIndexingEnabled = INDEXING.inClassPath() && GridQueryProcessor.isEnabled(cfg);
-
-        IgniteCacheOffheapManager offheapMgr = new IgniteCacheOffheapManager(cacheIndexingEnabled);
+        IgniteCacheOffheapManager offheapMgr = pluginMgr.createComponent(IgniteCacheOffheapManager.class);
 
         storeMgr.initialize(cfgStore, sesHolders);
 
@@ -1810,9 +1808,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             tm,
             verMgr,
             mvccMgr,
-            dbMgr,
             pageStoreMgr,
             walMgr,
+            dbMgr,
             depMgr,
             exchMgr,
             topMgr,

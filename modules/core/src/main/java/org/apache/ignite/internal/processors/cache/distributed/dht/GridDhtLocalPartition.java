@@ -42,7 +42,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheSwapEntry;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabasePartitionManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -118,8 +117,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     /** Update counter. */
     private final AtomicLong cntr = new AtomicLong();
 
-    private final IgniteCacheDatabasePartitionManager dbPartMgr;
-
     /**
      * @param cctx Context.
      * @param id Partition ID.
@@ -146,10 +143,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
         rmvQueue = new GridCircularBuffer<>(U.ceilPow2(delQueueSize));
 
-        dbPartMgr = cctx.database().partitions();
-
-        if (dbPartMgr != null)
-            cntr.set(dbPartMgr.getLastAppliedUpdate(id));
+        cntr.set(cctx.offheap().lastUpdatedPartitionCounter(id));
     }
 
     /**
@@ -656,13 +650,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      */
     public long updateCounter() {
         return cntr.get();
-    }
-
-    public void onUpdateFinished(long cntr) {
-        assert cntr <= this.cntr.get();
-
-        if (dbPartMgr != null)
-            dbPartMgr.onUpdateReceived(id, cntr);
     }
 
     /**

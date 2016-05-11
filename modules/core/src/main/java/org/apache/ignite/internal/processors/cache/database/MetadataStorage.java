@@ -48,6 +48,8 @@ public class MetadataStorage implements MetaStore {
         throws IgniteCheckedException {
         byte[] idxNameBytes = idxName.getBytes(StandardCharsets.UTF_8);
 
+        U.debug("Get or allocate: " + idxName + ", " + cacheId);
+
         FullPageId metaId = metaPage(cacheId);
 
         Page meta = pageMem.page(metaId);
@@ -92,6 +94,8 @@ public class MetadataStorage implements MetaStore {
                 return rootPageId;
 
             while (nextPageId > 0) {
+                U.debug("Next page: " + U.hexLong(nextPageId));
+
                 // Meta page.
                 Page nextPage = pageMem.page(new FullPageId(nextPageId, 0));
 

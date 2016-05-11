@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.database;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DatabaseConfiguration;
+import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
@@ -79,13 +80,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @throws IgniteCheckedException If failed to restore state.
-     */
-    public void restoreState() throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /**
      * No-op for non-persistent storage.
      */
     public void checkpointReadLock() {
@@ -96,6 +90,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * No-op for non-persistent storage.
      */
     public void checkpointReadUnlock() {
+        // No-op.
+    }
+
+    /**
+     * @param discoEvt Before exchange for the given discovery event.
+     */
+    public void beforeExchange(DiscoveryEvent discoEvt) throws IgniteCheckedException {
         // No-op.
     }
 

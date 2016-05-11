@@ -43,6 +43,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -53,6 +54,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.dwordsOffset;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 
@@ -67,7 +69,7 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
     private CacheDataTree dataTree;
 
     /** */
-    private final boolean indexingEnabled;
+    private boolean indexingEnabled;
 
     /** */
     private FreeList freeList;
@@ -76,17 +78,12 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
     private ReuseList reuseList;
 
     /**
-     * @param indexingEnabled {@code True} if indexing is enabled for cache.
-     */
-    public IgniteCacheOffheapManager(boolean indexingEnabled) {
-        this.indexingEnabled = indexingEnabled;
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
+
+        indexingEnabled = INDEXING.inClassPath() && GridQueryProcessor.isEnabled(cctx.config());
 
         if (cctx.affinityNode()) {
             IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
@@ -248,6 +245,26 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
      */
     public int onUndeploy(ClassLoader ldr) {
         // TODO: GG-10884.
+        return 0;
+    }
+
+    /**
+     * Partition counter update callback. May be overridden by plugin-provided subclasses.
+     *
+     * @param part Partition.
+     * @param cntr Partition counter.
+     */
+    public void onPartitionCounterUpdated(int part, long cntr) {
+        // No-op.
+    }
+
+    /**
+     * Partition counter provider. May be overridden by plugin-provided subclasses.
+     *
+     * @param part Partition ID.
+     * @return Last updated counter.
+     */
+    public long lastUpdatedPartitionCounter(int part) {
         return 0;
     }
 

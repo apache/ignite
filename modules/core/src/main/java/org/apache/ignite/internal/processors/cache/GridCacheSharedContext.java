@@ -126,9 +126,9 @@ public class GridCacheSharedContext<K, V> {
         IgniteTxManager txMgr,
         GridCacheVersionManager verMgr,
         GridCacheMvccManager mvccMgr,
-        IgniteCacheDatabaseSharedManager dbMgr,
         IgnitePageStoreManager pageStoreMgr,
         IgniteWriteAheadLogManager walMgr,
+        IgniteCacheDatabaseSharedManager dbMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
         CacheAffinitySharedManager<K, V> affMgr,
@@ -138,7 +138,7 @@ public class GridCacheSharedContext<K, V> {
     ) {
         this.kernalCtx = kernalCtx;
 
-        setManagers(mgrs, txMgr, jtaMgr, verMgr, mvccMgr, dbMgr, pageStoreMgr, walMgr, depMgr, exchMgr, affMgr, ioMgr);
+        setManagers(mgrs, txMgr, jtaMgr, verMgr, mvccMgr, pageStoreMgr, walMgr, dbMgr, depMgr, exchMgr, affMgr, ioMgr);
 
         this.storeSesLsnrs = storeSesLsnrs;
 
@@ -180,9 +180,9 @@ public class GridCacheSharedContext<K, V> {
             jtaMgr,
             verMgr,
             mvccMgr,
-            dbMgr,
             pageStoreMgr,
             walMgr,
+            dbMgr,
             new GridCacheDeploymentManager<K, V>(),
             new GridCachePartitionExchangeManager<K, V>(),
             affMgr,
@@ -223,9 +223,9 @@ public class GridCacheSharedContext<K, V> {
         CacheJtaManagerAdapter jtaMgr,
         GridCacheVersionManager verMgr,
         GridCacheMvccManager mvccMgr,
-        IgniteCacheDatabaseSharedManager dbMgr,
         IgnitePageStoreManager pageStoreMgr,
         IgniteWriteAheadLogManager walMgr,
+        IgniteCacheDatabaseSharedManager dbMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
         CacheAffinitySharedManager affMgr,
@@ -233,9 +233,9 @@ public class GridCacheSharedContext<K, V> {
         this.mvccMgr = add(mgrs, mvccMgr);
         this.verMgr = add(mgrs, verMgr);
         this.txMgr = add(mgrs, txMgr);
-        this.dbMgr = add(mgrs, dbMgr);
         this.pageStoreMgr = add(mgrs, pageStoreMgr);
         this.walMgr = add(mgrs, walMgr);
+        this.dbMgr = add(mgrs, dbMgr);
         this.jtaMgr = add(mgrs, jtaMgr);
         this.depMgr = add(mgrs, depMgr);
         this.exchMgr = add(mgrs, exchMgr);
