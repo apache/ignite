@@ -17,6 +17,9 @@
 
 namespace Apache.Ignite.Core.Communication.Tcp
 {
+    using System;
+    using System.ComponentModel;
+
     /// <summary>
     /// <see cref="TcpCommunicationSpi"/> is default communication SPI which uses
     /// TCP/IP protocol and Java NIO to communicate with other nodes.
@@ -32,6 +35,44 @@ namespace Apache.Ignite.Core.Communication.Tcp
     /// </summary>
     public class TcpCommunicationSpi : ICommunicationSpi
     {
+        /// <summary> Default value of <see cref="AckSendThreshold"/> property. </summary>
+        public const int DefaultAckSendThreshold = 16;
+
+        /// <summary> Default value of <see cref="ConnectTimeout"/> property. </summary>
+        public static readonly TimeSpan DefaultConnectTimeout = TimeSpan.FromMilliseconds(5000);
+
+        /// <summary> Default value of <see cref="DirectBuffer"/> property. </summary>
+        public const bool DefaultDirectBuffer = true;
+
+        /// <summary> Default value of <see cref="DirectSendBuffer"/> property. </summary>
+        public const bool DefaultDirectSendBuffer = false;
+
+        /// <summary>
+        /// Gets or sets the number of received messages per connection to node 
+        /// after which acknowledgment message is sent.
+        /// </summary>
+        [DefaultValue(DefaultAckSendThreshold)]
+        public int AckSendThreshold { get; set; }
+
+        /// <summary>
+        /// Gets or sets the connect timeout used when establishing connection with remote nodes.
+        /// </summary>
+        [DefaultValue(typeof(TimeSpan), "00:00:05")]
+        public TimeSpan ConnectTimeout { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether to allocate direct (ByteBuffer.allocateDirect) 
+        /// or heap (ByteBuffer.allocate) buffer.
+        /// </summary>
+        public bool DirectBuffer { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether to allocate direct (ByteBuffer.allocateDirect) 
+        /// or heap (ByteBuffer.allocate) send buffer.
+        /// </summary>
+        public bool DirectSendBuffer { get; set; }
+
+
         public int LocalPort { get; set; }
         public int LocalPortRange { get; set; }
     }
