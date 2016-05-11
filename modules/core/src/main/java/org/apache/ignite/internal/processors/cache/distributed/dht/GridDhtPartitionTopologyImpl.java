@@ -61,8 +61,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 /**
  * Partition topology.
  */
-@GridToStringExclude
-class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
+@GridToStringExclude class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
     /** If true, then check consistency. */
     private static final boolean CONSISTENCY_CHECK = false;
 
@@ -1171,7 +1170,7 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
                     Long cntr = cntrMap.get(part.id());
 
-                    if (cntr != null)
+                    if (cntr != null && cntr > part.updateCounter())
                         part.updateCounter(cntr);
                 }
             }
@@ -1448,6 +1447,37 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             }
 
             consistencyCheck();
+
+            return false;
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    @Override public boolean ownIfUpToDate(GridDhtLocalPartition part) {
+        ClusterNode loc = cctx.localNode();
+
+        long partCntr = part.updateCounter();
+
+        lock.writeLock().lock();
+
+        try {
+            Long cntr = cntrMap.get(part.id());
+
+            if (cntr == null || partCntr < cntr) {
+                if (part.own()) {
+                    updateLocal(part.id(), loc.id(), part.state(), updateSeq.incrementAndGet());
+
+                    consistencyCheck();
+
+                    return true;
+                }
+
+                consistencyCheck();
+
+                return false;
+            }
 
             return false;
         }
