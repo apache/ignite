@@ -34,6 +34,12 @@ import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.visor.VisorTaskArgument;
 import org.apache.ignite.internal.visor.cache.VisorCacheLoadTask;
+import org.apache.ignite.internal.visor.cache.VisorCacheMetricsCollectorTask;
+import org.apache.ignite.internal.visor.igfs.VisorIgfsSamplingStateTask;
+import org.apache.ignite.internal.visor.node.VisorNodeSuppressedErrorsTask;
+import org.apache.ignite.internal.visor.query.VisorQueryCleanupTask;
+import org.apache.ignite.internal.visor.query.VisorQueryNextPageTask;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
@@ -153,9 +159,6 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
             if (Set.class == cls)
                 return new HashSet<>(Arrays.asList(val.split(",")));
 
-            if (Map.class == cls)
-                return new HashMap<>(Integer.parseInt(val));
-
             if (Object[].class == cls)
                 return val.split(",");
 
@@ -203,29 +206,78 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
                         jobArgs = toObject(argCls, val);
                     }
                     else if (argCls == Collection.class) {
-                        String colClsName = argument(3);
+                        String itemClsName = argument(3);
+                        String items = argument(4);
 
-                        assert colClsName != null;
+                        assert itemClsName != null;
+                        assert items != null;
 
-                        Class<?> colCls = Class.forName(colClsName);
+                        Class<?> itemCls = Class.forName(itemClsName);
 
                         Collection<Object> col = new ArrayList<>();
 
-                        for (int i = 4; i < argsCnt; i++) {
-                            String val = argument(i);
-
-                            col.add(toObject(colCls, val));
-                        }
+                        for (String val : items.split(","))
+                            col.add(toObject(itemCls, val));
 
                         jobArgs = col;
                     }
-                    else if (taskCls == VisorCacheLoadTask.class && argCls == GridTuple3.class) {
-                        String cacheNames = argument(3);
-                        String ttl = argument(4);
-                        String ldrArgs = argument(5);
+                    else if (argCls == IgniteBiTuple.class) {
+                        String keyClsName = argument(3);
+                        String valClsName = argument(4);
 
-                        jobArgs = new GridTuple3<>(toObject(Set.class, cacheNames), toObject(Long.class, ttl),
-                            toObject(Object[].class, ldrArgs));
+                        assert keyClsName != null;
+                        assert valClsName != null;
+
+                        Class<?> keyCls = Class.forName(keyClsName);
+                        Class<?> valCls = Class.forName(valClsName);
+
+                        String key = argument(5);
+                        String val = argument(6);
+
+                        jobArgs = new IgniteBiTuple<>(toObject(keyCls, key), toObject(valCls, val));
+                    }
+                    else if (argCls == GridTuple3.class) {
+                        String v1ClsName = argument(3);
+                        String v2ClsName = argument(4);
+                        String v3ClsName = argument(5);
+
+                        assert v1ClsName != null;
+                        assert v2ClsName != null;
+                        assert v3ClsName != null;
+
+                        Class<?> v1Cls = Class.forName(v1ClsName);
+                        Class<?> v2Cls = Class.forName(v2ClsName);
+                        Class<?> v3Cls = Class.forName(v3ClsName);
+
+                        String v1 = argument(6);
+                        String v2 = argument(7);
+                        String v3 = argument(8);
+
+                        jobArgs = new GridTuple3<>(toObject(v1Cls, v1), toObject(v2Cls, v2), toObject(v3Cls, v3));
+                    }
+                    else if (taskCls == VisorQueryNextPageTask.class && argCls == IgniteBiTuple.class) {
+                        String qryId = argument(3);
+                        String pageSize = argument(4);
+
+                        jobArgs = new IgniteBiTuple<>(qryId, toObject(Integer.class, pageSize));
+                    }
+                    else if (taskCls == VisorCacheMetricsCollectorTask.class && argCls == IgniteBiTuple.class) {
+                        String showSysCaches = argument(3);
+                        String cacheNames = argument(4);
+
+                        jobArgs = new IgniteBiTuple<>(toObject(Boolean.class, showSysCaches), toObject(Set.class, cacheNames));
+                    }
+                    else if (taskCls == VisorQueryCleanupTask.class && argCls == Map.class) {
+                        String showSysCaches = argument(3);
+                        String cacheNames = argument(4);
+
+                        jobArgs = new IgniteBiTuple<>(showSysCaches, toObject(Set.class, cacheNames));
+                    }
+                    else if (taskCls == VisorNodeSuppressedErrorsTask.class && argCls == Map.class) {
+                        String showSysCaches = argument(3);
+                        String cacheNames = argument(4);
+
+                        jobArgs = new IgniteBiTuple<>(showSysCaches, toObject(Set.class, cacheNames));
                     }
                     else {
                         int beanArgsCnt = argsCnt - 3;

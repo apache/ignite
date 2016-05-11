@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetada
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.cache.VisorCache;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
@@ -81,6 +82,35 @@ class GridJettyJsonConfig extends JsonConfig {
 
             if (val instanceof UUID)
                 return val.toString();
+
+            throw new UnsupportedOperationException("Serialize value to json is not supported: " + val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object processObjectValue(String key, Object val, JsonConfig jsonCfg) {
+            return processArrayValue(val, jsonCfg);
+        }
+    };
+
+    /**
+     * Helper class for simple to-string conversion for {@link UUID}.
+     */
+    private static JsonValueProcessor IGNITE_BI_TUPLE_PROCESSOR = new JsonValueProcessor() {
+        /** {@inheritDoc} */
+        @Override public Object processArrayValue(Object val, JsonConfig jsonCfg) {
+            if (val == null)
+                return new JSONObject(true);
+
+            if (val instanceof IgniteBiTuple) {
+                IgniteBiTuple t2 = (IgniteBiTuple)val;
+
+                final JSONObject ret = new JSONObject();
+
+                ret.element("key", t2.getKey(), jsonCfg);
+                ret.element("value", t2.getValue(), jsonCfg);
+
+                return ret;
+            }
 
             throw new UnsupportedOperationException("Serialize value to json is not supported: " + val);
         }
@@ -145,6 +175,7 @@ class GridJettyJsonConfig extends JsonConfig {
 
         setAllowNonStringKeys(true);
 
+        registerJsonValueProcessor(IgniteBiTuple.class, IGNITE_BI_TUPLE_PROCESSOR);
         registerJsonValueProcessor(UUID.class, UUID_PROCESSOR);
         registerJsonValueProcessor(IgniteUuid.class, IGNITE_UUID_PROCESSOR);
         registerJsonValueProcessor(Date.class, DATE_PROCESSOR);
