@@ -205,14 +205,14 @@ namespace ignite
             int32_t ReadDoubleArray(double* res, int32_t len);
 
             /**
-             * Read Guid. Maps to "UUID" type in Java.
+             * Read Guid. Maps to "java.util.UUID" type in Java.
              *
              * @return Result.
              */
             Guid ReadGuid();
 
             /**
-             * Read array of Guids. Maps to "UUID[]" type in Java.
+             * Read array of Guids. Maps to "java.util.UUID[]" type in Java.
              *
              * @param res Array to store data to.
              * @param len Expected length of array.             
@@ -224,14 +224,14 @@ namespace ignite
             int32_t ReadGuidArray(Guid* res, int32_t len);
 
             /**
-             * Read Date. Maps to "Date" type in Java.
+             * Read Date. Maps to "java.util.Date" type in Java.
              *
              * @return Result.
              */
             Date ReadDate();
 
             /**
-             * Read array of Dates. Maps to "Date[]" type in Java.
+             * Read array of Dates. Maps to "java.util.Date[]" type in Java.
              *
              * @param res Array to store data to.
              * @param len Expected length of array.             
@@ -243,14 +243,14 @@ namespace ignite
             int32_t ReadDateArray(Date* res, int32_t len);
 
             /**
-             * Read Timestamp. Maps to "Timestamp" type in Java.
+             * Read Timestamp. Maps to "java.sql.Timestamp" type in Java.
              *
              * @return Result.
              */
             Timestamp ReadTimestamp();
 
             /**
-             * Read array of Timestamps. Maps to "Timestamp[]" type in Java.
+             * Read array of Timestamps. Maps to "java.sql.Timestamp[]" type in Java.
              *
              * @param res Array to store data to.
              * @param len Expected length of array.             

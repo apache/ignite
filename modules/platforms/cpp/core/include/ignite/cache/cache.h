@@ -46,6 +46,10 @@ namespace ignite
     {
         /**
          * Main entry point for all Data Grid APIs.
+         *
+         * Both key and value types should be default-constructable,
+         * copy-constructable and assignable. Also BinaryType class
+         * template should be specialized for both types.
          */
         template<typename K, typename V>
         class IGNITE_IMPORT_EXPORT Cache
@@ -54,13 +58,16 @@ namespace ignite
             /**
              * Constructor.
              */
-            Cache(impl::cache::CacheImpl* impl) : impl(ignite::common::concurrent::SharedPointer<impl::cache::CacheImpl>(impl))
+            Cache(impl::cache::CacheImpl* impl) :
+                impl(impl)
             {
                 // No-op.
             }
 
             /**
-             * Name of this cache (null for default cache).
+             * Get name of this cache (null for default cache).
+             *
+             * @return Name of this cache (null for default cache).
              */
             const char* GetName() const
             {

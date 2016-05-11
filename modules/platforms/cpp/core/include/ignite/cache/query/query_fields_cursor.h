@@ -70,11 +70,12 @@ namespace ignite
                 
                 /**
                  * Check whether next entry exists.
-                 * Throws IgniteError class instance in case of failure.
                  *
                  * This method should only be used on the valid instance.
                  *
                  * @return True if next entry exists.
+                 *
+                 * @throw IgniteError class instance in case of failure.
                  */
                 bool HasNext()
                 {
@@ -114,11 +115,12 @@ namespace ignite
 
                 /**
                  * Get next entry.
-                 * Throws IgniteError class instance in case of failure.
                  *
                  * This method should only be used on the valid instance.
                  *
                  * @return Next entry.
+                 *
+                 * @throw IgniteError class instance in case of failure.
                  */
                 QueryFieldsRow GetNext()
                 {
