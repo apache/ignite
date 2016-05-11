@@ -289,9 +289,8 @@
         private void ReadCore(BinaryReader r)
         {
             // Simple properties
-            ClientMode = r.ReadBoolean();
+            _clientMode = r.ReadBooleanNullable();
             IncludedEventTypes = r.ReadIntArray();
-
             _metricsExpireTime = r.ReadTimeSpanNullable();
             _metricsHistorySize = r.ReadIntNullable();
             _metricsLogFrequency = r.ReadTimeSpanNullable();

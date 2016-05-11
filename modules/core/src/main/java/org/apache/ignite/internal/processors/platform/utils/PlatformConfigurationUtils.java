@@ -667,7 +667,7 @@ public class PlatformConfigurationUtils {
         w.writeBoolean(true); w.writeLong(cfg.getNetworkSendRetryDelay());
         w.writeBoolean(true); w.writeLong(cfg.getNetworkTimeout());
         w.writeString(cfg.getWorkDirectory());
-        w.writeBoolean(true); w.writeString(cfg.getLocalHost());
+        w.writeString(cfg.getLocalHost());
         w.writeBoolean(true); w.writeBoolean(cfg.isDaemon());
         w.writeBoolean(true); w.writeBoolean(cfg.isLateAffinityAssignment());
 
