@@ -27,6 +27,8 @@ namespace Apache.Ignite.Core.Tests
 
     /// <summary>
     /// Tests windows service deployment and lifecycle.
+    /// <para />
+    /// NOTE: This fixture requires administrative privileges.
     /// </summary>
     public class WindowsServiceTest
     {
