@@ -236,6 +236,8 @@
 
                 tcpComm.Write(writer);
             }
+            else
+                writer.WriteBoolean(false);
 
             // Binary config
             var isCompactFooterSet = BinaryConfiguration != null && BinaryConfiguration.CompactFooterInternal != null;
