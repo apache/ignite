@@ -62,13 +62,11 @@ public class IgnitePersistentStoreLoadTest extends LoadTestDriver {
 
             driver.runTest("WRITE", WriteWorker.class, WriteWorker.LOGGER_NAME);
 
+            driver.runTest("BULK_WRITE", BulkWriteWorker.class, BulkWriteWorker.LOGGER_NAME);
+
             driver.runTest("READ", ReadWorker.class, ReadWorker.LOGGER_NAME);
 
             driver.runTest("BULK_READ", BulkReadWorker.class, BulkReadWorker.LOGGER_NAME);
-
-            CassandraHelper.dropTestKeyspaces();
-
-            driver.runTest("BULK_WRITE", BulkWriteWorker.class, BulkWriteWorker.LOGGER_NAME);
 
             /**
              * Load test script executed on one machine could complete earlier that the same load test executed from
