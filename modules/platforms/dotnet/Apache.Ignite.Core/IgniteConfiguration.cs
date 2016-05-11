@@ -404,11 +404,14 @@
         /// <summary>
         /// URL to Spring configuration file.
         /// <para />
-        /// Ignite.NET can be configured natively without Spring. 
-        /// Setting this property will ignore all other properties except <see cref="IgniteHome"/>, 
-        /// <see cref="Assemblies"/>, <see cref="SuppressWarnings"/>, <see cref="LifecycleBeans"/>, 
-        /// <see cref="JvmOptions"/>, <see cref="JvmDllPath"/>, <see cref="IgniteHome"/>, 
-        /// <see cref="JvmInitialMemoryMb"/>, <see cref="JvmMaxMemoryMb"/>.
+        /// Spring configuration is loaded first, then <see cref="IgniteConfiguration"/> properties are applied.
+        /// Null property values do not override Spring values.
+        /// Value-typed properties are tracked internally: if setter was not called, Spring value won't be overwritten.
+        /// <para />
+        /// Simply put, either define a property in Spring, or define it in .NET.
+        /// <para />
+        /// This merging happens on the top level only; i.e. if there are cache configurations defined in Spring 
+        /// and in .NET, .NET caches will overwrite Spring caches.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1056:UriPropertiesShouldNotBeStrings")]
         public string SpringConfigUrl { get; set; }
