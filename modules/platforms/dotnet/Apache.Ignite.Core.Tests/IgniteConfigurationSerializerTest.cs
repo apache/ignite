@@ -33,6 +33,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.DataStructures.Configuration;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Multicast;
@@ -445,6 +446,26 @@ namespace Apache.Ignite.Core.Tests
                     DefaultTimeout = TimeSpan.FromDays(2),
                     DefaultTransactionConcurrency = TransactionConcurrency.Optimistic,
                     PessimisticTransactionLogLinger = TimeSpan.FromHours(3)
+                },
+                CommunicationSpi = new TcpCommunicationSpi
+                {
+                    LocalPort = 47501,
+                    MaxConnectTimeout = TimeSpan.FromSeconds(34),
+                    MessageQueueLimit = 15,
+                    ConnectTimeout = TimeSpan.FromSeconds(17),
+                    IdleConnectionTimeout = TimeSpan.FromSeconds(19),
+                    SelectorsCount = 8,
+                    ReconnectCount = 33,
+                    SocketReceiveBufferSize = 512,
+                    AckSendThreshold = 99,
+                    DirectBuffer = false,
+                    DirectSendBuffer = true,
+                    LocalPortRange = 45,
+                    LocalAddress = "127.0.0.1",
+                    TcpNoDelay = false,
+                    SlowClientQueueLimit = 98,
+                    SocketSendBufferSize = 2045,
+                    UnacknowledgedMessagesBufferSize = 3450
                 }
             };
         }
