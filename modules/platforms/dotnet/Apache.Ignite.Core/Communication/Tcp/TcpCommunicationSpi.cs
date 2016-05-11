@@ -94,6 +94,7 @@ namespace Apache.Ignite.Core.Communication.Tcp
             SelectorsCount = DefaultSelectorsCount;
             SocketReceiveBufferSize = DefaultSocketBufferSize;
             SocketSendBufferSize = DefaultSocketBufferSize;
+            TcpNoDelay = DefaultTcpNoDelay;
         }
 
         /// <summary>
