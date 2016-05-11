@@ -29,6 +29,7 @@
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Communication;
     using Apache.Ignite.Core.DataStructures.Configuration;
     using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Discovery.Tcp;
@@ -476,6 +477,12 @@
         /// Null for default discovery.
         /// </summary>
         public IDiscoverySpi DiscoverySpi { get; set; }
+
+        /// <summary>
+        /// Gets or sets the communication service provider.
+        /// Null for default communication.
+        /// </summary>
+        public ICommunicationSpi CommunicationSpi { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether node should start in client mode.
