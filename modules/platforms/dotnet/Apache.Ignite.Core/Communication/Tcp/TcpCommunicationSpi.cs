@@ -19,6 +19,8 @@ namespace Apache.Ignite.Core.Communication.Tcp
 {
     using System;
     using System.ComponentModel;
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
     /// <see cref="TcpCommunicationSpi"/> is default communication SPI which uses
@@ -92,6 +94,32 @@ namespace Apache.Ignite.Core.Communication.Tcp
             SelectorsCount = DefaultSelectorsCount;
             SocketReceiveBufferSize = DefaultSocketBufferSize;
             SocketSendBufferSize = DefaultSocketBufferSize;
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TcpCommunicationSpi"/> class.
+        /// </summary>
+        /// <param name="reader">The reader.</param>
+        internal TcpCommunicationSpi(BinaryReader reader)
+        {
+            AckSendThreshold = reader.ReadInt();
+            ConnectTimeout = reader.ReadLongAsTimespan();
+            ConnectTimeout = reader.ReadLongAsTimespan();
+            DirectBuffer = reader.ReadBoolean();
+            DirectSendBuffer = reader.ReadBoolean();
+            IdleConnectionTimeout = reader.ReadLongAsTimespan();
+            LocalAddress = reader.ReadString();
+            LocalPort = reader.ReadInt();
+            LocalPortRange = reader.ReadInt();
+            MaxConnectTimeout = reader.ReadLongAsTimespan();
+            MessageQueueLimit = reader.ReadInt();
+            ReconnectCount = reader.ReadInt();
+            SelectorsCount = reader.ReadInt();
+            SlowClientQueueLimit = reader.ReadInt();
+            SocketReceiveBufferSize = reader.ReadInt();
+            SocketSendBufferSize = reader.ReadInt();
+            TcpNoDelay = reader.ReadBoolean();
+            UnacknowledgedMessagesBufferSize = reader.ReadInt();
         }
 
         /// <summary>
@@ -225,5 +253,30 @@ namespace Apache.Ignite.Core.Communication.Tcp
         /// then connection to node is closed and reconnect is attempted.
         /// </summary>
         public int UnacknowledgedMessagesBufferSize { get; set; }
+
+        /// <summary>
+        /// Writes this instance to the specified writer.
+        /// </summary>
+        internal void Write(IBinaryRawWriter writer)
+        {
+            writer.WriteInt(AckSendThreshold);
+            writer.WriteLong((long) ConnectTimeout.TotalMilliseconds);
+            writer.WriteLong((long) ConnectTimeout.TotalMilliseconds);
+            writer.WriteBoolean(DirectBuffer);
+            writer.WriteBoolean(DirectSendBuffer);
+            writer.WriteLong((long) IdleConnectionTimeout.TotalMilliseconds);
+            writer.WriteString(LocalAddress);
+            writer.WriteInt(LocalPort);
+            writer.WriteInt(LocalPortRange);
+            writer.WriteLong((long) MaxConnectTimeout.TotalMilliseconds);
+            writer.WriteInt(MessageQueueLimit);
+            writer.WriteInt(ReconnectCount);
+            writer.WriteInt(SelectorsCount);
+            writer.WriteInt(SlowClientQueueLimit);
+            writer.WriteInt(SocketReceiveBufferSize);
+            writer.WriteInt(SocketSendBufferSize);
+            writer.WriteBoolean(TcpNoDelay);
+            writer.WriteInt(UnacknowledgedMessagesBufferSize);
+        }
     }
 }
