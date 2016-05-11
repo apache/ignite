@@ -86,7 +86,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         return nodes;
     }
 
-    GridAffinityFunctionContextImpl nodesModification(List<ClusterNode> nodes, int iter, int backups,
+    GridAffinityFunctionContextImpl nodesModificationRemoveLast(List<ClusterNode> nodes, int iter, int backups,
         boolean newVersion) {
         DiscoveryEvent discoEvt;
 
@@ -105,12 +105,34 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
 
         return new GridAffinityFunctionContextImpl(nodes,
             null, discoEvt, new AffinityTopologyVersion(nodes.size()), backups,
-            (newVersion)? null : compatibilityVersion);
+            (newVersion) ? null : compatibilityVersion);
+    }
+
+    GridAffinityFunctionContextImpl nodesModificationRemoveFirst(List<ClusterNode> nodes, int iter, int backups,
+        boolean newVersion) {
+        DiscoveryEvent discoEvt;
+
+        if (iter % 2 == 0) {
+            // Add new node.
+            ClusterNode node = new GridTestNode(UUID.randomUUID());
+            node.attribute(MAC_PREF + iter);
+            nodes.add(node);
+
+            discoEvt = new DiscoveryEvent(nodes.get(0), "", EventType.EVT_NODE_JOINED, node);
+        }
+        else {
+            // Remove first node.
+            discoEvt = new DiscoveryEvent(nodes.get(0), "", EventType.EVT_NODE_LEFT, nodes.remove(0));
+        }
+
+        return new GridAffinityFunctionContextImpl(nodes,
+            null, discoEvt, new AffinityTopologyVersion(nodes.size()), backups,
+            (newVersion) ? null : compatibilityVersion);
     }
 
     IgniteBiTuple<Long, List<List<ClusterNode>>> assignPartitions_old(RendezvousAffinityFunction aff,
         List<ClusterNode> nodes, int backups, int iter) {
-        GridAffinityFunctionContextImpl ctx = nodesModification(nodes, iter, backups, false);
+        GridAffinityFunctionContextImpl ctx = nodesModificationRemoveLast(nodes, iter, backups, false);
 
         long start = System.currentTimeMillis();
         List<List<ClusterNode>> assignments = aff.assignPartitionsMd5Impl(ctx);
@@ -119,7 +141,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
 
     IgniteBiTuple<Long, List<List<ClusterNode>>> assignPartitions_new(RendezvousAffinityFunction aff,
         List<ClusterNode> nodes, int backups, int iter) {
-        GridAffinityFunctionContextImpl ctx = nodesModification(nodes, iter, backups, true);
+        GridAffinityFunctionContextImpl ctx = nodesModificationRemoveLast(nodes, iter, backups, true);
 
         long start = System.currentTimeMillis();
         List<List<ClusterNode>> assignments = aff.assignPartitions(ctx);
@@ -159,7 +181,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         List<Map<ClusterNode, AtomicInteger>> nodeMaps = new ArrayList<>();
         int backups = lst.get(0).size();
 
-        for(int i = 0; i < backups; ++i) {
+        for (int i = 0; i < backups; ++i) {
             Map<ClusterNode, AtomicInteger> map = new HashMap<>();
 
             for (List<ClusterNode> l : lst) {
@@ -173,10 +195,10 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         }
 
         List<List<Integer>> byNodes = new ArrayList<>(nodes.size());
-        for(int i = 0; i < nodes.size(); ++i) {
+        for (int i = 0; i < nodes.size(); ++i) {
             List<Integer> byBackups = new ArrayList<>(backups);
-            for(int j = 0; j < backups; ++j) {
-                if(nodeMaps.get(j).get(nodes.get(i)) == null)
+            for (int j = 0; j < backups; ++j) {
+                if (nodeMaps.get(j).get(nodes.get(i)) == null)
                     byBackups.add(0);
                 else
                     byBackups.add(nodeMaps.get(j).get(nodes.get(i)).get());
@@ -188,8 +210,8 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
 
     void printDistribution(List<List<Integer>> byNodes, String suffix) throws IOException {
         int nodes = byNodes.size();
-        try(PrintStream ps = new PrintStream(Files.newOutputStream(FileSystems.getDefault()
-            .getPath(String.format("%03d", nodes) + suffix)))){
+        try (PrintStream ps = new PrintStream(Files.newOutputStream(FileSystems.getDefault()
+            .getPath(String.format("%03d", nodes) + suffix)))) {
 
             for (int i = 0; i < byNodes.size(); ++i) {
                 for (int w : byNodes.get(i))
@@ -253,6 +275,48 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
 
             info(String.format("Test %d nodes. Old: %d ms +/- %.3f ms; New: %d ms +/- %.3f ms;",
                 nodesCnt, avr, var, avr_new, var_new));
+        }
+    }
+
+    private int diff(List<List<ClusterNode>> aff0, List<List<ClusterNode>> aff1) {
+        if(aff0 == null || aff1 == null)
+            return 0;
+        int diff = 0;
+        assertEquals(aff0.size(), aff1.size());
+        for (int i = 0; i < aff0.size(); ++i) {
+            if (!aff0.get(i).equals(aff1.get(i)))
+                ++diff;
+        }
+        return diff;
+    }
+
+    public void testChangeAffinity() {
+        int[] nodesCnts = {100, 60, 100, 200, 300, 400, 500, 600};
+
+        RendezvousAffinityFunction funcMd5 = affinityFunction();
+        RendezvousAffinityFunction funcWang = affinityFunction();
+
+        for (int nodesCnt : nodesCnts) {
+            List<ClusterNode> nodes_old = createBaseNodes(nodesCnt);
+            List<ClusterNode> nodes_new = createBaseNodes(nodesCnt);
+            List<List<ClusterNode>> affPrev = null;
+            int diffCntOld = 0;
+            int diffCntNew = 0;
+
+            for (int i = 0; i < MAX_EXPERIMENTS; ++i) {
+                List<List<ClusterNode>> affCur = assignPartitions_old(funcMd5, nodes_old, 2, i).get2();
+                diffCntOld += diff(affPrev, affCur);
+                affPrev = affCur;
+            }
+
+            for (int i = 0; i < MAX_EXPERIMENTS; ++i) {
+                List<List<ClusterNode>> affCur = assignPartitions_new(funcWang, nodes_new, 2, i).get2();
+                diffCntNew += diff(affPrev, affCur);
+                affPrev = affCur;
+            }
+
+            info(String.format("Test %d nodes. Old: %.1f; New: %.1f;",
+                nodesCnt, (double)diffCntOld / MAX_EXPERIMENTS, (double)diffCntNew / MAX_EXPERIMENTS));
         }
     }
 }
