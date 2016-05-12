@@ -1883,16 +1883,16 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     public void activate() {
         locJoinEvt.listen(new IgniteInClosure<IgniteInternalFuture<DiscoveryEvent>>() {
             @Override public void apply(IgniteInternalFuture<DiscoveryEvent> future) {
-                activatedNodes.add(localNode().id());
+                if (activatedNodes.add(localNode().id())) {
+                    try {
+                        sendCustomEvent(new TcpDiscoveryNodeActivatedMessage());
+                    }
+                    catch (IgniteCheckedException e) {
+                        if (future instanceof GridFutureAdapter)
+                            ((GridFutureAdapter)future).onDone(e);
 
-                try {
-                    sendCustomEvent(new TcpDiscoveryNodeActivatedMessage());
-                }
-                catch (IgniteCheckedException e) {
-                    if (future instanceof GridFutureAdapter)
-                        ((GridFutureAdapter)future).onDone(e);
-
-                    locJoinEvt.onDone(e);
+                        locJoinEvt.onDone(e);
+                    }
                 }
             }
         });
@@ -2618,7 +2618,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 assert node.order() != 0 : "Invalid node order [locNode=" + loc + ", node=" + node + ']';
                 assert !node.isDaemon();
 
-                if (!CU.clientNode(node) && node.isActive())
+                if (!CU.clientNode(node) && activated(node.id()))
                     srvNodes.add(node);
 
                 if (node.order() > maxOrder0)
@@ -2989,7 +2989,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /**
      * Cache predicate.
      */
-    private static class CachePredicate {
+    private class CachePredicate {
         /** Cache filter. */
         private final IgnitePredicate<ClusterNode> cacheFilter;
 
@@ -3047,7 +3047,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @return {@code True} if this node is a data node for given cache.
          */
         public boolean dataNode(ClusterNode node) {
-            return !node.isDaemon() && node.isActive() && CU.affinityNode(node, cacheFilter);
+            return !node.isDaemon() && activated(node.id()) && CU.affinityNode(node, cacheFilter);
         }
 
         /**
@@ -3055,7 +3055,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          * @return {@code True} if cache is accessible on the given node.
          */
         public boolean cacheNode(ClusterNode node) {
-            return !node.isDaemon() && node.isActive() &&
+            return !node.isDaemon() && activated(node.id()) &&
                 (CU.affinityNode(node, cacheFilter) || clientNodes.containsKey(node.id()));
         }
 

@@ -526,6 +526,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
         node.attrs = attrs;
         node.clientRouterNodeId = clientRouterNodeId;
+        node.discoMgr = discoMgr;
 
         return node;
     }
