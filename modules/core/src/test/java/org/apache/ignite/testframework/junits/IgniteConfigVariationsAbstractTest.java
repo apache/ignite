@@ -472,6 +472,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
          * Default constructor.
          */
         public CustomSerializableObject() {
+            // No-op.
         }
 
         /**
