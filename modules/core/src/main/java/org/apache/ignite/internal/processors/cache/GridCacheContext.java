@@ -54,7 +54,6 @@ import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
-import org.apache.ignite.internal.managers.swapspace.GridSwapSpaceManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
@@ -104,8 +103,6 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
-import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
 import static org.apache.ignite.cache.CacheRebalanceMode.NONE;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC;
@@ -154,7 +151,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     private CacheContinuousQueryManager contQryMgr;
 
     /** Evictions manager. */
-    private GridCacheEvictionManager evictMgr;
+    private CacheEvictionManager evictMgr;
 
     /** Data structures manager. */
     private CacheDataStructuresManager dataStructuresMgr;
@@ -282,7 +279,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
         GridCacheEventManager evtMgr,
         CacheStoreManager storeMgr,
-        GridCacheEvictionManager evictMgr,
+        CacheEvictionManager evictMgr,
         GridCacheQueryManager<K, V> qryMgr,
         CacheContinuousQueryManager contQryMgr,
         CacheDataStructuresManager dataStructuresMgr,
@@ -872,13 +869,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return Grid swap space manager.
-     */
-    public GridSwapSpaceManager gridSwap() {
-        return ctx.swap();
-    }
-
-    /**
      * @return Grid event storage manager.
      */
     public GridEventStorageManager gridEvents() {
@@ -979,13 +969,6 @@ public class GridCacheContext<K, V> implements Externalizable {
     }
 
     /**
-     * @return Swap manager.
-     */
-    public GridCacheSwapManager swap() {
-        return null;
-    }
-
-    /**
      * @return Store manager.
      */
     public CacheStoreManager store() {
@@ -1009,7 +992,7 @@ public class GridCacheContext<K, V> implements Externalizable {
     /**
      * @return Eviction manager.
      */
-    public GridCacheEvictionManager evicts() {
+    public CacheEvictionManager evicts() {
         return evictMgr;
     }
 
@@ -1370,13 +1353,6 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public boolean deploymentEnabled() {
         return depEnabled;
-    }
-
-    /**
-     * @return {@code True} if offheap storage is enabled.
-     */
-    public boolean isOffHeapEnabled() {
-        return true;
     }
 
     /**

@@ -50,7 +50,6 @@ import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
@@ -248,7 +247,7 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
      * @return Number of undeployed entries.
      */
     public int onUndeploy(ClassLoader ldr) {
-        // TODO: GG-10884.
+        // TODO: GG-11141.
         return 0;
     }
 
@@ -367,6 +366,11 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
         return 0;
     }
 
+    // TODO GG-10884: moved from GridCacheSwapManager.
+    void writeAll(Iterable<GridCacheBatchSwapEntry> swapped) throws IgniteCheckedException {
+        // No-op.
+    }
+
     /**
      * @param primary {@code True} if need return primary entries.
      * @param backup {@code True} if need return backup entries.
@@ -377,7 +381,8 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
     @SuppressWarnings("unchecked")
     public <K, V> GridCloseableIterator<Cache.Entry<K, V>> entriesIterator(final boolean primary,
         final boolean backup,
-        final AffinityTopologyVersion topVer)
+        final AffinityTopologyVersion topVer,
+        final boolean keepBinary)
         throws IgniteCheckedException {
         final GridCursor<CacheDataRow> cur = cursor();
 
@@ -419,7 +424,13 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
                 }
 
                 if (nextRow != null) {
-                    next = new CacheEntryImplEx(nextRow.key(), nextRow.value(), nextRow.version());
+                    KeyCacheObject key = nextRow.key();
+                    CacheObject val = nextRow.value();
+
+                    Object key0 = cctx.unwrapBinaryIfNeeded(key, keepBinary, false);
+                    Object val0 = cctx.unwrapBinaryIfNeeded(val, keepBinary, false);
+
+                    next = new CacheEntryImplEx(key0, val0, nextRow.version());
 
                     return true;
                 }

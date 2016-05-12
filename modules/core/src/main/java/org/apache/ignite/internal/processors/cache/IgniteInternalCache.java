@@ -982,9 +982,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     /**
      * Evicts entry associated with given key from cache. Note, that entry will be evicted
      * only if it's not used (not participating in any locks or transactions).
-     * <p>
-     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true}, the evicted entry will
-     * be swapped to offheap, and then to disk.
      *
      * @param key Key to evict from cache.
      * @return {@code True} if entry could be evicted, {@code false} otherwise.
@@ -995,9 +992,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * Attempts to evict all entries associated with keys. Note,
      * that entry will be evicted only if it's not used (not
      * participating in any locks or transactions).
-     * <p>
-     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true}, the evicted entry will
-     * be swapped to offheap, and then to disk.
      *
      * @param keys Keys to evict.
      */
@@ -1006,9 +1000,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     /**
      * Clears all entries from this cache only if the entry is not
      * currently locked or participating in a transaction.
-     * <p>
-     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true}, the evicted entries will
-     * also be cleared from swap.
      * <p>
      * Note that this operation is local as it merely clears
      * entries from local cache. It does not remove entries from
@@ -1024,9 +1015,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * Clears an entry from this cache and swap storage only if the entry
      * is not currently locked, and is not participating in a transaction.
      * <p>
-     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true}, the evicted entries will
-     * also be cleared from swap.
-     * <p>
      * Note that this operation is local as it merely clears
      * an entry from local cache. It does not remove entries from
      * remote caches or from underlying persistent storage.
@@ -1041,9 +1029,6 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     /**
      * Clears entries from this cache and swap storage only if the entry
      * is not currently locked, and is not participating in a transaction.
-     * <p>
-     * If {@link org.apache.ignite.configuration.CacheConfiguration#isSwapEnabled()} is set to {@code true}, the evicted entries will
-     * also be cleared from swap.
      * <p>
      * Note that this operation is local as it merely clears
      * an entry from local cache. It does not remove entries from

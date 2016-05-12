@@ -25,7 +25,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
-import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
@@ -37,21 +36,16 @@ import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMapImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
-import org.apache.ignite.internal.processors.cache.GridCacheSwapEntry;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridCircularBuffer;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -492,13 +486,11 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
         int ord = (int)(reservations >> 32);
 
-        if (isEmpty() && !GridQueryProcessor.isEnabled(cctx.config()) &&
+        if (isEmpty() &&
             ord == RENTING.ordinal() && (reservations & 0xFFFF) == 0 &&
             casState(reservations, EVICTED)) {
             if (log.isDebugEnabled())
                 log.debug("Evicted partition: " + this);
-
-            clearSwap();
 
             clearPageStore();
 
@@ -561,9 +553,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             if (log.isDebugEnabled())
                 log.debug("Evicted partition: " + this);
 
-            if (!GridQueryProcessor.isEnabled(cctx.config()))
-                clearSwap();
-
             if (cctx.isDrEnabled())
                 cctx.dr().partitionEvicted(id);
 
@@ -576,42 +565,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             ((GridDhtPreloader)cctx.preloader()).onPartitionEvicted(this, true);
 
             clearDeferredDeletes();
-        }
-    }
-
-    /**
-     * Clears swap entries for evicted partition.
-     */
-    private void clearSwap() {
-        if (true) // TODO GG-10884.
-            return;
-
-        assert state() == EVICTED;
-        assert !GridQueryProcessor.isEnabled(cctx.config()) : "Indexing needs to have unswapped values.";
-
-        try {
-            GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> it = cctx.swap().iterator(id);
-
-            boolean isLocStore = cctx.store().isLocal();
-
-            if (it != null) {
-                // We can safely remove these values because no entries will be created for evicted partition.
-                while (it.hasNext()) {
-                    Map.Entry<byte[], GridCacheSwapEntry> entry = it.next();
-
-                    byte[] keyBytes = entry.getKey();
-
-                    KeyCacheObject key = cctx.toCacheKeyObject(keyBytes);
-
-                    cctx.swap().remove(key);
-
-                    if (isLocStore)
-                        cctx.store().remove(null, key);
-                }
-            }
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to clear swap for evicted partition: " + this, e);
         }
     }
 
@@ -673,124 +626,50 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     private void clearAll() {
         GridCacheVersion clearVer = cctx.versions().next();
 
-        boolean swap = cctx.isOffHeapEnabled();
-
         boolean rec = cctx.events().isRecordable(EVT_CACHE_REBALANCE_OBJECT_UNLOADED);
 
         Iterator<GridDhtCacheEntry> it = (Iterator)map.allEntries().iterator();
 
-        // TODO GG-10884: need pass old value to indexing?
-        GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> swapIt = null;
-//        GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> swapIt = null;
-//
-//        if (swap && GridQueryProcessor.isEnabled(cctx.config())) { // Indexing needs to unswap cache values.
-//            Iterator<GridDhtCacheEntry> unswapIt = null;
-//
-//            try {
-//                swapIt = cctx.swap().iterator(id);
-//                unswapIt = unswapIterator(swapIt);
-//            }
-//            catch (Exception e) {
-//                U.error(log, "Failed to clear swap for evicted partition: " + this, e);
-//            }
-//
-//            if (unswapIt != null)
-//                it = F.concat(it, unswapIt);
-//        }
-
         GridCacheObsoleteEntryExtras extras = new GridCacheObsoleteEntryExtras(clearVer);
 
-        try {
-            while (it.hasNext()) {
-                GridDhtCacheEntry cached = null;
+        while (it.hasNext()) {
+            GridDhtCacheEntry cached = null;
 
-                try {
-                    cached = it.next();
+            try {
+                cached = it.next();
 
-                    if (cached.clearInternal(clearVer, swap, extras)) {
-                        map.removeEntry(cached);
+                if (cached.clearInternal(clearVer, extras)) {
+                    map.removeEntry(cached);
 
-                        if (!cached.isInternal()) {
-                            if (rec) {
-                                cctx.events().addEvent(cached.partition(),
-                                    cached.key(),
-                                    cctx.localNodeId(),
-                                    (IgniteUuid)null,
-                                    null,
-                                    EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
-                                    null,
-                                    false,
-                                    cached.rawGet(),
-                                    cached.hasValue(),
-                                    null,
-                                    null,
-                                    null,
-                                    false);
-                            }
+                    if (!cached.isInternal()) {
+                        if (rec) {
+                            cctx.events().addEvent(cached.partition(),
+                                cached.key(),
+                                cctx.localNodeId(),
+                                (IgniteUuid)null,
+                                null,
+                                EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
+                                null,
+                                false,
+                                cached.rawGet(),
+                                cached.hasValue(),
+                                null,
+                                null,
+                                null,
+                                false);
                         }
                     }
                 }
-                catch (GridDhtInvalidPartitionException e) {
-                    assert isEmpty() && state() == EVICTED : "Invalid error [e=" + e + ", part=" + this + ']';
+            }
+            catch (GridDhtInvalidPartitionException e) {
+                assert isEmpty() && state() == EVICTED : "Invalid error [e=" + e + ", part=" + this + ']';
 
-                    break; // Partition is already concurrently cleared and evicted.
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to clear cache entry for evicted partition: " + cached, e);
-                }
+                break; // Partition is already concurrently cleared and evicted.
+            }
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to clear cache entry for evicted partition: " + cached, e);
             }
         }
-        finally {
-            U.close(swapIt, log);
-        }
-    }
-
-    /**
-     * @param it Swap iterator.
-     * @return Unswapping iterator over swapped entries.
-     */
-    private Iterator<GridDhtCacheEntry> unswapIterator(
-        final GridCloseableIterator<Map.Entry<byte[], GridCacheSwapEntry>> it) {
-        if (it == null)
-            return null;
-
-        return new Iterator<GridDhtCacheEntry>() {
-            /** */
-            GridDhtCacheEntry lastEntry;
-
-            @Override public boolean hasNext() {
-                return it.hasNext();
-            }
-
-            @Override public GridDhtCacheEntry next() {
-                Map.Entry<byte[], GridCacheSwapEntry> entry = it.next();
-
-                byte[] keyBytes = entry.getKey();
-
-                while (true) {
-                    try {
-                        KeyCacheObject key = cctx.toCacheKeyObject(keyBytes);
-
-                        lastEntry = (GridDhtCacheEntry)cctx.cache().entryEx(key, false);
-
-                        lastEntry.unswap(true);
-
-                        return lastEntry;
-                    }
-                    catch (GridCacheEntryRemovedException e) {
-                        if (log.isDebugEnabled())
-                            log.debug("Got removed entry: " + lastEntry);
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new CacheException(e);
-                    }
-                }
-            }
-
-            @Override public void remove() {
-                map.removeEntry(lastEntry);
-            }
-        };
     }
 
     /**

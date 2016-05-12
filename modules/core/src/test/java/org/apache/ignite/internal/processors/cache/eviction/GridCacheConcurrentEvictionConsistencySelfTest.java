@@ -78,8 +78,6 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
 
         cc.setCacheMode(LOCAL);
 
-        cc.setSwapEnabled(false);
-
         cc.setWriteSynchronizationMode(FULL_SYNC);
 
         cc.setNearConfiguration(null);

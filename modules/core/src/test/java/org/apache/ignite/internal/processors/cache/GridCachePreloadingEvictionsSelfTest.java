@@ -82,7 +82,6 @@ public class GridCachePreloadingEvictionsSelfTest extends GridCommonAbstractTest
         partCacheCfg.setWriteSynchronizationMode(FULL_SYNC);
         partCacheCfg.setNearConfiguration(null);
         partCacheCfg.setEvictSynchronized(true);
-        partCacheCfg.setSwapEnabled(false);
         partCacheCfg.setEvictionPolicy(null);
         partCacheCfg.setEvictSynchronizedKeyBufferSize(25);
         partCacheCfg.setEvictMaxOverflowRatio(0.99f);

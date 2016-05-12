@@ -117,7 +117,6 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
     protected CacheConfiguration cacheConfiguration() {
         CacheConfiguration cc = defaultCacheConfiguration();
 
-        cc.setSwapEnabled(false);
         cc.setRebalanceMode(SYNC);
 
         cc.setCacheStoreFactory(singletonFactory(store));

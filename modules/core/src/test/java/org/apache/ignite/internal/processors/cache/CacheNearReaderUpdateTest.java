@@ -38,11 +38,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
@@ -87,8 +85,6 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         cfg.setClientMode(client);
-
-        cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
 
         return cfg;
     }
@@ -331,7 +327,6 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
             ", near=" + (ccfg.getNearConfiguration() != null) +
             ", store=" + ccfg.isWriteThrough() +
             ", evictPlc=" + (ccfg.getEvictionPolicy() != null) +
-            ", swap=" + ccfg.isSwapEnabled()  +
             ", maxOffheap=" + ccfg.getOffHeapMaxMemory()  +
             ']');
     }
@@ -344,12 +339,6 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
         storeMap.clear();
 
         ignite.destroyCache(cacheName);
-
-        for (Ignite ignite0 : G.allGrids()) {
-            GridTestSwapSpaceSpi spi = (GridTestSwapSpaceSpi)ignite0.configuration().getSwapSpaceSpi();
-
-            spi.clearAll();
-        }
     }
 
     /**
