@@ -18,9 +18,12 @@
 package org.apache.ignite.internal.websession;
 
 import java.io.BufferedReader;
+import java.io.Externalizable;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Serializable;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Random;
@@ -28,7 +31,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import javax.servlet.ServletException;
@@ -38,12 +40,14 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -64,11 +68,21 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
     /** Servers count in load test. */
     private static final int SRV_CNT = 3;
 
+    /** */
+    private static boolean keepBinaryFlag = true;
+
     /**
      * @return Name of the cache for this test.
      */
     protected String getCacheName() {
         return "partitioned";
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTest() throws Exception {
+        super.beforeTest();
+
+        keepBinaryFlag = true;
     }
 
     /**
@@ -79,10 +93,25 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception
+     */
+    public void testSingleRequestNoKeepBinary() throws Exception {
+        keepBinaryFlag = false;
+
+        testSingleRequest("/modules/core/src/test/config/websession/example-cache.xml");
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testSingleRequestMetaInf() throws Exception {
         testSingleRequest("ignite-webapp-config.xml");
+    }
+
+    public void testImplicitlyAttributeModificationNoKeepBinary() throws Exception {
+        keepBinaryFlag = false;
+
+        testImplicitlyAttributeModification();
     }
 
     /**
@@ -96,9 +125,9 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClientReconnectRequest() throws Exception {
-        testClientReconnectRequest("/modules/core/src/test/config/websession/example-cache.xml",
-            "/modules/core/src/test/config/websession/example-cache2.xml",
-            "/modules/core/src/test/config/websession/example-cache-client.xml");
+//        testClientReconnectRequest("/modules/core/src/test/config/websession/example-cache.xml",
+//            "/modules/core/src/test/config/websession/example-cache2.xml",
+//            "/modules/core/src/test/config/websession/example-cache-client.xml");
     }
 
     /**
@@ -114,7 +143,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
         Ignite ignite = Ignition.start(srvCfg);
 
         try {
-            srv = startServer(TEST_JETTY_PORT, clientCfg, "client", new SessionCreateServlet());
+            srv = startServer(TEST_JETTY_PORT, clientCfg, "client", keepBinaryFlag, new SessionCreateServlet());
 
             URL url = new URL("http://localhost:" + TEST_JETTY_PORT + "/ignitetest/test");
 
@@ -173,7 +202,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
         Server srv = null;
 
         try {
-            srv = startServer(TEST_JETTY_PORT, cfg, null, new SessionCreateServlet());
+            srv = startServer(TEST_JETTY_PORT, cfg, null, keepBinaryFlag, new SessionCreateServlet());
 
             String sesId = sendRequestAndCheckMarker("marker1", null);
             sendRequestAndCheckMarker("test_string", sesId);
@@ -184,7 +213,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    private String sendRequestAndCheckMarker(String reqMarker, String sesId) throws IOException {
+    private String sendRequestAndCheckMarker(String reqMarker, String sesId) throws IOException, IgniteCheckedException {
         URLConnection conn = new URL("http://localhost:" + TEST_JETTY_PORT +
             "/ignitetest/test?marker=" + reqMarker).openConnection();
         conn.addRequestProperty("Cookie", "JSESSIONID=" + sesId);
@@ -194,14 +223,33 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
         try (BufferedReader rdr = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
             sesId = rdr.readLine();
 
-            IgniteCache<String, HttpSession> cache = G.ignite().cache(getCacheName());
+            if (!keepBinaryFlag) {
+                IgniteCache<String, HttpSession> cache = G.ignite().cache(getCacheName());
 
-            assertNotNull(cache);
+                assertNotNull(cache);
 
-            HttpSession ses = cache.get(sesId);
+                HttpSession ses = cache.get(sesId);
 
-            assertNotNull(ses);
-            assertEquals(reqMarker, ((Profile)ses.getAttribute("profile")).getMarker());
+                assertNotNull(ses);
+                assertEquals(reqMarker, ((Profile) ses.getAttribute("profile")).getMarker());
+            }
+            else {
+                IgniteCache<String, WebSessionEntity> cache = G.ignite().cache(getCacheName());
+
+                assertNotNull(cache);
+
+                WebSessionEntity ses = cache.get(sesId);
+
+                assertNotNull(ses);
+
+                final byte[] data = ses.attributes().get("profile");
+
+                assertNotNull(data);
+
+                final Marshaller marshaller = G.ignite().configuration().getMarshaller();
+
+                assertEquals(reqMarker, marshaller.<Profile>unmarshal(data, getClass().getClassLoader()).getMarker());
+            }
         }
         return sesId;
     }
@@ -216,7 +264,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
         Server srv = null;
 
         try {
-            srv = startServer(TEST_JETTY_PORT, cfg, null, new SessionCreateServlet());
+            srv = startServer(TEST_JETTY_PORT, cfg, null, keepBinaryFlag, new SessionCreateServlet());
 
             URLConnection conn = new URL("http://localhost:" + TEST_JETTY_PORT + "/ignitetest/test").openConnection();
 
@@ -225,19 +273,47 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
             try (BufferedReader rdr = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
                 String sesId = rdr.readLine();
 
-                IgniteCache<String, HttpSession> cache = G.ignite().cache(getCacheName());
+                if (!keepBinaryFlag) {
+                    IgniteCache<String, HttpSession> cache = G.ignite().cache(getCacheName());
 
-                assertNotNull(cache);
+                    assertNotNull(cache);
 
-                HttpSession ses = cache.get(sesId);
+                    HttpSession ses = cache.get(sesId);
 
-                assertNotNull(ses);
-                assertEquals("val1", ses.getAttribute("key1"));
+                    assertNotNull(ses);
+
+                    assertEquals("val1", ses.getAttribute("key1"));
+                }
+                else {
+                    final IgniteCache<String, WebSessionEntity> cache = G.ignite().cache(getCacheName());
+
+                    assertNotNull(cache);
+
+                    final WebSessionEntity entity = cache.get(sesId);
+
+                    assertNotNull(entity);
+
+                    final byte[] data = entity.attributes().get("key1");
+
+                    assertNotNull(data);
+
+                    final Marshaller marshaller = G.ignite().configuration().getMarshaller();
+
+                    final String val = marshaller.unmarshal(data, getClass().getClassLoader());
+
+                    assertEquals("val1", val);
+                }
             }
         }
         finally {
             stopServer(srv);
         }
+    }
+
+    public void testInvalidatedSessionNoKeepBinary() throws Exception {
+        keepBinaryFlag = false;
+
+        testInvalidatedSession();
     }
 
     /**
@@ -251,7 +327,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
         try {
             srv = startServer(TEST_JETTY_PORT, "/modules/core/src/test/config/websession/example-cache.xml",
-                null, new InvalidatedSessionServlet());
+                null, keepBinaryFlag, new InvalidatedSessionServlet());
 
             Ignite ignite = G.ignite();
 
@@ -266,18 +342,34 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
                 assertNotNull(invalidatedSesId);
 
-                IgniteCache<String, HttpSession> cache = ignite.cache(getCacheName());
+                if (!keepBinaryFlag) {
+                    IgniteCache<String, HttpSession> cache = ignite.cache(getCacheName());
 
-                assertNotNull(cache);
+                    assertNotNull(cache);
 
-                HttpSession invalidatedSes = cache.get(invalidatedSesId);
+                    HttpSession invalidatedSes = cache.get(invalidatedSesId);
 
-                assertNull(invalidatedSes);
+                    assertNull(invalidatedSes);
 
-                // requests to subsequent getSession() returns null.
-                String ses = rdr.readLine();
+                    // requests to subsequent getSession() returns null.
+                    String ses = rdr.readLine();
 
-                assertEquals("null", ses);
+                    assertEquals("null", ses);
+                }
+                else {
+                    IgniteCache<String, WebSessionEntity> cache = ignite.cache(getCacheName());
+
+                    assertNotNull(cache);
+
+                    WebSessionEntity invalidatedSes = cache.get(invalidatedSesId);
+
+                    assertNull(invalidatedSes);
+
+                    // requests to subsequent getSession() returns null.
+                    String ses = rdr.readLine();
+
+                    assertEquals("null", ses);
+                }
             }
 
             // put and update.
@@ -309,20 +401,42 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
                 assertTrue(latch.await(10, TimeUnit.SECONDS));
 
-                IgniteCache<String, HttpSession> cache = ignite.cache(getCacheName());
+                if (!keepBinaryFlag) {
+                    IgniteCache<String, HttpSession> cache = ignite.cache(getCacheName());
 
-                assertNotNull(cache);
+                    assertNotNull(cache);
 
-                HttpSession ses = cache.get(sesId);
+                    HttpSession ses = cache.get(sesId);
 
-                assertNotNull(ses);
+                    assertNotNull(ses);
 
-                assertEquals("val10", ses.getAttribute("key10"));
+                    assertEquals("val10", ses.getAttribute("key10"));
+                }
+                else {
+                    IgniteCache<String, WebSessionEntity> cache = ignite.cache(getCacheName());
+
+                    assertNotNull(cache);
+
+                    WebSessionEntity entity = cache.get(sesId);
+
+                    assertNotNull(entity);
+
+                    final Marshaller marshaller = ignite.configuration().getMarshaller();
+
+                    assertEquals("val10",
+                        marshaller.unmarshal(entity.attributes().get("key10"), getClass().getClassLoader()));
+                }
             }
         }
         finally {
             stopServer(srv);
         }
+    }
+
+    public void testChangeSessionIdNoKeepBinary() throws Exception {
+        keepBinaryFlag = false;
+
+        testChangeSessionId();
     }
 
     /**
@@ -336,7 +450,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
         try {
             srv = startServer(TEST_JETTY_PORT, "/modules/core/src/test/config/websession/example-cache.xml",
-                null, new SessionIdChangeServlet());
+                null, keepBinaryFlag, new SessionIdChangeServlet());
 
             Ignite ignite = G.ignite();
 
@@ -365,17 +479,35 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
                 assertTrue(newGenSesId.equals(newWebSesId));
 
-                IgniteCache<String, HttpSession> cache = ignite.cache(getCacheName());
+                if (!keepBinaryFlag) {
+                    IgniteCache<String, HttpSession> cache = ignite.cache(getCacheName());
 
-                assertNotNull(cache);
+                    assertNotNull(cache);
 
-                Thread.sleep(1000);
+                    Thread.sleep(1000);
 
-                HttpSession ses = cache.get(newWebSesId);
+                    HttpSession ses = cache.get(newWebSesId);
 
-                assertNotNull(ses);
+                    assertNotNull(ses);
 
-                assertEquals("val1", ses.getAttribute("key1"));
+                    assertEquals("val1", ses.getAttribute("key1"));
+                }
+                else {
+                    IgniteCache<String, WebSessionEntity> cache = ignite.cache(getCacheName());
+
+                    assertNotNull(cache);
+
+                    Thread.sleep(1000);
+
+                    WebSessionEntity ses = cache.get(newWebSesId);
+
+                    assertNotNull(ses);
+
+                    final Marshaller marshaller = ignite.configuration().getMarshaller();
+
+                    assertEquals("val1",
+                        marshaller.<String>unmarshal(ses.attributes().get("key1"), getClass().getClassLoader()));
+                }
             }
 
             conn = new URL("http://localhost:" + TEST_JETTY_PORT + "/ignitetest/simple").openConnection();
@@ -419,7 +551,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
             String cfg = "/modules/core/src/test/config/websession/spring-cache-" + (idx + 1) + ".xml";
 
             srvs.set(idx, startServer(
-                TEST_JETTY_PORT + idx, cfg, "grid-" + (idx + 1), new RestartsTestServlet(sesIdRef)));
+                TEST_JETTY_PORT + idx, cfg, "grid-" + (idx + 1), keepBinaryFlag, new RestartsTestServlet(sesIdRef)));
         }
 
         final AtomicBoolean stop = new AtomicBoolean();
@@ -446,7 +578,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
                     String cfg = "/modules/core/src/test/config/websession/spring-cache-" + (idx + 1) + ".xml";
 
                     srv = startServer(
-                        TEST_JETTY_PORT + idx, cfg, "grid-" + (idx + 1), new RestartsTestServlet(sesIdRef));
+                        TEST_JETTY_PORT + idx, cfg, "grid-" + (idx + 1), keepBinaryFlag, new RestartsTestServlet(sesIdRef));
 
                     assert srvs.compareAndSet(idx, null, srv);
 
@@ -524,14 +656,18 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
      * @param servlet Servlet.
      * @return Servlet container web context for this test.
      */
-    protected WebAppContext getWebContext(@Nullable String cfg, @Nullable String gridName, HttpServlet servlet) {
-        WebAppContext ctx = new WebAppContext(U.resolveIgnitePath("modules/core/src/test/webapp").getAbsolutePath(),
+    protected WebAppContext getWebContext(@Nullable String cfg, @Nullable String gridName,
+        boolean keepBinaryFlag, HttpServlet servlet) {
+        final String path = keepBinaryFlag ? "modules/core/src/test/webapp" : "modules/web/src/test/webapp2";
+
+        WebAppContext ctx = new WebAppContext(U.resolveIgnitePath(path).getAbsolutePath(),
             "/ignitetest");
 
         ctx.setInitParameter("IgniteConfigurationFilePath", cfg);
         ctx.setInitParameter("IgniteWebSessionsGridName", gridName);
         ctx.setInitParameter("IgniteWebSessionsCacheName", getCacheName());
         ctx.setInitParameter("IgniteWebSessionsMaximumRetriesOnFail", "100");
+        ctx.setInitParameter("IgniteWebSessionsKeepBinary", Boolean.toString(keepBinaryFlag));
 
         ctx.addServlet(new ServletHolder(servlet), "/*");
 
@@ -548,11 +684,12 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
      * @return Server.
      * @throws Exception In case of error.
      */
-    private Server startServer(int port, @Nullable String cfg, @Nullable String gridName, HttpServlet servlet)
+    private Server startServer(int port, @Nullable String cfg, @Nullable String gridName,
+        boolean keepBinaryFlag, HttpServlet servlet)
         throws Exception {
         Server srv = new Server(port);
 
-        WebAppContext ctx = getWebContext(cfg, gridName, servlet);
+        WebAppContext ctx = getWebContext(cfg, gridName, keepBinaryFlag, servlet);
 
         srv.setHandler(ctx);
 
@@ -584,6 +721,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
             ses.setAttribute("checkCnt", 0);
             ses.setAttribute("key1", "val1");
             ses.setAttribute("key2", "val2");
+            ses.setAttribute("mkey", new TestObj("mval"));
 
             Profile p = (Profile)ses.getAttribute("profile");
 
@@ -638,23 +776,25 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
             assert ses != null;
 
+            final String sesId = ses.getId();
+
             if (req.getPathInfo().equals("/invalidated")) {
-                X.println(">>>", "Session to invalidate with id: " + ses.getId(), ">>>");
+                X.println(">>>", "Session to invalidate with id: " + sesId, ">>>");
 
                 ses.invalidate();
 
-                res.getWriter().println(ses.getId());
+                res.getWriter().println(sesId);
 
                 // invalidates again.
                 req.getSession().invalidate();
             }
             else if (req.getPathInfo().equals("/valid")) {
-                X.println(">>>", "Created session: " + ses.getId(), ">>>");
+                X.println(">>>", "Created session: " + sesId, ">>>");
 
                 ses.setAttribute("key10", "val10");
             }
 
-            res.getWriter().println((req.getSession(false) == null) ? "null" : ses.getId());
+            res.getWriter().println((req.getSession(false) == null) ? "null" : sesId);
 
             res.getWriter().flush();
         }
@@ -744,6 +884,62 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
             res.getWriter().write(attr.toString());
 
             res.getWriter().flush();
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestObj implements Externalizable {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        private String val;
+
+        /**
+         *
+         */
+        public TestObj() {
+        }
+
+        /**
+         * @param val Value.
+         */
+        public TestObj(final String val) {
+            this.val = val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeExternal(final ObjectOutput out) throws IOException {
+            U.writeString(out, val);
+            System.out.println("TestObj marshalled");
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readExternal(final ObjectInput in) throws IOException, ClassNotFoundException {
+            // It must be unmarshalled only on client side.
+            if (keepBinaryFlag)
+                fail("Should not be unmarshalled");
+
+            val = U.readString(in);
+            System.out.println("TestObj unmarshalled");
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(final Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            final TestObj testObj = (TestObj) o;
+
+            return val != null ? val.equals(testObj.val) : testObj.val == null;
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return val != null ? val.hashCode() : 0;
         }
     }
 }
