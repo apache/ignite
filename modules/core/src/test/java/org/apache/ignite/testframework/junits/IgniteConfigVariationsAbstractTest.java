@@ -275,7 +275,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
             case EXTERNALIZABLE:
                 return new ExternalizableObject(keyId);
             case PLANE_OBJECT:
-                return new TestObject(keyId);
+                return new PlaneObject(keyId);
             case BINARILIZABLE:
                 return new BinarylizableObject(keyId);
             default:
@@ -292,8 +292,6 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
 
         if (obj instanceof TestObject)
             return ((TestObject)obj).value();
-        else if (obj instanceof SerializableObject)
-            return ((SerializableObject)obj).value();
         else
             throw new IllegalArgumentException("Unknown type: " + obj);
     }
@@ -312,7 +310,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
             case EXTERNALIZABLE:
                 return new ExternalizableObject(idx);
             case PLANE_OBJECT:
-                return new TestObject(idx);
+                return new PlaneObject(idx);
             case BINARILIZABLE:
                 return new BinarylizableObject(idx);
             default:
@@ -323,7 +321,17 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     /**
      *
      */
-    public static class TestObject {
+    public static interface TestObject {
+        /**
+         * @return Value.
+         */
+        public int value();
+    }
+
+    /**
+     *
+     */
+    public static class PlaneObject implements TestObject {
         /** */
         protected int val;
 
@@ -336,14 +344,14 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         /**
          * Default constructor must be accessible for deserialize subclasses by JDK serialization API.
          */
-        TestObject() {
+        PlaneObject() {
             // No-op.
         }
 
         /**
          * @param val Value.
          */
-        TestObject(int val) {
+        PlaneObject(int val) {
             this.val = val;
             strVal = "val" + val;
 
@@ -351,10 +359,8 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
             enumVal = values[Math.abs(val) % values.length];
         }
 
-        /**
-         * @return Value.
-         */
-        public int value() {
+        /** {@inheritDoc} */
+        @Override public int value() {
             return val;
         }
 
@@ -363,10 +369,10 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
             if (this == o)
                 return true;
 
-            if (!(o instanceof TestObject))
+            if (!(o instanceof PlaneObject))
                 return false;
 
-            TestObject val = (TestObject)o;
+            PlaneObject val = (PlaneObject)o;
 
             return getClass().equals(o.getClass()) && this.val == val.val && enumVal == val.enumVal
                 && strVal.equals(val.strVal);
@@ -390,7 +396,10 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     /**
      *
      */
-    protected static class SerializableObject implements Serializable {
+    protected static class SerializableObject implements Serializable, TestObject {
+        /** */
+        private static final long serialVersionUID = 0;
+
         /** */
         protected int val;
 
@@ -418,10 +427,8 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
             enumVal = values[Math.abs(val) % values.length];
         }
 
-        /**
-         * @return Value.
-         */
-        public int value() {
+        /** {@inheritDoc} */
+        @Override public int value() {
             return val;
         }
 
@@ -457,7 +464,10 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     /**
      *
      */
-    protected static class CustomSerializableObject extends TestObject implements Serializable {
+    protected static class CustomSerializableObject extends PlaneObject implements Serializable {
+        /** */
+        private static final long serialVersionUID = 0;
+
         /**
          * Default constructor.
          */
@@ -472,7 +482,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         }
 
         /**
-         * Custom serialization of superclass because {@link TestObject} is non-serializable.
+         * Custom serialization of superclass because {@link PlaneObject} is non-serializable.
          *
          * @param out output stream.
          * @throws IOException if de-serialization failed.
@@ -484,7 +494,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         }
 
         /**
-         * Custom deserialization of superclass because {@link TestObject} is non-serializable.
+         * Custom deserialization of superclass because {@link PlaneObject} is non-serializable.
          *
          * @param in input stream
          * @throws IOException if de-serialization failed.
@@ -500,11 +510,14 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     /**
      *
      */
-    private static class ExternalizableObject extends TestObject implements Externalizable {
+    private static class ExternalizableObject extends PlaneObject implements Externalizable {
+        /** */
+        private static final long serialVersionUID = 0;
+
         /**
          * Default constructor.
          */
-        ExternalizableObject() {
+        public ExternalizableObject() {
             super(-1);
         }
 
@@ -533,7 +546,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     /**
      *
      */
-    public static class BinarylizableObject extends TestObject implements Binarylizable {
+    public static class BinarylizableObject extends PlaneObject implements Binarylizable {
         /**
          * Default constructor.
          */
@@ -548,12 +561,14 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
             super(val);
         }
 
+        /** {@inheritDoc} */
         @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
             writer.writeInt("val", val);
             writer.writeString("strVal", strVal);
             writer.writeEnum("enumVal", enumVal);
         }
 
+        /** {@inheritDoc} */
         @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
             val = reader.readInt("val");
             strVal = reader.readString("strVal");
