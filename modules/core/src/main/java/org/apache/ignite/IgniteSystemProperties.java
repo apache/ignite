@@ -401,6 +401,22 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_NO_SELECTOR_OPTS = "IGNITE_NO_SELECTOR_OPTS";
 
     /**
+     * System property to specify period between calls of the {@code IgniteH2Indexing.cleanupStmtCache()} cleanup
+     * function. The cache of StatementCache is cleaned up to prevent memory leaks in case of user thread termination
+     * and on the high load when there are many Threads. Default value is {@code 600,000ms (10 min)}.
+     */
+    public static final String IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD = "IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD";
+
+    /**
+     * System property to specify time timeout after that StatementCache is clear by
+     * {@code IgniteH2Indexing.cleanupStmtCache()} for thread that doesn't perform any query within timeout.
+     * Default value is {@code 600,000ms (10 min)}.
+     */
+    public static final String IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT =
+        "IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT";
+
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
