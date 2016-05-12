@@ -864,7 +864,9 @@ $generatorXml.cacheGeneral = function(cache, res) {
 
     $generatorXml.property(res, cache, 'readFromBackup');
     $generatorXml.property(res, cache, 'copyOnRead');
-    $generatorXml.property(res, cache, 'invalidate');
+
+    if (cache.cacheMode === 'PARTITIONED' && cache.atomicityMode === 'TRANSACTIONAL')
+        $generatorXml.property(res, cache, 'invalidate');
 
     res.needEmptyLine = true;
 

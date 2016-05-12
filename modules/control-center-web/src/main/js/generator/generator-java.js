@@ -1086,7 +1086,9 @@ $generatorJava.cacheGeneral = function (cache, varName, res) {
 
     $generatorJava.property(res, varName, cache, 'readFromBackup');
     $generatorJava.property(res, varName, cache, 'copyOnRead');
-    $generatorJava.property(res, varName, cache, 'invalidate');
+
+    if (cache.cacheMode === 'PARTITIONED' && cache.atomicityMode === 'TRANSACTIONAL')
+        $generatorJava.property(res, varName, cache, 'invalidate');
 
     res.needEmptyLine = true;
 
