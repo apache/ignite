@@ -401,15 +401,16 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_NO_SELECTOR_OPTS = "IGNITE_NO_SELECTOR_OPTS";
 
     /**
-     * Manages compatibility of Ignite services.
+     * Manages backward compatibility of {@link IgniteServices}. All nodes in cluster must have identical value
+     * of this property.
      * <p>
-     * If the property is {@code false} then service implementation class is not required if it's not expected to be
-     * deployed on current node. But cluster are not compatible with old nodes.
+     * If property is {@code false} then node is not required to have service implementation class if service is not
+     * deployed on this node.
      * <p>
-     * If the property is {@code true} then all Ignite nodes fully compatible, but service implementation class is
-     * required even if it's not expected to be deployed on current node.
+     * If the property is {@code true} then service implementation class is required on node even if service
+     * is not deployed on this node.
      */
-    public static final String IGNITE_SERVICE_COMPATIBILITY_ENABLED = "IGNITE_SERVICE_COMPATIBILITY_ENABLED";
+    public static final String IGNITE_SERVICES_COMPATIBILITY_ENABLED = "IGNITE_SERVICES_COMPATIBILITY_ENABLED";
 
     /**
      * Enforces singleton.

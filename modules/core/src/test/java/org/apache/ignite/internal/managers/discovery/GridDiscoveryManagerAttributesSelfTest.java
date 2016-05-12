@@ -28,7 +28,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICE_COMPATIBILITY_ENABLED;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_ENABLED;
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 
@@ -166,7 +166,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testServiceCompatibilityEnabled() throws Exception {
-        String backup = System.getProperty(IGNITE_SERVICE_COMPATIBILITY_ENABLED);
+        String backup = System.getProperty(IGNITE_SERVICES_COMPATIBILITY_ENABLED);
 
         try {
             doTestServiceCompatibilityEnabled(true, false, true);
@@ -177,9 +177,10 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         }
         finally {
             if (backup != null)
-                System.setProperty(IGNITE_SERVICE_COMPATIBILITY_ENABLED, backup);
+                System.setProperty(IGNITE_SERVICES_COMPATIBILITY_ENABLED, backup);
             else
-                System.clearProperty(IGNITE_SERVICE_COMPATIBILITY_ENABLED);        }
+                System.clearProperty(IGNITE_SERVICES_COMPATIBILITY_ENABLED);
+        }
     }
 
     /**
@@ -190,11 +191,11 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
      */
     private void doTestServiceCompatibilityEnabled(boolean first, boolean second, boolean fail) throws Exception {
         try {
-            System.setProperty(IGNITE_SERVICE_COMPATIBILITY_ENABLED, String.valueOf(first));
+            System.setProperty(IGNITE_SERVICES_COMPATIBILITY_ENABLED, String.valueOf(first));
 
             startGrid(0);
 
-            System.setProperty(IGNITE_SERVICE_COMPATIBILITY_ENABLED, String.valueOf(second));
+            System.setProperty(IGNITE_SERVICES_COMPATIBILITY_ENABLED, String.valueOf(second));
 
             try {
                 startGrid(1);

@@ -93,9 +93,11 @@ import org.apache.ignite.thread.IgniteThreadFactory;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICE_COMPATIBILITY_ENABLED;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_ENABLED;
+import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SERVICES_COMPATIBILITY_ENABLED;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -106,8 +108,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "ConstantConditions"})
 public class GridServiceProcessor extends GridProcessorAdapter {
     /** */
-    public static final boolean SERVICE_COMPATIBILITY_ENABLED =
-        IgniteSystemProperties.getBoolean(IGNITE_SERVICE_COMPATIBILITY_ENABLED, false);
+    private final boolean srvcCompatibility  = getBoolean(IGNITE_SERVICES_COMPATIBILITY_ENABLED, false);
 
     /** Time to wait before reassignment retries. */
     private static final long RETRY_TIMEOUT = 1000;
@@ -164,6 +165,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
+        ctx.addNodeAttribute(ATTR_SERVICES_COMPATIBILITY_ENABLED, srvcCompatibility);
+
         if (ctx.isDaemon())
             return;
 
@@ -409,7 +412,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         validate(cfg);
 
-        if (!SERVICE_COMPATIBILITY_ENABLED) {
+        if (!srvcCompatibility) {
             Marshaller marsh = ctx.config().getMarshaller();
 
             LazyServiceConfiguration cfg0;

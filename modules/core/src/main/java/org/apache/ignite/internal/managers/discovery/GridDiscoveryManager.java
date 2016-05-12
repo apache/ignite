@@ -118,7 +118,7 @@ import org.jsr166.ConcurrentHashMap8;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICE_COMPATIBILITY_ENABLED;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_ENABLED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -131,7 +131,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DEPLOYMENT_MO
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOADING;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SERVICE_COMPATIBILITY_ENABLED;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SERVICES_COMPATIBILITY_ENABLED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_USER_NAME;
 import static org.apache.ignite.internal.IgniteVersionUtils.VER;
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.NOOP;
@@ -1007,7 +1007,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         boolean locDelayAssign = locNode.attribute(ATTR_LATE_AFFINITY_ASSIGNMENT);
 
-        Boolean locSrvcCompatibilityEnabled = locNode.attribute(ATTR_SERVICE_COMPATIBILITY_ENABLED);
+        Boolean locSrvcCompatibilityEnabled = locNode.attribute(ATTR_SERVICES_COMPATIBILITY_ENABLED);
 
         assert locSrvcCompatibilityEnabled != null;
 
@@ -1086,14 +1086,14 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     ", rmtAddrs=" + U.addressesAsString(n) + ']');
             }
 
-            Boolean rmtSrvcCompatibilityEnabled = n.attribute(ATTR_SERVICE_COMPATIBILITY_ENABLED);
+            Boolean rmtSrvcCompatibilityEnabled = n.attribute(ATTR_SERVICES_COMPATIBILITY_ENABLED);
             boolean rmtSrvcCompatibilityEnabledBool = rmtSrvcCompatibilityEnabled == null ? true
                 : rmtSrvcCompatibilityEnabled;
 
             if (locSrvcCompatibilityEnabled != rmtSrvcCompatibilityEnabledBool) {
-                throw new IgniteCheckedException("Local node's " + IGNITE_SERVICE_COMPATIBILITY_ENABLED +
+                throw new IgniteCheckedException("Local node's " + IGNITE_SERVICES_COMPATIBILITY_ENABLED +
                     " property value differs from remote node's value " +
-                    "(to make sure all nodes in topology have identical service compatibility mode, " +
+                    "(to make sure all nodes in topology have identical IgniteServices compatibility mode, " +
                     "configure system property explicitly) " +
                     "[locSrvcCompatibilityEnabled=" + locSrvcCompatibilityEnabled +
                     ", rmtSrvcCompatibilityEnabled=" + rmtSrvcCompatibilityEnabled +
