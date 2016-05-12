@@ -30,7 +30,7 @@ namespace ignite
     namespace cache
     {
         /**
-         * Cache entry class template.
+         * %Cache entry class template.
          *
          * Both key and value types should be default-constructable,
          * copy-constructable and assignable.

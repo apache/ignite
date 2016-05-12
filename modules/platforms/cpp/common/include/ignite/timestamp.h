@@ -32,7 +32,7 @@
 namespace ignite
 {
     /**
-     * Timestamp type.
+     * %Timestamp type.
      */
     class IGNITE_IMPORT_EXPORT Timestamp
     {
