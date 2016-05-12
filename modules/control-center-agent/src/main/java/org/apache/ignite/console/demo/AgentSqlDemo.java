@@ -195,6 +195,7 @@ public class AgentSqlDemo {
         CacheConfiguration<K, V> ccfg = cacheConfiguration(EMPLOYEE_CACHE_NAME);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        ccfg.setBackups(1);
 
         // Configure cacheEmployee types.
         Collection<QueryEntity> qryEntities = new ArrayList<>();
