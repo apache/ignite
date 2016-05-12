@@ -68,9 +68,6 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
     /** Servers count in load test. */
     private static final int SRV_CNT = 3;
 
-    /** */
-    private static boolean keepBinaryFlag = true;
-
     /**
      * @return Name of the cache for this test.
      */
@@ -78,11 +75,11 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
         return "partitioned";
     }
 
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
-
-        keepBinaryFlag = true;
+    /**
+     * @return Keep binary flag.
+     */
+    protected boolean keepBinary() {
+        return true;
     }
 
     /**
@@ -93,25 +90,10 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception
-     */
-    public void testSingleRequestNoKeepBinary() throws Exception {
-        keepBinaryFlag = false;
-
-        testSingleRequest("/modules/core/src/test/config/websession/example-cache.xml");
-    }
-
-    /**
      * @throws Exception If failed.
      */
     public void testSingleRequestMetaInf() throws Exception {
         testSingleRequest("ignite-webapp-config.xml");
-    }
-
-    public void testImplicitlyAttributeModificationNoKeepBinary() throws Exception {
-        keepBinaryFlag = false;
-
-        testImplicitlyAttributeModification();
     }
 
     /**
@@ -125,9 +107,9 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testClientReconnectRequest() throws Exception {
-//        testClientReconnectRequest("/modules/core/src/test/config/websession/example-cache.xml",
-//            "/modules/core/src/test/config/websession/example-cache2.xml",
-//            "/modules/core/src/test/config/websession/example-cache-client.xml");
+        testClientReconnectRequest("/modules/core/src/test/config/websession/example-cache.xml",
+            "/modules/core/src/test/config/websession/example-cache2.xml",
+            "/modules/core/src/test/config/websession/example-cache-client.xml");
     }
 
     /**
@@ -143,7 +125,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
         Ignite ignite = Ignition.start(srvCfg);
 
         try {
-            srv = startServer(TEST_JETTY_PORT, clientCfg, "client", keepBinaryFlag, new SessionCreateServlet());
+            srv = startServer(TEST_JETTY_PORT, clientCfg, "client", new SessionCreateServlet(keepBinary()));
 
             URL url = new URL("http://localhost:" + TEST_JETTY_PORT + "/ignitetest/test");
 
@@ -202,7 +184,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
         Server srv = null;
 
         try {
-            srv = startServer(TEST_JETTY_PORT, cfg, null, keepBinaryFlag, new SessionCreateServlet());
+            srv = startServer(TEST_JETTY_PORT, cfg, null, new SessionCreateServlet(keepBinary()));
 
             String sesId = sendRequestAndCheckMarker("marker1", null);
             sendRequestAndCheckMarker("test_string", sesId);
@@ -223,7 +205,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
         try (BufferedReader rdr = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
             sesId = rdr.readLine();
 
-            if (!keepBinaryFlag) {
+            if (!keepBinary()) {
                 IgniteCache<String, HttpSession> cache = G.ignite().cache(getCacheName());
 
                 assertNotNull(cache);
@@ -264,7 +246,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
         Server srv = null;
 
         try {
-            srv = startServer(TEST_JETTY_PORT, cfg, null, keepBinaryFlag, new SessionCreateServlet());
+            srv = startServer(TEST_JETTY_PORT, cfg, null, new SessionCreateServlet(keepBinary()));
 
             URLConnection conn = new URL("http://localhost:" + TEST_JETTY_PORT + "/ignitetest/test").openConnection();
 
@@ -273,7 +255,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
             try (BufferedReader rdr = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
                 String sesId = rdr.readLine();
 
-                if (!keepBinaryFlag) {
+                if (!keepBinary()) {
                     IgniteCache<String, HttpSession> cache = G.ignite().cache(getCacheName());
 
                     assertNotNull(cache);
@@ -310,12 +292,6 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    public void testInvalidatedSessionNoKeepBinary() throws Exception {
-        keepBinaryFlag = false;
-
-        testInvalidatedSession();
-    }
-
     /**
      * Tests invalidated sessions.
      *
@@ -327,7 +303,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
         try {
             srv = startServer(TEST_JETTY_PORT, "/modules/core/src/test/config/websession/example-cache.xml",
-                null, keepBinaryFlag, new InvalidatedSessionServlet());
+                null, new InvalidatedSessionServlet());
 
             Ignite ignite = G.ignite();
 
@@ -342,7 +318,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
                 assertNotNull(invalidatedSesId);
 
-                if (!keepBinaryFlag) {
+                if (!keepBinary()) {
                     IgniteCache<String, HttpSession> cache = ignite.cache(getCacheName());
 
                     assertNotNull(cache);
@@ -401,7 +377,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
                 assertTrue(latch.await(10, TimeUnit.SECONDS));
 
-                if (!keepBinaryFlag) {
+                if (!keepBinary()) {
                     IgniteCache<String, HttpSession> cache = ignite.cache(getCacheName());
 
                     assertNotNull(cache);
@@ -433,12 +409,6 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    public void testChangeSessionIdNoKeepBinary() throws Exception {
-        keepBinaryFlag = false;
-
-        testChangeSessionId();
-    }
-
     /**
      * Tests session id change.
      *
@@ -450,7 +420,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
         try {
             srv = startServer(TEST_JETTY_PORT, "/modules/core/src/test/config/websession/example-cache.xml",
-                null, keepBinaryFlag, new SessionIdChangeServlet());
+                null, new SessionIdChangeServlet());
 
             Ignite ignite = G.ignite();
 
@@ -479,7 +449,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
                 assertTrue(newGenSesId.equals(newWebSesId));
 
-                if (!keepBinaryFlag) {
+                if (!keepBinary()) {
                     IgniteCache<String, HttpSession> cache = ignite.cache(getCacheName());
 
                     assertNotNull(cache);
@@ -551,7 +521,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
             String cfg = "/modules/core/src/test/config/websession/spring-cache-" + (idx + 1) + ".xml";
 
             srvs.set(idx, startServer(
-                TEST_JETTY_PORT + idx, cfg, "grid-" + (idx + 1), keepBinaryFlag, new RestartsTestServlet(sesIdRef)));
+                TEST_JETTY_PORT + idx, cfg, "grid-" + (idx + 1), new RestartsTestServlet(sesIdRef)));
         }
 
         final AtomicBoolean stop = new AtomicBoolean();
@@ -578,7 +548,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
                     String cfg = "/modules/core/src/test/config/websession/spring-cache-" + (idx + 1) + ".xml";
 
                     srv = startServer(
-                        TEST_JETTY_PORT + idx, cfg, "grid-" + (idx + 1), keepBinaryFlag, new RestartsTestServlet(sesIdRef));
+                        TEST_JETTY_PORT + idx, cfg, "grid-" + (idx + 1), new RestartsTestServlet(sesIdRef));
 
                     assert srvs.compareAndSet(idx, null, srv);
 
@@ -684,12 +654,11 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
      * @return Server.
      * @throws Exception In case of error.
      */
-    private Server startServer(int port, @Nullable String cfg, @Nullable String gridName,
-        boolean keepBinaryFlag, HttpServlet servlet)
+    private Server startServer(int port, @Nullable String cfg, @Nullable String gridName, HttpServlet servlet)
         throws Exception {
         Server srv = new Server(port);
 
-        WebAppContext ctx = getWebContext(cfg, gridName, keepBinaryFlag, servlet);
+        WebAppContext ctx = getWebContext(cfg, gridName, keepBinary(), servlet);
 
         srv.setHandler(ctx);
 
@@ -713,6 +682,16 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
      * Test servlet.
      */
     private static class SessionCreateServlet extends HttpServlet {
+        /** Keep binary flag. */
+        private final boolean keepBinaryFlag;
+
+        /**
+         * @param keepBinaryFlag Keep binary flag.
+         */
+        private SessionCreateServlet(final boolean keepBinaryFlag) {
+            this.keepBinaryFlag = keepBinaryFlag;
+        }
+
         /** {@inheritDoc} */
         @Override protected void doGet(HttpServletRequest req, HttpServletResponse res)
             throws ServletException, IOException {
@@ -721,7 +700,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
             ses.setAttribute("checkCnt", 0);
             ses.setAttribute("key1", "val1");
             ses.setAttribute("key2", "val2");
-            ses.setAttribute("mkey", new TestObj("mval"));
+            ses.setAttribute("mkey", new TestObj("mval", keepBinaryFlag));
 
             Profile p = (Profile)ses.getAttribute("profile");
 
@@ -897,6 +876,9 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
         /** */
         private String val;
 
+        /** */
+        private boolean keepBinaryFlag;
+
         /**
          *
          */
@@ -905,24 +887,29 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
         /**
          * @param val Value.
+         * @param keepBinaryFlag Keep binary flag.
          */
-        public TestObj(final String val) {
+        public TestObj(final String val, final boolean keepBinaryFlag) {
             this.val = val;
+            this.keepBinaryFlag = keepBinaryFlag;
         }
 
         /** {@inheritDoc} */
         @Override public void writeExternal(final ObjectOutput out) throws IOException {
             U.writeString(out, val);
+            out.writeBoolean(keepBinaryFlag);
             System.out.println("TestObj marshalled");
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(final ObjectInput in) throws IOException, ClassNotFoundException {
+            val = U.readString(in);
+            keepBinaryFlag = in.readBoolean();
+
             // It must be unmarshalled only on client side.
             if (keepBinaryFlag)
                 fail("Should not be unmarshalled");
 
-            val = U.readString(in);
             System.out.println("TestObj unmarshalled");
         }
 
@@ -933,13 +920,16 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
             final TestObj testObj = (TestObj) o;
 
+            if (keepBinaryFlag != testObj.keepBinaryFlag) return false;
             return val != null ? val.equals(testObj.val) : testObj.val == null;
 
         }
 
         /** {@inheritDoc} */
         @Override public int hashCode() {
-            return val != null ? val.hashCode() : 0;
+            int result = val != null ? val.hashCode() : 0;
+            result = 31 * result + (keepBinaryFlag ? 1 : 0);
+            return result;
         }
     }
 }

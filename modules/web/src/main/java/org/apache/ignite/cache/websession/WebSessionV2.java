@@ -87,6 +87,9 @@ class WebSessionV2 implements HttpSession {
     /** Grid marshaller. */
     private final Marshaller marshaller;
 
+    /** Original session to delegate invalidation. */
+    private final HttpSession genuineSes;
+
     /**
      * @param id Session ID.
      * @param ses Session.
@@ -102,6 +105,7 @@ class WebSessionV2 implements HttpSession {
         this.marshaller = marshaller;
         this.ctx = ctx;
         this.isNew = isNew;
+        this.genuineSes = ses;
 
         accessTime = System.currentTimeMillis();
 
@@ -288,6 +292,15 @@ class WebSessionV2 implements HttpSession {
     /** {@inheritDoc} */
     @Override public void invalidate() {
         assertValid();
+
+        if (genuineSes != null) {
+            try {
+                genuineSes.invalidate();
+            }
+            catch (IllegalStateException e) {
+                // Already invalidated, keep going.
+            }
+        }
 
         invalidated = true;
     }
