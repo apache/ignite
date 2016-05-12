@@ -96,8 +96,7 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
                     final AtomicInteger idx = new AtomicInteger();
 
                     GridTestUtils.runMultiThreaded(new Callable<Void>() {
-                        @Override
-                        public Void call() throws Exception {
+                        @Override public Void call() throws Exception {
                             int node = idx.getAndIncrement();
 
                             Ignite ignite = startGrid(node);
