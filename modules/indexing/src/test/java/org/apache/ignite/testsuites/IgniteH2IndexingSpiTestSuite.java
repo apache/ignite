@@ -48,7 +48,7 @@ public class IgniteH2IndexingSpiTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridH2IndexRebuildTest.class));
 
         // Batch indexing.
-        suite.addTest(new TestSuite(CacheOffheapBatchIndexingTest.class));
+        suite.addTest(new TestSuite(CacheOffheapBatchIndexingSingleTypeTest.class));
 
         return suite;
     }
