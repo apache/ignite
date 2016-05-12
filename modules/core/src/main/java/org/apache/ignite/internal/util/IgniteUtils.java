@@ -215,6 +215,7 @@ import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
+import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionHeuristicException;
 import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.apache.ignite.transactions.TransactionRollbackException;
@@ -808,6 +809,9 @@ public abstract class IgniteUtils {
 
         m.put(IgniteTxTimeoutCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
             @Override public IgniteException apply(IgniteCheckedException e) {
+                if (e.getCause() instanceof TransactionDeadlockException)
+                    return new TransactionTimeoutException(e.getMessage(), e.getCause());
+
                 return new TransactionTimeoutException(e.getMessage(), e);
             }
         });

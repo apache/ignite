@@ -785,7 +785,7 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
 
         /** {@inheritDoc} */
         @Override public boolean exists(IgfsPath path) {
-            return false;
+            return true;
         }
 
         /** {@inheritDoc} */
