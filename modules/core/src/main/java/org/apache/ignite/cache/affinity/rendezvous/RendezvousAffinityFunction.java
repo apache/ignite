@@ -598,7 +598,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * the MD5 implementation is used.
      */
     private boolean useMd5Impl(AffinityFunctionContext ctx) {
-        return (ctx.oldestNodeVersion() != null) && (compatibilityVer.compareTo(ctx.oldestNodeVersion()) > 0);
+        return (ctx.oldestNodeVersion() != null) && (compatibilityVer.compareTo(ctx.oldestNodeVersion()) >= 0);
     }
 
     /** {@inheritDoc} */
