@@ -15,25 +15,11 @@
 ## limitations under the License.
 ##
 
-ACLOCAL_AMFLAGS = "-Im4"
+ACLOCAL_AMFLAGS =-I m4
 
-SUBDIRS = .
-DIST_SUBDIRS = . include
+SUBDIRS = \
+    putget-example \
+    odbc-example \
+    query-example \
+    include
 
-AM_CPPFLAGS = -I$(srcdir)/include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -DIGNITE_IMPL
-AM_CXXFLAGS = -Wall -std=c++0x
-
-noinst_PROGRAMS = ignite-putgetexample
-
-ignite_putgetexample_SOURCES = src/putgetexample.cpp
-
-ignite_putgetexample_LDFLAGS = -static-libtool-libs -L/usr/local/lib -lignite
-
-run-check: check
-	./ignite-putgetexample -p
-
-clean-local: clean-check
-	$(RM) *.gcno *.gcda
-
-clean-check:
-	$(RM) $(ignite_putgetexample_OBJECTS)

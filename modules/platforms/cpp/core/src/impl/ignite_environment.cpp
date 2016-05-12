@@ -15,12 +15,13 @@
  * limitations under the License.
  */
 
+#include "ignite/impl/interop/interop_external_memory.h"
 #include "ignite/impl/binary/binary_reader_impl.h"
 #include "ignite/impl/ignite_environment.h"
 #include "ignite/binary/binary.h"
 
 using namespace ignite::common::concurrent;
-using namespace ignite::common::java;
+using namespace ignite::jni::java;
 using namespace ignite::impl::interop;
 using namespace ignite::impl::binary;
 using namespace ignite::binary;
