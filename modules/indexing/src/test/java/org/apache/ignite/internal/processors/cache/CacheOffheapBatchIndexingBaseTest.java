@@ -25,7 +25,6 @@ import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -44,7 +43,8 @@ public abstract class CacheOffheapBatchIndexingBaseTest extends GridCommonAbstra
 
     /**
      * Load data into cache
-     * @param name name
+     *
+     * @param name Cache name.
      */
     protected void preload(String name) {
         try (IgniteDataStreamer<Object, Object> streamer = ignite(0).dataStreamer(name)) {
@@ -60,8 +60,6 @@ public abstract class CacheOffheapBatchIndexingBaseTest extends GridCommonAbstra
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setMarshaller(new BinaryMarshaller());
 
         cfg.setPeerClassLoadingEnabled(false);
 
@@ -82,6 +80,7 @@ public abstract class CacheOffheapBatchIndexingBaseTest extends GridCommonAbstra
 
     /**
      * @param base Base.
+     * @return Salary.
      */
     protected double salary(int base) {
         return base * 100.;
@@ -108,7 +107,6 @@ public abstract class CacheOffheapBatchIndexingBaseTest extends GridCommonAbstra
      * Ignite cache value class.
      */
     protected static class Person implements Binarylizable {
-
         /** Person ID. */
         @QuerySqlField(index = true)
         private int id;
@@ -246,7 +244,6 @@ public abstract class CacheOffheapBatchIndexingBaseTest extends GridCommonAbstra
      * Ignite cache value class with indexed field.
      */
     protected static class Organization implements Binarylizable {
-
         /** Organization ID. */
         @QuerySqlField(index = true)
         private int id;

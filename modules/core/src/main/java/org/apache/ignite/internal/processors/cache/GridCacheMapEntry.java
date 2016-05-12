@@ -3868,7 +3868,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             GridCacheQueryManager<?, ?> qryMgr = cctx.queries();
 
             if (qryMgr.enabled())
-                qryMgr.remove(key(), prevVal);
+                qryMgr.remove(key(), (CacheObject)cctx.unwrapTemporary(prevVal));
         }
         catch (IgniteCheckedException e) {
             throw new GridCacheIndexUpdateException(e);

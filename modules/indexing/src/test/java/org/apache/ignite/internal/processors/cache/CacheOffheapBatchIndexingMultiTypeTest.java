@@ -29,39 +29,50 @@ import org.apache.ignite.configuration.CacheConfiguration;
  */
 public class CacheOffheapBatchIndexingMultiTypeTest extends CacheOffheapBatchIndexingBaseTest {
     /**
-     * Test putAll with multiple indexed entites and streamer pre-loading with low off-heap cache size.
-     * The test fails in remove call.
+     * Tests putAll with multiple indexed entities and streamer pre-loading with low off-heap cache size.
      */
     public void testPutAllMultupleEntitiesAndStreamer() {
-        //fail("IGNITE-2982");
-        doStreamerBatchTest(50, 1_000, new Class<?>[] {Integer.class, CacheOffheapBatchIndexingBaseTest.Person.class,
-            Integer.class, CacheOffheapBatchIndexingBaseTest.Organization.class}, 1, true);
+        doStreamerBatchTest(50, 1_000, new Class<?>[] {
+            Integer.class, CacheOffheapBatchIndexingBaseTest.Person.class,
+            Integer.class, CacheOffheapBatchIndexingBaseTest.Organization.class},
+            1,
+            true);
     }
 
     /**
-     * Test putAll with multiple indexed entites and streamer preloading with default off-heap cache size.
-     * The test fails on remove and often hangs in putAll call.
+     * Tests putAll with multiple indexed entities and streamer preloading with default off-heap cache size.
      */
     public void testPutAllMultupleEntitiesAndStreamerDfltOffHeapRowCacheSize() {
-        //fail("IGNITE-2982");
-        doStreamerBatchTest(50, 1_000, new Class<?>[] {Integer.class, CacheOffheapBatchIndexingBaseTest.Person.class,
-                Integer.class, CacheOffheapBatchIndexingBaseTest.Organization.class},
-            CacheConfiguration.DFLT_SQL_ONHEAP_ROW_CACHE_SIZE, true);
+        doStreamerBatchTest(50, 1_000, new Class<?>[] {
+            Integer.class, CacheOffheapBatchIndexingBaseTest.Person.class,
+            Integer.class, CacheOffheapBatchIndexingBaseTest.Organization.class},
+            CacheConfiguration.DFLT_SQL_ONHEAP_ROW_CACHE_SIZE,
+            true);
     }
 
     /**
-     * Test putAll after with streamer batch load with one entity.
-     * The test fails in putAll.
+     * Tests putAll after with streamer batch load with one entity.
      */
     public void testPuAllSingleEntity() {
-        //fail("IGNITE-2982");
-        doStreamerBatchTest(50, 1_000, new Class<?>[] {Integer.class, CacheOffheapBatchIndexingBaseTest.Organization.class}, 1, false);
+        doStreamerBatchTest(50,
+            1_000,
+            new Class<?>[] {Integer.class, CacheOffheapBatchIndexingBaseTest.Organization.class},
+            1,
+            false);
     }
 
     /**
-     * Test putAll after with streamer batch load with one entity.
+     * @param iterations Number of iterations.
+     * @param entitiesCnt Number of entities to put.
+     * @param entityClasses Entity classes.
+     * @param onHeapRowCacheSize Cache size.
+     * @param preloadInStreamer Data preload flag.
      */
-    private void doStreamerBatchTest(int iterations, int entitiesCnt, Class<?>[] entityClasses, int onHeapRowCacheSize, boolean preloadInStreamer) {
+    private void doStreamerBatchTest(int iterations,
+        int entitiesCnt,
+        Class<?>[] entityClasses,
+        int onHeapRowCacheSize,
+        boolean preloadInStreamer) {
         Ignite ignite = grid(0);
 
         final IgniteCache<Object, Object> cache =
@@ -89,7 +100,8 @@ public class CacheOffheapBatchIndexingMultiTypeTest extends CacheOffheapBatchInd
 
                 cache.putAll(putMap2);
             }
-        } finally {
+        }
+        finally {
             cache.destroy();
         }
     }

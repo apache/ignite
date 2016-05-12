@@ -25,12 +25,10 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.binary.BinaryObjectOffheapImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
 import org.h2.api.TableEngine;
@@ -422,15 +420,8 @@ public class GridH2Table extends TableBase {
                 if (old instanceof GridH2AbstractKeyValueRow) { // Unswap value.
                     Value v = row.getValue(VAL_COL);
 
-                    if (v != null) {
-                        Object obj = v.getObject();
-
-                        // Convert to heap object if the row lies off-heap, or unswap call will fail.
-                        if (obj instanceof BinaryObjectOffheapImpl) //
-                            obj = ((BinaryObjectOffheapImpl)obj).heapCopy();
-
-                        ((GridH2AbstractKeyValueRow)old).onUnswap(obj, true);
-                    }
+                    if (v != null)
+                        ((GridH2AbstractKeyValueRow)old).onUnswap(v.getObject(), true);
                 }
 
                 if (old != null) {
