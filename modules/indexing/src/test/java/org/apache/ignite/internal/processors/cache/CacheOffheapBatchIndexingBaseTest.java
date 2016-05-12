@@ -17,21 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.cache.CacheEntryProcessor;
-import org.apache.ignite.cache.query.QueryCursor;
-import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -47,11 +37,25 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Tests various cache operations with indexing enabled.
- * TODO FIXME needs cleanup.
  */
-public class CacheOffheapBatchIndexingTest extends GridCommonAbstractTest {
+public abstract class CacheOffheapBatchIndexingBaseTest extends GridCommonAbstractTest {
     /** */
     private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
+    /**
+     * Load data into cache
+     * @param name name
+     */
+    protected void preload(String name) {
+        try (IgniteDataStreamer<Object, Object> streamer = ignite(0).dataStreamer(name)) {
+            for (int i = 0; i < 30_000; i++) {
+                if (i % 2 == 0)
+                    streamer.addData(i, new Person(i, i + 1, String.valueOf(i), String.valueOf(i + 1), salary(i)));
+                else
+                    streamer.addData(i, new Organization(i, String.valueOf(i)));
+            }
+        }
+    }
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -77,134 +81,9 @@ public class CacheOffheapBatchIndexingTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Loading date into cache
-     * @param name
-     */
-    private void preload(String name) {
-        try (IgniteDataStreamer<Object, Object> streamer = ignite(0).dataStreamer(name)) {
-            for (int i = 0; i < 30_000; i++) {
-                if (i % 2 == 0)
-                    streamer.addData(i, new Person(i, i + 1, String.valueOf(i), String.valueOf(i + 1), salary(i)));
-                else
-                    streamer.addData(i, new Organization(i, String.valueOf(i)));
-            }
-        }
-    }
-
-    /**
-     * Test removal using EntryProcessor.
-     * @throws Exception If failed.
-     */
-    public void testBatchRemove() throws Exception {
-        Ignite ignite = grid(0);
-
-        final IgniteCache<Object, Object> cache =
-            ignite.createCache(cacheConfiguration(1, new Class<?>[] {Integer.class, Organization.class}));
-
-        try {
-            int iterations = 50;
-            while (iterations-- >= 0) {
-                int total = 1000;
-
-                for (int id = 0; id < total; id++)
-                    cache.put(id, new Organization(id, "Organization " + id));
-
-                cache.invoke(0, new CacheEntryProcessor<Object, Object, Object>() {
-                    @Override public Object process(MutableEntry<Object, Object> entry,
-                        Object... arguments) throws EntryProcessorException {
-
-                        entry.remove();
-
-                        return null;
-                    }
-                });
-
-                QueryCursor<List<?>> q = cache.query(new SqlFieldsQuery("select _key,_val from Organization where id=0"));
-
-                assertEquals(0, q.getAll().size());
-
-                q = cache.query(new SqlFieldsQuery("select _key,_val from Organization where id=1"));
-
-                assertEquals(1, q.getAll().size());
-
-                assertEquals(total - 1, cache.size());
-
-                cache.clear();
-            }
-        }
-        finally {
-            cache.destroy();
-        }
-    }
-
-    /**
-     * Test putAll with multiple indexed entites and streamer pre-loading with low off-heap cache size.
-     * The test fails in remove call.
-     */
-    public void testPutAllMultupleEntitiesAndStreamer() {
-        fail("IGNITE-2982");
-        doStreamerBatchTest(50, 1_000, new Class<?>[] {Integer.class, Person.class, Integer.class, Organization.class}, 1, true);
-    }
-
-    /**
-     * Test putAll with multiple indexed entites and streamer preloading with default off-heap cache size.
-     * The test fails on remove and often hangs in putAll call.
-     */
-    public void testPutAllMultupleEntitiesAndStreamerDfltOffHeapRowCacheSize() {
-        fail("IGNITE-2982");
-        doStreamerBatchTest(50, 1_000, new Class<?>[] {Integer.class, Person.class, Integer.class, Organization.class},
-            CacheConfiguration.DFLT_SQL_ONHEAP_ROW_CACHE_SIZE, true);
-    }
-
-    /**
-     * Test putAll after with streamer batch load with one entity.
-     * The test fails in putAll.
-     */
-    public void testPuAllSingleEntity() {
-        fail("IGNITE-2982");
-        doStreamerBatchTest(50, 1_000, new Class<?>[] {Integer.class, Organization.class}, 1, false);
-    }
-
-    /**
-     * Test putAll after with streamer batch load with one entity.
-     */
-    private void doStreamerBatchTest(int iterations, int entitiesCnt, Class<?>[] entityClasses, int onHeapRowCacheSize, boolean preloadInStreamer) {
-        Ignite ignite = grid(0);
-
-        final IgniteCache<Object, Object> cache =
-            ignite.createCache(cacheConfiguration(onHeapRowCacheSize, entityClasses));
-
-        try {
-            if (preloadInStreamer)
-                preload(cache.getName());
-
-            while (iterations-- >= 0) {
-                Map<Integer, Person> putMap1 = new TreeMap<>();
-
-                for (int i = 0; i < entitiesCnt; i++)
-                    putMap1.put(i, new Person(i, i + 1, String.valueOf(i), String.valueOf(i + 1), salary(i)));
-
-                cache.putAll(putMap1);
-
-                Map<Integer, Organization> putMap2 = new TreeMap<>();
-
-                for (int i = entitiesCnt / 2; i < entitiesCnt * 3 / 2; i++) {
-                    cache.remove(i);
-
-                    putMap2.put(i, new Organization(i, String.valueOf(i)));
-                }
-
-                cache.putAll(putMap2);
-            }
-        } finally {
-            cache.destroy();
-        }
-    }
-
-    /**
      * @param base Base.
      */
-    private double salary(int base) {
+    protected double salary(int base) {
         return base * 100.;
     }
 
@@ -213,7 +92,7 @@ public class CacheOffheapBatchIndexingTest extends GridCommonAbstractTest {
      * @param indexedTypes indexed types for cache.
      * @return Cache configuration.
      */
-    private CacheConfiguration<Object, Object> cacheConfiguration(int onHeapRowCacheSize, Class<?>[] indexedTypes) {
+    protected CacheConfiguration<Object, Object> cacheConfiguration(int onHeapRowCacheSize, Class<?>[] indexedTypes) {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
 
         ccfg.setAtomicityMode(ATOMIC);
@@ -228,7 +107,7 @@ public class CacheOffheapBatchIndexingTest extends GridCommonAbstractTest {
     /**
      * Ignite cache value class.
      */
-    private static class Person implements Binarylizable {
+    protected static class Person implements Binarylizable {
 
         /** Person ID. */
         @QuerySqlField(index = true)
@@ -366,7 +245,7 @@ public class CacheOffheapBatchIndexingTest extends GridCommonAbstractTest {
     /**
      * Ignite cache value class with indexed field.
      */
-    private static class Organization implements Binarylizable {
+    protected static class Organization implements Binarylizable {
 
         /** Organization ID. */
         @QuerySqlField(index = true)
