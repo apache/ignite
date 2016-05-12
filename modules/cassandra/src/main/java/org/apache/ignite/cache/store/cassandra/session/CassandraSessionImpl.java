@@ -188,12 +188,11 @@ public class CassandraSessionImpl implements CassandraSession {
                 int seqNum = 0;
 
                 for (V obj : data) {
-                    if (assistant.alreadyProcessed(seqNum))
-                        continue;
-
-                    Statement statement = tuneStatementExecutionOptions(assistant.bindStatement(preparedSt, obj));
-                    ResultSetFuture fut = session().executeAsync(statement);
-                    futResults.add(new CacheEntryImpl<>(seqNum, fut));
+                    if (!assistant.alreadyProcessed(seqNum)) {
+                        Statement statement = tuneStatementExecutionOptions(assistant.bindStatement(preparedSt, obj));
+                        ResultSetFuture fut = session().executeAsync(statement);
+                        futResults.add(new CacheEntryImpl<>(seqNum, fut));
+                    }
 
                     seqNum++;
                 }
