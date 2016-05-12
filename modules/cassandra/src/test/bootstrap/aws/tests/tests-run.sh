@@ -272,6 +272,10 @@ validate()
 
 setupCassandraSeeds()
 {
+    if [ $CASSANDRA_NODES_COUNT -eq 0 ]; then
+        return 0
+    fi
+
     CASSANDRA_SEEDS1=
     CASSANDRA_SEEDS2=
 
@@ -338,6 +342,10 @@ setupCassandraSeeds()
 
 setupIgniteSeeds()
 {
+    if [ $IGNITE_NODES_COUNT -eq 0 ]; then
+        return 0
+    fi
+
     echo "[INFO] Setting up Ignite seeds"
 
     echo "[INFO] Looking for Ignite seeds in: $S3_IGNITE_NODES_DISCOVERY_URL"
@@ -472,6 +480,10 @@ removeFirstNodeLock()
 
 waitAllIgniteNodesReady()
 {
+    if [ $IGNITE_NODES_COUNT -eq 0 ]; then
+        return 0
+    fi
+
     echo "[INFO] Waiting for all $IGNITE_NODES_COUNT Ignite nodes up and running"
 
     while true; do
@@ -496,6 +508,10 @@ waitAllIgniteNodesReady()
 
 waitAllCassandraNodesReady()
 {
+    if [ $CASSANDRA_NODES_COUNT -eq 0 ]; then
+        return 0
+    fi
+
     echo "[INFO] Waiting for all $CASSANDRA_NODES_COUNT Cassandra nodes up and running"
 
     while true; do
