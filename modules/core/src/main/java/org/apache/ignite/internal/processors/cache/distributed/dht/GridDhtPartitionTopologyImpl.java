@@ -330,7 +330,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
         ClusterNode oldest = CU.oldestAliveCacheServerNode(cctx.shared(), topVer);
 
-//        assert oldest != null || cctx.kernalContext().clientNode();
+        assert oldest != null || cctx.kernalContext().clientNode();
 
         GridDhtPartitionExchangeId exchId = exchFut.exchangeId();
 
@@ -463,7 +463,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             // In case if node joins, get topology at the time of joining node.
             ClusterNode oldest = CU.oldestAliveCacheServerNode(cctx.shared(), topVer);
 
-//            assert oldest != null || cctx.kernalContext().clientNode();
+            assert oldest != null || cctx.kernalContext().clientNode();
 
             if (log.isDebugEnabled())
                 log.debug("Partition map beforeExchange [exchId=" + exchId + ", fullMap=" + fullMapString() + ']');
@@ -495,15 +495,14 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                         log.debug("Copied old map into new map on oldest node (previous oldest node left) [exchId=" +
                             exchId + ", fullMap=" + fullMapString() + ']');
                 }
+            }
 
-                if (affReady)
-                    initPartitions0(exchFut, updateSeq);
-                else {
-                    List<List<ClusterNode>> aff = cctx.affinity().idealAssignment();
+            if (affReady)
+                initPartitions0(exchFut, updateSeq);
+            else {
+                List<List<ClusterNode>> aff = cctx.affinity().idealAssignment();
 
-                    createPartitions(aff, updateSeq);
-                }
-
+                createPartitions(aff, updateSeq);
             }
 
             consistencyCheck();

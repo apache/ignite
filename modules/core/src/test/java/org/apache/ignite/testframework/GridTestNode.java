@@ -232,11 +232,6 @@ public class GridTestNode extends GridMetadataAwareAdapter implements ClusterNod
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isActive() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public int hashCode() {
         return id.hashCode();
     }

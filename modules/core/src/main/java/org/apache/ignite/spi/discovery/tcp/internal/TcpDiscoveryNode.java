@@ -151,11 +151,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
     @GridToStringExclude
     private transient boolean daemon;
 
-    @GridToStringExclude
-    private transient volatile boolean activated = false;
-
-    private transient GridDiscoveryManager discoMgr = null;
-
     /**
      * Public default no-arg constructor for {@link Externalizable} interface.
      */
@@ -526,7 +521,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
         node.attrs = attrs;
         node.clientRouterNodeId = clientRouterNodeId;
-        node.discoMgr = discoMgr;
 
         return node;
     }
@@ -544,22 +538,6 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         }
 
         return cacheCli;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean isActive() {
-        if (activated)
-            return true;
-
-        if (discoMgr == null)
-            return false;
-
-        boolean activated = discoMgr.activated(id);
-
-        if (activated)
-            this.activated = true;
-
-        return activated;
     }
 
     /** {@inheritDoc} */

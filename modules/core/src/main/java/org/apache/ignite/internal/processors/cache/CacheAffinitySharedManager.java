@@ -532,14 +532,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         });
     }
 
-    public void onNodeActivation(final AffinityTopologyVersion topVer, boolean crd) {
-        forAllCaches(crd, new IgniteInClosureX<GridAffinityAssignmentCache>() {
-            @Override public void applyx(GridAffinityAssignmentCache cache) throws IgniteCheckedException {
-                cache.initialize(topVer, cache.assignments(lastAffVer));
-            }
-        });
-    }
-
     /**
      * Called on exchange initiated by {@link CacheAffinityChangeMessage} which sent after rebalance finished.
      *

@@ -45,7 +45,7 @@ public interface GridComponent {
         /** */
         CLUSTER_PROC,
 
-        //** */
+        /** */
         DISCOVERY_PROC
     }
 

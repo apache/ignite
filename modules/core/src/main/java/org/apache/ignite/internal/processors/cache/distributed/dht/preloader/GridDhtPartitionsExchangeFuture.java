@@ -468,7 +468,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 if (CU.clientNode(discoEvt.eventNode()))
                     exchange = onClientNodeEvent(crdNode);
-//                else if (!discoEvt.eventNode().isActive())
                 else
                     exchange = onServerNodeEvent(crdNode);
             }
@@ -652,8 +651,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             centralizedAff = cctx.affinity().onServerLeft(this);
         }
         else {
-//            assert discoEvt.type() == EVT_NODE_JOINED : discoEvt;
-
             cctx.affinity().onServerJoin(this, crd);
         }
 

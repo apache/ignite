@@ -259,6 +259,4 @@ public interface ClusterNode {
      * @see DiscoverySpi#isClientMode()
      */
     public boolean isClient();
-
-    public boolean isActive();
 }

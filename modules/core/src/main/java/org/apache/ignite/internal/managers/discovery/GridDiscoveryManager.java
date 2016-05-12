@@ -1850,10 +1850,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
     }
 
-    public void sendNodeActivationEvent() throws IgniteCheckedException {
-        throw new UnsupportedOperationException("Not implemented");
-    }
-
     /**
      * Gets first grid node start time, see {@link DiscoverySpi#getGridStartTime()}.
      *
@@ -1902,6 +1898,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public Serializable collectDiscoveryData(UUID nodeId) {
         HashMap<String, Object> map = new HashMap<>();
 
@@ -1910,6 +1907,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         return map;
     }
 
+    /** {@inheritDoc} */
     @Override public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Serializable data) {
         if (data instanceof HashMap) {
             HashMap<String, Object> map = (HashMap<String, Object>) data;
@@ -1919,10 +1917,18 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
     }
 
+    /**
+     * Checks that node with given ID is activated.
+     * @param nodeId Node ID.
+     * @return {@code True} if active.
+     */
     public boolean activated(UUID nodeId) {
         return activatedNodes.contains(nodeId);
     }
 
+    /**
+     * Activates local node.
+     */
     public void activate() {
         locJoinEvt.listen(new IgniteInClosure<IgniteInternalFuture<DiscoveryEvent>>() {
             @Override public void apply(IgniteInternalFuture<DiscoveryEvent> future) {

@@ -22,18 +22,25 @@ import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
+/**
+ * Message for node activation.
+ */
 public class TcpDiscoveryNodeActivatedMessage implements DiscoveryCustomMessage {
 
+    /** */
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
+    /** {@inheritDoc} */
     @Override public IgniteUuid id() {
         return id;
     }
 
+    /** {@inheritDoc} */
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
         return null;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isMutable() {
         return false;
     }

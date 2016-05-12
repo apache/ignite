@@ -41,6 +41,9 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionRollbackException;
 
+/**
+ * Tests functionality related to node activation.
+ */
 public class NodeActivationSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
@@ -71,11 +74,39 @@ public class NodeActivationSelfTest extends GridCommonAbstractTest {
         G.stopAll(false);
     }
 
-    public void testNoOwnedPartitionsOnInactiveNode() throws Exception {
-        Ignite ignite1 = G.start(getConfiguration("test1"));
-        Ignite ignite2 = G.start(getConfiguration("test2"));
+    /**
+     * @throws Exception If fails.
+     */
+    public void test() throws Exception {
+        IgniteEx ignite1 = (IgniteEx)G.start(getConfiguration("1"));
 
-        assert ignite1.affinity(null).allPartitions(ignite1.cluster().localNode()).length == 0;
-        assert ignite2.affinity(null).allPartitions(ignite1.cluster().localNode()).length == 0;
+        assert ignite1.context().discovery().topologyVersionEx().minorTopologyVersion() > 0;
+        assert ignite1.context().discovery().activated(ignite1.localNode().id());
+
+        final IgniteCache cache1 = ignite1.cache(null);
+
+        cache1.put(1, 1);
+
+        IgniteEx ignite2 = (IgniteEx)G.start(getConfiguration("2"));
+
+        assert ignite1.context().discovery().topologyVersionEx().minorTopologyVersion() > 0;
+        assert ignite1.context().discovery().topologyVersionEx().equals(ignite2.context().discovery().topologyVersionEx());
+        assert ignite1.context().discovery().activated(ignite1.localNode().id());
+        assert ignite1.context().discovery().activated(ignite2.localNode().id());
+        assert ignite2.context().discovery().activated(ignite1.localNode().id());
+        assert ignite2.context().discovery().activated(ignite2.localNode().id());
+
+        final IgniteCache cache2 = ignite2.cache(null);
+
+        cache2.put(2, 2);
+
+        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return cache2.containsKey(1) && cache1.containsKey(2);
+            }
+        }, 5000);
+
+        assert cache2.get(1).equals(Integer.valueOf(1));
+        assert cache1.get(2).equals(Integer.valueOf(2));
     }
 }

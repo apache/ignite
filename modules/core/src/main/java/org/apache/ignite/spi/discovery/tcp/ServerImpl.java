@@ -120,7 +120,6 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHandshakeRespons
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryHeartbeatMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryJoinRequestMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryLoopbackProblemMessage;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeActivatedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddFinishedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeAddedMessage;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeFailedMessage;
