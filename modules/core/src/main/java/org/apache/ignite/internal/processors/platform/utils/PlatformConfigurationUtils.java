@@ -174,6 +174,8 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             ccfg.setNearConfiguration(readNearConfiguration(in));
 
+        ccfg.setEvictionPolicy(readEvictionPolicy(in));
+
         return ccfg;
     }
 
@@ -185,8 +187,20 @@ public class PlatformConfigurationUtils {
      */
     public static NearCacheConfiguration readNearConfiguration(BinaryRawReader in) {
         NearCacheConfiguration cfg = new NearCacheConfiguration();
-        cfg.setNearStartSize(in.readInt());
 
+        cfg.setNearStartSize(in.readInt());
+        cfg.setNearEvictionPolicy(readEvictionPolicy(in));
+
+        return cfg;
+    }
+
+    /**
+     * Reads the eviction policy.
+     *
+     * @param in Stream.
+     * @return Eviction policy.
+     */
+    public static EvictionPolicy readEvictionPolicy(BinaryRawReader in) {
         byte plcTyp = in.readByte();
 
         switch (plcTyp) {
@@ -197,22 +211,20 @@ public class PlatformConfigurationUtils {
                 p.setBatchSize(in.readInt());
                 p.setMaxSize(in.readInt());
                 p.setMaxMemorySize(in.readLong());
-                cfg.setNearEvictionPolicy(p);
-                break;
+                return p;
             }
             case 2: {
                 LruEvictionPolicy p = new LruEvictionPolicy();
                 p.setBatchSize(in.readInt());
                 p.setMaxSize(in.readInt());
                 p.setMaxMemorySize(in.readLong());
-                cfg.setNearEvictionPolicy(p);
-                break;
+                return p;
             }
             default:
                 assert false;
         }
 
-        return cfg;
+        return null;
     }
 
     /**
@@ -226,9 +238,15 @@ public class PlatformConfigurationUtils {
         assert cfg != null;
 
         out.writeInt(cfg.getNearStartSize());
+        writeEvictionPolicy(out, cfg.getNearEvictionPolicy());
+    }
 
-        EvictionPolicy p = cfg.getNearEvictionPolicy();
-
+    /**
+     * Writes the eviction policy.
+     * @param out Stream.
+     * @param p Policy.
+     */
+    private static void writeEvictionPolicy(BinaryRawWriter out, EvictionPolicy p) {
         if (p instanceof FifoEvictionPolicy) {
             out.writeByte((byte)1);
 
@@ -596,6 +614,8 @@ public class PlatformConfigurationUtils {
         }
         else
             writer.writeBoolean(false);
+
+        writeEvictionPolicy(writer, ccfg.getEvictionPolicy());
     }
 
     /**
