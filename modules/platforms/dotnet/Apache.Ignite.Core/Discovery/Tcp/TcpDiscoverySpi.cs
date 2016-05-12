@@ -65,11 +65,23 @@ namespace Apache.Ignite.Core.Discovery.Tcp
         /// <summary> Default value for the <see cref="LocalPortRange"/> property. </summary>
         public const int DefaultLocalPortRange = 100;
 
+        /// <summary> Default value for the <see cref="MaxMissedHeartbeats"/> property. </summary>
+        public const int DefaultMaxMissedHeartbeats = 1;
 
+        /// <summary> Default value for the <see cref="MaxMissedClientHeartbeats"/> property. </summary>
+        public const int DefaultMaxMissedClientHeartbeats = 5;
 
+        /// <summary> Default value for the <see cref="IpFinderCleanFrequency"/> property. </summary>
+        public static readonly TimeSpan DefaultIpFinderCleanFrequency = TimeSpan.FromSeconds(60);
 
+        /// <summary> Default value for the <see cref="ThreadPriority"/> property. </summary>
+        public const int DefaultThreadPriority = 10;
 
-
+        /// <summary> Default value for the <see cref="HeartbeatFrequency"/> property. </summary>
+        public static readonly TimeSpan DefaultHeartbeatFrequency = TimeSpan.FromSeconds(2);
+        
+        /// <summary> Default value for the <see cref="TopologyHistorySize"/> property. </summary>
+        public const int DefaultTopologyHistorySize = 1000;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="TcpDiscoverySpi"/> class.
@@ -84,6 +96,12 @@ namespace Apache.Ignite.Core.Discovery.Tcp
             ReconnectCount = DefaultReconnectCount;
             LocalPort = DefaultLocalPort;
             LocalPortRange = DefaultLocalPortRange;
+            MaxMissedHeartbeats = DefaultMaxMissedHeartbeats;
+            MaxMissedClientHeartbeats = DefaultMaxMissedClientHeartbeats;
+            IpFinderCleanFrequency = DefaultIpFinderCleanFrequency;
+            ThreadPriority = DefaultThreadPriority;
+            HeartbeatFrequency = DefaultHeartbeatFrequency;
+            TopologyHistorySize = DefaultTopologyHistorySize;
         }
 
         /// <summary>
@@ -174,11 +192,13 @@ namespace Apache.Ignite.Core.Discovery.Tcp
         /// <summary>
         /// Gets or sets the maximum heartbeats count node can miss without initiating status check.
         /// </summary>
+        [DefaultValue(DefaultMaxMissedHeartbeats)]
         public int MaxMissedHeartbeats { get; set; }
 
         /// <summary>
         /// Gets or sets the maximum heartbeats count node can miss without failing client node.
         /// </summary>
+        [DefaultValue(DefaultMaxMissedClientHeartbeats)]
         public int MaxMissedClientHeartbeats { get; set; }
 
         /// <summary>
@@ -190,22 +210,26 @@ namespace Apache.Ignite.Core.Discovery.Tcp
         /// <summary>
         /// Gets or sets the IP finder clean frequency.
         /// </summary>
+        [DefaultValue(typeof(TimeSpan), "0:1:0")]
         public TimeSpan IpFinderCleanFrequency { get; set; }
 
         /// <summary>
         /// Sets thread priority, 1 (lowest) to 10 (highest). All threads within SPI will be started with it.
         /// </summary>
+        [DefaultValue(DefaultThreadPriority)]
         public int ThreadPriority { get; set; }
 
         /// <summary>
         /// Gets or sets delay between issuing of heartbeat messages. SPI sends heartbeat messages
         /// in configurable time interval to other nodes to notify them about its state.
         /// </summary>
+        [DefaultValue(typeof(TimeSpan), "0:0:2")]
         public TimeSpan HeartbeatFrequency { get; set; }
 
         /// <summary>
         /// Gets or sets the size of topology snapshots history.
         /// </summary>
+        [DefaultValue(DefaultTopologyHistorySize)]
         public int TopologyHistorySize { get; set; }
 
         /// <summary>
