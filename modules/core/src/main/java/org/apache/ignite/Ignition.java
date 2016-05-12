@@ -534,16 +534,6 @@ public class Ignition {
     }
 
     /**
-     * Get or start grid instance, if it wasn't started yet.
-     * @param cfg Grid configuration.
-     * @return Grid instance.
-     * @throws IgniteCheckedException Thrown if something went wrong on startup.
-     */
-    public static Ignite getOrStart(IgniteConfiguration cfg) throws IgniteCheckedException {
-        return IgnitionEx.start(cfg, false);
-    }
-
-    /**
      * This method is used to address a local {@link Ignite} instance, principally from closure.
      * <p>
      * According to contract this method has to be called only under {@link IgniteThread}.
