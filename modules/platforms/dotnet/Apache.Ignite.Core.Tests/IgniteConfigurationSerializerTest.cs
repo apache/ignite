@@ -31,6 +31,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Xml.Schema;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
@@ -400,7 +401,19 @@ namespace Apache.Ignite.Core.Tests
                         WriteBehindFlushFrequency = TimeSpan.FromSeconds(5),
                         WriteBehindFlushSize = 66,
                         WriteBehindFlushThreadCount = 2,
-                        WriteSynchronizationMode = CacheWriteSynchronizationMode.FullAsync
+                        WriteSynchronizationMode = CacheWriteSynchronizationMode.FullAsync,
+                        NearConfiguration = new NearCacheConfiguration
+                        {
+                            NearStartSize = 5,
+                            EvictionPolicy = new FifoEvictionPolicy
+                            {
+                                BatchSize = 19, MaxMemorySize = 1024, MaxSize = 555
+                            }
+                        },
+                        EvictionPolicy = new LruEvictionPolicy
+                        {
+                            BatchSize = 18, MaxMemorySize = 1023, MaxSize = 554
+                        }
                     }
                 },
                 ClientMode = true,

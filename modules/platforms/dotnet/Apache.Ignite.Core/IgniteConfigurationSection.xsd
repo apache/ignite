@@ -166,6 +166,29 @@
                                                 </xs:sequence>
                                             </xs:complexType>
                                         </xs:element>
+                                        <xs:element name="nearConfiguration" minOccurs="0">
+                                            <xs:complexType>
+                                                <xs:all>
+                                                    <xs:element name="evictionPolicy" minOccurs="0">
+                                                        <xs:complexType>
+                                                            <xs:attribute name="batchSize" type="xs:int" />
+                                                            <xs:attribute name="maxSize" type="xs:int" />
+                                                            <xs:attribute name="maxMemorySize" type="xs:int" />
+                                                            <xs:attribute name="type" type="xs:string" use="required" />
+                                                        </xs:complexType>
+                                                    </xs:element>
+                                                </xs:all>
+                                                <xs:attribute name="nearStartSize" type="xs:int" />
+                                            </xs:complexType>
+                                        </xs:element>
+                                        <xs:element name="evictionPolicy" minOccurs="0">
+                                            <xs:complexType>
+                                                <xs:attribute name="batchSize" type="xs:int" />
+                                                <xs:attribute name="maxSize" type="xs:int" />
+                                                <xs:attribute name="maxMemorySize" type="xs:int" />
+                                                <xs:attribute name="type" type="xs:string" use="required" />
+                                            </xs:complexType>
+                                        </xs:element>
                                     </xs:all>
                                     <xs:attribute name="name" type="xs:string" />
                                     <xs:attribute name="cacheMode" type="xs:string" />
