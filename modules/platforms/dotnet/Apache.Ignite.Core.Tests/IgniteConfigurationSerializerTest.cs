@@ -91,6 +91,10 @@ namespace Apache.Ignite.Core.Tests
                                             </indexes>
                                         </queryEntity>
                                     </queryEntities>
+                                    <evictionPolicy type='LruEvictionPolicy' batchSize='1' maxSize='2' maxMemorySize='3' />
+                                    <nearConfiguration nearStartSize='7'>
+                                        <evictionPolicy type='FifoEvictionPolicy' batchSize='10' maxSize='20' maxMemorySize='30' />
+                                    </nearConfiguration>
                                 </cacheConfiguration>
                                 <cacheConfiguration name='secondCache' />
                             </cacheConfiguration>
@@ -143,6 +147,22 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(QueryIndexType.Geospatial, queryEntity.Indexes.Single().IndexType);
             Assert.AreEqual("indexFld", queryEntity.Indexes.Single().Fields.Single().Name);
             Assert.AreEqual(true, queryEntity.Indexes.Single().Fields.Single().IsDescending);
+
+            var nearCfg = cacheCfg.NearConfiguration;
+            Assert.IsNotNull(nearCfg);
+            Assert.AreEqual(7, nearCfg.NearStartSize);
+
+            var plc = nearCfg.EvictionPolicy as LruEvictionPolicy;
+            Assert.IsNotNull(plc);
+            Assert.AreEqual(1, plc.BatchSize);
+            Assert.AreEqual(2, plc.MaxSize);
+            Assert.AreEqual(3, plc.MaxMemorySize);
+
+            var fifoPlc = cacheCfg.EvictionPolicy as FifoEvictionPolicy;
+            Assert.IsNotNull(fifoPlc);
+            Assert.AreEqual(10, fifoPlc.BatchSize);
+            Assert.AreEqual(20, fifoPlc.MaxSize);
+            Assert.AreEqual(30, fifoPlc.MaxMemorySize);
 
             Assert.AreEqual(new Dictionary<string, object> {{"myNode", "true"}}, cfg.UserAttributes);
 
