@@ -785,7 +785,7 @@ public class  PageMemoryImpl implements PageMemory {
             assert buf.remaining() == sysPageSize : "remaining=" + buf.remaining() + ", sysPageSize=" + sysPageSize;
 
             try {
-                walMgr.log(new PageWrapperRecord(pageId, buf), false);
+                walMgr.log(new PageWrapperRecord(pageId, buf));
             }
             catch (IgniteCheckedException | StorageException e) {
                 // TODO ignite-db.

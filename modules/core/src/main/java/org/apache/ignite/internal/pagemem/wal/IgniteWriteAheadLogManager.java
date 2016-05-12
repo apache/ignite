@@ -21,11 +21,6 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManager;
-import org.apache.ignite.internal.util.lang.GridCloseableIterator;
-import org.apache.ignite.lang.IgniteBiInClosure;
-import org.apache.ignite.lang.IgniteBiTuple;
-
-import java.util.Iterator;
 
 /**
  *
@@ -41,14 +36,12 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager {
      * Appends the given log entry to the write-ahead log.
      *
      * @param entry entry to log.
-     * @param fsync If {@code true}, will sync the log after the entry write. Will effectively sync all
-     *      previous records written to the log before.
      * @return WALPointer that may be passed to {@link #fsync(WALPointer)} method to make sure the record is
      *      written to the log.
      * @throws IgniteCheckedException If failed to construct log entry.
      * @throws StorageException If IO error occurred while writing log entry.
      */
-    public WALPointer log(WALRecord entry, boolean fsync) throws IgniteCheckedException, StorageException;
+    public WALPointer log(WALRecord entry) throws IgniteCheckedException, StorageException;
 
     /**
      * Makes sure that all log entries written to the log up until the specified pointer are actually persisted to

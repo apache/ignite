@@ -28,6 +28,9 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.pagemem.wal.StorageException;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -458,6 +461,12 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                     cctx.database().checkpointReadLock();
 
                     try {
+                        if (!near() && cctx.wal() != null) {
+                            WALPointer ptr = cctx.wal().log(DataRecord.fromTransaction(this));
+
+                            cctx.wal().fsync(ptr);
+                        }
+
                         // Node that for near transactions we grab all entries.
                         for (IgniteTxEntry txEntry : (near() ? allEntries() : writeEntries())) {
                             GridCacheContext cacheCtx = txEntry.context();
@@ -683,6 +692,10 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
                                     throw (Error)ex;
                             }
                         }
+                    }
+                    catch (StorageException e) {
+                        throw new IgniteCheckedException("Failed to log transaction record " +
+                            "(transaction will be rolled back): " + this, e);
                     }
                     finally {
                         cctx.database().checkpointReadUnlock();

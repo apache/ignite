@@ -22,13 +22,15 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 /**
  *
  */
 public class DataRecord extends WALRecord {
     /** */
-    private Collection<DataEntry> writeEntries;
+    private List<DataEntry> writeEntries;
 
     /** {@inheritDoc} */
     @Override public RecordType type() {
@@ -60,16 +62,23 @@ public class DataRecord extends WALRecord {
     }
 
     /**
+     * @param writeEntry Write entry.
+     */
+    public DataRecord(DataEntry writeEntry) {
+        this(Collections.singletonList(writeEntry));
+    }
+
+    /**
      * @param writeEntries Write entries.
      */
-    public DataRecord(Collection<DataEntry> writeEntries) {
+    public DataRecord(List<DataEntry> writeEntries) {
         this.writeEntries = writeEntries;
     }
 
     /**
      * @return Collection of write entries.
      */
-    public Collection<DataEntry> writeEntries() {
+    public List<DataEntry> writeEntries() {
         return writeEntries;
     }
 }

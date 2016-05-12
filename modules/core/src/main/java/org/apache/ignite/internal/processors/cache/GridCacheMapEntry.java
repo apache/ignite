@@ -35,6 +35,9 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.eviction.EvictableEntry;
+import org.apache.ignite.internal.pagemem.wal.StorageException;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
@@ -843,7 +846,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         Object key0 = null;
         Object val0 = null;
 
-        long localUpdateCntr;
         long updateCntr0;
 
         synchronized (this) {
@@ -927,12 +929,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             if (cctx.deferredDelete() && deletedUnlocked() && !isInternal() && !detached())
                 deletedUnlocked(false);
 
-            localUpdateCntr = nextPartCounter(topVer);
+            updateCntr0 = nextPartCounter(topVer);
 
             if (updateCntr != null && updateCntr != 0)
                 updateCntr0 = updateCntr;
-            else
-                updateCntr0 = localUpdateCntr;
 
             update(val, expireTime, ttl, newVer, true);
 
@@ -1041,7 +1041,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         CacheLazyEntry entry0 = null;
 
-        long localUpdateCntr;
         Long updateCntr0;
 
         boolean deferred;
@@ -1110,12 +1109,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 }
             }
 
-            localUpdateCntr = nextPartCounter(topVer);
+            updateCntr0 = nextPartCounter(topVer);
 
             if (updateCntr != null && updateCntr != 0)
                 updateCntr0 = updateCntr;
-            else
-                updateCntr0 = localUpdateCntr;
 
             drReplicate(drType, null, newVer, topVer);
 
@@ -1603,7 +1600,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         Object key0 = null;
         Object updated0 = null;
 
-        long localUpdateCntr = 0;
         Long updateCntr0 = null;
 
         synchronized (this) {
@@ -2078,16 +2074,16 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 updated = cctx.kernalContext().cacheObjects().prepareForCache(updated, cctx);
 
-                storeValue(updated, newExpireTime, newVer);
-
-                update(updated, newExpireTime, newTtl, newVer, true);
-
-                localUpdateCntr = nextPartCounter(topVer);
+                updateCntr0 = nextPartCounter(topVer);
 
                 if (updateCntr != null)
                     updateCntr0 = updateCntr;
-                else
-                    updateCntr0 = localUpdateCntr;
+
+                logUpdate(op, updated, newVer, updateCntr0);
+
+                storeValue(updated, newExpireTime, newVer);
+
+                update(updated, newExpireTime, newTtl, newVer, true);
 
                 drReplicate(drType, updated, newVer, topVer);
 
@@ -2140,6 +2136,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (oldVal == null)
                     oldVal = saveValueForIndexUnlocked();
 
+                updateCntr0 = nextPartCounter(topVer);
+
+                if (updateCntr != null)
+                    updateCntr0 = updateCntr;
+
+                logUpdate(op, null, newVer, updateCntr0);
+
                 removeValue(oldVal, ver);
 
                 if (hadVal) {
@@ -2171,13 +2174,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 clearReaders();
 
                 recordNodeId(affNodeId, topVer);
-
-                localUpdateCntr = nextPartCounter(topVer);
-
-                if (updateCntr != null)
-                    updateCntr0 = updateCntr;
-                else
-                    updateCntr0 = localUpdateCntr;
 
                 drReplicate(drType, null, newVer, topVer);
 
@@ -3445,6 +3441,35 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert val != null : "null values in update for key: " + key;
 
         cctx.offheap().update(key, val, ver, expireTime, partition());
+    }
+
+    /**
+     * @param op Update operation.
+     * @param val Write value.
+     * @param writeVer Write version.
+     * @param updCntr Update counter.
+     */
+    protected void logUpdate(GridCacheOperation op, CacheObject val, GridCacheVersion writeVer, long updCntr)
+        throws IgniteCheckedException {
+        // We log individual updates only in ATMOIC cache.
+        assert cctx.atomic();
+
+        try {
+            if (cctx.shared().wal() != null)
+                cctx.shared().wal().log(new DataRecord(new DataEntry(
+                    cctx.cacheId(),
+                    key,
+                    val,
+                    op,
+                    null,
+                    writeVer,
+                    partition(),
+                    updCntr)));
+        }
+        catch (StorageException e) {
+            throw new IgniteCheckedException("Failed to log ATOMIC cache update [key=" + key + ", op=" + op +
+                ", val=" + val + ']', e);
+        }
     }
 
     /**

@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.pagemem.wal.record;
 
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.pagemem.impl.PageMemoryImpl.PAGE_CACHE_ID_OFFSET;
 import static org.apache.ignite.internal.pagemem.impl.PageMemoryImpl.PAGE_ID_OFFSET;
@@ -42,8 +43,10 @@ public class PageSnapshot extends PageAbstractRecord {
      * @param arr Backing array.
      */
     public PageSnapshot(byte[] arr) {
-        if (getLong(arr, BYTE_ARR_OFF) != PAGE_MARKER)
-            throw new IllegalArgumentException("Invalid page marker.");
+        long mark = getLong(arr, BYTE_ARR_OFF);
+
+        if (mark != PAGE_MARKER)
+            throw new IllegalArgumentException("Invalid page marker: " + U.hexLong(mark));
 
         long pageId = getLong(arr, BYTE_ARR_OFF + PAGE_ID_OFFSET);
         int cacheId = getInt(arr, BYTE_ARR_OFF + PAGE_CACHE_ID_OFFSET);
