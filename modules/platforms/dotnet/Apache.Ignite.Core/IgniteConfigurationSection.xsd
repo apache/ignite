@@ -260,10 +260,10 @@
                         <xs:attribute name="networkTimeout" type="xs:string" />
                         <xs:attribute name="joinTimeout" type="xs:string" />
                         
-                        <xs:attribute name="ClientReconnectDisabled" type="xs:boolean" />
-                        <xs:attribute name="ForceServerMode" type="xs:boolean" />
-                        <xs:attribute name="HeartbeatFrequency" type="xs:string" />
-                        <xs:attribute name="IpFinderCleanFrequency" type="xs:string" />
+                        <xs:attribute name="clientReconnectDisabled" type="xs:boolean" />
+                        <xs:attribute name="forceServerMode" type="xs:boolean" />
+                        <xs:attribute name="heartbeatFrequency" type="xs:string" />
+                        <xs:attribute name="ipFinderCleanFrequency" type="xs:string" />
                         
                         <xs:attribute name="localAddress" type="xs:string" />
                         <xs:attribute name="localPort" type="xs:int" />
