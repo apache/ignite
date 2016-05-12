@@ -48,6 +48,7 @@ import org.apache.ignite.internal.managers.discovery.GridDiscoveryTopologySnapsh
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
+import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -1102,6 +1103,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** {@inheritDoc} */
     @Override public Throwable validateCache(GridCacheContext cctx) {
         Throwable err = error();
+
+        if (!cctx.cache().state().active())
+            return new CacheInvalidStateException("Failed to perform cache operation " +
+            "(cache state is not valid): " + cctx.name());
 
         if (err != null)
             return err;

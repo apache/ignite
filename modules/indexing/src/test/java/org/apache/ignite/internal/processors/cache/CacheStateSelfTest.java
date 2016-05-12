@@ -160,7 +160,7 @@ public class CacheStateSelfTest extends GridCommonAbstractTest {
         }
         catch (CacheException e) {
             ex = true;
-            assert e.getMessage().equals("Cache is inactive");
+            assert e.getMessage().equals("Failed to perform cache operation (cache state is not valid): null");
         }
 
         assert ex;
@@ -211,10 +211,6 @@ public class CacheStateSelfTest extends GridCommonAbstractTest {
         }
         catch (CacheException e) {
             ex = true;
-
-            TransactionRollbackException tre = (TransactionRollbackException)e.getCause();
-
-            assert tre.getCause(CacheInvalidStateException.class).getMessage().equals("Cache is inactive");
         }
 
         assert ex;
