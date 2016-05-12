@@ -3372,13 +3372,12 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 final Boolean locSrvcCompatibilityEnabled = locNode.attribute(ATTR_SERVICES_COMPATIBILITY_ENABLED);
-
-                assert locSrvcCompatibilityEnabled != null;
+                boolean locSrvcCompatibilityEnabledBool = locSrvcCompatibilityEnabled == null ? true : locSrvcCompatibilityEnabled;
 
                 final Boolean rmtSrvcCompatibilityEnabled = node.attribute(ATTR_SERVICES_COMPATIBILITY_ENABLED);
                 boolean rmtSrvcCompatibilityEnabledBool = rmtSrvcCompatibilityEnabled == null ? true : rmtSrvcCompatibilityEnabled;
 
-                if (locSrvcCompatibilityEnabled != rmtSrvcCompatibilityEnabledBool) {
+                if (locSrvcCompatibilityEnabledBool != rmtSrvcCompatibilityEnabledBool) {
                     utilityPool.submit(
                         new Runnable() {
                             @Override public void run() {
