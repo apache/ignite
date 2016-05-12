@@ -70,7 +70,7 @@ public class IgniteCacheCreatePutTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
-        return 3 * 60 * 1000L;
+        return 5 * 60 * 1000L;
     }
 
     /** {@inheritDoc} */
