@@ -52,8 +52,10 @@ fi
 
 AC_CONFIG_FILES([ \
     Makefile \
+    include/Makefile \
     putget-example/Makefile \
     odbc-example/Makefile \
+    query-example/Makefile \
 ])
 
 AC_OUTPUT

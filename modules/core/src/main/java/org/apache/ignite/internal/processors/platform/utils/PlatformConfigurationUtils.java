@@ -42,6 +42,9 @@ import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactoryNative;
 import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
+import org.apache.ignite.spi.communication.CommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiMBean;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -346,6 +349,30 @@ public class PlatformConfigurationUtils {
 
         readCacheConfigurations(in, cfg);
         readDiscoveryConfiguration(in, cfg);
+
+        if (in.readBoolean()) {
+            TcpCommunicationSpi comm = new TcpCommunicationSpi();
+
+            comm.setAckSendThreshold(in.readInt());
+            comm.setConnectTimeout(in.readLong());
+            comm.setDirectBuffer(in.readBoolean());
+            comm.setDirectSendBuffer(in.readBoolean());
+            comm.setIdleConnectionTimeout(in.readLong());
+            comm.setLocalAddress(in.readString());
+            comm.setLocalPort(in.readInt());
+            comm.setLocalPortRange(in.readInt());
+            comm.setMaxConnectTimeout(in.readLong());
+            comm.setMessageQueueLimit(in.readInt());
+            comm.setReconnectCount(in.readInt());
+            comm.setSelectorsCount(in.readInt());
+            comm.setSlowClientQueueLimit(in.readInt());
+            comm.setSocketReceiveBuffer(in.readInt());
+            comm.setSocketSendBuffer(in.readInt());
+            comm.setTcpNoDelay(in.readBoolean());
+            comm.setUnacknowledgedMessagesBufferSize(in.readInt());
+
+            cfg.setCommunicationSpi(comm);
+        }
 
         if (in.readBoolean()) {
             if (cfg.getBinaryConfiguration() == null)
@@ -683,6 +710,33 @@ public class PlatformConfigurationUtils {
             w.writeInt(0);
 
         writeDiscoveryConfiguration(w, cfg.getDiscoverySpi());
+
+        CommunicationSpi comm = cfg.getCommunicationSpi();
+
+        if (comm instanceof TcpCommunicationSpi) {
+            w.writeBoolean(true);
+            TcpCommunicationSpiMBean tcp = (TcpCommunicationSpiMBean) comm;
+
+            w.writeInt(tcp.getAckSendThreshold());
+            w.writeLong(tcp.getConnectTimeout());
+            w.writeBoolean(tcp.isDirectBuffer());
+            w.writeBoolean(tcp.isDirectSendBuffer());
+            w.writeLong(tcp.getIdleConnectionTimeout());
+            w.writeString(tcp.getLocalAddress());
+            w.writeInt(tcp.getLocalPort());
+            w.writeInt(tcp.getLocalPortRange());
+            w.writeLong(tcp.getMaxConnectTimeout());
+            w.writeInt(tcp.getMessageQueueLimit());
+            w.writeInt(tcp.getReconnectCount());
+            w.writeInt(tcp.getSelectorsCount());
+            w.writeInt(tcp.getSlowClientQueueLimit());
+            w.writeInt(tcp.getSocketReceiveBuffer());
+            w.writeInt(tcp.getSocketSendBuffer());
+            w.writeBoolean(tcp.isTcpNoDelay());
+            w.writeInt(tcp.getUnacknowledgedMessagesBufferSize());
+        }
+        else
+            w.writeBoolean(false);
 
         BinaryConfiguration bc = cfg.getBinaryConfiguration();
         w.writeBoolean(bc != null);

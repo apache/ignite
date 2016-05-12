@@ -29,6 +29,8 @@
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Communication;
+    using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.DataStructures.Configuration;
     using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Discovery.Tcp;
@@ -222,6 +224,23 @@
             else
                 writer.WriteBoolean(false);
 
+            // Communication config
+            var comm = CommunicationSpi;
+
+            if (comm != null)
+            {
+                writer.WriteBoolean(true);
+
+                var tcpComm = comm as TcpCommunicationSpi;
+
+                if (tcpComm == null)
+                    throw new InvalidOperationException("Unsupported communication SPI: " + comm.GetType());
+
+                tcpComm.Write(writer);
+            }
+            else
+                writer.WriteBoolean(false);
+
             // Binary config
             var isCompactFooterSet = BinaryConfiguration != null && BinaryConfiguration.CompactFooterInternal != null;
 
@@ -302,6 +321,9 @@
 
             // Discovery config
             DiscoverySpi = r.ReadBoolean() ? new TcpDiscoverySpi(r) : null;
+
+            // Communication config
+            CommunicationSpi = r.ReadBoolean() ? new TcpCommunicationSpi(r) : null;
 
             // Binary config
             if (r.ReadBoolean())
@@ -480,6 +502,12 @@
         /// Null for default discovery.
         /// </summary>
         public IDiscoverySpi DiscoverySpi { get; set; }
+
+        /// <summary>
+        /// Gets or sets the communication service provider.
+        /// Null for default communication.
+        /// </summary>
+        public ICommunicationSpi CommunicationSpi { get; set; }
 
         /// <summary>
         /// Gets or sets a value indicating whether node should start in client mode.
