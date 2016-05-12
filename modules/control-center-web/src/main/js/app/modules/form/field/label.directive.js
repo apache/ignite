@@ -29,8 +29,11 @@ export default ['igniteFormFieldLabel', [() => {
 
                         const $label = $element.parent().parent().find('label');
 
-                        if ($element[0].id)
-                            $label[0].id = $element[0].id;
+                        if ($element[0].id) {
+                            const id = $element[0].id;
+
+                            $label[0].id = id.indexOf('+') >= 0 ? $scope.$eval(id) : id;
+                        }
 
                         $label.append(clone);
                     });
