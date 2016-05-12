@@ -1033,6 +1033,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
             // Allow context to be collected, which will cause resource cleanup in finalizer.
             _ctx = null;
+
+            // Notify grid
+            var ignite = _ignite;
+
+            if (ignite != null)
+                ignite.AfterNodeStop();
         }
         
         private void Error(void* target, int errType, sbyte* errClsChars, int errClsCharsLen, sbyte* errMsgChars,

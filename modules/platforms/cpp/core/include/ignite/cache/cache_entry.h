@@ -36,7 +36,7 @@ namespace ignite
          * copy-constructable and assignable.
          */
         template<typename K, typename V>
-        class IGNITE_IMPORT_EXPORT CacheEntry
+        class CacheEntry
         {
         public:
             /**
