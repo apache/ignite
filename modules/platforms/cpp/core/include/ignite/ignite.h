@@ -20,10 +20,11 @@
  * Declares ignite::Ignite class.
  */
 
-#ifndef _IGNITE
-#define _IGNITE
+#ifndef _IGNITE_IGNITE
+#define _IGNITE_IGNITE
 
 #include "ignite/cache/cache.h"
+#include "ignite/transactions/transactions.h"
 #include "ignite/impl/ignite_impl.h"
 #include "ignite/ignite_configuration.h"
 
@@ -81,7 +82,7 @@ namespace ignite
         template<typename K, typename V>
         cache::Cache<K, V> GetCache(const char* name, IgniteError* err)
         {
-            impl::cache::CacheImpl* cacheImpl = impl.Get()->GetCache<K, V>(name, err);
+            impl::cache::CacheImpl* cacheImpl = impl.Get()->GetCache<K, V>(name, *err);
 
             return cache::Cache<K, V>(cacheImpl);
         }
@@ -114,7 +115,7 @@ namespace ignite
         template<typename K, typename V>
         cache::Cache<K, V> GetOrCreateCache(const char* name, IgniteError* err)
         {
-            impl::cache::CacheImpl* cacheImpl = impl.Get()->GetOrCreateCache<K, V>(name, err);
+            impl::cache::CacheImpl* cacheImpl = impl.Get()->GetOrCreateCache<K, V>(name, *err);
 
             return cache::Cache<K, V>(cacheImpl);
         }
@@ -147,17 +148,30 @@ namespace ignite
         template<typename K, typename V>
         cache::Cache<K, V> CreateCache(const char* name, IgniteError* err)
         {
-            impl::cache::CacheImpl* cacheImpl = impl.Get()->CreateCache<K, V>(name, err);
+            impl::cache::CacheImpl* cacheImpl = impl.Get()->CreateCache<K, V>(name, *err);
 
             return cache::Cache<K, V>(cacheImpl);
         }
 
         /**
+         * Get transactions.
+         *
+         * @return Transaction class instance.
+         */
+        transactions::Transactions GetTransactions();
+
+        /**
          * Check if the instance is valid.
+         *
+         * Invalid instance can be returned if some of the previous
+         * operations have resulted in a failure. For example invalid
+         * instance can be returned by not-throwing version of method
+         * in case of error. Invalid instances also often can be
+         * created using default constructor.
          * 
          * @return True if the instance is valid and can be used.
          */
-        bool IsValid()
+        bool IsValid() const
         {
             return impl.IsValid();
         }
@@ -168,4 +182,4 @@ namespace ignite
     };
 }
 
-#endif
+#endif //_IGNITE_IGNITE

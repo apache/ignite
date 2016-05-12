@@ -166,11 +166,30 @@
         <profile>
             <id>release</id>
             <activation>
-                <activeByDefault>true</activeByDefault>
-                <jdk>[1.7,)</jdk>
+                <property>
+                    <name>!skipDefault</name><!--activeByDefault-->
+                </property>
             </activation>
             <build>
                 <plugins>
+                    <plugin><!-- skipping generation of dependencies licenses
+                     to keep clean /maven-shared-archive-resources/META-INF
+                     to prevent license.txt moving to sources.zip -->
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-remote-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>ignite-dependencies</id>
+                                <goals>
+                                    <goal>process</goal>
+                                </goals>
+                                <configuration>
+                                   <skip>true</skip>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>

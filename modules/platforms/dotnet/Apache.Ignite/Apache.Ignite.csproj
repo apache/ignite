@@ -33,6 +33,7 @@
   <ItemGroup>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
+    <Reference Include="System.Configuration.Install" />
     <Reference Include="System.Core" />
     <Reference Include="System.ServiceProcess" />
     <Reference Include="System.Xml.Linq" />
@@ -51,8 +52,10 @@
     <Compile Include="Service\IgniteService.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="Service\NativeMethods.cs" />
     <Compile Include="Service\ServiceDescription.cs" />
+    <Compile Include="Service\IgniteServiceInstaller.cs">
+      <SubType>Component</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.csproj">

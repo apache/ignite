@@ -190,6 +190,17 @@ public final class IgniteSystemProperties {
     public static final String IGNITE_TX_SALVAGE_TIMEOUT = "IGNITE_TX_SALVAGE_TIMEOUT";
 
     /**
+     * Specifies maximum number of iterations for deadlock detection procedure.
+     * If value of this property is less then or equal to zero then deadlock detection will be disabled.
+     */
+    public static final String IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS = "IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS";
+
+    /**
+     * Specifies timeout for deadlock detection procedure.
+     */
+    public static final String IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT = "IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT";
+
+    /**
      * System property to override multicast group taken from configuration.
      * Used for testing purposes.
      */
