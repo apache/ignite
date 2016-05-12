@@ -35,6 +35,14 @@
 	 {
 		 // Empty.
 	 }
+
+	 /**
+	  * %Ignite Transaction API.
+	  */
+	 namespace transactions
+	 {
+		 // Empty.
+	 }
 	 
 	 /**
 	  * %Ignite %Cache API.

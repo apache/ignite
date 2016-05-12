@@ -17,6 +17,8 @@
 
 package org.apache.ignite.yardstick.cache.load;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,6 +32,10 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
+import javax.cache.configuration.FactoryBuilder;
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryListenerException;
+import javax.cache.event.CacheEntryUpdatedListener;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
@@ -40,12 +46,14 @@ import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
@@ -62,6 +70,7 @@ import org.apache.ignite.transactions.TransactionIsolation;
 import org.apache.ignite.yardstick.IgniteAbstractBenchmark;
 import org.apache.ignite.yardstick.IgniteBenchmarkUtils;
 import org.apache.ignite.yardstick.cache.load.model.ModelUtil;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.yardstickframework.BenchmarkConfiguration;
@@ -94,8 +103,14 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     /** Map cache name on value classes. */
     private Map<String, Class[]> valuesCacheClasses;
 
-    /** List of query descriptors by cache names */
+    /** List of query descriptors by cache names. */
     private Map<String, List<SqlCacheDescriptor>> cacheSqlDescriptors;
+
+    /** List of SQL queries. */
+    private List<String> queries;
+
+    /** List of allowed cache operations which will be executed. */
+    private List<Operation> allowedOperations;
 
     /**
      * Replace value entry processor.
@@ -106,6 +121,11 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      * Remove entry processor.
      */
     private BenchmarkRemoveEntryProcessor rmvEntryProc;
+
+    /**
+     * Last local continuous query cursor.
+     */
+    private ThreadLocal<QueryCursor> localContinuousQueryCursor = new ThreadLocal<>();
 
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
@@ -141,6 +161,10 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
         replaceEntryProc = new BenchmarkReplaceValueEntryProcessor(null);
         rmvEntryProc = new BenchmarkRemoveEntryProcessor();
         cacheSqlDescriptors = new HashMap<>();
+
+        loadQueries();
+
+        loadAllowedOperations();
 
         for (String cacheName : ignite().cacheNames()) {
             IgniteCache<Object, Object> cache = ignite().cache(cacheName);
@@ -227,6 +251,45 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                 txCaches.add(cache);
 
             availableCaches.add(cache);
+        }
+    }
+
+    /**
+     * Load allowed operation from parameters.
+     */
+    private void loadAllowedOperations() {
+        allowedOperations = new ArrayList<>();
+
+        if (args.allowOperations().isEmpty()) {
+            for (Operation op : Operation.values())
+                allowedOperations.add(op);
+        }
+        else {
+            for (String opName : args.allowOperations())
+                allowedOperations.add(Operation.valueOf(opName.toUpperCase()));
+        }
+    }
+
+    /**
+     * Load query from file.
+     *
+     * @throws Exception If fail.
+     */
+    private void loadQueries() throws Exception {
+        queries = new ArrayList<>();
+
+        if (args.queriesFile() != null) {
+            try (FileReader fr = new FileReader(args.queriesFile())) {
+                try (BufferedReader br = new BufferedReader(fr)) {
+                    String line;
+                    while ((line = br.readLine()) != null) {
+                        if (line.trim().isEmpty())
+                            continue;
+
+                        queries.add(line.trim());
+                    }
+                }
+            }
         }
     }
 
@@ -418,7 +481,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      * @throws Exception If fail.
      */
     private void executeRandomOperation(IgniteCache cache) throws Exception {
-        switch (Operation.valueOf(nextRandom(operations))) {
+        switch (nextRandomOperation()) {
             case PUT:
                 doPut(cache);
                 break;
@@ -465,7 +528,19 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
             case SQL_QUERY:
                 doSqlQuery(cache);
+                break;
+
+            case CONTINUOUS_QUERIE:
+                doContinuousQuery(cache);
         }
+    }
+
+    /**
+     * @return Operation.
+     */
+    @NotNull private Operation nextRandomOperation() {
+        Operation op = allowedOperations.get(nextRandom(allowedOperations.size()));
+        return op;
     }
 
     /**
@@ -557,7 +632,6 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                 createRandomValue(i + 1, cache.getName()));
         else
             cache.invoke(createRandomKey(i, cache.getName()), rmvEntryProc);
-
     }
 
     /**
@@ -703,12 +777,70 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
 
             int id = nextRandom(args.range());
 
-            Query sq = nextBoolean() ? randomDescriptor.getSqlQuery(id) : randomDescriptor.getSqlFieldsQuery(id);
+            Query sq;
+            if (queries.isEmpty())
+                sq = nextBoolean() ? randomDescriptor.getSqlQuery(id) : randomDescriptor.getSqlFieldsQuery(id);
+            else
+                sq = new SqlFieldsQuery(queries.get(nextRandom(queries.size())));
 
             try (QueryCursor cursor = cache.query(sq)) {
                 for (Object obj : cursor)
                     ;
             }
+        }
+    }
+
+    /**
+     * @param cache Ignite cache.
+     * @throws Exception If failed.
+     */
+    private void doContinuousQuery(IgniteCache cache) throws Exception {
+        if (nextBoolean() || localContinuousQueryCursor.get() == null) {
+
+            if (localContinuousQueryCursor.get() != null)
+                localContinuousQueryCursor.get().close();
+
+            ContinuousQuery qry = new ContinuousQuery();
+
+            qry.setLocalListener(new ContinuousQueryUpdater());
+            qry.setRemoteFilterFactory(FactoryBuilder.factoryOf(new ContinuousQueryFilter(nextRandom(100))));
+
+            localContinuousQueryCursor.set(cache.query(qry));
+        }
+    }
+
+    /**
+     * Continuous query updater class.
+     */
+    private static class ContinuousQueryUpdater implements CacheEntryUpdatedListener, Serializable {
+
+        /** {@inheritDoc} */
+        @Override public void onUpdated(Iterable iterable) throws CacheEntryListenerException {
+            for (Object o : iterable);
+        }
+    }
+
+    /**
+     * Continuous query filter class.
+     */
+    private static class ContinuousQueryFilter implements CacheEntryEventSerializableFilter, Serializable {
+
+        /**
+         * Value.
+         */
+        private int val;
+
+        /**
+         * @param val Value.
+         */
+        public ContinuousQueryFilter(int val) {
+            this.val = val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean evaluate(CacheEntryEvent event) throws CacheEntryListenerException {
+            return event.getOldValue() != null && event.getValue() != null
+                && ((event.getOldValue().hashCode() - event.getValue().hashCode()) % (val + 3) == 0);
         }
     }
 
@@ -758,8 +890,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                 scanQry.setFilter(igniteBiPred);
 
                 try (QueryCursor cursor = cache.query(scanQry)) {
-                    for (Object obj : cursor)
-                        ;
+                    for (Object obj : cursor);
                 }
 
             }
@@ -928,7 +1059,10 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
         SCAN_QUERY,
 
         /** SQL query operation. */
-        SQL_QUERY;
+        SQL_QUERY,
+
+        /** Continuous Query. */
+        CONTINUOUS_QUERIE;
 
         /**
          * @param num Number of operation.

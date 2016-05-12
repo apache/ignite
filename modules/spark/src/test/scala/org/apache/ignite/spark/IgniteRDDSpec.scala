@@ -17,8 +17,6 @@
 
 package org.apache.ignite.spark
 
-import java.time.LocalDate
-
 import org.apache.ignite.Ignition
 import org.apache.ignite.cache.query.annotations.{QueryTextField, QuerySqlField}
 import org.apache.ignite.configuration.{CacheConfiguration, IgniteConfiguration}

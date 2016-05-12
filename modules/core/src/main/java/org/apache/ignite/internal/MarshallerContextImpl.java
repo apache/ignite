@@ -79,21 +79,17 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
      * @throws IgniteCheckedException In case of error.
      */
     public void onMarshallerCacheStarted(GridKernalContext ctx) throws IgniteCheckedException {
-        ctx.cache().marshallerCache().context().continuousQueries().executeInternalQuery(
-            new ContinuousQueryListener(ctx.log(MarshallerContextImpl.class), workDir),
-            null,
-            ctx.cache().marshallerCache().context().affinityNode(),
-            true,
-            false
-        );
-    }
-
-    /**
-     * @param ctx Kernal context.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public void onMarshallerCachePreloaded(GridKernalContext ctx) throws IgniteCheckedException {
         assert ctx != null;
+
+        if (!ctx.isDaemon()) {
+            ctx.cache().marshallerCache().context().continuousQueries().executeInternalQuery(
+                new ContinuousQueryListener(ctx.log(MarshallerContextImpl.class), workDir),
+                null,
+                ctx.cache().marshallerCache().context().affinityNode(),
+                true,
+                false
+            );
+        }
 
         log = ctx.log(MarshallerContextImpl.class);
 
