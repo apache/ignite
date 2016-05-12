@@ -62,7 +62,7 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
     /** Name of the address table, in upper case.  Mostly table names are not case-sensitive
      * but databases such as Oracle require table names in upper-case when looking them up in the metadata. */
     public static final String ADDRS_TABLE_NAME = "TBL_ADDRS";
-    
+
     /** Query to get addresses. */
     public static final String GET_ADDRS_QRY = "select hostname, port from \"" + ADDRS_TABLE_NAME
             + "\"";
@@ -113,145 +113,110 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
     @Override public Collection<InetSocketAddress> getRegisteredAddresses() throws IgniteSpiException {
         init();
 
-        Connection conn = null;
+		try (Connection conn = getConnection(TRANSACTION_READ_COMMITTED);
+			 PreparedStatement stmt = prepareStatement(conn, GET_ADDRS_QRY);
+			 ResultSet rs = stmt.executeQuery()) {
+			Collection<InetSocketAddress> addrs = new LinkedList<>();
 
-        PreparedStatement stmt = null;
+			while (rs.next())
+				addrs.add(new InetSocketAddress(rs.getString(1), rs.getInt(2)));
 
-        ResultSet rs = null;
+			return addrs;
+		} catch (SQLException e) {
+			throw closeFailure(e);
+		}
+	}
 
-        try {
-            conn = dataSrc.getConnection();
-
-            conn.setTransactionIsolation(TRANSACTION_READ_COMMITTED);
-
-            stmt = conn.prepareStatement(GET_ADDRS_QRY);
-
-            rs = stmt.executeQuery();
-
-            Collection<InetSocketAddress> addrs = new LinkedList<>();
-
-            while (rs.next())
-                addrs.add(new InetSocketAddress(rs.getString(1), rs.getInt(2)));
-
-            return addrs;
-        }
-        catch (SQLException e) {
-            throw new IgniteSpiException("Failed to get registered addresses version.", e);
-        }
-        finally {
-            U.closeQuiet(rs);
-            U.closeQuiet(stmt);
-            U.closeQuiet(conn);
-        }
-    }
+	private IgniteSpiException closeFailure(SQLException e) {
+		throw new IgniteSpiException("Failed to close database resources.", e);
+	}
 
     /** {@inheritDoc} */
     @Override public void registerAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
         assert !F.isEmpty(addrs);
 
-        init();
+		init();
 
-        Connection conn = null;
+		try (Connection conn = getConnection(TRANSACTION_READ_COMMITTED, false);
+			 PreparedStatement stmtUnreg = prepareStatement(conn, UNREG_ADDR_QRY);
+			 PreparedStatement stmtReg = conn.prepareStatement(REG_ADDR_QRY)
+		) {
+			doRegisterAddresses(addrs, conn, stmtUnreg, stmtReg);
+		} catch (SQLException e) {
+			throw closeFailure(e);
+		}
+	}
 
-        PreparedStatement stmtUnreg = null;
+	private void doRegisterAddresses(Collection<InetSocketAddress> addrs, Connection conn, PreparedStatement stmtUnreg, PreparedStatement stmtReg) {
+		boolean committed = false;
+		try {
+			for (InetSocketAddress addr : addrs) {
+				stmtUnreg.setString(1, addr.getAddress().getHostAddress());
+				stmtUnreg.setInt(2, addr.getPort());
 
-        PreparedStatement stmtReg = null;
+				stmtUnreg.addBatch();
 
-        boolean committed = false;
+				stmtReg.setString(1, addr.getAddress().getHostAddress());
+				stmtReg.setInt(2, addr.getPort());
 
-        try {
-            conn = dataSrc.getConnection();
+				stmtReg.addBatch();
+			}
 
-            conn.setAutoCommit(false);
+			stmtUnreg.executeBatch();
+			stmtReg.executeBatch();
 
-            conn.setTransactionIsolation(TRANSACTION_READ_COMMITTED);
+			conn.commit();
 
-            stmtUnreg = conn.prepareStatement(UNREG_ADDR_QRY);
-            stmtReg = conn.prepareStatement(REG_ADDR_QRY);
+			committed = true;
+		} catch (SQLException e) {
+			U.rollbackConnectionQuiet(conn);
 
-            for (InetSocketAddress addr : addrs) {
-                stmtUnreg.setString(1, addr.getAddress().getHostAddress());
-                stmtUnreg.setInt(2, addr.getPort());
-
-                stmtUnreg.addBatch();
-
-                stmtReg.setString(1, addr.getAddress().getHostAddress());
-                stmtReg.setInt(2, addr.getPort());
-
-                stmtReg.addBatch();
-            }
-
-            stmtUnreg.executeBatch();
-            stmtUnreg.close();
-
-            stmtReg.executeBatch();
-            stmtReg.close();
-
-            conn.commit();
-
-            committed = true;
-        }
-        catch (SQLException e) {
-            U.rollbackConnectionQuiet(conn);
-
-            throw new IgniteSpiException("Failed to register addresses: " + addrs, e);
-        }
-        finally {
-            if (!committed)
-                U.rollbackConnectionQuiet(conn);
-
-            U.closeQuiet(stmtUnreg);
-            U.closeQuiet(stmtReg);
-            U.closeQuiet(conn);
-        }
-    }
+			throw new IgniteSpiException("Failed to register addresses: " + addrs, e);
+		} finally {
+			if (!committed)
+				U.rollbackConnectionQuiet(conn);
+		}
+	}
 
     /** {@inheritDoc} */
     @Override public void unregisterAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
         assert !F.isEmpty(addrs);
 
-        init();
+		init();
 
-        Connection conn = null;
+		try (Connection conn = getConnection(TRANSACTION_READ_COMMITTED, false);
+			 PreparedStatement stmt = conn.prepareStatement(UNREG_ADDR_QRY)){
 
-        PreparedStatement stmt = null;
+			doUnregisterAddress(addrs, conn, stmt);
+		} catch (SQLException e) {
+			throw closeFailure(e);
+		}
+	}
 
-        boolean committed = false;
+	private void doUnregisterAddress(Collection<InetSocketAddress> addrs, Connection conn, PreparedStatement stmt) {
+		boolean committed = false;
 
-        try {
-            conn = dataSrc.getConnection();
+		try {
+			for (InetSocketAddress addr : addrs) {
+				stmt.setString(1, addr.getAddress().getHostAddress());
+				stmt.setInt(2, addr.getPort());
 
-            conn.setAutoCommit(false);
+				stmt.addBatch();
+			}
 
-            conn.setTransactionIsolation(TRANSACTION_READ_COMMITTED);
+			stmt.executeBatch();
+			conn.commit();
 
-            stmt = conn.prepareStatement(UNREG_ADDR_QRY);
+			committed = true;
+		} catch (SQLException e) {
+			U.rollbackConnectionQuiet(conn);
 
-            for (InetSocketAddress addr : addrs) {
-                stmt.setString(1, addr.getAddress().getHostAddress());
-                stmt.setInt(2, addr.getPort());
-
-                stmt.addBatch();
-            }
-
-            stmt.executeBatch();
-            conn.commit();
-
-            committed = true;
-        }
-        catch (SQLException e) {
-            U.rollbackConnectionQuiet(conn);
-
-            throw new IgniteSpiException("Failed to unregister addresses: " + addrs, e);
-        }
-        finally {
-            if (!committed)
-                U.rollbackConnectionQuiet(conn);
-
-            U.closeQuiet(stmt);
-            U.closeQuiet(conn);
-        }
-    }
+			throw new IgniteSpiException("Failed to unregister addresses: " + addrs, e);
+		} finally {
+			if (!committed)
+				U.rollbackConnectionQuiet(conn);
+		}
+	}
 
     /**
      * Sets data source.
@@ -296,72 +261,65 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
                 return;
             }
 
-            Connection conn = null;
+			try (Connection conn = getConnection(TRANSACTION_READ_COMMITTED, false)) {
 
-            boolean committed = false;
+				boolean committed = false;
 
-            try {
-                conn = dataSrc.getConnection();
+				try {
+					DatabaseMetaData dbm = conn.getMetaData();
 
-                conn.setAutoCommit(false);
+					// Many JDBC implementations support an 'if not exists' clause
+					// in the create statement which will check and create atomically.
+					// However not all databases support it, for example Oracle,
+					// so we do not use it.
+					try (ResultSet tables = dbm.getTables(null, null, ADDRS_TABLE_NAME, null)) {
+						if (!tables.next()) {
+							// Table does not exist
+							// Create tbl_addrs.
+							try (Statement stmt = conn.createStatement()) {
+								stmt.executeUpdate(CREATE_ADDRS_TABLE_QRY);
 
-                conn.setTransactionIsolation(TRANSACTION_READ_COMMITTED);
+								conn.commit();
+							} catch (SQLException e) {
+								// Due to a race condition, the table may have been
+								// created since we tested above for its existence.
+								// We must ignore the exception if this is the
+								// cause.
+								// However different JDBC driver implementations may
+								// return different codes and messages in the
+								// exception, so the safest way to determine if this
+								// exception is to be ignored is to test again to
+								// see if the table has been created.
+								try (ResultSet tablesAgain = dbm.getTables(null, null, ADDRS_TABLE_NAME, null)) {
+									if (!tablesAgain.next())
+										throw e;
+								}
+							}
+						}
+					}
 
-                DatabaseMetaData dbm = conn.getMetaData();
+					committed = true;
 
-                // Many JDBC implementations support an 'if not exists' clause
-                // in the create statement which will check and create atomically.
-                // However not all databases support it, for example Oracle,
-                // so we do not use it.
-                try (ResultSet tables = dbm.getTables(null, null, ADDRS_TABLE_NAME, null)) {
-                    if (!tables.next()) {
-                        // Table does not exist
-                        // Create tbl_addrs.
-                        try (Statement stmt = conn.createStatement()) {
-                            stmt.executeUpdate(CREATE_ADDRS_TABLE_QRY);
+					if (log.isDebugEnabled())
+						log.debug("DB schema has been initialized.");
+				} catch (SQLException e) {
+					U.rollbackConnectionQuiet(conn);
 
-                            conn.commit();
-                        }
-                        catch (SQLException e) {
-                            // Due to a race condition, the table may have been
-                            // created since we tested above for its existence.
-                            // We must ignore the exception if this is the
-                            // cause.
-                            // However different JDBC driver implementations may
-                            // return different codes and messages in the
-                            // exception, so the safest way to determine if this
-                            // exception is to be ignored is to test again to
-                            // see if the table has been created.
-                            try (ResultSet tablesAgain = dbm.getTables(null, null, ADDRS_TABLE_NAME, null)) {
-                                if (!tablesAgain.next())
-                                    throw e;
-                            }
-                        }
-                    }
-                }
+					throw new IgniteSpiException("Failed to initialize DB schema.", e);
+				} finally {
+					if (!committed)
+						U.rollbackConnectionQuiet(conn);
 
-                committed = true;
+					U.closeQuiet(conn);
 
-                if (log.isDebugEnabled())
-                    log.debug("DB schema has been initialized.");
-            }
-            catch (SQLException e) {
-                U.rollbackConnectionQuiet(conn);
-
-                throw new IgniteSpiException("Failed to initialize DB schema.", e);
-            }
-            finally {
-                if (!committed)
-                    U.rollbackConnectionQuiet(conn);
-
-                U.closeQuiet(conn);
-
-                initLatch.countDown();
-            }
-        }
-        else
-            checkSchema();
-    }
+					initLatch.countDown();
+				}
+			} catch (SQLException e) {
+				throw closeFailure(e);
+			}
+		} else
+			checkSchema();
+	}
 
     /**
      * Checks correctness of existing DB schema.
@@ -376,30 +334,56 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
             throw new IgniteSpiException("Thread has been interrupted.", e);
         }
 
-        Connection conn = null;
+		try (Connection conn = getConnection(TRANSACTION_READ_COMMITTED);
+			 Statement stmt = statement(conn)) {
+			try {
+				// Check if tbl_addrs exists and database initialized properly.
+				stmt.execute(CHK_QRY);
+			} catch (SQLException e) {
+				throw new IgniteSpiException("IP finder has not been properly initialized.", e);
+			}
+		} catch (SQLException e){
+			throw closeFailure(e);
+		}
+	}
 
-        Statement stmt = null;
+	private Connection getConnection(int level) {
+		try {
+			Connection conn = dataSrc.getConnection();
+			conn.setTransactionIsolation(level);
+			return conn;
+		} catch (SQLException e) {
+			throw new IgniteSpiException("Failed to create database connection.", e);
+		}
+	}
 
-        try {
-            conn = dataSrc.getConnection();
+	private Connection getConnection(int level, boolean autoCommit) {
+		Connection conn = getConnection(level);
+		try {
+			conn.setAutoCommit(autoCommit);
+			return conn;
+		} catch (SQLException e) {
+			throw new IgniteSpiException("Failed to set autocommit on database connection.", e);
+		}
+	}
 
-            conn.setTransactionIsolation(TRANSACTION_READ_COMMITTED);
+	private PreparedStatement prepareStatement(Connection conn, String statement){
+		try {
+			return conn.prepareStatement(statement);
+		} catch (SQLException e) {
+			throw new IgniteSpiException("Failed to create prepared statement:" + statement, e);
+		}
+	}
 
-            // Check if tbl_addrs exists and database initialized properly.
-            stmt = conn.createStatement();
+	private Statement statement(Connection conn){
+		try {
+			return conn.createStatement();
+		} catch (SQLException e) {
+			throw new IgniteSpiException("Failed to create statement:", e);
+		}
+	}
 
-            stmt.execute(CHK_QRY);
-        }
-        catch (SQLException e) {
-            throw new IgniteSpiException("IP finder has not been properly initialized.", e);
-        }
-        finally {
-            U.closeQuiet(stmt);
-            U.closeQuiet(conn);
-        }
-    }
-
-    /** {@inheritDoc} */
+	/** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(TcpDiscoveryJdbcIpFinder.class, this);
     }
