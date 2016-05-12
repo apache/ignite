@@ -319,7 +319,7 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
 
             final Collection<UUID> nids;
 
-            if (nidsArg == null || nidsArg.equals("null")) {
+            if (nidsArg == null || nidsArg.equals("null") || nidsArg.equals("")) {
                 Collection<ClusterNode> nodes = ignite.cluster().nodes();
 
                 nids = new ArrayList<>(nodes.size());
