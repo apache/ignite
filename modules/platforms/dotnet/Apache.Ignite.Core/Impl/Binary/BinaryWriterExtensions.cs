@@ -27,7 +27,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Writes the nullable boolean.
         /// </summary>
-        public static void WriteBoolean(this BinaryWriter writer, bool? value)
+        public static void WriteBooleanNullable(this BinaryWriter writer, bool? value)
         {
             if (value != null)
             {
@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Writes the nullable boolean.
         /// </summary>
-        public static void WriteInt(this BinaryWriter writer, int? value)
+        public static void WriteIntNullable(this BinaryWriter writer, int? value)
         {
             if (value != null)
             {
@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Writes the timespan.
         /// </summary>
-        public static void WriteTimeSpan(this BinaryWriter writer, TimeSpan value)
+        public static void WriteTimeSpanAsLong(this BinaryWriter writer, TimeSpan value)
         {
             writer.WriteLong((long) value.TotalMilliseconds);
         }
@@ -63,12 +63,12 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Writes the nullable boolean.
         /// </summary>
-        public static void WriteTimeSpan(this BinaryWriter writer, TimeSpan? value)
+        public static void WriteTimeSpanAsLongNullable(this BinaryWriter writer, TimeSpan? value)
         {
             if (value != null)
             {
                 writer.WriteBoolean(true);
-                writer.WriteTimeSpan(value.Value);
+                writer.WriteTimeSpanAsLong(value.Value);
             }
             else
                 writer.WriteBoolean(false);

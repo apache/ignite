@@ -178,20 +178,20 @@
             Debug.Assert(writer != null);
 
             // Simple properties
-            writer.WriteBoolean(_clientMode);
+            writer.WriteBooleanNullable(_clientMode);
             writer.WriteIntArray(IncludedEventTypes == null ? null : IncludedEventTypes.ToArray());
 
-            writer.WriteTimeSpan(_metricsExpireTime);
-            writer.WriteInt(_metricsHistorySize);
-            writer.WriteTimeSpan(_metricsLogFrequency);
-            writer.WriteTimeSpan(_metricsUpdateFrequency);
-            writer.WriteInt(_networkSendRetryCount);
-            writer.WriteTimeSpan(_networkSendRetryDelay);
-            writer.WriteTimeSpan(_networkTimeout);
+            writer.WriteTimeSpanAsLongNullable(_metricsExpireTime);
+            writer.WriteIntNullable(_metricsHistorySize);
+            writer.WriteTimeSpanAsLongNullable(_metricsLogFrequency);
+            writer.WriteTimeSpanAsLongNullable(_metricsUpdateFrequency);
+            writer.WriteIntNullable(_networkSendRetryCount);
+            writer.WriteTimeSpanAsLongNullable(_networkSendRetryDelay);
+            writer.WriteTimeSpanAsLongNullable(_networkTimeout);
             writer.WriteString(WorkDirectory);
             writer.WriteString(Localhost);
-            writer.WriteBoolean(_isDaemon);
-            writer.WriteBoolean(_isLateAffinityAssignment);
+            writer.WriteBooleanNullable(_isDaemon);
+            writer.WriteBooleanNullable(_isLateAffinityAssignment);
 
             // Cache config
             var caches = CacheConfiguration;
