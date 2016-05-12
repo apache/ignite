@@ -15,8 +15,42 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.internal.pagemem.wal.record;
+
 /**
- * <!-- Package description. -->
- * Contains internal tests or test related classes and interfaces.
+ * Log entry abstract class.
  */
-package org.apache.ignite.spi.swapspace;
+public abstract class WALRecord {
+    /**
+     * Record type.
+     */
+    public enum RecordType {
+        /** */
+        TX_RECORD,
+
+        /** */
+        PAGE_RECORD,
+
+        /** */
+        DATA_RECORD,
+
+        /** */
+        STORE_OPERATION_RECORD,
+
+        /** */
+        CHECKPOINT_RECORD;
+
+        /** */
+        private static final RecordType[] VALS = RecordType.values();
+
+        /** */
+        public static RecordType fromOrdinal(int ord) {
+            return ord < 0 || ord >= VALS.length ? null : VALS[ord];
+        }
+    }
+
+    /**
+     * @return Entry type.
+     */
+    public abstract RecordType type();
+}

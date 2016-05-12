@@ -17,11 +17,18 @@
 
 package org.apache.ignite.internal.processors.platform.utils;
 
+import java.lang.management.ManagementFactory;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
@@ -37,7 +44,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
-import org.apache.ignite.internal.binary.*;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactoryNative;
@@ -49,15 +57,6 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMultic
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
-
-import java.lang.management.ManagementFactory;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Configuration utils.
@@ -119,7 +118,8 @@ public class PlatformConfigurationUtils {
         ccfg.setCacheMode(CacheMode.fromOrdinal(in.readInt()));
         ccfg.setCopyOnRead(in.readBoolean());
         ccfg.setEagerTtl(in.readBoolean());
-        ccfg.setSwapEnabled(in.readBoolean());
+        // TODO GG-10884.
+        //ccfg.setSwapEnabled(in.readBoolean());
         ccfg.setEvictSynchronized(in.readBoolean());
         ccfg.setEvictSynchronizedConcurrencyLevel(in.readInt());
         ccfg.setEvictSynchronizedKeyBufferSize(in.readInt());
@@ -131,7 +131,8 @@ public class PlatformConfigurationUtils {
         ccfg.setLongQueryWarningTimeout(in.readLong());
         ccfg.setMaxConcurrentAsyncOperations(in.readInt());
         ccfg.setEvictMaxOverflowRatio(in.readFloat());
-        ccfg.setMemoryMode(CacheMemoryMode.values()[in.readInt()]);
+        // TODO GG-10884.
+        //ccfg.setMemoryMode(CacheMemoryMode.values()[in.readInt()]);
         ccfg.setName(in.readString());
         ccfg.setOffHeapMaxMemory(in.readLong());
         ccfg.setReadFromBackup(in.readBoolean());
@@ -509,7 +510,8 @@ public class PlatformConfigurationUtils {
             CacheConfiguration.DFLT_CACHE_MODE.ordinal() : ccfg.getCacheMode().ordinal());
         writer.writeBoolean(ccfg.isCopyOnRead());
         writer.writeBoolean(ccfg.isEagerTtl());
-        writer.writeBoolean(ccfg.isSwapEnabled());
+        // TODO GG-10884.
+//        writer.writeBoolean(ccfg.isSwapEnabled());
         writer.writeBoolean(ccfg.isEvictSynchronized());
         writer.writeInt(ccfg.getEvictSynchronizedConcurrencyLevel());
         writer.writeInt(ccfg.getEvictSynchronizedKeyBufferSize());
@@ -521,8 +523,9 @@ public class PlatformConfigurationUtils {
         writer.writeLong(ccfg.getLongQueryWarningTimeout());
         writer.writeInt(ccfg.getMaxConcurrentAsyncOperations());
         writer.writeFloat(ccfg.getEvictMaxOverflowRatio());
-        writer.writeInt(ccfg.getMemoryMode() == null ?
-            CacheConfiguration.DFLT_MEMORY_MODE.ordinal() : ccfg.getMemoryMode().ordinal());
+        // TODO GG-10884.
+//        writer.writeInt(ccfg.getMemoryMode() == null ?
+//            CacheConfiguration.DFLT_MEMORY_MODE.ordinal() : ccfg.getMemoryMode().ordinal());
         writer.writeString(ccfg.getName());
         writer.writeLong(ccfg.getOffHeapMaxMemory());
         writer.writeBoolean(ccfg.isReadFromBackup());

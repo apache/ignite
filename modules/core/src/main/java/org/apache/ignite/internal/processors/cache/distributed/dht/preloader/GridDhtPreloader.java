@@ -188,7 +188,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         supplier = new GridDhtPartitionSupplier(cctx);
         demander = new GridDhtPartitionDemander(cctx, demandLock);
 
-        supplier.start();
         demander.start();
 
         cctx.events().addListener(discoLsnr, EVT_NODE_JOINED, EVT_NODE_LEFT, EVT_NODE_FAILED);
@@ -205,7 +204,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings( {"LockAcquiredButNotSafelyReleased"})
+    @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
     @Override public void onKernalStop() {
         if (log.isDebugEnabled())
             log.debug("DHT rebalancer onKernalStop callback.");
@@ -276,6 +275,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                 assert part != null;
                 assert part.id() == p;
+
+                top.ownIfUpToDate(part);
 
                 if (part.state() != MOVING) {
                     if (log.isDebugEnabled())
@@ -484,31 +485,27 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                 GridCacheEntryEx entry = null;
 
-                if (cctx.isOffHeapEnabled()) {
-                    while (true) {
-                        try {
-                            entry = cctx.dht().entryEx(k);
+                while (true) {
+                    try {
+                        entry = cctx.dht().entryEx(k);
 
-                            entry.unswap();
+                        entry.unswap();
 
-                            break;
-                        }
-                        catch (GridCacheEntryRemovedException ignore) {
-                            if (log.isDebugEnabled())
-                                log.debug("Got removed entry: " + k);
-                        }
-                        catch (GridDhtInvalidPartitionException ignore) {
-                            if (log.isDebugEnabled())
-                                log.debug("Local node is no longer an owner: " + p);
+                        break;
+                    }
+                    catch (GridCacheEntryRemovedException ignore) {
+                        if (log.isDebugEnabled())
+                            log.debug("Got removed entry: " + k);
+                    }
+                    catch (GridDhtInvalidPartitionException ignore) {
+                        if (log.isDebugEnabled())
+                            log.debug("Local node is no longer an owner: " + p);
 
-                            res.addMissed(k);
+                        res.addMissed(k);
 
-                            break;
-                        }
+                        break;
                     }
                 }
-                else
-                    entry = cctx.dht().peekEx(k);
 
                 // If entry is null, then local partition may have left
                 // after the message was received. In that case, we are
@@ -519,8 +516,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                     if (info != null && !info.isNew())
                         res.addInfo(info);
 
-                    if (cctx.isOffHeapEnabled())
-                        cctx.evicts().touch(entry, msg.topologyVersion());
+                    cctx.evicts().touch(entry, msg.topologyVersion());
                 }
                 else if (log.isDebugEnabled())
                     log.debug("Key is not present in DHT cache: " + k);
@@ -648,7 +644,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
      * @param keys Keys to request.
      * @return Future for request.
      */
-    @SuppressWarnings( {"unchecked", "RedundantCast"})
+    @SuppressWarnings({"unchecked", "RedundantCast"})
     @Override public GridDhtFuture<Object> request(Collection<KeyCacheObject> keys, AffinityTopologyVersion topVer) {
         if (!needForceKeys())
             return null;
@@ -766,7 +762,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** {@inheritDoc} */
     @Override public void dumpDebugInfo() {
         if (!forceKeyFuts.isEmpty()) {
-            U.warn(log, "Pending force key futures [cache=" + cctx.name() +"]:");
+            U.warn(log, "Pending force key futures [cache=" + cctx.name() + "]:");
 
             for (GridDhtForceKeysFuture fut : forceKeyFuts.values())
                 U.warn(log, ">>> " + fut);
@@ -796,7 +792,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
             if (log.isDebugEnabled())
                 log.debug("Received message from node [node=" + nodeId + ", msg=" + msg + ']');
 
-            onMessage(node , msg);
+            onMessage(node, msg);
         }
 
         /**

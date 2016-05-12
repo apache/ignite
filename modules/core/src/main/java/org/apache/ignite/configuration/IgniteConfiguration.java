@@ -71,8 +71,6 @@ import org.apache.ignite.spi.failover.always.AlwaysFailoverSpi;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.apache.ignite.spi.loadbalancing.LoadBalancingSpi;
 import org.apache.ignite.spi.loadbalancing.roundrobin.RoundRobinLoadBalancingSpi;
-import org.apache.ignite.spi.swapspace.SwapSpaceSpi;
-import org.apache.ignite.spi.swapspace.file.FileSwapSpaceSpi;
 import org.apache.ignite.ssl.SslContextFactory;
 
 import static org.apache.ignite.plugin.segmentation.SegmentationPolicy.STOP;
@@ -350,9 +348,6 @@ public class IgniteConfiguration {
     /** Load balancing SPI. */
     private LoadBalancingSpi[] loadBalancingSpi;
 
-    /** Checkpoint SPI. */
-    private SwapSpaceSpi swapSpaceSpi;
-
     /** Indexing SPI. */
     private IndexingSpi indexingSpi;
 
@@ -482,7 +477,6 @@ public class IgniteConfiguration {
         failSpi = cfg.getFailoverSpi();
         loadBalancingSpi = cfg.getLoadBalancingSpi();
         indexingSpi = cfg.getIndexingSpi();
-        swapSpaceSpi = cfg.getSwapSpaceSpi();
 
         /*
          * Order alphabetically for maintenance purposes.
@@ -1887,33 +1881,6 @@ public class IgniteConfiguration {
         this.loadBalancingSpi = loadBalancingSpi;
 
         return this;
-    }
-
-    /**
-     * Sets fully configured instances of {@link SwapSpaceSpi}.
-     *
-     * @param swapSpaceSpi Fully configured instances of {@link SwapSpaceSpi} or
-     *      <tt>null</tt> if no SPI provided.
-     * @see IgniteConfiguration#getSwapSpaceSpi()
-     * @return {@code this} for chaining.
-     */
-    public IgniteConfiguration setSwapSpaceSpi(SwapSpaceSpi swapSpaceSpi) {
-        this.swapSpaceSpi = swapSpaceSpi;
-
-        return this;
-    }
-
-    /**
-     * Should return fully configured swap space SPI implementation. If not provided,
-     * {@link FileSwapSpaceSpi} will be used.
-     * <p>
-     * Note that user can provide one or multiple instances of this SPI (and select later which one
-     * is used in a particular context).
-     *
-     * @return Grid swap space SPI implementation or <tt>null</tt> to use default implementation.
-     */
-    public SwapSpaceSpi getSwapSpaceSpi() {
-        return swapSpaceSpi;
     }
 
     /**

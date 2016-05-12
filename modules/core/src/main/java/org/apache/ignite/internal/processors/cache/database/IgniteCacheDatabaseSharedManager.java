@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.database;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DatabaseConfiguration;
+import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
@@ -31,6 +32,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -39,16 +41,13 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdapter {
     /** */
-    private PageMemory pageMem;
+    protected PageMemory pageMem;
 
     /** */
-    private MetadataStorage meta;
-
-    /** */
-    private ReadWriteLock txLock = new ReentrantReadWriteLock();
+    protected MetadataStorage meta;
 
     /** {@inheritDoc} */
-    @Override public void onKernalStart0(boolean reconnect) throws IgniteCheckedException {
+    @Override protected void start0() throws IgniteCheckedException {
         DatabaseConfiguration dbCfg = cctx.kernalContext().config().getDatabaseConfiguration();
 
         if (dbCfg != null && !cctx.kernalContext().clientNode()) {
@@ -81,50 +80,38 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Callback invoked before transaction is committed.
-     *
-     * @param xidVer Transaction version.
+     * No-op for non-persistent storage.
      */
-    @SuppressWarnings("LockAcquiredButNotSafelyReleased")
-    public void txCommitBegin(GridCacheVersion xidVer) {
-        txLock.readLock().lock();
+    public void checkpointReadLock() {
+        // No-op.
     }
 
     /**
-     * Callback invoked after transaction has been committed.
-     *
-     * @param xidVer Transaction version.
+     * No-op for non-persistent storage.
      */
-    public void txCommitEnd(GridCacheVersion xidVer) {
-        txLock.readLock().unlock();
+    public void checkpointReadUnlock() {
+        // No-op.
+    }
+
+    /**
+     * @param discoEvt Before exchange for the given discovery event.
+     */
+    public void beforeExchange(DiscoveryEvent discoEvt) throws IgniteCheckedException {
+        // No-op.
     }
 
     /**
      * Marks checkpoint begin.
      */
     public Collection<FullPageId> snapshotCheckpoint() {
-        txLock.writeLock().lock();
-
-        try {
-            return pageMem.beginCheckpoint();
-        }
-        finally {
-            txLock.writeLock().unlock();
-        }
-    }
-
-    /**
-     * Marks checkpoint end.
-     */
-    public void checkpointEnd() {
-        pageMem.finishCheckpoint();
+        return Collections.emptyList();
     }
 
     /**
      * @param dbCfg Database configuration.
      * @return Page memory instance.
      */
-    private PageMemory createPageMemory(DatabaseConfiguration dbCfg) {
+    protected PageMemory createPageMemory(DatabaseConfiguration dbCfg) {
         String path = dbCfg.getFileCacheAllocationPath();
 
         long fragmentSize = dbCfg.getFragmentSize();
@@ -132,7 +119,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
         if (fragmentSize == 0)
             fragmentSize = dbCfg.getPageCacheSize();
 
-        String consId = String.valueOf(cctx.discovery().localNode().consistentId());
+        String consId = String.valueOf(cctx.discovery().consistentId());
 
         consId = consId.replaceAll("[:,\\.]", "_");
 
@@ -157,7 +144,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
                 dbCfg.getPageCacheSize(),
                 fragmentSize);
 
-        return new PageMemoryImpl(log, memProvider, cctx.pageStore(), dbCfg.getPageSize(), dbCfg.getConcurrencyLevel());
+        return new PageMemoryImpl(log, memProvider, cctx, dbCfg.getPageSize(), dbCfg.getConcurrencyLevel());
     }
 
     /**

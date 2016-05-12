@@ -15,33 +15,11 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.swapspace;
-
-import org.apache.ignite.internal.util.typedef.internal.S;
+package org.apache.ignite.internal.pagemem.wal;
 
 /**
- * Context for swap operations.
+ *
  */
-public class SwapContext {
-    /** */
-    private ClassLoader clsLdr;
-
-    /**
-     * @return Class loader.
-     */
-    public ClassLoader classLoader() {
-        return clsLdr;
-    }
-
-    /**
-     * @param clsLdr Class loader.
-     */
-    public void classLoader(ClassLoader clsLdr) {
-        this.clsLdr = clsLdr;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(SwapContext.class, this);
-    }
+public interface WALPointer {
+    // Marker interface for WAL implementation.
 }

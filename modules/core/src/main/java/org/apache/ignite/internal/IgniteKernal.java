@@ -61,10 +61,10 @@ import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.IgniteQueue;
-import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteServices;
@@ -96,7 +96,6 @@ import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.failover.GridFailoverManager;
 import org.apache.ignite.internal.managers.indexing.GridIndexingManager;
 import org.apache.ignite.internal.managers.loadbalancer.GridLoadBalancerManager;
-import org.apache.ignite.internal.managers.swapspace.GridSwapSpaceManager;
 import org.apache.ignite.internal.processors.GridProcessor;
 import org.apache.ignite.internal.processors.affinity.GridAffinityProcessor;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
@@ -120,7 +119,6 @@ import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.OsDiscoveryNodeValidationProcessor;
 import org.apache.ignite.internal.processors.odbc.OdbcProcessor;
-import org.apache.ignite.internal.processors.offheap.GridOffHeapProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformNoopProcessor;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.plugin.IgnitePluginProcessor;
@@ -194,7 +192,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_BUILD_VER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CLIENT_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DAEMON;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_LATE_AFFINITY_ASSIGNMENT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_DEPLOYMENT_MODE;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_GRID_NAME;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IPS;
@@ -203,6 +200,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JMX_PORT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JVM_ARGS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_JVM_PID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_LANG_RUNTIME;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_LATE_AFFINITY_ASSIGNMENT;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
@@ -430,13 +428,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         assert cfg != null;
 
         return Arrays.toString(cfg.getCheckpointSpi());
-    }
-
-    /** {@inheritDoc} */
-    @Override public String getSwapSpaceSpiFormatted() {
-        assert cfg != null;
-
-        return cfg.getSwapSpaceSpi().toString();
     }
 
     /** {@inheritDoc} */
@@ -841,7 +832,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startManager(new GridLoadBalancerManager(ctx));
             startManager(new GridFailoverManager(ctx));
             startManager(new GridCollisionManager(ctx));
-            startManager(new GridSwapSpaceManager(ctx));
             startManager(new GridIndexingManager(ctx));
 
             ackSecurity();
@@ -1148,7 +1138,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         A.notNull(cfg.getUserAttributes(), "cfg.getUserAttributes()");
 
         // All SPIs should be non-null.
-        A.notNull(cfg.getSwapSpaceSpi(), "cfg.getSwapSpaceSpi()");
         A.notNull(cfg.getCheckpointSpi(), "cfg.getCheckpointSpi()");
         A.notNull(cfg.getCommunicationSpi(), "cfg.getCommunicationSpi()");
         A.notNull(cfg.getDeploymentSpi(), "cfg.getDeploymentSpi()");
@@ -1364,7 +1353,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         // Stick in SPI versions and classes attributes.
         addSpiAttributes(cfg.getCollisionSpi());
-        addSpiAttributes(cfg.getSwapSpaceSpi());
         addSpiAttributes(cfg.getDiscoverySpi());
         addSpiAttributes(cfg.getFailoverSpi());
         addSpiAttributes(cfg.getCommunicationSpi());
@@ -2174,7 +2162,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             log.debug("Grid event storage SPI  : " + cfg.getEventStorageSpi());
             log.debug("Grid failover SPI       : " + Arrays.toString(cfg.getFailoverSpi()));
             log.debug("Grid load balancing SPI : " + Arrays.toString(cfg.getLoadBalancingSpi()));
-            log.debug("Grid swap space SPI     : " + cfg.getSwapSpaceSpi());
         }
     }
 

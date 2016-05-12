@@ -91,7 +91,6 @@ public abstract class GridCacheBasicStoreAbstractTest extends GridCommonAbstract
 
         cc.setCacheMode(cacheMode());
         cc.setWriteSynchronizationMode(FULL_SYNC);
-        cc.setSwapEnabled(false);
         cc.setAtomicityMode(atomicityMode());
         cc.setRebalanceMode(SYNC);
 

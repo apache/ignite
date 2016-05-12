@@ -112,11 +112,11 @@ public abstract class BPlusTree<L, T extends L> {
                     if (io.isLeaf())
                         return null;
 
-                    List<Long> res;
-
                     int cnt = io.getCount(buf);
 
                     assert cnt >= 0: cnt;
+
+                    List<Long> res;
 
                     if (cnt > 0) {
                         res = new ArrayList<>(cnt + 1);
@@ -434,8 +434,7 @@ public abstract class BPlusTree<L, T extends L> {
 
     /** */
     private final PageHandler<Remove> lockTailForward = new GetPageHandler<Remove>() {
-        @Override protected int run0(long pageId, Page page, ByteBuffer buf, BPlusIO<L> io, Remove r, int lvl)
-            throws IgniteCheckedException {
+        @Override protected int run0(long pageId, Page page, ByteBuffer buf, BPlusIO<L> io, Remove r, int lvl) {
             r.addTail(pageId, page, buf, io, lvl, Tail.FORWARD, -1);
 
             return Remove.FOUND;
@@ -491,8 +490,7 @@ public abstract class BPlusTree<L, T extends L> {
 
     /** */
     private final PageHandler<Long> updateFirst = new PageHandler<Long>() {
-        @Override public int run(long metaId, Page meta, ByteBuffer buf, Long pageId, int lvl)
-            throws IgniteCheckedException {
+        @Override public int run(long metaId, Page meta, ByteBuffer buf, Long pageId, int lvl) {
             assert pageId != null;
 
             BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(buf);
@@ -513,8 +511,7 @@ public abstract class BPlusTree<L, T extends L> {
 
     /** */
     private final PageHandler<Long> newRoot = new PageHandler<Long>() {
-        @Override public int run(long metaId, Page meta, ByteBuffer buf, Long rootPageId, int lvl)
-            throws IgniteCheckedException {
+        @Override public int run(long metaId, Page meta, ByteBuffer buf, Long rootPageId, int lvl) {
             assert rootPageId != null;
 
             BPlusMetaIO io = BPlusMetaIO.VERSIONS.forPage(buf);
@@ -535,11 +532,9 @@ public abstract class BPlusTree<L, T extends L> {
      * @param reuseList Reuse list.
      * @param innerIos Inner IO versions.
      * @param leafIos Leaf IO versions.
-     * @throws IgniteCheckedException If failed.
      */
-    public BPlusTree(int cacheId, PageMemory pageMem, FullPageId metaPageId, ReuseList reuseList,
-        IOVersions<? extends BPlusInnerIO<L>> innerIos, IOVersions<? extends BPlusLeafIO<L>> leafIos)
-        throws IgniteCheckedException {
+    protected BPlusTree(int cacheId, PageMemory pageMem, FullPageId metaPageId, ReuseList reuseList,
+        IOVersions<? extends BPlusInnerIO<L>> innerIos, IOVersions<? extends BPlusLeafIO<L>> leafIos) {
         // TODO make configurable: 0 <= minFill <= maxFill <= 1
         minFill = 0f; // Testing worst case when merge happens only on empty page.
         maxFill = 0f; // Avoiding random effects on testing.
@@ -1075,7 +1070,6 @@ public abstract class BPlusTree<L, T extends L> {
      * @throws IgniteCheckedException If failed.
      */
     public final long size() throws IgniteCheckedException {
-        long cnt = 0;
         long pageId;
 
         try (Page meta = page(metaPageId)) {
@@ -1083,6 +1077,8 @@ public abstract class BPlusTree<L, T extends L> {
         }
 
         BPlusIO<L> io = null;
+
+        long cnt = 0;
 
         while (pageId != 0) {
             try (Page page = page(pageId)) {
@@ -1320,28 +1316,28 @@ public abstract class BPlusTree<L, T extends L> {
         static final int RETRY_ROOT = 9;
 
         /** */
-        long rmvId;
+        protected long rmvId;
 
         /** Starting point root level. May be outdated. Must be modified only in {@link Get#init()}. */
-        int rootLvl;
+        protected int rootLvl;
 
         /** Starting point root ID. May be outdated. Must be modified only in {@link Get#init()}. */
-        long rootId;
+        protected long rootId;
 
         /** Meta page. Initialized by {@link Get#init()}, released by {@link Get#releaseMeta()}. */
-        Page meta;
+        protected Page meta;
 
         /** */
-        L row;
+        protected L row;
 
         /** In/Out parameter: Page ID. */
-        long pageId;
+        protected long pageId;
 
         /** In/Out parameter: expected forward page ID. */
-        long fwdId;
+        protected long fwdId;
 
         /** In/Out parameter: in case of right turn this field will contain backward page ID for the child. */
-        long backId;
+        protected long backId;
 
         /**
          * @param row Row.
@@ -1467,7 +1463,7 @@ public abstract class BPlusTree<L, T extends L> {
      */
     private final class GetCursor extends Get {
         /** */
-        ForwardCursor cursor;
+        private ForwardCursor cursor;
 
         /**
          * @param lower Lower bound.
@@ -1509,28 +1505,28 @@ public abstract class BPlusTree<L, T extends L> {
      */
     private final class Put extends Get {
         /** Right child page ID for split row. */
-        long rightId;
+        private long rightId;
 
         /** Replaced row if any. */
-        T oldRow;
+        private T oldRow;
 
         /**
          * This page is kept locked after split until insert to the upper level will not be finished.
          * It is needed because split row will be "in flight" and if we'll release tail, remove on
          * split row may fail.
          */
-        Page tail;
+        private Page tail;
 
         /**
          * Bottom level for insertion (insert can't go deeper). Will be incremented on split on each level.
          */
-        short btmLvl;
+        private short btmLvl;
 
         /** */
-        byte needReplaceInner = FALSE;
+        private byte needReplaceInner = FALSE;
 
         /** */
-        ReuseBag bag;
+        private ReuseBag bag;
 
         /**
          * @param row Row.
@@ -1543,7 +1539,7 @@ public abstract class BPlusTree<L, T extends L> {
         }
 
         /** {@inheritDoc} */
-        @Override boolean found(BPlusIO<L> io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
+        @Override boolean found(BPlusIO<L> io, ByteBuffer buf, int idx, int lvl) {
             if (io.isLeaf())
                 return true;
 
@@ -1555,7 +1551,7 @@ public abstract class BPlusTree<L, T extends L> {
         }
 
         /** {@inheritDoc} */
-        @Override boolean notFound(BPlusIO<L> io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
+        @Override boolean notFound(BPlusIO<L> io, ByteBuffer buf, int idx, int lvl) {
             assert btmLvl >= 0 : btmLvl;
             assert lvl >= btmLvl : lvl;
 
@@ -1711,31 +1707,31 @@ public abstract class BPlusTree<L, T extends L> {
      */
     private final class Remove extends Get implements ReuseBag {
         /** */
-        boolean ceil;
+        private boolean ceil;
 
         /** We may need to lock part of the tree branch from the bottom to up for multiple levels. */
-        Tail<L> tail;
+        private Tail<L> tail;
 
         /** */
-        byte needReplaceInner = FALSE;
+        private byte needReplaceInner = FALSE;
 
         /** */
-        byte needMergeEmptyBranch = FALSE;
+        private byte needMergeEmptyBranch = FALSE;
 
         /** Removed row. */
-        T removed;
+        private T removed;
 
         /** Current page. */
-        Page page;
+        private Page page;
 
         /** */
-        short innerIdx = Short.MIN_VALUE;
+        private short innerIdx = Short.MIN_VALUE;
 
         /** */
-        Object freePages;
+        private Object freePages;
 
         /** */
-        ReuseBag bag;
+        private ReuseBag bag;
 
         /**
          * @param row Row.
@@ -1801,7 +1797,7 @@ public abstract class BPlusTree<L, T extends L> {
         }
 
         /** {@inheritDoc} */
-        @Override boolean found(BPlusIO<L> io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
+        @Override boolean found(BPlusIO<L> io, ByteBuffer buf, int idx, int lvl) {
             if (io.isLeaf())
                 return true;
 
@@ -1813,7 +1809,7 @@ public abstract class BPlusTree<L, T extends L> {
         }
 
         /** {@inheritDoc} */
-        @Override boolean notFound(BPlusIO<L> io, ByteBuffer buf, int idx, int lvl) throws IgniteCheckedException {
+        @Override boolean notFound(BPlusIO<L> io, ByteBuffer buf, int idx, int lvl) {
             if (io.isLeaf()) {
                 assert tail == null;
 
@@ -1946,8 +1942,8 @@ public abstract class BPlusTree<L, T extends L> {
          */
         private int removeFromLeaf(long leafId, Page leaf, long backId, long fwdId) throws IgniteCheckedException {
             // Init parameters.
-            this.pageId = leafId;
-            this.page = leaf;
+            pageId = leafId;
+            page = leaf;
             this.backId = backId;
             this.fwdId = fwdId;
 
@@ -2381,31 +2377,31 @@ public abstract class BPlusTree<L, T extends L> {
         static final byte FORWARD = 2;
 
         /** */
-        final long pageId;
+        private final long pageId;
 
         /** */
-        final Page page;
+        private final Page page;
 
         /** */
-        final ByteBuffer buf;
+        private final ByteBuffer buf;
 
         /** */
-        final BPlusIO<L> io;
+        private final BPlusIO<L> io;
 
         /** */
-        byte type;
+        private byte type;
 
         /** */
-        final byte lvl;
+        private final byte lvl;
 
         /** */
-        final short idx;
+        private final short idx;
 
         /** Only {@link #EXACT} tail can have either {@link #BACK} or {@link #FORWARD} sibling.*/
-        Tail<L> sibling;
+        private Tail<L> sibling;
 
         /** Only {@link #EXACT} tail can point to {@link #EXACT} tail of lower level. */
-        Tail<L> down;
+        private Tail<L> down;
 
         /**
          * @param pageId Page ID.

@@ -35,6 +35,9 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.eviction.EvictableEntry;
+import org.apache.ignite.internal.pagemem.wal.StorageException;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
@@ -91,10 +94,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     private static final byte IS_UNSWAPPED_MASK = 0x02;
 
     /** */
-    private static final byte IS_OFFHEAP_PTR_MASK = 0x04;
-
-    /** */
-    private static final byte IS_SWAPPING_REQUIRED = 0x08;
+    private static final byte IS_SWAPPING_REQUIRED = 0x04;
 
     /** */
     public static final GridCacheAtomicVersionComparator ATOMIC_VER_COMPARATOR = new GridCacheAtomicVersionComparator();
@@ -389,67 +389,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 flags |= IS_UNSWAPPED_MASK;
 
                 if (read != null) {
-                    CacheObject idxVal = read.get1();
+                    CacheObject val = read.get1();
 
-                    // Set unswapped value.
-                    update(idxVal, 0, 0, read.get2(), false);
+                    update(val, 0, 0, read.get2(), false);
 
-                    return idxVal;
+                    return val;
                 }
-
-                // TODO GG-10884.
-//                if (false) {
-//                    GridCacheSwapEntry e;
-//
-//                    if (cctx.offheapTiered()) {
-//                        e = cctx.swap().readOffheapPointer(this);
-//
-//                        if (e != null) {
-//                            if (e.offheapPointer() > 0) {
-//                                offHeapPointer(e.offheapPointer());
-//
-//                                flags |= IS_OFFHEAP_PTR_MASK;
-//
-//                                if (needVal) {
-//                                    CacheObject val = cctx.fromOffheap(offHeapPointer(), false);
-//
-//                                    e.value(val);
-//                                }
-//                            }
-//                            else // Read from swap.
-//                                offHeapPointer(0);
-//                        }
-//                    }
-//                    else
-//                        e = detached() ? cctx.swap().read(this, true, true, true, false) : cctx.swap().readAndRemove(this);
-//
-//                    if (log.isDebugEnabled())
-//                        log.debug("Read swap entry [swapEntry=" + e + ", cacheEntry=" + this + ']');
-//
-//                    flags |= IS_UNSWAPPED_MASK;
-//
-//                    // If there is a value.
-//                    if (e != null) {
-//                        long delta = e.expireTime() == 0 ? 0 : e.expireTime() - U.currentTimeMillis();
-//
-//                        if (delta >= 0) {
-//                            CacheObject val = e.value();
-//
-//                            val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
-//
-//                            // Set unswapped value.
-//                            update(val, e.expireTime(), e.ttl(), e.version());
-//
-//                            // Must update valPtr again since update() will reset it.
-//                            if (cctx.offheapTiered() && e.offheapPointer() > 0)
-//                                offHeapPointer(e.offheapPointer());
-//
-//                            return val;
-//                        }
-//                        else
-//                            clearIndex(e.value(), e.version());
-//                    }
-//                }
             }
         }
 
@@ -1033,6 +978,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             cctx.dataStructures().onEntryUpdated(key, false, keepBinary);
         }
 
+        onUpdateFinished(updateCntr0);
+
         if (log.isDebugEnabled())
             log.debug("Updated cache entry [val=" + val + ", old=" + old + ", entry=" + this + ']');
 
@@ -1073,7 +1020,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         String taskName,
         @Nullable GridCacheVersion dhtVer,
         @Nullable Long updateCntr
-        ) throws IgniteCheckedException, GridCacheEntryRemovedException {
+    ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert cctx.transactional();
 
         CacheObject old;
@@ -1245,11 +1192,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             onMarkedObsolete();
         }
 
-        if (intercept) {
-            entry0.updateCounter(updateCntr0);
+        onUpdateFinished(updateCntr0);
 
+        if (intercept)
             cctx.config().getInterceptor().onAfterRemove(entry0);
-        }
 
         if (valid) {
             CacheObject ret;
@@ -1577,6 +1523,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     updateCntr,
                     null,
                     AffinityTopologyVersion.NONE);
+
+                onUpdateFinished(updateCntr);
             }
 
             cctx.dataStructures().onEntryUpdated(key, op == GridCacheOperation.DELETE, keepBinary);
@@ -1844,6 +1792,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                             if (updateCntr != null)
                                 updateCntr0 = updateCntr;
+
+                            onUpdateFinished(updateCntr0);
 
                             cctx.continuousQueries().onEntryUpdated(
                                 key,
@@ -2124,14 +2074,16 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 updated = cctx.kernalContext().cacheObjects().prepareForCache(updated, cctx);
 
-                storeValue(updated, newExpireTime, newVer);
-
-                update(updated, newExpireTime, newTtl, newVer, true);
-
                 updateCntr0 = nextPartCounter(topVer);
 
                 if (updateCntr != null)
                     updateCntr0 = updateCntr;
+
+                logUpdate(op, updated, newVer, updateCntr0);
+
+                storeValue(updated, newExpireTime, newVer);
+
+                update(updated, newExpireTime, newTtl, newVer, true);
 
                 drReplicate(drType, updated, newVer, topVer);
 
@@ -2184,6 +2136,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (oldVal == null)
                     oldVal = saveValueForIndexUnlocked();
 
+                updateCntr0 = nextPartCounter(topVer);
+
+                if (updateCntr != null)
+                    updateCntr0 = updateCntr;
+
+                logUpdate(op, null, newVer, updateCntr0);
+
                 removeValue(oldVal, ver);
 
                 if (hadVal) {
@@ -2215,11 +2174,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 clearReaders();
 
                 recordNodeId(affNodeId, topVer);
-
-                updateCntr0 = nextPartCounter(topVer);
-
-                if (updateCntr != null)
-                    updateCntr0 = updateCntr;
 
                 drReplicate(drType, null, newVer, topVer);
 
@@ -2286,6 +2240,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     oldVal = cctx.toCacheObject(cctx.unwrapTemporary(interceptRes.get2()));
             }
         }
+
+        onUpdateFinished(updateCntr0);
 
         if (log.isDebugEnabled())
             log.debug("Updated cache entry [val=" + val + ", old=" + oldVal + ", entry=" + this + ']');
@@ -2759,8 +2715,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         ttlAndExpireTimeExtras(ttl, expireTime);
 
-        if (cctx.isOffHeapEnabled())
-            flags |= IS_SWAPPING_REQUIRED;
+        flags |= IS_SWAPPING_REQUIRED;
 
         if (expireTime != 0 && expireTime != oldExpireTime && cctx.config().isEagerTtl())
             cctx.ttl().addTrackedEntry(this);
@@ -2822,92 +2777,38 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheObject peek(boolean heap,
-        boolean offheap,
-        boolean swap,
-        AffinityTopologyVersion topVer,
-        @Nullable IgniteCacheExpiryPolicy expiryPlc)
-        throws GridCacheEntryRemovedException, IgniteCheckedException {
-        assert heap || offheap || swap;
-
-        if (heap) {
-            GridTuple<CacheObject> val = peekGlobal(topVer, null, expiryPlc);
-
-            if (val != null)
-                return val.get();
-        }
-
-        if (offheap || swap) {
-            GridCacheSwapEntry e = cctx.swap().read(this, false, offheap, swap, true);
-
-            return e != null ? e.value() : null;
-        }
-
-        return null;
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public CacheObject peek(
         boolean heap,
         boolean offheap,
-        boolean swap,
-        @Nullable IgniteCacheExpiryPolicy plc)
-        throws GridCacheEntryRemovedException, IgniteCheckedException {
-        IgniteInternalTx tx = cctx.tm().localTxx();
-
-        AffinityTopologyVersion topVer = tx != null ? tx.topologyVersion() : cctx.affinity().affinityTopologyVersion();
-
-        return peek(heap, offheap, swap, topVer, plc);
-    }
-
-    /**
-     * @param topVer Topology version.
-     * @param filter Filter.
-     * @param expiryPlc Optional expiry policy.
-     * @return Peeked value.
-     * @throws GridCacheEntryRemovedException If entry got removed.
-     * @throws IgniteCheckedException If unexpected cache failure occurred.
-     */
-    @SuppressWarnings({"RedundantTypeArguments"})
-    @Nullable private GridTuple<CacheObject> peekGlobal(
         AffinityTopologyVersion topVer,
-        CacheEntryPredicate[] filter,
         @Nullable IgniteCacheExpiryPolicy expiryPlc)
         throws GridCacheEntryRemovedException, IgniteCheckedException {
-        if (!valid(topVer))
-            return null;
+        assert heap || offheap;
 
         boolean rmv = false;
 
         try {
-            while (true) {
-                GridCacheVersion ver;
-                CacheObject val;
+            synchronized (this) {
+                checkObsolete();
 
-                synchronized (this) {
-                    if (checkExpired()) {
-                        rmv = markObsolete0(cctx.versions().next(this.ver), true, null);
+                if (!valid(topVer))
+                    return null;
 
-                        return null;
-                    }
+                if (checkExpired()) {
+                    rmv = markObsolete0(cctx.versions().next(this.ver), true, null);
 
-                    checkObsolete();
-
-                    ver = this.ver;
-                    val = this.val;
-
-                    if (val != null && expiryPlc != null)
-                        updateTtl(expiryPlc);
+                    return null;
                 }
 
-                if (val == null)
-                    return null;
+                if (val == null && offheap)
+                    unswap(true);
 
-                if (!cctx.isAll(this, filter))
-                    return null;
+                CacheObject val = this.val;
 
-                if (F.isEmptyOrNulls(filter) || ver.equals(version()))
-                    return F.t(val);
+                if (val != null && expiryPlc != null)
+                    updateTtl(expiryPlc);
+
+                return val;
             }
         }
         finally {
@@ -2917,6 +2818,16 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 cctx.cache().removeEntry(this);
             }
         }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public CacheObject peek(@Nullable IgniteCacheExpiryPolicy plc)
+        throws GridCacheEntryRemovedException, IgniteCheckedException {
+        IgniteInternalTx tx = cctx.tm().localTxx();
+
+        AffinityTopologyVersion topVer = tx != null ? tx.topologyVersion() : cctx.affinity().affinityTopologyVersion();
+
+        return peek(true, false, topVer, plc);
     }
 
     /**
@@ -3048,6 +2959,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             return false;
         }
+    }
+
+    protected void onUpdateFinished(Long cntr) {
+        if (!cctx.isLocal() && !isNear() && cntr != null)
+            cctx.offheap().onPartitionCounterUpdated(partition(), cntr);
     }
 
     /**
@@ -3528,6 +3444,35 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /**
+     * @param op Update operation.
+     * @param val Write value.
+     * @param writeVer Write version.
+     * @param updCntr Update counter.
+     */
+    protected void logUpdate(GridCacheOperation op, CacheObject val, GridCacheVersion writeVer, long updCntr)
+        throws IgniteCheckedException {
+        // We log individual updates only in ATMOIC cache.
+        assert cctx.atomic();
+
+        try {
+            if (cctx.shared().wal() != null)
+                cctx.shared().wal().log(new DataRecord(new DataEntry(
+                    cctx.cacheId(),
+                    key,
+                    val,
+                    op,
+                    null,
+                    writeVer,
+                    partition(),
+                    updCntr)));
+        }
+        catch (StorageException e) {
+            throw new IgniteCheckedException("Failed to log ATOMIC cache update [key=" + key + ", op=" + op +
+                ", val=" + val + ']', e);
+        }
+    }
+
+    /**
      * Removes value from offheap.
      *
      * @param prevVal Previous value (if needed for index update).
@@ -3626,7 +3571,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     return null;
 
                 try {
-                    return e.peek(true, false, false, null);
+                    return e.peek(null);
                 }
                 catch (GridCacheEntryRemovedException ignored) {
                     // No-op.
@@ -3661,10 +3606,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public boolean evictInternal(GridCacheVersion obsoleteVer,
-        @Nullable CacheEntryPredicate[] filter) throws IgniteCheckedException {
-        // TODO GG-10884: evictions from offheap(pagememory) are not supported.
-
+    @Override public boolean evictInternal(GridCacheVersion obsoleteVer, @Nullable CacheEntryPredicate[] filter)
+        throws IgniteCheckedException {
         boolean marked = false;
 
         try {
@@ -3749,7 +3692,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     @Override public GridCacheBatchSwapEntry evictInBatchInternal(GridCacheVersion obsoleteVer)
         throws IgniteCheckedException {
         assert Thread.holdsLock(this);
-        assert cctx.isOffHeapEnabled();
         assert !obsolete();
 
         GridCacheBatchSwapEntry ret = null;

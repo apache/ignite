@@ -15,21 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spi.swapspace;
-
-import org.jetbrains.annotations.Nullable;
+package org.apache.ignite.internal.pagemem.wal;
 
 /**
- * Swap space SPI eviction listener.
+ *
  */
-public interface SwapSpaceSpiListener {
+public class StorageException extends Exception {
     /**
-     * Notification for swap space events.
-     *
-     * @param evtType Event type. See {@link org.apache.ignite.events.SwapSpaceEvent}
-     * @param spaceName Space name for this event or {@code null} for default space.
-     * @param keyBytes Key bytes of affected entry. Not {@code null} only for evict notifications.
-     * @param valBytes Value bytes of affected entry. Not {@code null} only for evict notifications.
+     * @param e Cause exception.
      */
-    public void onSwapEvent(int evtType, @Nullable String spaceName, @Nullable byte[] keyBytes, @Nullable byte[] valBytes);
+    public StorageException(Exception e) {
+        super(e);
+    }
 }

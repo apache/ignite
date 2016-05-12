@@ -21,14 +21,19 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.locks.AbstractQueuedSynchronizer;
+
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
+import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.SB;
+
+import static org.apache.ignite.internal.pagemem.impl.PageMemoryImpl.PAGE_OVERHEAD;
 
 /**
  *
  */
-class PageImpl extends AbstractQueuedSynchronizer implements Page {
+public class PageImpl extends AbstractQueuedSynchronizer implements Page {
     /** */
     private static final AtomicIntegerFieldUpdater<PageImpl> refCntUpd =
         AtomicIntegerFieldUpdater.newUpdater(PageImpl.class, "refCnt");
@@ -36,7 +41,7 @@ class PageImpl extends AbstractQueuedSynchronizer implements Page {
     /** */
     private final FullPageId fullId;
 
-    /** */
+    /** Pointer to the system page start. */
     private final long ptr;
 
     /** */
@@ -44,10 +49,10 @@ class PageImpl extends AbstractQueuedSynchronizer implements Page {
     private volatile int refCnt;
 
     /** */
-    private volatile int ver;
-
-    /** */
     private final ByteBuffer buf;
+
+    /** Buffer copy to ensure writes during a checkpoint. */
+    private TmpCopy cp;
 
     /** */
     private final PageMemoryImpl pageMem;
@@ -61,17 +66,7 @@ class PageImpl extends AbstractQueuedSynchronizer implements Page {
         this.ptr = ptr;
         this.pageMem = pageMem;
 
-        buf = pageMem.wrapPointer(ptr + PageMemoryImpl.PAGE_OVERHEAD, pageMem.pageSize());
-    }
-
-    /** {@inheritDoc} */
-    @Override public int version() {
-        return ver;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int incrementVersion() {
-        return ++ver; // Must be updated in write lock.
+        buf = pageMem.wrapPointer(ptr + PAGE_OVERHEAD, pageMem.pageSize());
     }
 
     /**
@@ -81,8 +76,7 @@ class PageImpl extends AbstractQueuedSynchronizer implements Page {
     private ByteBuffer reset(ByteBuffer buf) {
         buf.order(ByteOrder.nativeOrder());
 
-        buf.position(0);
-        buf.limit(pageMem.pageSize());
+        buf.rewind();
 
         return buf;
     }
@@ -143,6 +137,9 @@ class PageImpl extends AbstractQueuedSynchronizer implements Page {
 
         pageMem.writeCurrentTimestamp(ptr);
 
+        if (cp != null)
+            return reset(cp.userBuf.asReadOnlyBuffer());
+
         return reset(buf.asReadOnlyBuffer());
     }
 
@@ -173,7 +170,70 @@ class PageImpl extends AbstractQueuedSynchronizer implements Page {
 
         pageMem.writeCurrentTimestamp(ptr);
 
+        // Create a buffer copy if the page needs to be checkpointed.
+        if (pageMem.isInCheckpoint(fullId)) {
+            if (cp == null) {
+                // Pin the page until checkpoint is not finished.
+                acquireReference();
+
+                byte[] pageData = new byte[pageMem.systemPageSize()];
+
+                GridUnsafe.copyMemory(null, ptr, pageData, GridUnsafe.BYTE_ARR_OFF, pageData.length);
+
+                cp = new TmpCopy(pageData);
+            }
+
+            return reset(cp.userBuf);
+        }
+
         return reset(buf);
+    }
+
+    /**
+     * If page was concurrently modified during the checkpoint phase, this method will flush all changes from the
+     * temporary location to main memory.
+     * This method must be called from the segment write lock.
+     */
+    public boolean flushCheckpoint(IgniteLogger log) {
+        acquire(1); // This call is not reentrant.
+
+        assert getExclusiveOwnerThread() == null: fullId();
+
+        setExclusiveOwnerThread(Thread.currentThread());
+
+        try {
+            if (cp != null) {
+                ByteBuffer cpBuf = reset(cp.userBuf);
+
+                reset(buf);
+
+                buf.put(cpBuf);
+
+                pageMem.clearCheckpoint(fullId);
+
+                pageMem.setDirty(fullId, ptr, cp.dirty, true);
+
+                cp = null;
+
+                return releaseReference();
+            }
+            else
+                pageMem.setDirty(fullId, ptr, false, true);
+
+            return false;
+        }
+        finally {
+            setExclusiveOwnerThread(null);
+
+            release(1);
+        }
+    }
+
+    /**
+     * @return {@code True} if page has a temp on-heap copy.
+     */
+    public boolean hasTempCopy() {
+        return cp != null;
     }
 
     /**
@@ -187,16 +247,25 @@ class PageImpl extends AbstractQueuedSynchronizer implements Page {
      * Mark dirty.
      */
     private void markDirty() {
-        pageMem.setDirty(fullId, ptr, true);
+        if (cp != null)
+            cp.dirty = true;
+        else
+            pageMem.setDirty(fullId, ptr, true, false);
     }
 
     /** {@inheritDoc} */
     @Override public void releaseWrite(boolean markDirty) {
-        if (markDirty)
-            markDirty();
-
         assert getState() == -1;
         assert getExclusiveOwnerThread() == Thread.currentThread() : "illegal monitor state";
+
+        if (markDirty) {
+            markDirty();
+
+            if (cp != null)
+                pageMem.beforeReleaseWrite(fullId, reset(cp.sysBuf));
+            else
+                pageMem.beforeReleaseWrite(fullId, pageMem.wrapPointer(ptr, pageMem.systemPageSize()));
+        }
 
         setExclusiveOwnerThread(null);
 
@@ -212,6 +281,9 @@ class PageImpl extends AbstractQueuedSynchronizer implements Page {
 
     /** {@inheritDoc} */
     @Override public boolean isDirty() {
+        if (cp != null)
+            return cp.dirty;
+
         return pageMem.isDirty(ptr);
     }
 
@@ -224,6 +296,8 @@ class PageImpl extends AbstractQueuedSynchronizer implements Page {
         sb.appendHex(pageMem.readRelative(ptr));
         sb.a(", absPtr=");
         sb.appendHex(ptr);
+        sb.a(", cp=");
+        sb.a(cp);
         sb.a(']');
 
         return sb.toString();
@@ -260,5 +334,40 @@ class PageImpl extends AbstractQueuedSynchronizer implements Page {
     /** {@inheritDoc} */
     @Override public void close() {
         pageMem.releasePage(this);
+    }
+
+    /**
+     * Temporary page copy.
+     */
+    private static class TmpCopy {
+        /** */
+        private ByteBuffer userBuf;
+
+        /** */
+        private ByteBuffer sysBuf;
+
+        /** */
+        private boolean dirty;
+
+        /**
+         * @param pageData Copied page data.
+         */
+        private TmpCopy(byte[] pageData) {
+            sysBuf = ByteBuffer.wrap(pageData);
+
+            sysBuf.position(PAGE_OVERHEAD);
+
+            userBuf = sysBuf.slice();
+        }
+
+        @Override public String toString() {
+            SB sb = new SB("TmpBuf [dirty=");
+
+            sb.a(dirty);
+
+            sb.a(']');
+
+            return sb.toString();
+        }
     }
 }

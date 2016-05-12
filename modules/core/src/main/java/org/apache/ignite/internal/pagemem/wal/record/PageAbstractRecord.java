@@ -15,8 +15,14 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.internal.pagemem.wal.record;
+
 /**
- * <!-- Package description. -->
- * Contains <b>default</b> no-op swap space SPI implementation.
+ *
  */
-package org.apache.ignite.spi.swapspace.noop;
+public abstract class PageAbstractRecord extends WALRecord {
+    /** {@inheritDoc} */
+    @Override public RecordType type() {
+        return RecordType.PAGE_RECORD;
+    }
+}

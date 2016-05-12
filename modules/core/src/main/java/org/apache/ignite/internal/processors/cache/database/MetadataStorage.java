@@ -48,6 +48,8 @@ public class MetadataStorage implements MetaStore {
         throws IgniteCheckedException {
         byte[] idxNameBytes = idxName.getBytes(StandardCharsets.UTF_8);
 
+        U.debug("Get or allocate: " + idxName + ", " + cacheId);
+
         FullPageId metaId = metaPage(cacheId);
 
         Page meta = pageMem.page(metaId);
@@ -82,9 +84,6 @@ public class MetadataStorage implements MetaStore {
         ByteBuffer buf = meta.getForRead();
 
         try {
-            // Save version
-            state.ver = meta.version();
-
             long nextPageId = buf.getLong();
 
             state.writePage = meta.id();
@@ -95,6 +94,8 @@ public class MetadataStorage implements MetaStore {
                 return rootPageId;
 
             while (nextPageId > 0) {
+                U.debug("Next page: " + U.hexLong(nextPageId));
+
                 // Meta page.
                 Page nextPage = pageMem.page(new FullPageId(nextPageId, 0));
 
@@ -145,10 +146,6 @@ public class MetadataStorage implements MetaStore {
         ByteBuffer buf = meta.getForWrite();
 
         try {
-            // The only case 0 can be returned.
-            if (meta.version() != state.ver)
-                return null;
-
             // Otherwise it is safe to allocate and write data or link new page directly to the saved page.
             long writePageId = state.writePage;
 
@@ -183,8 +180,6 @@ public class MetadataStorage implements MetaStore {
 
                     // Release old write-locked page.
                     if (writePageId != meta.id()) {
-                        writePage.incrementVersion();
-
                         writePage.releaseWrite(true);
 
                         pageMem.releasePage(writePage);
@@ -205,8 +200,6 @@ public class MetadataStorage implements MetaStore {
             }
             finally {
                 if (writePageId != meta.id()) {
-                    writePage.incrementVersion();
-
                     writePage.releaseWrite(true);
 
                     pageMem.releasePage(writePage);
@@ -297,8 +290,6 @@ public class MetadataStorage implements MetaStore {
                 return fullId;
             }
             finally {
-                meta.incrementVersion();
-
                 meta.releaseWrite(written);
             }
         }
@@ -311,9 +302,6 @@ public class MetadataStorage implements MetaStore {
      * Search state.
      */
     private static class SearchState {
-        /** */
-        private int ver;
-
         /** */
         private long writePage;
 

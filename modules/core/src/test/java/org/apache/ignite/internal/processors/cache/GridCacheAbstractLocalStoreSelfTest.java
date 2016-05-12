@@ -153,7 +153,6 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         cacheCfg.setReadThrough(true);
         cacheCfg.setBackups(backups);
         cacheCfg.setOffHeapMaxMemory(0);
-        cacheCfg.setSwapEnabled(true);
 
         if (isOffHeapTieredMode())
             cacheCfg.setMemoryMode(OFFHEAP_TIERED);

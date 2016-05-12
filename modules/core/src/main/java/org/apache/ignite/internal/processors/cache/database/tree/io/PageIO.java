@@ -71,6 +71,9 @@ public abstract class PageIO {
     public static final short T_REUSE_INNER = 10;
 
     /** */
+    public static final short T_CHECKPOINT_META = 11;
+
+    /** */
     private final int ver;
 
     /** */

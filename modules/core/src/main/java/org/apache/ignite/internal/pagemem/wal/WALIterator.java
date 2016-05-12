@@ -15,8 +15,15 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.internal.pagemem.wal;
+
+import org.apache.ignite.internal.pagemem.wal.record.WALRecord;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
+import org.apache.ignite.lang.IgniteBiTuple;
+
 /**
- * <!-- Package description. -->
- * Contains APIs for swap space SPI.
+ *
  */
-package org.apache.ignite.spi.swapspace;
+public interface WALIterator extends GridCloseableIterator<IgniteBiTuple<WALPointer, WALRecord>> {
+    // Iterator alias.
+}

@@ -327,7 +327,7 @@ public class CacheMetricsImpl implements CacheMetrics {
         if (ctx == null)
             return -1;
 
-        GridCacheEvictionManager evictMgr = ctx.evicts();
+        CacheEvictionManager evictMgr = ctx.evicts();
 
         return evictMgr != null ? evictMgr.evictQueueSize() : -1;
     }

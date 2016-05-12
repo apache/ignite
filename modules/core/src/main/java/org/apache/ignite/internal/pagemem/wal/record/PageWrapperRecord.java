@@ -15,8 +15,41 @@
  * limitations under the License.
  */
 
+package org.apache.ignite.internal.pagemem.wal.record;
+
+import org.apache.ignite.internal.pagemem.FullPageId;
+
+import java.nio.ByteBuffer;
+
 /**
- * <!-- Package description. -->
- * TODO.
+ *
  */
-package org.apache.ignite.internal.managers.swapspace;
+public class PageWrapperRecord extends PageAbstractRecord {
+    /** */
+    private FullPageId fullId;
+
+    /** */
+    private ByteBuffer pageBuf;
+
+    /**
+     * @param pageBuf Page buf.
+     */
+    public PageWrapperRecord(FullPageId fullId, ByteBuffer pageBuf) {
+        this.fullId = fullId;
+        this.pageBuf = pageBuf;
+    }
+
+    /**
+     * @return Page start pointer.
+     */
+    public ByteBuffer buffer() {
+        return pageBuf;
+    }
+
+    /**
+     * @return Full page ID.
+     */
+    public FullPageId fullId() {
+        return fullId;
+    }
+}

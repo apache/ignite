@@ -75,7 +75,6 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         cc.setNearConfiguration(null);
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setRebalanceMode(SYNC);
-        cc.setSwapEnabled(false);
         cc.setSqlFunctionClasses(GridQueryParsingTest.class);
         cc.setIndexedTypes(
             String.class, Address.class,

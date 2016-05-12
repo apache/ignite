@@ -608,7 +608,6 @@ public interface GridCacheEntryEx {
      *
      * @param heap Read from heap flag.
      * @param offheap Read from offheap flag.
-     * @param swap Read from swap flag.
      * @param topVer Topology version.
      * @param plc Expiry policy if TTL should be updated.
      * @return Value.
@@ -617,7 +616,6 @@ public interface GridCacheEntryEx {
      */
     @Nullable public CacheObject peek(boolean heap,
         boolean offheap,
-        boolean swap,
         AffinityTopologyVersion topVer,
         @Nullable IgniteCacheExpiryPolicy plc)
         throws GridCacheEntryRemovedException, IgniteCheckedException;
@@ -625,18 +623,12 @@ public interface GridCacheEntryEx {
     /**
      * Peeks into entry without loading value or updating statistics.
      *
-     * @param heap Read from heap flag.
-     * @param offheap Read from offheap flag.
-     * @param swap Read from swap flag.
      * @param plc Expiry policy if TTL should be updated.
      * @return Value.
      * @throws GridCacheEntryRemovedException If entry has been removed.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public CacheObject peek(boolean heap,
-        boolean offheap,
-        boolean swap,
-        @Nullable IgniteCacheExpiryPolicy plc)
+    @Nullable public CacheObject peek(@Nullable IgniteCacheExpiryPolicy plc)
         throws GridCacheEntryRemovedException, IgniteCheckedException;
 
     /**
