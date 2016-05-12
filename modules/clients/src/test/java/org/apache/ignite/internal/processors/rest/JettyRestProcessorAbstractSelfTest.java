@@ -52,19 +52,13 @@ import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandler;
+import org.apache.ignite.internal.util.lang.GridTuple3;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.visor.cache.VisorCacheClearTask;
-import org.apache.ignite.internal.visor.cache.VisorCacheConfigurationCollectorTask;
-import org.apache.ignite.internal.visor.cache.VisorCacheMetadataTask;
-import org.apache.ignite.internal.visor.cache.VisorCacheMetricsCollectorTask;
-import org.apache.ignite.internal.visor.cache.VisorCacheNodesTask;
-import org.apache.ignite.internal.visor.cache.VisorCacheRebalanceTask;
-import org.apache.ignite.internal.visor.cache.VisorCacheResetMetricsTask;
-import org.apache.ignite.internal.visor.cache.VisorCacheStartTask;
-import org.apache.ignite.internal.visor.cache.VisorCacheSwapBackupsTask;
+import org.apache.ignite.internal.visor.cache.*;
+import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionsTask;
 import org.apache.ignite.internal.visor.compute.VisorComputeResetMetricsTask;
 import org.apache.ignite.internal.visor.compute.VisorComputeToggleMonitoringTask;
 import org.apache.ignite.internal.visor.compute.VisorGatewayTask;
@@ -80,12 +74,7 @@ import org.apache.ignite.internal.visor.log.VisorLogSearchTask;
 import org.apache.ignite.internal.visor.misc.VisorAckTask;
 import org.apache.ignite.internal.visor.misc.VisorLatestVersionTask;
 import org.apache.ignite.internal.visor.misc.VisorResolveHostNameTask;
-import org.apache.ignite.internal.visor.node.VisorNodeConfigurationCollectorTask;
-import org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTask;
-import org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTaskArg;
-import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask;
-import org.apache.ignite.internal.visor.node.VisorNodeGcTask;
-import org.apache.ignite.internal.visor.node.VisorNodePingTask;
+import org.apache.ignite.internal.visor.node.*;
 import org.apache.ignite.internal.visor.query.VisorQueryArg;
 import org.apache.ignite.internal.visor.query.VisorQueryCleanupTask;
 import org.apache.ignite.internal.visor.query.VisorQueryNextPageTask;
@@ -1250,18 +1239,9 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         jsonEquals(ret, successRes);
 
-//        ret = content(new HashMap<String, String>(cmd) {{
-//            put("p1", grid(1).localNode().id().toString());
-//            put("p2", VisorCacheLoadTask.class.getName());
-//            put("p3", GridTuple3.class.getName());
-//            put("p4", Set.class.getName());
-//            put("p5", Long.class.getName());
-//            put("p6", Object[].class.getName());
-//
-//            put("p7", "person");
-//            put("p8", "0");
-//            put("p9", "");
-//        }});
+//        ret = content(new VisorGatewayArgument(VisorCacheLoadTask.class)
+//            .forNode(grid(1).localNode())
+//            .tuple3(Set.class, Long.class, Object[].class, "person", 0, "null"));
 //
 //        info("Exe command result: " + ret);
 //
@@ -1492,19 +1472,15 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         // Multinode tasks
 
-//        ret = content(new HashMap<String, String>(cmd) {{
-//            put("p1", null);
-//            put("p2", VisorComputeCancelSessionsTask.class.getName());
-//            put("p3", Map.class.getName());
-//            put("p4", "0");
-//        }});
-//
-//        info("Exe command result: " + ret);
-//
-//        assertNotNull(ret);
-//        assertTrue(!ret.isEmpty());
-//
-//        jsonEquals(ret, successRes);
+        ret = content(new VisorGatewayArgument(VisorComputeCancelSessionsTask.class)
+            .map(UUID.class, Set.class, new HashMap()));
+
+        info("Exe command result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
 
         ret = content(new VisorGatewayArgument(VisorCacheMetricsCollectorTask.class)
             .pair(Boolean.class, Set.class, false, "person"));
@@ -1577,19 +1553,15 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         jsonEquals(ret, successRes);
 
-//        ret = content(new HashMap<String, String>(cmd) {{
-//            put("p1", null);
-//            put("p2", VisorNodeSuppressedErrorsTask.class.getName());
-//            put("p3", Map.class.getName());
-//            put("p4", "0");
-//        }});
-//
-//        info("Exe command result: " + ret);
-//
-//        assertNotNull(ret);
-//        assertTrue(!ret.isEmpty());
-//
-//        jsonEquals(ret, successRes);
+        ret = content(new VisorGatewayArgument(VisorNodeSuppressedErrorsTask.class)
+            .map(UUID.class, Long.class, new HashMap()));
+
+        info("Exe command result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
 
         ret = content(new VisorGatewayArgument(VisorCacheClearTask.class)
             .forNode(grid(1).localNode())
@@ -1616,6 +1588,17 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         ret = content(new VisorGatewayArgument(VisorCacheStartTask.class)
             .argument(VisorCacheStartTask.VisorCacheStartArg.class, false, "person2", URLEncoder.encode(START_CACHE)));
+
+        info("Exe command result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new VisorGatewayArgument(VisorCacheStopTask.class)
+            .forNode(grid(1).localNode())
+            .argument(String.class, "c"));
 
         info("Exe command result: " + ret);
 
@@ -2073,7 +2056,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     /**
      * Helper for build {@link VisorGatewayTask} arguments.
      */
-    private static class VisorGatewayArgument extends HashMap<String, String> {
+    public static class VisorGatewayArgument extends HashMap<String, String> {
         /** Latest argument index. */
         private int idx = 3;
 
@@ -2160,6 +2143,30 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
             put("p" + idx++, valCls.getName());
             put("p" + idx++, key != null ? key.toString() : "null");
             put("p" + idx++, val != null ? val.toString() : "null");
+
+            return this;
+        }
+
+        /**
+         * Add tuple argument.
+         *
+         * @param firstCls Class of first argument.
+         * @param secondCls Class of second argument.
+         * @param thirdCls Class of third argument.
+         * @param first First argument.
+         * @param second Second argument.
+         * @param third Third argument.
+         * @return This helper for chaining method calls.
+         */
+        public VisorGatewayArgument tuple3(Class firstCls, Class secondCls, Class thirdCls,
+            Object first, Object second, Object third) {
+            put("p" + idx++, GridTuple3.class.getName());
+            put("p" + idx++, firstCls.getName());
+            put("p" + idx++, secondCls.getName());
+            put("p" + idx++, thirdCls.getName());
+            put("p" + idx++, first != null ? first.toString() : "null");
+            put("p" + idx++, second != null ? second.toString() : "null");
+            put("p" + idx++, third != null ? third.toString() : "null");
 
             return this;
         }

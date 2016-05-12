@@ -169,12 +169,14 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
 
                 if (entries != null) {
                     for (String entry : entries.split(";")) {
-                        String[] values = entry.split("=");
+                        if (entry.length() > 0) {
+                            String[] values = entry.split("=");
 
-                        assert values.length >= 1;
+                            assert values.length >= 1;
 
-                        res.put(toSimpleObject(keyCls, values[0]),
-                            values.length > 1 ? toSimpleObject(valCls, values[1]) : null);
+                            res.put(toSimpleObject(keyCls, values[0]),
+                                    values.length > 1 ? toSimpleObject(valCls, values[1]) : null);
+                        }
                     }
                 }
 
