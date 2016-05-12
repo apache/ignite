@@ -117,6 +117,20 @@ namespace Apache.Ignite.Core.Discovery.Tcp
             MaxAckTimeout = reader.ReadLongAsTimespan();
             NetworkTimeout = reader.ReadLongAsTimespan();
             JoinTimeout = reader.ReadLongAsTimespan();
+
+            ForceServerMode = reader.ReadBoolean();
+            ClientReconnectDisabled = reader.ReadBoolean();
+            LocalAddress = reader.ReadString();
+            ReconnectCount = reader.ReadInt();
+            LocalPort = reader.ReadInt();
+            LocalPortRange = reader.ReadInt();
+            MaxMissedHeartbeats = reader.ReadInt();
+            MaxMissedClientHeartbeats = reader.ReadInt();
+            StatisticsPrintFrequency = reader.ReadLongAsTimespan();
+            IpFinderCleanFrequency = reader.ReadLongAsTimespan();
+            ThreadPriority = reader.ReadInt();
+            HeartbeatFrequency = reader.ReadLongAsTimespan();
+            TopologyHistorySize = reader.ReadInt();
         }
 
         /// <summary>
@@ -258,6 +272,20 @@ namespace Apache.Ignite.Core.Discovery.Tcp
             writer.WriteLong((long) MaxAckTimeout.TotalMilliseconds);
             writer.WriteLong((long) NetworkTimeout.TotalMilliseconds);
             writer.WriteLong((long) JoinTimeout.TotalMilliseconds);
+
+            writer.WriteBoolean(ForceServerMode);
+            writer.WriteBoolean(ClientReconnectDisabled);
+            writer.WriteString(LocalAddress);
+            writer.WriteInt(ReconnectCount);
+            writer.WriteInt(LocalPort);
+            writer.WriteInt(LocalPortRange);
+            writer.WriteInt(MaxMissedHeartbeats);
+            writer.WriteInt(MaxMissedClientHeartbeats);
+            writer.WriteLong((long) StatisticsPrintFrequency.TotalMilliseconds);
+            writer.WriteLong((long) IpFinderCleanFrequency.TotalMilliseconds);
+            writer.WriteInt(ThreadPriority);
+            writer.WriteLong((long) HeartbeatFrequency.TotalMilliseconds);
+            writer.WriteInt(TopologyHistorySize);
         }
     }
 }
