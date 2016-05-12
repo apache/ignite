@@ -47,6 +47,9 @@ class GridAffinityAssignment implements Serializable {
     /** Map of backup node partitions. */
     private final Map<UUID, Set<Integer>> backup;
 
+    /** */
+    private final boolean clientEvtChange;
+
     /**
      * Constructs cached affinity calculations item.
      *
@@ -56,6 +59,7 @@ class GridAffinityAssignment implements Serializable {
         this.topVer = topVer;
         primary = new HashMap<>();
         backup = new HashMap<>();
+        clientEvtChange = false;
     }
 
     /**
@@ -68,6 +72,7 @@ class GridAffinityAssignment implements Serializable {
 
         primary = new HashMap<>();
         backup = new HashMap<>();
+        clientEvtChange = false;
 
         initPrimaryBackupMaps();
     }
@@ -82,6 +87,15 @@ class GridAffinityAssignment implements Serializable {
         assignment = aff.assignment;
         primary = aff.primary;
         backup = aff.backup;
+
+        clientEvtChange = true;
+    }
+
+    /**
+     * @return {@code True} if
+     */
+    public boolean clientEventChange() {
+        return clientEvtChange;
     }
 
     /**

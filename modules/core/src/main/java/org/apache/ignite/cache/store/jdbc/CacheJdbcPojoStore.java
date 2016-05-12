@@ -248,7 +248,7 @@ public class CacheJdbcPojoStore<K, V> extends CacheAbstractJdbcStore<K, V> {
 
                 Object colVal = getColumnValue(rs, colIdx, field.getJavaFieldType());
 
-                builder.setField(field.getJavaFieldName(), colVal);
+                builder.setField(field.getJavaFieldName(), colVal, (Class<Object>)field.getJavaFieldType());
 
                 if (calcHash)
                     hashValues.add(colVal);

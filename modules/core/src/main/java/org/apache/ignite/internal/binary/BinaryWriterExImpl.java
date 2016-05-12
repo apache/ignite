@@ -17,19 +17,11 @@
 
 package org.apache.ignite.internal.binary;
 
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.binary.BinaryIdMapper;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
-import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
-import org.apache.ignite.internal.util.typedef.internal.A;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.IOException;
 import java.io.ObjectOutput;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.Timestamp;
@@ -37,6 +29,14 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.internal.binary.streams.BinaryHeapOutputStream;
+import org.apache.ignite.internal.binary.streams.BinaryOutputStream;
+import org.apache.ignite.internal.util.typedef.internal.A;
+import org.jetbrains.annotations.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -77,8 +77,8 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
     /** Amount of written fields. */
     private int fieldCnt;
 
-    /** ID mapper. */
-    private BinaryIdMapper idMapper;
+    /** */
+    private BinaryInternalMapper mapper;
 
     /**
      * @param ctx Context.
@@ -815,6 +815,38 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
 
                 doWriteString(val.getClass().getName());
             }
+        }
+    }
+
+    /**
+     * @param proxy Proxy.
+     */
+    public void doWriteProxy(Proxy proxy, Class<?>[] intfs) {
+        if (proxy == null)
+            out.writeByte(GridBinaryMarshaller.NULL);
+        else {
+            out.unsafeEnsure(1 + 4);
+
+            out.unsafeWriteByte(GridBinaryMarshaller.PROXY);
+            out.unsafeWriteInt(intfs.length);
+
+            for (Class<?> intf : intfs) {
+                BinaryClassDescriptor desc = ctx.descriptorForClass(intf, false);
+
+                if (desc.registered())
+                    out.writeInt(desc.typeId());
+                else {
+                    out.writeInt(GridBinaryMarshaller.UNREGISTERED_TYPE_ID);
+
+                    doWriteString(intf.getName());
+                }
+            }
+
+            InvocationHandler ih = Proxy.getInvocationHandler(proxy);
+
+            assert ih != null;
+
+            doWriteObject(ih);
         }
     }
 
@@ -1642,10 +1674,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (rawOffPos != 0)
             throw new BinaryObjectException("Individual field can't be written after raw writer is acquired.");
 
-        if (idMapper == null)
-            idMapper = ctx.userTypeIdMapper(typeId);
+        if (mapper == null)
+            mapper = ctx.userTypeMapper(typeId);
 
-        int id = idMapper.fieldId(typeId, fieldName);
+        assert mapper != null;
+
+        int id = mapper.fieldId(typeId, fieldName);
 
         writeFieldId(id);
     }

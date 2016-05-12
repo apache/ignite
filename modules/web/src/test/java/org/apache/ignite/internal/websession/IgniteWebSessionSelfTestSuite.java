@@ -57,6 +57,11 @@ public class IgniteWebSessionSelfTestSuite extends TestSuite {
         @Override public void testRestarts() throws Exception {
             fail("https://issues.apache.org/jira/browse/IGNITE-810");
         }
+
+        /** {@inheritDoc} */
+        @Override public void testClientReconnectRequest() throws Exception {
+            fail("https://issues.apache.org/jira/browse/IGNITE-810");
+        }
     }
 
     /**

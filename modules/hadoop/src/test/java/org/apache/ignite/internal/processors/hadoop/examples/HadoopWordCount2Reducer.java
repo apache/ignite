@@ -55,6 +55,7 @@ public class HadoopWordCount2Reducer extends Reducer<Text, IntWritable, Text, In
     /** {@inheritDoc} */
     @Override protected void setup(Context context) throws IOException, InterruptedException {
         super.setup(context);
+
         wasSetUp = true;
     }
 
