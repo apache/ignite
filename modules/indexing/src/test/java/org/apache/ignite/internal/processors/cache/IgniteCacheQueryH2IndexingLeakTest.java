@@ -75,10 +75,12 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
     private static final int THREAD_COUNT = 10;
 
     /** Timeout */
-    private static final long STMT_CACHE_CLENUP_TIMEOUT = 1000;
+    private static final long STMT_CACHE_CLEANUP_TIMEOUT = 1000;
 
-    /** Timeout */
-    private static String origCacheClenupPeriod;
+    /** Orig cleanup period. */
+    private static String origCacheCleanupPeriod;
+
+    /** Orig usage timeout. */
     private static String origCacheThreadUsageTimeout;
 
     /** */
@@ -147,11 +149,17 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
     private static class FakeIndexing extends IgniteH2Indexing {
         private static final ConcurrentMap<FakeIndexing, Boolean> instances = new ConcurrentHashMap<>();
 
+        /**
+         * Default constructor.
+         */
         public FakeIndexing() {
             instances.putIfAbsent(this, true);
         }
 
-        public static int getTotalCachesSize() {
+        /**
+         * Get sum of sizes of all stmtCaches instances
+         */
+        static int getTotalCachesSize() {
             int size = 0;
             for(FakeIndexing h2idx : instances.keySet()) {
                 ConcurrentMap stmtCache = GridTestUtils.getFieldValue(h2idx, IgniteH2Indexing.class, "stmtCache");
@@ -159,7 +167,6 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
             }
             return  size;
         }
-
     }
 
     /** {@inheritDoc} */
@@ -188,10 +195,10 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        origCacheClenupPeriod = System.getProperty(IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD);
+        origCacheCleanupPeriod = System.getProperty(IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD);
         origCacheThreadUsageTimeout = System.getProperty(IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT);
-        System.setProperty(IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD, Long.toString(STMT_CACHE_CLENUP_TIMEOUT));
-        System.setProperty(IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT, Long.toString(STMT_CACHE_CLENUP_TIMEOUT));
+        System.setProperty(IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD, Long.toString(STMT_CACHE_CLEANUP_TIMEOUT));
+        System.setProperty(IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT, Long.toString(STMT_CACHE_CLEANUP_TIMEOUT));
 
         startGridsMultiThreaded(GRID_CNT);
     }
@@ -200,7 +207,7 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
         System.setProperty(IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD,
-            origCacheClenupPeriod !=null ? origCacheClenupPeriod : "");
+            origCacheCleanupPeriod !=null ? origCacheCleanupPeriod : "");
         System.setProperty(IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT,
             origCacheThreadUsageTimeout !=null ? origCacheThreadUsageTimeout : "");
     }
@@ -282,14 +289,14 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
                 @Override public boolean apply() {
                     return FakeIndexing.getTotalCachesSize() == THREAD_COUNT;
                 }
-            }, STMT_CACHE_CLENUP_TIMEOUT));
+            }, STMT_CACHE_CLEANUP_TIMEOUT));
 
             // Wait for stmtCache is cleaned up because all user threads are terminated.
             assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
                     return FakeIndexing.getTotalCachesSize() == 0;
                 }
-            }, STMT_CACHE_CLENUP_TIMEOUT * 2));
+            }, STMT_CACHE_CLEANUP_TIMEOUT * 2));
         }
     }
 
@@ -332,16 +339,16 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
                 @Override public boolean apply() {
                     return FakeIndexing.getTotalCachesSize() == THREAD_COUNT;
                 }
-            }, STMT_CACHE_CLENUP_TIMEOUT));
+            }, STMT_CACHE_CLEANUP_TIMEOUT));
 
-            Thread.sleep(STMT_CACHE_CLENUP_TIMEOUT);
+            Thread.sleep(STMT_CACHE_CLEANUP_TIMEOUT);
 
             // Wait for stmtCache is cleaned up because all user threads don't perform queries a lot of time.
             assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
                     return FakeIndexing.getTotalCachesSize() == 0;
                 }
-            }, STMT_CACHE_CLENUP_TIMEOUT * 2));
+            }, STMT_CACHE_CLEANUP_TIMEOUT * 2));
 
             synchronized (endOfTestMonitor) {
                 endOfTestMonitor.notifyAll();
