@@ -259,12 +259,10 @@
                         <xs:attribute name="maxAckTimeout" type="xs:string" />
                         <xs:attribute name="networkTimeout" type="xs:string" />
                         <xs:attribute name="joinTimeout" type="xs:string" />
-                        
                         <xs:attribute name="clientReconnectDisabled" type="xs:boolean" />
                         <xs:attribute name="forceServerMode" type="xs:boolean" />
                         <xs:attribute name="heartbeatFrequency" type="xs:string" />
                         <xs:attribute name="ipFinderCleanFrequency" type="xs:string" />
-                        
                         <xs:attribute name="localAddress" type="xs:string" />
                         <xs:attribute name="localPort" type="xs:int" />
                         <xs:attribute name="localPortRange" type="xs:int" />
