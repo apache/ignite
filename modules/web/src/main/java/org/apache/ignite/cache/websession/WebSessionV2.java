@@ -355,7 +355,7 @@ class WebSessionV2 implements HttpSession {
             maxInactiveInterval);
 
         for (final Map.Entry<String, Object> entry : attributes().entrySet())
-            marshaled.attributes().put(entry.getKey(), marshal(entry.getValue()));
+            marshaled.putAttribute(entry.getKey(), marshal(entry.getValue()));
 
         return marshaled;
     }
