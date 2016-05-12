@@ -53,6 +53,25 @@ namespace Apache.Ignite.Core.Discovery.Tcp
         public static readonly TimeSpan DefaultJoinTimeout = TimeSpan.Zero;
 
         /// <summary>
+        /// Default value for the <see cref="ReconnectCount"/> property.
+        /// </summary>
+        public const int DefaultReconnectCount = 10;
+
+        /// <summary>
+        /// Default value for the <see cref="LocalPort"/> property.
+        /// </summary>
+        public const int DefaultLocalPort = 47500;
+
+        /// <summary> Default value for the <see cref="LocalPortRange"/> property. </summary>
+        public const int DefaultLocalPortRange = 100;
+
+
+
+
+
+
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="TcpDiscoverySpi"/> class.
         /// </summary>
         public TcpDiscoverySpi()
@@ -62,6 +81,9 @@ namespace Apache.Ignite.Core.Discovery.Tcp
             MaxAckTimeout = DefaultMaxAckTimeout;
             NetworkTimeout = DefaultNetworkTimeout;
             JoinTimeout = DefaultJoinTimeout;
+            ReconnectCount = DefaultReconnectCount;
+            LocalPort = DefaultLocalPort;
+            LocalPortRange = DefaultLocalPortRange;
         }
 
         /// <summary>
@@ -112,6 +134,79 @@ namespace Apache.Ignite.Core.Discovery.Tcp
         /// Gets or sets the join timeout.
         /// </summary>
         public TimeSpan JoinTimeout { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether TcpDiscoverySpi is started in server mode 
+        /// regardless of <see cref="IgniteConfiguration.ClientMode"/> setting.
+        /// </summary>
+        public bool ForceServerMode { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether client does not try to reconnect after
+        /// server detected client node failure.
+        /// </summary>
+        public bool ClientReconnectDisabled { get; set; }
+
+        /// <summary>
+        /// Gets or sets the local host IP address that discovery SPI uses.
+        /// </summary>
+        public string LocalAddress { get; set; }
+
+        /// <summary>
+        /// Gets or sets the number of times node tries to (re)establish connection to another node.
+        /// </summary>
+        [DefaultValue(DefaultReconnectCount)]
+        public int ReconnectCount { get; set; }
+
+        /// <summary>
+        /// Gets or sets the local port to listen to.
+        /// </summary>
+        [DefaultValue(DefaultLocalPort)]
+        public int LocalPort { get; set; }
+
+        /// <summary>
+        /// Gets or sets the range for local ports. Local node will try to bind on first available port starting from
+        /// <see cref="LocalPort"/> up until (<see cref="LocalPort"/> + <see cref="LocalPortRange"/>).
+        /// </summary>
+        [DefaultValue(DefaultLocalPortRange)]
+        public int LocalPortRange { get; set; }
+
+        /// <summary>
+        /// Gets or sets the maximum heartbeats count node can miss without initiating status check.
+        /// </summary>
+        public int MaxMissedHeartbeats { get; set; }
+
+        /// <summary>
+        /// Gets or sets the maximum heartbeats count node can miss without failing client node.
+        /// </summary>
+        public int MaxMissedClientHeartbeats { get; set; }
+
+        /// <summary>
+        /// Gets or sets the statistics print frequency.
+        /// <see cref="TimeSpan.Zero"/> for no statistics.
+        /// </summary>
+        public TimeSpan StatisticsPrintFrequency { get; set; }
+
+        /// <summary>
+        /// Gets or sets the IP finder clean frequency.
+        /// </summary>
+        public TimeSpan IpFinderCleanFrequency { get; set; }
+
+        /// <summary>
+        /// Sets thread priority, 1 (lowest) to 10 (highest). All threads within SPI will be started with it.
+        /// </summary>
+        public int ThreadPriority { get; set; }
+
+        /// <summary>
+        /// Gets or sets delay between issuing of heartbeat messages. SPI sends heartbeat messages
+        /// in configurable time interval to other nodes to notify them about its state.
+        /// </summary>
+        public TimeSpan HeartbeatFrequency { get; set; }
+
+        /// <summary>
+        /// Gets or sets the size of topology snapshots history.
+        /// </summary>
+        public int TopologyHistorySize { get; set; }
 
         /// <summary>
         /// Writes this instance to the specified writer.
