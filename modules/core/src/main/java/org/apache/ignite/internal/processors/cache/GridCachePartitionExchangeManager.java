@@ -48,6 +48,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
@@ -83,6 +84,7 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeActivatedMessage;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -258,6 +260,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         }
                         else
                             exchangeFuture(msg.exchangeId(), null, null, null).onAffinityChangeMessage(customEvt.eventNode(), msg);
+                    }
+
+                    else if (customEvt.customMessage() instanceof TcpDiscoveryNodeActivatedMessage) {
+                        TcpDiscoveryNodeActivatedMessage msg = (TcpDiscoveryNodeActivatedMessage)customEvt.customMessage();
+
+                        exchId = exchangeId(n.id(), affinityTopologyVersion(e), e.type());
+
+                        exchFut = exchangeFuture(exchId, e, null, null);
                     }
                 }
 
@@ -1672,7 +1682,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (log.isDebugEnabled())
                 log.debug("Received message from node [node=" + nodeId + ", msg=" + msg + ']');
 
-            onMessage(node , msg);
+            onMessage(node, msg);
         }
 
         /**

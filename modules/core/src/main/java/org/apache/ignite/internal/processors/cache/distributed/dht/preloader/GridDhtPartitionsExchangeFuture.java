@@ -44,10 +44,12 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryTopologySnapshot;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
+import org.apache.ignite.internal.processors.cache.CacheAffinitySharedManager;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -70,6 +72,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeActivatedMessage;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -441,7 +444,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             Collection<DynamicCacheDescriptor> receivedCaches;
 
             if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
-                if (!F.isEmpty(reqs))
+                assert discoEvt instanceof DiscoveryCustomEvent;
+
+                DiscoveryCustomMessage customMessage = ((DiscoveryCustomEvent)discoEvt).customMessage();
+
+                if (customMessage instanceof TcpDiscoveryNodeActivatedMessage)
+                    exchange = onServerNodeEvent(crdNode);
+                else if (!F.isEmpty(reqs))
                     exchange = onCacheChangeRequest(crdNode);
                 else {
                     assert affChangeMsg != null : this;
@@ -460,8 +469,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 if (CU.clientNode(discoEvt.eventNode()))
                     exchange = onClientNodeEvent(crdNode);
 //                else if (!discoEvt.eventNode().isActive())
-                else if (!cctx.discovery().activated(discoEvt.eventNode().id()))
-                    exchange = ExchangeType.NONE;
                 else
                     exchange = onServerNodeEvent(crdNode);
             }
@@ -470,7 +477,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             cctx.database().beforeExchange(discoEvt);
 
-            cctx.discovery().activate();
+            if (exchange == ExchangeType.ALL && crd == null)
+                exchange = ExchangeType.NONE;
 
             switch (exchange) {
                 case ALL: {
@@ -515,7 +523,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
-      * @throws IgniteCheckedException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private void initTopologies() throws IgniteCheckedException {
         if (crd != null) {
@@ -644,7 +652,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             centralizedAff = cctx.affinity().onServerLeft(this);
         }
         else {
-            assert discoEvt.type() == EVT_NODE_JOINED : discoEvt;
+//            assert discoEvt.type() == EVT_NODE_JOINED : discoEvt;
 
             cctx.affinity().onServerJoin(this, crd);
         }
@@ -1379,7 +1387,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (!crd.equals(node)) {
                 if (log.isDebugEnabled())
                     log.debug("Received full partition map from unexpected node [oldest=" + crd.id() +
-                            ", nodeId=" + node.id() + ']');
+                        ", nodeId=" + node.id() + ']');
 
                 if (node.order() > crd.order())
                     fullMsgs.put(node, msg);

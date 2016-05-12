@@ -495,14 +495,15 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                         log.debug("Copied old map into new map on oldest node (previous oldest node left) [exchId=" +
                             exchId + ", fullMap=" + fullMapString() + ']');
                 }
-            }
 
-            if (affReady)
-                initPartitions0(exchFut, updateSeq);
-            else {
-                List<List<ClusterNode>> aff = cctx.affinity().idealAssignment();
+                if (affReady)
+                    initPartitions0(exchFut, updateSeq);
+                else {
+                    List<List<ClusterNode>> aff = cctx.affinity().idealAssignment();
 
-                createPartitions(aff, updateSeq);
+                    createPartitions(aff, updateSeq);
+                }
+
             }
 
             consistencyCheck();
