@@ -28,7 +28,7 @@ cluster_name: 'CassandraIgnite'
 
 # It makes new (non-seed) nodes automatically migrate the right data to themselves.
 # When initializing a fresh cluster with no data, add auto_bootstrap: false
-auto_bootstrap: false
+#auto_bootstrap: false
 
 # This defines the number of tokens randomly assigned to this node on the ring
 # The more tokens, relative to other nodes, the larger the proportion of data
@@ -84,8 +84,8 @@ batchlog_replay_throttle_in_kb: 1024
 #   users. It keeps usernames and hashed passwords in system_auth.credentials table.
 #   Please increase system_auth keyspace replication factor if you use this authenticator.
 #   If using PasswordAuthenticator, CassandraRoleManager must also be used (see below)
-authenticator: PasswordAuthenticator
-#authenticator: AllowAllAuthenticator
+#authenticator: PasswordAuthenticator
+authenticator: AllowAllAuthenticator
 
 # Authorization backend, implementing IAuthorizer; used to limit access/provide permissions
 # Out of the box, Cassandra provides org.apache.cassandra.auth.{AllowAllAuthorizer,
@@ -94,8 +94,8 @@ authenticator: PasswordAuthenticator
 # - AllowAllAuthorizer allows any action to any user - set it to disable authorization.
 # - CassandraAuthorizer stores permissions in system_auth.permissions table. Please
 #   increase system_auth keyspace replication factor if you use this authorizer.
-authorizer: CassandraAuthorizer
-#authorizer: AllowAllAuthorizer
+#authorizer: CassandraAuthorizer
+authorizer: AllowAllAuthorizer
 
 # Part of the Authentication & Authorization backend, implementing IRoleManager; used
 # to maintain grants and memberships between roles.
