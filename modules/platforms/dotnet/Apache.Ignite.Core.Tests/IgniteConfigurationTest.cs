@@ -161,7 +161,8 @@ namespace Apache.Ignite.Core.Tests
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 SpringConfigUrl = @"config\spring-test.xml",
-                NetworkSendRetryDelay = TimeSpan.FromSeconds(45)
+                NetworkSendRetryDelay = TimeSpan.FromSeconds(45),
+                MetricsHistorySize = 57
             };
 
             using (var ignite = Ignition.Start(cfg))
@@ -170,6 +171,11 @@ namespace Apache.Ignite.Core.Tests
 
                 Assert.AreEqual(45, resCfg.NetworkSendRetryDelay.TotalSeconds);  // .NET overrides XML
                 Assert.AreEqual(2999, resCfg.NetworkTimeout.TotalMilliseconds);  // Not set in .NET -> comes from XML
+                Assert.AreEqual(57, resCfg.MetricsHistorySize);  // Only set in .NET
+
+                var disco = resCfg.DiscoverySpi as TcpDiscoverySpi;
+                Assert.IsNotNull(disco);
+                Assert.AreEqual(TimeSpan.FromMilliseconds(300), disco.SocketTimeout);
             }
         }
 
