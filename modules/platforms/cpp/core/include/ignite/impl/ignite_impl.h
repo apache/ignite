@@ -23,6 +23,7 @@
 #include <ignite/common/utils.h>
 
 #include "ignite/impl/cache/cache_impl.h"
+#include "ignite/impl/transactions/transactions_impl.h"
 #include "ignite/impl/ignite_environment.h"
 
 namespace ignite 
@@ -34,7 +35,8 @@ namespace ignite
          */
         class IGNITE_FRIEND_EXPORT IgniteImpl
         {
-            friend class Ignite;
+            typedef ignite::common::concurrent::SharedPointer<IgniteEnvironment> SP_IgniteEnvironment;
+            typedef ignite::common::concurrent::SharedPointer<impl::transactions::TransactionsImpl> SP_TransactionsImpl;
         public:
             /**
              * Constructor used to create new instance.
@@ -42,7 +44,7 @@ namespace ignite
              * @param env Environment.
              * @param javaRef Reference to java object.
              */
-            IgniteImpl(ignite::common::concurrent::SharedPointer<IgniteEnvironment> env, jobject javaRef);
+            IgniteImpl(SP_IgniteEnvironment env, jobject javaRef);
             
             /**
              * Destructor.
@@ -70,7 +72,7 @@ namespace ignite
              * @param err Error.
              */
             template<typename K, typename V> 
-            cache::CacheImpl* GetCache(const char* name, IgniteError* err)
+            cache::CacheImpl* GetCache(const char* name, IgniteError& err)
             {
                 ignite::jni::java::JniErrorInfo jniErr;
 
@@ -78,7 +80,7 @@ namespace ignite
 
                 if (!cacheJavaRef)
                 {
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
 
                     return NULL;
                 }
@@ -95,7 +97,7 @@ namespace ignite
              * @param err Error.
              */
             template<typename K, typename V>
-            cache::CacheImpl* GetOrCreateCache(const char* name, IgniteError* err)
+            cache::CacheImpl* GetOrCreateCache(const char* name, IgniteError& err)
             {
                 ignite::jni::java::JniErrorInfo jniErr;
 
@@ -103,7 +105,7 @@ namespace ignite
 
                 if (!cacheJavaRef)
                 {
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
 
                     return NULL;
                 }
@@ -120,7 +122,7 @@ namespace ignite
              * @param err Error.
              */
             template<typename K, typename V>
-            cache::CacheImpl* CreateCache(const char* name, IgniteError* err)
+            cache::CacheImpl* CreateCache(const char* name, IgniteError& err)
             {
                 ignite::jni::java::JniErrorInfo jniErr;
 
@@ -128,7 +130,7 @@ namespace ignite
 
                 if (!cacheJavaRef)
                 {
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
 
                     return NULL;
                 }
@@ -150,13 +152,34 @@ namespace ignite
             {
                 return proxy.impl.Get();
             }
+
+            /**
+             * Get transactions.
+             *
+             * @return TransactionsImpl instance.
+             */
+            SP_TransactionsImpl GetTransactions()
+            {
+                return txImpl;
+            }
+
         private:
+            /**
+             * Get transactions internal call.
+             *
+             * @return TransactionsImpl instance.
+             */
+            SP_TransactionsImpl InternalGetTransactions(IgniteError &err);
+
             /** Environment. */
-            ignite::common::concurrent::SharedPointer<IgniteEnvironment> env;
-            
+            SP_IgniteEnvironment env;
+
             /** Native Java counterpart. */
-            jobject javaRef;   
-            
+            jobject javaRef;
+
+            /** Transactions implementaion. */
+            SP_TransactionsImpl txImpl;
+
             IGNITE_NO_COPY_ASSIGNMENT(IgniteImpl)
         };
     }

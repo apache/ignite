@@ -165,10 +165,6 @@
 
         <profile>
             <id>release</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-                <jdk>[1.7,)</jdk>
-            </activation>
             <build>
                 <plugins>
                     <plugin><!-- skipping generation of dependencies licenses
