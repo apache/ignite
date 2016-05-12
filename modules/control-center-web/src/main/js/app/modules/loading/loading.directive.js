@@ -19,7 +19,7 @@ import template from './loading.jade!';
 import './loading.css!';
 
 export default ['igniteLoading', ['$loading', '$compile', ($loading, $compile) => {
-    const link = (scope, element, attrs) => {
+    const link = (scope, element) => {
         const compiledTemplate = $compile(template());
 
         const build = () => {
@@ -35,13 +35,7 @@ export default ['igniteLoading', ['$loading', '$compile', ($loading, $compile) =
             }
         };
 
-        const update = () => {
-            scope.loading && scope.loading.html(compiledTemplate(scope));
-        };
-
         build();
-
-        attrs.$observe('text', (value) => (_.isUndefined(value) && update()));
     };
 
     return {

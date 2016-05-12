@@ -424,7 +424,6 @@ consoleModule.controller('domainsController', [
                                         importDomainModal.$promise.then(function () {
                                             $scope.importDomain.action = 'connect';
                                             $scope.importDomain.tables = [];
-                                            $scope.importDomain.loadingOptions = LOADING_SCHEMAS;
 
                                             $focus('jdbcUrl');
                                         });
@@ -450,6 +449,7 @@ consoleModule.controller('domainsController', [
         function _loadSchemas() {
             IgniteAgentMonitor.awaitAgent()
                 .then(function() {
+                    $scope.importDomain.loadingOptions = LOADING_SCHEMAS;
                     $loading.start('importDomainFromDb');
 
                     if ($root.IgniteDemoMode)
@@ -472,7 +472,6 @@ consoleModule.controller('domainsController', [
                         $scope.importDomainNext();
 
                     $scope.importDomain.info = INFO_SELECT_SCHEMAS;
-                    $scope.importDomain.loadingOptions = LOADING_TABLES;
                 })
                 .catch(function(errMsg) {
                     $common.showError(errMsg);
@@ -521,6 +520,7 @@ consoleModule.controller('domainsController', [
         function _loadTables() {
             IgniteAgentMonitor.awaitAgent()
                 .then(function() {
+                    $scope.importDomain.loadingOptions = LOADING_TABLES;
                     $loading.start('importDomainFromDb');
 
                     $scope.importDomain.allTablesSelected = false;
@@ -604,7 +604,6 @@ consoleModule.controller('domainsController', [
             $scope.importDomain.action = 'options';
             $scope.importDomain.button = 'Save';
             $scope.importDomain.info = INFO_SELECT_OPTIONS;
-            $scope.importDomain.loadingOptions = SAVING_DOMAINS;
         }
 
         function toJavaClassName(name) {
@@ -639,6 +638,7 @@ consoleModule.controller('domainsController', [
 
         function _saveBatch(batch) {
             if (batch && batch.length > 0) {
+                $scope.importDomain.loadingOptions = SAVING_DOMAINS;
                 $loading.start('importDomainFromDb');
 
                 $http.post('/api/v1/configuration/domains/save/batch', batch)
@@ -1011,12 +1011,10 @@ consoleModule.controller('domainsController', [
             else if ($scope.importDomain.action === 'tables' && $scope.importDomain.schemas.length > 0) {
                 $scope.importDomain.action = 'schemas';
                 $scope.importDomain.info = INFO_SELECT_SCHEMAS;
-                $scope.importDomain.loadingOptions = LOADING_TABLES;
             }
             else {
                 $scope.importDomain.action = 'connect';
                 $scope.importDomain.info = INFO_CONNECT_TO_DB;
-                $scope.importDomain.loadingOptions = LOADING_SCHEMAS;
             }
         };
 
