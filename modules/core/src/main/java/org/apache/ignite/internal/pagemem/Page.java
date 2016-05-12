@@ -38,20 +38,6 @@ public interface Page extends AutoCloseable {
     public FullPageId fullId();
 
     /**
-     * Simple version counter.
-     *
-     * @return Current version.
-     */
-    public int version();
-
-    /**
-     * Increment version.
-     *
-     * @return Incremented version value.
-     */
-    public int incrementVersion();
-
-    /**
      * @return ByteBuffer for modifying the page.
      */
     public ByteBuffer getForRead();

@@ -52,6 +52,11 @@ public interface PageMemory extends LifecycleAware, PageIdAllocator {
     public int pageSize();
 
     /**
+     * @return Page size with system overhead, in bytes.
+     */
+    public int systemPageSize();
+
+    /**
      * Gets a collection of dirty page IDs since the last checkpoint. If a dirty page is being written after
      * the checkpointing operation begun, the modifications will be written to a temporary buffer which will
      * be flushed to the main memory after the checkpointing finished. This method must be called when no

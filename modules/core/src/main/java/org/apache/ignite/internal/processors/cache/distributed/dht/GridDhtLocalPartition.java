@@ -136,6 +136,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             Math.max(MAX_DELETE_QUEUE_SIZE / cctx.affinity().partitions(), 20);
 
         rmvQueue = new GridCircularBuffer<>(U.ceilPow2(delQueueSize));
+
+        cntr.set(cctx.offheap().lastUpdatedPartitionCounter(id));
     }
 
     /**

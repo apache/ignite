@@ -35,6 +35,9 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.eviction.EvictableEntry;
+import org.apache.ignite.internal.pagemem.wal.StorageException;
+import org.apache.ignite.internal.pagemem.wal.record.DataEntry;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
@@ -975,6 +978,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             cctx.dataStructures().onEntryUpdated(key, false, keepBinary);
         }
 
+        onUpdateFinished(updateCntr0);
+
         if (log.isDebugEnabled())
             log.debug("Updated cache entry [val=" + val + ", old=" + old + ", entry=" + this + ']');
 
@@ -1015,7 +1020,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         String taskName,
         @Nullable GridCacheVersion dhtVer,
         @Nullable Long updateCntr
-        ) throws IgniteCheckedException, GridCacheEntryRemovedException {
+    ) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert cctx.transactional();
 
         CacheObject old;
@@ -1187,11 +1192,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             onMarkedObsolete();
         }
 
-        if (intercept) {
-            entry0.updateCounter(updateCntr0);
+        onUpdateFinished(updateCntr0);
 
+        if (intercept)
             cctx.config().getInterceptor().onAfterRemove(entry0);
-        }
 
         if (valid) {
             CacheObject ret;
@@ -1519,6 +1523,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     updateCntr,
                     null,
                     AffinityTopologyVersion.NONE);
+
+                onUpdateFinished(updateCntr);
             }
 
             cctx.dataStructures().onEntryUpdated(key, op == GridCacheOperation.DELETE, keepBinary);
@@ -1786,6 +1792,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                             if (updateCntr != null)
                                 updateCntr0 = updateCntr;
+
+                            onUpdateFinished(updateCntr0);
 
                             cctx.continuousQueries().onEntryUpdated(
                                 key,
@@ -2066,14 +2074,16 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 updated = cctx.kernalContext().cacheObjects().prepareForCache(updated, cctx);
 
-                storeValue(updated, newExpireTime, newVer);
-
-                update(updated, newExpireTime, newTtl, newVer, true);
-
                 updateCntr0 = nextPartCounter(topVer);
 
                 if (updateCntr != null)
                     updateCntr0 = updateCntr;
+
+                logUpdate(op, updated, newVer, updateCntr0);
+
+                storeValue(updated, newExpireTime, newVer);
+
+                update(updated, newExpireTime, newTtl, newVer, true);
 
                 drReplicate(drType, updated, newVer, topVer);
 
@@ -2126,6 +2136,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (oldVal == null)
                     oldVal = saveValueForIndexUnlocked();
 
+                updateCntr0 = nextPartCounter(topVer);
+
+                if (updateCntr != null)
+                    updateCntr0 = updateCntr;
+
+                logUpdate(op, null, newVer, updateCntr0);
+
                 removeValue(oldVal, ver);
 
                 if (hadVal) {
@@ -2157,11 +2174,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 clearReaders();
 
                 recordNodeId(affNodeId, topVer);
-
-                updateCntr0 = nextPartCounter(topVer);
-
-                if (updateCntr != null)
-                    updateCntr0 = updateCntr;
 
                 drReplicate(drType, null, newVer, topVer);
 
@@ -2228,6 +2240,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     oldVal = cctx.toCacheObject(cctx.unwrapTemporary(interceptRes.get2()));
             }
         }
+
+        onUpdateFinished(updateCntr0);
 
         if (log.isDebugEnabled())
             log.debug("Updated cache entry [val=" + val + ", old=" + oldVal + ", entry=" + this + ']');
@@ -2947,6 +2961,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         }
     }
 
+    protected void onUpdateFinished(Long cntr) {
+        if (!cctx.isLocal() && !isNear() && cntr != null)
+            cctx.offheap().onPartitionCounterUpdated(partition(), cntr);
+    }
+
     /**
      * @param topVer Topology version.
      * @return Update counter.
@@ -3422,6 +3441,35 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert val != null : "null values in update for key: " + key;
 
         cctx.offheap().update(key, val, ver, expireTime, partition());
+    }
+
+    /**
+     * @param op Update operation.
+     * @param val Write value.
+     * @param writeVer Write version.
+     * @param updCntr Update counter.
+     */
+    protected void logUpdate(GridCacheOperation op, CacheObject val, GridCacheVersion writeVer, long updCntr)
+        throws IgniteCheckedException {
+        // We log individual updates only in ATMOIC cache.
+        assert cctx.atomic();
+
+        try {
+            if (cctx.shared().wal() != null)
+                cctx.shared().wal().log(new DataRecord(new DataEntry(
+                    cctx.cacheId(),
+                    key,
+                    val,
+                    op,
+                    null,
+                    writeVer,
+                    partition(),
+                    updCntr)));
+        }
+        catch (StorageException e) {
+            throw new IgniteCheckedException("Failed to log ATOMIC cache update [key=" + key + ", op=" + op +
+                ", val=" + val + ']', e);
+        }
     }
 
     /**
