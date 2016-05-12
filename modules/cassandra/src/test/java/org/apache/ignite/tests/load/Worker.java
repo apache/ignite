@@ -116,16 +116,17 @@ public abstract class Worker extends Thread {
     @SuppressWarnings("unchecked")
     @Override public void run() {
         try {
-            if (cacheStore != null)
-                execute();
-            else {
+            if (ignite != null)
                 igniteCache = ignite.getOrCreateCache(new CacheConfiguration(TestsHelper.getLoadTestsCacheName()));
-                execute();
-            }
+
+            execute();
         }
         catch (Throwable e) {
             executionError = e;
             throw new RuntimeException("Test execution abnormally terminated", e);
+        }
+        finally {
+            reportTestCompletion();
         }
     }
 
@@ -161,6 +162,16 @@ public abstract class Worker extends Thread {
     /** */
     public int getMsgCountTotal() {
         return warmupMsgProcessed + msgProcessed;
+    }
+
+    /** */
+    public int getWarmupMsgProcessed() {
+        return warmupMsgProcessed;
+    }
+
+    /** */
+    public int getMsgProcessed() {
+        return msgProcessed;
     }
 
     /** */
@@ -260,7 +271,6 @@ public abstract class Worker extends Thread {
         finally {
             warmupFinishTime = warmupFinishTime != 0 ? warmupFinishTime : System.currentTimeMillis();
             finishTime = System.currentTimeMillis();
-            reportTestCompletion();
         }
     }
 
@@ -359,6 +369,9 @@ public abstract class Worker extends Thread {
 
         int completed = (int)(statReportedTime - testStartTime) * 100 / TestsHelper.getLoadTestsExecutionTime();
 
+        if (completed > 100)
+            completed = 100;
+
         if (warmup) {
             log.info("Warm up messages processed " + warmupMsgProcessed + ", " +
                 "speed " + getWarmUpSpeed() + " msg/sec, " + completed + "% completed");
@@ -394,7 +407,9 @@ public abstract class Worker extends Thread {
         }
 
         builder.append("Processed messages: ").append(msgProcessed).append(SystemHelper.LINE_SEPARATOR);
-        builder.append("Processing speed: ").append(getSpeed()).append(" msg/sec");
+        builder.append("Processing speed: ").append(getSpeed()).append(" msg/sec").append(SystemHelper.LINE_SEPARATOR);
+        builder.append("Errors: ").append(msgFailed).append(" / ").
+                append(String.format("%.2f", getErrorsPercent()).replace(",", ".")).append("%");
 
         if (executionError != null)
             log.error(builder.toString(), executionError);

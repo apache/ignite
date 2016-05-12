@@ -103,8 +103,12 @@ public abstract class LoadTestDriver {
                     failed = true;
                 }
 
-                if (failed || worker.isFailed())
+                if (failed || worker.isFailed()) {
                     failedWorkers.add(worker.getName());
+                    logger().info("Worker " + worker.getName() + " execution failed");
+                }
+                else
+                    logger().info("Worker " + worker.getName() + " successfully completed");
             }
 
             printTestResultsHeader(testName, failedWorkers);
@@ -175,7 +179,7 @@ public abstract class LoadTestDriver {
 
 
         for (Worker worker : workers) {
-            cnt += worker.getMsgCountTotal();
+            cnt += worker.getMsgProcessed();
             errCnt += worker.getErrorsCount();
             speed += worker.getSpeed();
         }
