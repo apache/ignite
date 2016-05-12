@@ -259,6 +259,21 @@
                         <xs:attribute name="maxAckTimeout" type="xs:string" />
                         <xs:attribute name="networkTimeout" type="xs:string" />
                         <xs:attribute name="joinTimeout" type="xs:string" />
+                        
+                        <xs:attribute name="ClientReconnectDisabled" type="xs:boolean" />
+                        <xs:attribute name="ForceServerMode" type="xs:boolean" />
+                        <xs:attribute name="HeartbeatFrequency" type="xs:string" />
+                        <xs:attribute name="IpFinderCleanFrequency" type="xs:string" />
+                        
+                        <xs:attribute name="localAddress" type="xs:string" />
+                        <xs:attribute name="localPort" type="xs:int" />
+                        <xs:attribute name="localPortRange" type="xs:int" />
+                        <xs:attribute name="maxMissedClientHeartbeats" type="xs:int" />
+                        <xs:attribute name="maxMissedHeartbeats" type="xs:int" />
+                        <xs:attribute name="reconnectCount" type="xs:int" />
+                        <xs:attribute name="statisticsPrintFrequency" type="xs:string" />
+                        <xs:attribute name="threadPriority" type="xs:int" />
+                        <xs:attribute name="topologyHistorySize" type="xs:int" />
                         <xs:attribute name="type" type="xs:string" use="required" />
                     </xs:complexType>
                 </xs:element>

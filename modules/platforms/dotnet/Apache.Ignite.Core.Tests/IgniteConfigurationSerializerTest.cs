@@ -420,7 +420,20 @@ namespace Apache.Ignite.Core.Tests
                         ResponseTimeout = TimeSpan.FromDays(1),
                         LocalAddress = "127.0.0.2",
                         Endpoints = new[] {"", "abc"}
-                    }
+                    },
+                    ClientReconnectDisabled = true,
+                    ForceServerMode = true,
+                    HeartbeatFrequency = TimeSpan.FromSeconds(3),
+                    IpFinderCleanFrequency = TimeSpan.FromMinutes(7),
+                    LocalAddress = "127.0.0.1",
+                    LocalPort = 49900,
+                    LocalPortRange = 13,
+                    MaxMissedClientHeartbeats = 9,
+                    MaxMissedHeartbeats = 7,
+                    ReconnectCount = 11,
+                    StatisticsPrintFrequency = TimeSpan.FromSeconds(20),
+                    ThreadPriority = 6,
+                    TopologyHistorySize = 1234567
                 },
                 IgniteHome = "igniteHome",
                 IncludedEventTypes = EventType.CacheQueryAll,
