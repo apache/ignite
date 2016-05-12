@@ -93,6 +93,8 @@ import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.IN
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotEquals;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 /**
  * Binary marshaller tests.
  */
@@ -180,7 +182,50 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testString() throws Exception {
-        assertEquals("str", marshalUnmarshal("str"));
+        // Ascii check.
+        String str = "ascii0123456789";
+        assertEquals(str, marshalUnmarshal(str));
+
+        byte[] bytes = str.getBytes(UTF_8);
+        assertEquals(str, BinaryUtils.utf8BytesToStr(bytes, 0, bytes.length));
+
+        bytes = BinaryUtils.strToUtf8Bytes(str);
+        assertEquals(str, new String(bytes, UTF_8));
+
+        // Extended symbols set check set.
+        str = "的的abcdкириллица";
+        assertEquals(str, marshalUnmarshal(str));
+
+        bytes = str.getBytes(UTF_8);
+        assertEquals(str, BinaryUtils.utf8BytesToStr(bytes, 0, bytes.length));
+
+        bytes = BinaryUtils.strToUtf8Bytes(str);
+        assertEquals(str, new String(bytes, UTF_8));
+
+        // Special symbols check.
+        str = new String(new char[]{0xD800, '的', 0xD800, 0xD800, 0xDC00, 0xDFFF});
+        assertEquals(str, marshalUnmarshal(str));
+
+        bytes = str.getBytes(UTF_8);
+        try {
+            BinaryUtils.utf8BytesToStr(bytes, 0, bytes.length);
+            assert false : "Mustn't be able to convert the string:" + str;
+        }
+        catch (BinaryObjectException e) {
+            //expected.
+        }
+
+        bytes = BinaryUtils.strToUtf8Bytes(str);
+        assertNotEquals(str, new String(bytes, UTF_8));
+
+        str = new String(new char[]{55296});
+        assertEquals(str, marshalUnmarshal(str));
+
+        bytes = str.getBytes(UTF_8);
+        assertNotEquals(str, BinaryUtils.utf8BytesToStr(bytes, 0, bytes.length));
+
+        bytes = BinaryUtils.strToUtf8Bytes(str);
+        assertNotEquals(str, new String(bytes, UTF_8));
     }
 
     /**

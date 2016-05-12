@@ -391,6 +391,11 @@ public final class IgniteSystemProperties {
         "IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID";
 
     /**
+     * Manages type of serialization mechanism for {@link String} that are marshalled/unmarshaller by BinaryMarshaller.
+     */
+    public static final String IGNITE_USE_BINARY_STRING_SER_VER_2 = "IGNITE_USE_BINARY_STRING_SER_VER_2";
+
+    /**
      * If set to {@code true}, then default selected keys set is used inside
      * {@code GridNioServer} which lead to some extra garbage generation when
      * processing selected keys.
