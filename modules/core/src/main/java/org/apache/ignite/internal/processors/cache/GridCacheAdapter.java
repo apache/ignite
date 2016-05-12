@@ -730,7 +730,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             IgniteCacheOffheapManager offheapMgr = ctx.isNear() ? ctx.near().dht().context().offheap() : ctx.offheap();
 
             if (modes.offheap)
-                its.add(offheapMgr.<K, V>entriesIterator(modes.primary, modes.backup, topVer));
+                its.add(offheapMgr.<K, V>entriesIterator(modes.primary, modes.backup, topVer, ctx.keepBinary()));
         }
 
         final Iterator<Cache.Entry<K, V>> it = F.flatIterators(its);
@@ -3691,7 +3691,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         GridCloseableIterator<Cache.Entry<K, V>> it;
 
         try {
-            it = ctx.offheap().entriesIterator(true, true, ctx.affinity().affinityTopologyVersion());
+            it = ctx.offheap().entriesIterator(true, true, ctx.affinity().affinityTopologyVersion(), ctx.keepBinary());
         }
         catch (IgniteCheckedException e) {
             throw CU.convertToCacheException(e);
