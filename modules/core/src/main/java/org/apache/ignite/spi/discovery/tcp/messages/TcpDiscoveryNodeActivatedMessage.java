@@ -24,15 +24,17 @@ import org.jetbrains.annotations.Nullable;
 
 public class TcpDiscoveryNodeActivatedMessage implements DiscoveryCustomMessage {
 
+    private final IgniteUuid id = IgniteUuid.randomUuid();
+
     @Override public IgniteUuid id() {
-        throw new UnsupportedOperationException("Not implemented");
+        return id;
     }
 
     @Nullable @Override public DiscoveryCustomMessage ackMessage() {
-        throw new UnsupportedOperationException("Not implemented");
+        return null;
     }
 
     @Override public boolean isMutable() {
-        throw new UnsupportedOperationException("Not implemented");
+        return false;
     }
 }

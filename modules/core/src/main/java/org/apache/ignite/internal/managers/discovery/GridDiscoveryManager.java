@@ -775,6 +775,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         localNodeInitLsnrs.add(lsnr);
     }
 
+    @Override public DiscoveryDataExchangeType discoveryDataType() {
+        return DiscoveryDataExchangeType.DISCOVERY_PROC;
+    }
+
     /**
      * @return Metrics.
      */

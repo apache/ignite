@@ -470,6 +470,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             cctx.database().beforeExchange(discoEvt);
 
+            cctx.discovery().activate();
+
             switch (exchange) {
                 case ALL: {
                     distributedExchange();
