@@ -385,7 +385,7 @@ namespace Apache.Ignite.Core.Tests
                     JoinTimeout = TimeSpan.FromSeconds(5),
                     IpFinder = new TcpDiscoveryStaticIpFinder
                     {
-                        Endpoints = new[] { "127.0.0.1:47500", "127.0.0.1:47501" }
+                        Endpoints = new[] { "127.0.0.1:49900", "127.0.0.1:49901" }
                     },
                     ClientReconnectDisabled = true,
                     ForceServerMode = true,
@@ -399,7 +399,7 @@ namespace Apache.Ignite.Core.Tests
                     ReconnectCount = 11,
                     StatisticsPrintFrequency = TimeSpan.FromSeconds(20),
                     ThreadPriority = 6,
-                    TopologyHistorySize = 100
+                    TopologyHistorySize = 1234567
                 },
                 GridName = "gridName1",
                 IncludedEventTypes = EventType.SwapspaceAll,
