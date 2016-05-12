@@ -152,17 +152,17 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsNotNull(nearCfg);
             Assert.AreEqual(7, nearCfg.NearStartSize);
 
-            var plc = nearCfg.EvictionPolicy as LruEvictionPolicy;
+            var plc = nearCfg.EvictionPolicy as FifoEvictionPolicy;
             Assert.IsNotNull(plc);
-            Assert.AreEqual(1, plc.BatchSize);
-            Assert.AreEqual(2, plc.MaxSize);
-            Assert.AreEqual(3, plc.MaxMemorySize);
+            Assert.AreEqual(10, plc.BatchSize);
+            Assert.AreEqual(20, plc.MaxSize);
+            Assert.AreEqual(30, plc.MaxMemorySize);
 
-            var fifoPlc = cacheCfg.EvictionPolicy as FifoEvictionPolicy;
-            Assert.IsNotNull(fifoPlc);
-            Assert.AreEqual(10, fifoPlc.BatchSize);
-            Assert.AreEqual(20, fifoPlc.MaxSize);
-            Assert.AreEqual(30, fifoPlc.MaxMemorySize);
+            var plc2 = cacheCfg.EvictionPolicy as LruEvictionPolicy;
+            Assert.IsNotNull(plc2);
+            Assert.AreEqual(1, plc2.BatchSize);
+            Assert.AreEqual(2, plc2.MaxSize);
+            Assert.AreEqual(3, plc2.MaxMemorySize);
 
             Assert.AreEqual(new Dictionary<string, object> {{"myNode", "true"}}, cfg.UserAttributes);
 
