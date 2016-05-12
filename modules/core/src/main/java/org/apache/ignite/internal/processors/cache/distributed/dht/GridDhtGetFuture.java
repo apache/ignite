@@ -224,6 +224,8 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                             log.debug("Failed to request keys from preloader [keys=" + keys + ", err=" + e + ']');
 
                         onDone(e);
+
+                        return null;
                     }
 
                     Map<KeyCacheObject, Boolean> mappedKeys = null;
