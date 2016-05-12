@@ -215,7 +215,14 @@
     <ClInclude Include="..\..\include\ignite\impl\ignite_impl.h" />
     <ClInclude Include="..\..\include\ignite\impl\handle_registry.h" />
     <ClInclude Include="..\..\include\ignite\impl\interop\interop_external_memory.h" />
+    <ClInclude Include="..\..\include\ignite\impl\interop\interop_target.h" />
     <ClInclude Include="..\..\include\ignite\impl\operations.h" />
+    <ClInclude Include="..\..\include\ignite\impl\transactions\transactions_impl.h" />
+    <ClInclude Include="..\..\include\ignite\impl\transactions\transaction_impl.h" />
+    <ClInclude Include="..\..\include\ignite\transactions\transaction.h" />
+    <ClInclude Include="..\..\include\ignite\transactions\transactions.h" />
+    <ClInclude Include="..\..\include\ignite\transactions\transaction_consts.h" />
+    <ClInclude Include="..\..\include\ignite\transactions\transaction_metrics.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\ignite.cpp" />
@@ -227,6 +234,11 @@
     <ClCompile Include="..\..\src\impl\ignite_impl.cpp" />
     <ClCompile Include="..\..\src\impl\handle_registry.cpp" />
     <ClCompile Include="..\..\src\impl\interop\interop_external_memory.cpp" />
+    <ClCompile Include="..\..\src\impl\interop\interop_target.cpp" />
+    <ClCompile Include="..\..\src\impl\transactions\transactions_impl.cpp" />
+    <ClCompile Include="..\..\src\impl\transactions\transaction_impl.cpp" />
+    <ClCompile Include="..\..\src\transactions\transaction.cpp" />
+    <ClCompile Include="..\..\src\transactions\transactions.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\binary\project\vs\binary.vcxproj">

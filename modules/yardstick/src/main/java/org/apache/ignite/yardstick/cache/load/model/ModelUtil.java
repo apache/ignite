@@ -49,8 +49,8 @@ public class ModelUtil {
      * Classes of values.
      */
     private static Class[] valClasses = {
-        Car.class,
-        Truck.class,
+//        Car.class,
+//        Truck.class,
         Person.class,
         Organization.class,
         Account.class,

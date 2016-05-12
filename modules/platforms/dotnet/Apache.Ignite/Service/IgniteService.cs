@@ -18,40 +18,41 @@
 namespace Apache.Ignite.Service
 {
     using System;
-    using System.ComponentModel;
+    using System.Collections.Generic;
+    using System.Configuration.Install;
     using System.IO;
     using System.Linq;
     using System.Reflection;
-    using System.Runtime.InteropServices;
     using System.ServiceProcess;
     using System.Text;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Lifecycle;
 
     /// <summary>
     /// Ignite windows service.
     /// </summary>
-    internal class IgniteService : ServiceBase
+    internal class IgniteService : ServiceBase, ILifecycleBean
     {
         /** Service name. */
-        private static readonly string SvcName = "Apache Ignite.NET";
+        public const string SvcName = "Apache Ignite.NET";
 
         /** Service display name. */
-        private static readonly string SvcDisplayName = "Apache Ignite.NET " + 
+        public static readonly string SvcDisplayName = SvcName + " " +
             Assembly.GetExecutingAssembly().GetName().Version.ToString(4);
 
         /** Service description. */
-        private static readonly string SvcDesc = "Apache Ignite.NET Service.";
+        public const string SvcDesc = "Apache Ignite.NET Service.";
 
         /** Current executable name. */
         private static readonly string ExeName =
             new FileInfo(new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath).FullName;
 
-        /** Current executable fully qualified name. */
-        private static readonly string FullExeName = Path.GetFileName(FullExeName);
-
         /** Ignite configuration to start with. */
         private readonly IgniteConfiguration _cfg;
+
+        /** Stopping recurse check flag. */
+        private bool _isStopping;
 
         /// <summary>
         /// Constructor.
@@ -63,6 +64,13 @@ namespace Apache.Ignite.Service
             ServiceName = SvcName;
 
             _cfg = cfg;
+
+            // Subscribe to lifecycle events
+            var beans = _cfg.LifecycleBeans ?? new List<ILifecycleBean>();
+
+            beans.Add(this);
+
+            _cfg.LifecycleBeans = beans;
         }
 
         /** <inheritDoc /> */
@@ -74,7 +82,8 @@ namespace Apache.Ignite.Service
         /** <inheritDoc /> */
         protected override void OnStop()
         {
-            Ignition.StopAll(true);
+            if (!_isStopping)
+                Ignition.StopAll(true);
         }
 
         /// <summary>
@@ -140,47 +149,15 @@ namespace Apache.Ignite.Service
         private static void Install0(Tuple<string, string>[] args)
         {
             // 1. Prepare arguments.
-            var binPath = new StringBuilder(FullExeName).Append(" ").Append(IgniteRunner.Svc);
+            var argString = new StringBuilder(IgniteRunner.Svc);
 
             foreach (var arg in args)
-                binPath.Append(" ").AppendFormat("-{0}={1}", arg.Item1, arg.Item2);
+                argString.Append(" ").AppendFormat("-{0}={1}", arg.Item1, arg.Item2);
 
-            // 2. Get SC manager.
-            var scMgr = OpenServiceControlManager();
+            IgniteServiceInstaller.Args = argString.ToString();
 
-            // 3. Create service.
-            var svc = NativeMethods.CreateService(
-                scMgr,
-                SvcName,
-                SvcDisplayName,
-                983551, // Access constant. 
-                0x10,   // Service type SERVICE_WIN32_OWN_PROCESS.
-                0x2,    // Start type SERVICE_AUTO_START.
-                0x2,    // Error control SERVICE_ERROR_SEVERE.
-                binPath.ToString(),
-                null,
-                IntPtr.Zero,
-                null,
-                null,   // Use priviliged LocalSystem account.
-                null
-            );
-
-            if (svc == IntPtr.Zero)
-                throw new IgniteException("Failed to create the service.", new Win32Exception());
-
-            // 4. Set description.
-            var desc = new ServiceDescription {desc = Marshal.StringToHGlobalUni(SvcDesc)};
-
-
-            try 
-            {
-                if (!NativeMethods.ChangeServiceConfig2(svc, 1u, ref desc)) 
-                    throw new IgniteException("Failed to set service description.", new Win32Exception());
-            }
-            finally 
-            {
-                Marshal.FreeHGlobal(desc.desc);
-            }
+            // 2. Install service.
+            ManagedInstallerClass.InstallHelper(new[] { ExeName });
         }
 
         /// <summary>
@@ -188,29 +165,18 @@ namespace Apache.Ignite.Service
         /// </summary>
         private static void Uninstall0()
         {
-            var scMgr = OpenServiceControlManager();
-
-            var svc = NativeMethods.OpenService(scMgr, SvcName, 65536);
-
-            if (svc == IntPtr.Zero)
-                throw new IgniteException("Failed to uninstall the service.", new Win32Exception());
-
-            NativeMethods.DeleteService(svc);
+            ManagedInstallerClass.InstallHelper(new[] { ExeName, "/u" });
         }
 
-        /// <summary>
-        /// Opens SC manager.
-        /// </summary>
-        /// <returns>SC manager pointer.</returns>
-        private static IntPtr OpenServiceControlManager()
+        /** <inheritdoc /> */
+        public void OnLifecycleEvent(LifecycleEventType evt)
         {
-            var ptr = NativeMethods.OpenSCManager(null, null, 983103);
+            if (evt == LifecycleEventType.AfterNodeStop)
+            {
+                _isStopping = true;
 
-            if (ptr == IntPtr.Zero)
-                throw new IgniteException("Failed to initialize Service Control manager " +
-                                          "(did you run the command as administrator?)", new Win32Exception());
-
-            return ptr;
+                Stop();
+            }
         }
     }
 }

@@ -262,6 +262,28 @@
                         <xs:attribute name="type" type="xs:string" use="required" />
                     </xs:complexType>
                 </xs:element>
+                <xs:element name="communicationSpi" minOccurs="0">
+                    <xs:complexType>
+                        <xs:attribute name="ackSendThreshold" type="xs:int" />
+                        <xs:attribute name="connectTimeout" type="xs:string" />
+                        <xs:attribute name="directBuffer" type="xs:boolean" />
+                        <xs:attribute name="directSendBuffer" type="xs:boolean" />
+                        <xs:attribute name="idleConnectionTimeout" type="xs:string" />
+                        <xs:attribute name="localAddress" type="xs:string" />
+                        <xs:attribute name="localPort" type="xs:int" />
+                        <xs:attribute name="localPortRange" type="xs:int" />
+                        <xs:attribute name="maxConnectTimeout" type="xs:string" />
+                        <xs:attribute name="messageQueueLimit" type="xs:string" />
+                        <xs:attribute name="reconnectCount" type="xs:int" />
+                        <xs:attribute name="selectorsCount" type="xs:int" />
+                        <xs:attribute name="slowClientQueueLimit" type="xs:int" />
+                        <xs:attribute name="socketReceiveBufferSize" type="xs:int" />
+                        <xs:attribute name="socketSendBufferSize" type="xs:int" />
+                        <xs:attribute name="tcpNoDelay" type="xs:boolean" />
+                        <xs:attribute name="unacknowledgedMessagesBufferSize" type="xs:int" />
+                        <xs:attribute name="type" type="xs:string" use="required" />
+                    </xs:complexType>
+                </xs:element>
                 <xs:element name="includedEventTypes" minOccurs="0">
                     <xs:complexType>
                         <xs:sequence>
