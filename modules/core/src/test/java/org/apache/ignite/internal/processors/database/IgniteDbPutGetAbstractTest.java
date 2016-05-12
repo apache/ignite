@@ -19,18 +19,26 @@ package org.apache.ignite.internal.processors.database;
 
 import java.io.Serializable;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
+import javax.cache.Cache;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -912,6 +920,129 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
 //            X.println(" <-- " + i);
 
             assertEquals(map.get(i), cache.get(i));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIterators() throws Exception {
+        IgniteEx ignite = grid(0);
+
+        IgniteCache<DbKey, DbValue> cache = ignite.cache("non-primitive");
+
+        Affinity aff = ignite.affinity(cache.getName());
+
+        Map<UUID, Integer> cntrs = new HashMap<>();
+
+        final int ENTRIES = 10_000;
+
+        for (int i = 0; i < ENTRIES; i++) {
+            DbKey k = new DbKey(i);
+            DbValue v = new DbValue(i, "test-value", i);
+
+            cache.put(k, v);
+
+            UUID nodeId = aff.mapKeyToNode(k).id();
+
+            Integer cntr = cntrs.get(nodeId);
+
+            if (cntr == null)
+                cntr = 1;
+            else
+                cntr += 1;
+
+            cntrs.put(nodeId, cntr);
+        }
+
+        checkLocalEntries(ENTRIES, cntrs);
+
+        checkLocalScan(ENTRIES, cntrs);
+
+        checkScan(ENTRIES);
+    }
+
+    /**
+     * @param total Expected total entries.
+     * @param cntrs Expected per-node entries count.
+     */
+    private void checkLocalEntries(int total, Map<UUID, Integer> cntrs) {
+        Set<DbKey> allKeys = new HashSet<>();
+
+        for (int i = 0; i < gridCount(); i++) {
+            Ignite ignite0 = grid(i);
+
+            IgniteCache<DbKey, DbValue> cache0 = ignite0.cache("non-primitive");
+
+            int cnt = 0;
+
+            for (Cache.Entry<DbKey, DbValue> e : cache0.localEntries()) {
+                cnt++;
+
+                allKeys.add(e.getKey());
+                assertEquals(e.getKey().val, e.getValue().iVal);
+            }
+
+            assertEquals(cntrs.get(ignite0.cluster().localNode().id()), (Integer)cnt);
+        }
+
+        assertEquals(total, allKeys.size());
+    }
+
+    /**
+     * @param total Expected total entries.
+     * @param cntrs Expected per-node entries count.
+     */
+    private void checkLocalScan(int total, Map<UUID, Integer> cntrs) {
+        Set<DbKey> allKeys = new HashSet<>();
+
+        for (int i = 0; i < gridCount(); i++) {
+            Ignite ignite0 = grid(i);
+
+            IgniteCache<DbKey, DbValue> cache0 = ignite0.cache("non-primitive");
+
+            int cnt = 0;
+
+            ScanQuery<DbKey, DbValue> qry = new ScanQuery<>();
+
+            qry.setLocal(true);
+
+            QueryCursor<Cache.Entry<DbKey, DbValue>> cur = cache0.query(qry);
+
+            for (Cache.Entry<DbKey, DbValue> e : cur) {
+                cnt++;
+
+                allKeys.add(e.getKey());
+                assertEquals(e.getKey().val, e.getValue().iVal);
+            }
+
+            assertEquals(cntrs.get(ignite0.cluster().localNode().id()), (Integer)cnt);
+        }
+
+        assertEquals(total, allKeys.size());
+    }
+
+    /**
+     * @param total Expected total entries.
+     */
+    private void checkScan(int total) {
+        for (int i = 0; i < gridCount(); i++) {
+            Set<DbKey> allKeys = new HashSet<>();
+
+            Ignite ignite0 = grid(i);
+
+            IgniteCache<DbKey, DbValue> cache0 = ignite0.cache("non-primitive");
+
+            ScanQuery<DbKey, DbValue> qry = new ScanQuery<>();
+
+            QueryCursor<Cache.Entry<DbKey, DbValue>> cur = cache0.query(qry);
+
+            for (Cache.Entry<DbKey, DbValue> e : cur) {
+                allKeys.add(e.getKey());
+                assertEquals(e.getKey().val, e.getValue().iVal);
+            }
+
+            assertEquals(total, allKeys.size());
         }
     }
 
