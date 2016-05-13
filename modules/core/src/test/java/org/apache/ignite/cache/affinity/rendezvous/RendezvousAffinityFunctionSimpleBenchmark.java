@@ -19,7 +19,6 @@ package org.apache.ignite.cache.affinity.rendezvous;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.affinity.AffinityFunction;
-import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.EventType;
@@ -75,6 +74,9 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         stopAllGrids();
     }
 
+    /**
+     *
+     */
     List<ClusterNode> createBaseNodes(int nodesCnt) {
         List<ClusterNode> nodes = new ArrayList<>(nodesCnt);
 
@@ -90,8 +92,11 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         return nodes;
     }
 
+    /**
+     *
+     */
     GridAffinityFunctionContextImpl nodesModificationRemoveLast(List<ClusterNode> nodes, int iter, int backups,
-        boolean newVersion) {
+        boolean newVer) {
         DiscoveryEvent discoEvt;
 
         if (iter % 2 == 0) {
@@ -109,9 +114,12 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
 
         return new GridAffinityFunctionContextImpl(nodes,
             null, discoEvt, new AffinityTopologyVersion(nodes.size()), backups,
-            (newVersion) ? null : compatibilityVersion);
+            (newVer) ? null : compatibilityVersion);
     }
 
+    /**
+     *
+     */
     GridAffinityFunctionContextImpl nodesModificationRemoveFirst(List<ClusterNode> nodes, int iter, int backups,
         boolean newVersion) {
         DiscoveryEvent discoEvt;
@@ -135,6 +143,9 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
             (newVersion) ? null : compatibilityVersion);
     }
 
+    /**
+     *
+     */
     IgniteBiTuple<Long, List<List<ClusterNode>>> assignPartitions_old(AffinityFunction aff,
         List<ClusterNode> nodes, int backups, int iter) {
         GridAffinityFunctionContextImpl ctx = nodesModificationRemoveFirst(nodes, iter, backups, false);
@@ -144,6 +155,9 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         return F.t(System.currentTimeMillis() - start, assignments);
     }
 
+    /**
+     *
+     */
     IgniteBiTuple<Long, List<List<ClusterNode>>> assignPartitions_new(AffinityFunction aff,
         List<ClusterNode> nodes, int backups, int iter) {
         GridAffinityFunctionContextImpl ctx = nodesModificationRemoveFirst(nodes, iter, backups, true);
@@ -153,6 +167,9 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         return F.t(System.currentTimeMillis() - start, assignments);
     }
 
+    /**
+     *
+     */
     protected AffinityFunction affinityFunction() {
         RendezvousAffinityFunction aff = new RendezvousAffinityFunction(true, 256);
 
@@ -161,6 +178,9 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         return aff;
     }
 
+    /**
+     *
+     */
     private double average(List<Long> results) {
         if (results.size() == 0)
             return 0;
@@ -170,6 +190,9 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         return (double)sum / results.size();
     }
 
+    /**
+     *
+     */
     private double variance(List<Long> results, double average) {
         if (results.size() == 0)
             return 0;
@@ -181,6 +204,9 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         return Math.sqrt((double)sum / results.size());
     }
 
+    /**
+     *
+     */
     private List<List<Integer>> freqDistribution(List<List<ClusterNode>> lst, List<ClusterNode> nodes) {
 
         List<Map<ClusterNode, AtomicInteger>> nodeMaps = new ArrayList<>();
@@ -200,19 +226,22 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         }
 
         List<List<Integer>> byNodes = new ArrayList<>(nodes.size());
-        for (int i = 0; i < nodes.size(); ++i) {
+        for (ClusterNode node : nodes) {
             List<Integer> byBackups = new ArrayList<>(backups);
             for (int j = 0; j < backups; ++j) {
-                if (nodeMaps.get(j).get(nodes.get(i)) == null)
+                if (nodeMaps.get(j).get(node) == null)
                     byBackups.add(0);
                 else
-                    byBackups.add(nodeMaps.get(j).get(nodes.get(i)).get());
+                    byBackups.add(nodeMaps.get(j).get(node).get());
             }
             byNodes.add(byBackups);
         }
         return byNodes;
     }
 
+    /**
+     *
+     */
     void printDistribution(List<List<Integer>> byNodes, String suffix, double goldenFreq) throws IOException {
         int nodes = byNodes.size();
         try (PrintStream ps = new PrintStream(Files.newOutputStream(FileSystems.getDefault()
@@ -228,6 +257,9 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
 
     }
 
+    /**
+     *
+     */
     private double chiSquare(List<List<Integer>> byNodes, int parts, double goldenNodeWeight) throws IOException {
         double sum = 0;
         for (int i = 0; i < byNodes.size(); ++i) {
@@ -238,6 +270,9 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         return sum;
     }
 
+    /**
+     *
+     */
     public void testDistribution() throws IOException {
         int[] nodesCnts = {3, 64, 100, 128, 200, 256, 300, 400, 500, 600};
 
@@ -265,6 +300,9 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         }
     }
 
+    /**
+     *
+     */
     public void testBench() {
         int[] nodesCnts = {100, 63, 100, 200, 300, 400, 500, 600};
 
@@ -275,6 +313,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
             funcListWang.add(affinityFunction());
         }
 
+        final int backups = 2;
         for (int nodesCnt : nodesCnts) {
             List<ClusterNode> nodes_old = createBaseNodes(nodesCnt);
             List<ClusterNode> nodes_new = createBaseNodes(nodesCnt);
@@ -283,12 +322,12 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
 
             for (int i = 0; i < MAX_EXPERIMENTS; ++i) {
                 for (AffinityFunction aff : funcListMd5)
-                    times_old.add(assignPartitions_old(aff, nodes_old, 2, i).get1());
+                    times_old.add(assignPartitions_old(aff, nodes_old, backups, i).get1());
             }
 
             for (int i = 0; i < MAX_EXPERIMENTS; ++i) {
                 for (AffinityFunction aff : funcListWang)
-                    times_new.add(assignPartitions_new(aff, nodes_new, 2, i).get1());
+                    times_new.add(assignPartitions_new(aff, nodes_new, backups, i).get1());
             }
 
             double avr_old = average(times_old);
@@ -301,11 +340,16 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
         }
     }
 
+    /**
+     *
+     */
     private int countNodesToExchange(List<List<ClusterNode>> affOld, List<List<ClusterNode>> affNew) {
         if (affOld == null || affNew == null)
             return 0;
-        int diff = 0;
+
         assertEquals(affOld.size(), affNew.size());
+
+        int diff = 0;
         for (int i = 0; i < affOld.size(); ++i) {
             Set<ClusterNode> s0 = new HashSet<>(affOld.get(i));
             Set<ClusterNode> s1 = new HashSet<>(affNew.get(i));
@@ -313,14 +357,16 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
                 if (!s0.contains(n))
                     ++diff;
             }
-//            if(!s0.equals(s1))
-//                ++countNodesToExchange;
         }
         return diff;
     }
 
+    /**
+     *
+     */
     public void testChangeAffinity() {
         int[] nodesCnts = {62, 66, 100, 200, 300, 400, 500, 600};
+        final int backups = 2;
 
         AffinityFunction funcMd5 = affinityFunction();
         AffinityFunction funcWang = affinityFunction();
@@ -332,7 +378,7 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
             int diffCntOld = 0;
 
             for (int i = 0; i < MAX_EXPERIMENTS; ++i) {
-                List<List<ClusterNode>> affCur = assignPartitions_old(funcMd5, nodes_old, 2, i).get2();
+                List<List<ClusterNode>> affCur = assignPartitions_old(funcMd5, nodes_old, backups, i).get2();
                 diffCntOld += countNodesToExchange(affPrev, affCur);
                 affPrev = affCur;
             }
@@ -340,13 +386,15 @@ public class RendezvousAffinityFunctionSimpleBenchmark extends GridCommonAbstrac
             affPrev = null;
             int diffCntNew = 0;
             for (int i = 0; i < MAX_EXPERIMENTS; ++i) {
-                List<List<ClusterNode>> affCur = assignPartitions_new(funcWang, nodes_new, 2, i).get2();
+                List<List<ClusterNode>> affCur = assignPartitions_new(funcWang, nodes_new, backups, i).get2();
                 diffCntNew += countNodesToExchange(affPrev, affCur);
                 affPrev = affCur;
             }
 
-            info(String.format("Test %d nodes. Old: %.1f; New: %.1f;",
-                nodesCnt, (double)diffCntOld / (MAX_EXPERIMENTS - 1), (double)diffCntNew / (MAX_EXPERIMENTS - 1)));
+            double goldenChangeAffinity = (double)funcWang.partitions() / nodesCnt * (backups + 1);
+            info(String.format("Test %d nodes. Golden: %.1f; Old: %.1f; New: %.1f;",
+                nodesCnt, goldenChangeAffinity,
+                (double)diffCntOld / (MAX_EXPERIMENTS - 1), (double)diffCntNew / (MAX_EXPERIMENTS - 1)));
         }
     }
 }
