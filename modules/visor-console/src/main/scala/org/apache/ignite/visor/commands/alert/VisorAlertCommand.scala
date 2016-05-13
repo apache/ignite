@@ -75,7 +75,7 @@ import scala.util.control.Breaks._
  *         Note that only one of the '-u' or '-r' is allowed.
  *         If neither '-u' or '-r' provided - all alerts will be printed.
  *     -t
- *         Defines notification frequency in seconds. Default is 1 minute.
+ *         Defines notification frequency in seconds. Default is 60 seconds.
  *         This parameter can only appear with '-r'.
  *     -s
  *         Define script for execution when alert triggered.
@@ -85,7 +85,7 @@ import scala.util.control.Breaks._
  *             2) Alert condition as string.
  *             3, ...) Values of alert conditions ordered as in alert command.
  *     -i
- *         Configure alert notification minimal throttling interval in seconds. Default is 1 minute.
+ *         Configure alert notification minimal throttling interval in seconds. Default is 60 seconds.
  *
  *     -<metric>
  *         This defines a mnemonic for the metric that will be measured:
@@ -845,7 +845,7 @@ object VisorAlertCommand {
                 "If neither '-u' or '-r' provided - all alerts will be printed."
             ),
             "-t" -> Seq(
-                "Defines notification frequency in seconds. Default is 1 minute.",
+                "Defines notification frequency in seconds. Default is 60 seconds.",
                 "This parameter can only appear with '-r'."
             ),
             "-s" -> Seq(
@@ -856,7 +856,7 @@ object VisorAlertCommand {
                 "    2) Alert condition as string.",
                 "    3, ...) Values of alert conditions ordered as in alert command."
             ),
-            "-i" -> "Configure alert notification minimal throttling interval. Default is 1 minute.",
+            "-i" -> "Configure alert notification minimal throttling interval in seconds. Default is 60 seconds.",
             "-<metric>" -> Seq(
                 "This defines a mnemonic for the metric that will be measured:",
                 "",
