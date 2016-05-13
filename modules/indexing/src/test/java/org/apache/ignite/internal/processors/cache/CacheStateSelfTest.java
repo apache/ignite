@@ -64,6 +64,7 @@ public class CacheStateSelfTest extends GridCommonAbstractTest {
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
         ccfg.setCacheMode(CacheMode.REPLICATED);
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        ccfg.setBackups(0);
 
         return ccfg;
     }
@@ -275,5 +276,42 @@ public class CacheStateSelfTest extends GridCommonAbstractTest {
 
         assert !cache3.containsKey(1);
         assert !cache3.containsKey(2);
+    }
+
+    public void testLostPartitions() throws Exception {
+        final IgniteEx ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
+        final IgniteEx ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
+
+        final IgniteCache cache1 = ignite1.cache(null);
+        final IgniteCache cache2 = ignite2.cache(null);
+
+        assert cache1.active();
+        assert cache2.active();
+
+        assert ignite1.affinity(null).mapKeyToNode(1).id().equals(ignite1.localNode().id());
+
+        final int partition = ignite1.affinity(null).partition(1);
+
+        cache1.put(1, 1);
+        assert cache2.get(1).equals(1);
+
+        ignite1.close();
+
+        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return ignite2.cachex(null).state().lostPartitions().contains(partition);
+            }
+        }, 5000);
+
+        boolean ex = false;
+
+        try {
+            cache2.get(1);
+        }
+        catch (CacheException e) {
+            ex = true;
+        }
+
+        assert ex;
     }
 }

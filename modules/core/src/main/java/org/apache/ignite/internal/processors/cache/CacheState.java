@@ -19,6 +19,8 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Serializable;
+import java.util.Collections;
+import java.util.Set;
 
 /**
  * This class represents mutable cache state.
@@ -28,12 +30,19 @@ public class CacheState implements Serializable {
     /** Active flag. */
     private final boolean active;
 
+    private final Set<Integer> lostParts;
+
     /**
      * Constructor.
      * @param active Active flag.
      */
     public CacheState(boolean active) {
+        this(active, null);
+    }
+
+    public CacheState(boolean active, Set<Integer> lostParts) {
         this.active = active;
+        this.lostParts = lostParts != null ? Collections.unmodifiableSet(lostParts) : Collections.<Integer>emptySet();
     }
 
     /**
@@ -43,7 +52,10 @@ public class CacheState implements Serializable {
         return active;
     }
 
-    /** {@inheritDoc} */
+    public Set<Integer> lostPartitions() {
+        return lostParts;
+    }
+
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -52,12 +64,15 @@ public class CacheState implements Serializable {
 
         CacheState state = (CacheState)o;
 
-        return active == state.active;
+        if (active != state.active)
+            return false;
+        return lostParts != null ? lostParts.equals(state.lostParts) : state.lostParts == null;
 
     }
 
-    /** {@inheritDoc} */
     @Override public int hashCode() {
-        return (active ? 1 : 0);
+        int result = (active ? 1 : 0);
+        result = 31 * result + (lostParts != null ? lostParts.hashCode() : 0);
+        return result;
     }
 }

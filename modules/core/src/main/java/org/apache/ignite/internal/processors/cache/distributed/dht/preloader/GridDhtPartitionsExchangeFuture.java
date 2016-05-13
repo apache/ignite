@@ -50,12 +50,14 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
+import org.apache.ignite.internal.processors.cache.CacheState;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -1106,15 +1108,27 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /** {@inheritDoc} */
-    @Override public Throwable validateCache(GridCacheContext cctx) {
-        Throwable err = error();
+    @Nullable @Override public Throwable validateCache(GridCacheContext cctx) {
+        return validateCache(cctx, Collections.<Integer>emptySet());
+    }
 
-        if (!cctx.cache().state().active())
-            return new CacheInvalidStateException("Failed to perform cache operation " +
-                "(cache state is not valid): " + cctx.name());
+    @Nullable @Override public Throwable validateCache(GridCacheContext cctx, Set<Integer> partitions) {
+        Throwable err = error();
 
         if (err != null)
             return err;
+
+        CacheState state = cctx.cache().state();
+
+        if (!state.active())
+            return new CacheInvalidStateException("Failed to perform cache operation " +
+                "(cache state is not valid): " + cctx.name());
+
+        for (Integer p : partitions) {
+            if (state.lostPartitions().contains(p))
+                return new CacheInvalidStateException("Failed to perform cache operation " +
+                    "(cache state is not valid): " + cctx.name());
+        }
 
         if (cctx.config().getTopologyValidator() != null) {
             Boolean res = cacheValidRes.get(cctx.cacheId());
@@ -1298,6 +1312,69 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         top.setOwners(p, owners);
     }
 
+    private void detectLostPartitions() {
+        assert crd.isLocal();
+
+        if (msgs.isEmpty())
+            return;
+
+        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+            for (int p = 0; p < cacheCtx.affinity().partitions(); p++) {
+                checkPartitionLost(cacheCtx, p);
+            }
+        }
+    }
+
+    private void checkPartitionLost(GridCacheContext cacheCtx, int p) {
+        GridDhtPartitionTopology top = cacheCtx.topology();
+
+        long maxCntr = 0;
+
+        for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : msgs.entrySet()) {
+            if (e.getValue().partitionUpdateCounters(cacheCtx.cacheId()) == null)
+                continue;
+
+            if (!e.getValue().partitionUpdateCounters(cacheCtx.cacheId()).containsKey(p))
+                continue;
+
+            Long cntr = e.getValue().partitionUpdateCounters(cacheCtx.cacheId()).get(p);
+
+            if (cntr > maxCntr)
+                maxCntr = cntr;
+        }
+
+        if (maxCntr == 0)
+            return;
+
+        boolean hasOwner = false;
+
+        for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : msgs.entrySet()) {
+            if (!e.getValue().partitions().containsKey(cacheCtx.cacheId()))
+                continue;
+
+            if (!e.getValue().partitions().get(cacheCtx.cacheId()).containsKey(p))
+                continue;
+
+            if (e.getValue().partitions().get(cacheCtx.cacheId()).get(p) == GridDhtPartitionState.OWNING) {
+                hasOwner = true;
+                break;
+            }
+        }
+
+        CacheState state = cacheCtx.cache().state();
+
+        if (state.lostPartitions().contains(p))
+            return;
+
+        Set<Integer> lostParts = new HashSet<>(state.lostPartitions().size() + 1);
+
+        lostParts.addAll(state.lostPartitions());
+
+        lostParts.add(p);
+
+        cctx.cache().changeCacheState(cacheCtx.name(), new CacheState(state.active(), lostParts));
+    }
+
     /**
      * @param discoThread If {@code true} completes future from another thread (to do not block discovery thread).
      */
@@ -1314,6 +1391,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             // TODO : find better place
             assignRolesByCounters();
+
+            detectLostPartitions();
 
             updateLastVersion(cctx.versions().last());
 

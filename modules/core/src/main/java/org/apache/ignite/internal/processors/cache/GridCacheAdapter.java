@@ -3856,7 +3856,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public boolean state(CacheState state, AffinityTopologyVersion topVer) {
+    @Override public boolean state(CacheState state, @Nullable AffinityTopologyVersion topVer) {
+        if (topVer == null)
+            topVer = AffinityTopologyVersion.NONE;
+
         while (true) {
             CacheState previousState = this.state.get();
 
