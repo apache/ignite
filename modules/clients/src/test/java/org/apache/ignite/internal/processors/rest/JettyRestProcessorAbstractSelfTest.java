@@ -171,7 +171,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @param ptrn Pattern to match.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    private void jsonEquals(String json, String ptrn) {
+    protected void jsonEquals(String json, String ptrn) {
         assertTrue("JSON mismatch [json=" + json + ", ptrn=" + ptrn + ']', Pattern.matches(ptrn, json));
     }
 
@@ -282,7 +282,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @param success Success flag.
      * @return Regex pattern for JSON.
      */
-    private String pattern(String res, boolean success) {
+    protected String pattern(String res, boolean success) {
         return "\\{\\\"error\\\":\\\"" + (!success ? ".+" : "") + "\\\"\\," +
             "\\\"response\\\":" + res + "\\," +
             "\\\"sessionToken\\\":\\\"" + (securityEnabled() && success ? ".+" : "") + "\\\"," +
@@ -1239,16 +1239,16 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         jsonEquals(ret, successRes);
 
-//        ret = content(new VisorGatewayArgument(VisorCacheLoadTask.class)
-//            .forNode(grid(1).localNode())
-//            .tuple3(Set.class, Long.class, Object[].class, "person", 0, "null"));
-//
-//        info("Exe command result: " + ret);
-//
-//        assertNotNull(ret);
-//        assertTrue(!ret.isEmpty());
-//
-//        jsonEquals(ret, successRes);
+        ret = content(new VisorGatewayArgument(VisorCacheLoadTask.class)
+            .forNode(grid(1).localNode())
+            .tuple3(Set.class, Long.class, Object[].class, "person", 0, "null"));
+
+        info("Exe command result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
 
         ret = content(new VisorGatewayArgument(VisorCacheSwapBackupsTask.class)
             .forNode(grid(1).localNode())
@@ -2061,7 +2061,9 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         private int idx = 3;
 
         /**
-         * Default constructor.
+         * Construct helper object.
+         *
+         * @param cls Class of executed task.
          */
         public VisorGatewayArgument(Class cls) {
             super(F.asMap(
