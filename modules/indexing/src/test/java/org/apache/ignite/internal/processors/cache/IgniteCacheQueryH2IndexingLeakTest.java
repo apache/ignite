@@ -69,8 +69,6 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cacheConfiguration());
 
-        GridQueryProcessor.idxCls = FakeIndexing.class;
-
         return cfg;
     }
 
@@ -96,29 +94,6 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
         return TEST_TIMEOUT + 60_000;
     }
 
-    /**
-     *
-     */
-    private static class FakeIndexing extends IgniteH2Indexing {
-        /** Instance. */
-        private static FakeIndexing instance;
-
-        /**
-         * Default constructor.
-         */
-        public FakeIndexing() {
-            instance = this;
-        }
-
-        /**
-         * Get size of stmtCache
-         */
-        static int getCachesSize() {
-            ConcurrentMap stmtCache = GridTestUtils.getFieldValue(instance, IgniteH2Indexing.class, "stmtCache");
-            return stmtCache.size();
-        }
-    }
-
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         origCacheCleanupPeriod = System.getProperty(IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD);
@@ -139,6 +114,18 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
 
         System.setProperty(IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT,
             origCacheThreadUsageTimeout != null ? origCacheThreadUsageTimeout : "");
+    }
+
+
+
+    /**
+     * @param qryProcessor Query processor.
+     * @return size of statement cache.
+     */
+    private static int getStatementCacheSize(GridQueryProcessor qryProcessor) {
+        IgniteH2Indexing h2Idx = GridTestUtils.getFieldValue(qryProcessor, GridQueryProcessor.class, "idx");
+        ConcurrentMap stmtCache = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "stmtCache");
+        return stmtCache.size();
     }
 
     /**
@@ -165,11 +152,13 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
                     }
                 }, THREAD_COUNT);
 
+            final GridQueryProcessor qryProcessor = grid(0).context().query();
+
             try {
                 // Wait for stmt cache entry is created for each thread.
                 assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
                     @Override public boolean apply() {
-                        return FakeIndexing.getCachesSize() == THREAD_COUNT;
+                        return getStatementCacheSize(qryProcessor) == THREAD_COUNT;
                     }
                 }, STMT_CACHE_CLEANUP_TIMEOUT));
             }
@@ -182,7 +171,7 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
             // Wait for stmtCache is cleaned up because all user threads are terminated.
             assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    return FakeIndexing.getCachesSize() == 0;
+                    return getStatementCacheSize(qryProcessor) == 0;
                 }
             }, STMT_CACHE_CLEANUP_TIMEOUT * 2));
         }
@@ -215,7 +204,7 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
             // Wait for stmtCache is cleaned up because all user threads don't perform queries a lot of time.
             assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    return FakeIndexing.getCachesSize() == 0;
+                    return getStatementCacheSize(grid(0).context().query()) == 0;
                 }
             }, STMT_CACHE_CLEANUP_TIMEOUT * 2));
 
