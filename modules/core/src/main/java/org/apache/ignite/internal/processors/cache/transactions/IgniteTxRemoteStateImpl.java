@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -36,9 +37,6 @@ import org.jsr166.ConcurrentHashMap8;
  *
  */
 public class IgniteTxRemoteStateImpl extends IgniteTxRemoteStateAdapter {
-    /** Cache IDs */
-    private final Set<Integer> cacheIds = Collections.newSetFromMap(new ConcurrentHashMap8<Integer, Boolean>());
-
     /** Read set. */
     @GridToStringInclude
     protected Map<IgniteTxKey, IgniteTxEntry> readMap;
@@ -61,7 +59,24 @@ public class IgniteTxRemoteStateImpl extends IgniteTxRemoteStateAdapter {
     @Override public void unwindEvicts(GridCacheSharedContext cctx) {
         assert readMap == null || readMap.isEmpty();
 
-        for (Integer cacheId : cacheIds) {
+        int singleCacheId = -1;
+        Set<Integer> cacheIds = null;
+
+        for (IgniteTxKey writeKey : writeMap.keySet()) {
+            int cacheId = writeKey.cacheId();
+
+            // Have we already notified this cache?
+            if (cacheId == singleCacheId || cacheIds != null && !cacheIds.add(cacheId))
+                continue;
+
+            if (singleCacheId == -1)
+                singleCacheId = cacheId;
+
+            if (cacheIds == null) {
+                cacheIds = new HashSet<>(2);
+                cacheIds.add(cacheId);
+            }
+
             GridCacheContext ctx = cctx.cacheContext(cacheId);
 
             if (ctx != null)
@@ -122,7 +137,6 @@ public class IgniteTxRemoteStateImpl extends IgniteTxRemoteStateAdapter {
     /** {@inheritDoc} */
     public void addWriteEntry(IgniteTxKey key, IgniteTxEntry e) {
         writeMap.put(key, e);
-        cacheIds.add(key.cacheId());
     }
 
     /** {@inheritDoc} */
@@ -144,7 +158,7 @@ public class IgniteTxRemoteStateImpl extends IgniteTxRemoteStateAdapter {
     /** {@inheritDoc} */
     @Override public void invalidPartition(int part) {
         if (writeMap != null) {
-            for (Iterator<IgniteTxEntry> it = writeMap.values().iterator(); it.hasNext();) {
+            for (Iterator<IgniteTxEntry> it = writeMap.values().iterator(); it.hasNext(); ) {
                 IgniteTxEntry e = it.next();
 
                 GridCacheContext cacheCtx = e.context();
