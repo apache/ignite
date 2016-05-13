@@ -205,14 +205,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /** */
     private static final String ESC_STR = ESC_CH + "" + ESC_CH;
 
-    /** The period of clean up the {@link #stmtCache}  */
-    private final Long CLEANUP_STMT_CACHE_PERIOD = Long.getLong(IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD, 600 * 1000);
+    /** The period of clean up the {@link #stmtCache}. */
+    private final Long CLEANUP_STMT_CACHE_PERIOD = Long.getLong(IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD, 10_000);
 
-    /** The timeout to remove entry from the {@link #stmtCache} if the thread doesn't perform any queries */
+    /** The timeout to remove entry from the {@link #stmtCache} if the thread doesn't perform any queries. */
     private final Long STATEMENT_CACHE_THREAD_USAGE_TIMEOUT =
         Long.getLong(IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT, 600 * 1000);
 
-    /** Cleanup task object */
+    /** Cleanup task object. */
     private GridTimeoutProcessor.CancelableTask stmtCacheCleanupTask;
 
     /**
@@ -1397,15 +1397,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /**
-     * Called periodically by {@link GridTimeoutProcessor} to clean up the {@link #stmtCache}
-     * See mode: <a href="https://issues.apache.org/jira/browse/IGNITE-3090">IGNITE-3090</> Memory leak in IgniteH2Indexing prepared statements cache
+     * Called periodically by {@link GridTimeoutProcessor} to clean up the {@link #stmtCache}.
      */
-    private void cleanupStmtCache() {
+    private void cleanupStatementCache() {
         long cur = U.currentTimeMillis();
 
         for(Iterator<Map.Entry<Thread, StatementCache>> it = stmtCache.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<Thread, StatementCache> entry = it.next();
+
             Thread t = entry.getKey();
+
             if (t.getState() == Thread.State.TERMINATED
                 || cur - entry.getValue().getLastUsage() > STATEMENT_CACHE_THREAD_USAGE_TIMEOUT)
                 it.remove();
@@ -1537,7 +1538,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             stmtCacheCleanupTask = ctx.timeout().schedule(new Runnable() {
                 @Override public void run() {
-                    cleanupStmtCache();
+                    cleanupStatementCache();
                 }
             }, CLEANUP_STMT_CACHE_PERIOD, CLEANUP_STMT_CACHE_PERIOD);
         }
@@ -1628,11 +1629,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             U.error(log, "Failed to shutdown database.", e);
         }
 
-        // Cancel cleanup task and remove from GridTimeoutProcessor.
-        if(stmtCacheCleanupTask != null) {
+        if (stmtCacheCleanupTask != null)
             stmtCacheCleanupTask.close();
-            ctx.timeout().removeTimeoutObject(stmtCacheCleanupTask);
-        }
 
         if (log.isDebugEnabled())
             log.debug("Cache query index stopped.");
@@ -2602,7 +2600,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         /**
-         * The timestamp of the last usage of the cache. Used by {@link #cleanupStmtCache()} to remove unused caches.
+         * The timestamp of the last usage of the cache. Used by {@link #cleanupStatementCache()} to remove unused caches.
          * @return last usage timestamp
          */
         private long getLastUsage() {
@@ -2610,7 +2608,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         /**
-         * Update the {@link #lastUsage} timestamp by current time.
+         * Updates the {@link #lastUsage} timestamp by current time.
          */
         private void updateLastUsage() {
             lastUsage = U.currentTimeMillis();
