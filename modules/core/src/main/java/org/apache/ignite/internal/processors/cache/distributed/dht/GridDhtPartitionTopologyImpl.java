@@ -397,9 +397,14 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                                     "(it does not belong to affinity): " + locPart);
                         }
                     }
+                    else
+                        locPart.own();
                 }
-                else if (belongs)
-                    createPartition(p);
+                else if (belongs) {
+                    locPart = createPartition(p);
+
+                    locPart.own();
+                }
             }
         }
 
@@ -639,8 +644,19 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
 
         GridDhtLocalPartition loc = locParts[p];
 
-        if (loc == null || loc.state() == EVICTED)
+        if (loc == null || loc.state() == EVICTED) {
             locParts[p] = loc = new GridDhtLocalPartition(cctx, p, entryFactory);
+
+            if (cctx.shared().pageStore() != null) {
+                try {
+                    cctx.shared().pageStore().onPartitionCreated(cctx.cacheId(), p);
+                }
+                catch (IgniteCheckedException e) {
+                    // TODO ignite-db
+                    throw new IgniteException(e);
+                }
+            }
+        }
 
         return loc;
     }
