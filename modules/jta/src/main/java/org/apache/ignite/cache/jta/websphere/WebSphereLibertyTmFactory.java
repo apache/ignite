@@ -23,8 +23,7 @@ import javax.transaction.TransactionManager;
 import org.apache.ignite.IgniteException;
 
 /**
- * Implementation of Transaction Manager factory that should be used to work Ignite's transactions inside
- * WebSphere Liberty.
+ * Implementation of Transaction Manager factory that should used within WebSphere Liberty.
  * <h2 class="header">Java Configuration</h2>
  * <pre name="code" class="java">
  * IgniteConfiguration cfg = new IgniteConfiguration();

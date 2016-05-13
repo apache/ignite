@@ -35,13 +35,13 @@ import javax.transaction.xa.XAResource;
 import org.apache.ignite.IgniteException;
 
 /**
- * Implementation of Transaction Manager factory that should be used to work Ignite's transactions inside
- * WebSphere Application Server ("poor" / "ordinary" WS AS).
+ * Implementation of Transaction Manager factory that should used within
+ * WebSphere Application Server ("full profile" / "traditional" WS AS).
  * <p>
  * Notes:
  * <ul>
  * <li>
- *     {@link WebSphereLibertyTmFactory} should be used with WebSphere Liberty.
+ *     {@link WebSphereLibertyTmFactory} should be used within WebSphere Liberty.
  * </li>
  * <li>
  *      The implementation has been tested with WebSphere Application Server 8.5.5.

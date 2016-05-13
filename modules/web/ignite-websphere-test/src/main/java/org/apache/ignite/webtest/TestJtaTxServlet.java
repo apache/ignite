@@ -31,7 +31,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 
 /**
- * Servlet to test working of Ignite transactions inside web-aplication environment.
+ * Servlet to test working of Ignite transactions inside web-application environment.
  */
 @SuppressWarnings("TooBroadScope")
 public class TestJtaTxServlet extends HttpServlet {
@@ -84,7 +84,8 @@ public class TestJtaTxServlet extends HttpServlet {
                 tmMgr.setRollbackOnly();
 
                 tmMgr.commit();
-            } catch (final RollbackException ignored) {
+            }
+            catch (final RollbackException ignored) {
                 writer.println("Transaction #2. setRollbackOnly [key1=" + key1 + ", val1=" + cache.get(key1)
                     + ", key2=" + key2 + ", val2=" + cache.get(key2) + "]");
             }
@@ -97,7 +98,8 @@ public class TestJtaTxServlet extends HttpServlet {
                 + ", key2=" + key2 + ", val2=" + cache.get(key2) + "]");
 
             tmMgr.commit();
-        } catch (final Throwable e) {
+        }
+        catch (final Throwable e) {
             e.printStackTrace(writer);
         }
     }

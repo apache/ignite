@@ -271,12 +271,12 @@ public class TransactionConfiguration implements Serializable {
      *  a transaction manager.
      * </li>
      * <li>
-     *  {@code org.apache.ignite.cache.jta.reflection.CacheReflectionTmFactory} uses reflection to call a method on a given class
-     *  to get a transaction manager.
+     *  {@code org.apache.ignite.cache.jta.websphere.WebSphereTmFactory} an implementation of Transaction Manager
+     *  factory to be used within WebSphere Application Server.
      * </li>
      * <li>
-     *  {@code org.apache.ignite.cache.jta.websphere.WebSphereTmFactory} an implementation of Transaction Manager
-     *  factory to be used inside WebSphere Application Server.
+     *  {@code org.apache.ignite.cache.jta.websphere.WebSphereLibertyTmFactory} an implementation of Transaction Manager
+     *  factory to be used within WebSphere Liberty.
      * </li>
      * </ul>
      *
