@@ -484,7 +484,8 @@ public abstract class GridAbstractTest extends TestCase {
      * @throws Exception If failed. {@link #afterTestsStopped()} will be called in this case.
      */
     protected void beforeTestsStarted() throws Exception {
-        // No-op.
+        // Will clean and re-create marshaller directory from scratch.
+        U.resolveWorkDirectory("marshaller", true);
     }
 
     /**

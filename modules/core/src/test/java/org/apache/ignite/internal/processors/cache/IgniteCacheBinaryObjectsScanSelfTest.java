@@ -60,6 +60,8 @@ public class IgniteCacheBinaryObjectsScanSelfTest extends GridCommonAbstractTest
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         ldr = null;
+
+        stopAllGrids();
     }
 
     /** {@inheritDoc} */

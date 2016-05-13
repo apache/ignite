@@ -77,9 +77,9 @@ public class IgniteBasicTestSuite extends TestSuite {
     public static TestSuite suite(Set<Class> ignoredTests) throws Exception {
         TestSuite suite = new TestSuite("Ignite Basic Test Suite");
 
+        suite.addTest(IgniteMarshallerSelfTestSuite.suite(ignoredTests));
         suite.addTest(IgniteLangSelfTestSuite.suite());
         suite.addTest(IgniteUtilSelfTestSuite.suite(ignoredTests));
-        suite.addTest(IgniteMarshallerSelfTestSuite.suite(ignoredTests));
 
         suite.addTest(IgniteKernalSelfTestSuite.suite(ignoredTests));
         suite.addTest(IgniteStartUpTestSuite.suite());
