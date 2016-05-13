@@ -212,6 +212,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     private final Long STATEMENT_CACHE_THREAD_USAGE_TIMEOUT =
         Long.getLong(IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT, 600 * 1000);
 
+    /** Cleanup task object */
+    private GridTimeoutProcessor.CancelableTask stmtCacheCleanupTask;
+
     /**
      * Command in H2 prepared statement.
      */
@@ -1532,7 +1535,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             mapQryExec.start(ctx, this);
             rdcQryExec.start(ctx, this);
 
-            ctx.timeout().schedule(new Runnable() {
+            stmtCacheCleanupTask = ctx.timeout().schedule(new Runnable() {
                 @Override public void run() {
                     cleanupStmtCache();
                 }
@@ -1623,6 +1626,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
         catch (SQLException e) {
             U.error(log, "Failed to shutdown database.", e);
+        }
+
+        // Cancel cleanup task and remove from GridTimeoutProcessor.
+        if(stmtCacheCleanupTask != null) {
+            stmtCacheCleanupTask.close();
+            ctx.timeout().removeTimeoutObject(stmtCacheCleanupTask);
         }
 
         if (log.isDebugEnabled())
