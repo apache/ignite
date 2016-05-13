@@ -2514,14 +2514,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             // Continuous query filter should be perform under lock.
             if (lsnrs != null) {
-                CacheObject evtVal = updated;
-                CacheObject evtOldVal = oldVal;
-
-                if (isOffHeapValuesOnly()) {
-                    evtVal = cctx.toCacheObject(cctx.unwrapTemporary(evtVal));
-
-                    evtOldVal = cctx.toCacheObject(cctx.unwrapTemporary(evtOldVal));
-                }
+                CacheObject evtVal = cctx.unwrapTemporary(updated);
+                CacheObject evtOldVal = cctx.unwrapTemporary(oldVal);
 
                 cctx.continuousQueries().onEntryUpdated(lsnrs, key, evtVal, evtOldVal, internal,
                     partition(), primary, false, updateCntr0, fut, topVer);
