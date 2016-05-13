@@ -545,6 +545,10 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
         };
     }
 
+    public boolean empty(int part) throws IgniteCheckedException {
+        return !iterator(part).hasNext();
+    }
+
     public GridIterator<CacheDataRow> iterator(final int part) throws IgniteCheckedException {
         final GridCursor<CacheDataRow> cur = cursor();
 
