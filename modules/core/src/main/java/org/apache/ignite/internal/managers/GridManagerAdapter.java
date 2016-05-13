@@ -209,6 +209,9 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
         Collection<String> names = U.newHashSet(spis.length);
 
         for (T spi : spis) {
+            if (spi instanceof IgniteSpiAdapter)
+                ((IgniteSpiAdapter)spi).onBeforeStart();
+
             // Inject all spi resources.
             ctx.resource().inject(spi);
 
