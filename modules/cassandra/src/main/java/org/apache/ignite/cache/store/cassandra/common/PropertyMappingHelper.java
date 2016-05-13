@@ -89,14 +89,14 @@ public class PropertyMappingHelper {
         List<PropertyDescriptor> descriptors = getPojoPropertyDescriptors(clazz, false);
 
         if (descriptors == null || descriptors.isEmpty())
-            throw new IllegalArgumentException("POJO class doesn't have '" + prop + "' property");
+            throw new IllegalArgumentException("POJO class " + clazz.getName() + " doesn't have '" + prop + "' property");
 
         for (PropertyDescriptor descriptor : descriptors) {
             if (descriptor.getName().equals(prop))
                 return descriptor;
         }
 
-        throw new IllegalArgumentException("POJO class doesn't have '" + prop + "' property");
+        throw new IllegalArgumentException("POJO class " + clazz.getName() + " doesn't have '" + prop + "' property");
     }
 
     /**
