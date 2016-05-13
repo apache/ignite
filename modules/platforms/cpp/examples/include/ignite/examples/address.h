@@ -22,16 +22,17 @@
 
 namespace ignite
 {
-    namespace examples 
+    namespace examples
     {
-        struct Address 
+        struct Address
         {
             Address() : street(), zip(0)
             {
                 // No-op.
             }
-            
-            Address(std::string street, int zip) : street(street), zip(zip) 
+
+            Address(const std::string& street, int zip) :
+                street(street), zip(zip)
             {
                 // No-op.
             }
