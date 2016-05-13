@@ -68,7 +68,7 @@ module.exports.factory = function(express, mongo) {
                 .then((notebook) => {
                     const noteId = note._id;
 
-                    if (notebook && noteId !== notebook._id.toString)
+                    if (notebook && noteId !== notebook._id.toString())
                         throw new Error('Notebook with name: "' + notebook.name + '" already exist.');
 
                     if (noteId) {

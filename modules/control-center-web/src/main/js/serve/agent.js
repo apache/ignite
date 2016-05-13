@@ -163,7 +163,10 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
                         if (msg.successStatus === 0)
                             return resolve(msg.response);
 
-                        reject(new Error('Agent is failed to authenticate in grid. Please check agent\'s login and password or node port.'));
+                        if (msg.successStatus === 2)
+                            return reject(new Error('Agent is failed to authenticate in grid. Please check agent\'s login and password or node port.'));
+
+                        reject(new Error(msg.error));
                     }
                     catch (e) {
                         return reject(e);
