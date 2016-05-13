@@ -64,11 +64,14 @@ public interface IgniteWriteAheadLogManager extends GridCacheSharedManager {
     public WALIterator replay(WALPointer start) throws IgniteCheckedException, StorageException;
 
     /**
-     * Given WAL a hint to clear entries logged before the given pointer.
+     * Gives a hint to WAL manager to clear entries logged before the given pointer. Some entries before the
+     * the given pointer will be kept because there is a configurable WAL history size. Those entries may be used
+     * for partial partition rebalancing.
      *
      * @param ptr Pointer for which it is safe to clear the log.
+     * @return Number of deleted WAL segments.
      * @throws IgniteException If failed to
      * @throws StorageException
      */
-    public void truncate(WALPointer ptr) throws IgniteException, StorageException;
+    public int truncate(WALPointer ptr) throws IgniteException, StorageException;
 }

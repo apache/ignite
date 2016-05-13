@@ -116,12 +116,14 @@ public abstract class PageHandler<X> {
      * @param cnt Bytes count to copy.
      */
     public static void copyMemory(ByteBuffer src, ByteBuffer dst, long srcOff, long dstOff, long cnt) {
-        assert src.isDirect();
-        assert dst.isDirect();
+        byte[] srcArr = src.hasArray() ? src.array() : null;
+        byte[] dstArr = dst.hasArray() ? dst.array() : null;
+        long srcArrOff = src.hasArray() ? src.arrayOffset() + GridUnsafe.BYTE_ARR_OFF : 0;
+        long dstArrOff = dst.hasArray() ? dst.arrayOffset() + GridUnsafe.BYTE_ARR_OFF : 0;
 
-        long srcPtr = ((DirectBuffer)src).address() + srcOff;
-        long dstPtr = ((DirectBuffer)dst).address() + dstOff;
+        long srcPtr = src.isDirect() ? ((DirectBuffer)src).address() : 0;
+        long dstPtr = dst.isDirect() ? ((DirectBuffer)dst).address() : 0;
 
-        GridUnsafe.copyMemory(srcPtr, dstPtr, cnt);
+        GridUnsafe.copyMemory(srcArr, srcPtr + srcArrOff + srcOff, dstArr, dstPtr + dstArrOff + dstOff, cnt);
     }
 }

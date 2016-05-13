@@ -1177,10 +1177,14 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     protected boolean deleteRecursively(File file) {
         boolean ok = true;
 
+        long size = -1;
+
         if (file.isDirectory()) {
             for (File f : file.listFiles())
                 ok = deleteRecursively(f) & ok;
         }
+        else
+            size = file.length();
 
         if (!file.delete()) {
             info("Failed to delete: " + file);
@@ -1189,7 +1193,8 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
         }
 
         if (ok)
-            info("Deleted OK: " + file.getAbsolutePath());
+            info("Deleted OK: " + file.getAbsolutePath() +
+                (size >=0 ? "(" + GridTestUtils.readableSize(size, false) + ")" : ""));
 
         return ok;
     }

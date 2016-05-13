@@ -8788,6 +8788,15 @@ public abstract class IgniteUtils {
      * @throws IgniteCheckedException If failed.
      */
     public static File resolveWorkDirectory(String path, boolean delIfExist) throws IgniteCheckedException {
+        if (path == null) {
+            String ggWork0 = igniteWork;
+
+            if (F.isEmpty(ggWork0))
+                throw new IgniteCheckedException("Failed to resolve path (work directory has not been set): " + path);
+
+            return new File(igniteWork);
+        }
+
         File dir = new File(path);
 
         if (!dir.isAbsolute()) {

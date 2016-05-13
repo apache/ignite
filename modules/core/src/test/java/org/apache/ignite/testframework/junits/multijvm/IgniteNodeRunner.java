@@ -96,12 +96,13 @@ public class IgniteNodeRunner {
      * @throws IOException If failed.
      * @see #readCfgFromFileAndDeleteFile(String)
      */
-    public static String storeToFile(IgniteConfiguration cfg) throws IOException {
+    public static String storeToFile(IgniteConfiguration cfg) throws IOException, IgniteCheckedException {
         String fileName = IGNITE_CONFIGURATION_FILE + cfg.getNodeId();
 
         try(OutputStream out = new BufferedOutputStream(new FileOutputStream(fileName))) {
             IgniteConfiguration cfg0 = new IgniteConfiguration(cfg);
 
+            cfg0.setWorkDirectory(U.resolveWorkDirectory(null, false).getAbsolutePath());
             cfg0.setMBeanServer(null);
             cfg0.setMarshaller(null);
             cfg0.setDiscoverySpi(null);
