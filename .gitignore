@@ -33,3 +33,4 @@ git-patch-prop-local.sh
 .settings
 .classpath
 .project
+/modules/platforms/**/*.VC.db
