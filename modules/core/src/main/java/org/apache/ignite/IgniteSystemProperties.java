@@ -19,6 +19,8 @@ package org.apache.ignite;
 
 import java.io.Serializable;
 import java.lang.management.RuntimeMXBean;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Properties;
 import javax.net.ssl.HostnameVerifier;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
@@ -186,6 +188,17 @@ public final class IgniteSystemProperties {
      * salvaged (i.e. invalidated and committed).
      */
     public static final String IGNITE_TX_SALVAGE_TIMEOUT = "IGNITE_TX_SALVAGE_TIMEOUT";
+
+    /**
+     * Specifies maximum number of iterations for deadlock detection procedure.
+     * If value of this property is less then or equal to zero then deadlock detection will be disabled.
+     */
+    public static final String IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS = "IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS";
+
+    /**
+     * Specifies timeout for deadlock detection procedure.
+     */
+    public static final String IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT = "IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT";
 
     /**
      * System property to override multicast group taken from configuration.
@@ -370,6 +383,9 @@ public final class IgniteSystemProperties {
     /** Maximum number of nested listener calls before listener notification becomes asynchronous. */
     public static final String IGNITE_MAX_NESTED_LISTENER_CALLS = "IGNITE_MAX_NESTED_LISTENER_CALLS";
 
+    /** Indicating whether local store keeps primary only. Backward compatibility flag. */
+    public static final String IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY = "IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY";
+
     /**
      * Manages {@link OptimizedMarshaller} behavior of {@code serialVersionUID} computation for
      * {@link Serializable} classes.
@@ -542,10 +558,22 @@ public final class IgniteSystemProperties {
     /**
      * Gets snapshot of system properties.
      * Snapshot could be used for thread safe iteration over system properties.
+     * Non-string properties are removed before return.
      *
      * @return Snapshot of system properties.
      */
     public static Properties snapshot() {
-        return (Properties)System.getProperties().clone();
+        Properties sysProps = (Properties)System.getProperties().clone();
+
+        Iterator<Map.Entry<Object, Object>> iter = sysProps.entrySet().iterator();
+
+        while (iter.hasNext()) {
+            Map.Entry entry = iter.next();
+
+            if (!(entry.getValue() instanceof String) || !(entry.getKey() instanceof String))
+                iter.remove();
+        }
+
+        return sysProps;
     }
 }

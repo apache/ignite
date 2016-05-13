@@ -33,6 +33,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.DataStructures.Configuration;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Multicast;
@@ -54,7 +55,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestPredefinedXml()
         {
-            var xml = @"<igniteConfig workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10' isDaemon='true'>
+            var xml = @"<igniteConfig workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10' isDaemon='true' isLateAffinityAssignment='false'>
                             <localhost>127.1.1.1</localhost>
                             <binaryConfiguration compactFooter='false'>
                                 <defaultNameMapper type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+NameMapper, Apache.Ignite.Core.Tests' bar='testBar' />
@@ -65,6 +66,7 @@ namespace Apache.Ignite.Core.Tests
                             <discoverySpi type='TcpDiscoverySpi' joinTimeout='0:1:0'>
                                 <ipFinder type='TcpDiscoveryMulticastIpFinder' addressRequestAttempts='7' />
                             </discoverySpi>
+                            <communicationSpi type='TcpCommunicationSpi' ackSendThreshold='33' idleConnectionTimeout='0:1:2' />
                             <jvmOptions><string>-Xms1g</string><string>-Xmx4g</string></jvmOptions>
                             <lifecycleBeans>
                                 <iLifecycleBean type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+LifecycleBean, Apache.Ignite.Core.Tests' foo='15' />
@@ -107,6 +109,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual("c:", cfg.WorkDirectory);
             Assert.AreEqual("127.1.1.1", cfg.Localhost);
             Assert.IsTrue(cfg.IsDaemon);
+            Assert.IsFalse(cfg.IsLateAffinityAssignment);
             Assert.AreEqual(1024, cfg.JvmMaxMemoryMb);
             Assert.AreEqual(TimeSpan.FromSeconds(10), cfg.MetricsLogFrequency);
             Assert.AreEqual(TimeSpan.FromMinutes(1), ((TcpDiscoverySpi)cfg.DiscoverySpi).JoinTimeout);
@@ -153,6 +156,11 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(new TimeSpan(0,1,2), tx.DefaultTimeout);
             Assert.AreEqual(15, tx.PessimisticTransactionLogSize);
             Assert.AreEqual(TimeSpan.FromSeconds(33), tx.PessimisticTransactionLogLinger);
+
+            var comm = cfg.CommunicationSpi as TcpCommunicationSpi;
+            Assert.IsNotNull(comm);
+            Assert.AreEqual(33, comm.AckSendThreshold);
+            Assert.AreEqual(new TimeSpan(0, 1, 2), comm.IdleConnectionTimeout);
         }
 
         /// <summary>
@@ -444,6 +452,26 @@ namespace Apache.Ignite.Core.Tests
                     DefaultTimeout = TimeSpan.FromDays(2),
                     DefaultTransactionConcurrency = TransactionConcurrency.Optimistic,
                     PessimisticTransactionLogLinger = TimeSpan.FromHours(3)
+                },
+                CommunicationSpi = new TcpCommunicationSpi
+                {
+                    LocalPort = 47501,
+                    MaxConnectTimeout = TimeSpan.FromSeconds(34),
+                    MessageQueueLimit = 15,
+                    ConnectTimeout = TimeSpan.FromSeconds(17),
+                    IdleConnectionTimeout = TimeSpan.FromSeconds(19),
+                    SelectorsCount = 8,
+                    ReconnectCount = 33,
+                    SocketReceiveBufferSize = 512,
+                    AckSendThreshold = 99,
+                    DirectBuffer = false,
+                    DirectSendBuffer = true,
+                    LocalPortRange = 45,
+                    LocalAddress = "127.0.0.1",
+                    TcpNoDelay = false,
+                    SlowClientQueueLimit = 98,
+                    SocketSendBufferSize = 2045,
+                    UnacknowledgedMessagesBufferSize = 3450
                 }
             };
         }

@@ -21,13 +21,20 @@ import java.io.Externalizable;
 import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInput;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import org.apache.commons.io.FileUtils;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -197,6 +204,12 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         for (int i = 0; i < DataMode.values().length; i++) {
             dataMode = DataMode.values()[i];
 
+            if (!isCompatible()) {
+                info("Skipping test in data mode: " + dataMode);
+
+                continue;
+            }
+            
             info("Running test in data mode: " + dataMode);
 
             if (i != 0)
@@ -234,6 +247,9 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
      * @return Key.
      */
     public static Object key(int keyId, DataMode mode) {
+        if (mode == null)
+            mode = DataMode.SERIALIZABLE;
+
         switch (mode) {
             case SERIALIZABLE:
                 return new SerializableObject(keyId);
@@ -241,6 +257,8 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
                 return new ExternalizableObject(keyId);
             case PLANE_OBJECT:
                 return new TestObject(keyId);
+            case BINARILIZABLE:
+                return new BinarylizableObject(keyId);
             default:
                 throw new IllegalArgumentException("mode: " + mode);
         }
@@ -263,6 +281,9 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
      * @return Value.
      */
     public static Object value(int idx, DataMode mode) {
+        if (mode == null)
+            mode = DataMode.SERIALIZABLE;
+
         switch (mode) {
             case SERIALIZABLE:
                 return new SerializableObject(idx);
@@ -270,6 +291,8 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
                 return new ExternalizableObject(idx);
             case PLANE_OBJECT:
                 return new TestObject(idx);
+            case BINARILIZABLE:
+                return new BinarylizableObject(idx);
             default:
                 throw new IllegalArgumentException("mode: " + mode);
         }
@@ -287,6 +310,13 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
 
         /** */
         protected TestEnum enumVal;
+
+        /**
+         * Default constructor must be accessible for deserialize subclasses by JDK serialization API.
+         */
+        TestObject() {
+            // No-op.
+        }
 
         /**
          * @param val Value.
@@ -345,6 +375,31 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         public SerializableObject(int val) {
             super(val);
         }
+
+        /**
+         * Custom serialization of superclass because {@link TestObject} is non-serializable.
+         *
+         * @param out output stream.
+         * @throws IOException if de-serialization failed.
+         */
+        private void writeObject(ObjectOutputStream out) throws IOException {
+            out.writeInt(val);
+            out.writeObject(strVal);
+            out.writeObject(enumVal);
+        }
+
+        /**
+         * Custom deserialization of superclass because {@link TestObject} is non-serializable.
+         *
+         * @param in input stream
+         * @throws IOException if de-serialization failed.
+         * @throws ClassNotFoundException if de-serialization failed.
+         */
+        private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+            val = in.readInt();
+            strVal = (String)in.readObject();
+            enumVal = (TestEnum)in.readObject();
+        }
     }
 
     /**
@@ -381,6 +436,37 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     }
 
     /**
+     *
+     */
+    public static class BinarylizableObject extends TestObject implements Binarylizable {
+        /**
+         * Default constructor.
+         */
+        public BinarylizableObject() {
+            super(-1);
+        }
+
+        /**
+         * @param val Value.
+         */
+        public BinarylizableObject(int val) {
+            super(val);
+        }
+
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+            writer.writeInt("val", val);
+            writer.writeString("strVal", strVal);
+            writer.writeEnum("enumVal", enumVal);
+        }
+
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+            val = reader.readInt("val");
+            strVal = reader.readString("strVal");
+            enumVal = reader.readEnum("enumVal");
+        }
+    }
+
+    /**
      * Data mode.
      */
     public enum DataMode {
@@ -391,7 +477,10 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         EXTERNALIZABLE,
 
         /** Objects without Serializable and Externalizable. */
-        PLANE_OBJECT
+        PLANE_OBJECT,
+
+        /** Binarylizable objects. Compatible only with binary marshaller */
+        BINARILIZABLE
     }
 
     /**
@@ -411,10 +500,24 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     /**
      *
      */
-    public static interface TestRunnable {
+    public interface TestRunnable {
         /**
          * @throws Exception If failed.
          */
-        public void run() throws Exception;
+        void run() throws Exception;
+    }
+
+    /**
+     * Check test compatibility with current data mode
+     * @return true if incompatible
+     * @throws Exception
+     */
+    protected boolean isCompatible() throws Exception {
+        switch (dataMode) {
+            case BINARILIZABLE:
+            case PLANE_OBJECT:
+                return !(getConfiguration().getMarshaller() instanceof JdkMarshaller);
+        }
+        return false;
     }
 }

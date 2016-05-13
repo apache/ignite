@@ -28,16 +28,23 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.eviction.EvictionPolicy;
+import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
+import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.AtomicConfiguration;
 import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.*;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactoryNative;
 import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
+import org.apache.ignite.spi.communication.CommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiMBean;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -58,7 +65,8 @@ import java.util.Map;
 /**
  * Configuration utils.
  */
-@SuppressWarnings("unchecked") public class PlatformConfigurationUtils {
+@SuppressWarnings("unchecked")
+public class PlatformConfigurationUtils {
     /**
      * Write .Net configuration to the stream.
      *
@@ -163,7 +171,83 @@ import java.util.Map;
             ccfg.setQueryEntities(entities);
         }
 
+        if (in.readBoolean())
+            ccfg.setNearConfiguration(readNearConfiguration(in));
+
         return ccfg;
+    }
+
+    /**
+     * Reads the near config.
+     *
+     * @param in Stream.
+     * @return NearCacheConfiguration.
+     */
+    public static NearCacheConfiguration readNearConfiguration(BinaryRawReader in) {
+        NearCacheConfiguration cfg = new NearCacheConfiguration();
+        cfg.setNearStartSize(in.readInt());
+
+        byte plcTyp = in.readByte();
+
+        switch (plcTyp) {
+            case 0:
+                break;
+            case 1: {
+                FifoEvictionPolicy p = new FifoEvictionPolicy();
+                p.setBatchSize(in.readInt());
+                p.setMaxSize(in.readInt());
+                p.setMaxMemorySize(in.readLong());
+                cfg.setNearEvictionPolicy(p);
+                break;
+            }
+            case 2: {
+                LruEvictionPolicy p = new LruEvictionPolicy();
+                p.setBatchSize(in.readInt());
+                p.setMaxSize(in.readInt());
+                p.setMaxMemorySize(in.readLong());
+                cfg.setNearEvictionPolicy(p);
+                break;
+            }
+            default:
+                assert false;
+        }
+
+        return cfg;
+    }
+
+    /**
+     * Reads the near config.
+     *
+     * @param out Stream.
+     * @param cfg NearCacheConfiguration.
+     */
+    @SuppressWarnings("TypeMayBeWeakened")
+    public static void writeNearConfiguration(BinaryRawWriter out, NearCacheConfiguration cfg) {
+        assert cfg != null;
+
+        out.writeInt(cfg.getNearStartSize());
+
+        EvictionPolicy p = cfg.getNearEvictionPolicy();
+
+        if (p instanceof FifoEvictionPolicy) {
+            out.writeByte((byte)1);
+
+            FifoEvictionPolicy p0 = (FifoEvictionPolicy)p;
+            out.writeInt(p0.getBatchSize());
+            out.writeInt(p0.getMaxSize());
+            out.writeLong(p0.getMaxMemorySize());
+        }
+        else if (p instanceof LruEvictionPolicy) {
+            out.writeByte((byte)2);
+
+            LruEvictionPolicy p0 = (LruEvictionPolicy)p;
+            out.writeInt(p0.getBatchSize());
+            out.writeInt(p0.getMaxSize());
+            out.writeLong(p0.getMaxMemorySize());
+        }
+        else {
+            out.writeByte((byte)0);
+        }
     }
 
     /**
@@ -264,9 +348,34 @@ import java.util.Map;
         cfg.setWorkDirectory(in.readString());
         cfg.setLocalHost(in.readString());
         cfg.setDaemon(in.readBoolean());
+        cfg.setLateAffinityAssignment(in.readBoolean());
 
         readCacheConfigurations(in, cfg);
         readDiscoveryConfiguration(in, cfg);
+
+        if (in.readBoolean()) {
+            TcpCommunicationSpi comm = new TcpCommunicationSpi();
+
+            comm.setAckSendThreshold(in.readInt());
+            comm.setConnectTimeout(in.readLong());
+            comm.setDirectBuffer(in.readBoolean());
+            comm.setDirectSendBuffer(in.readBoolean());
+            comm.setIdleConnectionTimeout(in.readLong());
+            comm.setLocalAddress(in.readString());
+            comm.setLocalPort(in.readInt());
+            comm.setLocalPortRange(in.readInt());
+            comm.setMaxConnectTimeout(in.readLong());
+            comm.setMessageQueueLimit(in.readInt());
+            comm.setReconnectCount(in.readInt());
+            comm.setSelectorsCount(in.readInt());
+            comm.setSlowClientQueueLimit(in.readInt());
+            comm.setSocketReceiveBuffer(in.readInt());
+            comm.setSocketSendBuffer(in.readInt());
+            comm.setTcpNoDelay(in.readBoolean());
+            comm.setUnacknowledgedMessagesBufferSize(in.readInt());
+
+            cfg.setCommunicationSpi(comm);
+        }
 
         if (in.readBoolean()) {
             if (cfg.getBinaryConfiguration() == null)
@@ -469,8 +578,7 @@ import java.util.Map;
 
         Collection<QueryEntity> qryEntities = ccfg.getQueryEntities();
 
-        if (qryEntities != null)
-        {
+        if (qryEntities != null) {
             writer.writeInt(qryEntities.size());
 
             for (QueryEntity e : qryEntities)
@@ -478,6 +586,16 @@ import java.util.Map;
         }
         else
             writer.writeInt(0);
+
+        NearCacheConfiguration nearCfg = ccfg.getNearConfiguration();
+
+        if (nearCfg != null) {
+            writer.writeBoolean(true);
+
+            writeNearConfiguration(writer, nearCfg);
+        }
+        else
+            writer.writeBoolean(false);
     }
 
     /**
@@ -581,6 +699,7 @@ import java.util.Map;
         w.writeString(cfg.getWorkDirectory());
         w.writeString(cfg.getLocalHost());
         w.writeBoolean(cfg.isDaemon());
+        w.writeBoolean(cfg.isLateAffinityAssignment());
 
         CacheConfiguration[] cacheCfg = cfg.getCacheConfiguration();
 
@@ -594,6 +713,33 @@ import java.util.Map;
             w.writeInt(0);
 
         writeDiscoveryConfiguration(w, cfg.getDiscoverySpi());
+
+        CommunicationSpi comm = cfg.getCommunicationSpi();
+
+        if (comm instanceof TcpCommunicationSpi) {
+            w.writeBoolean(true);
+            TcpCommunicationSpiMBean tcp = (TcpCommunicationSpiMBean) comm;
+
+            w.writeInt(tcp.getAckSendThreshold());
+            w.writeLong(tcp.getConnectTimeout());
+            w.writeBoolean(tcp.isDirectBuffer());
+            w.writeBoolean(tcp.isDirectSendBuffer());
+            w.writeLong(tcp.getIdleConnectionTimeout());
+            w.writeString(tcp.getLocalAddress());
+            w.writeInt(tcp.getLocalPort());
+            w.writeInt(tcp.getLocalPortRange());
+            w.writeLong(tcp.getMaxConnectTimeout());
+            w.writeInt(tcp.getMessageQueueLimit());
+            w.writeInt(tcp.getReconnectCount());
+            w.writeInt(tcp.getSelectorsCount());
+            w.writeInt(tcp.getSlowClientQueueLimit());
+            w.writeInt(tcp.getSocketReceiveBuffer());
+            w.writeInt(tcp.getSocketSendBuffer());
+            w.writeBoolean(tcp.isTcpNoDelay());
+            w.writeInt(tcp.getUnacknowledgedMessagesBufferSize());
+        }
+        else
+            w.writeBoolean(false);
 
         BinaryConfiguration bc = cfg.getBinaryConfiguration();
         w.writeBoolean(bc != null);

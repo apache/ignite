@@ -49,6 +49,7 @@
     <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.ServiceProcess" />
     <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
@@ -58,6 +59,7 @@
     <Compile Include="Cache\CacheAffinityFieldTest.cs" />
     <Compile Include="Cache\CacheConfigurationTest.cs" />
     <Compile Include="Cache\CacheDynamicStartTest.cs" />
+    <Compile Include="Cache\CacheNearTest.cs" />
     <Compile Include="Cache\CacheTestAsyncWrapper.cs" />
     <Compile Include="Cache\CacheAbstractTest.cs" />
     <Compile Include="Cache\CacheAffinityTest.cs" />
@@ -101,6 +103,7 @@
     <Compile Include="Compute\BinarizableClosureTaskTest.cs" />
     <Compile Include="Compute\BinarizableTaskTest.cs" />
     <Compile Include="Compute\MixedClusterTest.cs" />
+    <Compile Include="Cache\Query\Continuous\ContinuousQueryJavaFilterTest.cs" />
     <Compile Include="Compute\ResourceTaskTest.cs" />
     <Compile Include="Compute\SerializableClosureTaskTest.cs" />
     <Compile Include="Compute\TaskAdapterTest.cs" />
@@ -154,6 +157,7 @@
     <Compile Include="Services\ServicesAsyncWrapper.cs" />
     <Compile Include="TestRunner.cs" />
     <Compile Include="TypeResolverTest.cs" />
+    <Compile Include="WindowsServiceTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.csproj">

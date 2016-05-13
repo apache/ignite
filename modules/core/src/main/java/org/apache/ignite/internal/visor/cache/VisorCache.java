@@ -233,9 +233,9 @@ public class VisorCache implements Serializable {
     protected void estimateMemorySize(IgniteEx ignite, GridCacheAdapter ca, int sample) throws IgniteCheckedException {
         int size = ca.size();
 
-        Set<GridCacheEntryEx> set = ca.context().isNear()
-            ? ((GridNearCacheAdapter)ca).dht().map().entries0()
-            : ca.map().entries0();
+        Iterable<GridCacheEntryEx> set = ca.context().isNear()
+            ? ((GridNearCacheAdapter)ca).dht().entries()
+            : ca.entries();
 
         long memSz = 0;
 

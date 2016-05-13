@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.DataStructures.Configuration;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Multicast;
@@ -67,6 +68,7 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultValueAttributes(new TcpDiscoverySpi());
             CheckDefaultValueAttributes(new CacheConfiguration());
             CheckDefaultValueAttributes(new TcpDiscoveryMulticastIpFinder());
+            CheckDefaultValueAttributes(new TcpCommunicationSpi());
         }
 
         /// <summary>
@@ -111,6 +113,7 @@ namespace Apache.Ignite.Core.Tests
                 Assert.IsTrue(File.Exists(resCfg.JvmDllPath));
                 Assert.AreEqual(cfg.Localhost, resCfg.Localhost);
                 Assert.AreEqual(cfg.IsDaemon, resCfg.IsDaemon);
+                Assert.AreEqual(cfg.IsLateAffinityAssignment, resCfg.IsLateAffinityAssignment);
                 Assert.AreEqual(cfg.UserAttributes, resCfg.UserAttributes);
 
                 var atm = cfg.AtomicConfiguration;
@@ -126,6 +129,26 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(tx.DefaultTransactionIsolation, resTx.DefaultTransactionIsolation);
                 Assert.AreEqual(tx.PessimisticTransactionLogLinger, resTx.PessimisticTransactionLogLinger);
                 Assert.AreEqual(tx.PessimisticTransactionLogSize, resTx.PessimisticTransactionLogSize);
+
+                var com = (TcpCommunicationSpi) cfg.CommunicationSpi;
+                var resCom = (TcpCommunicationSpi) resCfg.CommunicationSpi;
+                Assert.AreEqual(com.AckSendThreshold, resCom.AckSendThreshold);
+                Assert.AreEqual(com.ConnectTimeout, resCom.ConnectTimeout);
+                Assert.AreEqual(com.DirectBuffer, resCom.DirectBuffer);
+                Assert.AreEqual(com.DirectSendBuffer, resCom.DirectSendBuffer);
+                Assert.AreEqual(com.IdleConnectionTimeout, resCom.IdleConnectionTimeout);
+                Assert.AreEqual(com.LocalAddress, resCom.LocalAddress);
+                Assert.AreEqual(com.LocalPort, resCom.LocalPort);
+                Assert.AreEqual(com.LocalPortRange, resCom.LocalPortRange);
+                Assert.AreEqual(com.MaxConnectTimeout, resCom.MaxConnectTimeout);
+                Assert.AreEqual(com.MessageQueueLimit, resCom.MessageQueueLimit);
+                Assert.AreEqual(com.ReconnectCount, resCom.ReconnectCount);
+                Assert.AreEqual(com.SelectorsCount, resCom.SelectorsCount);
+                Assert.AreEqual(com.SlowClientQueueLimit, resCom.SlowClientQueueLimit);
+                Assert.AreEqual(com.SocketReceiveBufferSize, resCom.SocketReceiveBufferSize);
+                Assert.AreEqual(com.SocketSendBufferSize, resCom.SocketSendBufferSize);
+                Assert.AreEqual(com.TcpNoDelay, resCom.TcpNoDelay);
+                Assert.AreEqual(com.UnacknowledgedMessagesBufferSize, resCom.UnacknowledgedMessagesBufferSize);
             }
         }
 
@@ -322,7 +345,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var props = obj.GetType().GetProperties();
 
-            foreach (var prop in props)
+            foreach (var prop in props.Where(p => p.Name != "SelectorsCount"))
             {
                 var attr = prop.GetCustomAttributes(true).OfType<DefaultValueAttribute>().FirstOrDefault();
                 var propValue = prop.GetValue(obj, null);
@@ -369,6 +392,7 @@ namespace Apache.Ignite.Core.Tests
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 Localhost = "127.0.0.1",
                 IsDaemon = true,
+                IsLateAffinityAssignment = false,
                 UserAttributes = Enumerable.Range(1, 10).ToDictionary(x => x.ToString(), x => (object) x),
                 AtomicConfiguration = new AtomicConfiguration
                 {
@@ -383,6 +407,26 @@ namespace Apache.Ignite.Core.Tests
                     DefaultTransactionIsolation = TransactionIsolation.Serializable,
                     PessimisticTransactionLogLinger = TimeSpan.FromHours(1),
                     PessimisticTransactionLogSize = 240
+                },
+                CommunicationSpi = new TcpCommunicationSpi
+                {
+                    LocalPort = 47501,
+                    MaxConnectTimeout = TimeSpan.FromSeconds(34),
+                    MessageQueueLimit = 15,
+                    ConnectTimeout = TimeSpan.FromSeconds(17),
+                    IdleConnectionTimeout = TimeSpan.FromSeconds(19),
+                    SelectorsCount = 8,
+                    ReconnectCount = 33,
+                    SocketReceiveBufferSize = 512,
+                    AckSendThreshold = 99,
+                    DirectBuffer = false,
+                    DirectSendBuffer = true,
+                    LocalPortRange = 45,
+                    LocalAddress = "127.0.0.1",
+                    TcpNoDelay = false,
+                    SlowClientQueueLimit = 98,
+                    SocketSendBufferSize = 2045,
+                    UnacknowledgedMessagesBufferSize = 3450
                 }
             };
         }
