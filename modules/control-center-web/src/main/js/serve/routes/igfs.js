@@ -65,10 +65,11 @@ module.exports.factory = function(_, express, mongo) {
         router.post('/save', (req, res) => {
             const params = req.body;
             const clusters = params.clusters;
-            let igfsId = params._id;
 
             mongo.Igfs.findOne({space: params.space, name: params.name}).exec()
                 .then((_igfs) => {
+                    const igfsId = params._id;
+
                     if (_igfs && igfsId !== _igfs._id.toString())
                         return res.status(500).send('IGFS with name: "' + params.name + '" already exist.');
 
@@ -77,17 +78,13 @@ module.exports.factory = function(_, express, mongo) {
                             .then(() => mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {igfss: igfsId}}, {multi: true}).exec())
                             .then(() => mongo.Cluster.update({_id: {$nin: clusters}}, {$pull: {igfss: igfsId}}, {multi: true}).exec())
                             .then(() => res.send(igfsId))
-                            .catch((err) => mongo.handleError(res, err));
                     }
 
                     return (new mongo.Igfs(params)).save()
-                        .then((igfs) => {
-                            igfsId = igfs._id;
-
-                            return mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {igfss: igfsId}}, {multi: true}).exec();
-                        })
-                        .then(() => res.send(igfsId))
-                        .catch((err) => mongo.handleError(res, err));
+                        .then((igfs) =>
+                            mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {igfss: igfsId}}, {multi: true}).exec()
+                                .then(() => res.send(igfs._id))
+                        );
                 })
                 .catch((err) => mongo.handleError(res, err));
         });

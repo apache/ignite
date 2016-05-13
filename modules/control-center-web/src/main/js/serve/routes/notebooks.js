@@ -64,11 +64,11 @@ module.exports.factory = function(express, mongo) {
         router.post('/save', (req, res) => {
             const note = req.body;
 
-            let noteId = note._id;
-
             mongo.Notebook.findOne({space: note.space, name: note.name}).exec()
                 .then((notebook) => {
-                    if (notebook && noteId !== notebook._id.toString())
+                    const noteId = note._id;
+
+                    if (notebook && noteId !== notebook._id.toString)
                         throw new Error('Notebook with name: "' + notebook.name + '" already exist.');
 
                     if (noteId) {
