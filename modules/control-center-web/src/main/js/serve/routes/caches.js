@@ -85,7 +85,7 @@ module.exports.factory = function(_, express, mongo) {
                             .then(() => mongo.Cluster.update({_id: {$nin: clusters}}, {$pull: {caches: cacheId}}, {multi: true}).exec())
                             .then(() => mongo.DomainModel.update({_id: {$in: domains}}, {$addToSet: {caches: cacheId}}, {multi: true}).exec())
                             .then(() => mongo.DomainModel.update({_id: {$nin: domains}}, {$pull: {caches: cacheId}}, {multi: true}).exec())
-                            .then(() => res.send(cacheId))
+                            .then(() => res.send(cacheId));
                     }
 
                     return (new mongo.Cache(params)).save()
