@@ -15,15 +15,16 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL
-#define _IGNITE_IMPL
+#ifndef _IGNITE_IMPL_IGNITE_IMPL
+#define _IGNITE_IMPL_IGNITE_IMPL
 
 #include <ignite/common/concurrent.h>
-#include <ignite/common/java.h>
+#include <ignite/jni/java.h>
+#include <ignite/common/utils.h>
 
 #include "ignite/impl/cache/cache_impl.h"
+#include "ignite/impl/transactions/transactions_impl.h"
 #include "ignite/impl/ignite_environment.h"
-#include "ignite/impl/utils.h"
 
 namespace ignite 
 {
@@ -34,7 +35,8 @@ namespace ignite
          */
         class IGNITE_FRIEND_EXPORT IgniteImpl
         {
-            friend class Ignite;
+            typedef ignite::common::concurrent::SharedPointer<IgniteEnvironment> SP_IgniteEnvironment;
+            typedef ignite::common::concurrent::SharedPointer<impl::transactions::TransactionsImpl> SP_TransactionsImpl;
         public:
             /**
              * Constructor used to create new instance.
@@ -42,7 +44,7 @@ namespace ignite
              * @param env Environment.
              * @param javaRef Reference to java object.
              */
-            IgniteImpl(ignite::common::concurrent::SharedPointer<IgniteEnvironment> env, jobject javaRef);
+            IgniteImpl(SP_IgniteEnvironment env, jobject javaRef);
             
             /**
              * Destructor.
@@ -61,7 +63,7 @@ namespace ignite
              *
              * @return JNI context for this instance.
              */
-            common::java::JniContext* GetContext();
+            jni::java::JniContext* GetContext();
 
             /**
              * Get cache.
@@ -70,20 +72,20 @@ namespace ignite
              * @param err Error.
              */
             template<typename K, typename V> 
-            cache::CacheImpl* GetCache(const char* name, IgniteError* err)
+            cache::CacheImpl* GetCache(const char* name, IgniteError& err)
             {
-                ignite::common::java::JniErrorInfo jniErr;
+                ignite::jni::java::JniErrorInfo jniErr;
 
                 jobject cacheJavaRef = env.Get()->Context()->ProcessorCache(javaRef, name, &jniErr);
 
                 if (!cacheJavaRef)
                 {
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
 
                     return NULL;
                 }
 
-                char* name0 = utils::CopyChars(name);
+                char* name0 = common::CopyChars(name);
 
                 return new cache::CacheImpl(name0, env, cacheJavaRef);
             }
@@ -95,20 +97,20 @@ namespace ignite
              * @param err Error.
              */
             template<typename K, typename V>
-            cache::CacheImpl* GetOrCreateCache(const char* name, IgniteError* err)
+            cache::CacheImpl* GetOrCreateCache(const char* name, IgniteError& err)
             {
-                ignite::common::java::JniErrorInfo jniErr;
+                ignite::jni::java::JniErrorInfo jniErr;
 
                 jobject cacheJavaRef = env.Get()->Context()->ProcessorGetOrCreateCache(javaRef, name, &jniErr);
 
                 if (!cacheJavaRef)
                 {
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
 
                     return NULL;
                 }
 
-                char* name0 = utils::CopyChars(name);
+                char* name0 = common::CopyChars(name);
 
                 return new cache::CacheImpl(name0, env, cacheJavaRef);
             }
@@ -120,20 +122,20 @@ namespace ignite
              * @param err Error.
              */
             template<typename K, typename V>
-            cache::CacheImpl* CreateCache(const char* name, IgniteError* err)
+            cache::CacheImpl* CreateCache(const char* name, IgniteError& err)
             {
-                ignite::common::java::JniErrorInfo jniErr;
+                ignite::jni::java::JniErrorInfo jniErr;
 
                 jobject cacheJavaRef = env.Get()->Context()->ProcessorCreateCache(javaRef, name, &jniErr);
 
                 if (!cacheJavaRef)
                 {
-                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, err);
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
 
                     return NULL;
                 }
 
-                char* name0 = utils::CopyChars(name);
+                char* name0 = common::CopyChars(name);
 
                 return new cache::CacheImpl(name0, env, cacheJavaRef);
             }
@@ -150,16 +152,37 @@ namespace ignite
             {
                 return proxy.impl.Get();
             }
+
+            /**
+             * Get transactions.
+             *
+             * @return TransactionsImpl instance.
+             */
+            SP_TransactionsImpl GetTransactions()
+            {
+                return txImpl;
+            }
+
         private:
+            /**
+             * Get transactions internal call.
+             *
+             * @return TransactionsImpl instance.
+             */
+            SP_TransactionsImpl InternalGetTransactions(IgniteError &err);
+
             /** Environment. */
-            ignite::common::concurrent::SharedPointer<IgniteEnvironment> env;
-            
+            SP_IgniteEnvironment env;
+
             /** Native Java counterpart. */
-            jobject javaRef;   
-            
+            jobject javaRef;
+
+            /** Transactions implementaion. */
+            SP_TransactionsImpl txImpl;
+
             IGNITE_NO_COPY_ASSIGNMENT(IgniteImpl)
         };
     }
 }
 
-#endif
+#endif //_IGNITE_IMPL_IGNITE_IMPL
