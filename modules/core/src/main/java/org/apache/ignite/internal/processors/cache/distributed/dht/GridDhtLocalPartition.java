@@ -39,11 +39,13 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPreloader;
 import org.apache.ignite.internal.processors.cache.extras.GridCacheObsoleteEntryExtras;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.GridCircularBuffer;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -201,7 +203,14 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @return {@code True} if partition is empty.
      */
     public boolean isEmpty() {
-        return map.size() == 0;
+        try {
+            return map.size() == 0 && cctx.offheap().empty(id);
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to check if partition is empty: " + id, e);
+
+            return false;
+        }
     }
 
     /** {@inheritDoc} */
@@ -671,6 +680,38 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to clear cache entry for evicted partition: " + cached, e);
             }
+        }
+
+        try {
+            GridIterator<CacheDataRow> it0 = cctx.offheap().iterator(id);
+
+            while (it0.hasNext()) {
+                CacheDataRow row = it0.next();
+
+                GridDhtCacheEntry cached = (GridDhtCacheEntry)cctx.cache().entryEx(row.key());
+
+                if (cached.clearInternal(clearVer, extras)) {
+                    if (rec) {
+                        cctx.events().addEvent(cached.partition(),
+                            cached.key(),
+                            cctx.localNodeId(),
+                            (IgniteUuid)null,
+                            null,
+                            EVT_CACHE_REBALANCE_OBJECT_UNLOADED,
+                            null,
+                            false,
+                            cached.rawGet(),
+                            cached.hasValue(),
+                            null,
+                            null,
+                            null,
+                            false);
+                    }
+                }
+            }
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to get iterator for evicted partition: " + id, e);
         }
     }
 

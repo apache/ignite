@@ -433,7 +433,6 @@
             <modules>
                 <module>modules/benchmarks</module>
                 <module>modules/yardstick</module>
-                <module>modules/benchmarks</module>
             </modules>
         </profile>
 
