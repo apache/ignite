@@ -64,7 +64,6 @@ class VisorCacheSwapCommandSpec extends VisorRuntimeBaseSpec(2) {
 
         cfg.setName(name)
         cfg.setCacheMode(CacheMode.PARTITIONED)
-        cfg.setSwapEnabled(true)
 
         cfg
     }
