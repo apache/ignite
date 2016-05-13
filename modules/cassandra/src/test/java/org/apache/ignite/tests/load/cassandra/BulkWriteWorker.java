@@ -30,7 +30,7 @@ public class BulkWriteWorker extends Worker {
     public static final String LOGGER_NAME = "CassandraBulkWriteLoadTest";
 
     /** */
-    public BulkWriteWorker(CacheStore cacheStore, int startPosition, int endPosition) {
+    public BulkWriteWorker(CacheStore cacheStore, long startPosition, long endPosition) {
         super(cacheStore, startPosition, endPosition);
     }
 

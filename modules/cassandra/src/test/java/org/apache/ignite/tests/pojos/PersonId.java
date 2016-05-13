@@ -30,7 +30,7 @@ public class PersonId implements Serializable {
     private String departmentCode;
 
     /** */
-    private int personNum;
+    private long personNum;
 
     /** */
     @SuppressWarnings("UnusedDeclaration")
@@ -38,7 +38,7 @@ public class PersonId implements Serializable {
     }
 
     /** */
-    public PersonId(String companyCode, String departmentCode, int personNum) {
+    public PersonId(String companyCode, String departmentCode, long personNum) {
         this.companyCode = companyCode;
         this.departmentCode = departmentCode;
         this.personNum = personNum;
@@ -98,13 +98,13 @@ public class PersonId implements Serializable {
 
     /** */
     @SuppressWarnings("UnusedDeclaration")
-    public void setPersonNumber(int personNum) {
+    public void setPersonNumber(long personNum) {
         this.personNum = personNum;
     }
 
     /** */
     @SuppressWarnings("UnusedDeclaration")
-    public int getPersonNumber() {
+    public long getPersonNumber() {
         return personNum;
     }
 }

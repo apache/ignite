@@ -88,7 +88,7 @@ public class CassandraDirectPersistenceTest {
     @Test
     @SuppressWarnings("unchecked")
     public void primitiveStrategyTest() {
-        CacheStore store1 = CacheStoreHelper.createCacheStore("intTypes",
+        CacheStore store1 = CacheStoreHelper.createCacheStore("longTypes",
             new ClassPathResource("org/apache/ignite/tests/persistence/primitive/persistence-settings-1.xml"),
             CassandraHelper.getAdminDataSrc());
 
@@ -96,14 +96,14 @@ public class CassandraDirectPersistenceTest {
             new ClassPathResource("org/apache/ignite/tests/persistence/primitive/persistence-settings-2.xml"),
             CassandraHelper.getAdminDataSrc());
 
-        Collection<CacheEntryImpl<Integer, Integer>> intEntries = TestsHelper.generateIntegersEntries();
+        Collection<CacheEntryImpl<Long, Long>> longEntries = TestsHelper.generateLongsEntries();
         Collection<CacheEntryImpl<String, String>> strEntries = TestsHelper.generateStringsEntries();
 
-        Collection<Integer> fakeIntKeys = TestsHelper.getKeys(intEntries);
-        fakeIntKeys.add(-1);
-        fakeIntKeys.add(-2);
-        fakeIntKeys.add(-3);
-        fakeIntKeys.add(-4);
+        Collection<Long> fakeLongKeys = TestsHelper.getKeys(longEntries);
+        fakeLongKeys.add(-1L);
+        fakeLongKeys.add(-2L);
+        fakeLongKeys.add(-3L);
+        fakeLongKeys.add(-4L);
 
         Collection<String> fakeStrKeys = TestsHelper.getKeys(strEntries);
         fakeStrKeys.add("-1");
@@ -114,12 +114,12 @@ public class CassandraDirectPersistenceTest {
         LOGGER.info("Running PRIMITIVE strategy write tests");
 
         LOGGER.info("Running single operation write tests");
-        store1.write(intEntries.iterator().next());
+        store1.write(longEntries.iterator().next());
         store2.write(strEntries.iterator().next());
         LOGGER.info("Single operation write tests passed");
 
         LOGGER.info("Running bulk operation write tests");
-        store1.writeAll(intEntries);
+        store1.writeAll(longEntries);
         store2.writeAll(strEntries);
         LOGGER.info("Bulk operation write tests passed");
 
@@ -131,9 +131,9 @@ public class CassandraDirectPersistenceTest {
 
         LOGGER.info("Running real keys read tests");
 
-        Integer intVal = (Integer)store1.load(intEntries.iterator().next().getKey());
-        if (!intEntries.iterator().next().getValue().equals(intVal))
-            throw new RuntimeException("Integer values was incorrectly deserialized from Cassandra");
+        Long longVal = (Long)store1.load(longEntries.iterator().next().getKey());
+        if (!longEntries.iterator().next().getValue().equals(longVal))
+            throw new RuntimeException("Long values was incorrectly deserialized from Cassandra");
 
         String strVal = (String)store2.load(strEntries.iterator().next().getKey());
         if (!strEntries.iterator().next().getValue().equals(strVal))
@@ -141,9 +141,9 @@ public class CassandraDirectPersistenceTest {
 
         LOGGER.info("Running fake keys read tests");
 
-        intVal = (Integer)store1.load(-1);
-        if (intVal != null)
-            throw new RuntimeException("Integer value with fake key '-1' was found in Cassandra");
+        longVal = (Long)store1.load(-1L);
+        if (longVal != null)
+            throw new RuntimeException("Long value with fake key '-1' was found in Cassandra");
 
         strVal = (String)store2.load("-1");
         if (strVal != null)
@@ -155,9 +155,9 @@ public class CassandraDirectPersistenceTest {
 
         LOGGER.info("Running real keys read tests");
 
-        Map intValues = store1.loadAll(TestsHelper.getKeys(intEntries));
-        if (!TestsHelper.checkCollectionsEqual(intValues, intEntries))
-            throw new RuntimeException("Integer values was incorrectly deserialized from Cassandra");
+        Map longValues = store1.loadAll(TestsHelper.getKeys(longEntries));
+        if (!TestsHelper.checkCollectionsEqual(longValues, longEntries))
+            throw new RuntimeException("Long values was incorrectly deserialized from Cassandra");
 
         Map strValues = store2.loadAll(TestsHelper.getKeys(strEntries));
         if (!TestsHelper.checkCollectionsEqual(strValues, strEntries))
@@ -165,9 +165,9 @@ public class CassandraDirectPersistenceTest {
 
         LOGGER.info("Running fake keys read tests");
 
-        intValues = store1.loadAll(fakeIntKeys);
-        if (!TestsHelper.checkCollectionsEqual(intValues, intEntries))
-            throw new RuntimeException("Integer values was incorrectly deserialized from Cassandra");
+        longValues = store1.loadAll(fakeLongKeys);
+        if (!TestsHelper.checkCollectionsEqual(longValues, longEntries))
+            throw new RuntimeException("Long values was incorrectly deserialized from Cassandra");
 
         strValues = store2.loadAll(fakeStrKeys);
         if (!TestsHelper.checkCollectionsEqual(strValues, strEntries))
@@ -181,18 +181,18 @@ public class CassandraDirectPersistenceTest {
 
         LOGGER.info("Deleting real keys");
 
-        store1.delete(intEntries.iterator().next().getKey());
-        store1.deleteAll(TestsHelper.getKeys(intEntries));
+        store1.delete(longEntries.iterator().next().getKey());
+        store1.deleteAll(TestsHelper.getKeys(longEntries));
 
         store2.delete(strEntries.iterator().next().getKey());
         store2.deleteAll(TestsHelper.getKeys(strEntries));
 
         LOGGER.info("Deleting fake keys");
 
-        store1.delete(-1);
+        store1.delete(-1L);
         store2.delete("-1");
 
-        store1.deleteAll(fakeIntKeys);
+        store1.deleteAll(fakeLongKeys);
         store2.deleteAll(fakeStrKeys);
 
         LOGGER.info("PRIMITIVE strategy delete tests passed");
@@ -202,7 +202,7 @@ public class CassandraDirectPersistenceTest {
     @Test
     @SuppressWarnings("unchecked")
     public void blobStrategyTest() {
-        CacheStore store1 = CacheStoreHelper.createCacheStore("intTypes",
+        CacheStore store1 = CacheStoreHelper.createCacheStore("longTypes",
             new ClassPathResource("org/apache/ignite/tests/persistence/blob/persistence-settings-1.xml"),
             CassandraHelper.getAdminDataSrc());
 
@@ -214,19 +214,19 @@ public class CassandraDirectPersistenceTest {
             new ClassPathResource("org/apache/ignite/tests/persistence/blob/persistence-settings-3.xml"),
             CassandraHelper.getAdminDataSrc());
 
-        Collection<CacheEntryImpl<Integer, Integer>> intEntries = TestsHelper.generateIntegersEntries();
-        Collection<CacheEntryImpl<Integer, Person>> personEntries = TestsHelper.generateIntegersPersonsEntries();
+        Collection<CacheEntryImpl<Long, Long>> longEntries = TestsHelper.generateLongsEntries();
+        Collection<CacheEntryImpl<Long, Person>> personEntries = TestsHelper.generateLongsPersonsEntries();
 
         LOGGER.info("Running BLOB strategy write tests");
 
         LOGGER.info("Running single operation write tests");
-        store1.write(intEntries.iterator().next());
+        store1.write(longEntries.iterator().next());
         store2.write(personEntries.iterator().next());
         store3.write(personEntries.iterator().next());
         LOGGER.info("Single operation write tests passed");
 
         LOGGER.info("Running bulk operation write tests");
-        store1.writeAll(intEntries);
+        store1.writeAll(longEntries);
         store2.writeAll(personEntries);
         store3.writeAll(personEntries);
         LOGGER.info("Bulk operation write tests passed");
@@ -237,9 +237,9 @@ public class CassandraDirectPersistenceTest {
 
         LOGGER.info("Running single operation read tests");
 
-        Integer intVal = (Integer)store1.load(intEntries.iterator().next().getKey());
-        if (!intEntries.iterator().next().getValue().equals(intVal))
-            throw new RuntimeException("Integer values was incorrectly deserialized from Cassandra");
+        Long longVal = (Long)store1.load(longEntries.iterator().next().getKey());
+        if (!longEntries.iterator().next().getValue().equals(longVal))
+            throw new RuntimeException("Long values was incorrectly deserialized from Cassandra");
 
         Person personVal = (Person)store2.load(personEntries.iterator().next().getKey());
         if (!personEntries.iterator().next().getValue().equals(personVal))
@@ -253,9 +253,9 @@ public class CassandraDirectPersistenceTest {
 
         LOGGER.info("Running bulk operation read tests");
 
-        Map intValues = store1.loadAll(TestsHelper.getKeys(intEntries));
-        if (!TestsHelper.checkCollectionsEqual(intValues, intEntries))
-            throw new RuntimeException("Integer values was incorrectly deserialized from Cassandra");
+        Map longValues = store1.loadAll(TestsHelper.getKeys(longEntries));
+        if (!TestsHelper.checkCollectionsEqual(longValues, longEntries))
+            throw new RuntimeException("Long values was incorrectly deserialized from Cassandra");
 
         Map personValues = store2.loadAll(TestsHelper.getKeys(personEntries));
         if (!TestsHelper.checkPersonCollectionsEqual(personValues, personEntries, false))
@@ -271,8 +271,8 @@ public class CassandraDirectPersistenceTest {
 
         LOGGER.info("Running BLOB strategy delete tests");
 
-        store1.delete(intEntries.iterator().next().getKey());
-        store1.deleteAll(TestsHelper.getKeys(intEntries));
+        store1.delete(longEntries.iterator().next().getKey());
+        store1.deleteAll(TestsHelper.getKeys(longEntries));
 
         store2.delete(personEntries.iterator().next().getKey());
         store2.deleteAll(TestsHelper.getKeys(personEntries));
@@ -287,7 +287,7 @@ public class CassandraDirectPersistenceTest {
     @Test
     @SuppressWarnings("unchecked")
     public void pojoStrategyTest() {
-        CacheStore store1 = CacheStoreHelper.createCacheStore("intTypes",
+        CacheStore store1 = CacheStoreHelper.createCacheStore("longTypes",
             new ClassPathResource("org/apache/ignite/tests/persistence/pojo/persistence-settings-1.xml"),
             CassandraHelper.getAdminDataSrc());
 
@@ -299,7 +299,7 @@ public class CassandraDirectPersistenceTest {
             new ClassPathResource("org/apache/ignite/tests/persistence/pojo/persistence-settings-3.xml"),
             CassandraHelper.getAdminDataSrc());
 
-        Collection<CacheEntryImpl<Integer, Person>> entries1 = TestsHelper.generateIntegersPersonsEntries();
+        Collection<CacheEntryImpl<Long, Person>> entries1 = TestsHelper.generateLongsPersonsEntries();
         Collection<CacheEntryImpl<PersonId, Person>> entries2 = TestsHelper.generatePersonIdsPersonsEntries();
         Collection<CacheEntryImpl<PersonId, Person>> entries3 = TestsHelper.generatePersonIdsPersonsEntries();
 

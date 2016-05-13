@@ -29,7 +29,7 @@ public class ReadWorker extends Worker {
     public static final String LOGGER_NAME = "IgniteReadLoadTest";
 
     /** */
-    public ReadWorker(Ignite ignite, int startPosition, int endPosition) {
+    public ReadWorker(Ignite ignite, long startPosition, long endPosition) {
         super(ignite, startPosition, endPosition);
     }
 

@@ -1,6 +1,6 @@
 <persistence keyspace="test1" table="blob_test3">
     <!-- By default Java standard serialization is going to be used -->
-    <keyPersistence class="java.lang.Integer"
+    <keyPersistence class="java.lang.Long"
                     strategy="BLOB"
                     column="key"/>
 

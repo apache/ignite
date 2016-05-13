@@ -29,7 +29,7 @@ public class ReadWorker extends Worker {
     public static final String LOGGER_NAME = "CassandraReadLoadTest";
 
     /** */
-    public ReadWorker(CacheStore cacheStore, int startPosition, int endPosition) {
+    public ReadWorker(CacheStore cacheStore, long startPosition, long endPosition) {
         super(cacheStore, startPosition, endPosition);
     }
 

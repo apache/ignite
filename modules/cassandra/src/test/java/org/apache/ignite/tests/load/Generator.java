@@ -23,5 +23,5 @@ package org.apache.ignite.tests.load;
  */
 public interface Generator {
     /** */
-    public Object generate(int i);
+    public Object generate(long i);
 }

@@ -30,7 +30,7 @@ public class BulkWriteWorker extends Worker {
     public static final String LOGGER_NAME = "IgniteBulkWriteLoadTest";
 
     /** */
-    public BulkWriteWorker(Ignite ignite, int startPosition, int endPosition) {
+    public BulkWriteWorker(Ignite ignite, long startPosition, long endPosition) {
         super(ignite, startPosition, endPosition);
     }
 

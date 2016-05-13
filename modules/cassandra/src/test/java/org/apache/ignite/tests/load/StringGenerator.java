@@ -17,12 +17,14 @@
 
 package org.apache.ignite.tests.load;
 
+import org.apache.ignite.cache.store.cassandra.common.SystemHelper;
+
 /**
  * Implementation of {@link org.apache.ignite.tests.load.Generator} generating {@link String} instance.
  */
 public class StringGenerator implements Generator {
     /** {@inheritDoc} */
-    @Override public Object generate(int i) {
-        return Integer.toString(i);
+    @Override public Object generate(long i) {
+        return Long.toString(i);
     }
 }

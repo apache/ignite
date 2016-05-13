@@ -19,7 +19,9 @@ echo.
 
 set TESTS_CLASSPATH="%~dp0\lib*;%~dp0settings"
 
-call java -cp "%TESTS_CLASSPATH%" "org.apache.ignite.tests.IgnitePersistentStoreLoadTest"
+call %~dp0jvm-opts.bat %*
+
+call java %JVM_OPTS% -cp "%TESTS_CLASSPATH%" "org.apache.ignite.tests.IgnitePersistentStoreLoadTest"
 
 if %errorLevel% NEQ 0 (
     echo.

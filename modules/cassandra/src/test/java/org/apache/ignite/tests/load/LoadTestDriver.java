@@ -70,21 +70,26 @@ public abstract class LoadTestDriver {
                     testName+ "' have failed");
         }
 
+        // calculates host unique prefix based on its subnet IP address
+        long hostUniqPrefix = getHostUniquePrefix();
+
         logger().info("Load tests driver setup successfully completed");
 
         try {
 
             List<Worker> workers = new LinkedList<>();
-            int startPosition = 0;
+            long startPosition = 0;
 
             logger().info("Starting workers");
 
             for (int i = 0; i < TestsHelper.getLoadTestsThreadsCount(); i++) {
-                Worker worker = createWorker(clazz, cfg, startPosition, startPosition + 10000000);
+                Worker worker = createWorker(clazz, cfg,
+                        hostUniqPrefix + startPosition,
+                        hostUniqPrefix + startPosition + 100000000);
                 workers.add(worker);
                 worker.setName(testName + "-worker-" + i);
                 worker.start();
-                startPosition += 10000001;
+                startPosition += 100000001;
             }
 
             logger().info("Workers started");
@@ -131,11 +136,11 @@ public abstract class LoadTestDriver {
 
     /** */
     @SuppressWarnings("unchecked")
-    private Worker createWorker(Class clazz, Object cfg, int startPosition, int endPosition) {
+    private Worker createWorker(Class clazz, Object cfg, long startPosition, long endPosition) {
         try {
             Class cfgCls = cfg instanceof Ignite ? Ignite.class : CacheStore.class;
 
-            Constructor ctor = clazz.getConstructor(cfgCls, int.class, int.class);
+            Constructor ctor = clazz.getConstructor(cfgCls, long.class, long.class);
 
             return (Worker)ctor.newInstance(cfg, startPosition, endPosition);
         }
@@ -173,9 +178,9 @@ public abstract class LoadTestDriver {
     /** */
     @SuppressWarnings("StringBufferReplaceableByString")
     private void printTestResultsStatistics(String testName, List<Worker> workers) {
-        int cnt = 0;
-        int errCnt = 0;
-        int speed = 0;
+        long cnt = 0;
+        long errCnt = 0;
+        long speed = 0;
 
 
         for (Worker worker : workers) {
@@ -201,5 +206,31 @@ public abstract class LoadTestDriver {
         builder.append("-------------------------------------------------");
 
         logger().info(builder.toString());
+    }
+
+    /** */
+    private long getHostUniquePrefix() {
+        String[] parts = SystemHelper.HOST_IP.split("\\.");
+
+        if (parts[2].equals("0"))
+            parts[2] = "777";
+
+        if (parts[3].equals("0"))
+            parts[3] = "777";
+
+        long part3 = Long.parseLong(parts[2]);
+        long part4 = Long.parseLong(parts[3]);
+
+        if (part3 < 10)
+            part3 = part3 * 100;
+        else if (part4 < 100)
+            part3 = part3 * 10;
+
+        if (part4 < 10)
+            part4 = part4 * 100;
+        else if (part4 < 100)
+            part4 = part4 * 10;
+
+        return (part4 * 100000000000000L) + (part3 * 100000000000L);
     }
 }

@@ -58,19 +58,19 @@ public abstract class Worker extends Thread {
     private volatile long finishTime = 0;
 
     /** */
-    private volatile int warmupMsgProcessed = 0;
+    private volatile long warmupMsgProcessed = 0;
 
     /** */
-    private volatile int warmupSleepCnt = 0;
+    private volatile long warmupSleepCnt = 0;
 
     /** */
-    private volatile int msgProcessed = 0;
+    private volatile long msgProcessed = 0;
 
     /** */
-    private volatile int msgFailed = 0;
+    private volatile long msgFailed = 0;
 
     /** */
-    private volatile int sleepCnt = 0;
+    private volatile long sleepCnt = 0;
 
     /** */
     private Throwable executionError;
@@ -91,13 +91,13 @@ public abstract class Worker extends Thread {
     private Logger log;
 
     /** */
-    private int startPosition;
+    private long startPosition;
 
     /** */
-    private int endPosition;
+    private long endPosition;
 
     /** */
-    public Worker(CacheStore cacheStore, int startPosition, int endPosition) {
+    public Worker(CacheStore cacheStore, long startPosition, long endPosition) {
         this.cacheStore = cacheStore;
         this.log = Logger.getLogger(loggerName());
         this.startPosition = startPosition;
@@ -105,7 +105,7 @@ public abstract class Worker extends Thread {
     }
 
     /** */
-    public Worker(Ignite ignite, int startPosition, int endPosition) {
+    public Worker(Ignite ignite, long startPosition, long endPosition) {
         this.ignite = ignite;
         this.log = Logger.getLogger(loggerName());
         this.startPosition = startPosition;
@@ -136,18 +136,18 @@ public abstract class Worker extends Thread {
     }
 
     /** */
-    public int getSpeed() {
+    public long getSpeed() {
         if (msgProcessed == 0)
             return 0;
 
         long finish = finishTime != 0 ? finishTime : System.currentTimeMillis();
         long duration = (finish - startTime - sleepCnt * TestsHelper.getLoadTestsRequestsLatency()) / 1000;
 
-        return duration == 0 ? msgProcessed : msgProcessed / (int)duration;
+        return duration == 0 ? msgProcessed : msgProcessed / duration;
     }
 
     /** */
-    public int getErrorsCount() {
+    public long getErrorsCount() {
         return msgFailed;
     }
 
@@ -160,17 +160,17 @@ public abstract class Worker extends Thread {
     }
 
     /** */
-    public int getMsgCountTotal() {
+    public long getMsgCountTotal() {
         return warmupMsgProcessed + msgProcessed;
     }
 
     /** */
-    public int getWarmupMsgProcessed() {
+    public long getWarmupMsgProcessed() {
         return warmupMsgProcessed;
     }
 
     /** */
-    public int getMsgProcessed() {
+    public long getMsgProcessed() {
         return msgProcessed;
     }
 
@@ -215,7 +215,7 @@ public abstract class Worker extends Thread {
 
         statReportedTime = testStartTime;
 
-        int cntr = startPosition;
+        long cntr = startPosition;
         Object key = TestsHelper.generateLoadTestsKey(cntr);
         Object val = TestsHelper.generateLoadTestsValue(cntr);
         List<CacheEntryImpl> batchList = new ArrayList<>(TestsHelper.getBulkOperationSize());
@@ -323,14 +323,14 @@ public abstract class Worker extends Thread {
     }
 
     /** */
-    private int getWarmUpSpeed() {
+    private long getWarmUpSpeed() {
         if (warmupMsgProcessed == 0)
             return 0;
 
         long finish = warmupFinishTime != 0 ? warmupFinishTime : System.currentTimeMillis();
         long duration = (finish - warmupStartTime - warmupSleepCnt * TestsHelper.getLoadTestsRequestsLatency()) / 1000;
 
-        return duration == 0 ? warmupMsgProcessed : warmupMsgProcessed / (int)duration;
+        return duration == 0 ? warmupMsgProcessed : warmupMsgProcessed / duration;
     }
 
     /** */

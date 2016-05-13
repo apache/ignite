@@ -84,6 +84,7 @@ public class IgnitePersistentStoreLoadTest extends LoadTestDriver {
         }
         catch (Throwable e) {
             LOGGER.error("Ignite load tests execution failed", e);
+            throw new RuntimeException("Ignite load tests execution failed", e);
         }
         finally {
             CassandraHelper.releaseCassandraResources();
