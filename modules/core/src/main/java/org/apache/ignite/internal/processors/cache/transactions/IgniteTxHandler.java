@@ -102,7 +102,11 @@ public class IgniteTxHandler {
      */
     public IgniteInternalFuture<?> processNearTxPrepareRequest(final UUID nearNodeId,
         final GridNearTxPrepareRequest req) {
-        return prepareTx(nearNodeId, null, req);
+        IgniteInternalFuture<GridNearTxPrepareResponse> fut = prepareTx(nearNodeId, null, req);
+
+        assert req.txState() != null || (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null);
+
+        return fut;
     }
 
     /**
@@ -505,10 +509,11 @@ public class IgniteTxHandler {
             return;
         }
 
-        IgniteInternalTx tx = ctx.tm().tx(res.version());
+        IgniteInternalTx tx = fut.tx();
 
-        if (tx != null)
-            res.txState(tx.txState());
+        assert tx != null;
+
+        res.txState(tx.txState());
 
         fut.onResult(nodeId, res);
     }
@@ -546,10 +551,11 @@ public class IgniteTxHandler {
             return;
         }
 
-        IgniteInternalTx tx = ctx.tm().tx(res.version());
+        IgniteInternalTx tx = fut.tx();
 
-        if (tx != null)
-            res.txState(tx.txState());
+        assert tx != null;
+
+        res.txState(tx.txState());
 
         fut.onResult(nodeId, res);
     }
@@ -595,7 +601,11 @@ public class IgniteTxHandler {
      */
     @Nullable public IgniteInternalFuture<IgniteInternalTx> processNearTxFinishRequest(UUID nodeId,
         GridNearTxFinishRequest req) {
-        return finish(nodeId, null, req);
+        IgniteInternalFuture<IgniteInternalTx> fut = finish(nodeId, null, req);
+
+        assert req.txState() != null || (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null);
+
+        return fut;
     }
 
     /**
@@ -664,6 +674,9 @@ public class IgniteTxHandler {
         }
         else
             tx = ctx.tm().tx(dhtVer);
+
+        if (tx != null)
+            req.txState(tx.txState());
 
         if (tx == null && locTx != null && !req.commit()) {
             U.warn(log, "DHT local tx not found for near local tx rollback " +
@@ -836,6 +849,8 @@ public class IgniteTxHandler {
 
             if (dhtTx != null)
                 req.txState(dhtTx.txState());
+            else if (nearTx != null)
+                req.txState(nearTx.txState());
 
             if (dhtTx != null && !F.isEmpty(dhtTx.invalidPartitions()))
                 res.invalidPartitionsByCacheId(dhtTx.invalidPartitions());
@@ -897,6 +912,8 @@ public class IgniteTxHandler {
             if (dhtTx != null)
                 dhtTx.rollback();
         }
+
+        assert req.txState() != null || (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null);
     }
 
     /**
@@ -975,6 +992,8 @@ public class IgniteTxHandler {
         }
         else
             sendReply(nodeId, req, true);
+
+        assert req.txState() != null || (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null);
     }
 
     /**
