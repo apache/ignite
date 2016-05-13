@@ -17,166 +17,96 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
-import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMemoryMode;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.configuration.NearCacheConfiguration;
-import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-import javax.cache.processor.EntryProcessor;
-import javax.cache.processor.EntryProcessorException;
-import javax.cache.processor.MutableEntry;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
+import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
- * The test are checking batch operation onto atomic offheap cache with per certain key and value types.
+ * Tests various cache operations with indexing enabled.
  */
-public class AtomicBinaryOffheapBatchTest extends IgniteCacheAbstractTest {
+public abstract class CacheOffheapBatchIndexingBaseTest extends GridCommonAbstractTest {
+    /** */
+    private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /**
-     * Size of batch in operation
-     */
-    public static final int BATCH_SIZE = 500;
-
-    @Override
-    protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        cfg.setMarshaller(new BinaryMarshaller());
-        cfg.setPeerClassLoadingEnabled(false);
-
-        return cfg;
-    }
-
-    @Override
-    protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
-
-        cfg.setMemoryMode(memoryMode());
-
-        cfg.setIndexedTypes(Integer.class, Person.class, Integer.class, Organization.class);
-
-        cfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.PRIMARY_SYNC);
-
-        return cfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    protected int gridCount() {
-        return 1;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    protected CacheMode cacheMode() {
-        return CacheMode.PARTITIONED;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    protected CacheAtomicityMode atomicityMode() {
-        return CacheAtomicityMode.ATOMIC;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    protected NearCacheConfiguration nearConfiguration() {
-        return null;
-    }
-
-    /**
-     * @return Cache memory mode.
-     */
-    protected CacheMemoryMode memoryMode() {
-        return CacheMemoryMode.OFFHEAP_TIERED;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    protected CacheAtomicWriteOrderMode atomicWriteOrderMode() {
-        return CacheAtomicWriteOrderMode.PRIMARY;
-    }
-
-    /**
-     * Test method.
+     * Load data into cache
      *
-     * @throws Exception If fail.
+     * @param name Cache name.
      */
-    public void testBatchOperations() throws Exception {
-        try (IgniteCache defaultCache = ignite(0).cache(null)) {
-            loadingCacheAnyDate();
-
-            for (int cnt = 0; cnt < 200; cnt++) {
-                Map<Integer, Person> putMap1 = new TreeMap<>();
-                for (int i = 0; i < BATCH_SIZE; i++)
-                    putMap1.put(i, new Person(i, i + 1, String.valueOf(i), String.valueOf(i + 1), i / 0.99));
-
-                defaultCache.putAll(putMap1);
-
-                Map<Integer, Organization> putMap2 = new TreeMap<>();
-                for (int i = BATCH_SIZE / 2; i < BATCH_SIZE * 3 / 2; i++)
-                    putMap2.put(i, new Organization(i, String.valueOf(i)));
-
-                defaultCache.putAll(putMap2);
-
-                Set<Integer> keySet = new TreeSet<>();
-
-                for (int i = 0; i < BATCH_SIZE * 3 / 2; i += 2)
-                    keySet.add(i);
-
-                defaultCache.removeAll(keySet);
-
-                keySet = new TreeSet<>();
-
-                for (int i = 1; i < BATCH_SIZE * 3 / 2; i += 2)
-                    keySet.add(i);
-
-                defaultCache.invokeAll(keySet, new EntryProcessor() {
-                    @Override
-                    public Object process(MutableEntry entry, Object... arguments) throws EntryProcessorException {
-                        Object value = entry.getValue();
-                        entry.remove();
-                        return value;
-                    }
-                });
-            }
-        }
-    }
-
-    /**
-     * Loading date into cache
-     */
-    private void loadingCacheAnyDate() {
-        try (IgniteDataStreamer streamer = ignite(0).dataStreamer(null)) {
+    protected void preload(String name) {
+        try (IgniteDataStreamer<Object, Object> streamer = ignite(0).dataStreamer(name)) {
             for (int i = 0; i < 30_000; i++) {
                 if (i % 2 == 0)
-                    streamer.addData(i, new Person(i, i + 1, String.valueOf(i), String.valueOf(i + 1), i / 0.99));
+                    streamer.addData(i, new Person(i, i + 1, String.valueOf(i), String.valueOf(i + 1), salary(i)));
                 else
                     streamer.addData(i, new Organization(i, String.valueOf(i)));
             }
         }
     }
 
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        cfg.setPeerClassLoadingEnabled(false);
+
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
+
+        return cfg;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        startGrid(0);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        stopAllGrids();
+    }
+
+    /**
+     * @param base Base.
+     * @return Salary.
+     */
+    protected double salary(int base) {
+        return base * 100.;
+    }
+
+    /**
+     * @param onHeapRowCacheSize on heap row cache size.
+     * @param indexedTypes indexed types for cache.
+     * @return Cache configuration.
+     */
+    protected CacheConfiguration<Object, Object> cacheConfiguration(int onHeapRowCacheSize, Class<?>[] indexedTypes) {
+        CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
+
+        ccfg.setAtomicityMode(ATOMIC);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
+        ccfg.setMemoryMode(OFFHEAP_TIERED);
+        ccfg.setSqlOnheapRowCacheSize(onHeapRowCacheSize);
+        ccfg.setIndexedTypes(indexedTypes);
+
+        return ccfg;
+    }
+
     /**
      * Ignite cache value class.
      */
-    private static class Person implements Binarylizable {
-
+    protected static class Person implements Binarylizable {
         /** Person ID. */
         @QuerySqlField(index = true)
         private int id;
@@ -313,8 +243,7 @@ public class AtomicBinaryOffheapBatchTest extends IgniteCacheAbstractTest {
     /**
      * Ignite cache value class with indexed field.
      */
-    private static class Organization implements Binarylizable {
-
+    protected static class Organization implements Binarylizable {
         /** Organization ID. */
         @QuerySqlField(index = true)
         private int id;
