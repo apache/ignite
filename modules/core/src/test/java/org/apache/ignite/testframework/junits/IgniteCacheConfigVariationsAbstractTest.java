@@ -198,7 +198,8 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        awaitPartitionMapExchange();
+        if (testsCfg.awaitPartitionMapExchange())
+            awaitPartitionMapExchange();
 
         assert jcache().unwrap(Ignite.class).transactions().tx() == null;
 
