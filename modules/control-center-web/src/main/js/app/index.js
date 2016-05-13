@@ -147,7 +147,6 @@ angular
     'ngSanitize',
     'mgcrea.ngStrap',
     'ui.router',
-    'ui.router.metatags',
     'gridster',
     // Base modules.
     'ignite-console.user',
@@ -217,12 +216,6 @@ angular
     $urlRouterProvider.otherwise('/');
 
     $locationProvider.html5Mode(true);
-}])
-.config(['UIRouterMetatagsProvider', (UIRouterMetatagsProvider) => {
-    UIRouterMetatagsProvider
-        .setDefaultTitle('Apache Ignite - Management Tool and Configuration Wizard')
-        .setTitleSuffix(' – Apache Ignite Web Console')
-        .setDefaultDescription('The Apache Ignite Web Console is an interactive management tool and configuration wizard which walks you through the creation of config files. Try it now.');
 }])
 .run(['$rootScope', ($root) => {
     $root._ = _;

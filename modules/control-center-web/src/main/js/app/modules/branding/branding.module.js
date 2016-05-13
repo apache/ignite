@@ -28,9 +28,15 @@ import ignitePoweredByApache from './powered-by-apache.directive';
 
 angular
 .module('ignite-console.branding', [
-
+    'ui.router.metatags'
 ])
 .provider(...IgniteBranding)
+.config(['UIRouterMetatagsProvider', (UIRouterMetatagsProvider) => {
+    UIRouterMetatagsProvider
+        .setDefaultTitle('Apache Ignite - Management Tool and Configuration Wizard')
+        .setTitleSuffix(' – Apache Ignite Web Console')
+        .setDefaultDescription('The Apache Ignite Web Console is an interactive management tool and configuration wizard which walks you through the creation of config files. Try it now.');
+}])
 .directive(...ignitePoweredByApache)
 .directive(...igniteHeaderLogo)
 .directive(...igniteHeaderTitle)
