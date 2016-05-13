@@ -20,8 +20,6 @@ package org.apache.ignite.internal.processors.cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cache.CachePeekMode;
-import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -31,21 +29,14 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.CAX;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.spi.swapspace.inmemory.GridTestSwapSpaceSpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import javax.cache.Cache;
 import java.io.Serializable;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD;
@@ -59,14 +50,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 @SuppressWarnings("StatementWithEmptyBody")
 public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
-    /** */
-    private static final boolean TEST_INFO = true;
-
     /** Number of test grids (nodes) */
     private static final int GRID_CNT = 1;
-
-    /** */
-    private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
     private static final long TEST_TIMEOUT = 2 * 60 * 1000;
@@ -86,22 +71,9 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
     /** */
     private static final int ITERATIONS = 5;
 
-    /** Don't start grid by default. */
-    public IgniteCacheQueryH2IndexingLeakTest() {
-        super(false);
-    }
-
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        TcpDiscoverySpi disco = new TcpDiscoverySpi();
-
-        disco.setIpFinder(ipFinder);
-
-        cfg.setDiscoverySpi(disco);
-
-        cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());
 
         cfg.setCacheConfiguration(cacheConfiguration());
 
@@ -119,20 +91,9 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
-        cacheCfg.setSwapEnabled(true);
-        cacheCfg.setBackups(1);
 
-        LruEvictionPolicy plc = null;
-
-        cacheCfg.setEvictionPolicy(plc);
-
-        cacheCfg.setSqlOnheapRowCacheSize(128);
         cacheCfg.setIndexedTypes(
-            Integer.class, Integer.class,
-            Integer.class, TestValue.class,
-            Integer.class, String.class,
-            Integer.class, Long.class,
-            Integer.class, Object.class
+            Integer.class, Integer.class
         );
 
         return cacheCfg;
@@ -147,25 +108,22 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
      *
      */
     private static class FakeIndexing extends IgniteH2Indexing {
-        private static final ConcurrentMap<FakeIndexing, Boolean> instances = new ConcurrentHashMap<>();
+        /** Instance. */
+        private static FakeIndexing instance;
 
         /**
          * Default constructor.
          */
         public FakeIndexing() {
-            instances.putIfAbsent(this, true);
+            instance = this;
         }
 
         /**
-         * Get sum of sizes of all stmtCaches instances
+         * Get size of stmtCache
          */
-        static int getTotalCachesSize() {
-            int size = 0;
-            for(FakeIndexing h2idx : instances.keySet()) {
-                ConcurrentMap stmtCache = GridTestUtils.getFieldValue(h2idx, IgniteH2Indexing.class, "stmtCache");
-                size += stmtCache.size();
-            }
-            return  size;
+        static int getCachesSize() {
+            ConcurrentMap stmtCache = GridTestUtils.getFieldValue(instance, IgniteH2Indexing.class, "stmtCache");
+            return stmtCache.size();
         }
     }
 
@@ -184,13 +142,8 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
 
         // Put test values into cache.
         final IgniteCache<Integer, Integer> c = grid(0).cache(null);
-
-        for (int i = 0; i < keyCnt; i++) {
+        for (int i = 0; i < keyCnt; i++)
             c.put(i, i);
-
-            c.localEvict(Arrays.asList(i));
-        }
-
     }
 
     /** {@inheritDoc} */
@@ -221,29 +174,7 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
             IgniteCache<Object, Object> c = grid(i).cache(null);
 
             c.removeAll();
-
-            // Fix for tests where mapping was removed at primary node
-            // but was not removed at others.
-            // removeAll() removes mapping only when it presents at a primary node.
-            // To remove all mappings used force remove by key.
-            if (c.size() > 0) {
-                for (Cache.Entry<Object, Object> e : c.localEntries())
-                    c.remove(e.getKey());
-            }
-
-            U.sleep(5000);
-
-            assertEquals("Swap keys: " + c.size(CachePeekMode.SWAP), 0, c.size(CachePeekMode.SWAP));
-            assertEquals(0, c.size(CachePeekMode.OFFHEAP));
-            assertEquals(0, c.size(CachePeekMode.PRIMARY));
-            assertEquals(0, c.size());
         }
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void info(String msg) {
-        if (TEST_INFO)
-            super.info(msg);
     }
 
     /**
@@ -287,14 +218,14 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
             // Wait for stmt cache entry is created for each thread.
             assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    return FakeIndexing.getTotalCachesSize() == THREAD_COUNT;
+                    return FakeIndexing.getCachesSize() == THREAD_COUNT;
                 }
             }, STMT_CACHE_CLEANUP_TIMEOUT));
 
             // Wait for stmtCache is cleaned up because all user threads are terminated.
             assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    return FakeIndexing.getTotalCachesSize() == 0;
+                    return FakeIndexing.getCachesSize() == 0;
                 }
             }, STMT_CACHE_CLEANUP_TIMEOUT * 2));
         }
@@ -329,6 +260,8 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
                                 }
                             }
                             catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                                return;
                             }
                         }
                     }
@@ -337,7 +270,7 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
             // Wait for stmt cache entry is created for each thread.
             assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    return FakeIndexing.getTotalCachesSize() == THREAD_COUNT;
+                    return FakeIndexing.getCachesSize() == THREAD_COUNT;
                 }
             }, STMT_CACHE_CLEANUP_TIMEOUT));
 
@@ -346,7 +279,7 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
             // Wait for stmtCache is cleaned up because all user threads don't perform queries a lot of time.
             assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    return FakeIndexing.getTotalCachesSize() == 0;
+                    return FakeIndexing.getCachesSize() == 0;
                 }
             }, STMT_CACHE_CLEANUP_TIMEOUT * 2));
 
