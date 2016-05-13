@@ -253,6 +253,20 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
             if (Object[].class == cls)
                 return val.split(";");
 
+            if (byte[].class == cls) {
+                String[] els = val.split(";");
+
+                if (els.length == 0 || (els.length == 1 && els[0].length() == 0))
+                    return new byte[0];
+
+                byte[] res = new byte[els.length];
+
+                for (int i = 0; i < els.length; i ++)
+                    res[i] = new Byte(els[i]);
+
+                return res;
+            }
+
             return val;
         }
 
