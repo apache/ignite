@@ -77,7 +77,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     private PageMemory pageMem;
 
     /** */
-    protected ReuseList reuseList;
+    private ReuseList reuseList;
 
 //    /** {@inheritDoc} */
 //    @Override protected long getTestTimeout() {
@@ -527,6 +527,9 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                 }
 
                 assertEquals(map.size(), tree.size());
+
+                if (i % 1000 == 0)
+                    tree.validateTree();
             }
         }
     }
