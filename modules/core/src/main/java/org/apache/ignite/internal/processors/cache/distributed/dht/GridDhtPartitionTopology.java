@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -256,4 +257,6 @@ public interface GridDhtPartitionTopology {
     public boolean rebalanceFinished(AffinityTopologyVersion topVer);
 
     public boolean ownIfUpToDate(GridDhtLocalPartition part);
+
+    public void setOwners(int p, Set<UUID> owners);
 }

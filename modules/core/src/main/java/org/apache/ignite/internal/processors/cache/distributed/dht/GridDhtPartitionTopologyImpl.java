@@ -1262,6 +1262,34 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         }
     }
 
+    @Override public void setOwners(int p, Set<UUID> owners) {
+        lock.writeLock().lock();
+
+        try {
+            GridDhtLocalPartition locPart = locParts[p];
+
+            if (locPart != null) {
+                if (locPart.state() == OWNING && !owners.contains(cctx.localNodeId()))
+                    locParts[p] = new GridDhtLocalPartition(cctx, p, entryFactory);
+            }
+
+            for (Map.Entry<UUID, GridDhtPartitionMap2> e : node2part.entrySet()) {
+                if (!e.getValue().containsKey(p))
+                    continue;
+
+                if (e.getValue().get(p) == OWNING && !owners.contains(e.getKey()))
+                    e.getValue().put(p, MOVING);
+                else if (owners.contains(e.getKey()))
+                    e.getValue().put(p, OWNING);
+            }
+
+            part2node.put(p, owners);
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
     /**
      * @param updateSeq Update sequence.
      * @param aff Affinity assignments.

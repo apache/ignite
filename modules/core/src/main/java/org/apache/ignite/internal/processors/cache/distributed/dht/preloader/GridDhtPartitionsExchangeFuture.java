@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -185,6 +186,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /** */
     private boolean centralizedAff;
+
+    private final ConcurrentMap<UUID, GridDhtPartitionsSingleMessage> msgs = new ConcurrentHashMap8<>();
 
     /**
      * Dummy future created to trigger reassignments if partition
@@ -511,7 +514,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /**
-      * @throws IgniteCheckedException If failed.
+     * @throws IgniteCheckedException If failed.
      */
     private void initTopologies() throws IgniteCheckedException {
         if (crd != null) {
@@ -1108,7 +1111,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         if (!cctx.cache().state().active())
             return new CacheInvalidStateException("Failed to perform cache operation " +
-            "(cache state is not valid): " + cctx.name());
+                "(cache state is not valid): " + cctx.name());
 
         if (err != null)
             return err;
@@ -1241,6 +1244,60 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
     }
 
+    private void assignRolesByCounters() {
+        assert crd.isLocal();
+
+        if (msgs.isEmpty())
+            return;
+
+        for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
+            for (int p = 0; p < cacheCtx.affinity().partitions(); p++) {
+                assignRolesByCounters(cacheCtx, p);
+            }
+        }
+    }
+
+    private void assignRolesByCounters(GridCacheContext cacheCtx, int p) {
+        GridDhtPartitionTopology top = cacheCtx.topology();
+
+        long maxCntr = 0;
+
+        for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : msgs.entrySet()) {
+            if (e.getValue().partitionUpdateCounters(cacheCtx.cacheId()) == null)
+                continue;
+
+            if (!e.getValue().partitionUpdateCounters(cacheCtx.cacheId()).containsKey(p))
+                continue;
+
+            Long cntr = e.getValue().partitionUpdateCounters(cacheCtx.cacheId()).get(p);
+
+            if (cntr > maxCntr)
+                maxCntr = cntr;
+        }
+
+        if (maxCntr == 0)
+            return;
+
+        Set<UUID> owners = new HashSet<>();
+
+        for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : msgs.entrySet()) {
+            if (e.getValue().partitionUpdateCounters(cacheCtx.cacheId()) == null)
+                continue;
+
+            if (!e.getValue().partitionUpdateCounters(cacheCtx.cacheId()).containsKey(p))
+                continue;
+
+            Long cntr = e.getValue().partitionUpdateCounters(cacheCtx.cacheId()).get(p);
+
+            assert cntr <= maxCntr;
+
+            if (cntr == maxCntr)
+                owners.add(e.getKey());
+        }
+
+        top.setOwners(p, owners);
+    }
+
     /**
      * @param discoThread If {@code true} completes future from another thread (to do not block discovery thread).
      */
@@ -1254,6 +1311,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         cacheCtx.topology().beforeExchange(GridDhtPartitionsExchangeFuture.this, !centralizedAff);
                 }
             }
+
+            // TODO : find better place
+            assignRolesByCounters();
 
             updateLastVersion(cctx.versions().last());
 
@@ -1379,7 +1439,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (!crd.equals(node)) {
                 if (log.isDebugEnabled())
                     log.debug("Received full partition map from unexpected node [oldest=" + crd.id() +
-                            ", nodeId=" + node.id() + ']');
+                        ", nodeId=" + node.id() + ']');
 
                 if (node.order() > crd.order())
                     fullMsgs.put(node, msg);
@@ -1425,6 +1485,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * @param msg Partitions single message.
      */
     private void updatePartitionSingleMap(GridDhtPartitionsSingleMessage msg) {
+        msgs.put(msg.exchangeId().nodeId(), msg);
+
         for (Map.Entry<Integer, GridDhtPartitionMap2> entry : msg.partitions().entrySet()) {
             Integer cacheId = entry.getKey();
             GridCacheContext cacheCtx = cctx.cacheContext(cacheId);

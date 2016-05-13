@@ -878,6 +878,10 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         }
     }
 
+    @Override public void setOwners(int p, Set<UUID> owners) {
+        // no-op
+    }
+
     /** {@inheritDoc} */
     @Override public Map<Integer, Long> updateCounters() {
         lock.readLock().lock();
