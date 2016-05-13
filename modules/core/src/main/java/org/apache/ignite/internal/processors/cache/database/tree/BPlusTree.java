@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
@@ -55,6 +56,9 @@ import static org.apache.ignite.internal.processors.cache.database.tree.util.Pag
  * Abstract B+Tree.
  */
 public abstract class BPlusTree<L, T extends L> {
+    /** */
+    public static Random rnd;
+
     /** */
     private static final byte FALSE = 0;
 
@@ -799,7 +803,7 @@ public abstract class BPlusTree<L, T extends L> {
 
             rootPageId = getFirstPageId(meta, rootLvl);
 
-            validateDown(rootPageId, 0L, rootLvl);
+            validateDown(meta, rootPageId, 0L, rootLvl);
         }
     }
 
@@ -856,12 +860,13 @@ public abstract class BPlusTree<L, T extends L> {
     }
 
     /**
+     * @param meta Meta page.
      * @param pageId Page ID.
      * @param fwdId Forward ID.
      * @param lvl Level.
      * @throws IgniteCheckedException If failed.
      */
-    private void validateDown(long pageId, long fwdId, final int lvl) throws IgniteCheckedException {
+    private void validateDown(Page meta, long pageId, long fwdId, final int lvl) throws IgniteCheckedException {
         try (Page page = page(pageId)) {
             ByteBuffer buf = page.getForRead();
 
@@ -887,13 +892,13 @@ public abstract class BPlusTree<L, T extends L> {
                     fail("Negative count: " + cnt);
 
                 if (io.isLeaf()) {
-                    if (cnt == 0)
+                    if (cnt == 0 && getRootLevel(meta) != 0)
                         fail("Empty leaf page.");
                 }
                 else {
                     // Recursively go down if we are on inner level.
                     for (int i = 0; i < cnt; i++)
-                        validateDown(inner(io).getLeft(buf, i), inner(io).getRight(buf, i), lvl - 1);
+                        validateDown(meta, inner(io).getLeft(buf, i), inner(io).getRight(buf, i), lvl - 1);
 
                     if (fwdId != 0) {
                         // For the rightmost child ask neighbor.
@@ -914,7 +919,7 @@ public abstract class BPlusTree<L, T extends L> {
 
                     pageId = inner(io).getLeft(buf, cnt); // The same as io.getRight(cnt - 1) but works for routing pages.
 
-                    validateDown(pageId, fwdId, lvl - 1);
+                    validateDown(meta, pageId, fwdId, lvl - 1);
                 }
             }
             finally {
@@ -1195,8 +1200,10 @@ public abstract class BPlusTree<L, T extends L> {
      * @param max Max.
      * @return Random value from {@code 0} (inclusive) to the given max value (exclusive).
      */
-    public int randomInt(int max) {
-         return ThreadLocalRandom.current().nextInt(max);
+    public static int randomInt(int max) {
+        Random rnd0 = rnd != null ? rnd : ThreadLocalRandom.current();
+
+        return rnd0.nextInt(max);
      }
 
     /**

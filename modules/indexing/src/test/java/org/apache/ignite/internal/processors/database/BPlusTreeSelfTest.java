@@ -119,6 +119,8 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        TestTree.rnd = null;
+
         if (reuseList != null) {
             long size = reuseList.size();
 
@@ -560,9 +562,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * Test tree.
      */
     protected static class TestTree extends BPlusTree<Long, Long> {
-        /** */
-        static Random rnd;
-
         /**
          * @param reuseList Reuse list.
          * @param canGetRow Can get row from inner page.
@@ -577,12 +576,6 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                 new IOVersions<>(new LongInnerIO(canGetRow)), new IOVersions<>(new LongLeafIO()));
 
             initNew();
-        }
-
-        /** {@inheritDoc} */
-        @Override public int randomInt(int max) {
-            // Need to have predictable reproducibility.
-            return rnd.nextInt(max);
         }
 
         /** {@inheritDoc} */
