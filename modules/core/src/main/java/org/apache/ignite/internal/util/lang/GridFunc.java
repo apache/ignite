@@ -1714,25 +1714,6 @@ public class GridFunc {
         };
     }
 
-    @SuppressWarnings("RedundantTypeArguments")
-    @SafeVarargs
-    public static <T1, T2> Iterable<T2> viewReadOnly(@Nullable final Iterable<? extends T1> c,
-        final IgniteClosure<? super T1, T2> trans, @Nullable final IgnitePredicate<? super T1>... p) {
-        A.notNull(trans, "trans");
-
-        if (isEmpty(c) || isAlwaysFalse(p))
-            return Collections.emptyList();
-
-        assert c != null;
-
-        return new Iterable<T2>() {
-            @NotNull
-            @Override public Iterator<T2> iterator() {
-                return F.<T1, T2>iterator(c, trans, true, p);
-            }
-        };
-    }
-
     /**
      * Creates read-only light-weight view on given list with provided transformation.
      * Resulting list will only "have" {@code transformed} elements. Note that only wrapping

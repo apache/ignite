@@ -1583,16 +1583,27 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         }
     }
 
+    /**
+     * Iterator over current local partitions.
+     */
     private class CurrentPartitionsIterator implements Iterator<GridDhtLocalPartition> {
 
+        /** Next index. */
         private int nextIdx;
 
+        /** Next partition. */
         private GridDhtLocalPartition nextPart;
 
+        /**
+         * Constructor
+         */
         private CurrentPartitionsIterator() {
             advance();
         }
 
+        /**
+         * Try to advance to next partition.
+         */
         private void advance() {
             while (nextIdx < locParts.length()) {
                 GridDhtLocalPartition part = locParts.get(nextIdx);
@@ -1606,10 +1617,12 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             }
         }
 
+        /** {@inheritDoc} */
         @Override public boolean hasNext() {
             return nextPart != null;
         }
 
+        /** {@inheritDoc} */
         @Override public GridDhtLocalPartition next() {
             if (nextPart == null)
                 throw new NoSuchElementException();
@@ -1624,6 +1637,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             return retVal;
         }
 
+        /** {@inheritDoc} */
         @Override public void remove() {
             throw new UnsupportedOperationException("remove");
         }
