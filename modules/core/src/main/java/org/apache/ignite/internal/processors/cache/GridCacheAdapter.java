@@ -3688,14 +3688,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      */
     IgniteInternalFuture<?> globalLoadCacheAsync(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args)
         throws IgniteCheckedException {
-        ClusterGroup oldNodes = ctx.kernalContext().grid().cluster().forCacheNodes(ctx.name())
+        ClusterGroup oldNodes = ctx.kernalContext().grid().cluster().forDataNodes(ctx.name())
             .forPredicate(new IgnitePredicate<ClusterNode>() {
                 @Override public boolean apply(ClusterNode node) {
                     return node.version().compareToIgnoreTimestamp(LOAD_CACHE_JOB_SINCE) < 0;
                 }
             });
 
-        ClusterGroup newNodes = ctx.kernalContext().grid().cluster().forCacheNodes(ctx.name())
+        ClusterGroup newNodes = ctx.kernalContext().grid().cluster().forDataNodes(ctx.name())
             .forPredicate(new IgnitePredicate<ClusterNode>() {
                 @Override public boolean apply(ClusterNode node) {
                     return node.version().compareToIgnoreTimestamp(LOAD_CACHE_JOB_SINCE) >= 0 &&
@@ -3703,7 +3703,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 }
             });
 
-        ClusterGroup newNodesV2 = ctx.kernalContext().grid().cluster().forCacheNodes(ctx.name())
+        ClusterGroup newNodesV2 = ctx.kernalContext().grid().cluster().forDataNodes(ctx.name())
             .forPredicate(new IgnitePredicate<ClusterNode>() {
                 @Override public boolean apply(ClusterNode node) {
                     return node.version().compareToIgnoreTimestamp(LOAD_CACHE_JOB_V2_SINCE) >= 0;

@@ -374,10 +374,18 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             CacheOperationContext prev = onEnter(gate, opCtx);
 
             try {
-                if (isAsync())
-                    setFuture(ctx.cache().globalLoadCacheAsync(p, args));
-                else
-                    ctx.cache().globalLoadCache(p, args);
+                if (isAsync()) {
+                    if (ctx.cache().isLocal())
+                        setFuture(ctx.cache().localLoadCacheAsync(p, args));
+                    else
+                        setFuture(ctx.cache().globalLoadCacheAsync(p, args));
+                }
+                else {
+                    if (ctx.cache().isLocal())
+                        ctx.cache().localLoadCache(p, args);
+                    else
+                        ctx.cache().globalLoadCache(p, args);
+                }
             }
             finally {
                 onLeave(gate, prev);
