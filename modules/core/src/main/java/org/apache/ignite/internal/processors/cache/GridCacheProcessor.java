@@ -105,7 +105,6 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -143,6 +142,7 @@ import static org.apache.ignite.internal.IgniteComponentType.JTA;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_CONSISTENCY_CHECK_SKIPPED;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_TX_CONFIG;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
+import static org.apache.ignite.internal.processors.query.GridQueryProcessor.isEnabled;
 
 /**
  * Cache processor.
@@ -1518,6 +1518,46 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     return desc.started();
                 }
             });
+    }
+
+    /**
+     * Gets public cache that can be used for query execution.
+     * If cache isn't created on current node it will be started.
+     *
+     * @param start Start cache.
+     * @param inclLoc Include local caches.
+     * @return Cache or {@code null} if there is no suitable cache.
+     */
+    public IgniteCacheProxy<?, ?> getOrStartPublicCache(boolean start, boolean inclLoc) throws IgniteCheckedException {
+        // Try to find started cache first
+        for (Map.Entry<String, GridCacheAdapter<?, ?>> e : caches.entrySet()) {
+            String cacheName = e.getKey();
+
+            CacheConfiguration ccfg = e.getValue().configuration();
+
+            if ((inclLoc || ccfg.getCacheMode() != LOCAL) && !CU.isSystemCache(cacheName) && isEnabled(ccfg))
+                return publicJCache(cacheName);
+        }
+
+        if (start) {
+            for (Map.Entry<String, DynamicCacheDescriptor> e : registeredCaches.entrySet()) {
+                String cacheName = e.getKey();
+
+                DynamicCacheDescriptor desc = e.getValue();
+
+                if (!caches.containsKey(cacheName)) {
+                    CacheConfiguration ccfg = desc.cacheConfiguration();
+
+                    if (ccfg.getCacheMode() != LOCAL && !CU.isSystemCache(cacheName) && isEnabled(ccfg)) {
+                        dynamicStartCache(null, cacheName, null, false, true, true).get();
+
+                        return publicJCache(cacheName);
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -3384,8 +3424,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException In case of error.
      */
     public void createMissingCaches() throws IgniteCheckedException {
-        for (String cacheName : registeredCaches.keySet()) {
-            if (!CU.isSystemCache(cacheName) && !caches.containsKey(cacheName))
+        for (Map.Entry<String, DynamicCacheDescriptor> e : registeredCaches.entrySet()) {
+            String cacheName = e.getKey();
+
+            CacheConfiguration ccfg = e.getValue().cacheConfiguration();
+
+            if (!CU.isSystemCache(cacheName) && !caches.containsKey(cacheName) && isEnabled(ccfg))
                 dynamicStartCache(null, cacheName, null, false, true, true).get();
         }
     }

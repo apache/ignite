@@ -76,6 +76,9 @@ import static org.apache.ignite.IgniteJdbcDriver.PROP_NODE_ID;
  * JDBC connection implementation.
  */
 public class JdbcConnection implements Connection {
+    /** Null stub. */
+    private static final String NULL = "null";
+
     /**
      * Ignite nodes cache.
      *
@@ -136,7 +139,9 @@ public class JdbcConnection implements Connection {
             this.nodeId = UUID.fromString(nodeIdProp);
 
         try {
-            cfg = props.getProperty(PROP_CFG);
+            String cfgUrl = props.getProperty(PROP_CFG);
+
+            cfg = cfgUrl == null || cfgUrl.isEmpty() ? NULL : cfgUrl;
 
             ignite = getIgnite(cfg);
 
@@ -169,7 +174,15 @@ public class JdbcConnection implements Connection {
                     fut = old;
                 else {
                     try {
-                        Ignite ignite = Ignition.start(loadConfiguration(cfgUrl));
+                        Ignite ignite;
+
+                        if (NULL.equals(cfg)) {
+                            Ignition.setClientMode(true);
+
+                            ignite = Ignition.start();
+                        }
+                        else
+                            ignite = Ignition.start(loadConfiguration(cfgUrl));
 
                         fut.onDone(ignite);
                     }
@@ -200,6 +213,8 @@ public class JdbcConnection implements Connection {
 
             if (cfg.getGridName() == null)
                 cfg.setGridName("ignite-jdbc-driver-" + UUID.randomUUID().toString());
+
+            cfg.setClientMode(true); // force client mode
 
             return cfg;
         }
@@ -733,7 +748,7 @@ public class JdbcConnection implements Connection {
 
         /** {@inheritDoc} */
         @Override public Boolean call() {
-            return ignite.cache(cacheName) != null;
+            return cacheName == null || ignite.cache(cacheName) != null;
         }
     }
 
