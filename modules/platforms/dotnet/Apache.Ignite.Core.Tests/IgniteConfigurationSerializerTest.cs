@@ -63,7 +63,7 @@ namespace Apache.Ignite.Core.Tests
                                     <string>Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+FooClass, Apache.Ignite.Core.Tests</string>
                                 </types>
                             </binaryConfiguration>
-                            <discoverySpi type='TcpDiscoverySpi' joinTimeout='0:1:0'>
+                            <discoverySpi type='TcpDiscoverySpi' joinTimeout='0:1:0' localAddress='192.168.1.1' localPort='6655'>
                                 <ipFinder type='TcpDiscoveryMulticastIpFinder' addressRequestAttempts='7' />
                             </discoverySpi>
                             <communicationSpi type='TcpCommunicationSpi' ackSendThreshold='33' idleConnectionTimeout='0:1:2' />
@@ -113,6 +113,8 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(1024, cfg.JvmMaxMemoryMb);
             Assert.AreEqual(TimeSpan.FromSeconds(10), cfg.MetricsLogFrequency);
             Assert.AreEqual(TimeSpan.FromMinutes(1), ((TcpDiscoverySpi)cfg.DiscoverySpi).JoinTimeout);
+            Assert.AreEqual("192.168.1.1", ((TcpDiscoverySpi)cfg.DiscoverySpi).LocalAddress);
+            Assert.AreEqual(6655, ((TcpDiscoverySpi)cfg.DiscoverySpi).LocalPort);
             Assert.AreEqual(7,
                 ((TcpDiscoveryMulticastIpFinder) ((TcpDiscoverySpi) cfg.DiscoverySpi).IpFinder).AddressRequestAttempts);
             Assert.AreEqual(new[] { "-Xms1g", "-Xmx4g" }, cfg.JvmOptions);
@@ -420,7 +422,20 @@ namespace Apache.Ignite.Core.Tests
                         ResponseTimeout = TimeSpan.FromDays(1),
                         LocalAddress = "127.0.0.2",
                         Endpoints = new[] {"", "abc"}
-                    }
+                    },
+                    ClientReconnectDisabled = true,
+                    ForceServerMode = true,
+                    HeartbeatFrequency = TimeSpan.FromSeconds(3),
+                    IpFinderCleanFrequency = TimeSpan.FromMinutes(7),
+                    LocalAddress = "127.0.0.1",
+                    LocalPort = 49900,
+                    LocalPortRange = 13,
+                    MaxMissedClientHeartbeats = 9,
+                    MaxMissedHeartbeats = 7,
+                    ReconnectCount = 11,
+                    StatisticsPrintFrequency = TimeSpan.FromSeconds(20),
+                    ThreadPriority = 6,
+                    TopologyHistorySize = 1234567
                 },
                 IgniteHome = "igniteHome",
                 IncludedEventTypes = EventType.CacheQueryAll,
