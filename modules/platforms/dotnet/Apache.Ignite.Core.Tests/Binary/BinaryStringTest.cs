@@ -17,11 +17,33 @@
 
 namespace Apache.Ignite.Core.Tests.Binary
 {
+    using Apache.Ignite.Core.Tests.Process;
+    using NUnit.Framework;
+
     /// <summary>
     /// Tests string serialization.
     /// </summary>
     public class BinaryStringTest
     {
         // TODO: Test both modes in separate processes
+        // Separate process will execute a closure that checks serialization and returns result through environment?
+
+        [Test]
+        public void Test()
+        {
+            const string springCfg = @"config\compute\compute-grid1.xml";
+            using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                SpringConfigUrl = springCfg
+            }))
+            {
+                var proc = new IgniteProcess(string.Format("-springConfigUrl={0} -J-ea", springCfg),
+                    "-J-Xcheck:jni", "-J-Xms512m", "-J-Xmx512m", "-J-DIGNITE_QUIET=false");
+
+                ignite.WaitTopology(2);
+
+                proc.Kill();
+            }
+        }
     }
 }
