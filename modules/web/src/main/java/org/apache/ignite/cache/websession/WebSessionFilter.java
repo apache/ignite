@@ -514,14 +514,13 @@ public class WebSessionFilter implements Filter {
                 try {
                     final WebSessionEntity entity = binaryCache.get(sesId);
 
-                    if (entity != null) {
+                    if (entity != null)
                         cached = new WebSessionV2(sesId, null, false, ctx, entity, marshaller);
 
-                        break;
-                    }
+                    break;
                 }
-                catch (CacheException | IgniteException | IllegalStateException e) {
-                    handleLoadSessionException(sesId, i, e);
+                catch (CacheException | IgniteException | IllegalStateException | AssertionError e) {
+                    handleLoadSessionException(sesId, i, new IgniteException(e));
                 }
             }
 
