@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests
 {
     using System;
     using System.Diagnostics;
+    using System.Linq;
     using System.Reflection;
     using Apache.Ignite.Core.Tests.Binary;
     using Apache.Ignite.Core.Tests.Memory;
@@ -34,8 +35,13 @@ namespace Apache.Ignite.Core.Tests
 
             if (args.Length == 2)
             {
-                Debugger.Launch();
-                Environment.ExitCode = TestOne(Type.GetType(args[0]), args[1]);
+                var testClass = Type.GetType(args[0]);
+                var method = args[1];
+
+                if (testClass == null || testClass.GetMethods().All(x => x.Name != method))
+                    throw new InvalidOperationException("Failed to find method: " + testClass + "." + method);
+
+                Environment.ExitCode = TestOne(testClass, method);
                 return;
             }
 

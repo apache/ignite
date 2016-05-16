@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Tests.Binary
 {
     using System;
-    using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
 
@@ -27,22 +26,34 @@ namespace Apache.Ignite.Core.Tests.Binary
     /// </summary>
     public class BinaryStringTest
     {
+        /** */
+        const string StringTestTask = "org.apache.ignite.platform.PlatformStringTestTask";
+
+        /// <summary>
+        /// Tests the new serialization mode.
+        /// </summary>
         [Test]
         public void TestNewMode()
         {
-            const string springCfg = @"config\compute\compute-grid1.xml";
-            using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
             {
-                SpringConfigUrl = springCfg
-            }))
-            {
-                // TODO: Call Java task with strings
-
-                var res = ignite.GetCompute().Call(new CheckStrings());
-                Assert.IsTrue(res);
+                CheckString(ignite, "foo");
             }
         }
 
+        /// <summary>
+        /// Checks the string.
+        /// </summary>
+        /// <param name="ignite">The ignite.</param>
+        /// <param name="test">The test string.</param>
+        private static void CheckString(IIgnite ignite, string test)
+        {
+            Assert.AreEqual(test, ignite.GetCompute().ExecuteJavaTask<string>(StringTestTask, test));
+        }
+
+        /// <summary>
+        /// Tests the old serialization mode.
+        /// </summary>
         [Test]
         public void TestOldMode()
         {
@@ -53,20 +64,11 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             var path = GetType().Assembly.Location;
 
-            var proc = System.Diagnostics.Process.Start(path, GetType().FullName + " Test");
+            var proc = System.Diagnostics.Process.Start(path, GetType().FullName + " TestNewMode");
 
             Assert.IsNotNull(proc);
             Assert.IsTrue(proc.WaitForExit(15000));
             Assert.AreEqual(0, proc.ExitCode);
-        }
-
-        [Serializable]
-        private class CheckStrings : IComputeFunc<bool>
-        {
-            public bool Invoke()
-            {
-                return true;
-            }
         }
     }
 }

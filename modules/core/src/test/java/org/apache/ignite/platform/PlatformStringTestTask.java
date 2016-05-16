@@ -32,15 +32,15 @@ import java.util.Map;
 /**
  * Task to test string serialization modes.
  */
-public class PlatformStringTestTask extends ComputeTaskAdapter<Object, Boolean> {
+public class PlatformStringTestTask extends ComputeTaskAdapter<String, String> {
     /** {@inheritDoc} */
     @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
-        @Nullable Object arg) {
-        return Collections.singletonMap(new StringTestTaskJob(), F.first(subgrid));
+        @Nullable String arg) {
+        return Collections.singletonMap(new StringTestTaskJob(arg), F.first(subgrid));
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Boolean reduce(List<ComputeJobResult> results) {
+    @Nullable @Override public String reduce(List<ComputeJobResult> results) {
         return results.get(0).getData();
     }
 
@@ -48,9 +48,20 @@ public class PlatformStringTestTask extends ComputeTaskAdapter<Object, Boolean> 
      * Job.
      */
     private static class StringTestTaskJob extends ComputeJobAdapter {
+        private final String arg;
+
+        /**
+         * Ctor.
+         * 
+         * @param arg arg.
+         */
+        private StringTestTaskJob(String arg) {
+            this.arg = arg;
+        }
+
         /** {@inheritDoc} */
-        @Nullable @Override public Boolean execute() {
-            return true;
+        @Nullable @Override public String execute() {
+            return arg;
         }
     }
 }
