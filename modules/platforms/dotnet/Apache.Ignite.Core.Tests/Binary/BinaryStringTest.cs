@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Tests.Binary
                 SpringConfigUrl = springCfg
             }))
             {
-                var proc = new IgniteProcess(string.Format("-springConfigUrl={0} -J-ea", springCfg),
+                var proc = new IgniteProcess(string.Format("-springConfigUrl={0}", springCfg), "-J-ea",
                     "-J-Xcheck:jni", "-J-Xms512m", "-J-Xmx512m", "-J-DIGNITE_QUIET=false");
 
                 ignite.WaitTopology(2);
