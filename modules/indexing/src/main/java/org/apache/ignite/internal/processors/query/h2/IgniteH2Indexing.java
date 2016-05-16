@@ -344,9 +344,9 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 if (cache == null)
                     cache = cache0;
-                else
-                    cache.updateLastUsage();
             }
+
+            cache.updateLastUsage();
 
             PreparedStatement stmt = cache.get(sql);
 

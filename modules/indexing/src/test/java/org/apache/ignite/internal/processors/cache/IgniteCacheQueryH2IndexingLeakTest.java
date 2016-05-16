@@ -116,15 +116,15 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
             origCacheThreadUsageTimeout != null ? origCacheThreadUsageTimeout : "");
     }
 
-
-
     /**
      * @param qryProcessor Query processor.
      * @return size of statement cache.
      */
     private static int getStatementCacheSize(GridQueryProcessor qryProcessor) {
         IgniteH2Indexing h2Idx = GridTestUtils.getFieldValue(qryProcessor, GridQueryProcessor.class, "idx");
+
         ConcurrentMap stmtCache = GridTestUtils.getFieldValue(h2Idx, IgniteH2Indexing.class, "stmtCache");
+
         return stmtCache.size();
     }
 
@@ -145,20 +145,20 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
                 new CAX() {
                     @Override public void applyx() throws IgniteCheckedException {
                         while (!stop.get()) {
-                            c.query(new SqlQuery(Integer.class, "_val >= 0")).iterator();
+                            c.query(new SqlQuery(Integer.class, "_val >= 0")).getAll();
 
-                            c.query(new SqlQuery(Integer.class, "_val >= 1")).iterator();
+                            c.query(new SqlQuery(Integer.class, "_val >= 1")).getAll();
                         }
                     }
                 }, THREAD_COUNT);
 
-            final GridQueryProcessor qryProcessor = grid(0).context().query();
+            final GridQueryProcessor qryProc = grid(0).context().query();
 
             try {
                 // Wait for stmt cache entry is created for each thread.
                 assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
                     @Override public boolean apply() {
-                        return getStatementCacheSize(qryProcessor) == THREAD_COUNT;
+                        return getStatementCacheSize(qryProc) == THREAD_COUNT;
                     }
                 }, STMT_CACHE_CLEANUP_TIMEOUT));
             }
@@ -171,7 +171,7 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
             // Wait for stmtCache is cleaned up because all user threads are terminated.
             assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicate() {
                 @Override public boolean apply() {
-                    return getStatementCacheSize(qryProcessor) == 0;
+                    return getStatementCacheSize(qryProc) == 0;
                 }
             }, STMT_CACHE_CLEANUP_TIMEOUT * 2));
         }
@@ -180,7 +180,6 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    @SuppressWarnings({"TooBroadScope"})
     public void testLeaksInIgniteH2IndexingOnUnusedThread() throws Exception {
         final IgniteCache<Integer, Integer> c = grid(0).cache(null);
 
@@ -193,7 +192,7 @@ public class IgniteCacheQueryH2IndexingLeakTest extends GridCommonAbstractTest {
             IgniteInternalFuture<?> fut = multithreadedAsync(
                 new CAX() {
                     @Override public void applyx() throws IgniteCheckedException {
-                        c.query(new SqlQuery(Integer.class, "_val >= 0")).iterator();
+                        c.query(new SqlQuery(Integer.class, "_val >= 0")).getAll();
 
                         U.await(latch);
                     }
