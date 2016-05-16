@@ -67,9 +67,8 @@ public class WebSessionAttributeProcessor implements EntryProcessor<String, WebS
      * @param maxInactiveInterval Max inactive interval.
      * @param maxIntervalChanged {@code True} if max inactive interval should be updated.
      */
-    public WebSessionAttributeProcessor(
-        final Map<String, byte[]> updatesMap, final long accessTime, final int maxInactiveInterval,
-        final boolean maxIntervalChanged) {
+    public WebSessionAttributeProcessor(final Map<String, byte[]> updatesMap, final long accessTime,
+        final int maxInactiveInterval, final boolean maxIntervalChanged) {
         this.updatesMap = updatesMap;
         this.accessTime = accessTime;
         this.maxInactiveInterval = maxInactiveInterval;
