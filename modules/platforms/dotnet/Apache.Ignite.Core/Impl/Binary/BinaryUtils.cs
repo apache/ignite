@@ -669,7 +669,51 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>Amount of bytes written.</returns>
         public static unsafe int StringToUtf8Bytes(char* chars, int charCnt, int byteCnt, Encoding enc, byte* data)
         {
-            return enc.GetBytes(chars, charCnt, data, byteCnt);
+            if (UseStringSerializationVer2)
+                return enc.GetBytes(chars, charCnt, data, byteCnt);
+
+            int strLen = charCnt;
+            int utfLen = 0;
+            int c, cnt;
+
+            // Determine length of resulting byte array.
+            for (cnt = 0; cnt < strLen; cnt++)
+            {
+                c = *(chars + cnt);
+
+                // ASCII
+                if (c <= 0x007F)
+                    utfLen++;
+                // Special symbols (surrogates)
+                else if (c > 0x07FF)
+                    utfLen += 3;
+                // The rest of the symbols.
+                else
+                    utfLen += 2;
+            }
+
+            int position = 0;
+
+            for (cnt = 0; cnt < strLen; cnt++)
+            {
+                c = *(chars + cnt);
+
+                if (c <= 0x007F)
+                    *(data + position++) = (byte)c;
+                else if (c > 0x07FF)
+                {
+                    *(data + position++) = (byte)(0xE0 | c >> 12 & 0x0F);
+                    *(data + position++) = (byte)(0x80 | c >> 6 & 0x3F);
+                    *(data + position++) = (byte)(0x80 | c & 0x3F);
+                }
+                else
+                {
+                    *(data + position++) = (byte)(0xC0 | c >> 6 & 0x1F);
+                    *(data + position++) = (byte)(0x80 | c & 0x3F);
+                }
+            }
+
+            return utfLen;
         }
 
         /// <summary>
