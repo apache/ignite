@@ -1221,7 +1221,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
             .forNode(grid(1).localNode())
             .collection(IgniteUuid.class, cid));
 
-        info("Exe command result: " + ret);
+        info("VisorCacheConfigurationCollectorTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1232,7 +1232,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
             .forNode(grid(1).localNode())
             .argument("person"));
 
-        info("Exe command result: " + ret);
+        info("VisorCacheNodesTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1243,7 +1243,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
             .forNode(grid(1).localNode())
             .tuple3(Set.class, Long.class, Object[].class, "person", 0, "null"));
 
-        info("Exe command result: " + ret);
+        info("VisorCacheLoadTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1254,7 +1254,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
             .forNode(grid(1).localNode())
             .set(String.class, "person"));
 
-        info("Exe command result: " + ret);
+        info("VisorCacheSwapBackupsTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1265,7 +1265,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
             .forNode(grid(1).localNode())
             .set(String.class, "person"));
 
-        info("Exe command result: " + ret);
+        info("VisorCacheRebalanceTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1276,7 +1276,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
             .forNode(grid(1).localNode())
             .argument("person"));
 
-        info("Exe command result: " + ret);
+        info("VisorCacheMetadataTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1287,7 +1287,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
             .forNode(grid(1).localNode())
             .argument("person"));
 
-        info("Exe command result: " + ret);
+        info("VisorCacheResetMetricsTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1298,7 +1298,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
             .forNode(grid(1).localNode())
             .pair(String.class, Boolean.class, "igfs", false));
 
-        info("Exe command result: " + ret);
+        info("VisorIgfsSamplingStateTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1309,7 +1309,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
             .forNode(grid(1).localNode())
             .argument("igfs"));
 
-        info("Exe command result: " + ret);
+        info("VisorIgfsProfilerClearTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1320,7 +1320,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
             .forNode(grid(1).localNode())
             .argument("igfs"));
 
-        info("Exe command result: " + ret);
+        info("VisorIgfsProfilerTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1331,7 +1331,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
             .forNode(grid(1).localNode())
             .argument("igfs"));
 
-        info("Exe command result: " + ret);
+        info("VisorIgfsFormatTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1342,7 +1342,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
             .forNode(grid(1).localNode())
             .set(String.class, "igfs"));
 
-        info("Exe command result: " + ret);
+        info("VisorIgfsResetMetricsTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1352,7 +1352,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         ret = content(new VisorGatewayArgument(VisorThreadDumpTask.class)
             .forNode(grid(1).localNode()));
 
-        info("Exe command result: " + ret);
+        info("VisorThreadDumpTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1363,7 +1363,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
             .forNode(grid(1).localNode())
             .pair(String.class, String.class, "", ""));
 
-        info("Exe command result: " + ret);
+        info("VisorLatestTextFilesTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1373,7 +1373,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         ret = content(new VisorGatewayArgument(VisorLatestVersionTask.class)
             .forNode(grid(1).localNode()));
 
-        info("Exe command result: " + ret);
+        info("VisorLatestVersionTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1384,7 +1384,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
             .forNode(grid(1).localNode())
             .argument(VisorFileBlockTask.VisorFileBlockArg.class, "", 0L, 1, 0L));
 
-        info("Exe command result: " + ret);
+        info("VisorFileBlockTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1397,7 +1397,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
             .forNode(grid(1).localNode())
             .argument(UUID.class, id));
 
-        info("Exe command result: " + ret);
+        info("VisorNodePingTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1407,7 +1407,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         ret = content(new VisorGatewayArgument(VisorNodeConfigurationCollectorTask.class)
             .forNode(grid(1).localNode()));
 
-        info("Exe command result: " + ret);
+        info("VisorNodeConfigurationCollectorTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1417,7 +1417,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         ret = content(new VisorGatewayArgument(VisorComputeResetMetricsTask.class)
             .forNode(grid(1).localNode()));
 
-        info("Exe command result: " + ret);
+        info("VisorComputeResetMetricsTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1428,7 +1428,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
             .forNode(grid(1).localNode())
             .argument(VisorQueryArg.class, "person", URLEncoder.encode("select * from Person"), false, 1));
 
-        info("Exe command result: " + ret);
+        info("VisorQueryTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1443,7 +1443,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
             .forNode(grid(1).localNode())
             .pair(String.class, Integer.class, qryId, 1));
 
-        info("Exe command result: " + ret);
+        info("VisorQueryNextPageTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1453,7 +1453,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         ret = content(new VisorGatewayArgument(VisorQueryCleanupTask.class)
             .map(UUID.class, Set.class, F.asMap(grid(1).localNode().id(), qryId)));
 
-        info("Exe command result: " + ret);
+        info("VisorQueryCleanupTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1463,7 +1463,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         ret = content(new VisorGatewayArgument(VisorResolveHostNameTask.class)
             .forNode(grid(1).localNode()));
 
-        info("Exe command result: " + ret);
+        info("VisorResolveHostNameTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1475,7 +1475,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         ret = content(new VisorGatewayArgument(VisorComputeCancelSessionsTask.class)
             .map(UUID.class, Set.class, new HashMap()));
 
-        info("Exe command result: " + ret);
+        info("VisorComputeCancelSessionsTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1485,7 +1485,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         ret = content(new VisorGatewayArgument(VisorCacheMetricsCollectorTask.class)
             .pair(Boolean.class, Set.class, false, "person"));
 
-        info("Exe command result: " + ret);
+        info("VisorCacheMetricsCollectorTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1495,7 +1495,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         ret = content(new VisorGatewayArgument(VisorLogSearchTask.class)
             .argument(VisorLogSearchTask.VisorLogSearchArg.class, ".", ".", "abrakodabra.txt", 1));
 
-        info("Exe command result: " + ret);
+        info("VisorLogSearchTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1504,7 +1504,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         ret = content(new VisorGatewayArgument(VisorNodeGcTask.class));
 
-        info("Exe command result: " + ret);
+        info("VisorNodeGcTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1514,7 +1514,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         ret = content(new VisorGatewayArgument(VisorAckTask.class)
             .argument("MSG"));
 
-        info("Exe command result: " + ret);
+        info("VisorAckTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1525,7 +1525,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
             .argument(VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg.class,
                 "null", "null", "null", "taskName", "null"));
 
-        info("Exe command result: " + ret);
+        info("VisorNodeEventsCollectorTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1536,7 +1536,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
             .argument(VisorNodeDataCollectorTaskArg.class,
                 false, "CONSOLE_" + UUID.randomUUID(), UUID.randomUUID(), 10, false));
 
-        info("Exe command result: " + ret);
+        info("VisorNodeDataCollectorTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1546,7 +1546,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         ret = content(new VisorGatewayArgument(VisorComputeToggleMonitoringTask.class)
             .pair(String.class, Boolean.class, UUID.randomUUID(), false));
 
-        info("Exe command result: " + ret);
+        info("VisorComputeToggleMonitoringTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1556,7 +1556,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         ret = content(new VisorGatewayArgument(VisorNodeSuppressedErrorsTask.class)
             .map(UUID.class, Long.class, new HashMap()));
 
-        info("Exe command result: " + ret);
+        info("VisorNodeSuppressedErrorsTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1567,7 +1567,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
             .forNode(grid(1).localNode())
             .argument("person"));
 
-        info("Exe command result: " + ret);
+        info("VisorCacheClearTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1589,7 +1589,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         ret = content(new VisorGatewayArgument(VisorCacheStartTask.class)
             .argument(VisorCacheStartTask.VisorCacheStartArg.class, false, "person2", URLEncoder.encode(START_CACHE)));
 
-        info("Exe command result: " + ret);
+        info("VisorCacheStartTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1600,7 +1600,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
             .forNode(grid(1).localNode())
             .argument(String.class, "c"));
 
-        info("Exe command result: " + ret);
+        info("VisorCacheStopTask result: " + ret);
 
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
@@ -1936,8 +1936,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * Init cache.
      */
     private void initCache() {
-        CacheConfiguration<Integer, Person> personCacheCfg = new CacheConfiguration<>("person");
-        personCacheCfg.setIndexedTypes(Integer.class, Person.class);
+        CacheConfiguration<Integer, Person> personCacheCfg = getCacheConfiguration();
 
         IgniteCache<Integer, Person> personCache = grid(0).getOrCreateCache(personCacheCfg);
 
@@ -1958,6 +1957,14 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         qry.setArgs(1000, 2000);
 
         assertEquals(2, personCache.query(qry).getAll().size());
+    }
+
+    protected CacheConfiguration getCacheConfiguration() {
+        CacheConfiguration<Integer, Person> personCacheCfg = new CacheConfiguration<>("person");
+
+        personCacheCfg.setIndexedTypes(Integer.class, Person.class);
+
+        return personCacheCfg;
     }
 
     /**
