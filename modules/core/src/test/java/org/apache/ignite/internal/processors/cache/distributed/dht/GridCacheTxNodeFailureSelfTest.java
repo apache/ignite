@@ -305,6 +305,8 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
             // Check that thread successfully finished.
             fut.get();
 
+            ((IgniteKernal)ignite(0)).context().discovery().topologyFuture(gridCount() + 1).get();
+
             awaitPartitionMapExchange();
 
             // Check there are no hanging transactions.
