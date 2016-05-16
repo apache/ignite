@@ -522,9 +522,6 @@ public class WebSessionFilter implements Filter {
                 catch (CacheException | IgniteException | IllegalStateException e) {
                     handleLoadSessionException(sesId, i, e);
                 }
-                catch (AssertionError e) {
-                    handleLoadSessionException(sesId, i, new IgniteException(e));
-                }
             }
 
             if (cached != null) {
