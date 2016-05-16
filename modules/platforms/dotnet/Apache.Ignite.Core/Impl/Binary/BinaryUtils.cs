@@ -659,7 +659,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Internal string write routine.
+        /// Converts string to UTF8 bytes.
         /// </summary>
         /// <param name="chars">Chars.</param>
         /// <param name="charCnt">Chars count.</param>
@@ -672,6 +672,16 @@ namespace Apache.Ignite.Core.Impl.Binary
             return enc.GetBytes(chars, charCnt, data, byteCnt);
         }
 
+        /// <summary>
+        /// Converts UTF8 bytes to string.
+        /// </summary>
+        /// <param name="bytes">The bytes.</param>
+        /// <returns>Resulting string.</returns>
+        public static string Utf8BytesToString(byte[] bytes)
+        {
+            return Utf8.GetString(bytes);
+        }
+
         /**
          * <summary>Read string in UTF8 encoding.</summary>
          * <param name="stream">Stream.</param>
@@ -681,7 +691,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             byte[] bytes = ReadByteArray(stream);
 
-            return bytes != null ? Utf8.GetString(bytes) : null;
+            return bytes != null ? Utf8BytesToString(bytes) : null;
         }
 
         /**
