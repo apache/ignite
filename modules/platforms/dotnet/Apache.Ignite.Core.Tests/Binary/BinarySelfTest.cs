@@ -457,9 +457,9 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             var tests = new[]
             {
+                new string(new[] {(char) 0xD800, '的', (char) 0xD800, (char) 0xD800, (char) 0xDC00, (char) 0xDFFF}),
                 "ascii0123456789",
-                "的的abcdкириллица",
-                new string(new[] {(char) 0xD800, '的', (char) 0xD800, (char) 0xD800, (char) 0xDC00, (char) 0xDFFF})
+                "的的abcdкириллица"
             };
 
             foreach (var test in tests)

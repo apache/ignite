@@ -667,7 +667,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="enc">Encoding.</param>
         /// <param name="data">Data.</param>
         /// <returns>Amount of bytes written.</returns>
-        public static unsafe int WriteString(char* chars, int charCnt, int byteCnt, Encoding enc, byte* data)
+        public static unsafe int StringToUtf8Bytes(char* chars, int charCnt, int byteCnt, Encoding enc, byte* data)
         {
             return enc.GetBytes(chars, charCnt, data, byteCnt);
         }

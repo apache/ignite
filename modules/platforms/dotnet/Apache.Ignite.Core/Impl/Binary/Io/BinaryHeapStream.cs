@@ -363,7 +363,7 @@ namespace Apache.Ignite.Core.Impl.Binary.IO
 
             fixed (byte* data0 = _data)
             {
-                written = BinaryUtils.WriteString(chars, charCnt, byteCnt, encoding, data0 + pos0);
+                written = BinaryUtils.StringToUtf8Bytes(chars, charCnt, byteCnt, encoding, data0 + pos0);
             }
 
             return written;

@@ -313,7 +313,7 @@ namespace Apache.Ignite.Core.Impl.Memory
             
             int curPos = EnsureWriteCapacityAndShift(byteCnt);
 
-            return BinaryUtils.WriteString(chars, charCnt, byteCnt, encoding, _data + curPos);
+            return BinaryUtils.StringToUtf8Bytes(chars, charCnt, byteCnt, encoding, _data + curPos);
         }
 
         /// <summary>

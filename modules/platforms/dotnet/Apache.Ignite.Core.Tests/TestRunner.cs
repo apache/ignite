@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.Diagnostics;
     using System.Reflection;
+    using Apache.Ignite.Core.Tests.Binary;
     using Apache.Ignite.Core.Tests.Cache.Query;
     using Apache.Ignite.Core.Tests.Memory;
     using NUnit.ConsoleRunner;
@@ -32,7 +33,7 @@ namespace Apache.Ignite.Core.Tests
             Debug.Listeners.Add(new TextWriterTraceListener(Console.Out));
             Debug.AutoFlush = true;
 
-            TestOne(typeof(CacheLinqTest), "TestExcept");
+            TestOne(typeof(BinarySelfTest), "TestWriteSpecialString");
 
             //TestAll(typeof (CacheQueriesCodeConfigurationTest));
             //TestAllInAssembly();
