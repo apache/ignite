@@ -52,7 +52,7 @@ public class PlatformStringTestTask extends ComputeTaskAdapter<String, String> {
 
         /**
          * Ctor.
-         * 
+         *
          * @param arg arg.
          */
         private StringTestTaskJob(String arg) {
