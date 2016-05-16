@@ -464,7 +464,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             foreach (var test in tests)
             {
-                Assert.AreEqual(_marsh.Unmarshal<string>(_marsh.Marshal(test)), test, "Failed on string: " + test);
+                Assert.AreEqual(_marsh.Unmarshal<string>(_marsh.Marshal(test)), test);
             }
         }
 
