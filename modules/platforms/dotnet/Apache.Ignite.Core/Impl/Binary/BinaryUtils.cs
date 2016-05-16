@@ -699,6 +699,12 @@ namespace Apache.Ignite.Core.Impl.Binary
             return position;
         }
 
+        /// <summary>
+        /// Gets the UTF8 byte count.
+        /// </summary>
+        /// <param name="chars">The chars.</param>
+        /// <param name="strLen">Length of the string.</param>
+        /// <returns>UTF byte count.</returns>
         private static unsafe int GetUtf8ByteCount(char* chars, int strLen)
         {
             int utfLen = 0;
