@@ -49,7 +49,7 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
             {
-                CheckString(ignite, "Normal string");
+                CheckString(ignite, "Normal string строка 123 — ☺");
 
                 if (BinaryUtils.UseStringSerializationVer2)
                 {
