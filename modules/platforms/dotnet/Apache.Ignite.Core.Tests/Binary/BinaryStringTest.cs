@@ -56,6 +56,10 @@ namespace Apache.Ignite.Core.Tests.Binary
                     foreach (var specialString in BinarySelfTest.SpecialStrings)
                         CheckString(ignite, specialString);
                 }
+                else
+                {
+                    CheckString(ignite, BinarySelfTest.SpecialStrings[0], true);
+                }
             }
         }
 
@@ -64,9 +68,15 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// </summary>
         /// <param name="ignite">The ignite.</param>
         /// <param name="test">The test string.</param>
-        private static void CheckString(IIgnite ignite, string test)
+        /// <param name="fail">Whether the check should fail.</param>
+        private static void CheckString(IIgnite ignite, string test, bool fail = false)
         {
-            Assert.AreEqual(test, ignite.GetCompute().ExecuteJavaTask<string>(StringTestTask, test));
+            var res = ignite.GetCompute().ExecuteJavaTask<string>(StringTestTask, test);
+
+            if (fail)
+                Assert.AreNotEqual(test, res);
+            else
+                Assert.AreEqual(test, res);
         }
 
         /// <summary>
