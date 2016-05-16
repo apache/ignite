@@ -5539,15 +5539,19 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             int size = 0;
 
+            if (ctx.isNear())
+                ctx = ctx.near().dht().context();
+
             for (String key : keys) {
                 if (ctx.affinity().localNode(key, ctx.discovery().topologyVersionEx())) {
-                    GridCacheEntryEx e =
-                        ctx.isNear() ? ctx.near().dht().peekEx(key) : ctx.cache().peekEx(key);
+                    GridCacheEntryEx e = ctx.cache().entryEx(key);
 
                     assert e != null : "Entry is null [idx=" + idx + ", key=" + key + ", ctx=" + ctx + ']';
                     assert !e.deleted() : "Entry is deleted: " + e;
 
                     size++;
+
+                    ctx.evicts().touch(e, null);
                 }
             }
 
