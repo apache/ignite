@@ -17,6 +17,6 @@ rem limitations under the License.
 
 echo.
 
-set "JVM_OPTS=-Xms6g -Xmx6g -XX:+AggressiveOpts -XX:MaxMetaspaceSize=256m"
-set "JVM_OPTS=%JVM_OPTS% -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:+UseTLAB -XX:NewSize=128m -XX:MaxNewSize=768m"
-set "JVM_OPTS=%JVM_OPTS% -Xss16m"
+rem set "JVM_OPTS=-Xms6g -Xmx6g -XX:+AggressiveOpts -XX:MaxMetaspaceSize=256m"
+rem set "JVM_OPTS=%JVM_OPTS% -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:+UseTLAB -XX:NewSize=128m -XX:MaxNewSize=768m"
+rem set "JVM_OPTS=%JVM_OPTS% -Xss16m"
