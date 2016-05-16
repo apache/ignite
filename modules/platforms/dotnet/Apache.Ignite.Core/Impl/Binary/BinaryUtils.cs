@@ -650,7 +650,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             fixed (char* chars = val)
             {
-                int byteCnt = Utf8.GetByteCount(chars, charCnt);
+                int byteCnt = GetUtf8ByteCount(chars, charCnt);
 
                 stream.WriteInt(byteCnt);
 
@@ -673,24 +673,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 return enc.GetBytes(chars, charCnt, data, byteCnt);
 
             int strLen = charCnt;
-            int utfLen = 0;
             int c, cnt;
-
-            // Determine length of resulting byte array.
-            for (cnt = 0; cnt < strLen; cnt++)
-            {
-                c = *(chars + cnt);
-
-                // ASCII
-                if (c <= 0x007F)
-                    utfLen++;
-                // Special symbols (surrogates)
-                else if (c > 0x07FF)
-                    utfLen += 3;
-                // The rest of the symbols.
-                else
-                    utfLen += 2;
-            }
 
             int position = 0;
 
@@ -713,6 +696,27 @@ namespace Apache.Ignite.Core.Impl.Binary
                 }
             }
 
+            return position;
+        }
+
+        private static unsafe int GetUtf8ByteCount(char* chars, int strLen)
+        {
+            int utfLen = 0;
+            int cnt;
+            for (cnt = 0; cnt < strLen; cnt++)
+            {
+                var c = *(chars + cnt);
+
+                // ASCII
+                if (c <= 0x007F)
+                    utfLen++;
+                // Special symbols (surrogates)
+                else if (c > 0x07FF)
+                    utfLen += 3;
+                // The rest of the symbols.
+                else
+                    utfLen += 2;
+            }
             return utfLen;
         }
 
