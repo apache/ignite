@@ -92,6 +92,16 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(disco.SocketTimeout, resDisco.SocketTimeout);
                 Assert.AreEqual(disco.JoinTimeout, resDisco.JoinTimeout);
 
+                Assert.AreEqual(disco.LocalAddress, resDisco.LocalAddress);
+                Assert.AreEqual(disco.LocalPort, resDisco.LocalPort);
+                Assert.AreEqual(disco.LocalPortRange, resDisco.LocalPortRange);
+                Assert.AreEqual(disco.MaxMissedClientHeartbeats, resDisco.MaxMissedClientHeartbeats);
+                Assert.AreEqual(disco.MaxMissedHeartbeats, resDisco.MaxMissedHeartbeats);
+                Assert.AreEqual(disco.ReconnectCount, resDisco.ReconnectCount);
+                Assert.AreEqual(disco.StatisticsPrintFrequency, resDisco.StatisticsPrintFrequency);
+                Assert.AreEqual(disco.ThreadPriority, resDisco.ThreadPriority);
+                Assert.AreEqual(disco.TopologyHistorySize, resDisco.TopologyHistorySize);
+
                 var ip = (TcpDiscoveryStaticIpFinder) disco.IpFinder;
                 var resIp = (TcpDiscoveryStaticIpFinder) resDisco.IpFinder;
 
@@ -364,6 +374,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static IgniteConfiguration GetCustomConfig()
         {
+            // CacheConfiguration is not tested here - see CacheConfigurationTest
             return new IgniteConfiguration
             {
                 DiscoverySpi = new TcpDiscoverySpi
@@ -375,8 +386,21 @@ namespace Apache.Ignite.Core.Tests
                     JoinTimeout = TimeSpan.FromSeconds(5),
                     IpFinder = new TcpDiscoveryStaticIpFinder
                     {
-                        Endpoints = new[] { "127.0.0.1:47500", "127.0.0.1:47501" }
-                    }
+                        Endpoints = new[] { "127.0.0.1:49900", "127.0.0.1:49901" }
+                    },
+                    ClientReconnectDisabled = true,
+                    ForceServerMode = true,
+                    HeartbeatFrequency = TimeSpan.FromSeconds(3),
+                    IpFinderCleanFrequency = TimeSpan.FromMinutes(7),
+                    LocalAddress = "127.0.0.1",
+                    LocalPort = 49900,
+                    LocalPortRange = 13,
+                    MaxMissedClientHeartbeats = 9,
+                    MaxMissedHeartbeats = 7,
+                    ReconnectCount = 11,
+                    StatisticsPrintFrequency = TimeSpan.FromSeconds(20),
+                    ThreadPriority = 6,
+                    TopologyHistorySize = 1234567
                 },
                 GridName = "gridName1",
                 IncludedEventTypes = EventType.SwapspaceAll,
