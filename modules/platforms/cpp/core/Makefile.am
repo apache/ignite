@@ -60,7 +60,12 @@ libignite_la_SOURCES = \
     src/impl/cache/query/query_impl.cpp \
     src/impl/cache/cache_impl.cpp \
     src/impl/interop/interop_external_memory.cpp \
-    src/impl/ignite_impl.cpp
+    src/impl/interop/interop_target.cpp \
+    src/impl/transactions/transaction_impl.cpp \
+    src/impl/transactions/transactions_impl.cpp \
+    src/impl/ignite_impl.cpp \
+    src/transactions/transaction.cpp \
+    src/transactions/transactions.cpp
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = $(srcdir)/ignite.pc

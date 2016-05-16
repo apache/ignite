@@ -72,6 +72,9 @@ public class ConfigVariationsTestSuiteBuilder {
     /** */
     private IgnitePredicate<CacheConfiguration>[] cacheCfgFilters;
 
+    /** */
+    private boolean skipWaitPartMapExchange;
+
     /**
      * @param name Name.
      * @param cls Test class.
@@ -189,13 +192,13 @@ public class ConfigVariationsTestSuiteBuilder {
             + ", cacheCfg=" + factory.getCacheConfigurationDescription() + "]";
 
         VariationsTestsConfig testCfg = new VariationsTestsConfig(factory, clsNameSuffix, stopNodes, cacheStartMode,
-            gridsCnt);
+            gridsCnt, !skipWaitPartMapExchange);
 
         TestSuite addedSuite;
 
         if (testedNodeCnt > 1)
             addedSuite = createMultiNodeTestSuite((Class<? extends IgniteCacheConfigVariationsAbstractTest>)cls, 
-                testCfg, testedNodeCnt, withClients);
+                testCfg, testedNodeCnt, withClients, skipWaitPartMapExchange);
         else
             addedSuite = new IgniteConfigVariationsTestSuite(cls, testCfg);
 
@@ -208,7 +211,7 @@ public class ConfigVariationsTestSuiteBuilder {
      * @param testedNodeCnt Count of tested nodes.
      */
     private static TestSuite createMultiNodeTestSuite(Class<? extends IgniteCacheConfigVariationsAbstractTest> cls,
-        VariationsTestsConfig cfg, int testedNodeCnt, boolean withClients) {
+        VariationsTestsConfig cfg, int testedNodeCnt, boolean withClients, boolean skipWaitParMapExchange) {
         TestSuite suite = new TestSuite();
 
         if (cfg.gridCount() < testedNodeCnt)
@@ -221,7 +224,8 @@ public class ConfigVariationsTestSuiteBuilder {
             boolean stopCache = i + 1 == testedNodeCnt;
 
             VariationsTestsConfig cfg0 = new VariationsTestsConfig(cfg.configurationFactory(), cfg.description(),
-                stopNodes, startCache, stopCache, cfg.cacheStartMode(), cfg.gridCount(), i, withClients);
+                stopNodes, startCache, stopCache, cfg.cacheStartMode(), cfg.gridCount(), i, withClients,
+                !skipWaitParMapExchange);
 
             suite.addTest(new IgniteConfigVariationsTestSuite(cls, cfg0));
         }
@@ -334,6 +338,12 @@ public class ConfigVariationsTestSuiteBuilder {
      */
     public ConfigVariationsTestSuiteBuilder withIgniteConfigFilters(IgnitePredicate<IgniteConfiguration>... filters) {
         igniteCfgFilters = filters;
+
+        return this;
+    }
+
+    public ConfigVariationsTestSuiteBuilder skipWaitPartitionMapExchange() {
+        skipWaitPartMapExchange = true;
 
         return this;
     }

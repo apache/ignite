@@ -27,8 +27,11 @@ nobase_include_HEADERS = \
     ignite/impl/cache/query/query_fields_row_impl.h \
     ignite/impl/cache/query/query_impl.h \
     ignite/impl/cache/cache_impl.h \
+    ignite/impl/interop/interop_target.h \
     ignite/impl/interop/interop_external_memory.h \
     ignite/impl/handle_registry.h \
+    ignite/impl/transactions/transaction_impl.h \
+    ignite/impl/transactions/transactions_impl.h \
     ignite/cache/query/query_fields_row.h \
     ignite/cache/query/query_fields_cursor.h \
     ignite/cache/query/query_scan.h \
@@ -41,7 +44,11 @@ nobase_include_HEADERS = \
     ignite/cache/cache.h \
     ignite/cache/cache_entry.h \
     ignite/cache/cache_peek_mode.h \
-    ignite/ignition.h
+    ignite/ignition.h \
+    ignite/transactions/transaction.h \
+    ignite/transactions/transaction_consts.h \
+    ignite/transactions/transactions.h \
+    ignite/transactions/transaction_metrics.h
 
 uninstall-hook:
 	if [ -d ${includedir}/ignite ]; then find ${includedir}/ignite -type d -empty -delete; fi

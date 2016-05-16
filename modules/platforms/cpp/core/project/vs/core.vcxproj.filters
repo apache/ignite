@@ -28,6 +28,21 @@
     <ClCompile Include="..\..\src\impl\binary\binary_type_updater_impl.cpp">
       <Filter>Code\impl\binary</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\impl\transactions\transactions_impl.cpp">
+      <Filter>Code\impl\transactions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\transactions\transactions.cpp">
+      <Filter>Code\transactions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\transactions\transaction_impl.cpp">
+      <Filter>Code\impl\transactions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\transactions\transaction.cpp">
+      <Filter>Code\transactions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\impl\interop\interop_target.cpp">
+      <Filter>Code\impl\interop</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\impl\cache\cache_impl.h">
@@ -102,6 +117,27 @@
     <ClInclude Include="..\..\include\ignite\impl\interop\interop_external_memory.h">
       <Filter>Code\impl\interop</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\transactions\transactions_impl.h">
+      <Filter>Code\impl\transactions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\transactions\transactions.h">
+      <Filter>Code\transactions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\transactions\transaction.h">
+      <Filter>Code\transactions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\transactions\transaction_impl.h">
+      <Filter>Code\impl\transactions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\transactions\transaction_consts.h">
+      <Filter>Code\transactions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\transactions\transaction_metrics.h">
+      <Filter>Code\transactions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\interop\interop_target.h">
+      <Filter>Code\impl\interop</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Code">
@@ -127,6 +163,12 @@
     </Filter>
     <Filter Include="Code\impl\binary">
       <UniqueIdentifier>{25234d34-541b-4f6c-b42a-cc96ee33a928}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\impl\transactions">
+      <UniqueIdentifier>{d6f8a3d2-db0e-45ff-9f39-d1f1fa8771f8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\transactions">
+      <UniqueIdentifier>{146fe661-0ad3-4d51-83a3-fce8a897e84d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

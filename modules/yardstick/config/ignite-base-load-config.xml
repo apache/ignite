@@ -1,23 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!--
-  ~ Licensed to the Apache Software Foundation (ASF) under one or more
-  ~ contributor license agreements.  See the NOTICE file distributed with
-  ~ this work for additional information regarding copyright ownership.
-  ~ The ASF licenses this file to You under the Apache License, Version 2.0
-  ~ (the "License"); you may not use this file except in compliance with
-  ~ the License.  You may obtain a copy of the License at
-  ~
-  ~      http://www.apache.org/licenses/LICENSE-2.0
-  ~
-  ~ Unless required by applicable law or agreed to in writing, software
-  ~ distributed under the License is distributed on an "AS IS" BASIS,
-  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  ~ See the License for the specific language governing permissions and
-  ~ limitations under the License.
-  -->
-
-<!--
   Licensed to the Apache Software Foundation (ASF) under one or more
   contributor license agreements.  See the NOTICE file distributed with
   this work for additional information regarding copyright ownership.
@@ -166,34 +149,12 @@
             <list>
                 <bean class="org.apache.ignite.cache.QueryEntity">
                     <property name="keyType" value="java.lang.Integer"/>
-                    <property name="valueType" value="org.apache.ignite.yardstick.cache.model.Organization"/>
-
-                    <property name="fields">
-                        <map>
-                            <entry key="id" value="java.lang.Integer"/>
-                            <entry key="name" value="java.lang.String"/>
-                        </map>
-                    </property>
-
-                    <property name="indexes">
-                        <list>
-                            <bean class="org.apache.ignite.cache.QueryIndex">
-                                <constructor-arg value="id"/>
-                            </bean>
-                            <bean class="org.apache.ignite.cache.QueryIndex">
-                                <constructor-arg value="name"/>
-                            </bean>
-                        </list>
-                    </property>
-                </bean>
-
-                <bean class="org.apache.ignite.cache.QueryEntity">
-                    <property name="keyType" value="java.lang.Integer"/>
                     <property name="valueType" value="org.apache.ignite.yardstick.cache.model.Person"/>
 
                     <property name="fields">
                         <map>
                             <entry key="id" value="java.lang.Integer"/>
+                            <entry key="orgId" value="java.lang.Integer"/>
                             <entry key="firstName" value="java.lang.String"/>
                             <entry key="lastName" value="java.lang.String"/>
                             <entry key="salary" value="java.lang.Double"/>
@@ -214,6 +175,44 @@
                                     </list>
                                 </constructor-arg>
                                 <constructor-arg value="SORTED"/>
+                            </bean>
+                        </list>
+                    </property>
+                </bean>
+            </list>
+        </property>
+    </bean>
+
+    <bean name="orgCache" class="org.apache.ignite.configuration.CacheConfiguration">
+        <property name="name" value="orgCache"/>
+
+        <property name="cacheMode" value="PARTITIONED"/>
+
+        <property name="atomicityMode" value="ATOMIC"/>
+
+        <property name="swapEnabled" value="false"/>
+
+        <!-- Configure query entities -->
+        <property name="queryEntities">
+            <list>
+                <bean class="org.apache.ignite.cache.QueryEntity">
+                    <property name="keyType" value="java.lang.Integer"/>
+                    <property name="valueType" value="org.apache.ignite.yardstick.cache.model.Organization"/>
+
+                    <property name="fields">
+                        <map>
+                            <entry key="id" value="java.lang.Integer"/>
+                            <entry key="name" value="java.lang.String"/>
+                        </map>
+                    </property>
+
+                    <property name="indexes">
+                        <list>
+                            <bean class="org.apache.ignite.cache.QueryIndex">
+                                <constructor-arg value="id"/>
+                            </bean>
+                            <bean class="org.apache.ignite.cache.QueryIndex">
+                                <constructor-arg value="name"/>
                             </bean>
                         </list>
                     </property>

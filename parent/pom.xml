@@ -770,6 +770,7 @@
                                         <exclude>**/*.gar</exclude><!--bin-files-->
                                         <exclude>**/licenses/*.txt</exclude><!--files of licenses-->
                                         <exclude>**/*readme*.txt</exclude><!--readme files-->
+                                        <exclude>**/*.sql</exclude><!--sql files-->
                                         <exclude>**/*README*.txt</exclude><!--readme files-->
                                         <exclude>**/*README*.md</exclude><!--readme files-->
                                         <exclude>**/*.timestamp</exclude><!--tmp-files-->
@@ -966,9 +967,10 @@
         <profile>
             <id>release</id>
             <activation>
-                <activeByDefault>true</activeByDefault>
+                <property>
+                    <name>!skipDefault</name><!--activeByDefault-->
+                </property>
             </activation>
-
             <dependencies>
                 <dependency>
                     <groupId>org.apache.ignite</groupId>
