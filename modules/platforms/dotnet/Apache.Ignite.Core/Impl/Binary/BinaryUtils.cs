@@ -658,6 +658,20 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
         }
 
+        /// <summary>
+        /// Internal string write routine.
+        /// </summary>
+        /// <param name="chars">Chars.</param>
+        /// <param name="charCnt">Chars count.</param>
+        /// <param name="byteCnt">Bytes count.</param>
+        /// <param name="enc">Encoding.</param>
+        /// <param name="data">Data.</param>
+        /// <returns>Amount of bytes written.</returns>
+        public static unsafe int WriteString(char* chars, int charCnt, int byteCnt, Encoding enc, byte* data)
+        {
+            return enc.GetBytes(chars, charCnt, data, byteCnt);
+        }
+
         /**
          * <summary>Read string in UTF8 encoding.</summary>
          * <param name="stream">Stream.</param>
