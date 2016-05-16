@@ -66,9 +66,6 @@ class WebSessionV2 implements HttpSession {
     /** Attributes. */
     protected Map<String, Object> attrs;
 
-    /** Attributes waiting for update in cache. */
-    private Map<String, Object> updatesMap;
-
     /** Timestamp that shows when this object was created. (Last access time from user request) */
     private final long accessTime;
 
@@ -203,15 +200,14 @@ class WebSessionV2 implements HttpSession {
                 // deserialize
                 try {
                     attr = unmarshal(bytes);
-                } catch (IOException e) {
+                }
+                catch (IOException e) {
                     throw new IgniteException(e);
                 }
 
                 attributes().put(name, attr);
             }
         }
-
-        updatesMap().put(name, attr);
 
         return attr;
     }
@@ -227,11 +223,8 @@ class WebSessionV2 implements HttpSession {
 
         if (val == null)
             removeAttribute(name);
-        else {
+        else
             attributes().put(name, val);
-
-            updatesMap().put(name, val);
-        }
     }
 
     /** {@inheritDoc} */
@@ -280,8 +273,6 @@ class WebSessionV2 implements HttpSession {
         assertValid();
 
         attributes().put(name, REMOVED_ATTR);
-
-        updatesMap().put(name, null);
     }
 
     /** {@inheritDoc} */
@@ -317,15 +308,18 @@ class WebSessionV2 implements HttpSession {
      * @throws IOException
      */
     public Map<String, byte[]> binaryUpdatesMap() throws IOException {
-        final Map<String, Object> map = updatesMap;
+        final Map<String, Object> map = attributes();
 
         if (F.isEmpty(map))
             return Collections.emptyMap();
 
         final Map<String, byte[]> res = new HashMap<>(map.size());
 
-        for (final Map.Entry<String, Object> entry : map.entrySet())
-            res.put(entry.getKey(), marshal(entry.getValue()));
+        for (final Map.Entry<String, Object> entry : map.entrySet()) {
+            Object val = entry.getValue() == REMOVED_ATTR ? null : entry.getValue();
+
+            res.put(entry.getKey(), marshal(val));
+        }
 
         return res;
     }
@@ -392,16 +386,6 @@ class WebSessionV2 implements HttpSession {
             attrs = new HashMap<>();
 
         return attrs;
-    }
-
-    /**
-     * @return Updates map.
-     */
-    private Map<String, Object> updatesMap() {
-        if (updatesMap == null)
-            updatesMap = new HashMap<>();
-
-        return updatesMap;
     }
 
     /**
