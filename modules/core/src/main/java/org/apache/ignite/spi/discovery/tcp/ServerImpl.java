@@ -133,7 +133,7 @@ import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_STRING_SER_VER_2;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -3349,7 +3349,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     utilityPool.submit(
                         new Runnable() {
                             @Override public void run() {
-                                String errMsg = "Local node's " + IGNITE_USE_BINARY_STRING_SER_VER_2 +
+                                String errMsg = "Local node's " + IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2 +
                                     " property value differs from remote node's value " +
                                     "(to make sure all nodes in topology have identical marshaller settings, " +
                                     "configure system property explicitly) " +
@@ -3359,7 +3359,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     ", rmtNodeAddrs=" + U.addressesAsString(node) +
                                     ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
 
-                                String sndMsg = "Local node's " + IGNITE_USE_BINARY_STRING_SER_VER_2 +
+                                String sndMsg = "Local node's " + IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2 +
                                     " property value differs from remote node's value " +
                                     "(to make sure all nodes in topology have identical marshaller settings, " +
                                     "configure system property explicitly) " +

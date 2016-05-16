@@ -206,26 +206,11 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
         str = new String(new char[]{0xD800, '的', 0xD800, 0xD800, 0xDC00, 0xDFFF});
         assertEquals(str, marshalUnmarshal(str));
 
-        bytes = str.getBytes(UTF_8);
-        try {
-            BinaryUtils.utf8BytesToStr(bytes, 0, bytes.length);
-            assert false : "Mustn't be able to convert the string:" + str;
-        }
-        catch (BinaryObjectException e) {
-            //expected.
-        }
-
-        bytes = BinaryUtils.strToUtf8Bytes(str);
-        assertNotEquals(str, new String(bytes, UTF_8));
-
         str = new String(new char[]{55296});
         assertEquals(str, marshalUnmarshal(str));
 
         bytes = str.getBytes(UTF_8);
         assertNotEquals(str, BinaryUtils.utf8BytesToStr(bytes, 0, bytes.length));
-
-        bytes = BinaryUtils.strToUtf8Bytes(str);
-        assertNotEquals(str, new String(bytes, UTF_8));
     }
 
     /**

@@ -180,7 +180,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALL
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_STARVATION_CHECK_INTERVAL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_STRING_SER_VER_2;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.snapshot;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
@@ -1306,7 +1306,8 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 cfg.getBinaryConfiguration().isCompactFooter());
 
             add(ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2,
-                getBoolean(IGNITE_USE_BINARY_STRING_SER_VER_2, BinaryUtils.USE_STR_SERIALIZATION_VER_2));
+                getBoolean(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2,
+                    BinaryUtils.USE_STR_SERIALIZATION_VER_2));
         }
 
         add(ATTR_USER_NAME, System.getProperty("user.name"));

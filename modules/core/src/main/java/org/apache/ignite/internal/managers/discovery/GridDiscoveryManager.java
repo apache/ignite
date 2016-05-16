@@ -118,7 +118,7 @@ import org.jsr166.ConcurrentHashMap8;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_STRING_SER_VER_2;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_DISCONNECTED;
 import static org.apache.ignite.events.EventType.EVT_CLIENT_NODE_RECONNECTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -1075,7 +1075,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             boolean rmtMarshStrSerVer2Bool = rmtMarshStrSerVer2 == null ? false : rmtMarshStrSerVer2;
 
             if (locMarshStrSerVer2Bool != rmtMarshStrSerVer2Bool) {
-                throw new IgniteCheckedException("Local node's " + IGNITE_USE_BINARY_STRING_SER_VER_2 +
+                throw new IgniteCheckedException("Local node's " + IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2 +
                     " property value differs from remote node's value " +
                     "(to make sure all nodes in topology have identical marshaller settings, " +
                     "configure system property explicitly) " +

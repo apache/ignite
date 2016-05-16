@@ -64,7 +64,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_STRING_SER_VER_2;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
@@ -79,7 +79,7 @@ public class BinaryUtils {
 
     /** */
     public static final boolean USE_STR_SERIALIZATION_VER_2 = IgniteSystemProperties.getBoolean(
-        IGNITE_USE_BINARY_STRING_SER_VER_2, true);
+        IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, true);
 
     /** {@code true} if serialized value of this type cannot contain references to objects. */
     private static final boolean[] PLAIN_TYPE_FLAG = new boolean[102];

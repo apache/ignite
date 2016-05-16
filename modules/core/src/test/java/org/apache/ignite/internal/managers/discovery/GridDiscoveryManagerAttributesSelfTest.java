@@ -29,7 +29,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_USE_BINARY_STRING_SER_VER_2;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 
@@ -170,7 +170,7 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     }
 
     public void testUseStringSerVer2() throws Exception {
-        String old = System.getProperty(IGNITE_USE_BINARY_STRING_SER_VER_2);
+        String old = System.getProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);
 
         binaryMarshallerEnabled = true;
 
@@ -183,9 +183,9 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
         }
         finally {
             if (old != null)
-                System.setProperty(IGNITE_USE_BINARY_STRING_SER_VER_2, old);
+                System.setProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, old);
             else
-                System.clearProperty(IGNITE_USE_BINARY_STRING_SER_VER_2);
+                System.clearProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);
 
             binaryMarshallerEnabled = false;
         }
@@ -197,16 +197,16 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     private void doTestUseStrSerVer2(String first, String second, boolean fail) throws Exception {
         try {
             if (first != null)
-                System.setProperty(IGNITE_USE_BINARY_STRING_SER_VER_2, first);
+                System.setProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, first);
             else
-                System.clearProperty(IGNITE_USE_BINARY_STRING_SER_VER_2);
+                System.clearProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);
 
             startGrid(0);
 
             if (second != null)
-                System.setProperty(IGNITE_USE_BINARY_STRING_SER_VER_2, second);
+                System.setProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, second);
             else
-                System.clearProperty(IGNITE_USE_BINARY_STRING_SER_VER_2);
+                System.clearProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);
 
             try {
                 startGrid(1);
