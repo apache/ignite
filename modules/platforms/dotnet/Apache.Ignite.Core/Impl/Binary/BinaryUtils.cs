@@ -257,6 +257,14 @@ namespace Apache.Ignite.Core.Impl.Binary
         public static readonly Func<IBinaryStream, Guid?> ReadGuid = IsGuidSequential
             ? (Func<IBinaryStream, Guid?>)ReadGuidFast : ReadGuidSlow;
 
+        /** String mode environment variable. */
+        public const string IgniteBinaryMarshallerUseStringSerializationVer2 =
+            "IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2";
+
+        /** String mode. */
+        private static readonly bool UseStringSerializationVer2 =
+            (Environment.GetEnvironmentVariable(IgniteBinaryMarshallerUseStringSerializationVer2) ?? "true") == "true";
+
         /// <summary>
         /// Default marshaller.
         /// </summary>
