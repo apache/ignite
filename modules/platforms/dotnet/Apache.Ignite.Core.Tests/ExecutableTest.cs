@@ -18,7 +18,6 @@
 // ReSharper disable UnusedVariable
 // ReSharper disable UnusedAutoPropertyAccessor.Global
 // ReSharper disable UnusedAutoPropertyAccessor.Local
-//#pragma warning disable 618
 namespace Apache.Ignite.Core.Tests
 {
     using System;
