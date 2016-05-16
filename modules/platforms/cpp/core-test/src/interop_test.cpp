@@ -39,8 +39,8 @@ BOOST_AUTO_TEST_CASE(StringUtfInvalidSequence)
 
     std::string initialValue;
 
-    initialValue.push_back(0xD8);
-    initialValue.push_back(0x00);
+    initialValue.push_back(static_cast<unsigned char>(0xD8));
+    initialValue.push_back(static_cast<unsigned char>(0x00));
 
     try
     {
@@ -68,10 +68,12 @@ BOOST_AUTO_TEST_CASE(StringUtfInvalidCodePoint)
 
     std::string initialValue;
 
-    // 1110xxxx 10xxxxxx 10xxxxxx <= 11011000 00000000 (0xD8) = 11101101 10100000 10000000 (ED A0 80)
-    initialValue.push_back(0xED);
-    initialValue.push_back(0xA0);
-    initialValue.push_back(0x80);
+    //    1110xxxx 10xxxxxx 10xxxxxx |
+    // <= 11011000 00000000          | 0xD8
+    //  = 11101101 10100000 10000000 | ED A0 80
+    initialValue.push_back(static_cast<unsigned char>(0xED));
+    initialValue.push_back(static_cast<unsigned char>(0xA0));
+    initialValue.push_back(static_cast<unsigned char>(0x80));
 
     cache.Put("key", initialValue);
     std::string cachedValue = cache.Get("key");
