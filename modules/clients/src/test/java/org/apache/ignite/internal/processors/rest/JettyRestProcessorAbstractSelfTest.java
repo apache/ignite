@@ -1940,8 +1940,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * Init cache.
      */
     private void initCache() {
-        CacheConfiguration<Integer, Person> personCacheCfg = new CacheConfiguration<>("person");
-        personCacheCfg.setIndexedTypes(Integer.class, Person.class);
+        CacheConfiguration<Integer, Person> personCacheCfg = getCacheConfiguration();
 
         IgniteCache<Integer, Person> personCache = grid(0).getOrCreateCache(personCacheCfg);
 
@@ -1962,6 +1961,19 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         qry.setArgs(1000, 2000);
 
         assertEquals(2, personCache.query(qry).getAll().size());
+    }
+
+    /**
+     * Configure cache to use in test.
+     *
+     * @return Cache configuration.
+     */
+    protected CacheConfiguration getCacheConfiguration() {
+        CacheConfiguration<Integer, Person> personCacheCfg = new CacheConfiguration<>("person");
+
+        personCacheCfg.setIndexedTypes(Integer.class, Person.class);
+
+        return personCacheCfg;
     }
 
     /**
