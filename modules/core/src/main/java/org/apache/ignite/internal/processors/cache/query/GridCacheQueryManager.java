@@ -850,7 +850,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
             final boolean backups = qry.includeBackups() || cctx.isReplicated();
 
-            final GridIterator<IgniteBiTuple<K, V>> heapIt = onheapIterator(qry, topVer, keyValFilter, backups, plc, locNode);
+            final GridIterator<IgniteBiTuple<K, V>> heapIt = onheapIterator(qry,
+                topVer,
+                keyValFilter,
+                backups,
+                plc,
+                locNode);
 
             final GridIterator<IgniteBiTuple<K, V>> it;
 
@@ -913,7 +918,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
     /**
      * @param qry Query.
+     * @param topVer Topology version.
      * @param backups Include backups.
+     * @param expPlc Expiry policy.
      * @param locNode Local node.
      * @return Swap iterator.
      * @throws IgniteCheckedException If failed.
@@ -944,10 +951,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
     /**
      * @param qry Query.
+     * @param topVer Topology version.
      * @param keyValFilter Filter.
      * @param backups Include backups.
+     * @param plc Expiry policy.
      * @param locNode Local node.
      * @return Offheap iterator.
+     * @throws GridDhtUnreservedPartitionException If failed to reserve partition.
      */
     private GridIterator<IgniteBiTuple<K, V>> onheapIterator(
         GridCacheQueryAdapter<?> qry,
@@ -1107,7 +1117,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private GridIteratorAdapter<IgniteBiTuple<K, V>> scanIterator(
         @Nullable final Iterator<Map.Entry<byte[], byte[]>> it,
         @Nullable final IgniteBiPredicate<K, V> filter,
-        final boolean keepBinary, final boolean locNode) {
+        final boolean keepBinary,
+        final boolean locNode) {
         if (it == null)
             return new GridEmptyCloseableIterator<>();
 
@@ -1273,7 +1284,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
                 res = qryInfo.local() ?
                     executeFieldsQuery(qry, qryInfo.arguments(), qryInfo.local(), qry.subjectId(), taskName,
-                        recipient(qryInfo.senderId(), qryInfo.requestId())) :
+                    recipient(qryInfo.senderId(), qryInfo.requestId())) :
                     fieldsQueryResult(qryInfo, taskName);
 
                 // If metadata needs to be returned to user and cleaned from internal fields - copy it.
@@ -3426,18 +3437,21 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         (K)cctx.unwrapBinaryIfNeeded(key, keepBinary0),
                         (V)cctx.unwrapBinaryIfNeeded(val, keepBinary0));
 
-                    boolean passPredicate = true;
+                    boolean passPred = true;
 
                     if (keyValFilter != null) {
-                        Map.Entry<K, V> e0 = next0;
+                        Object key0 = next0.getKey();
+                        Object val0 = next0.getValue();
 
-                        if (keepBinary0)
-                            e0 = (Map.Entry<K, V>)cctx.unwrapBinaryIfNeeded(next0, keepBinary);
+                        if (keepBinary0 && !keepBinary) {
+                            key0 = (K)cctx.unwrapBinaryIfNeeded(key0, keepBinary);
+                            val0 = (V)cctx.unwrapBinaryIfNeeded(val0, keepBinary);
+                        }
 
-                        passPredicate = keyValFilter.apply(e0.getKey(), e0.getValue());
+                        passPred = keyValFilter.apply((K)key0, (V)val0);
                     }
 
-                    if (passPredicate)
+                    if (passPred)
                         break;
                     else
                         next0 = null;

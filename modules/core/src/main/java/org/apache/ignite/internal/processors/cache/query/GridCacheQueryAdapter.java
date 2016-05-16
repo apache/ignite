@@ -507,12 +507,13 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
         final GridCacheQueryManager qryMgr = cctx.queries();
 
-        boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
-
         if (part != null && !cctx.isLocal())
             return (GridCloseableIterator<R>)new ScanQueryFallbackClosableIterator(part, this, qryMgr, cctx);
-        else
+        else {
+            boolean loc = nodes.size() == 1 && F.first(nodes).id().equals(cctx.localNodeId());
+
             return loc ? qryMgr.scanQueryLocal(this, true) : qryMgr.scanQueryDistributed(this, nodes);
+        }
     }
 
     /**
@@ -565,18 +566,18 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
         Collection<ClusterNode> affNodes = CU.affinityNodes(cctx);
 
         if (prj == null && part == null)
-            return Collections.unmodifiableCollection(affNodes);
+            return affNodes;
 
         final Set<ClusterNode> owners =
             part == null ? Collections.<ClusterNode>emptySet() : new HashSet<>(cctx.topology().owners(part, topVer));
 
-        return Collections.unmodifiableCollection(F.view(affNodes, new P1<ClusterNode>() {
+        return F.view(affNodes, new P1<ClusterNode>() {
             @Override public boolean apply(ClusterNode n) {
                 return cctx.discovery().cacheAffinityNode(n, cctx.name()) &&
                     (prj == null || prj.node(n.id()) != null) &&
                     (part == null || owners.contains(n));
             }
-        }));
+        });
     }
 
     /** {@inheritDoc} */
@@ -690,7 +691,7 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
                 GridCacheQueryFutureAdapter fut =
                     (GridCacheQueryFutureAdapter)qryMgr.queryDistributed(bean, Collections.singleton(node));
 
-                tuple= new T2(null, fut);
+                tuple = new T2(null, fut);
             }
         }
 
