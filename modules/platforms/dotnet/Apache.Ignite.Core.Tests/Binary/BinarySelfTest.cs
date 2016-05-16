@@ -47,6 +47,14 @@ namespace Apache.Ignite.Core.Tests.Binary
         /** */
         private Marshaller _marsh;
 
+        /** */
+        public static readonly string[] SpecialStrings =
+        {
+            new string(new[] {(char) 0xD800, '的', (char) 0xD800, (char) 0xD800, (char) 0xDC00, (char) 0xDFFF}),
+            "ascii0123456789",
+            "的的abcdкириллица"
+        };
+
         /// <summary>
         /// 
         /// </summary>
@@ -455,14 +463,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestWriteSpecialString()
         {
-            var tests = new[]
-            {
-                new string(new[] {(char) 0xD800, '的', (char) 0xD800, (char) 0xD800, (char) 0xDC00, (char) 0xDFFF}),
-                "ascii0123456789",
-                "的的abcdкириллица"
-            };
-
-            foreach (var test in tests)
+            foreach (var test in SpecialStrings)
             {
                 Assert.AreEqual(_marsh.Unmarshal<string>(_marsh.Marshal(test)), test);
             }

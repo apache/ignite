@@ -31,6 +31,15 @@ namespace Apache.Ignite.Core.Tests.Binary
         const string StringTestTask = "org.apache.ignite.platform.PlatformStringTestTask";
 
         /// <summary>
+        /// Tests the default mode.
+        /// </summary>
+        [Test]
+        public void TestDefaultMode()
+        {
+            Assert.IsTrue(BinaryUtils.UseStringSerializationVer2);
+        }
+
+        /// <summary>
         /// Tests the new serialization mode.
         /// </summary>
         [Test]
@@ -40,7 +49,13 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
             {
-                CheckString(ignite, "foo");
+                CheckString(ignite, "Normal string");
+
+                if (BinaryUtils.UseStringSerializationVer2)
+                {
+                    foreach (var specialString in BinarySelfTest.SpecialStrings)
+                        CheckString(ignite, specialString);
+                }
             }
         }
 
