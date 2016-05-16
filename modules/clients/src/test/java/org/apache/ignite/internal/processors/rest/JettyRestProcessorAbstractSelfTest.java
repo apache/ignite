@@ -53,6 +53,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetada
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandler;
 import org.apache.ignite.internal.util.lang.GridTuple3;
+import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.SB;
@@ -1501,6 +1502,12 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         info("VisorCacheMetricsCollectorTask result: " + ret);
 
+        ret = content(new VisorGatewayArgument(VisorCacheMetricsCollectorTask.class)
+            .forNodes(grid(1).cluster().nodes())
+            .pair(Boolean.class, Set.class, false, "person"));
+
+        info("VisorCacheMetricsCollectorTask (with nodes) result: " + ret);
+
         assertNotNull(ret);
         assertTrue(!ret.isEmpty());
 
@@ -2101,6 +2108,23 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
          */
         public VisorGatewayArgument forNode(ClusterNode node) {
             put("p1", node.id().toString());
+
+            return this;
+        }
+
+        /**
+         * Prepare list of node IDs.
+         *
+         * @param nodes Collection of nodes.
+         * @return This helper for chaining method calls.
+         */
+        public VisorGatewayArgument forNodes(Collection<ClusterNode> nodes) {
+            put("p1", concat(F.transform(nodes, new C1<ClusterNode, UUID>() {
+                /** {@inheritDoc} */
+                @Override public UUID apply(ClusterNode node) {
+                    return node.id();
+                }
+            }).toArray(), ";"));
 
             return this;
         }
