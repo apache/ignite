@@ -1381,26 +1381,29 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** {@inheritDoc} */
     @Override public void dumpStats() {
-        StringBuilder sb = new StringBuilder("Communication SPI recovery descriptors: ").append(U.nl());
+        IgniteLogger log = this.log;
 
-        for (Map.Entry<ClientKey, GridNioRecoveryDescriptor> entry : recoveryDescs.entrySet()) {
-            GridNioRecoveryDescriptor desc = entry.getValue();
+        if (log != null && log.isInfoEnabled()) {
+            StringBuilder sb = new StringBuilder("Communication SPI recovery descriptors: ").append(U.nl());
 
-            sb.append("    [key=").append(entry.getKey())
-                .append(", msgsSent=").append(desc.sent())
-                .append(", msgsAckedByRmt=").append(desc.acked())
-                .append(", msgsRcvd=").append(desc.received())
-                .append(", descIdHash=").append(System.identityHashCode(desc))
-                .append(']').append(U.nl());
+            for (Map.Entry<ClientKey, GridNioRecoveryDescriptor> entry : recoveryDescs.entrySet()) {
+                GridNioRecoveryDescriptor desc = entry.getValue();
+
+                sb.append("    [key=").append(entry.getKey())
+                    .append(", msgsSent=").append(desc.sent())
+                    .append(", msgsAckedByRmt=").append(desc.acked())
+                    .append(", msgsRcvd=").append(desc.received())
+                    .append(", descIdHash=").append(System.identityHashCode(desc))
+                    .append(']').append(U.nl());
+            }
+
+            log.info(sb.toString());
         }
 
-        if (log.isInfoEnabled())
-            log.info(sb.toString());
+        GridNioServer<Message> nioSrvr = this.nioSrvr;
 
-        GridNioServer<Message> nioSrvr1 = nioSrvr;
-
-        if (nioSrvr1 != null)
-            nioSrvr1.dumpStats();
+        if (nioSrvr != null)
+            nioSrvr.dumpStats();
     }
 
     /** {@inheritDoc} */
