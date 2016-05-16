@@ -669,9 +669,10 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>Amount of bytes written.</returns>
         public static unsafe int StringToUtf8Bytes(char* chars, int charCnt, int byteCnt, Encoding enc, byte* data)
         {
-            if (UseStringSerializationVer2)
+            if (!UseStringSerializationVer2)
                 return enc.GetBytes(chars, charCnt, data, byteCnt);
 
+            // TODO: Inline
             int strLen = charCnt;
             int utfLen = 0;
             int c, cnt;
@@ -719,11 +720,96 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Converts UTF8 bytes to string.
         /// </summary>
-        /// <param name="bytes">The bytes.</param>
+        /// <param name="arr">The bytes.</param>
         /// <returns>Resulting string.</returns>
-        public static string Utf8BytesToString(byte[] bytes)
+        public static string Utf8BytesToString(byte[] arr)
         {
-            return Utf8.GetString(bytes);
+            if (!UseStringSerializationVer2)
+                return Utf8.GetString(arr);
+
+            // TODO: Inline
+            var len = arr.Length;
+            var off = 0;
+            int c, charArrCnt = 0, total = off + len;
+            int c2, c3;
+            char[] res = new char[len];
+
+            // try reading ascii
+            while (off < total)
+            {
+                c = arr[off] & 0xff;
+
+                if (c > 127)
+                    break;
+
+                off++;
+
+                res[charArrCnt++] = (char)c;
+            }
+
+            // read other
+            while (off < total)
+            {
+                c = arr[off] & 0xff;
+
+                switch (c >> 4)
+                {
+                    case 0:
+                    case 1:
+                    case 2:
+                    case 3:
+                    case 4:
+                    case 5:
+                    case 6:
+                    case 7:
+                        /* 0xxxxxxx*/
+                        off++;
+
+                        res[charArrCnt++] = (char)c;
+
+                        break;
+                    case 12:
+                    case 13:
+                        /* 110x xxxx   10xx xxxx*/
+                        off += 2;
+
+                        if (off > total)
+                            throw new BinaryObjectException("Malformed input: partial character at end");
+
+                        c2 = (int)arr[off - 1];
+
+                        if ((c2 & 0xC0) != 0x80)
+                            throw new BinaryObjectException("Malformed input around byte: " + off);
+
+                        res[charArrCnt++] = (char)(((c & 0x1F) << 6) | (c2 & 0x3F));
+
+                        break;
+                    case 14:
+                        /* 1110 xxxx  10xx xxxx  10xx xxxx */
+                        off += 3;
+
+                        if (off > total)
+                            throw new BinaryObjectException("Malformed input: partial character at end");
+
+                        c2 = (int)arr[off - 2];
+
+                        c3 = (int)arr[off - 1];
+
+                        if (((c2 & 0xC0) != 0x80) || ((c3 & 0xC0) != 0x80))
+                            throw new BinaryObjectException("Malformed input around byte: " + (off - 1));
+
+                        res[charArrCnt++] = (char)(((c & 0x0F) << 12) |
+                            ((c2 & 0x3F) << 6) |
+                            ((c3 & 0x3F) << 0));
+
+                        break;
+                    default:
+                        /* 10xx xxxx,  1111 xxxx */
+                        throw new BinaryObjectException("Malformed input around byte: " + off);
+                }
+            }
+
+            return len == charArrCnt ? new string(res) : new string(res, 0, charArrCnt);
         }
 
         /**
