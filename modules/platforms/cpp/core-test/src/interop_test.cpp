@@ -29,7 +29,7 @@ using namespace boost::unit_test;
 
 BOOST_AUTO_TEST_SUITE(InteropTestSuite)
 
-BOOST_AUTO_TEST_CASE(StringUtfTest)
+BOOST_AUTO_TEST_CASE(StringUtfInvalidSequence)
 {
     IgniteConfiguration cfg;
 
@@ -54,6 +54,30 @@ BOOST_AUTO_TEST_CASE(StringUtfTest)
     {
         // Expected.
     }
+
+    Ignition::StopAll(false);
+}
+
+BOOST_AUTO_TEST_CASE(StringUtfInvalidCodePoint)
+{
+    IgniteConfiguration cfg;
+
+    Ignite ignite = Ignition::Start(cfg);
+
+    Cache<std::string, std::string> cache = ignite.CreateCache<std::string, std::string>("Test");
+
+    std::string initialValue;
+
+    // 1110xxxx 10xxxxxx 10xxxxxx <= 11011000 00000000 (0xD8) = 11101101 10100000 10000000 (ED A0 80)
+    initialValue.push_back(0xED);
+    initialValue.push_back(0xA0);
+    initialValue.push_back(0x80);
+
+    cache.Put("key", initialValue);
+    std::string cachedValue = cache.Get("key");
+
+    // This is a valid case. Invalid code points are supported.
+    BOOST_CHECK_EQUAL(initialValue, cachedValue);
 
     Ignition::StopAll(false);
 }
