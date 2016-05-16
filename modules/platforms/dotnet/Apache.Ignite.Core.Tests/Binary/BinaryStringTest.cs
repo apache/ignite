@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Tests.Binary
     using System;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl.Binary;
-    using Apache.Ignite.Core.Tests.Process;
     using NUnit.Framework;
 
     /// <summary>
@@ -29,7 +28,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     public class BinaryStringTest
     {
         [Test]
-        public void Test()
+        public void TestNewMode()
         {
             const string springCfg = @"config\compute\compute-grid1.xml";
             using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
@@ -37,26 +36,18 @@ namespace Apache.Ignite.Core.Tests.Binary
                 SpringConfigUrl = springCfg
             }))
             {
-
-                var proc = new IgniteProcess(string.Format("-springConfigUrl={0}", springCfg), "-J-ea",
-                    "-J-Xcheck:jni", "-J-Xms512m", "-J-Xmx512m", "-J-DIGNITE_QUIET=false");
-
-                ignite.WaitTopology(2);
+                // TODO: Call Java task with strings
 
                 var res = ignite.GetCompute().Call(new CheckStrings());
                 Assert.IsTrue(res);
-
-                proc.Kill();
             }
         }
 
         [Test]
-        public void Test2()
+        public void TestOldMode()
         {
+            // Run "TestNewMode" in a separate process
             var envVar = BinaryUtils.IgniteBinaryMarshallerUseStringSerializationVer2;
-
-            if (Environment.GetEnvironmentVariable(envVar) == "false")
-                return;
 
             Environment.SetEnvironmentVariable(envVar, "false");
 

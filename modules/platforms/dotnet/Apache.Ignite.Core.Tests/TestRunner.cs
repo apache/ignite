@@ -34,6 +34,7 @@ namespace Apache.Ignite.Core.Tests
 
             if (args.Length == 2)
             {
+                Debugger.Launch();
                 Environment.ExitCode = TestOne(Type.GetType(args[0]), args[1]);
                 return;
             }
