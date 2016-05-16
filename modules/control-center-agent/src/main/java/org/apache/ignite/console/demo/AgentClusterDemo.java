@@ -64,13 +64,13 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
- * Demo for SQL.
+ * Demo for cluster features like SQL and Monitoring.
  *
  * Cache will be created and populated with data to query.
  */
-public class AgentSqlDemo {
+public class AgentClusterDemo {
     /** */
-    private static final Logger log = Logger.getLogger(AgentSqlDemo.class.getName());
+    private static final Logger log = Logger.getLogger(AgentClusterDemo.class.getName());
 
     /** */
     private static final AtomicBoolean initLatch = new AtomicBoolean();
@@ -312,13 +312,14 @@ public class AgentSqlDemo {
 
     /**
      * Configure node.
-     * @param gridName Grid name.
+     * @param gridIdx Grid name index.
+     * @param client If {@code true} then start client node.
      * @return IgniteConfiguration
      */
-    private static  IgniteConfiguration igniteConfiguration(String gridName) {
+    private static  IgniteConfiguration igniteConfiguration(int gridIdx, boolean client) {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName(gridName);
+        cfg.setGridName((client ? "demo-server-" : "demo-client-") + gridIdx);
 
         cfg.setLocalHost("127.0.0.1");
 
@@ -349,9 +350,12 @@ public class AgentSqlDemo {
 
         cfg.setMetricsLogFrequency(0);
 
-        cfg.setCacheConfiguration(cacheCountry(), cacheDepartment(), cacheEmployee(), cacheParking(), cacheCar());
-
         cfg.getConnectorConfiguration().setPort(60700);
+
+        if (client)
+            cfg.setClientMode(true);
+        else
+            cfg.setCacheConfiguration(cacheCountry(), cacheDepartment(), cacheEmployee(), cacheParking(), cacheCar());
 
         return cfg;
     }
@@ -554,10 +558,28 @@ public class AgentSqlDemo {
             System.setProperty(IGNITE_NO_ASCII, "true");
 
             try {
-                IgniteEx ignite = null;
+                IgniteEx ignite = (IgniteEx)Ignition.start(igniteConfiguration(0, false));
 
-                for (int i = 0; i < NODE_CNT; i++)
-                    ignite = (IgniteEx)Ignition.start(igniteConfiguration("demo-" + i));
+                final AtomicInteger cnt = new AtomicInteger(0);
+
+                final ScheduledExecutorService execSrv = Executors.newSingleThreadScheduledExecutor();
+
+                execSrv.scheduleAtFixedRate(new Runnable() {
+                    @Override public void run() {
+                        int idx = cnt.incrementAndGet();
+
+                        try {
+                            Ignition.start(igniteConfiguration(idx, idx == NODE_CNT));
+                        }
+                        catch (Throwable e) {
+                            log.error("DEMO: Failed to start embedded node: " + e.getMessage());
+                        }
+                        finally {
+                            if (idx == NODE_CNT)
+                                execSrv.shutdown();
+                        }
+                    }
+                }, 10, 10, TimeUnit.SECONDS);
 
                 if (log.isDebugEnabled())
                     log.debug("DEMO: Started embedded nodes with indexed enabled caches...");

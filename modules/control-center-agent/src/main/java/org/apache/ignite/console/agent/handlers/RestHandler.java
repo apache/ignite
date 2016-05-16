@@ -37,7 +37,7 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.ignite.console.agent.AgentConfiguration;
-import org.apache.ignite.console.demo.AgentSqlDemo;
+import org.apache.ignite.console.demo.AgentClusterDemo;
 import org.apache.log4j.Logger;
 
 import static org.apache.ignite.console.agent.AgentConfiguration.DFLT_NODE_PORT;
@@ -140,7 +140,7 @@ public class RestHandler extends AbstractHandler {
 
         if (demo) {
             // try start demo if needed.
-            AgentSqlDemo.testDrive(cfg);
+            AgentClusterDemo.testDrive(cfg);
 
             // null if demo node not started yet.
             if (cfg.demoNodeUri() == null)
