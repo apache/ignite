@@ -29,28 +29,28 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
  */
 public class DataEntry {
     /** */
-    private int cacheId;
+    protected int cacheId;
 
     /** */
-    private KeyCacheObject key;
+    protected KeyCacheObject key;
 
     /** */
-    private CacheObject val;
+    protected CacheObject val;
 
     /** */
-    private GridCacheOperation op;
+    protected GridCacheOperation op;
 
     /** */
-    private GridCacheVersion nearXidVer;
+    protected GridCacheVersion nearXidVer;
 
     /** */
-    private GridCacheVersion writeVer;
+    protected GridCacheVersion writeVer;
 
     /** */
-    private int partId;
+    protected int partId;
 
     /** */
-    private long partCnt;
+    protected long partCnt;
 
     /**
      * @param txEntry Transactional entry.
