@@ -393,7 +393,6 @@ namespace Apache.Ignite.Core.Impl
 
             Marshal.Copy(ptr, arr, 0, arr.Length);
 
-            // TODO
             return Encoding.UTF8.GetString(arr);
         }
 
@@ -417,7 +416,6 @@ namespace Apache.Ignite.Core.Impl
                 *((byte*)ptr.ToPointer() + strBytes.Length) = 0; // NULL-terminator.
             }
             
-            // TODO
             return (sbyte*)ptr.ToPointer();
         }
 
