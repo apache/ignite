@@ -374,6 +374,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static IgniteConfiguration GetCustomConfig()
         {
+            // CacheConfiguration is not tested here - see CacheConfigurationTest
             return new IgniteConfiguration
             {
                 DiscoverySpi = new TcpDiscoverySpi
