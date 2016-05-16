@@ -32,6 +32,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -275,5 +277,43 @@ public class CacheStateSelfTest extends GridCommonAbstractTest {
 
         assert !cache3.containsKey(1);
         assert !cache3.containsKey(2);
+    }
+
+    public void testRebalancingUsingCounters() throws Exception {
+        IgniteEx ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
+
+        final IgniteCache cache1 = ignite1.cache(null);
+
+        cache1.active(false).get();
+
+        assert !cache1.active();
+
+        IgniteEx ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
+        IgniteEx ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
+
+        final IgniteCache cache2 = ignite2.cache(null);
+        final IgniteCache cache3 = ignite3.cache(null);
+
+        assert !cache1.active() && !cache2.active() && !cache3.active();
+
+        GridDhtLocalPartition part1 = ignite1.cachex().context().topology().localPartition(0, true);
+        GridDhtLocalPartition part2 = ignite2.cachex().context().topology().localPartition(0, true);
+        GridDhtLocalPartition part3 = ignite3.cachex().context().topology().localPartition(0, true);
+
+        part1.updateCounter(10);
+        part2.updateCounter(20);
+        part3.updateCounter(5);
+
+        cache1.active(true).get();
+
+        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return cache1.active() && cache2.active() && cache3.active();
+            }
+        }, 5000);
+
+        assert ignite1.cachex().context().topology().localPartition(0, true).updateCounter() == 20;
+        assert ignite2.cachex().context().topology().localPartition(0, true).updateCounter() == 20;
+        assert ignite3.cachex().context().topology().localPartition(0, true).updateCounter() == 20;
     }
 }
