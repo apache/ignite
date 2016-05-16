@@ -398,7 +398,8 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
     @SuppressWarnings("unchecked")
     public <K, V> GridCloseableIterator<Cache.Entry<K, V>> entriesIterator(final boolean primary,
         final boolean backup,
-        final AffinityTopologyVersion topVer)
+        final AffinityTopologyVersion topVer,
+        final boolean keepBinary)
         throws IgniteCheckedException {
         final GridCursor<CacheDataRow> cur = cursor();
 
@@ -440,7 +441,13 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
                 }
 
                 if (nextRow != null) {
-                    next = new CacheEntryImplEx(nextRow.key(), nextRow.value(), nextRow.version());
+                    KeyCacheObject key = nextRow.key();
+                    CacheObject val = nextRow.value();
+
+                    Object key0 = cctx.unwrapBinaryIfNeeded(key, keepBinary, false);
+                    Object val0 = cctx.unwrapBinaryIfNeeded(val, keepBinary, false);
+
+                    next = new CacheEntryImplEx(key0, val0, nextRow.version());
 
                     return true;
                 }
@@ -553,6 +560,10 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
                 return next != null;
             }
         };
+    }
+
+    public boolean empty(int part) throws IgniteCheckedException {
+        return !iterator(part).hasNext();
     }
 
     public GridIterator<CacheDataRow> iterator(final int part) throws IgniteCheckedException {

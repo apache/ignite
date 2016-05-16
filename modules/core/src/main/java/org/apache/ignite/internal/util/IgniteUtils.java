@@ -71,6 +71,8 @@ import java.nio.channels.FileLock;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.AccessController;
 import java.security.KeyManagementException;
 import java.security.MessageDigest;
@@ -3503,9 +3505,22 @@ public abstract class IgniteUtils {
         else
             ggHome0 = ggHomeTup.get();
 
-        if (ggHome0 != null && !ggHome0.equals(path))
-            throw new IgniteException("Failed to set IGNITE_HOME after it has been already resolved " +
-                "[igniteHome=" + ggHome0 + ", newIgniteHome=" + path + ']');
+        if (ggHome0 != null && !ggHome0.equals(path)) {
+            try {
+                Path path0 = new File(ggHome0).toPath();
+
+                Path path1 = new File(path).toPath();
+
+                if (!Files.isSameFile(path0, path1))
+                    throw new IgniteException("Failed to set IGNITE_HOME after it has been already resolved " +
+                        "[igniteHome=" + path0 + ", newIgniteHome=" + path1 + ']');
+            }
+            catch (IOException ignore) {
+                // Throw an exception if failed to follow symlinks.
+                throw new IgniteException("Failed to set IGNITE_HOME after it has been already resolved " +
+                    "[igniteHome=" + ggHome0 + ", newIgniteHome=" + path + ']');
+            }
+        }
     }
 
     /**
@@ -8788,6 +8803,15 @@ public abstract class IgniteUtils {
      * @throws IgniteCheckedException If failed.
      */
     public static File resolveWorkDirectory(String path, boolean delIfExist) throws IgniteCheckedException {
+        if (path == null) {
+            String ggWork0 = igniteWork;
+
+            if (F.isEmpty(ggWork0))
+                throw new IgniteCheckedException("Failed to resolve path (work directory has not been set): " + path);
+
+            return new File(igniteWork);
+        }
+
         File dir = new File(path);
 
         if (!dir.isAbsolute()) {

@@ -103,13 +103,6 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * Marks checkpoint begin.
-     */
-    public Collection<FullPageId> snapshotCheckpoint() {
-        return Collections.emptyList();
-    }
-
-    /**
      * @param dbCfg Database configuration.
      * @return Page memory instance.
      */
