@@ -274,9 +274,9 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
             consumer.close();
 
             if (conditioned)
-                assertTrue(evtCnt == (EVENT_CNT * TOPICS.length) / 2);
+                assertEquals((EVENT_CNT * TOPICS.length) / 2, evtCnt);
             else
-                assertTrue(evtCnt == EVENT_CNT * TOPICS.length);
+                assertEquals(EVENT_CNT * TOPICS.length, evtCnt);
         }
     }
 

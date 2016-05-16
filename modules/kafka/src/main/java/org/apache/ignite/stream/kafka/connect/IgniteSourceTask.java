@@ -50,6 +50,9 @@ public class IgniteSourceTask extends SourceTask {
     /** Logger. */
     private static final Logger log = LoggerFactory.getLogger(IgniteSourceTask.class);
 
+    /** Tasks static monitor. */
+    private static final Object lock = new Object();
+
     /** Event buffer size. */
     private static int evtBufSize = 100000;
 
@@ -100,51 +103,54 @@ public class IgniteSourceTask extends SourceTask {
      * @param props Task properties.
      */
     @Override public void start(Map<String, String> props) {
-        // Each task has the same parameters -- avoid setting more than once.
-        if (cacheName != null)
-            return;
+        synchronized (lock) {
+            // Each task has the same parameters -- avoid setting more than once.
+            // Nothing to do if the task has been already started.
+            if (!stopped)
+                return;
 
-        cacheName = props.get(IgniteSourceConstants.CACHE_NAME);
-        igniteConfigFile = props.get(IgniteSourceConstants.CACHE_CFG_PATH);
-        topics = props.get(IgniteSourceConstants.TOPIC_NAMES).split("\\s*,\\s*");
+            cacheName = props.get(IgniteSourceConstants.CACHE_NAME);
+            igniteConfigFile = props.get(IgniteSourceConstants.CACHE_CFG_PATH);
+            topics = props.get(IgniteSourceConstants.TOPIC_NAMES).split("\\s*,\\s*");
 
-        if (props.containsKey(IgniteSourceConstants.INTL_BUF_SIZE))
-            evtBufSize = Integer.parseInt(props.get(IgniteSourceConstants.INTL_BUF_SIZE));
+            if (props.containsKey(IgniteSourceConstants.INTL_BUF_SIZE))
+                evtBufSize = Integer.parseInt(props.get(IgniteSourceConstants.INTL_BUF_SIZE));
 
-        if (props.containsKey(IgniteSourceConstants.INTL_BATCH_SIZE))
-            evtBatchSize = Integer.parseInt(props.get(IgniteSourceConstants.INTL_BATCH_SIZE));
+            if (props.containsKey(IgniteSourceConstants.INTL_BATCH_SIZE))
+                evtBatchSize = Integer.parseInt(props.get(IgniteSourceConstants.INTL_BATCH_SIZE));
 
-        if (props.containsKey(IgniteSourceConstants.CACHE_FILTER_CLASS)) {
-            String filterCls = props.get(IgniteSourceConstants.CACHE_FILTER_CLASS);
-            if (filterCls != null && !filterCls.isEmpty()) {
-                try {
-                    Class<? extends IgnitePredicate<CacheEvent>> clazz =
-                        (Class<? extends IgnitePredicate<CacheEvent>>)Class.forName(filterCls);
+            if (props.containsKey(IgniteSourceConstants.CACHE_FILTER_CLASS)) {
+                String filterCls = props.get(IgniteSourceConstants.CACHE_FILTER_CLASS);
+                if (filterCls != null && !filterCls.isEmpty()) {
+                    try {
+                        Class<? extends IgnitePredicate<CacheEvent>> clazz =
+                            (Class<? extends IgnitePredicate<CacheEvent>>)Class.forName(filterCls);
 
-                    filter = clazz.newInstance();
-                }
-                catch (Exception e) {
-                    log.error("Failed to instantiate the provided filter! " +
-                        "User-enabled filtering is ignored!", e);
+                        filter = clazz.newInstance();
+                    }
+                    catch (Exception e) {
+                        log.error("Failed to instantiate the provided filter! " +
+                            "User-enabled filtering is ignored!", e);
+                    }
                 }
             }
-        }
 
-        rmtLsnr = new TaskRemoteFilter(cacheName);
+            rmtLsnr = new TaskRemoteFilter(cacheName);
 
-        try {
-            int[] evts = cacheEvents(props.get(IgniteSourceConstants.CACHE_EVENTS));
+            try {
+                int[] evts = cacheEvents(props.get(IgniteSourceConstants.CACHE_EVENTS));
 
-            rmtLsnrId = IgniteGrid.getIgnite().events(IgniteGrid.getIgnite().cluster().forCacheNodes(cacheName))
-                .remoteListen(locLsnr, rmtLsnr, evts);
-        }
-        catch (Exception e) {
-            log.error("Failed to register event listener!", e);
+                rmtLsnrId = IgniteGrid.getIgnite().events(IgniteGrid.getIgnite().cluster().forCacheNodes(cacheName))
+                    .remoteListen(locLsnr, rmtLsnr, evts);
+            }
+            catch (Exception e) {
+                log.error("Failed to register event listener!", e);
 
-            throw new ConnectException(e);
-        }
-        finally {
-            stopped = false;
+                throw new ConnectException(e);
+            }
+            finally {
+                stopped = false;
+            }
         }
     }
 
@@ -225,6 +231,13 @@ public class IgniteSourceTask extends SourceTask {
                 .stopRemoteListen(rmtLsnrId);
 
         rmtLsnrId = null;
+    }
+
+    /**
+     * Used by unit test to avoid restart node and valid state of the <code>stopped</code> flag
+     */
+    protected void setStopped(boolean stopped) {
+        this.stopped = stopped ;
     }
 
     /**
