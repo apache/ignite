@@ -383,6 +383,9 @@ public final class IgniteSystemProperties {
     /** Maximum number of nested listener calls before listener notification becomes asynchronous. */
     public static final String IGNITE_MAX_NESTED_LISTENER_CALLS = "IGNITE_MAX_NESTED_LISTENER_CALLS";
 
+    /** Indicating whether local store keeps primary only. Backward compatibility flag. */
+    public static final String IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY = "IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY";
+
     /**
      * Manages {@link OptimizedMarshaller} behavior of {@code serialVersionUID} computation for
      * {@link Serializable} classes.
@@ -405,6 +408,26 @@ public final class IgniteSystemProperties {
      * any problems in communication layer.
      */
     public static final String IGNITE_NO_SELECTOR_OPTS = "IGNITE_NO_SELECTOR_OPTS";
+
+    /**
+     * System property to specify period in milliseconds between calls of the SQL statements cache cleanup task.
+     * <p>
+     * Cleanup tasks clears cache for terminated threads and for threads which did not perform SQL queries within
+     * timeout configured via {@link #IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT} property.
+     * <p>
+     * Default value is {@code 10,000ms}.
+     */
+    public static final String IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD = "IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD";
+
+    /**
+     * System property to specify timeout in milliseconds after which thread's SQL statements cache is cleared by
+     * cleanup task if the thread does not perform any query.
+     * <p>
+     * Default value is {@code 600,000ms}.
+     */
+    public static final String IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT =
+        "IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT";
+
 
     /**
      * Enforces singleton.
