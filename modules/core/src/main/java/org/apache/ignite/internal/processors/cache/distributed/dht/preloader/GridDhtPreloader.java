@@ -276,7 +276,7 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 assert part != null;
                 assert part.id() == p;
 
-                top.ownIfUpToDate(part);
+//                top.ownIfUpToDate(part);
 
                 if (part.state() != MOVING) {
                     if (log.isDebugEnabled())

@@ -62,7 +62,7 @@ public class CacheStateSelfTest extends GridCommonAbstractTest {
         CacheConfiguration ccfg = new CacheConfiguration(cacheName);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        ccfg.setCacheMode(CacheMode.REPLICATED);
+        ccfg.setCacheMode(CacheMode.PARTITIONED);
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         ccfg.setBackups(0);
 
@@ -288,12 +288,12 @@ public class CacheStateSelfTest extends GridCommonAbstractTest {
         assert cache1.active();
         assert cache2.active();
 
-        assert ignite1.affinity(null).mapKeyToNode(1).id().equals(ignite1.localNode().id());
+        awaitPartitionMapExchange();
 
-        final int partition = ignite1.affinity(null).partition(1);
+        final int partition = ignite1.affinity(null).allPartitions(ignite1.localNode())[0];
 
-        cache1.put(1, 1);
-        assert cache2.get(1).equals(1);
+        cache1.put(partition, 1);
+        assert cache2.get(partition).equals(1);
 
         ignite1.close();
 
@@ -306,7 +306,7 @@ public class CacheStateSelfTest extends GridCommonAbstractTest {
         boolean ex = false;
 
         try {
-            cache2.get(1);
+            cache2.get(partition);
         }
         catch (CacheException e) {
             ex = true;

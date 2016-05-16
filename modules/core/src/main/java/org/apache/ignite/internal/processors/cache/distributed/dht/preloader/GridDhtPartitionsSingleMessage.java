@@ -114,7 +114,7 @@ public class GridDhtPartitionsSingleMessage extends GridDhtPartitionsAbstractMes
      * @param cacheId Cache ID.
      * @return Partition update counters.
      */
-    public Map<Integer, Long> partitionUpdateCounters(int cacheId) {
+    @Override public Map<Integer, Long> partitionUpdateCounters(int cacheId) {
         if (partCntrs != null) {
             Map<Integer, Long> res = partCntrs.get(cacheId);
 

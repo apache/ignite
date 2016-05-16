@@ -57,6 +57,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
@@ -189,7 +190,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** */
     private boolean centralizedAff;
 
-    private final ConcurrentMap<UUID, GridDhtPartitionsSingleMessage> msgs = new ConcurrentHashMap8<>();
+    private final ConcurrentMap<UUID, GridDhtPartitionsAbstractMessage> msgs = new ConcurrentHashMap8<>();
 
     /**
      * Dummy future created to trigger reassignments if partition
@@ -1276,7 +1277,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         long maxCntr = 0;
 
-        for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : msgs.entrySet()) {
+        for (Map.Entry<UUID, GridDhtPartitionsAbstractMessage> e : msgs.entrySet()) {
             if (e.getValue().partitionUpdateCounters(cacheCtx.cacheId()) == null)
                 continue;
 
@@ -1294,14 +1295,16 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         Set<UUID> owners = new HashSet<>();
 
-        for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : msgs.entrySet()) {
-            if (e.getValue().partitionUpdateCounters(cacheCtx.cacheId()) == null)
+        for (Map.Entry<UUID, GridDhtPartitionsAbstractMessage> e : msgs.entrySet()) {
+            GridDhtPartitionsAbstractMessage msg = e.getValue();
+
+            if (msg.partitionUpdateCounters(cacheCtx.cacheId()) == null)
                 continue;
 
-            if (!e.getValue().partitionUpdateCounters(cacheCtx.cacheId()).containsKey(p))
+            if (msg.partitionUpdateCounters(cacheCtx.cacheId()).containsKey(p))
                 continue;
 
-            Long cntr = e.getValue().partitionUpdateCounters(cacheCtx.cacheId()).get(p);
+            Long cntr = msg.partitionUpdateCounters(cacheCtx.cacheId()).get(p);
 
             assert cntr <= maxCntr;
 
@@ -1315,62 +1318,75 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private void detectLostPartitions() {
         assert crd.isLocal();
 
-        if (msgs.isEmpty())
-            return;
-
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-            for (int p = 0; p < cacheCtx.affinity().partitions(); p++) {
-                checkPartitionLost(cacheCtx, p);
-            }
+            if (cacheCtx.cache().state().active())
+                checkPartitionLost(cacheCtx);
         }
     }
 
-    private void checkPartitionLost(GridCacheContext cacheCtx, int p) {
+    private void checkPartitionLost(GridCacheContext cacheCtx) {
+        int parts = cacheCtx.affinity().partitions();
+        Set<Integer> partsWithOwner = new HashSet<>();
+
         GridDhtPartitionTopology top = cacheCtx.topology();
 
-        long maxCntr = 0;
-
-        for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : msgs.entrySet()) {
-            if (e.getValue().partitionUpdateCounters(cacheCtx.cacheId()) == null)
-                continue;
-
-            if (!e.getValue().partitionUpdateCounters(cacheCtx.cacheId()).containsKey(p))
-                continue;
-
-            Long cntr = e.getValue().partitionUpdateCounters(cacheCtx.cacheId()).get(p);
-
-            if (cntr > maxCntr)
-                maxCntr = cntr;
+        for (GridDhtLocalPartition part : top.currentLocalPartitions()) {
+            if (part.state() == GridDhtPartitionState.OWNING)
+                partsWithOwner.add(part.id());
         }
 
-        if (maxCntr == 0)
+        for (int p = 0; p < parts; p++) {
+            if (partsWithOwner.contains(p))
+                continue;
+
+            for (Map.Entry<UUID, GridDhtPartitionsAbstractMessage> e : msgs.entrySet()) {
+                GridDhtPartitionsAbstractMessage msg = e.getValue();
+
+                if (msg instanceof GridDhtPartitionsSingleMessage) {
+                    GridDhtPartitionsSingleMessage singleMsg = (GridDhtPartitionsSingleMessage) msg;
+
+                    if (!singleMsg.partitions().containsKey(cacheCtx.cacheId()))
+                        continue;
+
+                    if (!singleMsg.partitions().get(cacheCtx.cacheId()).containsKey(p))
+                        continue;
+
+                    if (singleMsg.partitions().get(cacheCtx.cacheId()).get(p) == GridDhtPartitionState.OWNING) {
+                        partsWithOwner.add(p);
+                    }
+                }
+                else if (msg instanceof GridDhtPartitionsFullMessage) {
+                    GridDhtPartitionsFullMessage fullMsg = (GridDhtPartitionsFullMessage) msg;
+
+                    for (Map.Entry<UUID, GridDhtPartitionMap2> e0 : fullMsg.partitions().get(cacheCtx.cacheId()).entrySet()) {
+                        if (!e0.getValue().containsKey(p))
+                            continue;
+
+                        if (e0.getValue().get(p) == GridDhtPartitionState.OWNING) {
+                            partsWithOwner.add(p);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (partsWithOwner.size() == parts)
             return;
 
-        boolean hasOwner = false;
+        Set<Integer> lostParts = new HashSet<>();
 
-        for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : msgs.entrySet()) {
-            if (!e.getValue().partitions().containsKey(cacheCtx.cacheId()))
-                continue;
-
-            if (!e.getValue().partitions().get(cacheCtx.cacheId()).containsKey(p))
-                continue;
-
-            if (e.getValue().partitions().get(cacheCtx.cacheId()).get(p) == GridDhtPartitionState.OWNING) {
-                hasOwner = true;
-                break;
-            }
+        for (int p = 0; p < parts; p++) {
+            if (!partsWithOwner.contains(p))
+                lostParts.add(p);
         }
 
         CacheState state = cacheCtx.cache().state();
 
-        if (state.lostPartitions().contains(p))
+        if (state.lostPartitions().containsAll(lostParts))
             return;
 
-        Set<Integer> lostParts = new HashSet<>(state.lostPartitions().size() + 1);
-
         lostParts.addAll(state.lostPartitions());
-
-        lostParts.add(p);
 
         cctx.cache().changeCacheState(cacheCtx.name(), new CacheState(state.active(), lostParts));
     }
@@ -1392,7 +1408,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             // TODO : find better place
             assignRolesByCounters();
 
-            detectLostPartitions();
+            if (discoEvt.type() != EventType.EVT_NODE_JOINED && discoEvt.type() != 18)
+                detectLostPartitions();
 
             updateLastVersion(cctx.versions().last());
 
@@ -1516,6 +1533,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 return;
 
             if (!crd.equals(node)) {
+                msgs.put(node.id(), msg);
+
                 if (log.isDebugEnabled())
                     log.debug("Received full partition map from unexpected node [oldest=" + crd.id() +
                         ", nodeId=" + node.id() + ']');
