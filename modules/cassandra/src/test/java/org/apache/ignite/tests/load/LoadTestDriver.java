@@ -231,6 +231,6 @@ public abstract class LoadTestDriver {
         else if (part4 < 100)
             part4 = part4 * 10;
 
-        return (part4 * 100000000000000L) + (part3 * 100000000000L);
+        return (part4 * 100000000000000L) + (part3 * 100000000000L) + Thread.currentThread().getId();
     }
 }

@@ -221,14 +221,17 @@ public abstract class Worker extends Thread {
         List<CacheEntryImpl> batchList = new ArrayList<>(TestsHelper.getBulkOperationSize());
         Map batchMap = new HashMap(TestsHelper.getBulkOperationSize());
 
+        int execTime = TestsHelper.getLoadTestsWarmupPeriod() + TestsHelper.getLoadTestsExecutionTime();
+
         try {
             while (true) {
-                if (System.currentTimeMillis() - testStartTime > TestsHelper.getLoadTestsExecutionTime())
+                if (System.currentTimeMillis() - testStartTime > execTime)
                     break;
 
                 if (warmup && System.currentTimeMillis() - testStartTime > TestsHelper.getLoadTestsWarmupPeriod()) {
                     warmupFinishTime = System.currentTimeMillis();
                     startTime = warmupFinishTime;
+                    statReportedTime = warmupFinishTime;
                     warmup = false;
                     log.info("Warm up period completed");
                 }
@@ -367,7 +370,9 @@ public abstract class Worker extends Thread {
 
         statReportedTime = System.currentTimeMillis();
 
-        int completed = (int)(statReportedTime - testStartTime) * 100 / TestsHelper.getLoadTestsExecutionTime();
+        int completed = warmup ?
+                (int)(statReportedTime - warmupStartTime) * 100 / TestsHelper.getLoadTestsWarmupPeriod() :
+                (int)(statReportedTime - startTime) * 100 / TestsHelper.getLoadTestsExecutionTime();
 
         if (completed > 100)
             completed = 100;
