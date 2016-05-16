@@ -21,7 +21,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.Serializable;
-import java.net.URI;
+import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.util.Collection;
@@ -143,11 +143,11 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         String addr = "http://" + LOC_HOST + ":" + restPort() + "/ignite?";
 
         for (Map.Entry<String, String> e : params.entrySet())
-            addr += e.getKey() + '=' + (e.getValue() != null ? e.getValue() : "") + '&';
+            addr += e.getKey() + '=' + e.getValue() + '&';
 
-        URI uri = new URI(addr);
+        URL url = new URL(addr);
 
-        URLConnection conn = uri.toURL().openConnection();
+        URLConnection conn = url.openConnection();
 
         String signature = signature();
 
@@ -1910,6 +1910,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         assertFalse(queryCursorFound());
     }
 
+    /**
+     * @return Signature.
+     * @throws Exception If failed.
+     */
     protected abstract String signature() throws Exception;
 
     /**
@@ -1936,7 +1940,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * Init cache.
      */
     private void initCache() {
-        CacheConfiguration<Integer, Person> personCacheCfg = getCacheConfiguration();
+        CacheConfiguration<Integer, Person> personCacheCfg = new CacheConfiguration<>("person");
+        personCacheCfg.setIndexedTypes(Integer.class, Person.class);
 
         IgniteCache<Integer, Person> personCache = grid(0).getOrCreateCache(personCacheCfg);
 
@@ -1957,14 +1962,6 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         qry.setArgs(1000, 2000);
 
         assertEquals(2, personCache.query(qry).getAll().size());
-    }
-
-    protected CacheConfiguration getCacheConfiguration() {
-        CacheConfiguration<Integer, Person> personCacheCfg = new CacheConfiguration<>("person");
-
-        personCacheCfg.setIndexedTypes(Integer.class, Person.class);
-
-        return personCacheCfg;
     }
 
     /**
