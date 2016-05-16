@@ -38,7 +38,7 @@ import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.IgniteServices;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DeploymentMode;
@@ -90,15 +90,15 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDescriptor;
+import org.apache.ignite.spi.IgniteNodeValidationResult;
 import org.apache.ignite.thread.IgniteThreadFactory;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_ENABLED;
-import static org.apache.ignite.IgniteSystemProperties.getBoolean;
+import static org.apache.ignite.IgniteSystemProperties.getString;
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
-import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SERVICES_COMPATIBILITY_ENABLED;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -109,7 +109,8 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "ConstantConditions"})
 public class GridServiceProcessor extends GridProcessorAdapter {
     /** */
-    private final boolean srvcCompatibility  = getBoolean(IGNITE_SERVICES_COMPATIBILITY_ENABLED, false);
+    // TODO check version before merge.
+    public static final IgniteProductVersion LAZY_SERVICES_CFG_SINCE = IgniteProductVersion.fromString("1.5.22");
 
     /** Time to wait before reassignment retries. */
     private static final long RETRY_TIMEOUT = 1000;
@@ -121,6 +122,20 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         EventType.EVT_NODE_FAILED,
         DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT
     };
+
+    /**
+     * Manages backward compatibility of {@link IgniteServices}.
+     * <p>
+     * If it is {@code false} then node is not required to have service implementation class if service is not
+     * deployed on this node.
+     * <p>
+     * If the property is {@code true} then service implementation class is required on node even if service
+     * is not deployed on this node.
+     */
+    private volatile boolean srvcCompatibility; // getBoolean(IGNITE_SERVICES_COMPATIBILITY_ENABLED, false);
+
+    /** */
+    private volatile boolean srvcUsed;
 
     /** Local service instances. */
     private final Map<String, Collection<ServiceContextImpl>> locSvcs = new HashMap<>();
@@ -166,8 +181,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
-        ctx.addNodeAttribute(ATTR_SERVICES_COMPATIBILITY_ENABLED, srvcCompatibility);
-
         if (ctx.isDaemon())
             return;
 
@@ -410,6 +423,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      */
     public IgniteInternalFuture<?> deploy(ServiceConfiguration cfg) {
         A.notNull(cfg, "cfg");
+
+        srvcUsed = true;
 
         validate(cfg);
 
@@ -1202,6 +1217,45 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         }
     }
 
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteNodeValidationResult validateNode(ClusterNode node) {
+        IgniteNodeValidationResult res = super.validateNode(node);
+
+        if (res != null)
+            return res;
+
+        ClusterNode locNode = ctx.discovery().localNode();
+
+        boolean rmtNodeIsOld = node.version().compareTo(LAZY_SERVICES_CFG_SINCE) < 0;
+
+        if (!rmtNodeIsOld || srvcCompatibility)
+            return null;
+
+        if (!srvcUsed) {
+            srvcCompatibility = true;
+
+            return null;
+        }
+
+        return new IgniteNodeValidationResult(node.id(), "Local node uses IgniteServices and works in not compatible mode with old nodes " +
+            "[locNodeId=" + locNode.id() + ", rmtNodeId=" + node.id() + "]",
+            "Remote node uses IgniteServices and works in not compatible mode with old nodes " +
+                "[locNodeId=" + node.id() + ", rmtNodeId=" + locNode.id() + "]");
+    }
+
+    /**
+     * @param mode Services compatiblity mode.
+     */
+    public void compatibilityMode(boolean mode) {
+        if (getString(IGNITE_SERVICES_COMPATIBILITY_ENABLED) != null) {
+            srvcCompatibility = true;
+
+            return;
+        }
+
+        srvcCompatibility = mode;
+    }
+
     /**
      * Service deployment listener.
      */
@@ -1213,6 +1267,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     for (CacheEntryEvent<?, ?> e : deps) {
                         if (!(e.getKey() instanceof GridServiceDeploymentKey))
                             continue;
+
+                        srvcUsed = true;
 
                         GridServiceDeployment dep;
 
@@ -1387,6 +1443,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                     if (!(e.getKey() instanceof GridServiceDeploymentKey))
                                         continue;
 
+                                    srvcUsed = true;
+
                                     GridServiceDeployment dep = (GridServiceDeployment)e.getValue();
 
                                     try {
@@ -1513,6 +1571,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                     for (CacheEntryEvent<?, ?> e : assignCol) {
                         if (!(e.getKey() instanceof GridServiceAssignmentsKey))
                             continue;
+
+                        srvcUsed = true;
 
                         GridServiceAssignments assigns;
 
