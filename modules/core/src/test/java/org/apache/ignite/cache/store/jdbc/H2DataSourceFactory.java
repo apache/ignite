@@ -15,25 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.cache.store.jdbc;
 
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-
-import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
+import javax.cache.configuration.Factory;
+import javax.sql.DataSource;
+import org.h2.jdbcx.JdbcConnectionPool;
 
 /**
- *
+ * Datasource to use for store tests.
  */
-public class GridCacheReplicatedLocalStoreSelfTest extends GridCacheAbstractLocalStoreSelfTest {
-    /** {@inheritDoc} */
-    @Override protected CacheAtomicityMode getAtomicMode() {
-        return ATOMIC;
-    }
+public class H2DataSourceFactory implements Factory<DataSource> {
+    /** DB connection URL. */
+    private static final String DFLT_CONN_URL = "jdbc:h2:mem:TestDatabase;DB_CLOSE_DELAY=-1";
 
     /** {@inheritDoc} */
-    @Override protected CacheMode getCacheMode() {
-        return REPLICATED;
+    @Override public DataSource create() {
+        return JdbcConnectionPool.create(DFLT_CONN_URL, "sa", "");
     }
 }

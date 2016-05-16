@@ -141,7 +141,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @GridToStringExclude
     private CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> updateReplyClos;
 
-    /** Pending  */
+    /** Pending */
     private ConcurrentMap<UUID, DeferredResponseBuffer> pendingResponses = new ConcurrentHashMap8<>();
 
     /** */
@@ -1566,10 +1566,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         GridCacheReturn retVal = null;
 
-                        if (keys.size() > 1 &&                             // Several keys ...
-                            writeThrough() && !req.skipStore() &&          // and store is enabled ...
-                            !ctx.store().isLocal() &&                      // and this is not local store ...
-                            !ctx.dr().receiveEnabled()                     // and no DR.
+                        if (keys.size() > 1 &&                    // Several keys ...
+                            writeThrough() && !req.skipStore() && // and store is enabled ...
+                            !ctx.store().isLocal() &&             // and this is not local store ...
+                                                                  // (conflict resolver should be used for local store)
+                            !ctx.dr().receiveEnabled()            // and no DR.
                             ) {
                             // This method can only be used when there are no replicated entries in the batch.
                             UpdateBatchResult updRes = updateWithBatch(node,
@@ -2201,7 +2202,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     op,
                     writeVal,
                     req.invokeArguments(),
-                    primary && writeThrough() && !req.skipStore(),
+                    (primary || (ctx.store().isLocal() && !ctx.shared().localStorePrimaryOnly()))
+                        && writeThrough() && !req.skipStore(),
                     !req.skipStore(),
                     sndPrevVal || req.returnValue(),
                     req.keepBinary(),
@@ -2964,7 +2966,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             op,
                             op == TRANSFORM ? entryProcessor : val,
                             op == TRANSFORM ? req.invokeArguments() : null,
-                            /*write-through*/false,
+                            /*write-through*/(ctx.store().isLocal() && !ctx.shared().localStorePrimaryOnly())
+                                && writeThrough() && !req.skipStore(),
                             /*read-through*/false,
                             /*retval*/false,
                             req.keepBinary(),
