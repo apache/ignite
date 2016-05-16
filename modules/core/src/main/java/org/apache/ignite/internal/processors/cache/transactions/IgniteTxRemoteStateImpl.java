@@ -58,20 +58,21 @@ public class IgniteTxRemoteStateImpl extends IgniteTxRemoteStateAdapter {
     @Override public void unwindEvicts(GridCacheSharedContext cctx) {
         assert readMap == null || readMap.isEmpty();
 
-        int singleCacheId = -1;
+        int singleCacheId = 0;
         Set<Integer> cacheIds = null;
 
         for (IgniteTxKey writeKey : writeMap.keySet()) {
             int cacheId = writeKey.cacheId();
 
+            assert cacheId != 0;
+
             // Have we already notified this cache?
             if (cacheId == singleCacheId || cacheIds != null && !cacheIds.add(cacheId))
                 continue;
 
-            if (singleCacheId == -1)
+            if (singleCacheId == 0)
                 singleCacheId = cacheId;
-
-            if (cacheIds == null) {
+            else if (cacheIds == null) {
                 cacheIds = new HashSet<>(2);
                 cacheIds.add(cacheId);
             }
