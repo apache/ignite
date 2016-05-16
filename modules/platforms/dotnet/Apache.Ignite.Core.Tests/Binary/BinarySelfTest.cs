@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -447,6 +447,25 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             Assert.AreEqual(_marsh.Unmarshal<string>(_marsh.Marshal("str")), "str");
             Assert.AreEqual(_marsh.Unmarshal<string>(_marsh.Marshal((string) null)), null);
+        }
+
+        /// <summary>
+        /// Tests special characters.
+        /// </summary>
+        [Test]
+        public void TestWriteSpecialString()
+        {
+            var tests = new[]
+            {
+                "ascii0123456789",
+                "的的abcdкириллица",
+                new string(new[] {(char) 0xD800, '的', (char) 0xD800, (char) 0xD800, (char) 0xDC00, (char) 0xDFFF})
+            };
+
+            foreach (var test in tests)
+            {
+                Assert.AreEqual(_marsh.Unmarshal<string>(_marsh.Marshal(test)), test, "Failed on string: " + test);
+            }
         }
 
         /**
