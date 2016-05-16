@@ -146,9 +146,12 @@ class GridJettyJsonConfig extends JsonConfig {
      * Helper class for simple to-string conversion for {@link Date}.
      */
     private static JsonValueProcessor DATE_PROCESSOR = new JsonValueProcessor() {
-        /** US date format. */
-        private final DateFormat usFormat
-            = DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.DEFAULT, Locale.US);
+        /** Thread local US date format. */
+        private final ThreadLocal<DateFormat> dateFmt = new ThreadLocal<DateFormat>() {
+            @Override protected DateFormat initialValue() {
+                return DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.DEFAULT, Locale.US);
+            }
+        };
 
         /** {@inheritDoc} */
         @Override public synchronized Object processArrayValue(Object val, JsonConfig jsonCfg) {
@@ -156,7 +159,7 @@ class GridJettyJsonConfig extends JsonConfig {
                 return new JSONObject(true);
 
             if (val instanceof Date)
-                return usFormat.format(val);
+                return dateFmt.get().format(val);
 
             throw new UnsupportedOperationException("Serialize value to json is not supported: " + val);
         }
