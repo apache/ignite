@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Tests
             Debug.Listeners.Add(new TextWriterTraceListener(Console.Out));
             Debug.AutoFlush = true;
 
-            TestOne(typeof(BinarySelfTest), "TestWriteSpecialString");
+            TestOne(typeof(BinaryStringTest), "Test");
 
             //TestAll(typeof (CacheQueriesCodeConfigurationTest));
             //TestAllInAssembly();
