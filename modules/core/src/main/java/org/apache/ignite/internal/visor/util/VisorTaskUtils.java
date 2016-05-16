@@ -395,6 +395,7 @@ public class VisorTaskUtils {
         final boolean all) {
         int[] evtTypes = all ? VISOR_ALL_EVTS : VISOR_NON_TASK_EVTS;
 
+        // Collect discovery events for Web Console.
         if (evtOrderKey.startsWith("CONSOLE_"))
             evtTypes = concat(evtTypes, EVTS_DISCOVERY);
 

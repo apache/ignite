@@ -152,6 +152,7 @@
     <Compile Include="Common\IgniteFutureCancelledException.cs" />
     <Compile Include="Common\IgniteGuid.cs" />
     <Compile Include="Common\Package-Info.cs" />
+    <Compile Include="Impl\Binary\BinaryWriterExtensions.cs" />
     <Compile Include="Impl\Common\Platform.cs" />
     <Compile Include="Impl\Cache\Event\JavaCacheEntryEventFilter.cs" />
     <Compile Include="Impl\Common\PlatformJavaObjectFactoryProxy.cs" />

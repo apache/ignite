@@ -41,6 +41,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetada
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.visor.cache.VisorCache;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 
 /**
@@ -92,6 +93,35 @@ class GridJettyJsonConfig extends JsonConfig {
     };
 
     /**
+     * Helper class for simple to-string conversion for {@link UUID}.
+     */
+    private static JsonValueProcessor IGNITE_BI_TUPLE_PROCESSOR = new JsonValueProcessor() {
+        /** {@inheritDoc} */
+        @Override public Object processArrayValue(Object val, JsonConfig jsonCfg) {
+            if (val == null)
+                return new JSONObject(true);
+
+            if (val instanceof IgniteBiTuple) {
+                IgniteBiTuple t2 = (IgniteBiTuple)val;
+
+                final JSONObject ret = new JSONObject();
+
+                ret.element("key", t2.getKey(), jsonCfg);
+                ret.element("value", t2.getValue(), jsonCfg);
+
+                return ret;
+            }
+
+            throw new UnsupportedOperationException("Serialize value to json is not supported: " + val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object processObjectValue(String key, Object val, JsonConfig jsonCfg) {
+            return processArrayValue(val, jsonCfg);
+        }
+    };
+
+    /**
      * Helper class for simple to-string conversion for {@link IgniteUuid}.
      */
     private static JsonValueProcessor IGNITE_UUID_PROCESSOR = new JsonValueProcessor() {
@@ -116,9 +146,12 @@ class GridJettyJsonConfig extends JsonConfig {
      * Helper class for simple to-string conversion for {@link Date}.
      */
     private static JsonValueProcessor DATE_PROCESSOR = new JsonValueProcessor() {
-        /** US date format. */
-        private final DateFormat usFormat
-            = DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.DEFAULT, Locale.US);
+        /** Thread local US date format. */
+        private final ThreadLocal<DateFormat> dateFmt = new ThreadLocal<DateFormat>() {
+            @Override protected DateFormat initialValue() {
+                return DateFormat.getDateTimeInstance(DateFormat.DEFAULT, DateFormat.DEFAULT, Locale.US);
+            }
+        };
 
         /** {@inheritDoc} */
         @Override public synchronized Object processArrayValue(Object val, JsonConfig jsonCfg) {
@@ -126,7 +159,7 @@ class GridJettyJsonConfig extends JsonConfig {
                 return new JSONObject(true);
 
             if (val instanceof Date)
-                return usFormat.format(val);
+                return dateFmt.get().format(val);
 
             throw new UnsupportedOperationException("Serialize value to json is not supported: " + val);
         }
@@ -145,6 +178,7 @@ class GridJettyJsonConfig extends JsonConfig {
 
         setAllowNonStringKeys(true);
 
+        registerJsonValueProcessor(IgniteBiTuple.class, IGNITE_BI_TUPLE_PROCESSOR);
         registerJsonValueProcessor(UUID.class, UUID_PROCESSOR);
         registerJsonValueProcessor(IgniteUuid.class, IGNITE_UUID_PROCESSOR);
         registerJsonValueProcessor(Date.class, DATE_PROCESSOR);
