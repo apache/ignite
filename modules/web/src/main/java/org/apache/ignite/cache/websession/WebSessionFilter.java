@@ -519,7 +519,10 @@ public class WebSessionFilter implements Filter {
 
                     break;
                 }
-                catch (CacheException | IgniteException | IllegalStateException | AssertionError e) {
+                catch (CacheException | IgniteException | IllegalStateException e) {
+                    handleLoadSessionException(sesId, i, e);
+                }
+                catch (AssertionError e) {
                     handleLoadSessionException(sesId, i, new IgniteException(e));
                 }
             }
