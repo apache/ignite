@@ -109,5 +109,14 @@ namespace Apache.Ignite.Core.Tests.Binary
             Assert.IsTrue(proc.WaitForExit(15000));
             Assert.AreEqual(0, proc.ExitCode);
         }
+
+        /// <summary>
+        /// Fixture tear down.
+        /// </summary>
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
+            Environment.SetEnvironmentVariable(BinaryUtils.IgniteBinaryMarshallerUseStringSerializationVer2, null);
+        }
     }
 }
