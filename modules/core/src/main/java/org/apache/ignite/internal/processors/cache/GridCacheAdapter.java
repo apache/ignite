@@ -1407,8 +1407,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         long start = statsEnabled ? System.nanoTime() : 0L;
 
-        if (ctx.keepBinary())
-            key = (K)ctx.toCacheKeyObject(key);
+//        if (ctx.keepBinary())
+//            key = (K)ctx.toCacheKeyObject(key);
 
         T2<V, GridCacheVersion> t = (T2<V, GridCacheVersion>)get(key, !ctx.keepBinary(), true);
 

@@ -51,20 +51,20 @@ public class WithKeepBinaryCacheConfigVariationsFullApiTestSuite extends TestSui
             .build()
         );
 
-        suite.addTest(new ConfigVariationsTestSuiteBuilder(
-            "With Keep Binary Cache with Interceptor Test Suite",
-            WithKeepBinaryCacheFullApiTest.class)
-            .withBasicCacheParams()
-            .withIgniteConfigFilters(new IgnitePredicate<IgniteConfiguration>() {
-                @Override public boolean apply(IgniteConfiguration cfg) {
-                    return cfg.getMarshaller() instanceof BinaryMarshaller;
-                }
-            })
-            .gridsCount(5)
-            .backups(1)
-            .testedNodesCount(3).withClients()
-            .build()
-        );
+//        suite.addTest(new ConfigVariationsTestSuiteBuilder(
+//            "With Keep Binary Cache with Interceptor Test Suite",
+//            WithKeepBinaryCacheFullApiTest.class)
+//            .withBasicCacheParams()
+//            .withIgniteConfigFilters(new IgnitePredicate<IgniteConfiguration>() {
+//                @Override public boolean apply(IgniteConfiguration cfg) {
+//                    return cfg.getMarshaller() instanceof BinaryMarshaller;
+//                }
+//            })
+//            .gridsCount(5)
+//            .backups(1)
+//            .testedNodesCount(3).withClients()
+//            .build()
+//        );
 
         return suite;
     }

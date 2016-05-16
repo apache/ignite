@@ -574,7 +574,9 @@ public abstract class CacheGetEntryAbstractTest extends GridCacheAbstractSelfTes
                 assertTrue("Unexpected error message: " + err.getMessage(), err.getMessage().startsWith(getVerErr));
             }
 
-            assertEquals(((TestValue)e.getValue().deserialize()).val, i);
+            BinaryObject value = e.getValue();
+            TestValue deserialize = (TestValue)value.deserialize();
+            assertEquals(deserialize.val, i);
         }
         else {
             Set<Integer> set = new HashSet<>();

@@ -18,8 +18,10 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collection;
+import java.util.IdentityHashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 import javax.cache.processor.EntryProcessorException;
@@ -171,7 +173,11 @@ public class WithKeepBinaryCacheFullApiTest extends IgniteCacheConfigVariationsA
                 }
             }
         }, PLANE_OBJECT, SERIALIZABLE);
+
+        LinkedList
     }
+
+
 
     /**
      * @throws Exception If failed.
