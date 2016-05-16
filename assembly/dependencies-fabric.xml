@@ -132,7 +132,8 @@
                 <exclude>org.apache.ignite:ignite-hibernate</exclude>
                 <exclude>org.apache.ignite:ignite-schedule</exclude>
                 <exclude>org.apache.ignite:ignite-geospatial</exclude>
-                <exclude>org.apache.ignite:ignite-weblogic-test</exclude>
+                <exclude>org.apache.ignite:ignite-appserver-test</exclude>
+                <exclude>org.apache.ignite:ignite-websphere-test</exclude>
             </excludes>
             <sources>
                 <includeModuleDirectory>true</includeModuleDirectory>

@@ -174,6 +174,8 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             ccfg.setNearConfiguration(readNearConfiguration(in));
 
+        ccfg.setEvictionPolicy(readEvictionPolicy(in));
+
         return ccfg;
     }
 
@@ -185,8 +187,20 @@ public class PlatformConfigurationUtils {
      */
     public static NearCacheConfiguration readNearConfiguration(BinaryRawReader in) {
         NearCacheConfiguration cfg = new NearCacheConfiguration();
-        cfg.setNearStartSize(in.readInt());
 
+        cfg.setNearStartSize(in.readInt());
+        cfg.setNearEvictionPolicy(readEvictionPolicy(in));
+
+        return cfg;
+    }
+
+    /**
+     * Reads the eviction policy.
+     *
+     * @param in Stream.
+     * @return Eviction policy.
+     */
+    public static EvictionPolicy readEvictionPolicy(BinaryRawReader in) {
         byte plcTyp = in.readByte();
 
         switch (plcTyp) {
@@ -197,22 +211,20 @@ public class PlatformConfigurationUtils {
                 p.setBatchSize(in.readInt());
                 p.setMaxSize(in.readInt());
                 p.setMaxMemorySize(in.readLong());
-                cfg.setNearEvictionPolicy(p);
-                break;
+                return p;
             }
             case 2: {
                 LruEvictionPolicy p = new LruEvictionPolicy();
                 p.setBatchSize(in.readInt());
                 p.setMaxSize(in.readInt());
                 p.setMaxMemorySize(in.readLong());
-                cfg.setNearEvictionPolicy(p);
-                break;
+                return p;
             }
             default:
                 assert false;
         }
 
-        return cfg;
+        return null;
     }
 
     /**
@@ -226,9 +238,15 @@ public class PlatformConfigurationUtils {
         assert cfg != null;
 
         out.writeInt(cfg.getNearStartSize());
+        writeEvictionPolicy(out, cfg.getNearEvictionPolicy());
+    }
 
-        EvictionPolicy p = cfg.getNearEvictionPolicy();
-
+    /**
+     * Writes the eviction policy.
+     * @param out Stream.
+     * @param p Policy.
+     */
+    private static void writeEvictionPolicy(BinaryRawWriter out, EvictionPolicy p) {
         if (p instanceof FifoEvictionPolicy) {
             out.writeByte((byte)1);
 
@@ -333,22 +351,19 @@ public class PlatformConfigurationUtils {
      * @param cfg Configuration.
      */
     public static void readIgniteConfiguration(BinaryRawReaderEx in, IgniteConfiguration cfg) {
-        if (!in.readBoolean())
-            return;  // there is no config
-
-        cfg.setClientMode(in.readBoolean());
-        cfg.setIncludeEventTypes(in.readIntArray());
-        cfg.setMetricsExpireTime(in.readLong());
-        cfg.setMetricsHistorySize(in.readInt());
-        cfg.setMetricsLogFrequency(in.readLong());
-        cfg.setMetricsUpdateFrequency(in.readLong());
-        cfg.setNetworkSendRetryCount(in.readInt());
-        cfg.setNetworkSendRetryDelay(in.readLong());
-        cfg.setNetworkTimeout(in.readLong());
-        cfg.setWorkDirectory(in.readString());
-        cfg.setLocalHost(in.readString());
-        cfg.setDaemon(in.readBoolean());
-        cfg.setLateAffinityAssignment(in.readBoolean());
+        if (in.readBoolean()) cfg.setClientMode(in.readBoolean());
+        int[] eventTypes = in.readIntArray(); if (eventTypes != null) cfg.setIncludeEventTypes(eventTypes);
+        if (in.readBoolean()) cfg.setMetricsExpireTime(in.readLong());
+        if (in.readBoolean()) cfg.setMetricsHistorySize(in.readInt());
+        if (in.readBoolean()) cfg.setMetricsLogFrequency(in.readLong());
+        if (in.readBoolean()) cfg.setMetricsUpdateFrequency(in.readLong());
+        if (in.readBoolean()) cfg.setNetworkSendRetryCount(in.readInt());
+        if (in.readBoolean()) cfg.setNetworkSendRetryDelay(in.readLong());
+        if (in.readBoolean()) cfg.setNetworkTimeout(in.readLong());
+        String workDir = in.readString(); if (workDir != null) cfg.setWorkDirectory(workDir);
+        String localHost = in.readString(); if (localHost != null) cfg.setLocalHost(localHost);
+        if (in.readBoolean()) cfg.setDaemon(in.readBoolean());
+        if (in.readBoolean()) cfg.setLateAffinityAssignment(in.readBoolean());
 
         readCacheConfigurations(in, cfg);
         readDiscoveryConfiguration(in, cfg);
@@ -515,6 +530,20 @@ public class PlatformConfigurationUtils {
         disco.setNetworkTimeout(in.readLong());
         disco.setJoinTimeout(in.readLong());
 
+        disco.setForceServerMode(in.readBoolean());
+        disco.setClientReconnectDisabled(in.readBoolean());
+        disco.setLocalAddress(in.readString());
+        disco.setReconnectCount(in.readInt());
+        disco.setLocalPort(in.readInt());
+        disco.setLocalPortRange(in.readInt());
+        disco.setMaxMissedHeartbeats(in.readInt());
+        disco.setMaxMissedClientHeartbeats(in.readInt());
+        disco.setStatisticsPrintFrequency(in.readLong());
+        disco.setIpFinderCleanFrequency(in.readLong());
+        disco.setThreadPriority(in.readInt());
+        disco.setHeartbeatFrequency(in.readLong());
+        disco.setTopHistorySize(in.readInt());
+
         cfg.setDiscoverySpi(disco);
     }
 
@@ -596,6 +625,8 @@ public class PlatformConfigurationUtils {
         }
         else
             writer.writeBoolean(false);
+
+        writeEvictionPolicy(writer, ccfg.getEvictionPolicy());
     }
 
     /**
@@ -687,19 +718,19 @@ public class PlatformConfigurationUtils {
         assert w != null;
         assert cfg != null;
 
-        w.writeBoolean(cfg.isClientMode());
+        w.writeBoolean(true); w.writeBoolean(cfg.isClientMode());
         w.writeIntArray(cfg.getIncludeEventTypes());
-        w.writeLong(cfg.getMetricsExpireTime());
-        w.writeInt(cfg.getMetricsHistorySize());
-        w.writeLong(cfg.getMetricsLogFrequency());
-        w.writeLong(cfg.getMetricsUpdateFrequency());
-        w.writeInt(cfg.getNetworkSendRetryCount());
-        w.writeLong(cfg.getNetworkSendRetryDelay());
-        w.writeLong(cfg.getNetworkTimeout());
+        w.writeBoolean(true); w.writeLong(cfg.getMetricsExpireTime());
+        w.writeBoolean(true); w.writeInt(cfg.getMetricsHistorySize());
+        w.writeBoolean(true); w.writeLong(cfg.getMetricsLogFrequency());
+        w.writeBoolean(true); w.writeLong(cfg.getMetricsUpdateFrequency());
+        w.writeBoolean(true); w.writeInt(cfg.getNetworkSendRetryCount());
+        w.writeBoolean(true); w.writeLong(cfg.getNetworkSendRetryDelay());
+        w.writeBoolean(true); w.writeLong(cfg.getNetworkTimeout());
         w.writeString(cfg.getWorkDirectory());
         w.writeString(cfg.getLocalHost());
-        w.writeBoolean(cfg.isDaemon());
-        w.writeBoolean(cfg.isLateAffinityAssignment());
+        w.writeBoolean(true); w.writeBoolean(cfg.isDaemon());
+        w.writeBoolean(true); w.writeBoolean(cfg.isLateAffinityAssignment());
 
         CacheConfiguration[] cacheCfg = cfg.getCacheConfiguration();
 
@@ -852,6 +883,20 @@ public class PlatformConfigurationUtils {
         w.writeLong(tcp.getMaxAckTimeout());
         w.writeLong(tcp.getNetworkTimeout());
         w.writeLong(tcp.getJoinTimeout());
+
+        w.writeBoolean(tcp.isForceServerMode());
+        w.writeBoolean(tcp.isClientReconnectDisabled());
+        w.writeString(tcp.getLocalAddress());
+        w.writeInt(tcp.getReconnectCount());
+        w.writeInt(tcp.getLocalPort());
+        w.writeInt(tcp.getLocalPortRange());
+        w.writeInt(tcp.getMaxMissedHeartbeats());
+        w.writeInt(tcp.getMaxMissedClientHeartbeats());
+        w.writeLong(tcp.getStatisticsPrintFrequency());
+        w.writeLong(tcp.getIpFinderCleanFrequency());
+        w.writeInt(tcp.getThreadPriority());
+        w.writeLong(tcp.getHeartbeatFrequency());
+        w.writeInt((int)tcp.getTopHistorySize());
     }
 
     /**

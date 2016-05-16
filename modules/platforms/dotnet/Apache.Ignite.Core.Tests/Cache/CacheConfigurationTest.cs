@@ -239,6 +239,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             AssertConfigsAreEqual(x.QueryEntities, y.QueryEntities);
             AssertConfigsAreEqual(x.NearConfiguration, y.NearConfiguration);
+            AssertConfigsAreEqual(x.EvictionPolicy, y.EvictionPolicy);
         }
 
         /// <summary>
@@ -509,6 +510,12 @@ namespace Apache.Ignite.Core.Tests.Cache
                         MaxMemorySize = 2500,
                         BatchSize = 3
                     }
+                },
+                EvictionPolicy = new FifoEvictionPolicy
+                {
+                    MaxSize = 26,
+                    MaxMemorySize = 2501,
+                    BatchSize = 33
                 }
             };
         }
