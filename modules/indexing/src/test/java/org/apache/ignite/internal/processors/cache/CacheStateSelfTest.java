@@ -304,6 +304,8 @@ public class CacheStateSelfTest extends GridCommonAbstractTest {
 
         cache1.active(true).get();
 
+        assert cache1.active() && cache2.active() && cache3.active();
+
         assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return cache1.active() && cache2.active() && cache3.active();

@@ -3864,17 +3864,18 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 return false;
 
             if (this.state.compareAndSet(previousState, state)) {
-                if (previousState.active() && !state.active()) {
-                    while (true) {
-                        try {
-                            ctx.shared().partitionReleaseFuture(topVer).get(10, TimeUnit.SECONDS);
+                while (true) {
+                    try {
+                        ctx.shared().partitionReleaseFuture(topVer).get(10, TimeUnit.SECONDS);
 
-                            break;
-                        }
-                        catch (IgniteCheckedException e) {
-                            ctx.shared().exchange().dumpDebugInfo();
-                        }
+                        break;
                     }
+                    catch (IgniteCheckedException e) {
+                        ctx.shared().exchange().dumpDebugInfo();
+                    }
+                }
+
+                if (previousState.active() && !state.active()) {
                     // TODO: trigger a checkpoint
                 }
                 return true;
