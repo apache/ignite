@@ -1914,7 +1914,11 @@ treecontrol.tree-classic {
     }
 
     .ui-grid-cell .ui-grid-cell-contents {
-        text-align: center
+        text-align: center;
+
+        > i.fa {
+            cursor: default;
+        }
     }
 
     .ui-grid-column-menu-button {
