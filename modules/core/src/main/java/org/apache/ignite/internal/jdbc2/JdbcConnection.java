@@ -214,7 +214,7 @@ public class JdbcConnection implements Connection {
             if (cfg.getGridName() == null)
                 cfg.setGridName("ignite-jdbc-driver-" + UUID.randomUUID().toString());
 
-            cfg.setClientMode(true); // force client mode
+            cfg.setClientMode(true); // Force client mode.
 
             return cfg;
         }

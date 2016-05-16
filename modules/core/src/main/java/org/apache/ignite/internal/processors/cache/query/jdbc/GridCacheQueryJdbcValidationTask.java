@@ -41,7 +41,6 @@ public class GridCacheQueryJdbcValidationTask extends ComputeTaskSplitAdapter<St
 
     /** {@inheritDoc} */
     @Override protected Collection<? extends ComputeJob> split(int gridSize, @Nullable final String cacheName) {
-        // Register big data usage.
         return Collections.singleton(new ComputeJobAdapter() {
             @IgniteInstanceResource
             private Ignite ignite;

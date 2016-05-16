@@ -129,8 +129,8 @@ class JdbcQueryTask implements IgniteCallable<JdbcQueryTask.QueryResult> {
         if (first = (cursor == null)) {
             IgniteCache<?, ?> cache = ignite.cache(cacheName);
 
-            // Don't create caches on server nodes in order to avoid of data rebalancing
-            boolean start = loc || ignite.configuration().isClientMode();
+            // Don't create caches on server nodes in order to avoid of data rebalancing.
+            boolean start = ignite.configuration().isClientMode();
 
             if (cache == null && cacheName == null)
                 cache = ((IgniteKernal)ignite).context().cache().getOrStartPublicCache(start, !loc && locQry);

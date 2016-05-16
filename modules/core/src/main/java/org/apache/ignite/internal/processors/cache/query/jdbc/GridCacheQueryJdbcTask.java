@@ -228,8 +228,8 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
         @Override public Object execute() {
             String cacheName = argument("cache");
             String sql = argument("sql");
-            List<Object> args = argument("args");
             Long timeout = argument("timeout");
+            List<Object> args = argument("args");
             UUID futId = argument("futId");
             final int pageSize = argument("pageSize");
             final int maxRows = argument("maxRows");
