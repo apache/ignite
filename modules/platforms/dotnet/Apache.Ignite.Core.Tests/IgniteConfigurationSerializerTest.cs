@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestPredefinedXml()
         {
-            var xml = @"<igniteConfig workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10' isDaemon='true' isLateAffinityAssignment='false'>
+            var xml = @"<igniteConfig workDirectory='c:' JvmMaxMemoryMb='1024' MetricsLogFrequency='0:0:10' isDaemon='true' isLateAffinityAssignment='false' springConfigUrl='c:\myconfig.xml'>
                             <localhost>127.1.1.1</localhost>
                             <binaryConfiguration compactFooter='false'>
                                 <defaultNameMapper type='Apache.Ignite.Core.Tests.IgniteConfigurationSerializerTest+NameMapper, Apache.Ignite.Core.Tests' bar='testBar' />
@@ -130,6 +130,7 @@ namespace Apache.Ignite.Core.Tests
                 cfg.BinaryConfiguration.Types.Single());
             Assert.IsFalse(cfg.BinaryConfiguration.CompactFooter);
             Assert.AreEqual(new[] {42, EventType.TaskFailed, EventType.JobFinished}, cfg.IncludedEventTypes);
+            Assert.AreEqual(@"c:\myconfig.xml", cfg.SpringConfigUrl);
 
             Assert.AreEqual("secondCache", cfg.CacheConfiguration.Last().Name);
 

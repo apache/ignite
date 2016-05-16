@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-#pragma warning disable 618  // deprecated SpringConfigUrl
 namespace Apache.Ignite.Core.Tests
 {
     using System;
@@ -168,16 +167,25 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestSpringXml()
         {
-            // When Spring XML is used, all properties are ignored.
-            var cfg = GetCustomConfig();
-
-            cfg.SpringConfigUrl = "config\\marshaller-default.xml";
+            // When Spring XML is used, .NET overrides Spring.
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                SpringConfigUrl = @"config\spring-test.xml",
+                NetworkSendRetryDelay = TimeSpan.FromSeconds(45),
+                MetricsHistorySize = 57
+            };
 
             using (var ignite = Ignition.Start(cfg))
             {
                 var resCfg = ignite.GetConfiguration();
 
-                CheckDefaultProperties(resCfg);
+                Assert.AreEqual(45, resCfg.NetworkSendRetryDelay.TotalSeconds);  // .NET overrides XML
+                Assert.AreEqual(2999, resCfg.NetworkTimeout.TotalMilliseconds);  // Not set in .NET -> comes from XML
+                Assert.AreEqual(57, resCfg.MetricsHistorySize);  // Only set in .NET
+
+                var disco = resCfg.DiscoverySpi as TcpDiscoverySpi;
+                Assert.IsNotNull(disco);
+                Assert.AreEqual(TimeSpan.FromMilliseconds(300), disco.SocketTimeout);
             }
         }
 
