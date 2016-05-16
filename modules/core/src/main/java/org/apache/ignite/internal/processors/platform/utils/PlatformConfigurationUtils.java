@@ -515,6 +515,20 @@ public class PlatformConfigurationUtils {
         disco.setNetworkTimeout(in.readLong());
         disco.setJoinTimeout(in.readLong());
 
+        disco.setForceServerMode(in.readBoolean());
+        disco.setClientReconnectDisabled(in.readBoolean());
+        disco.setLocalAddress(in.readString());
+        disco.setReconnectCount(in.readInt());
+        disco.setLocalPort(in.readInt());
+        disco.setLocalPortRange(in.readInt());
+        disco.setMaxMissedHeartbeats(in.readInt());
+        disco.setMaxMissedClientHeartbeats(in.readInt());
+        disco.setStatisticsPrintFrequency(in.readLong());
+        disco.setIpFinderCleanFrequency(in.readLong());
+        disco.setThreadPriority(in.readInt());
+        disco.setHeartbeatFrequency(in.readLong());
+        disco.setTopHistorySize(in.readInt());
+
         cfg.setDiscoverySpi(disco);
     }
 
@@ -852,6 +866,20 @@ public class PlatformConfigurationUtils {
         w.writeLong(tcp.getMaxAckTimeout());
         w.writeLong(tcp.getNetworkTimeout());
         w.writeLong(tcp.getJoinTimeout());
+
+        w.writeBoolean(tcp.isForceServerMode());
+        w.writeBoolean(tcp.isClientReconnectDisabled());
+        w.writeString(tcp.getLocalAddress());
+        w.writeInt(tcp.getReconnectCount());
+        w.writeInt(tcp.getLocalPort());
+        w.writeInt(tcp.getLocalPortRange());
+        w.writeInt(tcp.getMaxMissedHeartbeats());
+        w.writeInt(tcp.getMaxMissedClientHeartbeats());
+        w.writeLong(tcp.getStatisticsPrintFrequency());
+        w.writeLong(tcp.getIpFinderCleanFrequency());
+        w.writeInt(tcp.getThreadPriority());
+        w.writeLong(tcp.getHeartbeatFrequency());
+        w.writeInt((int)tcp.getTopHistorySize());
     }
 
     /**
