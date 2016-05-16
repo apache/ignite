@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -28,12 +27,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.jsr166.ConcurrentHashMap8;
 
 /**
  *
@@ -137,12 +134,12 @@ public class IgniteTxRemoteStateImpl extends IgniteTxRemoteStateAdapter {
     }
 
     /** {@inheritDoc} */
-    public void addWriteEntry(IgniteTxKey key, IgniteTxEntry e) {
+    @Override public void addWriteEntry(IgniteTxKey key, IgniteTxEntry e) {
         writeMap.put(key, e);
     }
 
     /** {@inheritDoc} */
-    public void clearEntry(IgniteTxKey key) {
+    @Override public void clearEntry(IgniteTxKey key) {
         readMap.remove(key);
         writeMap.remove(key);
     }
