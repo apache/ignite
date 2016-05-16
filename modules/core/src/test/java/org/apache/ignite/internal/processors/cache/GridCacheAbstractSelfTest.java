@@ -180,9 +180,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                         throw e;
                 }
             }
-
-            for (Cache.Entry<String, Integer> entry : jcache(i).localEntries(CachePeekMode.SWAP))
-                jcache(i).remove(entry.getKey());
         }
 
         assert jcache().unwrap(Ignite.class).transactions().tx() == null;

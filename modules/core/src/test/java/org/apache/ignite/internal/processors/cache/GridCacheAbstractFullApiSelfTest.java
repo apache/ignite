@@ -5537,9 +5537,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         @Override public void run(int idx) throws Exception {
             GridCacheContext<String, Integer> ctx = ((IgniteKernal)ignite).<String, Integer>internalCache().context();
 
-            if (ctx.cache().configuration().getMemoryMode() == OFFHEAP_TIERED)
-                return;
-
             int size = 0;
 
             for (String key : keys) {
