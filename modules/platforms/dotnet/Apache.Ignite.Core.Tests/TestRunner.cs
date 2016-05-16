@@ -21,17 +21,22 @@ namespace Apache.Ignite.Core.Tests
     using System.Diagnostics;
     using System.Reflection;
     using Apache.Ignite.Core.Tests.Binary;
-    using Apache.Ignite.Core.Tests.Cache.Query;
     using Apache.Ignite.Core.Tests.Memory;
     using NUnit.ConsoleRunner;
 
     public static class TestRunner
     {
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
             Debug.Listeners.Add(new TextWriterTraceListener(Console.Out));
             Debug.AutoFlush = true;
+
+            if (args.Length == 2)
+            {
+                Environment.ExitCode = TestOne(Type.GetType(args[0]), args[1]);
+                return;
+            }
 
             TestOne(typeof(BinaryStringTest), "Test");
 
@@ -39,7 +44,7 @@ namespace Apache.Ignite.Core.Tests
             //TestAllInAssembly();
         }
 
-        private static void TestOne(Type testClass, string method)
+        private static int TestOne(Type testClass, string method)
         {
             string[] args = { "/run:" + testClass.FullName + "." + method, Assembly.GetAssembly(testClass).Location };
 
@@ -47,6 +52,8 @@ namespace Apache.Ignite.Core.Tests
 
             if (returnCode != 0)
                 Console.Beep();
+
+            return returnCode;
         }
 
         private static void TestAll(Type testClass)

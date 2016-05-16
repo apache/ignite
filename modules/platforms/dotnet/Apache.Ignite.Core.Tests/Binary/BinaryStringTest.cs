@@ -28,15 +28,9 @@ namespace Apache.Ignite.Core.Tests.Binary
     /// </summary>
     public class BinaryStringTest
     {
-        // TODO: Test both modes in separate processes
-        // Separate process will execute a closure that checks serialization and returns result through environment?
-
         [Test]
-        public void Test([Values(true, false)] bool stringSerVer2)
+        public void Test()
         {
-            Environment.SetEnvironmentVariable(BinaryUtils.IgniteBinaryMarshallerUseStringSerializationVer2,
-                stringSerVer2.ToString().ToLowerInvariant());
-
             const string springCfg = @"config\compute\compute-grid1.xml";
             using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
@@ -54,6 +48,25 @@ namespace Apache.Ignite.Core.Tests.Binary
 
                 proc.Kill();
             }
+        }
+
+        [Test]
+        public void Test2()
+        {
+            var envVar = BinaryUtils.IgniteBinaryMarshallerUseStringSerializationVer2;
+
+            if (Environment.GetEnvironmentVariable(envVar) == "false")
+                return;
+
+            Environment.SetEnvironmentVariable(envVar, "false");
+
+            var path = GetType().Assembly.Location;
+
+            var proc = System.Diagnostics.Process.Start(path, GetType().FullName + " Test");
+
+            Assert.IsNotNull(proc);
+            Assert.IsTrue(proc.WaitForExit(15000));
+            Assert.AreEqual(0, proc.ExitCode);
         }
 
         [Serializable]
