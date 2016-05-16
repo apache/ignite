@@ -672,7 +672,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (!UseStringSerializationVer2)
                 return enc.GetBytes(chars, charCnt, data, byteCnt);
 
-            // TODO: Inline
             int strLen = charCnt;
             int utfLen = 0;
             int c, cnt;
@@ -727,10 +726,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (!UseStringSerializationVer2)
                 return Utf8.GetString(arr);
 
-            // TODO: Inline
-            var len = arr.Length;
-            var off = 0;
-            int c, charArrCnt = 0, total = off + len;
+            int len = arr.Length, off = 0;
+            int c, charArrCnt = 0, total = len;
             int c2, c3;
             char[] res = new char[len];
 
