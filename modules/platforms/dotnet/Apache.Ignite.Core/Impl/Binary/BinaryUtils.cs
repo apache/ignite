@@ -783,7 +783,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                         if (off > total)
                             throw new BinaryObjectException("Malformed input: partial character at end");
 
-                        c2 = (int)arr[off - 1];
+                        c2 = arr[off - 1];
 
                         if ((c2 & 0xC0) != 0x80)
                             throw new BinaryObjectException("Malformed input around byte: " + off);
@@ -798,9 +798,9 @@ namespace Apache.Ignite.Core.Impl.Binary
                         if (off > total)
                             throw new BinaryObjectException("Malformed input: partial character at end");
 
-                        c2 = (int)arr[off - 2];
+                        c2 = arr[off - 2];
 
-                        c3 = (int)arr[off - 1];
+                        c3 = arr[off - 1];
 
                         if (((c2 & 0xC0) != 0x80) || ((c3 & 0xC0) != 0x80))
                             throw new BinaryObjectException("Malformed input around byte: " + (off - 1));
