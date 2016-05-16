@@ -1205,20 +1205,20 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     }
 
     /**
-     * Tests {@code exe} command with {@link VisorGatewayTask}.
-     * <p>
-     * Note that attempt to execute unknown task (UNKNOWN_TASK) will result in exception on server.
+     * Tests execution of Visor tasks via {@link VisorGatewayTask}.
      *
      * @throws Exception If failed.
      */
     public void testVisorGateway() throws Exception {
+        ClusterNode locNode = grid(1).localNode();
+
         final String successRes = pattern(
             "\\{\\\"error\\\":\\\"\\\",\\\"finished\\\":true,\\\"id\\\":\\\"[^\\\"]+\\\",\\\"result\\\":.+}", true);
 
         final IgniteUuid cid = grid(1).context().cache().internalCache("person").context().dynamicDeploymentId();
 
         String ret = content(new VisorGatewayArgument(VisorCacheConfigurationCollectorTask.class)
-            .forNode(grid(1).localNode())
+            .forNode(locNode)
             .collection(IgniteUuid.class, cid));
 
         info("VisorCacheConfigurationCollectorTask result: " + ret);
@@ -1229,7 +1229,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jsonEquals(ret, successRes);
 
         ret = content(new VisorGatewayArgument(VisorCacheNodesTask.class)
-            .forNode(grid(1).localNode())
+            .forNode(locNode)
             .argument("person"));
 
         info("VisorCacheNodesTask result: " + ret);
@@ -1240,7 +1240,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jsonEquals(ret, successRes);
 
         ret = content(new VisorGatewayArgument(VisorCacheLoadTask.class)
-            .forNode(grid(1).localNode())
+            .forNode(locNode)
             .tuple3(Set.class, Long.class, Object[].class, "person", 0, "null"));
 
         info("VisorCacheLoadTask result: " + ret);
@@ -1251,7 +1251,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jsonEquals(ret, successRes);
 
         ret = content(new VisorGatewayArgument(VisorCacheSwapBackupsTask.class)
-            .forNode(grid(1).localNode())
+            .forNode(locNode)
             .set(String.class, "person"));
 
         info("VisorCacheSwapBackupsTask result: " + ret);
@@ -1262,7 +1262,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jsonEquals(ret, successRes);
 
         ret = content(new VisorGatewayArgument(VisorCacheRebalanceTask.class)
-            .forNode(grid(1).localNode())
+            .forNode(locNode)
             .set(String.class, "person"));
 
         info("VisorCacheRebalanceTask result: " + ret);
@@ -1273,7 +1273,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jsonEquals(ret, successRes);
 
         ret = content(new VisorGatewayArgument(VisorCacheMetadataTask.class)
-            .forNode(grid(1).localNode())
+            .forNode(locNode)
             .argument("person"));
 
         info("VisorCacheMetadataTask result: " + ret);
@@ -1284,7 +1284,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jsonEquals(ret, successRes);
 
         ret = content(new VisorGatewayArgument(VisorCacheResetMetricsTask.class)
-            .forNode(grid(1).localNode())
+            .forNode(locNode)
             .argument("person"));
 
         info("VisorCacheResetMetricsTask result: " + ret);
@@ -1295,7 +1295,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jsonEquals(ret, successRes);
 
         ret = content(new VisorGatewayArgument(VisorIgfsSamplingStateTask.class)
-            .forNode(grid(1).localNode())
+            .forNode(locNode)
             .pair(String.class, Boolean.class, "igfs", false));
 
         info("VisorIgfsSamplingStateTask result: " + ret);
@@ -1306,7 +1306,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jsonEquals(ret, successRes);
 
         ret = content(new VisorGatewayArgument(VisorIgfsProfilerClearTask.class)
-            .forNode(grid(1).localNode())
+            .forNode(locNode)
             .argument("igfs"));
 
         info("VisorIgfsProfilerClearTask result: " + ret);
@@ -1317,7 +1317,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jsonEquals(ret, successRes);
 
         ret = content(new VisorGatewayArgument(VisorIgfsProfilerTask.class)
-            .forNode(grid(1).localNode())
+            .forNode(locNode)
             .argument("igfs"));
 
         info("VisorIgfsProfilerTask result: " + ret);
@@ -1328,7 +1328,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jsonEquals(ret, successRes);
 
         ret = content(new VisorGatewayArgument(VisorIgfsFormatTask.class)
-            .forNode(grid(1).localNode())
+            .forNode(locNode)
             .argument("igfs"));
 
         info("VisorIgfsFormatTask result: " + ret);
@@ -1339,7 +1339,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jsonEquals(ret, successRes);
 
         ret = content(new VisorGatewayArgument(VisorIgfsResetMetricsTask.class)
-            .forNode(grid(1).localNode())
+            .forNode(locNode)
             .set(String.class, "igfs"));
 
         info("VisorIgfsResetMetricsTask result: " + ret);
@@ -1350,7 +1350,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jsonEquals(ret, successRes);
 
         ret = content(new VisorGatewayArgument(VisorThreadDumpTask.class)
-            .forNode(grid(1).localNode()));
+            .forNode(locNode));
 
         info("VisorThreadDumpTask result: " + ret);
 
@@ -1360,7 +1360,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jsonEquals(ret, successRes);
 
         ret = content(new VisorGatewayArgument(VisorLatestTextFilesTask.class)
-            .forNode(grid(1).localNode())
+            .forNode(locNode)
             .pair(String.class, String.class, "", ""));
 
         info("VisorLatestTextFilesTask result: " + ret);
@@ -1371,7 +1371,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jsonEquals(ret, successRes);
 
         ret = content(new VisorGatewayArgument(VisorLatestVersionTask.class)
-            .forNode(grid(1).localNode()));
+            .forNode(locNode));
 
         info("VisorLatestVersionTask result: " + ret);
 
@@ -1381,7 +1381,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jsonEquals(ret, successRes);
 
         ret = content(new VisorGatewayArgument(VisorFileBlockTask.class)
-            .forNode(grid(1).localNode())
+            .forNode(locNode)
             .argument(VisorFileBlockTask.VisorFileBlockArg.class, "", 0L, 1, 0L));
 
         info("VisorFileBlockTask result: " + ret);
@@ -1391,11 +1391,9 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         jsonEquals(ret, successRes);
 
-        final UUID id = grid(1).cluster().node().id();
-
         ret = content(new VisorGatewayArgument(VisorNodePingTask.class)
-            .forNode(grid(1).localNode())
-            .argument(UUID.class, id));
+            .forNode(locNode)
+            .argument(UUID.class, locNode.id()));
 
         info("VisorNodePingTask result: " + ret);
 
@@ -1405,7 +1403,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jsonEquals(ret, successRes);
 
         ret = content(new VisorGatewayArgument(VisorNodeConfigurationCollectorTask.class)
-            .forNode(grid(1).localNode()));
+            .forNode(locNode));
 
         info("VisorNodeConfigurationCollectorTask result: " + ret);
 
@@ -1415,7 +1413,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jsonEquals(ret, successRes);
 
         ret = content(new VisorGatewayArgument(VisorComputeResetMetricsTask.class)
-            .forNode(grid(1).localNode()));
+            .forNode(locNode));
 
         info("VisorComputeResetMetricsTask result: " + ret);
 
@@ -1425,7 +1423,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jsonEquals(ret, successRes);
 
         ret = content(new VisorGatewayArgument(VisorQueryTask.class)
-            .forNode(grid(1).localNode())
+            .forNode(locNode)
             .argument(VisorQueryArg.class, "person", URLEncoder.encode("select * from Person"), false, 1));
 
         info("VisorQueryTask result: " + ret);
@@ -1440,7 +1438,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         final String qryId = (String)((Map)((Map)((Map)json.get("response")).get("result")).get("value")).get("queryId");
 
         ret = content(new VisorGatewayArgument(VisorQueryNextPageTask.class)
-            .forNode(grid(1).localNode())
+            .forNode(locNode)
             .pair(String.class, Integer.class, qryId, 1));
 
         info("VisorQueryNextPageTask result: " + ret);
@@ -1451,7 +1449,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jsonEquals(ret, successRes);
 
         ret = content(new VisorGatewayArgument(VisorQueryCleanupTask.class)
-            .map(UUID.class, Set.class, F.asMap(grid(1).localNode().id(), qryId)));
+            .map(UUID.class, Set.class, F.asMap(locNode.id(), qryId)));
 
         info("VisorQueryCleanupTask result: " + ret);
 
@@ -1461,7 +1459,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jsonEquals(ret, successRes);
 
         ret = content(new VisorGatewayArgument(VisorResolveHostNameTask.class)
-            .forNode(grid(1).localNode()));
+            .forNode(locNode));
 
         info("VisorResolveHostNameTask result: " + ret);
 
@@ -1533,8 +1531,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jsonEquals(ret, successRes);
 
         ret = content(new VisorGatewayArgument(VisorNodeDataCollectorTask.class)
-            .argument(VisorNodeDataCollectorTaskArg.class,
-                false, "CONSOLE_" + UUID.randomUUID(), UUID.randomUUID(), 10, false));
+            .argument(VisorNodeDataCollectorTaskArg.class, false,
+                "CONSOLE_" + UUID.randomUUID(), UUID.randomUUID(), 10, false));
 
         info("VisorNodeDataCollectorTask result: " + ret);
 
@@ -1564,7 +1562,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jsonEquals(ret, successRes);
 
         ret = content(new VisorGatewayArgument(VisorCacheClearTask.class)
-            .forNode(grid(1).localNode())
+            .forNode(locNode)
             .argument("person"));
 
         info("VisorCacheClearTask result: " + ret);
@@ -1597,7 +1595,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         jsonEquals(ret, successRes);
 
         ret = content(new VisorGatewayArgument(VisorCacheStopTask.class)
-            .forNode(grid(1).localNode())
+            .forNode(locNode)
             .argument(String.class, "c"));
 
         info("VisorCacheStopTask result: " + ret);
