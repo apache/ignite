@@ -17,25 +17,15 @@
   limitations under the License.
 -->
 
-<!--
-    Ignite Spring configuration file.
--->
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xsi:schemaLocation="
-        http://www.springframework.org/schema/beans
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
         http://www.springframework.org/schema/beans/spring-beans.xsd">
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-        <!-- JDBC driver should force true value -->
-        <property name="clientMode" value="false"/>
-
         <property name="localHost" value="127.0.0.1"/>
-
-        <property name="marshaller">
-            <bean class="org.apache.ignite.marshaller.optimized.OptimizedMarshaller">
-                <property name="requireSerializable" value="false"/>
-            </bean>
-        </property>
+        <property name="connectorConfiguration"><null/></property>
+        <property name="networkSendRetryDelay" value="765"/>
+        <property name="networkTimeout" value="2999" />
 
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
@@ -43,14 +33,14 @@
                     <bean class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
                         <property name="addresses">
                             <list>
-                                <value>127.0.0.1:47500..47549</value>
+                                <!-- In distributed environment, replace with actual host IP address. -->
+                                <value>127.0.0.1:47500</value>
                             </list>
                         </property>
                     </bean>
                 </property>
+                <property name="socketTimeout" value="300" />
             </bean>
         </property>
-
-        <property name="peerClassLoadingEnabled" value="true"/>
     </bean>
 </beans>

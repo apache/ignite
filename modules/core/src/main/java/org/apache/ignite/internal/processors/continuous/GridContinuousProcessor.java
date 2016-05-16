@@ -1399,7 +1399,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
          */
         GridContinuousBatch addAll(Collection<?> objs) {
             assert objs != null;
-            assert objs.size() > 0;
 
             GridContinuousBatch toSnd = null;
 

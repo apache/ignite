@@ -55,6 +55,7 @@ import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoggerResource;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.compute.ComputeJobResultPolicy.WAIT;
 
@@ -74,6 +75,7 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
     /** Scheduler. */
     private static final ScheduledExecutorService SCHEDULER = Executors.newScheduledThreadPool(1);
 
+    /** Ignite. */
     @IgniteInstanceResource
     private Ignite ignite;
 
@@ -104,19 +106,52 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
             else {
                 String cache = (String)args.get("cache");
 
-                GridDiscoveryManager discoMgr = ((IgniteKernal)ignite).context().discovery();
+                Map<? extends ComputeJob, ClusterNode> node = mapToNode(subgrid, args, first, cache);
 
-                for (ClusterNode n : subgrid) {
-                    if (discoMgr.cacheAffinityNode(n, cache))
-                        return F.asMap(new JdbcDriverJob(args, first), n);
+                if (node == null && cache == null) {
+                    boolean start = ignite.configuration().isClientMode();
+
+                    IgniteCache<?, ?> cache0 =
+                            ((IgniteKernal)ignite).context().cache().getOrStartPublicCache(start, false);
+
+                    if (cache0 != null)
+                        node = mapToNode(subgrid, args, first, cache0.getName());
                 }
 
-                throw new IgniteException("Can't find node with cache: " + cache);
+                if (node != null)
+                    return node;
+                else
+                    throw new IgniteException("Can't find node with cache: " + cache);
             }
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
+    }
+
+    /**
+     * @param subgrid Subgrid.
+     * @param args Args.
+     * @param first First.
+     * @param cache Cache.
+     */
+    @Nullable private Map<? extends ComputeJob, ClusterNode> mapToNode(
+        List<ClusterNode> subgrid,
+        Map<String, Object> args,
+        boolean first,
+        String cache
+    ) {
+        GridDiscoveryManager discoMgr = ((IgniteKernal)ignite).context().discovery();
+
+        for (ClusterNode n : subgrid) {
+            if (discoMgr.cacheAffinityNode(n, cache)) {
+                args.put("cache", cache);
+
+                return F.asMap(new JdbcDriverJob(args, first), n);
+            }
+        }
+
+        return null;
     }
 
     /** {@inheritDoc} */
@@ -214,6 +249,20 @@ public class GridCacheQueryJdbcTask extends ComputeTaskAdapter<byte[], byte[]> {
                 assert futId == null;
 
                 IgniteCache<?, ?> cache = ignite.cache(cacheName);
+
+                if (cache == null && cacheName == null) {
+                    try {
+                        boolean start = ignite.configuration().isClientMode();
+
+                        cache = ((IgniteKernal)ignite).context().cache().getOrStartPublicCache(start, false);
+                    }
+                    catch (IgniteCheckedException e) {
+                        throw new IgniteException(e);
+                    }
+                }
+
+                if (cache == null)
+                    throw new IgniteException(new SQLException("Cache not found [cacheName=" + cacheName + ']'));
 
                 SqlFieldsQuery qry = new SqlFieldsQuery(sql).setArgs(args.toArray());
 
