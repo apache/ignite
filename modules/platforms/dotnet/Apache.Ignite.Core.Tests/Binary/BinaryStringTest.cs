@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Binary
 {
     using System;
+    using System.Diagnostics;
     using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
 
@@ -35,6 +36,8 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestNewMode()
         {
+            TestUtils.JvmDebug = false;  // avoid conflicting listener from standalone process
+
             using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
             {
                 CheckString(ignite, "foo");
@@ -62,11 +65,22 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Environment.SetEnvironmentVariable(envVar, "false");
 
-            var path = GetType().Assembly.Location;
+            var procStart = new ProcessStartInfo
+            {
+                FileName = GetType().Assembly.Location,
+                Arguments = GetType().FullName + " TestNewMode",
+                CreateNoWindow = true,
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
 
-            var proc = System.Diagnostics.Process.Start(path, GetType().FullName + " TestNewMode");
+            var proc = Process.Start(procStart);
 
             Assert.IsNotNull(proc);
+
+            Console.WriteLine(proc.StandardOutput.ReadToEnd());
+            Console.WriteLine(proc.StandardError.ReadToEnd());
             Assert.IsTrue(proc.WaitForExit(15000));
             Assert.AreEqual(0, proc.ExitCode);
         }

@@ -35,6 +35,7 @@ namespace Apache.Ignite.Core.Tests
 
             if (args.Length == 2)
             {
+                //Debugger.Launch();
                 var testClass = Type.GetType(args[0]);
                 var method = args[1];
 
