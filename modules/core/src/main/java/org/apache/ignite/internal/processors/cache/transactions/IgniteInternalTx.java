@@ -698,4 +698,9 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
      * @param topVer New topology version.
      */
     public void onRemap(AffinityTopologyVersion topVer);
+
+    /**
+     * @param e Commit error.
+     */
+    public void commitError(Throwable e);
 }

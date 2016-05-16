@@ -125,7 +125,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="result_page.h" />
     <ClInclude Include="..\..\include\ignite\odbc\common_types.h">
       <Filter>Code</Filter>
     </ClInclude>

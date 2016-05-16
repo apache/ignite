@@ -523,7 +523,7 @@ namespace ignite
                 void ProcessorDestroyCache(jobject obj, const char* name, JniErrorInfo* errInfo);
                 jobject ProcessorAffinity(jobject obj, const char* name);
                 jobject ProcessorDataStreamer(jobject obj, const char* name, bool keepPortable);
-                jobject ProcessorTransactions(jobject obj);
+                jobject ProcessorTransactions(jobject obj, JniErrorInfo* errInfo = NULL);
                 jobject ProcessorCompute(jobject obj, jobject prj);
                 jobject ProcessorMessage(jobject obj, jobject prj);
                 jobject ProcessorEvents(jobject obj, jobject prj);
@@ -601,14 +601,14 @@ namespace ignite
                 bool QueryCursorIteratorHasNext(jobject obj, JniErrorInfo* errInfo = NULL);
                 void QueryCursorClose(jobject obj, JniErrorInfo* errInfo = NULL);
 
-                long long TransactionsStart(jobject obj, int concurrency, int isolation, long long timeout, int txSize);
-                int TransactionsCommit(jobject obj, long long id);
+                long long TransactionsStart(jobject obj, int concurrency, int isolation, long long timeout, int txSize, JniErrorInfo* errInfo = NULL);
+                int TransactionsCommit(jobject obj, long long id, JniErrorInfo* errInfo = NULL);
                 void TransactionsCommitAsync(jobject obj, long long id, long long futId);
-                int TransactionsRollback(jobject obj, long long id);
+                int TransactionsRollback(jobject obj, long long id, JniErrorInfo* errInfo = NULL);
                 void TransactionsRollbackAsync(jobject obj, long long id, long long futId);
-                int TransactionsClose(jobject obj, long long id);
-                int TransactionsState(jobject obj, long long id);
-                bool TransactionsSetRollbackOnly(jobject obj, long long id);
+                int TransactionsClose(jobject obj, long long id, JniErrorInfo* errInfo = NULL);
+                int TransactionsState(jobject obj, long long id, JniErrorInfo* errInfo = NULL);
+                bool TransactionsSetRollbackOnly(jobject obj, long long id, JniErrorInfo* errInfo = NULL);
                 void TransactionsResetMetrics(jobject obj);
 
                 jobject EventsWithAsync(jobject obj);

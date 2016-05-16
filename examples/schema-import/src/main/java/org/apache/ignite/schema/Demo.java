@@ -24,10 +24,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory;
-import org.apache.ignite.cache.store.jdbc.dialect.H2Dialect;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.transactions.Transaction;
-import org.h2.jdbcx.JdbcConnectionPool;
 
 /**
  * This demo demonstrates the use of cache with {@link CacheJdbcPojoStore}
@@ -37,20 +35,6 @@ import org.h2.jdbcx.JdbcConnectionPool;
  * several {@link DemoNode} instances as well to form a cluster.
  */
 public class Demo {
-    /**
-     * Constructs and returns a fully configured instance of a {@link CacheJdbcPojoStoreFactory}.
-     */
-    private static class H2DemoStoreFactory<K, V> extends CacheJdbcPojoStoreFactory<K, V> {
-        /** {@inheritDoc} */
-        @Override public CacheJdbcPojoStore<K, V> create() {
-            setDialect(new H2Dialect());
-
-            setDataSource(JdbcConnectionPool.create("jdbc:h2:tcp://localhost/~/schema-import/demo", "sa", ""));
-
-            return super.create();
-        }
-    }
-
     /**
      * Executes demo.
      *
@@ -62,9 +46,12 @@ public class Demo {
 
         // Start Ignite node.
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
+            CacheJdbcPojoStoreFactory<PersonKey, Person> pojoStoreFactory = new CacheJdbcPojoStoreFactory<>();
+
+            pojoStoreFactory.setDataSourceFactory(new H2DataSourceFactory());
+
             // Configure cache store.
-            CacheConfiguration<PersonKey, Person> cfg =
-                CacheConfig.cache("PersonCache", new H2DemoStoreFactory<PersonKey, Person>());
+            CacheConfiguration<PersonKey, Person> cfg = CacheConfig.cache("PersonCache", pojoStoreFactory);
 
             try (IgniteCache<PersonKey, Person> cache = ignite.getOrCreateCache(cfg)) {
                 // Preload cache from database.

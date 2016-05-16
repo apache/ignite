@@ -51,8 +51,9 @@ import scala.language.{implicitConversions, reflectiveCalls}
  * |       | of Event Storage SPI that is responsible for temporary storage of generated   |
  * |       | events on each node can also affect the functionality of this command.        |
  * |       |                                                                               |
- * |       | By default - all events are DISABLED and Ignite stores last 10,000 local      |
- * |       | events on each node. Both of these defaults can be changed in configuration.  |
+ * |       | By default - all events are DISABLED. But if events enabled then Ignite will  |
+ * |       | stores last 10,000 local events on each node.                                 |
+ * |       | Both of these defaults can be changed in configuration.                       |
  * +---------------------------------------------------------------------------------------+
  * }}}
  *
@@ -247,7 +248,7 @@ object VisorDiscoveryCommand {
             "of Event Storage SPI that is responsible for temporary storage of generated",
             "events on each node can also affect the functionality of this command.",
             " ",
-            "By default - all events are disabled and Ignite stores last 10,000 local",
+            "By default - all events are disabled. But if events enabled then Ignite will stores last 10,000 local",
             "events on each node. Both of these defaults can be changed in configuration."
         ),
         spec = List(

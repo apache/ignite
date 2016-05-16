@@ -114,6 +114,9 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     /** Footer end. */
     private final int footerLen;
 
+    /** Class descriptor. */
+    private BinaryClassDescriptor desc;
+
     /** Mapper. */
     private final BinaryInternalMapper mapper;
 
@@ -254,7 +257,9 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
                 if (forUnmarshal) {
                     // Registers class by type ID, at least locally if the cache is not ready yet.
-                    typeId = ctx.descriptorForClass(BinaryUtils.doReadClass(in, ctx, ldr, typeId0), false).typeId();
+                    desc = ctx.descriptorForClass(BinaryUtils.doReadClass(in, ctx, ldr, typeId0), false);
+
+                    typeId = desc.typeId();
                 }
                 else
                     typeId = ctx.typeId(BinaryUtils.doReadClassName(in));
@@ -300,7 +305,10 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @return Descriptor.
      */
     BinaryClassDescriptor descriptor() {
-        return ctx.descriptorForTypeId(userType, typeId, ldr, true);
+        if (desc == null)
+            desc = ctx.descriptorForTypeId(userType, typeId, ldr, true);
+
+        return desc;
     }
 
     /**
@@ -1462,7 +1470,8 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 break;
 
             case OBJ:
-                BinaryClassDescriptor desc = ctx.descriptorForTypeId(userType, typeId, ldr, true);
+                if (desc == null)
+                    desc = ctx.descriptorForTypeId(userType, typeId, ldr, true);
 
                 streamPosition(dataStart);
 

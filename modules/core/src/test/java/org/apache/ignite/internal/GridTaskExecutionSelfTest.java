@@ -47,19 +47,21 @@ public class GridTaskExecutionSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        ignite = startGrid(1);
-
+        startGrid(1);
         startGrid(2);
         startGrid(3);
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        stopGrid(1);
-        stopGrid(2);
-        stopGrid(3);
+        stopAllGrids();
+    }
 
-        ignite = null;
+    /**
+     *  {@inheritDoc}
+     */
+    @Override protected void beforeTest() throws Exception {
+        ignite = grid(1);
     }
 
     /**

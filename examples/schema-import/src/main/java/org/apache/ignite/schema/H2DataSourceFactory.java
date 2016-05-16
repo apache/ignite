@@ -15,16 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.schema;
 
-import org.apache.ignite.cache.CacheMemoryMode;
+import javax.cache.configuration.Factory;
+import javax.sql.DataSource;
+import org.h2.jdbcx.JdbcConnectionPool;
 
 /**
- *
+ * Datasource to use for store tests.
  */
-public class IgniteCacheReadThroughEvictionOffheapTiredSelfTest extends IgniteCacheReadThroughEvictionSelfTest {
+public class H2DataSourceFactory implements Factory<DataSource> {
+    /** DB connection URL. */
+    private static final String DFLT_CONN_URL = "jdbc:h2:tcp://localhost/~/schema-import/demo";
+
     /** {@inheritDoc} */
-    @Override protected CacheMemoryMode cacheMemoryMode() {
-        return CacheMemoryMode.OFFHEAP_TIERED;
+    @Override public DataSource create() {
+        return JdbcConnectionPool.create(DFLT_CONN_URL, "sa", "");
     }
 }
