@@ -31,6 +31,8 @@ TESTS_PACKAGE_DONLOAD_URL=$S3_DOWNLOADS/ignite-cassandra-tests-1.6.0-SNAPSHOT.zi
 TESTS_PACKAGE_ZIP=ignite-cassandra-tests-1.6.0-SNAPSHOT.zip
 TESTS_PACKAGE_UNZIP_DIR=ignite-cassandra-tests
 
+S3_LOGS_URL=$S3_SYSTEM/logs/c-logs
+S3_LOGS_TRIGGER_URL=$S3_SYSTEM/logs-trigger
 S3_BOOTSTRAP_SUCCESS_URL=$S3_SYSTEM/c-success
 S3_BOOTSTRAP_FAILURE_URL=$S3_SYSTEM/c-failure
 S3_CASSANDRA_NODES_DISCOVERY_URL=$S3_SYSTEM/c-discovery
@@ -125,6 +127,63 @@ tagInstance()
     fi
 }
 
+downloadPackage()
+{
+    echo "[INFO] Downloading $3 package from $1 into $2"
+
+    if [[ "$1" == s3* ]]; then
+        aws s3 cp $1 $2
+
+        if [ $? -ne 0 ]; then
+            echo "[WARN] Failed to download $3 package from first attempt"
+            rm -Rf $2
+            sleep 10s
+
+            echo "[INFO] Trying second attempt to download $3 package"
+            aws s3 cp $1 $2
+
+            if [ $? -ne 0 ]; then
+                echo "[WARN] Failed to download $3 package from second attempt"
+                rm -Rf $2
+                sleep 10s
+
+                echo "[INFO] Trying third attempt to download $3 package"
+                aws s3 cp $1 $2
+
+                if [ $? -ne 0 ]; then
+                    terminate "All three attempts to download $3 package from $1 are failed"
+                fi
+            fi
+        fi
+    else
+        curl "$1" -o "$2"
+
+        if [ $? -ne 0 ] && [ $? -ne 6 ]; then
+            echo "[WARN] Failed to download $3 package from first attempt"
+            rm -Rf $2
+            sleep 10s
+
+            echo "[INFO] Trying second attempt to download $3 package"
+            curl "$1" -o "$2"
+
+            if [ $? -ne 0 ] && [ $? -ne 6 ]; then
+                echo "[WARN] Failed to download $3 package from second attempt"
+                rm -Rf $2
+                sleep 10s
+
+                echo "[INFO] Trying third attempt to download $3 package"
+                curl "$1" -o "$2"
+
+                if [ $? -ne 0 ] && [ $? -ne 6 ]; then
+                    terminate "All three attempts to download $3 package from $1 are failed"
+                fi
+            fi
+        fi
+    fi
+
+    echo "[INFO] $3 package successfully downloaded from $1 into $2"
+}
+
 if [[ "$S3_CASSANDRA_NODES_DISCOVERY_URL" != */ ]]; then
     S3_CASSANDRA_NODES_DISCOVERY_URL=${S3_CASSANDRA_NODES_DISCOVERY_URL}/
 fi
@@ -134,6 +193,8 @@ echo "[INFO] Bootstrapping Cassandra node"
 echo "[INFO]-----------------------------------------------------------------"
 echo "[INFO] Cassandra download URL: $CASSANDRA_DOWNLOAD_URL"
 echo "[INFO] Tests package download URL: $TESTS_PACKAGE_DONLOAD_URL"
+echo "[INFO] Logs URL: $S3_LOGS_URL"
+echo "[INFO] Logs trigger URL: $S3_LOGS_TRIGGER_URL"
 echo "[INFO] Cassandra nodes discovery URL: $S3_CASSANDRA_NODES_DISCOVERY_URL"
 echo "[INFO] Cassandra first node lock URL: $S3_CASSANDRA_FIRST_NODE_LOCK_URL"
 echo "[INFO] Cassandra nodes join lock URL: $S3_CASSANDRA_NODES_JOIN_LOCK_URL"
@@ -181,11 +242,7 @@ fi
 
 rm -Rf /opt/jdk-8u77-linux-x64.tar.gz
 
-echo "[INFO] Downloading 'get-pip.py'"
-curl "https://bootstrap.pypa.io/get-pip.py" -o "/opt/get-pip.py"
-if [ $? -ne 0 ]; then
-    terminate "Failed to download 'get-pip.py'"
-fi
+downloadPackage "https://bootstrap.pypa.io/get-pip.py" "/opt/get-pip.py" "get-pip.py"
 
 echo "[INFO] Installing 'pip'"
 python /opt/get-pip.py
@@ -200,10 +257,7 @@ if [ $? -ne 0 ]; then
     echo "[INFO] Trying to install awscli using zip archive"
     echo "[INFO] Downloading awscli zip"
 
-    curl "$AWS_CLI_DOWNLOAD_URL" -o "/opt/awscli-bundle.zip"
-    if [ $? -ne 0 ]; then
-        terminate "Failed to download awscli zip"
-    fi
+    downloadPackage "$AWS_CLI_DOWNLOAD_URL" "/opt/awscli-bundle.zip" "awscli"
 
     echo "[INFO] Unzipping awscli zip"
     unzip /opt/awscli-bundle.zip -d /opt
@@ -251,18 +305,7 @@ if [ $? -ne 0 ]; then
     terminate "Failed to setup Cassandra storage dir: /storage/cassandra"
 fi
 
-echo "[INFO] Downloading Cassandra package"
-if [[ "$CASSANDRA_DOWNLOAD_URL" == s3* ]]; then
-    aws s3 cp $CASSANDRA_DOWNLOAD_URL /opt/$CASSANDRA_TARBALL
-    if [ $? -ne 0 ]; then
-        terminate "Failed to download Cassandra package from: $CASSANDRA_DOWNLOAD_URL"
-    fi
-else
-    curl "$CASSANDRA_DOWNLOAD_URL" -o "/opt/$CASSANDRA_TARBALL"
-    if [ $? -ne 0 ] && [ $? -ne 6 ]; then
-        terminate "Failed to download Cassandra package from: $CASSANDRA_DOWNLOAD_URL"
-    fi
-fi
+downloadPackage "$CASSANDRA_DOWNLOAD_URL" "/opt/$CASSANDRA_TARBALL" "Cassandra"
 
 echo "[INFO] Unzipping Cassandra package"
 tar -xvzf /opt/$CASSANDRA_TARBALL -C /opt
@@ -274,18 +317,7 @@ rm -f /opt/$CASSANDRA_TARBALL /opt/cassandra
 mv /opt/$CASSANDRA_UNTAR_DIR /opt/cassandra
 chown -R cassandra:cassandra /opt/cassandra
 
-echo "[INFO] Downloading tests package"
-if [[ "$TESTS_PACKAGE_DONLOAD_URL" == s3* ]]; then
-    aws s3 cp $TESTS_PACKAGE_DONLOAD_URL /opt/$TESTS_PACKAGE_ZIP
-    if [ $? -ne 0 ]; then
-        terminate "Failed to download tests package from: $TESTS_PACKAGE_DONLOAD_URL"
-    fi
-else
-    curl "$TESTS_PACKAGE_DONLOAD_URL" -O "/opt/$TESTS_PACKAGE_ZIP"
-    if [ $? -ne 0 ] && [ $? -ne 6 ]; then
-        terminate "Failed to download tests package from: $TESTS_PACKAGE_DONLOAD_URL"
-    fi
-fi
+downloadPackage "$TESTS_PACKAGE_DONLOAD_URL" "/opt/$TESTS_PACKAGE_ZIP" "Tests"
 
 unzip /opt/$TESTS_PACKAGE_ZIP -d /opt
 if [ $? -ne 0 ]; then
@@ -307,11 +339,16 @@ if [ ! -f "/opt/$TESTS_PACKAGE_UNZIP_DIR/bootstrap/aws/cassandra/cassandra-templ
     terminate "There are no cassandra-start.sh in tests package"
 fi
 
+if [ ! -f "/opt/$TESTS_PACKAGE_UNZIP_DIR/bootstrap/aws/logs-collector.sh" ]; then
+    terminate "There are no logs-collector.sh in tests package"
+fi
+
 mv -f /opt/$TESTS_PACKAGE_UNZIP_DIR/bootstrap/aws/cassandra/cassandra-start.sh /opt
 mv -f /opt/$TESTS_PACKAGE_UNZIP_DIR/bootstrap/aws/cassandra/cassandra-env.sh /opt/cassandra/conf
 mv -f /opt/$TESTS_PACKAGE_UNZIP_DIR/bootstrap/aws/cassandra/cassandra-template.yaml /opt/cassandra/conf
+mv -f /opt/$TESTS_PACKAGE_UNZIP_DIR/bootstrap/aws/logs-collector.sh /opt
 rm -Rf /opt/$TESTS_PACKAGE_UNZIP_DIR
-chown -R cassandra:cassandra /opt/cassandra /opt/cassandra-start.sh
+chown -R cassandra:cassandra /opt/cassandra /opt/cassandra-start.sh /opt/logs-collector.sh
 
 #profile=/home/cassandra/.bash_profile
 profile=/root/.bash_profile
@@ -324,6 +361,10 @@ echo "export S3_BOOTSTRAP_FAILURE_URL=$S3_BOOTSTRAP_FAILURE_URL" >> $profile
 echo "export S3_CASSANDRA_NODES_DISCOVERY_URL=$S3_CASSANDRA_NODES_DISCOVERY_URL" >> $profile
 echo "export S3_CASSANDRA_NODES_JOIN_LOCK_URL=$S3_CASSANDRA_NODES_JOIN_LOCK_URL" >> $profile
 echo "export S3_CASSANDRA_FIRST_NODE_LOCK_URL=$S3_CASSANDRA_FIRST_NODE_LOCK_URL" >> $profile
+
+HOST_NAME=$(hostname -f | tr '[:upper:]' '[:lower:]')
+
+/opt/logs-collector.sh "/opt/cassandra/logs" "$S3_LOGS_URL/$HOST_NAME" "$S3_LOGS_TRIGGER_URL" > /opt/cassandra/logs-collector.log &
 
 cmd="/opt/cassandra-start.sh"
 

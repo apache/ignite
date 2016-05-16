@@ -27,6 +27,8 @@ TESTS_PACKAGE_DONLOAD_URL=$S3_DOWNLOADS/ignite-cassandra-tests-1.6.0-SNAPSHOT.zi
 TESTS_PACKAGE_ZIP=ignite-cassandra-tests-1.6.0-SNAPSHOT.zip
 TESTS_PACKAGE_UNZIP_DIR=ignite-cassandra-tests
 
+S3_LOGS_URL=$S3_SYSTEM/logs/t-logs
+S3_LOGS_TRIGGER_URL=$S3_SYSTEM/logs-trigger
 S3_IGNITE_NODES_DISCOVERY_URL=$S3_SYSTEM/i-discovery
 S3_CASSANDRA_NODES_DISCOVERY_URL=$S3_SYSTEM/c-discovery
 S3_TEST_NODES_DISCOVERY_URL=$S3_SYSTEM/t-discovery
@@ -46,9 +48,9 @@ INSTANCE_NAME_TAG=TEST-SERVER
 INSTANCE_OWNER_TAG=ignite@apache.org
 INSTANCE_PROJECT_TAG=ignite
 
-CASSANDRA_NODES_COUNT=10
-IGNITE_NODES_COUNT=5
-TEST_NODES_COUNT=3
+CASSANDRA_NODES_COUNT=50
+IGNITE_NODES_COUNT=30
+TEST_NODES_COUNT=15
 
 TESTS_TYPE="ignite"
 
@@ -135,6 +137,63 @@ tagInstance()
     fi
 }
 
+downloadPackage()
+{
+    echo "[INFO] Downloading $3 package from $1 into $2"
+
+    if [[ "$1" == s3* ]]; then
+        aws s3 cp $1 $2
+
+        if [ $? -ne 0 ]; then
+            echo "[WARN] Failed to download $3 package from first attempt"
+            rm -Rf $2
+            sleep 10s
+
+            echo "[INFO] Trying second attempt to download $3 package"
+            aws s3 cp $1 $2
+
+            if [ $? -ne 0 ]; then
+                echo "[WARN] Failed to download $3 package from second attempt"
+                rm -Rf $2
+                sleep 10s
+
+                echo "[INFO] Trying third attempt to download $3 package"
+                aws s3 cp $1 $2
+
+                if [ $? -ne 0 ]; then
+                    terminate "All three attempts to download $3 package from $1 are failed"
+                fi
+            fi
+        fi
+    else
+        curl "$1" -o "$2"
+
+        if [ $? -ne 0 ] && [ $? -ne 6 ]; then
+            echo "[WARN] Failed to download $3 package from first attempt"
+            rm -Rf $2
+            sleep 10s
+
+            echo "[INFO] Trying second attempt to download $3 package"
+            curl "$1" -o "$2"
+
+            if [ $? -ne 0 ] && [ $? -ne 6 ]; then
+                echo "[WARN] Failed to download $3 package from second attempt"
+                rm -Rf $2
+                sleep 10s
+
+                echo "[INFO] Trying third attempt to download $3 package"
+                curl "$1" -o "$2"
+
+                if [ $? -ne 0 ] && [ $? -ne 6 ]; then
+                    terminate "All three attempts to download $3 package from $1 are failed"
+                fi
+            fi
+        fi
+    fi
+
+    echo "[INFO] $3 package successfully downloaded from $1 into $2"
+}
+
 echo "[INFO]-----------------------------------------------------------------"
 echo "[INFO] Bootstrapping Tests node"
 echo "[INFO]-----------------------------------------------------------------"
@@ -144,6 +203,8 @@ echo "[INFO] Ignite nodes count: $IGNITE_NODES_COUNT"
 echo "[INFO] Cassandra nodes count: $CASSANDRA_NODES_COUNT"
 echo "[INFO] Tests summary URL: $S3_TESTS_SUMMARY_URL"
 echo "[INFO] Tests first node lock URL: $S3_TESTS_FIRST_NODE_LOCK_URL"
+echo "[INFO] Logs URL: $S3_LOGS_URL"
+echo "[INFO] Logs trigger URL: $S3_LOGS_TRIGGER_URL"
 echo "[INFO] Tests package download URL: $TESTS_PACKAGE_DONLOAD_URL"
 echo "[INFO] Test node discovery URL: $S3_TEST_NODES_DISCOVERY_URL"
 echo "[INFO] Ignite node discovery URL: $S3_IGNITE_NODES_DISCOVERY_URL"
@@ -198,11 +259,7 @@ fi
 
 rm -Rf /opt/jdk-8u77-linux-x64.tar.gz
 
-echo "[INFO] Downloading 'get-pip.py'"
-curl "https://bootstrap.pypa.io/get-pip.py" -o "/opt/get-pip.py"
-if [ $? -ne 0 ]; then
-    terminate "Failed to download 'get-pip.py'"
-fi
+downloadPackage "https://bootstrap.pypa.io/get-pip.py" "/opt/get-pip.py" "get-pip.py"
 
 echo "[INFO] Installing 'pip'"
 python /opt/get-pip.py
@@ -217,10 +274,7 @@ if [ $? -ne 0 ]; then
     echo "[INFO] Trying to install awscli using zip archive"
     echo "[INFO] Downloading awscli zip"
 
-    curl "$AWS_CLI_DOWNLOAD_URL" -o "/opt/awscli-bundle.zip"
-    if [ $? -ne 0 ]; then
-        terminate "Failed to download awscli zip"
-    fi
+    downloadPackage "$AWS_CLI_DOWNLOAD_URL" "/opt/awscli-bundle.zip" "awscli"
 
     echo "[INFO] Unzipping awscli zip"
     unzip /opt/awscli-bundle.zip -d /opt
@@ -259,18 +313,7 @@ if [ -z "$exists" ]; then
     fi
 fi
 
-echo "[INFO] Downloading tests package"
-if [[ "$TESTS_PACKAGE_DONLOAD_URL" == s3* ]]; then
-    aws s3 cp $TESTS_PACKAGE_DONLOAD_URL /opt/$TESTS_PACKAGE_ZIP
-    if [ $? -ne 0 ]; then
-        terminate "Failed to download tests package from: $TESTS_PACKAGE_DONLOAD_URL"
-    fi
-else
-    curl "$TESTS_PACKAGE_DONLOAD_URL" -O "/opt/$TESTS_PACKAGE_ZIP"
-    if [ $? -ne 0 ] && [ $? -ne 6 ]; then
-        terminate "Failed to download tests package from: $TESTS_PACKAGE_DONLOAD_URL"
-    fi
-fi
+downloadPackage "$TESTS_PACKAGE_DONLOAD_URL" "/opt/$TESTS_PACKAGE_ZIP" "Tests"
 
 unzip /opt/$TESTS_PACKAGE_ZIP -d /opt
 if [ $? -ne 0 ]; then
@@ -278,8 +321,6 @@ if [ $? -ne 0 ]; then
 fi
 
 mv /opt/$TESTS_PACKAGE_UNZIP_DIR /opt/ignite-cassandra-tests
-chown -R ignite:ignite /opt/ignite-cassandra-tests
-find /opt/ignite-cassandra-tests -type f -name "*.sh" -exec chmod ug+x {} \;
 
 if [ ! -f "/opt/ignite-cassandra-tests/cassandra-load-tests.sh" ]; then
     terminate "There are no cassandra-load-tests.sh in tests package"
@@ -292,6 +333,16 @@ fi
 if [ ! -f "/opt/ignite-cassandra-tests/bootstrap/aws/tests/ignite-cassandra-client-template.xml" ]; then
     terminate "There are no ignite-cassandra-client-template.xml in tests package"
 fi
+
+if [ ! -f "/opt/$TESTS_PACKAGE_UNZIP_DIR/bootstrap/aws/logs-collector.sh" ]; then
+    terminate "There are no logs-collector.sh in tests package"
+fi
+
+chown -R ignite:ignite /opt/ignite-cassandra-tests
+find /opt/ignite-cassandra-tests -type f -name "*.sh" -exec chmod ug+x {} \;
+
+cp -f /opt/ignite-cassandra-tests/bootstrap/aws/logs-collector.sh /opt
+chown -R ignite:ignite /opt/logs-collector.sh
 
 #profile=/home/ignite/.bash_profile
 profile=/root/.bash_profile
@@ -315,6 +366,11 @@ echo "export S3_TESTS_FIRST_NODE_LOCK_URL=$S3_TESTS_FIRST_NODE_LOCK_URL" >> $pro
 echo "export CASSANDRA_NODES_COUNT=$CASSANDRA_NODES_COUNT" >> $profile
 echo "export IGNITE_NODES_COUNT=$IGNITE_NODES_COUNT" >> $profile
 echo "export TEST_NODES_COUNT=$TEST_NODES_COUNT" >> $profile
+echo "export S3_LOGS_TRIGGER_URL=$S3_LOGS_TRIGGER_URL" >> $profile
+
+HOST_NAME=$(hostname -f | tr '[:upper:]' '[:lower:]')
+
+/opt/logs-collector.sh "/opt/ignite-cassandra-tests/logs" "$S3_LOGS_URL/$HOST_NAME" "$S3_LOGS_TRIGGER_URL" > /opt/ignite-cassandra-tests/logs-collector.log &
 
 cmd="/opt/ignite-cassandra-tests/bootstrap/aws/tests/tests-run.sh"
 

@@ -190,7 +190,7 @@ reportTestsSummary()
 
     pushd $TESTS_SUMMARY_DIR
 
-    zip -r -9 $HOME/tests-summary.zip $TESTS_SUMMARY_DIR
+    zip -r -9 $HOME/tests-summary.zip .
     code=$?
 
     rm -Rf $TESTS_SUMMARY_DIR
@@ -232,6 +232,11 @@ reportSucceedTestsStatistics()
     blkReadMsg=0
     blkReadErrors=0
     blkReadSpeed=0
+
+    writeErrNodes=
+    blkWriteErrNodes=
+    readErrNodes=
+    blkReadErrNodes=
 
 	tmpFile=`mktemp`
 
@@ -288,6 +293,12 @@ reportSucceedTestsStatistics()
         if [ -n "$cnt" ]; then
             echo "[INFO] WRITE errors: $cnt"
             writeErrors=$(( $writeErrors+$cnt ))
+            if [ $cnt -ne 0 ]; then
+                if [ -n "$writeErrNodes" ]; then
+                    writeErrNodes="${writeErrNodes}, "
+                fi
+                writeErrNodes="${writeErrNodes}${node}"
+            fi
         else
             echo "[WARN] Failed to detect WRITE errors count for $node node. This test probably failed."
             echo "WARNING |" >> $tmpFile
@@ -340,6 +351,12 @@ reportSucceedTestsStatistics()
         if [ -n "$cnt" ]; then
             blkWriteErrors=$(( $blkWriteErrors+$cnt ))
             echo "[INFO] BULK_WRITE errors: $cnt"
+            if [ $cnt -ne 0 ]; then
+                if [ -n "$blkWriteErrNodes" ]; then
+                    blkWriteErrNodes="${blkWriteErrNodes}, "
+                fi
+                blkWriteErrNodes="${blkWriteErrNodes}${node}"
+            fi
         else
             echo "[WARN] Failed to detect BULK_WRITE errors count for $node node. This test probably failed."
             echo "WARNING |" >> $tmpFile
@@ -392,6 +409,12 @@ reportSucceedTestsStatistics()
         if [ -n "$cnt" ]; then
             readErrors=$(( $readErrors+$cnt ))
             echo "[INFO] READ errors: $cnt"
+            if [ $cnt -ne 0 ]; then
+                if [ -n "$readErrNodes" ]; then
+                    blkWriteErrNodes="${readErrNodes}, "
+                fi
+                readErrNodes="${readErrNodes}${node}"
+            fi
         else
             echo "[WARN] Failed to detect READ errors count for $node node. This test probably failed."
             echo "WARNING |" >> $tmpFile
@@ -444,6 +467,12 @@ reportSucceedTestsStatistics()
         if [ -n "$cnt" ]; then
             blkReadErrors=$(( $blkReadErrors+$cnt ))
             echo "[INFO] BULK_READ errors: $cnt"
+            if [ $cnt -ne 0 ]; then
+                if [ -n "$blkReadErrNodes" ]; then
+                    blkReadErrNodes="${blkReadErrNodes}, "
+                fi
+                blkReadErrNodes="${blkReadErrNodes}${node}"
+            fi
         else
             echo "[WARN] Failed to detect BULK_READ errors count for $node node. This test probably failed."
             echo "WARNING |" >> $tmpFile
@@ -502,6 +531,34 @@ reportSucceedTestsStatistics()
     echo "Speed   : $blkReadSpeed msg/sec" >> $1
     echo "Errors  : $blkReadErrors" >> $1
     echo "----------------------------------------------------------------------------------------------" >> $1
+
+    if [ -n "$writeErrNodes" ]; then
+        echo "Nodes having WRITE errors |" >> $1
+        echo "-------------------------------" >> $1
+        echo "$writeErrNodes" >> $1
+        echo "----------------------------------------------------------------------------------------------" >> $1
+    fi
+
+    if [ -n "$blkWriteErrNodes" ]; then
+        echo "Nodes having BULK_WRITE errors |" >> $1
+        echo "-------------------------------" >> $1
+        echo "$blkWriteErrNodes" >> $1
+        echo "----------------------------------------------------------------------------------------------" >> $1
+    fi
+
+    if [ -n "$readErrNodes" ]; then
+        echo "Nodes having READ errors |" >> $1
+        echo "-------------------------------" >> $1
+        echo "$readErrNodes" >> $1
+        echo "----------------------------------------------------------------------------------------------" >> $1
+    fi
+
+    if [ -n "$blkReadErrNodes" ]; then
+        echo "Nodes having BULK_READ errors |" >> $1
+        echo "-------------------------------" >> $1
+        echo "$blkReadErrNodes" >> $1
+        echo "----------------------------------------------------------------------------------------------" >> $1
+    fi
 
     cat $tmpFile >> $1
 

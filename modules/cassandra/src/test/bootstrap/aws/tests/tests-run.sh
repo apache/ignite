@@ -69,8 +69,6 @@ terminate()
         echo "[ERROR] Failed to report tests results to: $reportFile"
     fi
 
-    rm -f /opt/ignite-cassandra-tests/tests-result /opt/ignite-cassandra-tests/hostname
-
     aws s3 rm ${S3_TESTS_RUNNING_URL}${HOST_NAME}
     aws s3 rm ${S3_TESTS_WAITING_URL}${HOST_NAME}
 
@@ -79,7 +77,16 @@ terminate()
         removeFirstNodeLock
         reportScript=$(readlink -m $( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/tests-report.sh)
         $reportScript
+
+        if [ -n "$S3_LOGS_TRIGGER_URL" ]; then
+            aws s3 cp --sse AES256 /opt/ignite-cassandra-tests/hostname $S3_LOGS_TRIGGER_URL
+            if [ $? -ne 0 ]; then
+                echo "[ERROR] Failed to trigger logs collection"
+            fi
+        fi
     fi
+
+    rm -Rf /opt/ignite-cassandra-tests/tests-result /opt/ignite-cassandra-tests/hostname
 
     if [ -n "$1" ]; then
         exit 1
@@ -490,7 +497,7 @@ waitAllIgniteNodesReady()
         successCount=$(aws s3 ls $S3_IGNITE_SUCCESS_URL | wc -l)
         failureCount=$(aws s3 ls $S3_IGNITE_FAILURE_URL | wc -l)
 
-        if [ "$successCount" == "$IGNITE_NODES_COUNT" ]; then
+        if [ $successCount -ge $IGNITE_NODES_COUNT ]; then
             break
         fi
 
@@ -518,7 +525,7 @@ waitAllCassandraNodesReady()
         successCount=$(aws s3 ls $S3_CASSANDRA_SUCCESS_URL | wc -l)
         failureCount=$(aws s3 ls $S3_CASSANDRA_FAILURE_URL | wc -l)
 
-        if [ "$successCount" == "$CASSANDRA_NODES_COUNT" ]; then
+        if [ $successCount -ge $CASSANDRA_NODES_COUNT ]; then
             break
         fi
 
@@ -580,7 +587,7 @@ waitAllTestNodesReady()
 
         nodesCount=$(aws s3 ls $S3_TEST_NODES_DISCOVERY_URL | wc -l)
 
-        if [ "$nodesCount" == "$TEST_NODES_COUNT" ]; then
+        if [ $nodesCount -ge $TEST_NODES_COUNT ]; then
             break
         fi
 
@@ -604,7 +611,7 @@ waitAllTestNodesCompleted()
         failureCount=$(aws s3 ls $S3_TESTS_FAILURE_URL | wc -l)
         count=$(( $successCount+$failureCount ))
 
-        if [ "$count" == "$TEST_NODES_COUNT" ]; then
+        if [ $count -ge $TEST_NODES_COUNT ]; then
             break
         fi
 
@@ -663,6 +670,7 @@ echo "[INFO] Ignite success URL: $S3_IGNITE_SUCCESS_URL"
 echo "[INFO] Ignite failure URL: $S3_IGNITE_FAILURE_URL"
 echo "[INFO] Cassandra success URL: $S3_CASSANDRA_SUCCESS_URL"
 echo "[INFO] Cassandra failure URL: $S3_CASSANDRA_FAILURE_URL"
+echo "[INFO] Logs trigger URL: $S3_LOGS_TRIGGER_URL"
 echo "[INFO] JAVA_HOME: $JAVA_HOME"
 echo "[INFO] PATH: $PATH"
 echo "[INFO]-----------------------------------------------------------------"

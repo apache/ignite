@@ -26,8 +26,8 @@
         <constructor-arg type="java.lang.String">
             <value><![CDATA[
 <persistence keyspace="test1" table="primitive_test1">
-    <keyPersistence class="java.lang.Integer" strategy="PRIMITIVE" column="key"/>
-    <valuePersistence class="java.lang.Integer" strategy="PRIMITIVE" column="value"/>
+    <keyPersistence class="java.lang.Long" strategy="PRIMITIVE" column="key"/>
+    <valuePersistence class="java.lang.Long" strategy="PRIMITIVE" column="value"/>
 </persistence>]]>
             </value>
         </constructor-arg>
@@ -38,7 +38,7 @@
         <constructor-arg type="java.lang.String">
             <value><![CDATA[
 <persistence keyspace="test1" table="blob_test1">
-    <keyPersistence class="java.lang.Integer" strategy="PRIMITIVE" />
+    <keyPersistence class="java.lang.Long" strategy="PRIMITIVE" />
     <valuePersistence strategy="BLOB"/>
 </persistence>]]>
             </value>
