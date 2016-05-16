@@ -392,6 +392,25 @@ public final class IgniteSystemProperties {
         "IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID";
 
     /**
+     * System property to specify period in milliseconds between calls of the SQL statements cache cleanup task.
+     * <p>
+     * Cleanup tasks clears cache for terminated threads and for threads which did not perform SQL queries within
+     * timeout configured via {@link #IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT} property.
+     * <p>
+     * Default value is {@code 10,000ms}.
+     */
+    public static final String IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD = "IGNITE_H2_INDEXING_CACHE_CLEANUP_PERIOD";
+
+    /**
+     * System property to specify timeout in milliseconds after which thread's SQL statements cache is cleared by
+     * cleanup task if the thread does not perform any query.
+     * <p>
+     * Default value is {@code 600,000ms}.
+     */
+    public static final String IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT =
+        "IGNITE_H2_INDEXING_CACHE_THREAD_USAGE_TIMEOUT";
+
+    /**
      * Enforces singleton.
      */
     private IgniteSystemProperties() {
