@@ -32,13 +32,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.cache.Cache;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
 import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteServices;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DeploymentMode;
@@ -123,19 +123,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT
     };
 
-    /**
-     * Manages backward compatibility of {@link IgniteServices}.
-     * <p>
-     * If it is {@code false} then node is not required to have service implementation class if service is not
-     * deployed on this node.
-     * <p>
-     * If the property is {@code true} then service implementation class is required on node even if service
-     * is not deployed on this node.
-     */
-    private volatile boolean srvcCompatibility; // getBoolean(IGNITE_SERVICES_COMPATIBILITY_ENABLED, false);
-
     /** */
-    private volatile boolean srvcUsed;
+    private final AtomicReference<ServicesCompatibilityState> compatibilityState = new AtomicReference<>(ServicesCompatibilityState.NOT_COMPATIBLE_MODE_SRVC_NOT_USED);
 
     /** Local service instances. */
     private final Map<String, Collection<ServiceContextImpl>> locSvcs = new HashMap<>();
@@ -424,11 +413,11 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     public IgniteInternalFuture<?> deploy(ServiceConfiguration cfg) {
         A.notNull(cfg, "cfg");
 
-        srvcUsed = true;
+        ServicesCompatibilityState state = markCompatibilityStateAsUsed();
 
         validate(cfg);
 
-        if (!srvcCompatibility) {
+        if (!state.srvcCompatibility) {
             Marshaller marsh = ctx.config().getMarshaller();
 
             LazyServiceConfiguration cfg0;
@@ -539,6 +528,25 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                 return new GridFinishedFuture<>(e);
             }
+        }
+    }
+
+    /**
+     * @return Compatibility state.
+     */
+    private ServicesCompatibilityState markCompatibilityStateAsUsed() {
+        while (true) {
+            ServicesCompatibilityState state = compatibilityState.get();
+
+            if (state.used)
+                return state;
+
+            ServicesCompatibilityState newState = state.srvcCompatibility ?
+                ServicesCompatibilityState.COMPATIBLE_MODE_SRVC_USED :
+                ServicesCompatibilityState.NOT_COMPATIBLE_MODE_SRVC_USED;
+
+            if (compatibilityState.compareAndSet(state, newState))
+                return newState;
         }
     }
 
@@ -1228,32 +1236,38 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         boolean rmtNodeIsOld = node.version().compareTo(LAZY_SERVICES_CFG_SINCE) < 0;
 
-        if (!rmtNodeIsOld || srvcCompatibility)
-            return null;
+        while (true) {
+            ServicesCompatibilityState state = compatibilityState.get();
 
-        if (!srvcUsed) {
-            srvcCompatibility = true;
+            if (!rmtNodeIsOld || state.srvcCompatibility)
+                return null;
 
-            return null;
+            // Remote node is old and services are in not compatible mode.
+            if (!state.used) {
+                if (!compatibilityState.compareAndSet(state, ServicesCompatibilityState.COMPATIBLE_MODE_NOT_SRVC_USED))
+                    continue;
+
+                return null;
+            }
+
+            return new IgniteNodeValidationResult(node.id(), "Local node uses IgniteServices and works in not compatible mode with old nodes " +
+                "[locNodeId=" + locNode.id() + ", rmtNodeId=" + node.id() + "]",
+                "Remote node uses IgniteServices and works in not compatible mode with old nodes " +
+                    "[locNodeId=" + node.id() + ", rmtNodeId=" + locNode.id() + "]");
         }
-
-        return new IgniteNodeValidationResult(node.id(), "Local node uses IgniteServices and works in not compatible mode with old nodes " +
-            "[locNodeId=" + locNode.id() + ", rmtNodeId=" + node.id() + "]",
-            "Remote node uses IgniteServices and works in not compatible mode with old nodes " +
-                "[locNodeId=" + node.id() + ", rmtNodeId=" + locNode.id() + "]");
     }
 
     /**
      * @param mode Services compatiblity mode.
      */
     public void compatibilityMode(boolean mode) {
-        if (getString(IGNITE_SERVICES_COMPATIBILITY_ENABLED) != null) {
-            srvcCompatibility = true;
+        if (getString(IGNITE_SERVICES_COMPATIBILITY_ENABLED) != null || mode) {
+            assert compatibilityState.compareAndSet(null, ServicesCompatibilityState.COMPATIBLE_MODE_NOT_SRVC_USED);
 
             return;
         }
 
-        srvcCompatibility = mode;
+        assert compatibilityState.compareAndSet(null, ServicesCompatibilityState.NOT_COMPATIBLE_MODE_SRVC_NOT_USED);
     }
 
     /**
@@ -1264,11 +1278,17 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         @Override public void onUpdated(final Iterable<CacheEntryEvent<?, ?>> deps) {
             depExe.submit(new BusyRunnable() {
                 @Override public void run0() {
+                    boolean firstTime = true;
+
                     for (CacheEntryEvent<?, ?> e : deps) {
                         if (!(e.getKey() instanceof GridServiceDeploymentKey))
                             continue;
 
-                        srvcUsed = true;
+                        if (firstTime) {
+                            markCompatibilityStateAsUsed();
+
+                            firstTime = false;
+                        }
 
                         GridServiceDeployment dep;
 
@@ -1437,13 +1457,19 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 Iterator<Cache.Entry<Object, Object>> it = serviceEntries(
                                     ServiceDeploymentPredicate.INSTANCE);
 
+                                boolean firstTime = true;
+
                                 while (it.hasNext()) {
                                     Cache.Entry<Object, Object> e = it.next();
 
                                     if (!(e.getKey() instanceof GridServiceDeploymentKey))
                                         continue;
 
-                                    srvcUsed = true;
+                                    if (firstTime) {
+                                        markCompatibilityStateAsUsed();
+
+                                        firstTime = false;
+                                    }
 
                                     GridServiceDeployment dep = (GridServiceDeployment)e.getValue();
 
@@ -1568,11 +1594,17 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         @Override public void onUpdated(final Iterable<CacheEntryEvent<?, ?>> assignCol) throws CacheEntryListenerException {
             depExe.submit(new BusyRunnable() {
                 @Override public void run0() {
+                    boolean firstTime = true;
+
                     for (CacheEntryEvent<?, ?> e : assignCol) {
                         if (!(e.getKey() instanceof GridServiceAssignmentsKey))
                             continue;
 
-                        srvcUsed = true;
+                        if (firstTime) {
+                            markCompatibilityStateAsUsed();
+
+                            firstTime = false;
+                        }
 
                         GridServiceAssignments assigns;
 
@@ -1733,6 +1765,38 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public Map<UUID, Integer> call() throws Exception {
             return serviceTopology(ignite.context().cache().utilityCache(), svcName);
+        }
+    }
+
+    /**
+     *
+     */
+    private enum ServicesCompatibilityState {
+        /** */
+        NOT_COMPATIBLE_MODE_SRVC_NOT_USED(false, false),
+
+        /** */
+        NOT_COMPATIBLE_MODE_SRVC_USED(false, true),
+
+        /** */
+        COMPATIBLE_MODE_NOT_SRVC_USED(true, false),
+
+        /** */
+        COMPATIBLE_MODE_SRVC_USED(true, true);
+
+        /** */
+        private final boolean srvcCompatibility;
+
+        /** */
+        private final boolean used;
+
+        /**
+         * @param srvcCompatibility Services compatibility mode.
+         * @param used Services has been used.
+         */
+        ServicesCompatibilityState(boolean srvcCompatibility, boolean used) {
+            this.srvcCompatibility = srvcCompatibility;
+            this.used = used;
         }
     }
 }
