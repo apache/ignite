@@ -1250,7 +1250,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
             // Remote node is old and services are in not compatible mode.
             if (!state.used) {
-                if (!compatibilityState.compareAndSet(state, ServicesCompatibilityState.COMPATIBLE_MODE_NOT_SRVC_USED))
+                if (!compatibilityState.compareAndSet(state, ServicesCompatibilityState.COMPATIBLE_MODE_SRVC_NOT_USED))
                     continue;
 
                 return null;
@@ -1269,7 +1269,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     public void compatibilityMode(boolean mode) {
         if (srvcCompatibilitySysProp != null || mode)
             // Do nothing if already not null.
-            compatibilityState.compareAndSet(null, ServicesCompatibilityState.COMPATIBLE_MODE_NOT_SRVC_USED);
+            compatibilityState.compareAndSet(null, ServicesCompatibilityState.COMPATIBLE_MODE_SRVC_NOT_USED);
         else
             // Do nothing if already not null.
             compatibilityState.compareAndSet(null, ServicesCompatibilityState.NOT_COMPATIBLE_MODE_SRVC_NOT_USED);
@@ -1784,7 +1784,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         NOT_COMPATIBLE_MODE_SRVC_USED(false, true),
 
         /** */
-        COMPATIBLE_MODE_NOT_SRVC_USED(true, false),
+        COMPATIBLE_MODE_SRVC_NOT_USED(true, false),
 
         /** */
         COMPATIBLE_MODE_SRVC_USED(true, true);
