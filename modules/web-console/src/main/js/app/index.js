@@ -217,6 +217,9 @@ angular
 
     $locationProvider.html5Mode(true);
 }])
+.config(['$animateProvider', ($animateProvider) => {
+    $animateProvider.classNameFilter(/^((?!(fa-spin)).)*$/);
+}])
 .run(['$rootScope', ($root) => {
     $root._ = _;
 }])

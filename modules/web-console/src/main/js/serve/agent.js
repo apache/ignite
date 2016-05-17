@@ -311,6 +311,56 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
 
             return this.executeRest(cmd);
         }
+
+        /**
+         * @param {Boolean} demo Is need run command on demo node.
+         * @param {String} nid Node id.
+         * @param {String} cacheName Cache name.
+         * @returns {Promise}
+         */
+        cacheClear(demo, nid, cacheName) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', nid)
+                .addParam('p2', 'org.apache.ignite.internal.visor.cache.VisorCacheClearTask')
+                .addParam('p3', 'java.lang.String')
+                .addParam('p4', cacheName);
+
+            return this.executeRest(cmd);
+        }
+
+        /**
+         * @param {Boolean} demo Is need run command on demo node.
+         * @param {String} nid Node id.
+         * @param {String} cacheName Cache name.
+         * @returns {Promise}
+         */
+        cacheStop(demo, nid, cacheName) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', nid)
+                .addParam('p2', 'org.apache.ignite.internal.visor.cache.VisorCacheStopTask')
+                .addParam('p3', 'java.lang.String')
+                .addParam('p4', cacheName);
+
+            return this.executeRest(cmd);
+        }
+
+        /**
+         * @param {Boolean} demo Is need run command on demo node.
+         * @param {String} nid Node id.
+         * @returns {Promise}
+         */
+        ping(demo, nid) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', 'null')
+                .addParam('p2', 'org.apache.ignite.internal.visor.node.VisorNodePingTask')
+                .addParam('p3', 'java.util.UUID')
+                .addParam('p4', nid);
+
+            return this.executeRest(cmd);
+        }
     }
 
     /**

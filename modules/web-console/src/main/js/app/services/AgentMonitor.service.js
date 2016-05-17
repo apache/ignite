@@ -294,6 +294,35 @@ class IgniteAgentMonitor {
         return this._rest('node:visor:collect', this._evtOrderKey, this._evtThrottleCntrKey);
     }
 
+    /**
+     * Clear specified cache on specified node.
+     * @param {String} nid Node id.
+     * @param {String} cacheName Cache name.
+     * @returns {Promise}
+     */
+    cacheClear(nid, cacheName) {
+        return this._rest('node:cache:clear', nid, cacheName);
+    }
+
+    /**
+     * Stop specified cache on specified node.
+     * @param {String} nid Node id.
+     * @param {String} cacheName Cache name.
+     * @returns {Promise}
+     */
+    cacheStop(nid, cacheName) {
+        return this._rest('node:cache:stop', nid, cacheName);
+    }
+
+    /**
+     * Ping node.
+     * @param {String} nid Node id.
+     * @returns {Promise}
+     */
+    ping(nid) {
+        return this._rest('node:ping', nid);
+    }
+
     stopWatch() {
         this._scope.showModal = false;
 

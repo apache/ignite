@@ -250,6 +250,46 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                         .catch((err) => cb(_errorToJson(err)));
                 });
 
+                // Clear specified cache on specified node and return result to browser.
+                socket.on('node:cache:clear', (nid, cacheName, cb) => {
+                    agentMgr.findAgent(user._id)
+                        .then((agent) => agent.cacheClear(demo, nid, cacheName))
+                        .then((data) => {
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
+                // Stop specified cache on specified node and return result to browser.
+                socket.on('node:cache:stop', (nids, cacheName, cb) => {
+                    agentMgr.findAgent(user._id)
+                        .then((agent) => agent.cacheStop(demo, nids, cacheName))
+                        .then((data) => {
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
+
+                // Ping node and return result to browser.
+                socket.on('node:ping', (nid, cb) => {
+                    agentMgr.findAgent(user._id)
+                        .then((agent) => agent.ping(demo, nid))
+                        .then((data) => {
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
                 const count = agentMgr.addAgentListener(user._id, socket);
 
                 socket.emit('agent:count', {count});

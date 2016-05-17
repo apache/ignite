@@ -382,6 +382,12 @@ h1, h2, h3, h4, h5, h6 {
     margin-right: 20px;
 }
 
+.modal-body-with-scroll {
+    max-height: 420px;
+    overflow-y: auto;
+    margin: 0;
+}
+
 .greedy {
     min-height: 100%;
     height: #{"calc(100vh - 270px)"};
