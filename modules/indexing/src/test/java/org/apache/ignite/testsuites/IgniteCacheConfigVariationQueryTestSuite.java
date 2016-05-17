@@ -15,35 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.query;
+package org.apache.ignite.testsuites;
 
-import java.util.Collection;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.util.future.GridFinishedFuture;
-import org.jetbrains.annotations.Nullable;
+import junit.framework.TestSuite;
+import org.apache.ignite.internal.processors.cache.IgniteCacheConfigVariationsQueryTest;
+import org.apache.ignite.testframework.configvariations.ConfigVariationsTestSuiteBuilder;
 
 /**
- * Error future.
+ * Test suite for cache queries.
  */
-public class GridCacheQueryErrorFuture<T> extends GridFinishedFuture<Collection<T>> implements CacheQueryFuture<T> {
+public class IgniteCacheConfigVariationQueryTestSuite extends TestSuite {
     /**
-     * @param ctx Context.
-     * @param err Error.
+     * @return Test suite.
+     * @throws Exception If failed.
      */
-    public GridCacheQueryErrorFuture(GridKernalContext ctx, Throwable err) {
-        super(err);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public T next() throws IgniteCheckedException {
-        get();
-
-        return null;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void close() throws Exception {
-        cancel();
+    public static TestSuite suite() throws Exception {
+        return new ConfigVariationsTestSuiteBuilder(
+            "Cache Config Variations Query Test Suite",
+            IgniteCacheConfigVariationsQueryTest.class)
+            .withBasicCacheParams()
+            .gridsCount(5).backups(1)
+            .testedNodesCount(3).withClients()
+            .build();
     }
 }

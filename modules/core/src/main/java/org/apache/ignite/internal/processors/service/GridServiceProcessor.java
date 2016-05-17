@@ -71,6 +71,7 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -1119,35 +1120,41 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      */
     @SuppressWarnings("unchecked")
     private Iterator<Cache.Entry<Object, Object>> serviceEntries(IgniteBiPredicate<Object, Object> p) {
-        if (!cache.context().affinityNode()) {
-            ClusterNode oldestSrvNode =
-                CU.oldestAliveCacheServerNode(cache.context().shared(), AffinityTopologyVersion.NONE);
+        try {
+            if (!cache.context().affinityNode()) {
+                ClusterNode oldestSrvNode =
+                    CU.oldestAliveCacheServerNode(cache.context().shared(), AffinityTopologyVersion.NONE);
 
-            if (oldestSrvNode == null)
-                return new GridEmptyIterator<>();
+                if (oldestSrvNode == null)
+                    return new GridEmptyIterator<>();
 
-            GridCacheQueryManager qryMgr = cache.context().queries();
+                GridCacheQueryManager qryMgr = cache.context().queries();
 
-            CacheQuery<Map.Entry<Object, Object>> qry = qryMgr.createScanQuery(p, null, false);
+                CacheQuery<Map.Entry<Object, Object>> qry = qryMgr.createScanQuery(p, null, false);
 
-            qry.keepAll(false);
+                qry.keepAll(false);
 
-            qry.projection(ctx.cluster().get().forNode(oldestSrvNode));
+                qry.projection(ctx.cluster().get().forNode(oldestSrvNode));
 
-            return cache.context().itHolder().iterator(qry.execute(),
-                new CacheIteratorConverter<Object, Map.Entry<Object,Object>>() {
-                    @Override protected Object convert(Map.Entry<Object, Object> e) {
-                        return new CacheEntryImpl<>(e.getKey(), e.getValue());
-                    }
+                GridCloseableIterator<Map.Entry<Object, Object>> iter = qry.executeScanQuery();
 
-                    @Override protected void remove(Object item) {
-                        throw new UnsupportedOperationException();
-                    }
-                }
-            );
+                return cache.context().itHolder().iterator(iter,
+                    new CacheIteratorConverter<Cache.Entry<Object, Object>, Map.Entry<Object,Object>>() {
+                        @Override protected Cache.Entry<Object, Object> convert(Map.Entry<Object, Object> e) {
+                            return new CacheEntryImpl<>(e.getKey(), e.getValue());
+                        }
+
+                        @Override protected void remove(Cache.Entry<Object, Object> item) {
+                            throw new UnsupportedOperationException();
+                        }
+                    });
+            }
+            else
+                return cache.entrySetx().iterator();
         }
-        else
-            return cache.entrySetx().iterator();
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /**

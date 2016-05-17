@@ -30,8 +30,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
-
-import org.apache.ignite.*;
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -417,7 +420,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
 
             CacheQueryFuture<Map.Entry<T, ?>> fut = qry.execute();
 
-            CacheWeakQueryIteratorsHolder.WeakQueryFutureIterator it =
+            CacheWeakQueryIteratorsHolder.WeakReferenceCloseableIterator it =
                 ctx.itHolder().iterator(fut, new CacheIteratorConverter<T, Map.Entry<T, ?>>() {
                     @Override protected T convert(Map.Entry<T, ?> e) {
                         return e.getKey();
