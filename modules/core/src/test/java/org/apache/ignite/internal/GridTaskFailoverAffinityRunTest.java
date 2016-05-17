@@ -22,12 +22,15 @@ import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -45,6 +48,8 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
+    private static final AtomicInteger testJobsCompleteCnt = new AtomicInteger();
 
     /** */
     private boolean clientMode;
@@ -123,11 +128,14 @@ public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
                 int grid = gridIdx.getAndIncrement();
 
                 while (!stop.get() && System.currentTimeMillis() < stopTime) {
+                    info("+++ Stop grid " + grid);
                     stopGrid(grid);
 
+                    info("+++ Start grid " + grid);
                     startGrid(grid);
                 }
 
+                info("+++ Restart thread finished");
                 return null;
             }
         }, 2, "restart-thread");
@@ -136,6 +144,7 @@ public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
             while (System.currentTimeMillis() < stopTime) {
                 Collection<IgniteFuture<?>> futs = new ArrayList<>(1000);
 
+                info("+++ Does affinity calls");
                 for (int i = 0; i < 1000; i++) {
                     comp.affinityCall(null, i, new TestJob());
 
@@ -146,6 +155,7 @@ public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
                     futs.add(fut0);
                 }
 
+                info("+++ Waits affinity calls futures");
                 for (IgniteFuture<?> fut0 : futs) {
                     try {
                         fut0.get();
@@ -155,10 +165,16 @@ public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
                     }
                 }
             }
+        } catch (Throwable th) {
+            error("+++ The test thread failed exception.", th);
+            throw th;
         }
         finally {
+            info("+++ Set up stop flag");
             stop.set(true);
 
+            info("+++ The count of the completed TestJob: " + testJobsCompleteCnt);
+            info("+++ Waits restart threads future");
             fut.get();
         }
     }
@@ -167,9 +183,15 @@ public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
      *
      */
     private static class TestJob implements IgniteCallable<Object> {
+        @IgniteInstanceResource
+        private Ignite ignite;
+
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
+
             Thread.sleep(1000);
+//            System.out.println("TestJob finished on: " + ignite.name());
+            testJobsCompleteCnt.getAndIncrement();
 
             return null;
         }
