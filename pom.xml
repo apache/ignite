@@ -796,33 +796,6 @@
         </profile>
 
         <profile>
-            <id>ignite-npm</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>exec-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <phase>compile</phase>
-                                <goals>
-                                    <goal>exec</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                        <configuration>
-                            <executable>npm</executable>
-                            <arguments>
-                                <argument>publish</argument>
-                                <argument>modules/nodejs/src/main/js</argument>
-                            </arguments>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        
-        <profile>
             <id>update-versions</id>
             <!-- updates dotnet & cpp versions -->
             <build>
