@@ -123,8 +123,10 @@ public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
                 int grid = gridIdx.getAndIncrement();
 
                 while (!stop.get() && System.currentTimeMillis() < stopTime) {
+                    info("+++ Stop grid " + grid);
                     stopGrid(grid);
 
+                    info("+++ Start grid " + grid);
                     startGrid(grid);
                 }
 
@@ -136,6 +138,7 @@ public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
             while (System.currentTimeMillis() < stopTime) {
                 Collection<IgniteFuture<?>> futs = new ArrayList<>(1000);
 
+                info("+++ Does affinity calls");
                 for (int i = 0; i < 1000; i++) {
                     comp.affinityCall(null, i, new TestJob());
 
@@ -146,6 +149,7 @@ public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
                     futs.add(fut0);
                 }
 
+                info("+++ Waits affinity calls futures");
                 for (IgniteFuture<?> fut0 : futs) {
                     try {
                         fut0.get();
@@ -155,10 +159,15 @@ public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
                     }
                 }
             }
+        } catch (Throwable th) {
+            error("+++ The test thread failed exception.", th);
+            throw th;
         }
         finally {
+            info("+++ Set up stop flag");
             stop.set(true);
 
+            info("+++ Waits restart threads future");
             fut.get();
         }
     }
