@@ -1447,6 +1447,9 @@ public class IgniteTxHandler {
 
             return;
         }
+        else {
+            res.txState(fut.tx().txState());
+        }
 
         fut.onResult(nodeId, res);
     }

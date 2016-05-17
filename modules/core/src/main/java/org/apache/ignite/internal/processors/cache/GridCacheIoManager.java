@@ -35,10 +35,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishRequest;
-import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxFinishResponse;
-import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareRequest;
-import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.dht.CacheGetFuture;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtAffinityAssignmentRequest;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLockRequest;
@@ -63,6 +59,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
@@ -640,28 +637,19 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             cctx.tm().resetContext();
             cctx.mvcc().contextReset();
 
-            IgniteTxState txState = null;
-
             // Unwind eviction notifications.
+            if (msg instanceof IgniteTxStateAware) {
+                IgniteTxState txState = ((IgniteTxStateAware)msg).txState();
 
-            if (msg instanceof GridDistributedTxPrepareRequest)
-                txState = ((GridDistributedTxPrepareRequest)msg).txState();
-
-            else if (msg instanceof GridDistributedTxPrepareResponse)
-                txState = ((GridDistributedTxPrepareResponse)msg).txState();
-
-            else if (msg instanceof GridDistributedTxFinishRequest)
-                txState = ((GridDistributedTxFinishRequest)msg).txState();
-
+                if (txState != null)
+                    txState.unwindEvicts(cctx);
+            }
             else {
                 GridCacheContext ctx = cctx.cacheContext(msg.cacheId());
 
                 if (ctx != null)
                     CU.unwindEvicts(ctx);
             }
-
-            if (txState != null)
-                txState.unwindEvicts(cctx);
         }
     }
 

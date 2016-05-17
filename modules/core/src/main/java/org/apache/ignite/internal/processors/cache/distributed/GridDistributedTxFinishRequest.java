@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.lang.IgniteUuid;
@@ -32,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Transaction completion message.
  */
-public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
+public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage implements IgniteTxStateAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -227,17 +228,13 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
         return commit ? syncCommit : syncRollback;
     }
 
-    /**
-     * @return Transient TX state.
-     */
-    public IgniteTxState txState() {
+    /** {@inheritDoc} */
+    @Override public IgniteTxState txState() {
         return txState;
     }
 
-    /**
-     * @param txState Transient TX state.
-     */
-    public void txState(IgniteTxState txState) {
+    /** {@inheritDoc} */
+    @Override public void txState(IgniteTxState txState) {
         this.txState = txState;
     }
 
