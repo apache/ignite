@@ -153,7 +153,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         IgniteConfiguration resCfg = testsCfg.configurationFactory().getConfiguration(gridName, cfg);
