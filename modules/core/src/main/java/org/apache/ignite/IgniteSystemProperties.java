@@ -392,6 +392,24 @@ public final class IgniteSystemProperties {
         "IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID";
 
     /**
+     * Manages type of serialization mechanism for {@link String} that is marshalled/unmarshalled by BinaryMarshaller.
+     * Should be used for cases when a String contains a surrogate symbol without its pair one. This is frequently used
+     * in algorithms that encrypts data in String format.
+     */
+    public static final String IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2 =
+        "IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2";
+
+    /**
+     * If set to {@code true}, then default selected keys set is used inside
+     * {@code GridNioServer} which lead to some extra garbage generation when
+     * processing selected keys.
+     * <p>
+     * Default value is {@code false}. Should be switched to {@code true} if there are
+     * any problems in communication layer.
+     */
+    public static final String IGNITE_NO_SELECTOR_OPTS = "IGNITE_NO_SELECTOR_OPTS";
+
+    /**
      * System property to specify period in milliseconds between calls of the SQL statements cache cleanup task.
      * <p>
      * Cleanup tasks clears cache for terminated threads and for threads which did not perform SQL queries within
