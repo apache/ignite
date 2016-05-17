@@ -72,6 +72,7 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.processors.cache.CacheAffinitySharedManager;
 import org.apache.ignite.internal.processors.security.SecurityContext;
+import org.apache.ignite.internal.processors.service.GridServiceProcessor;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -133,7 +134,7 @@ import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE_ENABLED;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -3415,43 +3416,45 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
                 }
 
-                final Object locSrvcCompatibilityEnabled = locNode.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);
+                if (node.version().compareTo(GridServiceProcessor.LAZY_SERVICES_CFG_SINCE) >= 0) {
+                    final Boolean locSrvcCompatibilityEnabled = locNode.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);
 
-                final Object rmtSrvcCompatibilityEnabled = node.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);
+                    final Boolean rmtSrvcCompatibilityEnabled = node.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);
 
-                if (locSrvcCompatibilityEnabled == null ^ rmtSrvcCompatibilityEnabled == null) {
-                    utilityPool.submit(
-                        new Runnable() {
-                            @Override public void run() {
-                                String errMsg = "Local node's " + IGNITE_SERVICES_COMPATIBILITY_MODE_ENABLED +
-                                    " property value differs from remote node's value " +
-                                    "(to make sure all nodes in topology have identical IgniteServices compatibility mode, " +
-                                    "configure system property explicitly) " +
-                                    "[locSrvcCompatibilityEnabled=" + locSrvcCompatibilityEnabled +
-                                    ", rmtSrvcCompatibilityEnabled=" + rmtSrvcCompatibilityEnabled +
-                                    ", locNodeAddrs=" + U.addressesAsString(locNode) +
-                                    ", rmtNodeAddrs=" + U.addressesAsString(node) +
-                                    ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
+                    if (!F.eq(locSrvcCompatibilityEnabled, rmtSrvcCompatibilityEnabled)) {
+                        utilityPool.submit(
+                            new Runnable() {
+                                @Override public void run() {
+                                    String errMsg = "Local node's " + IGNITE_SERVICES_COMPATIBILITY_MODE +
+                                        " property value differs from remote node's value " +
+                                        "(to make sure all nodes in topology have identical IgniteServices compatibility mode, " +
+                                        "configure system property explicitly) " +
+                                        "[locSrvcCompatibilityEnabled=" + locSrvcCompatibilityEnabled +
+                                        ", rmtSrvcCompatibilityEnabled=" + rmtSrvcCompatibilityEnabled +
+                                        ", locNodeAddrs=" + U.addressesAsString(locNode) +
+                                        ", rmtNodeAddrs=" + U.addressesAsString(node) +
+                                        ", locNodeId=" + locNode.id() + ", rmtNodeId=" + msg.creatorNodeId() + ']';
 
-                                String sndMsg = "Local node's " + IGNITE_SERVICES_COMPATIBILITY_MODE_ENABLED +
-                                    " property value differs from remote node's value " +
-                                    "(to make sure all nodes in topology have identical IgniteServices compatibility mode, " +
-                                    "configure system property explicitly) " +
-                                    "[locSrvcCompatibilityEnabled=" + rmtSrvcCompatibilityEnabled +
-                                    ", rmtSrvcCompatibilityEnabled=" + locSrvcCompatibilityEnabled +
-                                    ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
-                                    ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
-                                    ", rmtNodeId=" + locNode.id() + ']';
+                                    String sndMsg = "Local node's " + IGNITE_SERVICES_COMPATIBILITY_MODE +
+                                        " property value differs from remote node's value " +
+                                        "(to make sure all nodes in topology have identical IgniteServices compatibility mode, " +
+                                        "configure system property explicitly) " +
+                                        "[locSrvcCompatibilityEnabled=" + rmtSrvcCompatibilityEnabled +
+                                        ", rmtSrvcCompatibilityEnabled=" + locSrvcCompatibilityEnabled +
+                                        ", locNodeAddrs=" + U.addressesAsString(node) + ", locPort=" + node.discoveryPort() +
+                                        ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
+                                        ", rmtNodeId=" + locNode.id() + ']';
 
-                                nodeCheckError(
-                                    node,
-                                    errMsg,
-                                    sndMsg);
-                            }
-                        });
+                                    nodeCheckError(
+                                        node,
+                                        errMsg,
+                                        sndMsg);
+                                }
+                            });
 
-                    // Ignore join request.
-                    return;
+                        // Ignore join request.
+                        return;
+                    }
                 }
 
                 // Handle join.

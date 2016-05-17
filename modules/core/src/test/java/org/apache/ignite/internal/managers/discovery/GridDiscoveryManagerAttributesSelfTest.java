@@ -29,7 +29,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE_ENABLED;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
@@ -229,20 +229,25 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testServiceCompatibilityEnabled() throws Exception {
-        String backup = System.getProperty(IGNITE_SERVICES_COMPATIBILITY_MODE_ENABLED);
+        String backup = System.getProperty(IGNITE_SERVICES_COMPATIBILITY_MODE);
 
         try {
             doTestServiceCompatibilityEnabled(true, null, true);
+            doTestServiceCompatibilityEnabled(false, null, true);
+            doTestServiceCompatibilityEnabled(null, false, true);
+            doTestServiceCompatibilityEnabled(true, false, true);
             doTestServiceCompatibilityEnabled(null, true, true);
+            doTestServiceCompatibilityEnabled(false, true, true);
 
             doTestServiceCompatibilityEnabled(true, true, false);
+            doTestServiceCompatibilityEnabled(false, false, false);
             doTestServiceCompatibilityEnabled(null, null, false);
         }
         finally {
             if (backup != null)
-                System.setProperty(IGNITE_SERVICES_COMPATIBILITY_MODE_ENABLED, backup);
+                System.setProperty(IGNITE_SERVICES_COMPATIBILITY_MODE, backup);
             else
-                System.clearProperty(IGNITE_SERVICES_COMPATIBILITY_MODE_ENABLED);
+                System.clearProperty(IGNITE_SERVICES_COMPATIBILITY_MODE);
         }
     }
 
@@ -255,16 +260,16 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     private void doTestServiceCompatibilityEnabled(Object first, Object second, boolean fail) throws Exception {
         try {
             if (first != null)
-                System.setProperty(IGNITE_SERVICES_COMPATIBILITY_MODE_ENABLED, String.valueOf(first));
+                System.setProperty(IGNITE_SERVICES_COMPATIBILITY_MODE, String.valueOf(first));
             else
-                System.clearProperty(IGNITE_SERVICES_COMPATIBILITY_MODE_ENABLED);
+                System.clearProperty(IGNITE_SERVICES_COMPATIBILITY_MODE);
 
             startGrid(0);
 
             if (second != null)
-                System.setProperty(IGNITE_SERVICES_COMPATIBILITY_MODE_ENABLED, String.valueOf(second));
+                System.setProperty(IGNITE_SERVICES_COMPATIBILITY_MODE, String.valueOf(second));
             else
-                System.clearProperty(IGNITE_SERVICES_COMPATIBILITY_MODE_ENABLED);
+                System.clearProperty(IGNITE_SERVICES_COMPATIBILITY_MODE);
 
             try {
                 startGrid(1);

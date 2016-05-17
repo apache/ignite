@@ -95,7 +95,7 @@ import org.apache.ignite.thread.IgniteThreadFactory;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE_ENABLED;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
 import static org.apache.ignite.IgniteSystemProperties.getString;
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
@@ -114,7 +114,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     public static final IgniteProductVersion LAZY_SERVICES_CFG_SINCE = IgniteProductVersion.fromString("1.5.22");
 
     /** */
-    private final String srvcCompatibilitySysProp = getString(IGNITE_SERVICES_COMPATIBILITY_MODE_ENABLED);
+    private final Boolean srvcCompatibilitySysProp;
 
     /** Time to wait before reassignment retries. */
     private static final long RETRY_TIMEOUT = 1000;
@@ -128,7 +128,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     };
 
     /** */
-    private final AtomicReference<ServicesCompatibilityState> compatibilityState = new AtomicReference<>();
+    private final AtomicReference<ServicesCompatibilityState> compatibilityState;
 
     /** Local service instances. */
     private final Map<String, Collection<ServiceContextImpl>> locSvcs = new HashMap<>();
@@ -170,6 +170,13 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         super(ctx);
 
         depExe = Executors.newSingleThreadExecutor(new IgniteThreadFactory(ctx.gridName(), "srvc-deploy"));
+
+        String servicesCompatibilityMode = getString(IGNITE_SERVICES_COMPATIBILITY_MODE);
+
+        srvcCompatibilitySysProp = servicesCompatibilityMode == null ? null : Boolean.valueOf(servicesCompatibilityMode);
+
+        compatibilityState = new AtomicReference<>(
+            new ServicesCompatibilityState(srvcCompatibilitySysProp != null ? srvcCompatibilitySysProp : false, false));
     }
 
     /** {@inheritDoc} */
@@ -547,9 +554,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
             if (state.used)
                 return state;
 
-            ServicesCompatibilityState newState = state.srvcCompatibility ?
-                ServicesCompatibilityState.COMPATIBLE_MODE_SRVC_USED :
-                ServicesCompatibilityState.NOT_COMPATIBLE_MODE_SRVC_USED;
+            ServicesCompatibilityState newState = new ServicesCompatibilityState(state.srvcCompatibility, true);
 
             if (compatibilityState.compareAndSet(state, newState))
                 return newState;
@@ -1250,15 +1255,17 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
             // Remote node is old and services are in not compatible mode.
             if (!state.used) {
-                if (!compatibilityState.compareAndSet(state, ServicesCompatibilityState.COMPATIBLE_MODE_SRVC_NOT_USED))
+                if (!compatibilityState.compareAndSet(state, new ServicesCompatibilityState(true, false)))
                     continue;
 
                 return null;
             }
 
-            return new IgniteNodeValidationResult(node.id(), "Local node uses IgniteServices and works in not compatible mode with old nodes " +
-                "[locNodeId=" + locNode.id() + ", rmtNodeId=" + node.id() + "]",
+            return new IgniteNodeValidationResult(node.id(), "Local node uses IgniteServices and works in not " +
+                "compatible mode with old nodes (" + IGNITE_SERVICES_COMPATIBILITY_MODE + " system property can be " +
+                "set explicitly) [locNodeId=" + locNode.id() + ", rmtNodeId=" + node.id() + "]",
                 "Remote node uses IgniteServices and works in not compatible mode with old nodes " +
+                    IGNITE_SERVICES_COMPATIBILITY_MODE + " system property can be set explicitly" +
                     "[locNodeId=" + node.id() + ", rmtNodeId=" + locNode.id() + "]");
         }
     }
@@ -1267,12 +1274,15 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param mode Services compatibility mode.
      */
     public void compatibilityMode(boolean mode) {
-        if (srvcCompatibilitySysProp != null || mode)
-            // Do nothing if already not null.
-            compatibilityState.compareAndSet(null, ServicesCompatibilityState.COMPATIBLE_MODE_SRVC_NOT_USED);
-        else
-            // Do nothing if already not null.
-            compatibilityState.compareAndSet(null, ServicesCompatibilityState.NOT_COMPATIBLE_MODE_SRVC_NOT_USED);
+        if (srvcCompatibilitySysProp != null)
+            mode = srvcCompatibilitySysProp;
+
+        while (true) {
+            ServicesCompatibilityState state = compatibilityState.get();
+
+            if (compatibilityState.compareAndSet(state, new ServicesCompatibilityState(mode, state.used)))
+                return;
+        }
     }
 
     /**
@@ -1776,19 +1786,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     /**
      *
      */
-    private enum ServicesCompatibilityState {
-        /** */
-        NOT_COMPATIBLE_MODE_SRVC_NOT_USED(false, false),
-
-        /** */
-        NOT_COMPATIBLE_MODE_SRVC_USED(false, true),
-
-        /** */
-        COMPATIBLE_MODE_SRVC_NOT_USED(true, false),
-
-        /** */
-        COMPATIBLE_MODE_SRVC_USED(true, true);
-
+    private static class ServicesCompatibilityState {
         /** */
         private final boolean srvcCompatibility;
 
