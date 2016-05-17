@@ -33,7 +33,8 @@ public class RandomSleeper {
     private int incr;
     private IgniteLogger log;
     private Random random = new Random(System.currentTimeMillis());
-    private int summary = 0;
+    private int duration = 0;
+    private int count = 0;
 
     /**
      * Creates sleeper instance
@@ -54,12 +55,20 @@ public class RandomSleeper {
         this.min = min;
         this.max = max;
         this.incr = incr;
+        this.log = log;
     }
 
     /**
      * Sleeps
      */
     public void sleep() {
+        count++;
+
+        // Don't do any sleep for the first two iterations. This significantly improves performance
+        // in case we were able to resolve the issue during first two iterations.
+        if (count <= 2)
+            return;
+
         try {
             int timeout = random.nextInt(max - min + 1) + min;
 
@@ -68,7 +77,7 @@ public class RandomSleeper {
 
             Thread.sleep(timeout);
 
-            summary += timeout;
+            duration += timeout;
 
             if (log != null)
                 log.info("Sleep completed");
@@ -85,7 +94,15 @@ public class RandomSleeper {
      * Returns summary sleep time
      * @return summary sleep time in milliseconds
      */
-    public int getSleepSummary() {
-        return summary;
+    public int getSleepDuration() {
+        return duration;
+    }
+
+    /**
+     * Returns sleeps count
+     * @return sleeps couint
+     */
+    public int getSleepCount() {
+        return count;
     }
 }
