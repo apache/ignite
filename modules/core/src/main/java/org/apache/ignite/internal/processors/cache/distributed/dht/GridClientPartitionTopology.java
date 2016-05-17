@@ -879,7 +879,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     @Override public void setOwners(int p, Set<UUID> owners) {
-        // no-op
+        // TODO GG-11122 implement.
     }
 
     /** {@inheritDoc} */

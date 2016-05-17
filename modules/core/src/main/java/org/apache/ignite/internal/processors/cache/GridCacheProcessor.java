@@ -1741,6 +1741,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     if (cache != null)
                         cache.state(req.state(), topVer);
                 }
+
                 if (req.stop()) {
                     stopGateway(req);
 
@@ -2657,8 +2658,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
             else if (req.modify()) {
                 if (desc != null) {
+                    assert req.state() != null : req;
 
-                    if (req.state() != null && !req.state().equals(desc.state())) {
+                    if (!req.state().equals(desc.state())) {
                         desc.state(req.state());
 
                         needExchange = true;

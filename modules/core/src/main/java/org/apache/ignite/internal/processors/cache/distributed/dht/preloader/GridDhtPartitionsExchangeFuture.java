@@ -1109,6 +1109,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     @Override public Throwable validateCache(GridCacheContext cctx) {
         Throwable err = error();
 
+        // TODO GG-11122: store cache state in exchange future.
         if (!cctx.cache().state().active())
             return new CacheInvalidStateException("Failed to perform cache operation " +
                 "(cache state is not valid): " + cctx.name());
@@ -1250,6 +1251,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         if (msgs.isEmpty())
             return;
 
+        // TODO GG-11122 iterate over client topologies.
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             for (int p = 0; p < cacheCtx.affinity().partitions(); p++) {
                 assignRolesByCounters(cacheCtx, p);
@@ -1263,6 +1265,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         long maxCntr = 0;
 
         for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : msgs.entrySet()) {
+            // TODO GG-11122 assert partitionUpdateCounters not null.
             if (e.getValue().partitionUpdateCounters(cacheCtx.cacheId()) == null)
                 continue;
 
@@ -1281,6 +1284,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         Set<UUID> owners = new HashSet<>();
 
         for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : msgs.entrySet()) {
+            // TODO GG-11122 assert partitionUpdateCounters not null.
             if (e.getValue().partitionUpdateCounters(cacheCtx.cacheId()) == null)
                 continue;
 
@@ -1312,7 +1316,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 }
             }
 
-            // TODO : find better place
+            // TODO : find better place, execute only when needed (server joined, cache state changed).
             assignRolesByCounters();
 
             updateLastVersion(cctx.versions().last());

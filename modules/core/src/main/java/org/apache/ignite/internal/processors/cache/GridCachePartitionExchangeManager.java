@@ -1385,6 +1385,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                                 long delay = cacheCtx.config().getRebalanceDelay();
 
+                                // TODO GG-11122 check active state here.
+
                                 GridDhtPreloaderAssignments assigns = null;
 
                                 // Don't delay for dummy reassigns to avoid infinite recursion.
