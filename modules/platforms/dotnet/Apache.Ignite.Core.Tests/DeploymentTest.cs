@@ -17,7 +17,6 @@
 
 #pragma warning disable 649
 #pragma warning disable 169
-#pragma warning disable 618
 namespace Apache.Ignite.Core.Tests
 {
     using System;
