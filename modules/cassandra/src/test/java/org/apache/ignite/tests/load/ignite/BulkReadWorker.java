@@ -30,7 +30,7 @@ public class BulkReadWorker extends Worker {
     public static final String LOGGER_NAME = "IgniteBulkReadLoadTest";
 
     /** */
-    public BulkReadWorker(Ignite ignite, int startPosition, int endPosition) {
+    public BulkReadWorker(Ignite ignite, long startPosition, long endPosition) {
         super(ignite, startPosition, endPosition);
     }
 

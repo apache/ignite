@@ -1,4 +1,5 @@
-#!/bin/sh
+#!/bin/bash
+
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
 # contributor license agreements.  See the NOTICE file distributed with
@@ -16,24 +17,9 @@
 # limitations under the License.
 #
 
-TESTS_ROOT=$(readlink -m $( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd ))
-TESTS_CLASSPATH="$TESTS_ROOT/lib/*:$TESTS_ROOT/settings"
+JVM_OPTS="-Xms10g -Xmx10g -server -XX:+AggressiveOpts -XX:MaxMetaspaceSize=256m"
+JVM_OPTS="$JVM_OPTS -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:+UseTLAB -XX:NewSize=128m -XX:MaxNewSize=768m"
+#JVM_OPTS="$JVM_OPTS -XX:MaxTenuringThreshold=0 -XX:SurvivorRatio=1024 -XX:+UseCMSInitiatingOccupancyOnly -XX:CMSInitiatingOccupancyFraction=60"
+JVM_OPTS="$JVM_OPTS -Xss16m"
 
-. $TESTS_ROOT/jvm-opt.sh $@
-
-java $JVM_OPTS -cp "$TESTS_CLASSPATH" "org.apache.ignite.tests.IgnitePersistentStoreLoadTest"
-
-if [ $? -ne 0 ]; then
-    echo
-    echo "--------------------------------------------------------------------------------"
-    echo "[ERROR] Tests execution failed"
-    echo "--------------------------------------------------------------------------------"
-    echo
-    exit 1
-fi
-
-echo
-echo "--------------------------------------------------------------------------------"
-echo "[INFO] Tests execution succeed"
-echo "--------------------------------------------------------------------------------"
-echo
+export JVM_OPTS

@@ -16,24 +16,6 @@
 # limitations under the License.
 #
 
-TESTS_ROOT=$(readlink -m $( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd ))
-TESTS_CLASSPATH="$TESTS_ROOT/lib/*:$TESTS_ROOT/settings"
-
-. $TESTS_ROOT/jvm-opt.sh $@
-
-java $JVM_OPTS -cp "$TESTS_CLASSPATH" "org.apache.ignite.tests.IgnitePersistentStoreLoadTest"
-
-if [ $? -ne 0 ]; then
-    echo
-    echo "--------------------------------------------------------------------------------"
-    echo "[ERROR] Tests execution failed"
-    echo "--------------------------------------------------------------------------------"
-    echo
-    exit 1
-fi
-
-echo
-echo "--------------------------------------------------------------------------------"
-echo "[INFO] Tests execution succeed"
-echo "--------------------------------------------------------------------------------"
-echo
+JVM_OPTS="-Xms6g -Xmx6g -XX:+AggressiveOpts -XX:MaxMetaspaceSize=256m"
+JVM_OPTS="$JVM_OPTS -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:+UseTLAB -XX:NewSize=128m -XX:MaxNewSize=768m"
+JVM_OPTS="$JVM_OPTS -Xss16m"

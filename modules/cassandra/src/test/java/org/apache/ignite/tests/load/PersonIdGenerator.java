@@ -25,7 +25,7 @@ import org.apache.ignite.tests.pojos.PersonId;
  */
 public class PersonIdGenerator implements Generator {
     /** {@inheritDoc} */
-    @Override public Object generate(int i) {
-        return new PersonId(Integer.toString(i), Integer.toString(i), i);
+    @Override public Object generate(long i) {
+        return new PersonId(Long.toString(i), Long.toString(i), i);
     }
 }

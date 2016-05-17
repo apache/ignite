@@ -133,18 +133,18 @@ public class TestsHelper {
     }
 
     /** */
-    public static Object generateLoadTestsKey(int i) {
+    public static Object generateLoadTestsKey(long i) {
         return LOAD_TESTS_KEY_GENERATOR.generate(i);
     }
 
     /** */
-    public static Object generateLoadTestsValue(int i) {
+    public static Object generateLoadTestsValue(long i) {
         return LOAD_TESTS_VALUE_GENERATOR.generate(i);
     }
 
     /** */
     @SuppressWarnings("unchecked")
-    public static CacheEntryImpl generateLoadTestsEntry(int i) {
+    public static CacheEntryImpl generateLoadTestsEntry(long i) {
         return new CacheEntryImpl(TestsHelper.generateLoadTestsKey(i), TestsHelper.generateLoadTestsValue(i));
     }
 
@@ -159,30 +159,30 @@ public class TestsHelper {
     }
 
     /** */
-    public static Map<Integer, Integer> generateIntegersMap() {
-        return generateIntegersMap(BULK_OPERATION_SIZE);
+    public static Map<Long, Long> generateLongsMap() {
+        return generateLongsMap(BULK_OPERATION_SIZE);
     }
 
     /** */
-    public static Map<Integer, Integer> generateIntegersMap(int cnt) {
-        Map<Integer, Integer> map = new HashMap<>();
+    public static Map<Long, Long> generateLongsMap(int cnt) {
+        Map<Long, Long> map = new HashMap<>();
 
-        for (int i = 0; i < cnt; i++)
+        for (long i = 0; i < cnt; i++)
             map.put(i, i + 123);
 
         return map;
     }
 
     /** */
-    public static Collection<CacheEntryImpl<Integer, Integer>> generateIntegersEntries() {
-        return generateIntegersEntries(BULK_OPERATION_SIZE);
+    public static Collection<CacheEntryImpl<Long, Long>> generateLongsEntries() {
+        return generateLongsEntries(BULK_OPERATION_SIZE);
     }
 
     /** */
-    public static Collection<CacheEntryImpl<Integer, Integer>> generateIntegersEntries(int cnt) {
-        Collection<CacheEntryImpl<Integer, Integer>> entries = new LinkedList<>();
+    public static Collection<CacheEntryImpl<Long, Long>> generateLongsEntries(int cnt) {
+        Collection<CacheEntryImpl<Long, Long>> entries = new LinkedList<>();
 
-        for (int i = 0; i < cnt; i++)
+        for (long i = 0; i < cnt; i++)
             entries.add(new CacheEntryImpl<>(i, i + 123));
 
         return entries;
@@ -219,20 +219,20 @@ public class TestsHelper {
     }
 
     /** */
-    public static Map<Integer, Person> generateIntegersPersonsMap() {
-        Map<Integer, Person> map = new HashMap<>();
+    public static Map<Long, Person> generateLongsPersonsMap() {
+        Map<Long, Person> map = new HashMap<>();
 
-        for (int i = 0; i < BULK_OPERATION_SIZE; i++)
+        for (long i = 0; i < BULK_OPERATION_SIZE; i++)
             map.put(i, generateRandomPerson());
 
         return map;
     }
 
     /** */
-    public static Collection<CacheEntryImpl<Integer, Person>> generateIntegersPersonsEntries() {
-        Collection<CacheEntryImpl<Integer, Person>> entries = new LinkedList<>();
+    public static Collection<CacheEntryImpl<Long, Person>> generateLongsPersonsEntries() {
+        Collection<CacheEntryImpl<Long, Person>> entries = new LinkedList<>();
 
-        for (int i = 0; i < BULK_OPERATION_SIZE; i++)
+        for (long i = 0; i < BULK_OPERATION_SIZE; i++)
             entries.add(new CacheEntryImpl<>(i, generateRandomPerson()));
 
         return entries;

@@ -94,22 +94,22 @@ public class IgnitePersistentStoreTest {
     public void primitiveStrategyTest() {
         Ignition.stopAll(true);
 
-        Map<Integer, Integer> intMap = TestsHelper.generateIntegersMap();
+        Map<Long, Long> longMap = TestsHelper.generateLongsMap();
         Map<String, String> strMap = TestsHelper.generateStringsMap();
 
         LOGGER.info("Running PRIMITIVE strategy write tests");
 
         try (Ignite ignite = Ignition.start("org/apache/ignite/tests/persistence/primitive/ignite-config.xml")) {
-            IgniteCache<Integer, Integer> intCache = ignite.getOrCreateCache(new CacheConfiguration<Integer, Integer>("cache1"));
+            IgniteCache<Long, Long> longCache = ignite.getOrCreateCache(new CacheConfiguration<Long, Long>("cache1"));
             IgniteCache<String, String> strCache = ignite.getOrCreateCache(new CacheConfiguration<String, String>("cache2"));
 
             LOGGER.info("Running single operation write tests");
-            intCache.put(1, 1);
+            longCache.put(1L, 1L);
             strCache.put("1", "1");
             LOGGER.info("Single operation write tests passed");
 
             LOGGER.info("Running bulk operation write tests");
-            intCache.putAll(intMap);
+            longCache.putAll(longMap);
             strCache.putAll(strMap);
             LOGGER.info("Bulk operation write tests passed");
         }
@@ -121,14 +121,14 @@ public class IgnitePersistentStoreTest {
         try (Ignite ignite = Ignition.start("org/apache/ignite/tests/persistence/primitive/ignite-config.xml")) {
             LOGGER.info("Running PRIMITIVE strategy read tests");
 
-            IgniteCache<Integer, Integer> intCache = ignite.getOrCreateCache(new CacheConfiguration<Integer, Integer>("cache1"));
+            IgniteCache<Long, Long> longCache = ignite.getOrCreateCache(new CacheConfiguration<Long, Long>("cache1"));
             IgniteCache<String, String> strCache = ignite.getOrCreateCache(new CacheConfiguration<String, String>("cache2"));
 
             LOGGER.info("Running single operation read tests");
 
-            Integer intVal = intCache.get(1);
-            if (!intVal.equals(intMap.get(1)))
-                throw new RuntimeException("Integer value was incorrectly deserialized from Cassandra");
+            Long longVal = longCache.get(1L);
+            if (!longVal.equals(longMap.get(1L)))
+                throw new RuntimeException("Long value was incorrectly deserialized from Cassandra");
 
             String strVal = strCache.get("1");
             if (!strVal.equals(strMap.get("1")))
@@ -138,9 +138,9 @@ public class IgnitePersistentStoreTest {
 
             LOGGER.info("Running bulk operation read tests");
 
-            Map<Integer, Integer> intMap1 = intCache.getAll(intMap.keySet());
-            if (!TestsHelper.checkMapsEqual(intMap, intMap1))
-                throw new RuntimeException("Integer values batch was incorrectly deserialized from Cassandra");
+            Map<Long, Long> longMap1 = longCache.getAll(longMap.keySet());
+            if (!TestsHelper.checkMapsEqual(longMap, longMap1))
+                throw new RuntimeException("Long values batch was incorrectly deserialized from Cassandra");
 
             Map<String, String> strMap1 = strCache.getAll(strMap.keySet());
             if (!TestsHelper.checkMapsEqual(strMap, strMap1))
@@ -152,8 +152,8 @@ public class IgnitePersistentStoreTest {
 
             LOGGER.info("Running PRIMITIVE strategy delete tests");
 
-            intCache.remove(1);
-            intCache.removeAll(intMap.keySet());
+            longCache.remove(1L);
+            longCache.removeAll(longMap.keySet());
 
             strCache.remove("1");
             strCache.removeAll(strMap.keySet());
@@ -167,22 +167,22 @@ public class IgnitePersistentStoreTest {
     public void blobStrategyTest() {
         Ignition.stopAll(true);
 
-        Map<Integer, Integer> intMap = TestsHelper.generateIntegersMap();
-        Map<Integer, Person> personMap = TestsHelper.generateIntegersPersonsMap();
+        Map<Long, Long> longMap = TestsHelper.generateLongsMap();
+        Map<Long, Person> personMap = TestsHelper.generateLongsPersonsMap();
 
         LOGGER.info("Running BLOB strategy write tests");
 
         try (Ignite ignite = Ignition.start("org/apache/ignite/tests/persistence/blob/ignite-config.xml")) {
-            IgniteCache<Integer, Integer> intCache = ignite.getOrCreateCache(new CacheConfiguration<Integer, Integer>("cache1"));
-            IgniteCache<Integer, Person> personCache = ignite.getOrCreateCache(new CacheConfiguration<Integer, Person>("cache2"));
+            IgniteCache<Long, Long> longCache = ignite.getOrCreateCache(new CacheConfiguration<Long, Long>("cache1"));
+            IgniteCache<Long, Person> personCache = ignite.getOrCreateCache(new CacheConfiguration<Long, Person>("cache2"));
 
             LOGGER.info("Running single operation write tests");
-            intCache.put(1, 1);
-            personCache.put(1, TestsHelper.generateRandomPerson());
+            longCache.put(1L, 1L);
+            personCache.put(1L, TestsHelper.generateRandomPerson());
             LOGGER.info("Single operation write tests passed");
 
             LOGGER.info("Running bulk operation write tests");
-            intCache.putAll(intMap);
+            longCache.putAll(longMap);
             personCache.putAll(personMap);
             LOGGER.info("Bulk operation write tests passed");
         }
@@ -194,28 +194,28 @@ public class IgnitePersistentStoreTest {
         try (Ignite ignite = Ignition.start("org/apache/ignite/tests/persistence/blob/ignite-config.xml")) {
             LOGGER.info("Running BLOB strategy read tests");
 
-            IgniteCache<Integer, Integer> intCache = ignite.getOrCreateCache(new CacheConfiguration<Integer, Integer>("cache1"));
-            IgniteCache<Integer, Person> personCache = ignite.getOrCreateCache(new CacheConfiguration<Integer, Person>("cache2"));
+            IgniteCache<Long, Long> longCache = ignite.getOrCreateCache(new CacheConfiguration<Long, Long>("cache1"));
+            IgniteCache<Long, Person> personCache = ignite.getOrCreateCache(new CacheConfiguration<Long, Person>("cache2"));
 
             LOGGER.info("Running single operation read tests");
 
-            Integer intVal = intCache.get(1);
-            if (!intVal.equals(intMap.get(1)))
-                throw new RuntimeException("Integer value was incorrectly deserialized from Cassandra");
+            Long longVal = longCache.get(1L);
+            if (!longVal.equals(longMap.get(1L)))
+                throw new RuntimeException("Long value was incorrectly deserialized from Cassandra");
 
-            Person person = personCache.get(1);
-            if (!person.equals(personMap.get(1)))
+            Person person = personCache.get(1L);
+            if (!person.equals(personMap.get(1L)))
                 throw new RuntimeException("Person value was incorrectly deserialized from Cassandra");
 
             LOGGER.info("Single operation read tests passed");
 
             LOGGER.info("Running bulk operation read tests");
 
-            Map<Integer, Integer> intMap1 = intCache.getAll(intMap.keySet());
-            if (!TestsHelper.checkMapsEqual(intMap, intMap1))
-                throw new RuntimeException("Integer values batch was incorrectly deserialized from Cassandra");
+            Map<Long, Long> longMap1 = longCache.getAll(longMap.keySet());
+            if (!TestsHelper.checkMapsEqual(longMap, longMap1))
+                throw new RuntimeException("Long values batch was incorrectly deserialized from Cassandra");
 
-            Map<Integer, Person> personMap1 = personCache.getAll(personMap.keySet());
+            Map<Long, Person> personMap1 = personCache.getAll(personMap.keySet());
             if (!TestsHelper.checkPersonMapsEqual(personMap, personMap1, false))
                 throw new RuntimeException("Person values batch was incorrectly deserialized from Cassandra");
 
@@ -225,10 +225,10 @@ public class IgnitePersistentStoreTest {
 
             LOGGER.info("Running BLOB strategy delete tests");
 
-            intCache.remove(1);
-            intCache.removeAll(intMap.keySet());
+            longCache.remove(1L);
+            longCache.removeAll(longMap.keySet());
 
-            personCache.remove(1);
+            personCache.remove(1L);
             personCache.removeAll(personMap.keySet());
 
             LOGGER.info("BLOB strategy delete tests passed");
@@ -242,16 +242,16 @@ public class IgnitePersistentStoreTest {
 
         LOGGER.info("Running POJO strategy write tests");
 
-        Map<Integer, Person> personMap1 = TestsHelper.generateIntegersPersonsMap();
+        Map<Long, Person> personMap1 = TestsHelper.generateLongsPersonsMap();
         Map<PersonId, Person> personMap2 = TestsHelper.generatePersonIdsPersonsMap();
 
         try (Ignite ignite = Ignition.start("org/apache/ignite/tests/persistence/pojo/ignite-config.xml")) {
-            IgniteCache<Integer, Person> personCache1 = ignite.getOrCreateCache(new CacheConfiguration<Integer, Person>("cache1"));
+            IgniteCache<Long, Person> personCache1 = ignite.getOrCreateCache(new CacheConfiguration<Long, Person>("cache1"));
             IgniteCache<PersonId, Person> personCache2 = ignite.getOrCreateCache(new CacheConfiguration<PersonId, Person>("cache2"));
             IgniteCache<PersonId, Person> personCache3 = ignite.getOrCreateCache(new CacheConfiguration<PersonId, Person>("cache3"));
 
             LOGGER.info("Running single operation write tests");
-            personCache1.put(1, TestsHelper.generateRandomPerson());
+            personCache1.put(1L, TestsHelper.generateRandomPerson());
             personCache2.put(TestsHelper.generateRandomPersonId(), TestsHelper.generateRandomPerson());
             personCache3.put(TestsHelper.generateRandomPersonId(), TestsHelper.generateRandomPerson());
             LOGGER.info("Single operation write tests passed");
@@ -270,13 +270,13 @@ public class IgnitePersistentStoreTest {
         try (Ignite ignite = Ignition.start("org/apache/ignite/tests/persistence/pojo/ignite-config.xml")) {
             LOGGER.info("Running POJO strategy read tests");
 
-            IgniteCache<Integer, Person> personCache1 = ignite.getOrCreateCache(new CacheConfiguration<Integer, Person>("cache1"));
+            IgniteCache<Long, Person> personCache1 = ignite.getOrCreateCache(new CacheConfiguration<Long, Person>("cache1"));
             IgniteCache<PersonId, Person> personCache2 = ignite.getOrCreateCache(new CacheConfiguration<PersonId, Person>("cache2"));
             IgniteCache<PersonId, Person> personCache3 = ignite.getOrCreateCache(new CacheConfiguration<PersonId, Person>("cache3"));
 
             LOGGER.info("Running single operation read tests");
-            Person person = personCache1.get(1);
-            if (!person.equalsPrimitiveFields(personMap1.get(1)))
+            Person person = personCache1.get(1L);
+            if (!person.equalsPrimitiveFields(personMap1.get(1L)))
                 throw new RuntimeException("Person value was incorrectly deserialized from Cassandra");
 
             PersonId id = personMap2.keySet().iterator().next();
@@ -293,9 +293,9 @@ public class IgnitePersistentStoreTest {
 
             LOGGER.info("Running bulk operation read tests");
 
-            Map<Integer, Person> persons1 = personCache1.getAll(personMap1.keySet());
+            Map<Long, Person> persons1 = personCache1.getAll(personMap1.keySet());
             if (!TestsHelper.checkPersonMapsEqual(persons1, personMap1, true))
-                throw new RuntimeException("Integer values batch was incorrectly deserialized from Cassandra");
+                throw new RuntimeException("Persons values batch was incorrectly deserialized from Cassandra");
 
             Map<PersonId, Person> persons2 = personCache2.getAll(personMap2.keySet());
             if (!TestsHelper.checkPersonMapsEqual(persons2, personMap2, true))
@@ -311,7 +311,7 @@ public class IgnitePersistentStoreTest {
 
             LOGGER.info("Running POJO strategy delete tests");
 
-            personCache1.remove(1);
+            personCache1.remove(1L);
             personCache1.removeAll(personMap1.keySet());
 
             personCache2.remove(id);

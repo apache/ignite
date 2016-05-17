@@ -19,7 +19,9 @@
 TESTS_ROOT=$(readlink -m $( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd ))
 TESTS_CLASSPATH="$TESTS_ROOT/lib/*:$TESTS_ROOT/settings"
 
-java -cp "$TESTS_CLASSPATH" "org.apache.ignite.tests.CassandraDirectPersistenceLoadTest"
+. $TESTS_ROOT/jvm-opt.sh $@
+
+java $JVM_OPTS -cp "$TESTS_CLASSPATH" "org.apache.ignite.tests.CassandraDirectPersistenceLoadTest"
 
 if [ $? -ne 0 ]; then
     echo

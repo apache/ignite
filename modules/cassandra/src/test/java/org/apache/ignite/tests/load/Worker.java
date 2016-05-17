@@ -58,16 +58,19 @@ public abstract class Worker extends Thread {
     private volatile long finishTime = 0;
 
     /** */
-    private volatile int warmupMsgProcessed = 0;
+    private volatile long warmupMsgProcessed = 0;
 
     /** */
-    private volatile int warmupSleepCnt = 0;
+    private volatile long warmupSleepCnt = 0;
 
     /** */
-    private volatile int msgProcessed = 0;
+    private volatile long msgProcessed = 0;
 
     /** */
-    private volatile int sleepCnt = 0;
+    private volatile long msgFailed = 0;
+
+    /** */
+    private volatile long sleepCnt = 0;
 
     /** */
     private Throwable executionError;
@@ -88,13 +91,13 @@ public abstract class Worker extends Thread {
     private Logger log;
 
     /** */
-    private int startPosition;
+    private long startPosition;
 
     /** */
-    private int endPosition;
+    private long endPosition;
 
     /** */
-    public Worker(CacheStore cacheStore, int startPosition, int endPosition) {
+    public Worker(CacheStore cacheStore, long startPosition, long endPosition) {
         this.cacheStore = cacheStore;
         this.log = Logger.getLogger(loggerName());
         this.startPosition = startPosition;
@@ -102,7 +105,7 @@ public abstract class Worker extends Thread {
     }
 
     /** */
-    public Worker(Ignite ignite, int startPosition, int endPosition) {
+    public Worker(Ignite ignite, long startPosition, long endPosition) {
         this.ignite = ignite;
         this.log = Logger.getLogger(loggerName());
         this.startPosition = startPosition;
@@ -113,16 +116,17 @@ public abstract class Worker extends Thread {
     @SuppressWarnings("unchecked")
     @Override public void run() {
         try {
-            if (cacheStore != null)
-                execute();
-            else {
+            if (ignite != null)
                 igniteCache = ignite.getOrCreateCache(new CacheConfiguration(TestsHelper.getLoadTestsCacheName()));
-                execute();
-            }
+
+            execute();
         }
         catch (Throwable e) {
             executionError = e;
             throw new RuntimeException("Test execution abnormally terminated", e);
+        }
+        finally {
+            reportTestCompletion();
         }
     }
 
@@ -132,19 +136,42 @@ public abstract class Worker extends Thread {
     }
 
     /** */
-    public int getSpeed() {
+    public long getSpeed() {
         if (msgProcessed == 0)
             return 0;
 
         long finish = finishTime != 0 ? finishTime : System.currentTimeMillis();
         long duration = (finish - startTime - sleepCnt * TestsHelper.getLoadTestsRequestsLatency()) / 1000;
 
-        return duration == 0 ? msgProcessed : msgProcessed / (int)duration;
+        return duration == 0 ? msgProcessed : msgProcessed / duration;
     }
 
     /** */
-    public int getMsgCountTotal() {
+    public long getErrorsCount() {
+        return msgFailed;
+    }
+
+    /** */
+    public float getErrorsPercent() {
+        if (msgFailed == 0)
+            return 0;
+
+        return msgProcessed + msgFailed == 0 ? 0 : (float)(msgFailed * 100 ) / (float)(msgProcessed + msgFailed);
+    }
+
+    /** */
+    public long getMsgCountTotal() {
         return warmupMsgProcessed + msgProcessed;
+    }
+
+    /** */
+    public long getWarmupMsgProcessed() {
+        return warmupMsgProcessed;
+    }
+
+    /** */
+    public long getMsgProcessed() {
+        return msgProcessed;
     }
 
     /** */
@@ -188,20 +215,23 @@ public abstract class Worker extends Thread {
 
         statReportedTime = testStartTime;
 
-        int cntr = startPosition;
+        long cntr = startPosition;
         Object key = TestsHelper.generateLoadTestsKey(cntr);
         Object val = TestsHelper.generateLoadTestsValue(cntr);
         List<CacheEntryImpl> batchList = new ArrayList<>(TestsHelper.getBulkOperationSize());
         Map batchMap = new HashMap(TestsHelper.getBulkOperationSize());
 
+        int execTime = TestsHelper.getLoadTestsWarmupPeriod() + TestsHelper.getLoadTestsExecutionTime();
+
         try {
             while (true) {
-                if (System.currentTimeMillis() - testStartTime > TestsHelper.getLoadTestsExecutionTime())
+                if (System.currentTimeMillis() - testStartTime > execTime)
                     break;
 
                 if (warmup && System.currentTimeMillis() - testStartTime > TestsHelper.getLoadTestsWarmupPeriod()) {
                     warmupFinishTime = System.currentTimeMillis();
                     startTime = warmupFinishTime;
+                    statReportedTime = warmupFinishTime;
                     warmup = false;
                     log.info("Warm up period completed");
                 }
@@ -244,59 +274,92 @@ public abstract class Worker extends Thread {
         finally {
             warmupFinishTime = warmupFinishTime != 0 ? warmupFinishTime : System.currentTimeMillis();
             finishTime = System.currentTimeMillis();
-            reportTestCompletion();
         }
     }
 
     /** */
-    private void doWork(CacheEntryImpl entry) throws InterruptedException {
-        process(cacheStore, entry);
-        updateMetrics(1);
+    private void doWork(CacheEntryImpl entry) {
+        try {
+            process(cacheStore, entry);
+            updateMetrics(1);
+        }
+        catch (Throwable e) {
+            log.error("Failed to perform single operation", e);
+            updateErrorMetrics(1);
+        }
     }
 
     /** */
-    private void doWork(Object key, Object val) throws InterruptedException {
-        process(igniteCache, key, val);
-        updateMetrics(1);
+    private void doWork(Object key, Object val) {
+        try {
+            process(igniteCache, key, val);
+            updateMetrics(1);
+        }
+        catch (Throwable e) {
+            log.error("Failed to perform single operation", e);
+            updateErrorMetrics(1);
+        }
     }
 
     /** */
-    private void doWork(Collection<CacheEntryImpl> entries) throws InterruptedException {
-        process(cacheStore, entries);
-        updateMetrics(entries.size());
+    private void doWork(Collection<CacheEntryImpl> entries) {
+        try {
+            process(cacheStore, entries);
+            updateMetrics(entries.size());
+        }
+        catch (Throwable e) {
+            log.error("Failed to perform batch operation", e);
+            updateErrorMetrics(entries.size());
+        }
     }
 
     /** */
-    private void doWork(Map entries) throws InterruptedException {
-        process(igniteCache, entries);
-        updateMetrics(entries.size());
+    private void doWork(Map entries) {
+        try {
+            process(igniteCache, entries);
+            updateMetrics(entries.size());
+        }
+        catch (Throwable e) {
+            log.error("Failed to perform batch operation", e);
+            updateErrorMetrics(entries.size());
+        }
     }
 
     /** */
-    private int getWarmUpSpeed() {
+    private long getWarmUpSpeed() {
         if (warmupMsgProcessed == 0)
             return 0;
 
         long finish = warmupFinishTime != 0 ? warmupFinishTime : System.currentTimeMillis();
         long duration = (finish - warmupStartTime - warmupSleepCnt * TestsHelper.getLoadTestsRequestsLatency()) / 1000;
 
-        return duration == 0 ? warmupMsgProcessed : warmupMsgProcessed / (int)duration;
+        return duration == 0 ? warmupMsgProcessed : warmupMsgProcessed / duration;
     }
 
     /** */
-    private void updateMetrics(int itemsProcessed) throws InterruptedException {
+    private void updateMetrics(int itemsProcessed) {
         if (warmup)
             warmupMsgProcessed += itemsProcessed;
         else
             msgProcessed += itemsProcessed;
 
-        if (TestsHelper.getLoadTestsRequestsLatency() > 0)
-            Thread.sleep(TestsHelper.getLoadTestsRequestsLatency());
+        if (TestsHelper.getLoadTestsRequestsLatency() > 0) {
+            try {
+                Thread.sleep(TestsHelper.getLoadTestsRequestsLatency());
 
-        if (warmup)
-            warmupSleepCnt++;
-        else
-            sleepCnt++;
+                if (warmup)
+                    warmupSleepCnt++;
+                else
+                    sleepCnt++;
+            }
+            catch (Throwable ignored) {
+            }
+        }
+    }
+
+    private void updateErrorMetrics(int itemsFailed) {
+        if (!warmup)
+            msgFailed += itemsFailed;
     }
 
     /** */
@@ -307,7 +370,12 @@ public abstract class Worker extends Thread {
 
         statReportedTime = System.currentTimeMillis();
 
-        int completed = (int)(statReportedTime - testStartTime) * 100 / TestsHelper.getLoadTestsExecutionTime();
+        int completed = warmup ?
+                (int)(statReportedTime - warmupStartTime) * 100 / TestsHelper.getLoadTestsWarmupPeriod() :
+                (int)(statReportedTime - startTime) * 100 / TestsHelper.getLoadTestsExecutionTime();
+
+        if (completed > 100)
+            completed = 100;
 
         if (warmup) {
             log.info("Warm up messages processed " + warmupMsgProcessed + ", " +
@@ -315,7 +383,8 @@ public abstract class Worker extends Thread {
         }
         else {
             log.info("Messages processed " + msgProcessed + ", " +
-                "speed " + getSpeed() + " msg/sec, " + completed + "% completed");
+                "speed " + getSpeed() + " msg/sec, " + completed + "% completed, " +
+                "errors " + msgFailed + " / " + String.format("%.2f", getErrorsPercent()).replace(",", ".") + "%");
         }
     }
 
@@ -343,7 +412,9 @@ public abstract class Worker extends Thread {
         }
 
         builder.append("Processed messages: ").append(msgProcessed).append(SystemHelper.LINE_SEPARATOR);
-        builder.append("Processing speed: ").append(getSpeed()).append(" msg/sec");
+        builder.append("Processing speed: ").append(getSpeed()).append(" msg/sec").append(SystemHelper.LINE_SEPARATOR);
+        builder.append("Errors: ").append(msgFailed).append(" / ").
+                append(String.format("%.2f", getErrorsPercent()).replace(",", ".")).append("%");
 
         if (executionError != null)
             log.error(builder.toString(), executionError);

@@ -36,9 +36,9 @@ public abstract class GenericBatchExecutionAssistant<R, V> implements BatchExecu
         if (processed.contains(seqNum))
             return;
 
-        processed.add(seqNum);
-
         process(row);
+
+        processed.add(seqNum);
     }
 
     /** {@inheritDoc} */

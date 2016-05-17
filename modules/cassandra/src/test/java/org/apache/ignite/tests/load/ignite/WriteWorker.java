@@ -29,7 +29,7 @@ public class WriteWorker extends Worker {
     public static final String LOGGER_NAME = "IgniteWriteLoadTest";
 
     /** */
-    public WriteWorker(Ignite ignite, int startPosition, int endPosition) {
+    public WriteWorker(Ignite ignite, long startPosition, long endPosition) {
         super(ignite, startPosition, endPosition);
     }
 

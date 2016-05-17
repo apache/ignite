@@ -301,9 +301,32 @@
                                             </fileset>
                                         </copy>
 
-                                        <fixcrlf file="${project.build.directory}/tests-package" eol="lf" eof="remove">
+                                        <fixcrlf srcdir="${project.build.directory}/tests-package" eol="lf" eof="remove">
                                             <include name="*.sh"/>
                                         </fixcrlf>
+
+                                        <copy todir="${project.build.directory}/tests-package" >
+                                            <fileset dir="${project.build.testSourceDirectory}/..">
+                                                <include name="bootstrap/**"/>
+                                            </fileset>
+                                        </copy>
+
+                                        <fixcrlf srcdir="${project.build.directory}/tests-package/bootstrap" eol="lf" eof="remove">
+                                            <include name="**"/>
+                                        </fixcrlf>
+
+                                        <zip destfile="${project.build.directory}/ignite-cassandra-tests-${project.version}.zip"
+                                             compress="true" whenempty="create" level="9" encoding="UTF-8"
+                                             useLanguageEncodingFlag="true" createUnicodeExtraFields="not-encodeable">
+
+                                            <zipfileset dir="${project.build.directory}/tests-package" prefix="ignite-cassandra-tests">
+                                                <exclude name="**/*.sh"/>
+                                            </zipfileset>
+
+                                            <zipfileset dir="${project.build.directory}/tests-package" prefix="ignite-cassandra-tests" filemode="555">
+                                                <include name="**/*.sh"/>
+                                            </zipfileset>
+                                        </zip>
                                     </then>
                                 </if>
                             </target>

@@ -29,7 +29,7 @@ public class WriteWorker extends Worker {
     public static final String LOGGER_NAME = "CassandraWriteLoadTest";
 
     /** */
-    public WriteWorker(CacheStore cacheStore, int startPosition, int endPosition) {
+    public WriteWorker(CacheStore cacheStore, long startPosition, long endPosition) {
         super(cacheStore, startPosition, endPosition);
     }
 

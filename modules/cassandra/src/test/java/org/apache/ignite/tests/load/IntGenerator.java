@@ -22,7 +22,12 @@ package org.apache.ignite.tests.load;
  */
 public class IntGenerator implements Generator {
     /** {@inheritDoc} */
-    @Override public Object generate(int i) {
-        return i;
+    @Override public Object generate(long i) {
+        long val = i / 10000;
+
+        while (val > Integer.MAX_VALUE)
+            val = val / 2;
+
+        return (int)val;
     }
 }

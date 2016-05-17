@@ -36,7 +36,7 @@ public class BulkReadWorker extends Worker {
     private List<Object> keys = new ArrayList<>(TestsHelper.getBulkOperationSize());
 
     /** */
-    public BulkReadWorker(CacheStore cacheStore, int startPosition, int endPosition) {
+    public BulkReadWorker(CacheStore cacheStore, long startPosition, long endPosition) {
         super(cacheStore, startPosition, endPosition);
     }
 
