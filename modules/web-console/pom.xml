@@ -30,7 +30,7 @@
         <relativePath>../../parent</relativePath>
     </parent>
 
-    <artifactId>ignite-control-center-web</artifactId>
+    <artifactId>ignite-web-console</artifactId>
     <version>1.6.0-SNAPSHOT</version>
 
     <build>

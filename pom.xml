@@ -787,10 +787,10 @@
         </profile>
 
         <profile>
-            <id>control-center</id>
+            <id>web-console</id>
             <modules>
-                <module>modules/control-center-agent</module>
-                <module>modules/control-center-web</module>
+                <module>modules/web-agent</module>
+                <module>modules/web-console</module>
                 <module>modules/schema-import-db</module>
             </modules>
         </profile>

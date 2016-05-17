@@ -30,7 +30,7 @@
         <relativePath>../../parent</relativePath>
     </parent>
 
-    <artifactId>ignite-control-center-agent</artifactId>
+    <artifactId>ignite-web-agent</artifactId>
     <version>1.6.0-SNAPSHOT</version>
 
     <properties>
@@ -148,14 +148,14 @@
 
                 <executions>
                     <execution>
-                        <id>release-control-center-agent</id>
+                        <id>release-web-agent</id>
                         <phase>package</phase>
                         <goals>
                             <goal>single</goal>
                         </goals>
                         <configuration>
                             <descriptors>
-                                <descriptor>assembly/release-control-center-agent.xml</descriptor>
+                                <descriptor>assembly/release-web-agent.xml</descriptor>
                             </descriptors>
                             <finalName>ignite-web-agent-${project.version}</finalName>
                             <outputDirectory>target</outputDirectory>
