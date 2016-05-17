@@ -2135,13 +2135,10 @@ public class BinaryUtils {
         for (cnt = 0; cnt < strLen; cnt++) {
             c = val.charAt(cnt);
 
-            // ASCII
-            if (c <= 0x007F)
+            if (c >= 0x0001 && c <= 0x007F)
                 utfLen++;
-                // Special symbols (surrogates)
             else if (c > 0x07FF)
                 utfLen += 3;
-                // The rest of the symbols.
             else
                 utfLen += 2;
         }
@@ -2153,16 +2150,16 @@ public class BinaryUtils {
         for (cnt = 0; cnt < strLen; cnt++) {
             c = val.charAt(cnt);
 
-            if (c <= 0x007F)
+            if (c >= 0x0001 && c <= 0x007F)
                 arr[position++] = (byte)c;
             else if (c > 0x07FF) {
-                arr[position++] = (byte)(0xE0 | c >> 12 & 0x0F);
-                arr[position++] = (byte)(0x80 | c >> 6 & 0x3F);
-                arr[position++] = (byte)(0x80 | c & 0x3F);
+                arr[position++] = (byte)(0xE0 | (c >> 12) & 0x0F);
+                arr[position++] = (byte)(0x80 | (c >> 6) & 0x3F);
+                arr[position++] = (byte)(0x80 | (c & 0x3F));
             }
             else {
-                arr[position++] = (byte)(0xC0 | c >> 6 & 0x1F);
-                arr[position++] = (byte)(0x80 | c & 0x3F);
+                arr[position++] = (byte)(0xC0 | ((c >> 6) & 0x1F));
+                arr[position++] = (byte)(0x80 | (c  & 0x3F));
             }
         }
 
