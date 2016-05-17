@@ -22,12 +22,15 @@ import java.util.Collection;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -45,6 +48,8 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
 public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
+    private static final AtomicInteger testJobsCompleteCnt = new AtomicInteger();
 
     /** */
     private boolean clientMode;
@@ -168,6 +173,7 @@ public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
             info("+++ Set up stop flag");
             stop.set(true);
 
+            info("+++ The count of the completed TestJob: " + testJobsCompleteCnt);
             info("+++ Waits restart threads future");
             fut.get();
         }
@@ -177,9 +183,15 @@ public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
      *
      */
     private static class TestJob implements IgniteCallable<Object> {
+        @IgniteInstanceResource
+        private Ignite ignite;
+
         /** {@inheritDoc} */
         @Override public Object call() throws Exception {
+
             Thread.sleep(1000);
+//            System.out.println("TestJob finished on: " + ignite.name());
+            testJobsCompleteCnt.getAndIncrement();
 
             return null;
         }
