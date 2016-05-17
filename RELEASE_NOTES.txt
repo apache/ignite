@@ -6,7 +6,7 @@ Apache Ignite In-Memory Data Fabric 1.6
 * .NET: Added ability to use Java-based remote filters in continuous queries.
 * Added ability to get partition 'updateCntr' with continuous query public API.
 * Added asynchronous execution of ContinuousQuery's remote filter and local listener.
-* Added backup patritions storaging to local store default behavior.
+* Added backup partitions storing to local store default behavior.
 * Added cache deadlock detection.
 * Added method to get versioned cache entry.
 * Added support for join timeout while registering local addresses with IP finder in TcpDiscoverySpi.
