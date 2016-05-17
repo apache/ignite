@@ -29,6 +29,13 @@ Ignite-specific options:
  * --enable-odbc - build included ODBC driver. Disabled by default.
  * --enable-core - build Ignite core library. Enabled by default.
  * --enable-node - build stand-alone node executable. Enabled by default.
+ 
+If you only need to build ODBC driver and do not want to build anything else you may just
+use configure script with the following arguments:
+ ./configure --enable-odbc --disable-core --disable-node
+
+With the config like that you should not have any ignite dependencies as jvm.dll installed
+to build ODBC driver.
 
 NOTE: You may want to use "make install" command to install Ignite libraries and heasders
 for your operation system. Note however that this action may require superuser privileges.
@@ -48,6 +55,9 @@ Building binaries:
 
  * Open and build %IGNITE_HOME%\platforms\cpp\project\vs\ignite.sln (or ignite_86.sln if
    you are running 32-bit platform).
+ * If you want to build ODBC driver then you should explicitly build it as it is disabled
+   in the solution file by default. In IDE it can be done by clicking on the ODBC project
+   with the right mouse button and choosing "Build" option.
 
 Building in later versions of Visual Studio:
  * Open project\vs\ignite.sln or project\vs\ignite_86.sln in Visual Studio

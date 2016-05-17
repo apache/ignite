@@ -39,7 +39,7 @@ public abstract class DatabaseMetadataDialect {
      * @return Collection of schema descriptors.
      * @throws SQLException If failed to get schemas.
      */
-    public abstract List<String> schemas(Connection conn) throws SQLException;
+    public abstract Collection<String> schemas(Connection conn) throws SQLException;
 
     /**
      * Gets tables from database.

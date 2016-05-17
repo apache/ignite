@@ -329,6 +329,8 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
         Ignite ignite1 = startGrid(1);
         Ignite ignite2 = startGrid(2);
 
+        awaitPartitionMapExchange();
+
         String name = BACKUP_CACHE_2;
 
         int key1 = -1;

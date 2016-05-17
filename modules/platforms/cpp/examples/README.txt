@@ -16,6 +16,7 @@ Prerequisites:
  * GCC, g++, autotools, automake, and libtool must be installed.
 
 To build examples execute the following commands one by one from examples root directory:
+ * libtoolize && aclocal && autoheader && automake --add-missing && autoreconf
  * ./configure
  * make
 

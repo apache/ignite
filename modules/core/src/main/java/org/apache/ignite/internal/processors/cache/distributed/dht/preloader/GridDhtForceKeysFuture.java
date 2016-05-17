@@ -246,7 +246,11 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
             int curTopVer = topCntr.get();
 
-            preloader.addFuture(this);
+            if (!preloader.addFuture(this)) {
+                assert isDone() : this;
+
+                return false;
+            }
 
             trackable = true;
 

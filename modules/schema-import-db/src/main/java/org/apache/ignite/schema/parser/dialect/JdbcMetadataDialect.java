@@ -75,8 +75,8 @@ public class JdbcMetadataDialect extends DatabaseMetadataDialect {
     private static final int IDX_ASC_OR_DESC_IDX = 10;
 
     /** {@inheritDoc} */
-    @Override public List<String> schemas(Connection conn) throws SQLException {
-        List<String> schemas = new ArrayList<>();
+    @Override public Collection<String> schemas(Connection conn) throws SQLException {
+        Collection<String> schemas = new ArrayList<>();
 
         ResultSet rs = conn.getMetaData().getSchemas();
 

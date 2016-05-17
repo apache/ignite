@@ -379,7 +379,12 @@ public class BinaryWriterExImpl implements BinaryWriter, BinaryRawWriterEx, Obje
         if (val == null)
             out.writeByte(GridBinaryMarshaller.NULL);
         else {
-            byte[] strArr = val.getBytes(UTF_8);
+            byte[] strArr;
+
+            if (BinaryUtils.USE_STR_SERIALIZATION_VER_2)
+                strArr = BinaryUtils.strToUtf8Bytes(val);
+            else
+                strArr = val.getBytes(UTF_8);
 
             out.unsafeEnsure(1 + 4);
             out.unsafeWriteByte(GridBinaryMarshaller.STRING);
