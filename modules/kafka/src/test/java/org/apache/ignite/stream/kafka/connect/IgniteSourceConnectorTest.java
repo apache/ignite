@@ -96,12 +96,12 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         kafkaBroker = new TestKafkaBroker();
 
-        WorkerConfig workerConfig = new StandaloneConfig(makeWorkerProps());
+        WorkerConfig workerCfg = new StandaloneConfig(makeWorkerProps());
 
-        MemoryOffsetBackingStore offsetBackingStore = new MemoryOffsetBackingStore();
-        offsetBackingStore.configure(workerConfig.originals());
+        MemoryOffsetBackingStore offBackingStore = new MemoryOffsetBackingStore();
+        offBackingStore.configure(workerCfg.originals());
 
-        worker = new Worker(workerConfig, offsetBackingStore);
+        worker = new Worker(workerCfg, offBackingStore);
         worker.start();
 
         herder = new StandaloneHerder(worker);
@@ -210,6 +210,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
      * Sends messages to the grid.
      *
      * @return Map of key value messages.
+     * @throws IOException If failed.
      */
     private Map<String, String> sendData() throws IOException {
         Map<String, String> keyValMap = new HashMap<>();
@@ -257,7 +258,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
         long start = System.currentTimeMillis();
 
         try {
-            while (false || (System.currentTimeMillis() - start) < 10000) {
+            while ((System.currentTimeMillis() - start) < 10000) {
                 ConsumerRecords<String, CacheEvent> records = consumer.poll(10);
                 for (ConsumerRecord<String, CacheEvent> record : records) {
                     System.out.println("Event: offset = " + record.offset() + ", key = " + record.key()
@@ -274,9 +275,9 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
             consumer.close();
 
             if (conditioned)
-                assertTrue(evtCnt == (EVENT_CNT * TOPICS.length) / 2);
+                assertEquals((EVENT_CNT * TOPICS.length) / 2, evtCnt);
             else
-                assertTrue(evtCnt == EVENT_CNT * TOPICS.length);
+                assertEquals(EVENT_CNT * TOPICS.length, evtCnt);
         }
     }
 
@@ -306,6 +307,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
      * Creates properties for Kafka Connect workers.
      *
      * @return Worker configurations.
+     * @throws IOException If failed.
      */
     private Map<String, String> makeWorkerProps() throws IOException {
         Map<String, String> props = new HashMap<>();

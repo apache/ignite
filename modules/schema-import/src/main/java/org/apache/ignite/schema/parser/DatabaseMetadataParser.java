@@ -26,52 +26,16 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.schema.model.PojoDescriptor;
 import org.apache.ignite.schema.model.SchemaDescriptor;
-import org.apache.ignite.schema.parser.dialect.DB2MetadataDialect;
-import org.apache.ignite.schema.parser.dialect.DatabaseMetadataDialect;
-import org.apache.ignite.schema.parser.dialect.JdbcMetadataDialect;
-import org.apache.ignite.schema.parser.dialect.MySQLMetadataDialect;
-import org.apache.ignite.schema.parser.dialect.OracleMetadataDialect;
 
 /**
  * Database metadata parser.
  */
 public class DatabaseMetadataParser {
-    /** Logger. */
-    private static final Logger log = Logger.getLogger(DatabaseMetadataParser.class.getName());
-
-    /**
-     * Get specified dialect object for selected database.
-     *
-     * @param conn Connection to database.
-     * @return Specific dialect object.
-     */
-    private static DatabaseMetadataDialect dialect(Connection conn) {
-        try {
-            String dbProductName = conn.getMetaData().getDatabaseProductName();
-
-            if ("Oracle".equals(dbProductName))
-                return new OracleMetadataDialect();
-            else if (dbProductName.startsWith("DB2/"))
-                return new DB2MetadataDialect();
-            else if ("MySQL".equals(dbProductName))
-                return new MySQLMetadataDialect();
-            else
-                return new JdbcMetadataDialect();
-        }
-        catch (SQLException e) {
-            log.log(Level.SEVERE, "Failed to resolve dialect (JdbcMetaDataDialect will be used.", e);
-
-            return new JdbcMetadataDialect();
-        }
-    }
-
     /**
      * Get list of schemas from database.
      *

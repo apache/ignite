@@ -2203,6 +2203,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     }
                 };
             }
+
+            @Override public boolean isValueRequired() {
+                return false;
+            }
         };
     }
 
