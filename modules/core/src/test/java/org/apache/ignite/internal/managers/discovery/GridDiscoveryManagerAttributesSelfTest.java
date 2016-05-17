@@ -28,7 +28,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_ENABLED;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE_ENABLED;
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 
@@ -166,20 +166,20 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
      * @throws Exception If failed.
      */
     public void testServiceCompatibilityEnabled() throws Exception {
-        String backup = System.getProperty(IGNITE_SERVICES_COMPATIBILITY_ENABLED);
+        String backup = System.getProperty(IGNITE_SERVICES_COMPATIBILITY_MODE_ENABLED);
 
         try {
-            doTestServiceCompatibilityEnabled(true, false, true);
-            doTestServiceCompatibilityEnabled(false, true, true);
+            doTestServiceCompatibilityEnabled(true, null, true);
+            doTestServiceCompatibilityEnabled(null, true, true);
 
             doTestServiceCompatibilityEnabled(true, true, false);
-            doTestServiceCompatibilityEnabled(false, false, false);
+            doTestServiceCompatibilityEnabled(null, null, false);
         }
         finally {
             if (backup != null)
-                System.setProperty(IGNITE_SERVICES_COMPATIBILITY_ENABLED, backup);
+                System.setProperty(IGNITE_SERVICES_COMPATIBILITY_MODE_ENABLED, backup);
             else
-                System.clearProperty(IGNITE_SERVICES_COMPATIBILITY_ENABLED);
+                System.clearProperty(IGNITE_SERVICES_COMPATIBILITY_MODE_ENABLED);
         }
     }
 
@@ -189,13 +189,19 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
      * @param fail Fail flag.
      * @throws Exception If failed.
      */
-    private void doTestServiceCompatibilityEnabled(boolean first, boolean second, boolean fail) throws Exception {
+    private void doTestServiceCompatibilityEnabled(Object first, Object second, boolean fail) throws Exception {
         try {
-            System.setProperty(IGNITE_SERVICES_COMPATIBILITY_ENABLED, String.valueOf(first));
+            if (first != null)
+                System.setProperty(IGNITE_SERVICES_COMPATIBILITY_MODE_ENABLED, String.valueOf(first));
+            else
+                System.clearProperty(IGNITE_SERVICES_COMPATIBILITY_MODE_ENABLED);
 
             startGrid(0);
 
-            System.setProperty(IGNITE_SERVICES_COMPATIBILITY_ENABLED, String.valueOf(second));
+            if (second != null)
+                System.setProperty(IGNITE_SERVICES_COMPATIBILITY_MODE_ENABLED, String.valueOf(second));
+            else
+                System.clearProperty(IGNITE_SERVICES_COMPATIBILITY_MODE_ENABLED);
 
             try {
                 startGrid(1);
@@ -205,14 +211,14 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
             }
             catch (Exception e) {
                 if (!fail)
-                    fail("Node must join");
+                    fail("Node must join: " + e.getMessage());
             }
         }
         finally {
             stopAllGrids();
         }
     }
-    
+
     /**
      * @throws Exception If failed.
      */

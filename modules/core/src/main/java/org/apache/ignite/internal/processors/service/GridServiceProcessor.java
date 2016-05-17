@@ -95,10 +95,11 @@ import org.apache.ignite.thread.IgniteThreadFactory;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_ENABLED;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE_ENABLED;
 import static org.apache.ignite.IgniteSystemProperties.getString;
 import static org.apache.ignite.configuration.DeploymentMode.ISOLATED;
 import static org.apache.ignite.configuration.DeploymentMode.PRIVATE;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_SERVICES_COMPATIBILITY_MODE;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.UTILITY_CACHE_NAME;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -112,6 +113,9 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     // TODO check version before merge.
     public static final IgniteProductVersion LAZY_SERVICES_CFG_SINCE = IgniteProductVersion.fromString("1.5.22");
 
+    /** */
+    private final String srvcCompatibilitySysProp = getString(IGNITE_SERVICES_COMPATIBILITY_MODE_ENABLED);
+
     /** Time to wait before reassignment retries. */
     private static final long RETRY_TIMEOUT = 1000;
 
@@ -124,7 +128,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     };
 
     /** */
-    private final AtomicReference<ServicesCompatibilityState> compatibilityState = new AtomicReference<>(ServicesCompatibilityState.NOT_COMPATIBLE_MODE_SRVC_NOT_USED);
+    private final AtomicReference<ServicesCompatibilityState> compatibilityState = new AtomicReference<>();
 
     /** Local service instances. */
     private final Map<String, Collection<ServiceContextImpl>> locSvcs = new HashMap<>();
@@ -170,6 +174,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteCheckedException {
+        ctx.addNodeAttribute(ATTR_SERVICES_COMPATIBILITY_MODE, srvcCompatibilitySysProp);
+
         if (ctx.isDaemon())
             return;
 
@@ -1261,13 +1267,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
      * @param mode Services compatiblity mode.
      */
     public void compatibilityMode(boolean mode) {
-        if (getString(IGNITE_SERVICES_COMPATIBILITY_ENABLED) != null || mode) {
-            assert compatibilityState.compareAndSet(null, ServicesCompatibilityState.COMPATIBLE_MODE_NOT_SRVC_USED);
-
-            return;
-        }
-
-        assert compatibilityState.compareAndSet(null, ServicesCompatibilityState.NOT_COMPATIBLE_MODE_SRVC_NOT_USED);
+        if (srvcCompatibilitySysProp != null || mode)
+            // Do nothing if already not null.
+            compatibilityState.compareAndSet(null, ServicesCompatibilityState.COMPATIBLE_MODE_NOT_SRVC_USED);
+        else
+            // Do nothing if already not null.
+            compatibilityState.compareAndSet(null, ServicesCompatibilityState.NOT_COMPATIBLE_MODE_SRVC_NOT_USED);
     }
 
     /**
