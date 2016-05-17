@@ -46,6 +46,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryCollectionFactory;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryMapFactory;
@@ -62,8 +63,6 @@ import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * Binary utils.
@@ -1150,15 +1149,18 @@ public class BinaryUtils {
      * @return Value.
      */
     public static String doReadString(BinaryInputStream in) {
-        if (!in.hasArray())
-            return new String(doReadByteArray(in), UTF_8);
+        if (!in.hasArray()) {
+            byte[] arr = doReadByteArray(in);
+
+            return fromUtf8Bytes(arr, 0, arr.length);
+        }
 
         int strLen = in.readInt();
 
         int pos = in.position();
 
         // String will copy necessary array part for us.
-        String res = new String(in.array(), pos, strLen, UTF_8);
+        String res = fromUtf8Bytes(in.array(), pos, strLen);
 
         in.position(pos + strLen);
 
@@ -2010,6 +2012,123 @@ public class BinaryUtils {
         }
         else
             return null;
+    }
+
+    /**
+     * Read string from UTF-8 bytes.
+     * @param arr array
+     * @param off offset
+     * @param len length
+     * @return string
+     */
+    public static String fromUtf8Bytes(byte[] arr, int off, int len) {
+        int c, chararr_cnt = 0, total = off + len;
+        int c2, c3;
+        char[] chararr = new char[len];
+
+        // try reading ascii
+        while (off < total) {
+            c = (int) arr[off] & 0xff;
+            if (c > 127) break;
+            off++;
+            chararr[chararr_cnt++]=(char)c;
+        }
+
+        // read other
+        while (off < total) {
+            c = (int) arr[off] & 0xff;
+            switch (c >> 4) {
+                case 0: case 1: case 2: case 3: case 4: case 5: case 6: case 7:
+                    /* 0xxxxxxx*/
+                    off++;
+
+                    chararr[chararr_cnt++]=(char)c;
+
+                    break;
+                case 12: case 13:
+                    /* 110x xxxx   10xx xxxx*/
+                    off += 2;
+
+                    if (off > total)
+                        throw new IgniteException("Malformed input: partial character at end");
+
+                    c2 = (int) arr[off -1];
+
+                    if ((c2 & 0xC0) != 0x80)
+                        throw new IgniteException("Malformed input around byte " + off);
+
+                    chararr[chararr_cnt++]=(char)(((c & 0x1F) << 6) | (c2 & 0x3F));
+
+                    break;
+                case 14:
+                    /* 1110 xxxx  10xx xxxx  10xx xxxx */
+                    off += 3;
+
+                    if (off > total)
+                        throw new IgniteException("Malformed input: partial character at end");
+
+                    c2 = (int) arr[off -2];
+
+                    c3 = (int) arr[off -1];
+
+                    if (((c2 & 0xC0) != 0x80) || ((c3 & 0xC0) != 0x80))
+                        throw new IgniteException("Malformed input around byte " + (off -1));
+
+                    chararr[chararr_cnt++]=(char)(((c & 0x0F) << 12) |
+                        ((c2 & 0x3F) << 6)  |
+                        ((c3 & 0x3F) << 0));
+
+                    break;
+                default:
+                    /* 10xx xxxx,  1111 xxxx */
+                    throw new IgniteException("Malformed input around byte " + off);
+            }
+        }
+
+        return len == chararr_cnt ? new String(chararr) : new String(chararr, 0, chararr_cnt);
+    }
+
+    /**
+     * Write string to UTF-8 bytes.
+     * @param val Value.
+     */
+    public static byte[] toUtf8Bytes(String val) {
+        int strlen = val.length();
+        int utflen = 0;
+        int c, cnt;
+
+        // determine byte array length
+        for (cnt = 0; cnt < strlen; cnt++) {
+            c = val.charAt(cnt);
+
+            if (c <= 0x007F)
+                utflen++;
+            else if (c > 0x07FF)
+                utflen += 3;
+            else
+                utflen += 2;
+        }
+
+        byte[] arr = new byte[utflen];
+
+        int position = 0;
+
+        for (cnt = 0; cnt < strlen; cnt++) {
+            c = val.charAt(cnt);
+
+            if (c <= 0x007F)
+                arr[position++] = (byte)c;
+            else if (c > 0x07FF) {
+                arr[position++] = (byte)(0xE0 | c >> 12 & 0x0F);
+                arr[position++] = (byte)(0x80 | c >> 6 & 0x3F);
+                arr[position++] = (byte)(0x80 | c & 0x3F);
+            } else {
+                arr[position++] = (byte)(0xC0 | c >> 6 & 0x1F);
+                arr[position++] = (byte)(0x80 | c & 0x3F);
+            }
+        }
+
+        return arr;
     }
 
     /**

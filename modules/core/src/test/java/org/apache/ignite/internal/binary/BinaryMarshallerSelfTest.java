@@ -180,7 +180,12 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testString() throws Exception {
-        assertEquals("str", marshalUnmarshal("str"));
+        String str = "ascii0123456789";
+        assertEquals(str, marshalUnmarshal(str));
+        str = "的的abcdкириллица";
+        assertEquals(str, marshalUnmarshal(str));
+        str = new String(new char[]{0xD800, '的', 0xD800, 0xD800, 0xDC00, 0xDFFF});
+        assertEquals(str, marshalUnmarshal(str));
     }
 
     /**
