@@ -130,6 +130,7 @@ public class GridTaskFailoverAffinityRunTest extends GridCommonAbstractTest {
                     startGrid(grid);
                 }
 
+                info("+++ Restart thread finished");
                 return null;
             }
         }, 2, "restart-thread");
