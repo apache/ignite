@@ -1251,28 +1251,30 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         if (msgs.isEmpty())
             return;
 
-        // TODO GG-11122 iterate over client topologies.
+
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             for (int p = 0; p < cacheCtx.affinity().partitions(); p++) {
-                assignRolesByCounters(cacheCtx, p);
+                assignRolesByCounters(cacheCtx.topology(), p);
             }
+        }
+
+        for (GridClientPartitionTopology top : cctx.exchange().clientTopologies()) {
+            // TODO GG-11122 iterate over client topologies.
         }
     }
 
-    private void assignRolesByCounters(GridCacheContext cacheCtx, int p) {
-        GridDhtPartitionTopology top = cacheCtx.topology();
-
+    private void assignRolesByCounters(GridDhtPartitionTopology top, int p) {
         long maxCntr = 0;
 
         for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : msgs.entrySet()) {
             // TODO GG-11122 assert partitionUpdateCounters not null.
-            if (e.getValue().partitionUpdateCounters(cacheCtx.cacheId()) == null)
+            if (e.getValue().partitionUpdateCounters(top.cacheId()) == null)
                 continue;
 
-            if (!e.getValue().partitionUpdateCounters(cacheCtx.cacheId()).containsKey(p))
+            if (!e.getValue().partitionUpdateCounters(top.cacheId()).containsKey(p))
                 continue;
 
-            Long cntr = e.getValue().partitionUpdateCounters(cacheCtx.cacheId()).get(p);
+            Long cntr = e.getValue().partitionUpdateCounters(top.cacheId()).get(p);
 
             if (cntr > maxCntr)
                 maxCntr = cntr;
@@ -1285,13 +1287,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : msgs.entrySet()) {
             // TODO GG-11122 assert partitionUpdateCounters not null.
-            if (e.getValue().partitionUpdateCounters(cacheCtx.cacheId()) == null)
+            if (e.getValue().partitionUpdateCounters(top.cacheId()) == null)
                 continue;
 
-            if (!e.getValue().partitionUpdateCounters(cacheCtx.cacheId()).containsKey(p))
+            if (!e.getValue().partitionUpdateCounters(top.cacheId()).containsKey(p))
                 continue;
 
-            Long cntr = e.getValue().partitionUpdateCounters(cacheCtx.cacheId()).get(p);
+            Long cntr = e.getValue().partitionUpdateCounters(top.cacheId()).get(p);
 
             assert cntr <= maxCntr;
 

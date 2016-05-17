@@ -85,6 +85,11 @@ public interface GridDhtPartitionTopology {
     public boolean stopping();
 
     /**
+     * @return Cache ID.
+     */
+    public int cacheId();
+
+    /**
      * Pre-initializes this topology.
      *
      * @param exchFut Exchange future.

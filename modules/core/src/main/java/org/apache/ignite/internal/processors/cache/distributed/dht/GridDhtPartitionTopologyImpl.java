@@ -124,6 +124,10 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         locParts = new GridDhtLocalPartition[cctx.config().getAffinity().partitions()];
     }
 
+    @Override public int cacheId() {
+        return cctx.cacheId();
+    }
+
     /**
      *
      */
