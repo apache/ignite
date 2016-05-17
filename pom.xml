@@ -787,6 +787,15 @@
         </profile>
 
         <profile>
+            <id>web-console</id>
+            <modules>
+                <module>modules/web-agent</module>
+                <module>modules/web-console</module>
+                <module>modules/schema-import-db</module>
+            </modules>
+        </profile>
+
+        <profile>
             <id>update-versions</id>
             <!-- updates dotnet & cpp versions -->
             <build>
