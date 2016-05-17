@@ -24,8 +24,9 @@ public class IgniteSourceTaskMock extends IgniteSourceTask {
 
     /** {@inheritDoc} */
     @Override public void stop() {
+        // don't stop the grid for tests.
         stopRemoteListen();
 
-        // don't stop the grid for tests.
+        setStopped(true);
     }
 }
