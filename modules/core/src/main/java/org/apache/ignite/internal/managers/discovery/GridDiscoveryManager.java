@@ -395,7 +395,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     @Override protected void onKernalStart0() throws IgniteCheckedException {
         if (Boolean.TRUE.equals(ctx.config().isClientMode()) && !getSpi().isClientMode())
             ctx.performance().add("Enable client mode for TcpDiscoverySpi " +
-                    "(set TcpDiscoverySpi.forceServerMode to false)");
+                "(set TcpDiscoverySpi.forceServerMode to false)");
     }
 
     /** {@inheritDoc} */
@@ -754,7 +754,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @param msgCls Message class.
      * @param lsnr Custom event listener.
      */
-    public <T extends DiscoveryCustomMessage> void setCustomEventListener(Class<T> msgCls, CustomEventListener<T> lsnr) {
+    public <T extends DiscoveryCustomMessage> void setCustomEventListener(Class<T> msgCls,
+        CustomEventListener<T> lsnr) {
         List<CustomEventListener<DiscoveryCustomMessage>> list = customEvtLsnrs.get(msgCls);
 
         if (list == null) {
@@ -1057,11 +1058,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             if (!F.eq(rmtPreferIpV4, locPreferIpV4)) {
                 if (!ipV4Warned)
                     U.warn(log, "Local node's value of 'java.net.preferIPv4Stack' " +
-                        "system property differs from remote node's " +
-                        "(all nodes in topology should have identical value) " +
-                        "[locPreferIpV4=" + locPreferIpV4 + ", rmtPreferIpV4=" + rmtPreferIpV4 +
-                        ", locId8=" + U.id8(locNode.id()) + ", rmtId8=" + U.id8(n.id()) +
-                        ", rmtAddrs=" + U.addressesAsString(n) + ']',
+                            "system property differs from remote node's " +
+                            "(all nodes in topology should have identical value) " +
+                            "[locPreferIpV4=" + locPreferIpV4 + ", rmtPreferIpV4=" + rmtPreferIpV4 +
+                            ", locId8=" + U.id8(locNode.id()) + ", rmtId8=" + U.id8(n.id()) +
+                            ", rmtAddrs=" + U.addressesAsString(n) + ']',
                         "Local and remote 'java.net.preferIPv4Stack' system properties do not match.");
 
                 ipV4Warned = true;
@@ -1110,7 +1111,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
             if (locDelayAssign != rmtLateAssign) {
                 throw new IgniteCheckedException("Remote node has cache affinity assignment mode different from local " +
-                    "[locId8=" +  U.id8(locNode.id()) +
+                    "[locId8=" + U.id8(locNode.id()) +
                     ", locDelayAssign=" + locDelayAssign +
                     ", rmtId8=" + U.id8(n.id()) +
                     ", rmtLateAssign=" + rmtLateAssign +
@@ -1910,7 +1911,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** {@inheritDoc} */
     @Override public void onDiscoveryDataReceived(UUID joiningNodeId, UUID rmtNodeId, Serializable data) {
         if (data instanceof HashMap) {
-            HashMap<String, Object> map = (HashMap<String, Object>) data;
+            HashMap<String, Object> map = (HashMap<String, Object>)data;
 
             if (Boolean.TRUE.equals(map.get("activated")))
                 activatedNodes.add(rmtNodeId);
@@ -1936,9 +1937,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         // call when locJoinEvt is already done.
         locJoinEvt.listen(new IgniteInClosure<IgniteInternalFuture<DiscoveryEvent>>() {
             @Override public void apply(IgniteInternalFuture<DiscoveryEvent> future) {
-                if (activatedNodes.add(localNode().id())) {
+                if (!activatedNodes.contains(localNode().id())) {
                     try {
-                        sendCustomEvent(new TcpDiscoveryNodeActivatedMessage());
+                        sendCustomEvent(new TcpDiscoveryNodeActivatedMessage(localNode().id()));
                     }
                     catch (IgniteCheckedException e) {
                         if (future instanceof GridFutureAdapter)

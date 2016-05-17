@@ -18,6 +18,7 @@
 
 package org.apache.ignite.spi.discovery.tcp.messages;
 
+import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -30,6 +31,16 @@ import org.jetbrains.annotations.Nullable;
 public class TcpDiscoveryNodeActivatedMessage implements DiscoveryCustomMessage {
     /** */
     private final IgniteUuid id = IgniteUuid.randomUuid();
+
+    private final UUID nodeId;
+
+    public TcpDiscoveryNodeActivatedMessage(UUID nodeId) {
+        this.nodeId = nodeId;
+    }
+
+    public UUID nodeId() {
+        return nodeId;
+    }
 
     /** {@inheritDoc} */
     @Override public IgniteUuid id() {

@@ -448,8 +448,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 DiscoveryCustomMessage customMessage = ((DiscoveryCustomEvent)discoEvt).customMessage();
 
-                if (customMessage instanceof TcpDiscoveryNodeActivatedMessage)
+                if (customMessage instanceof TcpDiscoveryNodeActivatedMessage) {
+                    assert !CU.clientNode(discoEvt.eventNode());
+
                     exchange = onServerNodeEvent(crdNode);
+                }
                 else if (!F.isEmpty(reqs))
                     exchange = onCacheChangeRequest(crdNode);
                 else {
@@ -652,8 +655,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             centralizedAff = cctx.affinity().onServerLeft(this);
         }
         else {
-            // TODO GG-11010 fix assert.
-            assert discoEvt.type() == EVT_NODE_JOINED : discoEvt;
+            assert discoEvt.type() == EVT_NODE_JOINED || discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT : discoEvt;
 
             cctx.affinity().onServerJoin(this, crd);
         }
