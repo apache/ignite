@@ -380,8 +380,8 @@ waitToJoinIgniteCluster()
         tryToGetClusterJoinLock
 
         if [ $? -ne 0 ]; then
-            echo "[INFO] Another node is trying to join cluster. Waiting for extra 2min."
-            sleep 2m
+            echo "[INFO] Another node is trying to join cluster. Waiting for extra 1min."
+            sleep 1m
         else
             echo "[INFO]-------------------------------------------------------------"
             echo "[INFO] Congratulations, got lock to join Ignite cluster"
@@ -622,8 +622,8 @@ while true; do
         fi
 
         removeClusterJoinLock
-        echo "[WARN] Failed to start Ignite daemon. Sleeping for extra 2min"
-        sleep 2m
+        echo "[WARN] Failed to start Ignite daemon. Sleeping for extra 1min"
+        sleep 1m
         startIgnite
         continue
     fi

@@ -16,6 +16,6 @@
 # limitations under the License.
 #
 
-#JVM_OPTS="-Xms6g -Xmx6g -XX:+AggressiveOpts -XX:MaxMetaspaceSize=256m"
-#JVM_OPTS="$JVM_OPTS -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:+UseTLAB -XX:NewSize=128m -XX:MaxNewSize=768m"
-#JVM_OPTS="$JVM_OPTS -Xss16m"
+JVM_OPTS="-Xms6g -Xmx6g -XX:+AggressiveOpts -XX:MaxMetaspaceSize=256m"
+JVM_OPTS="$JVM_OPTS -XX:+UseParNewGC -XX:+UseConcMarkSweepGC -XX:+UseTLAB -XX:NewSize=128m -XX:MaxNewSize=768m"
+JVM_OPTS="$JVM_OPTS -Xss16m"

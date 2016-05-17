@@ -28,7 +28,7 @@ cluster_name: 'CassandraIgnite'
 
 # It makes new (non-seed) nodes automatically migrate the right data to themselves.
 # When initializing a fresh cluster with no data, add auto_bootstrap: false
-#auto_bootstrap: false
+auto_bootstrap: false
 
 # This defines the number of tokens randomly assigned to this node on the ring
 # The more tokens, relative to other nodes, the larger the proportion of data
@@ -682,9 +682,9 @@ cas_contention_timeout_in_ms: 1000
 # How long the coordinator should wait for truncates to complete
 # (This can be much longer, because unless auto_snapshot is disabled
 # we need to flush first so we can snapshot before removing the data.)
-truncate_request_timeout_in_ms: 6000
+truncate_request_timeout_in_ms: 60000
 # The default timeout for other, miscellaneous operations
-request_timeout_in_ms: 1000
+request_timeout_in_ms: 10000
 
 # Enable operation timeout information exchange between nodes to accurately
 # measure request timeouts.  If disabled, replicas will assume that requests
