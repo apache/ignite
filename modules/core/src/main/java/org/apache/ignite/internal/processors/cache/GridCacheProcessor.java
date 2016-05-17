@@ -2481,6 +2481,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (msg instanceof CacheAffinityChangeMessage)
             return sharedCtx.affinity().onCustomEvent(((CacheAffinityChangeMessage)msg));
 
+        // TODO GG-11010 check is not already activated, if activated skip exchange.
         if (msg instanceof TcpDiscoveryNodeActivatedMessage)
             return true;
 

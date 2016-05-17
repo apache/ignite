@@ -35,7 +35,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.ClusterMetricsSnapshot;
 import org.apache.ignite.internal.IgniteNodeAttributes;
-import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.cache.CacheMetricsSnapshot;
 import org.apache.ignite.internal.util.lang.GridMetadataAwareAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -175,7 +174,8 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
         int discPort,
         DiscoveryMetricsProvider metricsProvider,
         IgniteProductVersion ver,
-        Serializable consistentId) {
+        Serializable consistentId)
+    {
         assert id != null;
         assert !F.isEmpty(addrs);
         assert metricsProvider != null;
@@ -620,7 +620,7 @@ public class TcpDiscoveryNode extends GridMetadataAwareAdapter implements Cluste
 
         for (int i = 0; i < size; i++) {
             int id = in.readInt();
-            CacheMetricsSnapshot m = (CacheMetricsSnapshot)in.readObject();
+            CacheMetricsSnapshot m = (CacheMetricsSnapshot) in.readObject();
 
             cacheMetrics.put(id, m);
         }

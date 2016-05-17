@@ -1930,6 +1930,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * Activates local node.
      */
     public void activate() {
+        // TODO GG-11010: update activatedNodes from discovery thread.
+        // not needed for client/daemon nodes.
+        // throw exception if failed, this should fail node start.
+        // call when locJoinEvt is already done.
         locJoinEvt.listen(new IgniteInClosure<IgniteInternalFuture<DiscoveryEvent>>() {
             @Override public void apply(IgniteInternalFuture<DiscoveryEvent> future) {
                 if (activatedNodes.add(localNode().id())) {

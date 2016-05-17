@@ -476,6 +476,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             cctx.database().beforeExchange(discoEvt);
 
+            // Possible if there are no active nodes.
             if (exchange == ExchangeType.ALL && crd == null)
                 exchange = ExchangeType.NONE;
 
@@ -651,6 +652,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             centralizedAff = cctx.affinity().onServerLeft(this);
         }
         else {
+            // TODO GG-11010 fix assert.
+            assert discoEvt.type() == EVT_NODE_JOINED : discoEvt;
+
             cctx.affinity().onServerJoin(this, crd);
         }
 

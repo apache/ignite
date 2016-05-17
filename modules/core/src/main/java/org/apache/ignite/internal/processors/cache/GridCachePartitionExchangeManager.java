@@ -1357,6 +1357,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             // invoke topology callback more than once for the
                             // same event.
 
+                            // TODO GG-11010 get activate state for topology version.
                             if (cctx.discovery().activated(cctx.localNodeId())) {
                                 for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                                     if (cacheCtx.isLocal())
@@ -1413,6 +1414,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         busy = false;
                     }
 
+                    // TODO GG-11010 do not call anything if inactive.
                     if (assignsMap != null) {
                         int size = assignsMap.size();
 
