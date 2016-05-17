@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
@@ -55,6 +56,9 @@ import static org.apache.ignite.internal.processors.cache.database.tree.util.Pag
  * Abstract B+Tree.
  */
 public abstract class BPlusTree<L, T extends L> {
+    /** */
+    public static Random rnd;
+
     /** */
     private static final byte FALSE = 0;
 
@@ -783,6 +787,148 @@ public abstract class BPlusTree<L, T extends L> {
     }
 
     /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public final void validateTree() throws IgniteCheckedException {
+        long rootPageId;
+        int rootLvl;
+
+        try (Page meta = page(metaPageId)) {
+            rootLvl = getRootLevel(meta);
+
+            if (rootLvl < 0)
+                fail("Root level: " + rootLvl);
+
+            validateFirstPages(meta, rootLvl);
+
+            rootPageId = getFirstPageId(meta, rootLvl);
+
+            validateDown(meta, rootPageId, 0L, rootLvl);
+        }
+    }
+
+    /**
+     * @param meta Meta page.
+     * @param rootLvl Root level.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void validateFirstPages(Page meta, int rootLvl) throws IgniteCheckedException {
+        for (int lvl = rootLvl; lvl > 0; lvl--)
+            validateFirstPage(meta, lvl);
+    }
+
+    /**
+     * @param msg Message.
+     */
+    private static void fail(Object msg) {
+        throw new AssertionError(msg);
+    }
+
+    /**
+     * @param meta Meta page.
+     * @param lvl Level.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void validateFirstPage(Page meta, int lvl) throws IgniteCheckedException {
+        if (lvl == 0)
+            fail("Leaf level: " + lvl);
+
+        long pageId = getFirstPageId(meta, lvl);
+
+        long leftmostChildId;
+
+        try (Page page = page(pageId)) {
+            ByteBuffer buf = page.getForRead();
+
+            try {
+                BPlusIO<L> io = io(buf);
+
+                if (io.isLeaf())
+                    fail("Leaf.");
+
+                leftmostChildId = inner(io).getLeft(buf, 0);
+            }
+            finally {
+                page.releaseRead();
+            }
+        }
+
+        long firstDownPageId = getFirstPageId(meta, lvl - 1);
+
+        if (firstDownPageId != leftmostChildId)
+            fail(new SB("First: meta ").appendHex(firstDownPageId).a(", child ").appendHex(leftmostChildId));
+    }
+
+    /**
+     * @param meta Meta page.
+     * @param pageId Page ID.
+     * @param fwdId Forward ID.
+     * @param lvl Level.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void validateDown(Page meta, long pageId, long fwdId, final int lvl) throws IgniteCheckedException {
+        try (Page page = page(pageId)) {
+            ByteBuffer buf = page.getForRead();
+
+            try {
+                long realPageId = BPlusIO.getPageId(buf);
+
+                if (realPageId != pageId)
+                    fail(new SB("ABA on page ID: ref ").appendHex(pageId).a(", buf ").appendHex(realPageId));
+
+                BPlusIO<L> io = io(buf);
+
+                if (io.isLeaf() != (lvl == 0)) // Leaf pages only at the level 0.
+                    fail("Leaf level mismatch: " + lvl);
+
+                long actualFwdId = io.getForward(buf);
+
+                if (actualFwdId != fwdId)
+                    fail(new SB("Triangle: expected fwd ").appendHex(fwdId).a(", actual fwd ").appendHex(actualFwdId));
+
+                int cnt = io.getCount(buf);
+
+                if (cnt < 0)
+                    fail("Negative count: " + cnt);
+
+                if (io.isLeaf()) {
+                    if (cnt == 0 && getRootLevel(meta) != 0)
+                        fail("Empty leaf page.");
+                }
+                else {
+                    // Recursively go down if we are on inner level.
+                    for (int i = 0; i < cnt; i++)
+                        validateDown(meta, inner(io).getLeft(buf, i), inner(io).getRight(buf, i), lvl - 1);
+
+                    if (fwdId != 0) {
+                        // For the rightmost child ask neighbor.
+                        try (Page fwd = page(fwdId)) {
+                            ByteBuffer fwdBuf = fwd.getForRead();
+
+                            try {
+                                if (io(fwdBuf) != io)
+                                    fail("IO on the same level must be the same");
+
+                                fwdId = inner(io).getLeft(fwdBuf, 0);
+                            }
+                            finally {
+                                fwd.releaseRead();
+                            }
+                        }
+                    }
+
+                    pageId = inner(io).getLeft(buf, cnt); // The same as io.getRight(cnt - 1) but works for routing pages.
+
+                    validateDown(meta, pageId, fwdId, lvl - 1);
+                }
+            }
+            finally {
+                page.releaseRead();
+            }
+        }
+    }
+
+    /**
      * @param io IO.
      * @param buf Buffer.
      * @param keys Keys.
@@ -1054,8 +1200,10 @@ public abstract class BPlusTree<L, T extends L> {
      * @param max Max.
      * @return Random value from {@code 0} (inclusive) to the given max value (exclusive).
      */
-    public int randomInt(int max) {
-         return ThreadLocalRandom.current().nextInt(max);
+    public static int randomInt(int max) {
+        Random rnd0 = rnd != null ? rnd : ThreadLocalRandom.current();
+
+        return rnd0.nextInt(max);
      }
 
     /**
