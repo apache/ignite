@@ -84,6 +84,7 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
         cacheCfg1.setCacheMode(cacheMode);
         cacheCfg1.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg1.setIndexedTypes(String.class, Integer.class);
+        cacheCfg1.setStatisticsEnabled(true);
 
         CacheConfiguration<String, Integer> cacheCfg2 = defaultCacheConfiguration();
 
@@ -91,6 +92,7 @@ public abstract class CacheAbstractQueryMetricsSelfTest extends GridCommonAbstra
         cacheCfg2.setCacheMode(cacheMode);
         cacheCfg2.setWriteSynchronizationMode(FULL_SYNC);
         cacheCfg2.setIndexedTypes(String.class, Integer.class);
+        cacheCfg2.setStatisticsEnabled(true);
 
         cfg.setCacheConfiguration(cacheCfg1, cacheCfg2);
 
