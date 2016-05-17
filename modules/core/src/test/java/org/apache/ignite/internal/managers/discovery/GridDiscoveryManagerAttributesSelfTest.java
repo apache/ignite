@@ -21,6 +21,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -28,6 +29,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 
@@ -47,12 +49,18 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     /** */
     private static boolean p2pEnabled;
 
+    /** */
+    private static boolean binaryMarshallerEnabled;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         if (gridName.equals(getTestGridName(1)))
             cfg.setClientMode(true);
+
+        if (binaryMarshallerEnabled)
+            cfg.setMarshaller(new BinaryMarshaller());
 
         cfg.setIncludeProperties(PREFER_IPV4);
         cfg.setDeploymentMode(mode);
@@ -144,6 +152,61 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
             startGrid(0);
 
             System.setProperty(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, second);
+
+            try {
+                startGrid(1);
+
+                if (fail)
+                    fail("Node should not join");
+            }
+            catch (Exception e) {
+                if (!fail)
+                    fail("Node should join");
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    public void testUseStringSerVer2() throws Exception {
+        String old = System.getProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);
+
+        binaryMarshallerEnabled = true;
+
+        try {
+            doTestUseStrSerVer2(Boolean.TRUE.toString(), Boolean.FALSE.toString(), true);
+            doTestUseStrSerVer2(Boolean.FALSE.toString(), Boolean.TRUE.toString(), true);
+
+            doTestUseStrSerVer2(Boolean.TRUE.toString(), Boolean.TRUE.toString(), false);
+            doTestUseStrSerVer2(Boolean.FALSE.toString(), Boolean.FALSE.toString(), false);
+        }
+        finally {
+            if (old != null)
+                System.setProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, old);
+            else
+                System.clearProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);
+
+            binaryMarshallerEnabled = false;
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestUseStrSerVer2(String first, String second, boolean fail) throws Exception {
+        try {
+            if (first != null)
+                System.setProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, first);
+            else
+                System.clearProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);
+
+            startGrid(0);
+
+            if (second != null)
+                System.setProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, second);
+            else
+                System.clearProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);
 
             try {
                 startGrid(1);
