@@ -15,7 +15,6 @@ Ignite .NET:
 * Added ability to use Java-based remote filters in continuous queries.
 
 Ignite C++:
-* Added ODBC driver for Ignite.
 * Added Transactions API for C++ client.
 * Added Date and Timestamp types implementation for C++ client.
 * Simplified Autotools build process for C++ client.
@@ -26,6 +25,7 @@ Ignite:
 * Added backup partitions storing to local store default behavior.
 * Added cache deadlock detection.
 * Added method to get versioned cache entry.
+* Added ODBC driver for Ignite.
 * Added support for join timeout while registering local addresses with IP finder in TcpDiscoverySpi.
 * Added support for JTA transactions via synchronization callback.
 * Fixed a bug causing object deserialization when local store is configured for cache.
