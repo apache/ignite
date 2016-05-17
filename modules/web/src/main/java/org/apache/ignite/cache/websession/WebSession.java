@@ -79,9 +79,9 @@ class WebSession implements HttpSession, Externalizable {
     @GridToStringExclude
     private transient ServletContext ctx;
 
-    /** Listener. */
+    /** Web session filter. */
     @GridToStringExclude
-    private transient WebSessionListener lsnr;
+    private transient WebSessionFilter filter;
 
     /** New session flag. */
     private transient boolean isNew;
@@ -155,12 +155,12 @@ class WebSession implements HttpSession, Externalizable {
     }
 
     /**
-     * @param lsnr Listener.
+     * @param filter Filter.
      */
-    public void listener(WebSessionListener lsnr) {
-        assert lsnr != null;
+    public void filter(final WebSessionFilter filter) {
+        assert filter != null;
 
-        this.lsnr = lsnr;
+        this.filter = filter;
     }
 
     /**
@@ -310,7 +310,7 @@ class WebSession implements HttpSession, Externalizable {
 
         updates = null;
 
-        lsnr.destroySession(id);
+        filter.destroySession(id);
 
         genSes.invalidate();
 
