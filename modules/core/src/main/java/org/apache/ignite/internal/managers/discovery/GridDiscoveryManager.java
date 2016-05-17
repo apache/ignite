@@ -1122,7 +1122,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     ", locNodeId=" + locNode.id() + ", rmtNodeId=" + n.id() + ']');
             }
 
-            if (n.version().compareTo(GridServiceProcessor.LAZY_SERVICES_CFG_SINCE) < 0)
+            if (n.version().compareToIgnoreTimestamp(GridServiceProcessor.LAZY_SERVICES_CFG_SINCE) < 0)
                 clusterHasOldNode = true;
         }
 

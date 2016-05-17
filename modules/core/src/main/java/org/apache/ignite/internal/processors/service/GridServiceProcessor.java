@@ -1240,7 +1240,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         ClusterNode locNode = ctx.discovery().localNode();
 
-        boolean rmtNodeIsOld = node.version().compareTo(LAZY_SERVICES_CFG_SINCE) < 0;
+        boolean rmtNodeIsOld = node.version().compareToIgnoreTimestamp(LAZY_SERVICES_CFG_SINCE) < 0;
 
         while (true) {
             ServicesCompatibilityState state = compatibilityState.get();
@@ -1264,7 +1264,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param mode Services compatiblity mode.
+     * @param mode Services compatibility mode.
      */
     public void compatibilityMode(boolean mode) {
         if (srvcCompatibilitySysProp != null || mode)
