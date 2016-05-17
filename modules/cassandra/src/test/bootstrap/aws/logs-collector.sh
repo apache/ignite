@@ -45,7 +45,7 @@ echo "--------------------------------------------------------------------"
 TRIGGER_STATE=
 
 while true; do
-    sleep 1m
+    sleep 30s
 
     STATE=$(aws s3 ls $3)
 
