@@ -3,7 +3,24 @@ Apache Ignite Release Notes
 
 Apache Ignite In-Memory Data Fabric 1.6
 ---------------------------------------
-* .NET: Added ability to use Java-based remote filters in continuous queries.
+Ignite .NET:
+* Added LINQ Provider for cache SQL queries
+* Added native configuration mechanism (C#, app.config, web.config - instead of Spring XML)
+* Added NuGet distribution
+* Added AtomicSequence and AtomicReference data structures
+* Binaries are now AnyCPU (instead of separate x64/x86)
+* Java-based services can be called the same way as .NET service are called
+* Added java-based continuous query filters
+* Added automatic Java detection: no need for JAVA_HOME
+* Added ability to use Java-based remote filters in continuous queries.
+
+Ignite C++:
+* Added ODBC driver for Ignite.
+* Added Transactions API for C++ client.
+* Added Date and Timestamp types implementation for C++ client.
+* Simplified Autotools build process for C++ client.
+
+Ignite:
 * Added ability to get partition 'updateCntr' with continuous query public API.
 * Added asynchronous execution of ContinuousQuery's remote filter and local listener.
 * Added backup partitions storing to local store default behavior.
