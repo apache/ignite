@@ -22,6 +22,9 @@ import org.junit.Test;
 
 import java.net.URL;
 
+/**
+ * Unit tests for DDL generator utility
+ */
 public class DDLGeneratorTest {
     @Test
     @SuppressWarnings("unchecked")
