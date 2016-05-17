@@ -44,6 +44,8 @@ ODBC driver you should perfrom the following steps:
    can check it using "ldd" command like this (assuming ODBC driver is located
    under /usr/local/lib):
    $ ldd /usr/local/lib/libignite-odbc.so.
+   If there is unresolved links to other libraries you may want to add
+   directories with these libraries to the LD_LIBRARY_PATH.
    
 2. Edit file $IGNITE_HOME/platforms/cpp/odbc/install/ignite-odbc-install.ini
    and ensure that "Driver" parameter of the "Apache Ignite" section points
@@ -66,15 +68,14 @@ dependencies can be resolved i.e. they can be found either in the %PATH% or
 in the same directory as the driver.
 
 After that you should use one of the install scripts from the directory 
-%IGNITE_HOME%/platforms/cpp/odbc/install:
+%IGNITE_HOME%/platforms/cpp/odbc/install. Note that most likely you will
+need OS administrator privileges to execute these scripts.
 
 For the 32-bit Windows you should use file install_x86.cmd like that:
 $ install_x86 <absolute_path_to_32_bit_driver>
 
 For the 64-bit Windows you should use file install_amd64.cmd like that:
 $ install_amd64 <absolute_path_to_64_bit_driver> [<absolute_path_to_32_bit_driver>]
-
-Most likely you will need OS administrator privileges to execute these scripts.
 
 Thats it. Your driver/drivers are installed.
 

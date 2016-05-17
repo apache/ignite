@@ -130,7 +130,7 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
 
             info(">>> Starting set of tests [testedNodeIdx=" + testedNodeIdx
                 + ", id=" + grid(testedNodeIdx).localNode().id()
-                + ", isClient=" + grid(testedNodeIdx).configuration().isClientMode()
+                + ", isClient=" + isClientMode()
                 + ", nearEnabled=" + nearEnabled() + "]");
         }
     }

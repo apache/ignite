@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -30,6 +31,7 @@ import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.IgfsEvent;
 import org.apache.ignite.igfs.IgfsException;
+import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryUtils;
@@ -356,7 +358,11 @@ public class IgfsUtils {
             for (FileSystemConfiguration igfsCfg : igfsCfgs) {
                 if (igfsCfg != null) {
                     if (F.eq(ccfg.getName(), igfsCfg.getMetaCacheName())) {
+                        // No copy-on-read.
                         ccfg.setCopyOnRead(false);
+
+                        // Always full-sync to maintain consistency.
+                        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
                         // Set co-located affinity mapper if needed.
                         if (igfsCfg.isColocateMetadata() && ccfg.getCacheMode() == CacheMode.REPLICATED &&
@@ -367,7 +373,15 @@ public class IgfsUtils {
                     }
 
                     if (F.eq(ccfg.getName(), igfsCfg.getDataCacheName())) {
+                        // No copy-on-read.
                         ccfg.setCopyOnRead(false);
+
+                        // Always full-sync to maintain consistency.
+                        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+
+                        // Set affinity mapper if needed.
+                        if (ccfg.getAffinityMapper() == null)
+                            ccfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper());
 
                         return;
                     }

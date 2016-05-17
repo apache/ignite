@@ -293,9 +293,8 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         @Override public boolean add(EntryWrapper e) {
             boolean res = super.add(e);
 
-            assert res : "Failed to add entry wrapper:"  + e;
-
-            size.increment();
+            if (res)
+                size.increment();
 
             return res;
         }

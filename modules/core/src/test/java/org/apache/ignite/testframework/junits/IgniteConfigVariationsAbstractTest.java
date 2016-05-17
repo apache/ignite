@@ -59,7 +59,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     protected VariationsTestsConfig testsCfg;
 
     /** */
-    protected volatile DataMode dataMode;
+    protected volatile DataMode dataMode = DataMode.PLANE_OBJECT;
 
     /**
      * @param testsCfg Tests configuration.
@@ -208,6 +208,28 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     }
 
     /**
+     * @return Tested grid in client mode or not.
+     */
+    // TODO delete one of isCLient methods
+    protected boolean isClientMode() {
+        return grid(testedNodeIdx).configuration().isClientMode();
+    }
+
+    /**
+     * @return Count of server nodes at topology.
+     */
+    protected int serversGridCount() {
+        int cnt = 0;
+
+        for (int i = 0; i < gridCount(); i++) {
+            if (!grid(i).configuration().isClientMode())
+                cnt++;
+        }
+
+        return cnt;
+    }
+
+    /**
      * Runs in all data modes.
      *
      * @throws Exception If failed.
@@ -248,6 +270,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     /**
      * @param keyId Key Id.
      * @return Key.
+     * @see #valueOf(Object)
      */
     public Object key(int keyId) {
         return key(keyId, dataMode);
@@ -256,6 +279,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     /**
      * @param valId Key Id.
      * @return Value.
+     * @see #valueOf(Object)
      */
     public Object value(int valId) {
         return value(valId, dataMode);
@@ -296,7 +320,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         if (obj instanceof TestObject)
             return ((TestObject)obj).value();
         else
-            throw new IllegalArgumentException("Unknown type: " + obj);
+            throw new IllegalArgumentException("Unknown tested object type: " + obj);
     }
 
     /**
