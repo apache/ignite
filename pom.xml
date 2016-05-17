@@ -681,6 +681,7 @@
             </activation>
             <modules>
                 <module>modules/schema-import</module>
+                <module>modules/schema-import-db</module>
             </modules>
             <build>
                 <plugins>
@@ -737,6 +738,7 @@
             </activation>
             <modules>
                 <module>modules/schema-import</module>
+                <module>modules/schema-import-db</module>
             </modules>
             <build>
                 <plugins>

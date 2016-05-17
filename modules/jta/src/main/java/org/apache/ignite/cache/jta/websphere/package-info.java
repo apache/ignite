@@ -15,16 +15,8 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.stream.kafka.connect;
-
-import org.apache.kafka.connect.connector.Task;
-
 /**
- * Source connector mock for tests for using the task mock.
+ * <!-- Package description. -->
+ * Contains WebSphere integrations.
  */
-public class IgniteSourceConnectorMock extends IgniteSourceConnector {
-    /** {@inheritDoc} */
-    @Override public Class<? extends Task> taskClass() {
-        return IgniteSourceTaskMock.class;
-    }
-}
+package org.apache.ignite.cache.jta.websphere;

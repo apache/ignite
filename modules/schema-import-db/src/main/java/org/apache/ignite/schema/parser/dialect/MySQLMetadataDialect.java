@@ -21,6 +21,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -29,7 +30,7 @@ import java.util.Set;
  */
 public class MySQLMetadataDialect extends JdbcMetadataDialect {
     /** {@inheritDoc} */
-    @Override public List<String> schemas(Connection conn) throws SQLException {
+    @Override public Collection<String> schemas(Connection conn) throws SQLException {
         List<String> schemas = new ArrayList<>();
 
         ResultSet rs = conn.getMetaData().getCatalogs();
