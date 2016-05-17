@@ -175,7 +175,7 @@ setupCassandraSeeds()
 
         echo "[INFO] Waiting for the first Cassandra node to start and publish its seed, time passed ${duration}min"
 
-        sleep 1m
+        sleep 30s
     done
 }
 
@@ -331,8 +331,8 @@ waitToJoinCassandraCluster()
         tryToGetClusterJoinLock
 
         if [ $? -ne 0 ]; then
-            echo "[INFO] Another node is trying to join cluster. Waiting for extra 1min."
-            sleep 1m
+            echo "[INFO] Another node is trying to join cluster. Waiting for extra 30sec."
+            sleep 30s
         else
             echo "[INFO]-------------------------------------------------------------"
             echo "[INFO] Congratulations, got lock to join Cassandra cluster"
@@ -380,9 +380,9 @@ waitFirstCassandraNodeRegistered()
             terminate "${NODE_STARTUP_TIME}min timeout expired, but first Cassandra node is still not up and running"
         fi
 
-        echo "[INFO] Waiting extra 1min"
+        echo "[INFO] Waiting extra 30sec"
 
-        sleep 1m
+        sleep 30s
     done
 
     echo "[INFO] First Cassandra node registered"
@@ -522,8 +522,8 @@ while true; do
 
     if [ -n "$concurrencyError" ] && [ "$FIRST_NODE" != "true" ]; then
         removeClusterJoinLock
-        echo "[WARN] Failed to concurrently start Cassandra daemon. Sleeping for extra 1min"
-        sleep 1m
+        echo "[WARN] Failed to concurrently start Cassandra daemon. Sleeping for extra 30sec"
+        sleep 30s
         startCassandra
         continue
     fi
@@ -535,8 +535,8 @@ while true; do
         fi
 
         removeClusterJoinLock
-        echo "[WARN] Failed to start Cassandra daemon. Sleeping for extra 1min"
-        sleep 1m
+        echo "[WARN] Failed to start Cassandra daemon. Sleeping for extra 30sec"
+        sleep 30s
         startCassandra
         continue
     fi

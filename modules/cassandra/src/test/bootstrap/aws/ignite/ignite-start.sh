@@ -161,7 +161,7 @@ setupCassandraSeeds()
 
         echo "[INFO] Waiting for the first Cassandra node to start and publish its seed, time passed ${duration}min"
 
-        sleep 1m
+        sleep 30s
     done
 }
 
@@ -234,7 +234,7 @@ setupIgniteSeeds()
 
         echo "[INFO] Waiting for the first Ignite node to start and publish its seed, time passed ${duration}min"
 
-        sleep 1m
+        sleep 30s
     done
 }
 
@@ -380,8 +380,8 @@ waitToJoinIgniteCluster()
         tryToGetClusterJoinLock
 
         if [ $? -ne 0 ]; then
-            echo "[INFO] Another node is trying to join cluster. Waiting for extra 1min."
-            sleep 1m
+            echo "[INFO] Another node is trying to join cluster. Waiting for extra 30sec."
+            sleep 30s
         else
             echo "[INFO]-------------------------------------------------------------"
             echo "[INFO] Congratulations, got lock to join Ignite cluster"
@@ -457,9 +457,9 @@ waitFirstIgniteNodeRegistered()
             terminate "${NODE_STARTUP_TIME}min timeout expired, but first Ignite node is still not up and running"
         fi
 
-        echo "[INFO] Waiting extra 1min"
+        echo "[INFO] Waiting extra 30sec"
 
-        sleep 1m
+        sleep 30s
     done
 
     echo "[INFO] First Ignite node registered"
@@ -497,8 +497,6 @@ startIgnite()
     /opt/ignite/bin/ignite.sh /opt/ignite/config/ignite-cassandra-server.xml &
 
     echo "[INFO] Ignite job id: $!"
-
-    sleep 1m
 
     START_ATTEMPT=$(( $START_ATTEMPT+1 ))
 }
@@ -622,8 +620,8 @@ while true; do
         fi
 
         removeClusterJoinLock
-        echo "[WARN] Failed to start Ignite daemon. Sleeping for extra 1min"
-        sleep 1m
+        echo "[WARN] Failed to start Ignite daemon. Sleeping for extra 30sec"
+        sleep 30s
         startIgnite
         continue
     fi
