@@ -32,6 +32,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -103,9 +104,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** Start future. */
     private GridFutureAdapter<Object> startFut;
 
-    /** Future completed when rebalance on start topology finished. */
-    private final GridFutureAdapter<Object> initRebalanceFut;
-
     /** Busy lock to prevent activities from accessing exchanger while it's stopping. */
     private final ReadWriteLock busyLock = new ReentrantReadWriteLock();
 
@@ -117,6 +115,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** */
     private final AtomicInteger partsEvictOwning = new AtomicInteger();
+
+    /** */
+    private volatile boolean stopping;
 
     /** Discovery listener. */
     private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
@@ -140,18 +141,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
                 assert e.type() != EVT_NODE_JOINED || n.order() > loc.order() : "Node joined with smaller-than-local " +
                     "order [newOrder=" + n.order() + ", locOrder=" + loc.order() + ']';
-
-                if (!initRebalanceFut.isDone()) {
-                    startFut.listen(new CI1<IgniteInternalFuture<?>>() {
-                        @Override public void apply(IgniteInternalFuture<?> fut) {
-                            cctx.closures().runLocalSafe(new Runnable() {
-                                @Override public void run() {
-                                    initRebalanceFut.onDone();
-                                }
-                            });
-                        }
-                    });
-                }
             }
             finally {
                 leaveBusy();
@@ -168,7 +157,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         top = cctx.dht().topology();
 
         startFut = new GridFutureAdapter<>();
-        initRebalanceFut = new GridFutureAdapter<>();
     }
 
     /** {@inheritDoc} */
@@ -204,12 +192,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         supplier = new GridDhtPartitionSupplier(cctx);
         demander = new GridDhtPartitionDemander(cctx, demandLock);
 
-        demander.rebalanceFuture().listen(new CI1<IgniteInternalFuture<Boolean>>() {
-            @Override public void apply(IgniteInternalFuture<Boolean> fut) {
-                initRebalanceFut.onDone();
-            }
-        });
-
         supplier.start();
         demander.start();
 
@@ -232,6 +214,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         if (log.isDebugEnabled())
             log.debug("DHT rebalancer onKernalStop callback.");
 
+        stopping = true;
+
         cctx.events().removeListener(discoLsnr);
 
         // Acquire write busy lock.
@@ -243,7 +227,18 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         if (demander != null)
             demander.stop();
 
+        IgniteCheckedException err = stopError();
+
+        for (GridDhtForceKeysFuture fut : forceKeyFuts.values())
+            fut.onDone(err);
+
         top = null;
+    }
+    /**
+     * @return Node stop exception.
+     */
+    private IgniteCheckedException stopError() {
+        return new NodeStoppingException("Operation has been cancelled (cache or node is stopping).");
     }
 
     /** {@inheritDoc} */
@@ -436,11 +431,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<Boolean> rebalanceFuture() {
         return cctx.kernalContext().clientNode() ? new GridFinishedFuture<>(true) : demander.rebalanceFuture();
-    }
-
-    /** {@inheritDoc} */
-    @Override public IgniteInternalFuture<?> initialRebalanceFuture() {
-        return cctx.kernalContext().clientNode() ? startFut : initRebalanceFut;
     }
 
     /**
@@ -738,9 +728,18 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
      * Adds future to future map.
      *
      * @param fut Future to add.
+     * @return {@code False} if node cache is stopping and future was completed with error.
      */
-    void addFuture(GridDhtForceKeysFuture<?, ?> fut) {
+    boolean addFuture(GridDhtForceKeysFuture<?, ?> fut) {
         forceKeyFuts.put(fut.futureId(), fut);
+
+        if (stopping) {
+            fut.onDone(stopError());
+
+            return false;
+        }
+
+        return true;
     }
 
     /**

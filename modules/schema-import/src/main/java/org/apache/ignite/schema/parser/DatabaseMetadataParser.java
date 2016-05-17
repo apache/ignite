@@ -128,8 +128,10 @@ public class DatabaseMetadataParser {
 
         List<PojoDescriptor> res = new ArrayList<>();
 
-        for (String schema : parents.keySet()) {
-            PojoDescriptor parent = parents.get(schema);
+        for (Map.Entry<String, PojoDescriptor> item : parents.entrySet()) {
+            String schema = item.getKey();
+            PojoDescriptor parent = item.getValue();
+
             Collection<PojoDescriptor> children = childrens.get(schema);
 
             if (!children.isEmpty()) {

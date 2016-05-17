@@ -17,7 +17,9 @@
 
 package org.apache.ignite.internal.processors.cache.binary;
 
-import java.util.Collections;
+import java.io.Serializable;
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -29,6 +31,7 @@ import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -46,6 +49,9 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
 
     /** */
     private static volatile boolean deserialized = false;
+
+    /** */
+    private static volatile boolean useWrappingLoader = false;
 
     /** */
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -71,14 +77,11 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
 
         cfg.setMarshaller(new BinaryMarshaller());
 
-        cfg.setClassLoader(getExternalClassLoader());
+        cfg.setClassLoader(useWrappingLoader ? new WrappingClassLoader(getExternalClassLoader()) :
+            getExternalClassLoader());
 
         if (customBinaryConf) {
-            BinaryTypeConfiguration btcfg = new BinaryTypeConfiguration();
-
-            btcfg.setTypeName("org.apache.ignite.tests.p2p.CacheDeploymentTestValue3");
-
-            btcfg.setSerializer(new BinarySerializer() {
+            BinarySerializer bs = new BinarySerializer() {
                 /** {@inheritDoc} */
                 @Override public void writeBinary(Object obj, BinaryWriter writer) throws BinaryObjectException {
                     //No-op.
@@ -88,11 +91,29 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
                 @Override public void readBinary(Object obj, BinaryReader reader) throws BinaryObjectException {
                     deserialized = true;
                 }
-            });
+            };
+
+            BinaryTypeConfiguration btcfg1 = new BinaryTypeConfiguration();
+
+            btcfg1.setTypeName("org.apache.ignite.tests.p2p.CacheDeploymentTestValue");
+
+            btcfg1.setSerializer(bs);
+
+            BinaryTypeConfiguration btcfg2 = new BinaryTypeConfiguration();
+
+            btcfg2.setTypeName("org.apache.ignite.internal.processors.cache.binary." +
+                "GridCacheBinaryObjectUserClassloaderSelfTest$TestValue1");
+
+            btcfg2.setSerializer(bs);
 
             BinaryConfiguration bcfg = new BinaryConfiguration();
 
-            bcfg.setTypeConfigurations(Collections.singletonList(btcfg));
+            Set<BinaryTypeConfiguration> set = new HashSet<>();
+
+            set.add(btcfg1);
+            set.add(btcfg2);
+
+            bcfg.setTypeConfigurations(set);
 
             cfg.setBinaryConfiguration(bcfg);
         }
@@ -115,10 +136,29 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
         return cacheCfg;
     }
 
+
     /**
      * @throws Exception If test failed.
      */
     public void testConfigurationRegistration() throws Exception {
+        useWrappingLoader = false;
+
+        doTestConfigurationRegistration();
+    }
+
+    /**
+     * @throws Exception If test failed.
+     */
+    public void testConfigurationRegistrationWithWrappingLoader() throws Exception {
+        useWrappingLoader = true;
+
+        doTestConfigurationRegistration();
+    }
+
+    /**
+     * @throws Exception If test failed.
+     */
+    private void doTestConfigurationRegistration() throws Exception {
         try {
             customBinaryConf = true;
 
@@ -128,20 +168,107 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
             IgniteCache<Integer, Object> cache1 = i1.cache(null);
             IgniteCache<Integer, Object> cache2 = i2.cache(null);
 
-            ClassLoader ldr = i1.configuration().getClassLoader();
+            ClassLoader ldr = useWrappingLoader ?
+                ((WrappingClassLoader)i1.configuration().getClassLoader()).getParent() :
+                i1.configuration().getClassLoader();
 
-            Object v1 = ldr.loadClass("org.apache.ignite.tests.p2p.CacheDeploymentTestValue3").newInstance();
+            Object v1 = ldr.loadClass("org.apache.ignite.tests.p2p.CacheDeploymentTestValue").newInstance();
+            Object v2 = ldr.loadClass("org.apache.ignite.tests.p2p.CacheDeploymentTestValue2").newInstance();
 
             cache1.put(1, v1);
+            cache1.put(2, v2);
+            cache1.put(3, new TestValue1(123));
+            cache1.put(4, new TestValue2(123));
 
             deserialized = false;
 
             cache2.get(1);
 
             assertTrue(deserialized);
+
+            deserialized = false;
+
+            cache2.get(2);
+
+            assertFalse(deserialized);
+
+            deserialized = false;
+
+            cache2.get(3);
+
+            assertTrue(deserialized);
+
+            deserialized = false;
+
+            cache2.get(4);
+
+            assertFalse(deserialized);
         }
         finally {
             customBinaryConf = false;
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestValue1 implements Serializable {
+        /** */
+        private int val;
+
+        /**
+         * @param val Value.
+         */
+        public TestValue1(int val) {
+            this.val = val;
+        }
+
+        /**
+         * @return Value.
+         */
+        public int value() {
+            return val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(TestValue1.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestValue2 implements Serializable {
+        /** */
+        private int val;
+
+        /**
+         * @param val Value.
+         */
+        public TestValue2(int val) {
+            this.val = val;
+        }
+
+        /**
+         * @return Value.
+         */
+        public int value() {
+            return val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(TestValue2.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class WrappingClassLoader extends ClassLoader {
+        public WrappingClassLoader(ClassLoader parent) {
+            super(parent);
         }
     }
 }

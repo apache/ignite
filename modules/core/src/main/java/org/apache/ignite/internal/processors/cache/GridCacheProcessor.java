@@ -79,7 +79,6 @@ import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProce
 import org.apache.ignite.internal.processors.cache.datastructures.CacheDataStructuresManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridNoStorageCacheMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicCache;
 import org.apache.ignite.internal.processors.cache.distributed.dht.colocated.GridDhtColocatedCache;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearAtomicCache;
@@ -106,7 +105,6 @@ import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
-import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
@@ -255,6 +253,12 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         aff.setHashIdResolver(new AffinityNodeAddressHashResolver());
                 }
             }
+            else if (cfg.getCacheMode() == LOCAL && !(cfg.getAffinity() instanceof LocalAffinityFunction)) {
+                cfg.setAffinity(new LocalAffinityFunction());
+
+                U.warn(log, "AffinityFunction configuration parameter will be ignored for local cache" +
+                    " [cacheName=" + U.maskName(cfg.getName()) + ']');
+            }
         }
 
         if (cfg.getCacheMode() == REPLICATED)
@@ -331,7 +335,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             perf.add("Disable near cache (set 'nearConfiguration' to null)", cfg.getNearConfiguration() == null);
 
             if (cfg.getAffinity() != null)
-                perf.add("Decrease number of backups (set 'keyBackups' to 0)", cfg.getBackups() == 0);
+                perf.add("Decrease number of backups (set 'backups' to 0)", cfg.getBackups() == 0);
         }
 
         // Suppress warning if at least one ATOMIC cache found.
@@ -583,7 +587,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings( {"unchecked"})
+    @SuppressWarnings({"unchecked"})
     @Override public void start() throws IgniteCheckedException {
         DeploymentMode depMode = ctx.config().getDeploymentMode();
 
@@ -800,15 +804,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cacheStartedLatch.countDown();
         }
 
-        if (!ctx.config().isDaemon())
-            ctx.marshallerContext().onMarshallerCacheStarted(ctx);
-
-        marshallerCache().context().preloader().initialRebalanceFuture().listen(new CIX1<IgniteInternalFuture<?>>() {
-            @Override public void applyx(IgniteInternalFuture<?> f) throws IgniteCheckedException {
-                ctx.marshallerContext().onMarshallerCachePreloaded(ctx);
-            }
-        });
-
         // Must call onKernalStart on shared managers after creation of fetched caches.
         for (GridCacheSharedManager<?, ?> mgr : sharedCtx.managers())
             mgr.onKernalStart(false);
@@ -816,25 +811,21 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         for (GridCacheAdapter<?, ?> cache : caches.values())
             onKernalStart(cache);
 
+        ctx.marshallerContext().onMarshallerCacheStarted(ctx);
+
+        if (!ctx.config().isDaemon())
+            ctx.cacheObjects().onUtilityCacheStarted();
+
         // Wait for caches in SYNC preload mode.
         for (CacheConfiguration cfg : ctx.config().getCacheConfiguration()) {
             GridCacheAdapter cache = caches.get(maskNull(cfg.getName()));
 
             if (cache != null) {
                 if (cfg.getRebalanceMode() == SYNC) {
-                    if (cfg.getCacheMode() == REPLICATED ||
-                        (cfg.getCacheMode() == PARTITIONED && cfg.getRebalanceDelay() >= 0)) {
-                        boolean utilityCache = CU.isUtilityCache(cache.name());
+                    CacheMode cacheMode = cfg.getCacheMode();
 
-                        if (utilityCache || CU.isMarshallerCache(cache.name())) {
-                            cache.preloader().initialRebalanceFuture().get();
-
-                            if (utilityCache)
-                                ctx.cacheObjects().onUtilityCacheStarted();
-                        }
-                        else
-                            cache.preloader().syncFuture().get();
-                    }
+                    if (cacheMode == REPLICATED || (cacheMode == PARTITIONED && cfg.getRebalanceDelay() >= 0))
+                        cache.preloader().syncFuture().get();
                 }
             }
         }
@@ -1252,7 +1243,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         else
             prepare(cfg, cfg.getCacheStoreFactory(), false);
 
-
         CacheStore cfgStore = cfg.getCacheStoreFactory() != null ? cfg.getCacheStoreFactory().create() : null;
 
         validate(ctx.config(), cfg, cacheType, cfgStore);
@@ -1530,6 +1520,42 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Gets public cache that can be used for query execution.
+     * If cache isn't created on current node it will be started.
+     *
+     * @param start Start cache.
+     * @param inclLoc Include local caches.
+     * @return Cache or {@code null} if there is no suitable cache.
+     */
+    public IgniteCacheProxy<?, ?> getOrStartPublicCache(boolean start, boolean inclLoc) throws IgniteCheckedException {
+        // Try to find started cache first.
+        for (Map.Entry<String, GridCacheAdapter<?, ?>> e : caches.entrySet()) {
+            CacheConfiguration ccfg = e.getValue().configuration();
+
+            String cacheName = ccfg.getName();
+
+            if ((inclLoc || ccfg.getCacheMode() != LOCAL) && GridQueryProcessor.isEnabled(ccfg))
+                return publicJCache(cacheName);
+        }
+
+        if (start) {
+            for (Map.Entry<String, DynamicCacheDescriptor> e : registeredCaches.entrySet()) {
+                DynamicCacheDescriptor desc = e.getValue();
+
+                CacheConfiguration ccfg = desc.cacheConfiguration();
+
+                if (ccfg.getCacheMode() != LOCAL && GridQueryProcessor.isEnabled(ccfg)) {
+                    dynamicStartCache(null, ccfg.getName(), null, false, true, true).get();
+
+                    return publicJCache(ccfg.getName());
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * Gets a collection of currently started public cache names.
      *
      * @return Collection of currently started public cache names
@@ -1548,6 +1574,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         );
     }
+
     /**
      * Gets cache mode.
      *
@@ -1590,8 +1617,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * Starts statically configured caches received from remote nodes during exchange.
      *
      * @param topVer Topology version.
-     * @throws IgniteCheckedException If failed.
      * @return Started caches descriptors.
+     * @throws IgniteCheckedException If failed.
      */
     public Collection<DynamicCacheDescriptor> startReceivedCaches(AffinityTopologyVersion topVer)
         throws IgniteCheckedException {
@@ -2135,7 +2162,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 break;
             }
 
-            if (cfg.getName() != null ) {
+            if (cfg.getName() != null) {
                 if (cfg.getName().endsWith("*")) {
                     if (cfg.getName().length() > 1) {
                         if (wildcardNameCfgs == null)
@@ -2350,7 +2377,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         return F.first(initiateCacheChanges(F.asList(t), false));
     }
 
-
     /**
      * @param cacheName Cache name to close.
      * @return Future that will be completed when cache is closed.
@@ -2511,7 +2537,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (msg instanceof CacheAffinityChangeMessage)
             return sharedCtx.affinity().onCustomEvent(((CacheAffinityChangeMessage)msg));
 
-        return msg instanceof DynamicCacheChangeBatch && onCacheChangeRequested((DynamicCacheChangeBatch) msg, topVer);
+        return msg instanceof DynamicCacheChangeBatch && onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
     }
 
     /**
@@ -2623,7 +2649,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             req.nearCacheConfiguration() != null);
                     }
                     else {
-                        if (req.failIfExists() ) {
+                        if (req.failIfExists()) {
                             if (fut != null)
                                 fut.onDone(new CacheExistsException("Failed to start cache " +
                                     "(a cache with the same name is already started): " + U.maskName(req.cacheName())));
@@ -2923,7 +2949,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param keyBytes Key bytes.
      * @param valBytes Value bytes.
      */
-    @SuppressWarnings( {"unchecked"})
+    @SuppressWarnings({"unchecked"})
     public void onEvictFromSwap(String spaceName, byte[] keyBytes, byte[] valBytes) {
         assert spaceName != null;
         assert keyBytes != null;
@@ -3149,8 +3175,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     @SuppressWarnings({"unchecked", "ConstantConditions"})
     @Nullable public <K, V> IgniteCacheProxy<K, V> publicJCache(@Nullable String cacheName,
         boolean failIfNotStarted,
-        boolean checkThreadTx) throws IgniteCheckedException
-    {
+        boolean checkThreadTx) throws IgniteCheckedException {
         if (log.isDebugEnabled())
             log.debug("Getting public cache for name: " + cacheName);
 
@@ -3360,8 +3385,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * Callback invoked by deployment manager for whenever a class loader
-     * gets undeployed.
+     * Callback invoked by deployment manager for whenever a class loader gets undeployed.
      *
      * @param ldr Class loader.
      */
@@ -3395,9 +3419,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException In case of error.
      */
     public void createMissingCaches() throws IgniteCheckedException {
-        for (String cacheName : registeredCaches.keySet()) {
-            if (!CU.isSystemCache(cacheName) && !caches.containsKey(cacheName))
-                dynamicStartCache(null, cacheName, null, false, true, true).get();
+        for (Map.Entry<String, DynamicCacheDescriptor> e : registeredCaches.entrySet()) {
+            CacheConfiguration ccfg = e.getValue().cacheConfiguration();
+
+            if (!caches.containsKey(maskNull(ccfg.getName())) && GridQueryProcessor.isEnabled(ccfg))
+                dynamicStartCache(null, ccfg.getName(), null, false, true, true).get();
         }
     }
 
@@ -3474,7 +3500,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param objs Extra components.
      * @return Components provided in cache configuration which can implement {@link LifecycleAware} interface.
      */
-    private Iterable<Object> lifecycleAwares(CacheConfiguration ccfg, Object...objs) {
+    private Iterable<Object> lifecycleAwares(CacheConfiguration ccfg, Object... objs) {
         Collection<Object> ret = new ArrayList<>(7 + objs.length);
 
         ret.add(ccfg.getAffinity());
@@ -3503,8 +3529,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param val Object to check.
-     * @throws IgniteCheckedException If validation failed.
      * @return Configuration copy.
+     * @throws IgniteCheckedException If validation failed.
      */
     private CacheConfiguration cloneCheckSerializable(final CacheConfiguration val) throws IgniteCheckedException {
         if (val == null)
@@ -3541,8 +3567,8 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param c Closure.
-     * @throws IgniteCheckedException If failed.
      * @return Closure result.
+     * @throws IgniteCheckedException If failed.
      */
     private <T> T withBinaryContext(IgniteOutClosureX<T> c) throws IgniteCheckedException {
         IgniteCacheObjectProcessor objProc = ctx.cacheObjects();
@@ -3574,7 +3600,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 return marshaller.unmarshal(marshaller.marshal(obj), U.resolveClassLoader(ctx.config()));
             }
         });
-    };
+    }
 
     /**
      * @param name Name to mask.

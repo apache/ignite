@@ -1381,25 +1381,29 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
     /** {@inheritDoc} */
     @Override public void dumpStats() {
-        StringBuilder sb = new StringBuilder("Communication SPI recovery descriptors: ").append(U.nl());
+        IgniteLogger log = this.log;
 
-        for (Map.Entry<ClientKey, GridNioRecoveryDescriptor> entry : recoveryDescs.entrySet()) {
-            GridNioRecoveryDescriptor desc = entry.getValue();
+        if (log != null) {
+            StringBuilder sb = new StringBuilder("Communication SPI recovery descriptors: ").append(U.nl());
 
-            sb.append("    [key=").append(entry.getKey())
-                .append(", msgsSent=").append(desc.sent())
-                .append(", msgsAckedByRmt=").append(desc.acked())
-                .append(", msgsRcvd=").append(desc.received())
-                .append(", descIdHash=").append(System.identityHashCode(desc))
-                .append(']').append(U.nl());
+            for (Map.Entry<ClientKey, GridNioRecoveryDescriptor> entry : recoveryDescs.entrySet()) {
+                GridNioRecoveryDescriptor desc = entry.getValue();
+
+                sb.append("    [key=").append(entry.getKey())
+                    .append(", msgsSent=").append(desc.sent())
+                    .append(", msgsAckedByRmt=").append(desc.acked())
+                    .append(", msgsRcvd=").append(desc.received())
+                    .append(", descIdHash=").append(System.identityHashCode(desc))
+                    .append(']').append(U.nl());
+            }
+
+            U.warn(log, sb.toString());
         }
 
-        U.warn(log, sb.toString());
+        GridNioServer<Message> nioSrvr = this.nioSrvr;
 
-        GridNioServer<Message> nioSrvr1 = nioSrvr;
-
-        if (nioSrvr1 != null)
-            nioSrvr1.dumpStats();
+        if (nioSrvr != null)
+            nioSrvr.dumpStats();
     }
 
     /** {@inheritDoc} */
@@ -1591,7 +1595,9 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         IgniteCheckedException lastEx = null;
 
         // If configured TCP port is busy, find first available in range.
-        for (int port = locPort; port < locPort + locPortRange; port++) {
+        int lastPort = locPortRange == 0 ? locPort : locPort + locPortRange - 1;
+
+        for (int port = locPort; port <= lastPort; port++) {
             try {
                 MessageFactory msgFactory = new MessageFactory() {
                     private MessageFactory impl;
@@ -2420,7 +2426,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                         if (errs == null)
                             errs = new IgniteCheckedException("Failed to connect to node (is node still alive?). " +
-                                "Make sure that each GridComputeTask and GridCacheTransaction has a timeout set " +
+                                "Make sure that each ComputeTask and GridCacheTransaction has a timeout set " +
                                 "in order to prevent parties from waiting forever in case of network issues " +
                                 "[nodeId=" + node.id() + ", addrs=" + addrs + ']');
 
@@ -2448,7 +2454,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                         if (errs == null)
                             errs = new IgniteCheckedException("Failed to connect to node (is node still alive?). " +
-                                "Make sure that each GridComputeTask and GridCacheTransaction has a timeout set " +
+                                "Make sure that each ComputeTask and GridCacheTransaction has a timeout set " +
                                 "in order to prevent parties from waiting forever in case of network issues " +
                                 "[nodeId=" + node.id() + ", addrs=" + addrs + ']');
 
@@ -2488,7 +2494,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
                     if (errs == null)
                         errs = new IgniteCheckedException("Failed to connect to node (is node still alive?). " +
-                            "Make sure that each GridComputeTask and GridCacheTransaction has a timeout set " +
+                            "Make sure that each ComputeTask and GridCacheTransaction has a timeout set " +
                             "in order to prevent parties from waiting forever in case of network issues " +
                             "[nodeId=" + node.id() + ", addrs=" + addrs + ']');
 

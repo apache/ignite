@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -456,6 +455,8 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                     AffinityTopologyVersion topVer = topologyVersion();
 
+                    batchStoreCommit(writeMap().values());
+
                     // Node that for near transactions we grab all entries.
                     for (IgniteTxEntry txEntry : (near() ? allEntries() : writeEntries())) {
                         GridCacheContext cacheCtx = txEntry.context();
@@ -772,6 +773,11 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     /** {@inheritDoc} */
     @Override public Collection<GridCacheVersion> alternateVersions() {
         return explicitVers == null ? Collections.<GridCacheVersion>emptyList() : explicitVers;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void commitError(Throwable e) {
+        // No-op.
     }
 
     /**

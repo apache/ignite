@@ -53,6 +53,51 @@ namespace Apache.Ignite.Core.Discovery.Tcp
         public static readonly TimeSpan DefaultJoinTimeout = TimeSpan.Zero;
 
         /// <summary>
+        /// Default value for the <see cref="ReconnectCount"/> property.
+        /// </summary>
+        public const int DefaultReconnectCount = 10;
+
+        /// <summary>
+        /// Default value for the <see cref="LocalPort"/> property.
+        /// </summary>
+        public const int DefaultLocalPort = 47500;
+
+        /// <summary>
+        /// Default value for the <see cref="LocalPortRange"/> property.
+        /// </summary>
+        public const int DefaultLocalPortRange = 100;
+
+        /// <summary>
+        /// Default value for the <see cref="MaxMissedHeartbeats"/> property.
+        /// </summary>
+        public const int DefaultMaxMissedHeartbeats = 1;
+
+        /// <summary>
+        /// Default value for the <see cref="MaxMissedClientHeartbeats"/> property.
+        /// </summary>
+        public const int DefaultMaxMissedClientHeartbeats = 5;
+
+        /// <summary>
+        /// Default value for the <see cref="IpFinderCleanFrequency"/> property.
+        /// </summary>
+        public static readonly TimeSpan DefaultIpFinderCleanFrequency = TimeSpan.FromSeconds(60);
+
+        /// <summary>
+        /// Default value for the <see cref="ThreadPriority"/> property.
+        /// </summary>
+        public const int DefaultThreadPriority = 10;
+
+        /// <summary>
+        /// Default value for the <see cref="HeartbeatFrequency"/> property.
+        /// </summary>
+        public static readonly TimeSpan DefaultHeartbeatFrequency = TimeSpan.FromSeconds(2);
+        
+        /// <summary>
+        /// Default value for the <see cref="TopologyHistorySize"/> property.
+        /// </summary>
+        public const int DefaultTopologyHistorySize = 1000;
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="TcpDiscoverySpi"/> class.
         /// </summary>
         public TcpDiscoverySpi()
@@ -62,6 +107,15 @@ namespace Apache.Ignite.Core.Discovery.Tcp
             MaxAckTimeout = DefaultMaxAckTimeout;
             NetworkTimeout = DefaultNetworkTimeout;
             JoinTimeout = DefaultJoinTimeout;
+            ReconnectCount = DefaultReconnectCount;
+            LocalPort = DefaultLocalPort;
+            LocalPortRange = DefaultLocalPortRange;
+            MaxMissedHeartbeats = DefaultMaxMissedHeartbeats;
+            MaxMissedClientHeartbeats = DefaultMaxMissedClientHeartbeats;
+            IpFinderCleanFrequency = DefaultIpFinderCleanFrequency;
+            ThreadPriority = DefaultThreadPriority;
+            HeartbeatFrequency = DefaultHeartbeatFrequency;
+            TopologyHistorySize = DefaultTopologyHistorySize;
         }
 
         /// <summary>
@@ -77,6 +131,20 @@ namespace Apache.Ignite.Core.Discovery.Tcp
             MaxAckTimeout = reader.ReadLongAsTimespan();
             NetworkTimeout = reader.ReadLongAsTimespan();
             JoinTimeout = reader.ReadLongAsTimespan();
+
+            ForceServerMode = reader.ReadBoolean();
+            ClientReconnectDisabled = reader.ReadBoolean();
+            LocalAddress = reader.ReadString();
+            ReconnectCount = reader.ReadInt();
+            LocalPort = reader.ReadInt();
+            LocalPortRange = reader.ReadInt();
+            MaxMissedHeartbeats = reader.ReadInt();
+            MaxMissedClientHeartbeats = reader.ReadInt();
+            StatisticsPrintFrequency = reader.ReadLongAsTimespan();
+            IpFinderCleanFrequency = reader.ReadLongAsTimespan();
+            ThreadPriority = reader.ReadInt();
+            HeartbeatFrequency = reader.ReadLongAsTimespan();
+            TopologyHistorySize = reader.ReadInt();
         }
 
         /// <summary>
@@ -114,6 +182,85 @@ namespace Apache.Ignite.Core.Discovery.Tcp
         public TimeSpan JoinTimeout { get; set; }
 
         /// <summary>
+        /// Gets or sets a value indicating whether TcpDiscoverySpi is started in server mode 
+        /// regardless of <see cref="IgniteConfiguration.ClientMode"/> setting.
+        /// </summary>
+        public bool ForceServerMode { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether client does not try to reconnect after
+        /// server detected client node failure.
+        /// </summary>
+        public bool ClientReconnectDisabled { get; set; }
+
+        /// <summary>
+        /// Gets or sets the local host IP address that discovery SPI uses.
+        /// </summary>
+        public string LocalAddress { get; set; }
+
+        /// <summary>
+        /// Gets or sets the number of times node tries to (re)establish connection to another node.
+        /// </summary>
+        [DefaultValue(DefaultReconnectCount)]
+        public int ReconnectCount { get; set; }
+
+        /// <summary>
+        /// Gets or sets the local port to listen to.
+        /// </summary>
+        [DefaultValue(DefaultLocalPort)]
+        public int LocalPort { get; set; }
+
+        /// <summary>
+        /// Gets or sets the range for local ports. Local node will try to bind on first available port starting from
+        /// <see cref="LocalPort"/> up until (<see cref="LocalPort"/> + <see cref="LocalPortRange"/>).
+        /// </summary>
+        [DefaultValue(DefaultLocalPortRange)]
+        public int LocalPortRange { get; set; }
+
+        /// <summary>
+        /// Gets or sets the maximum heartbeats count node can miss without initiating status check.
+        /// </summary>
+        [DefaultValue(DefaultMaxMissedHeartbeats)]
+        public int MaxMissedHeartbeats { get; set; }
+
+        /// <summary>
+        /// Gets or sets the maximum heartbeats count node can miss without failing client node.
+        /// </summary>
+        [DefaultValue(DefaultMaxMissedClientHeartbeats)]
+        public int MaxMissedClientHeartbeats { get; set; }
+
+        /// <summary>
+        /// Gets or sets the statistics print frequency.
+        /// <see cref="TimeSpan.Zero"/> for no statistics.
+        /// </summary>
+        public TimeSpan StatisticsPrintFrequency { get; set; }
+
+        /// <summary>
+        /// Gets or sets the IP finder clean frequency.
+        /// </summary>
+        [DefaultValue(typeof(TimeSpan), "0:1:0")]
+        public TimeSpan IpFinderCleanFrequency { get; set; }
+
+        /// <summary>
+        /// Sets thread priority, 1 (lowest) to 10 (highest). All threads within SPI will be started with it.
+        /// </summary>
+        [DefaultValue(DefaultThreadPriority)]
+        public int ThreadPriority { get; set; }
+
+        /// <summary>
+        /// Gets or sets delay between issuing of heartbeat messages. SPI sends heartbeat messages
+        /// in configurable time interval to other nodes to notify them about its state.
+        /// </summary>
+        [DefaultValue(typeof(TimeSpan), "0:0:2")]
+        public TimeSpan HeartbeatFrequency { get; set; }
+
+        /// <summary>
+        /// Gets or sets the size of topology snapshots history.
+        /// </summary>
+        [DefaultValue(DefaultTopologyHistorySize)]
+        public int TopologyHistorySize { get; set; }
+
+        /// <summary>
         /// Writes this instance to the specified writer.
         /// </summary>
         internal void Write(IBinaryRawWriter writer)
@@ -139,6 +286,20 @@ namespace Apache.Ignite.Core.Discovery.Tcp
             writer.WriteLong((long) MaxAckTimeout.TotalMilliseconds);
             writer.WriteLong((long) NetworkTimeout.TotalMilliseconds);
             writer.WriteLong((long) JoinTimeout.TotalMilliseconds);
+
+            writer.WriteBoolean(ForceServerMode);
+            writer.WriteBoolean(ClientReconnectDisabled);
+            writer.WriteString(LocalAddress);
+            writer.WriteInt(ReconnectCount);
+            writer.WriteInt(LocalPort);
+            writer.WriteInt(LocalPortRange);
+            writer.WriteInt(MaxMissedHeartbeats);
+            writer.WriteInt(MaxMissedClientHeartbeats);
+            writer.WriteLong((long) StatisticsPrintFrequency.TotalMilliseconds);
+            writer.WriteLong((long) IpFinderCleanFrequency.TotalMilliseconds);
+            writer.WriteInt(ThreadPriority);
+            writer.WriteLong((long) HeartbeatFrequency.TotalMilliseconds);
+            writer.WriteInt(TopologyHistorySize);
         }
     }
 }

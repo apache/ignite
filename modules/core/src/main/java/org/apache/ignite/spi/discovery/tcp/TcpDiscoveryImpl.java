@@ -260,6 +260,9 @@ abstract class TcpDiscoveryImpl {
     @SuppressWarnings("BusyWait")
     protected final void registerLocalNodeAddress() throws IgniteSpiException {
         // Make sure address registration succeeded.
+        // ... but limit it if join timeout is configured.
+        long start = spi.getJoinTimeout() > 0 ? U.currentTimeMillis() : 0;
+
         while (true) {
             try {
                 spi.ipFinder.initializeLocalAddresses(locNode.socketAddresses());
@@ -275,6 +278,13 @@ abstract class TcpDiscoveryImpl {
                 LT.error(log, e, "Failed to register local node address in IP finder on start " +
                     "(retrying every 2000 ms).");
             }
+
+            if (start > 0 && (U.currentTimeMillis() - start) > spi.getJoinTimeout())
+                throw new IgniteSpiException(
+                    "Failed to register local addresses with IP finder within join timeout " +
+                        "(make sure IP finder configuration is correct, and operating system firewalls are disabled " +
+                        "on all host machines, or consider increasing 'joinTimeout' configuration property) " +
+                        "[joinTimeout=" + spi.getJoinTimeout() + ']');
 
             try {
                 U.sleep(2000);

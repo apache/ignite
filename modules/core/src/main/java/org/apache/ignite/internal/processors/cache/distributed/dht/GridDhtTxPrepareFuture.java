@@ -363,6 +363,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                     final boolean keepBinary = txEntry.keepBinary();
 
                     CacheObject val = cached.innerGet(
+                        null,
                         tx,
                         /*swap*/true,
                         readThrough,

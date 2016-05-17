@@ -35,8 +35,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
-    using Apache.Ignite.Core.Discovery.Tcp;
-    using Apache.Ignite.Core.Discovery.Tcp.Static;
     using Apache.Ignite.Linq;
     using NUnit.Framework;
 
@@ -120,19 +118,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// </summary>
         private static IgniteConfiguration GetConfig(string gridName = null)
         {
-            return new IgniteConfiguration
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions(),
                 BinaryConfiguration = new BinaryConfiguration(typeof(Person),
                     typeof(Organization), typeof(Address), typeof(Role), typeof(RoleKey), typeof(Numerics)),
-                DiscoverySpi = new TcpDiscoverySpi
-                {
-                    IpFinder = new TcpDiscoveryStaticIpFinder
-                    {
-                        Endpoints = new[] { "127.0.0.1:47500", "127.0.0.1:47501" }
-                    }
-                },
                 GridName = gridName
             };
         }
@@ -853,6 +842,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         public void TestCompiledQuery()
         {
             var cache = GetPersonCache().AsCacheQueryable();
+
+            // const args are not allowed
+            Assert.Throws<InvalidOperationException>(() => CompiledQuery.Compile(() => cache.Where(x => x.Key < 5)));
 
             // 0 arg
             var qry0 = CompiledQuery.Compile(() => cache.Select(x => x.Value.Name));

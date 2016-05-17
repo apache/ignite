@@ -35,7 +35,7 @@ import java.lang.annotation.Target;
  * <pre name="code" class="java">
  * public class MyGridJob implements ComputeJob {
  *     ...
- *     &#64;GridComputeJobAfterSend
+ *     &#64;ComputeJobAfterSend
  *     public void onJobAfterSend() {
  *          ...
  *     }

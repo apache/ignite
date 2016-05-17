@@ -931,7 +931,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     locMap = new GridDhtPartitionMap(locMap.nodeId(), locMap.updateSequence(), locMap.map());
 
                 m.addLocalPartitionMap(cacheCtx.cacheId(), locMap);
-                
+
                 m.partitionUpdateCounters(cacheCtx.cacheId(), cacheCtx.topology().updateCounters());
             }
         }
@@ -1072,9 +1072,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             cacheValidRes = m != null ? m : Collections.<Integer, Boolean>emptyMap();
         }
 
-        cctx.cache().onExchangeDone(exchId.topologyVersion(), reqs, err);
-
         cctx.exchange().onExchangeDone(this, err);
+
+        cctx.cache().onExchangeDone(exchId.topologyVersion(), reqs, err);
 
         if (super.onDone(res, err) && realExchange) {
             if (log.isDebugEnabled())

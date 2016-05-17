@@ -132,7 +132,7 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
 
             info(">>> Starting set of tests [testedNodeIdx=" + testedNodeIdx
                 + ", id=" + grid(testedNodeIdx).localNode().id()
-                + ", isClient=" + grid(testedNodeIdx).configuration().isClientMode()
+                + ", isClient=" + isClientMode()
                 + ", nearEnabled=" + testedNodeNearEnabled + "]");
         }
     }
@@ -198,7 +198,8 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        awaitPartitionMapExchange();
+        if (testsCfg.awaitPartitionMapExchange())
+            awaitPartitionMapExchange();
 
         assert jcache().unwrap(Ignite.class).transactions().tx() == null;
 

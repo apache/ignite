@@ -23,26 +23,25 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.channels.Channels;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import org.apache.ignite.mesos.ClusterProperties;
 
 /**
  * Class downloads and stores Ignite.
  */
 public class IgniteProvider {
+    // This constants are set by maven-ant-plugin.
     /** */
-    public static final String DOWNLOAD_LINK = "http://tiny.cc/updater/download_community.php";
+    private static final String DOWNLOAD_LINK = "http://ignite.run/download_ignite.php";
 
     /** */
-    public static final String DIRECT_DOWNLOAD_LINK = "http://www.gridgain.com/media/gridgain-community-fabric-";
+    private static final String DOWNLOAD_URL_PATTERN = "https://archive.apache.org/dist/ignite/%s/apache-ignite-fabric-%s-bin.zip";
 
     /** */
     private String downloadFolder;
-
-    /** */
-    private String latestVersion = null;
 
     /**
      * @param downloadFolder Folder with ignite.
@@ -52,135 +51,53 @@ public class IgniteProvider {
     }
 
     /**
-     * @return Latest ignite version.
+     * @param ver Ignite version.
+     * @throws IOException If downloading failed.
+     * @return Path to latest ignite.
      */
-    public String getIgnite() {
-        File folder = checkDownloadFolder();
-
-        if (latestVersion == null) {
-            List<String> files = findIgnites(folder);
-
-            if (!files.isEmpty()) {
-                if (files.size() == 1)
-                    latestVersion = parseVersion(files.get(0));
-                else
-                    latestVersion = parseVersion(Collections.max(files, new Comparator<String>() {
-                        @Override public int compare(String f1, String f2) {
-                            if (f1.equals(f2))
-                                return 0;
-
-                            String[] ver1 = parseVersion(f1).split("\\.");
-                            String[] ver2 = parseVersion(f2).split("\\.");
-
-                            if (Integer.valueOf(ver1[0]) >= Integer.valueOf(ver2[0])
-                                && Integer.valueOf(ver1[1]) >= Integer.valueOf(ver2[1])
-                                && Integer.valueOf(ver1[2]) >= Integer.valueOf(ver2[2]))
-
-                                return 1;
-                            else
-                                return -1;
-                        }
-                    }));
-            }
-        }
-
-        latestVersion = updateIgnite(latestVersion);
-
-        return "gridgain-community-fabric-" + latestVersion + ".zip";
+    public String getIgnite(String ver) throws IOException {
+        return downloadIgnite(ver);
     }
 
     /**
-     * @param folder Folder.
-     * @return Ignite archives.
+     * @param ver Ignite version which will be downloaded. If {@code null} will download the latest ignite version.
+     * @throws IOException If downloading failed.
+     * @return Ignite archive.
      */
-    private List<String> findIgnites(File folder) {
-        String[] files = folder.list();
+    public String downloadIgnite(String ver) throws IOException {
+        assert ver != null;
 
-        List<String> ignites = new ArrayList<>();
+        URL url;
 
-        if (files != null) {
-            for (String fileName : files) {
-                if (fileName.contains("gridgain-community-fabric-") && fileName.endsWith(".zip"))
-                    ignites.add(fileName);
-            }
-        }
+        if (ver.equals(ClusterProperties.DEFAULT_IGNITE_VERSION)) {
+            URL updateUrl = new URL(DOWNLOAD_LINK);
 
-        return ignites;
-    }
-
-    /**
-     * @param version Ignite version.
-     * @return Ignite.
-     */
-    public String getIgnite(String version) {
-        File folder = checkDownloadFolder();
-
-        String[] ignites = folder.list();
-
-        String ignite = null;
-
-        if (ignites != null) {
-            for (String fileName : ignites) {
-                if (fileName.equals("gridgain-community-fabric-" + version + ".zip"))
-                    ignite = fileName;
-            }
-        }
-
-        if (ignite != null)
-            return ignite;
-
-        return downloadIgnite(version);
-    }
-
-    /**
-     * @param currentVersion The current latest version.
-     * @return Current version if the current version is latest; new ignite version otherwise.
-     */
-    private String updateIgnite(String currentVersion) {
-        try {
-            URL url;
-
-            if (currentVersion == null)
-                url = new URL(DOWNLOAD_LINK);
-            else
-                url = new URL(DOWNLOAD_LINK + "?version=" + currentVersion);
-
-            HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            HttpURLConnection conn = (HttpURLConnection)updateUrl.openConnection();
 
             int code = conn.getResponseCode();
 
-            if (code == 200) {
-                String redirectUrl = conn.getURL().toString();
-
-                checkDownloadFolder();
-
-                FileOutputStream outFile = new FileOutputStream(downloadFolder + "/" + fileName(redirectUrl));
-
-                outFile.getChannel().transferFrom(Channels.newChannel(conn.getInputStream()), 0, Long.MAX_VALUE);
-
-                outFile.close();
-
-                return parseVersion(redirectUrl);
-            }
-            else if (code == 304)
-                // This version is latest.
-                return currentVersion;
+            if (code == 200)
+                url = conn.getURL();
             else
-                throw new RuntimeException("Got unexpected response code. Response code: " + code);
+                throw new RuntimeException("Failed to download ignite distributive. Maybe set incorrect version? " +
+                    "[resCode:" + code + ", ver: " + ver + "]");
         }
-        catch (IOException e) {
-            throw new RuntimeException("Failed update ignite.", e);
-        }
+        else
+            url = new URL(String.format(DOWNLOAD_URL_PATTERN, ver.replace("-incubating", ""), ver));
+
+        return downloadIgnite(url);
     }
 
     /**
-     * @param version The current latest version.
-     * @return Ignite archive.
+     * Downloads ignite by URL if this version wasn't downloaded before.
+     *
+     * @param url URL to Ignite.
+     * @return File name.
      */
-    public String downloadIgnite(String version) {
-        try {
-            URL url = new URL(DIRECT_DOWNLOAD_LINK + version + ".zip");
+    private String downloadIgnite(URL url) {
+        assert url != null;
 
+        try {
             HttpURLConnection conn = (HttpURLConnection)url.openConnection();
 
             int code = conn.getResponseCode();
@@ -189,6 +106,9 @@ public class IgniteProvider {
                 checkDownloadFolder();
 
                 String fileName = fileName(url.toString());
+
+                if (fileExist(fileName))
+                    return fileName;
 
                 FileOutputStream outFile = new FileOutputStream(downloadFolder + fileName);
 
@@ -202,8 +122,45 @@ public class IgniteProvider {
                 throw new RuntimeException("Got unexpected response code. Response code: " + code);
         }
         catch (IOException e) {
-            throw new RuntimeException("Failed update ignite.", e);
+            throw new RuntimeException("Failed to download Ignite.", e);
         }
+    }
+
+    /**
+     * Checks that file exists.
+     *
+     * @param fileName File name.
+     * @return {@code True} if file exist otherwise {@code false}.
+     */
+    private boolean fileExist(String fileName) {
+        String pathToIgnite = downloadFolder + (downloadFolder.endsWith("/") ? "" : '/') + fileName;
+
+        return new File(pathToIgnite).exists();
+    }
+
+    /**
+     * Copy file to working directory.
+     *
+     * @param filePath File path.
+     * @return File name.
+     * @throws IOException If coping failed.
+     */
+    String copyToWorkDir(String filePath) throws IOException {
+        Path srcFile = Paths.get(filePath);
+
+        if (Files.exists(srcFile)) {
+            checkDownloadFolder();
+
+            Path newDir = Paths.get(downloadFolder);
+
+            Path fileName = srcFile.getFileName();
+
+            Files.copy(srcFile, newDir.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
+
+            return fileName.toString();
+        }
+
+        return null;
     }
 
     /**
@@ -215,17 +172,10 @@ public class IgniteProvider {
         if (!file.exists())
             file.mkdirs();
 
+        if (!file.exists())
+            throw new IllegalArgumentException("Failed to create working directory: " + downloadFolder);
+
         return file;
-    }
-
-    /**
-     * @param url URL.
-     * @return Ignite version.
-     */
-    public static String parseVersion(String url) {
-        String[] split = url.split("-");
-
-        return split[split.length - 1].replaceAll(".zip", "");
     }
 
     /**
