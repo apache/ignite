@@ -143,337 +143,337 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
 
         super.afterTestsStopped();
     }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testFilterAndFactoryProvided() throws Exception {
-        final CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            ATOMIC,
-            ONHEAP_TIERED,
-            false);
-
-        grid(0).createCache(ccfg);
-
-        try {
-            final ContinuousQuery qry = new ContinuousQuery();
-
-            qry.setRemoteFilterFactory(new Factory<CacheEntryEventFilter>() {
-                @Override public CacheEntryEventFilter create() {
-                    return null;
-                }
-            });
-
-            qry.setRemoteFilter(new CacheEntryEventSerializableFilter() {
-                @Override public boolean evaluate(CacheEntryEvent event) throws CacheEntryListenerException {
-                    return false;
-                }
-            });
-
-            qry.setLocalListener(new CacheEntryUpdatedListener() {
-                @Override public void onUpdated(Iterable iterable) throws CacheEntryListenerException {
-                    // No-op.
-                }
-            });
-
-            GridTestUtils.assertThrows(log, new Callable<Object>() {
-                @Override public Object call() throws Exception {
-                    return grid(0).cache(ccfg.getName()).query(qry);
-                }
-            }, IgniteException.class, null);
-
-        }
-        finally {
-            grid(0).destroyCache(ccfg.getName());
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicClient() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            ATOMIC,
-            ONHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, CLIENT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomic() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            ATOMIC,
-            ONHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, SERVER);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicAllNodes() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            ATOMIC,
-            ONHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, ALL);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicReplicated() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
-            0,
-            ATOMIC,
-            ONHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, SERVER);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicReplicatedAllNodes() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
-            0,
-            ATOMIC,
-            ONHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, ALL);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicReplicatedClient() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
-            0,
-            ATOMIC,
-            ONHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, CLIENT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheapValues() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            ATOMIC,
-            OFFHEAP_VALUES,
-            false);
-
-        doTestContinuousQuery(ccfg, SERVER);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheapValuesAllNodes() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            ATOMIC,
-            OFFHEAP_VALUES,
-            false);
-
-        doTestContinuousQuery(ccfg, ALL);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheapValuesClient() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            ATOMIC,
-            OFFHEAP_VALUES,
-            false);
-
-        doTestContinuousQuery(ccfg, CLIENT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheapTiered() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            ATOMIC,
-            OFFHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, SERVER);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheapTieredAllNodes() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            ATOMIC,
-            OFFHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, ALL);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicOffheapTieredClient() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            ATOMIC,
-            OFFHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, CLIENT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicNoBackups() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            0,
-            ATOMIC,
-            ONHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, SERVER);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicNoBackupsAllNodes() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            0,
-            ATOMIC,
-            ONHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, ALL);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testAtomicNoBackupsClient() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            0,
-            ATOMIC,
-            ONHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, CLIENT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTx() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL,
-            ONHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, SERVER);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxAllNodes() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL,
-            ONHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, ALL);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxExplicit() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL,
-            ONHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, SERVER);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDoubleRemoveAtomicWithoutBackup() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            0,
-            ATOMIC,
-            ONHEAP_TIERED,
-            false);
-
-        doTestNotModifyOperation(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDoubleRemoveAtomicWithoutBackupWithStore() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            0,
-            ATOMIC,
-            ONHEAP_TIERED,
-            false);
-
-        doTestNotModifyOperation(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDoubleRemoveAtomic() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            ATOMIC,
-            ONHEAP_TIERED,
-            false);
-
-        doTestNotModifyOperation(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDoubleRemoveAtomicWithStore() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            ATOMIC,
-            ONHEAP_TIERED,
-            true);
-
-        doTestNotModifyOperation(ccfg);
-    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testFilterAndFactoryProvided() throws Exception {
+//        final CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            1,
+//            ATOMIC,
+//            ONHEAP_TIERED,
+//            false);
+//
+//        grid(0).createCache(ccfg);
+//
+//        try {
+//            final ContinuousQuery qry = new ContinuousQuery();
+//
+//            qry.setRemoteFilterFactory(new Factory<CacheEntryEventFilter>() {
+//                @Override public CacheEntryEventFilter create() {
+//                    return null;
+//                }
+//            });
+//
+//            qry.setRemoteFilter(new CacheEntryEventSerializableFilter() {
+//                @Override public boolean evaluate(CacheEntryEvent event) throws CacheEntryListenerException {
+//                    return false;
+//                }
+//            });
+//
+//            qry.setLocalListener(new CacheEntryUpdatedListener() {
+//                @Override public void onUpdated(Iterable iterable) throws CacheEntryListenerException {
+//                    // No-op.
+//                }
+//            });
+//
+//            GridTestUtils.assertThrows(log, new Callable<Object>() {
+//                @Override public Object call() throws Exception {
+//                    return grid(0).cache(ccfg.getName()).query(qry);
+//                }
+//            }, IgniteException.class, null);
+//
+//        }
+//        finally {
+//            grid(0).destroyCache(ccfg.getName());
+//        }
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testAtomicClient() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            1,
+//            ATOMIC,
+//            ONHEAP_TIERED,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, CLIENT);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testAtomic() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            1,
+//            ATOMIC,
+//            ONHEAP_TIERED,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, SERVER);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testAtomicAllNodes() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            1,
+//            ATOMIC,
+//            ONHEAP_TIERED,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, ALL);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testAtomicReplicated() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
+//            0,
+//            ATOMIC,
+//            ONHEAP_TIERED,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, SERVER);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testAtomicReplicatedAllNodes() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
+//            0,
+//            ATOMIC,
+//            ONHEAP_TIERED,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, ALL);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testAtomicReplicatedClient() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
+//            0,
+//            ATOMIC,
+//            ONHEAP_TIERED,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, CLIENT);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testAtomicOffheapValues() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            1,
+//            ATOMIC,
+//            OFFHEAP_VALUES,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, SERVER);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testAtomicOffheapValuesAllNodes() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            1,
+//            ATOMIC,
+//            OFFHEAP_VALUES,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, ALL);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testAtomicOffheapValuesClient() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            1,
+//            ATOMIC,
+//            OFFHEAP_VALUES,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, CLIENT);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testAtomicOffheapTiered() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            1,
+//            ATOMIC,
+//            OFFHEAP_TIERED,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, SERVER);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testAtomicOffheapTieredAllNodes() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            1,
+//            ATOMIC,
+//            OFFHEAP_TIERED,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, ALL);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testAtomicOffheapTieredClient() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            1,
+//            ATOMIC,
+//            OFFHEAP_TIERED,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, CLIENT);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testAtomicNoBackups() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            0,
+//            ATOMIC,
+//            ONHEAP_TIERED,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, SERVER);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testAtomicNoBackupsAllNodes() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            0,
+//            ATOMIC,
+//            ONHEAP_TIERED,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, ALL);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testAtomicNoBackupsClient() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            0,
+//            ATOMIC,
+//            ONHEAP_TIERED,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, CLIENT);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testTx() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            1,
+//            TRANSACTIONAL,
+//            ONHEAP_TIERED,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, SERVER);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testTxAllNodes() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            1,
+//            TRANSACTIONAL,
+//            ONHEAP_TIERED,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, ALL);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testTxExplicit() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            1,
+//            TRANSACTIONAL,
+//            ONHEAP_TIERED,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, SERVER);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testDoubleRemoveAtomicWithoutBackup() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            0,
+//            ATOMIC,
+//            ONHEAP_TIERED,
+//            false);
+//
+//        doTestNotModifyOperation(ccfg);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testDoubleRemoveAtomicWithoutBackupWithStore() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            0,
+//            ATOMIC,
+//            ONHEAP_TIERED,
+//            false);
+//
+//        doTestNotModifyOperation(ccfg);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testDoubleRemoveAtomic() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            1,
+//            ATOMIC,
+//            ONHEAP_TIERED,
+//            false);
+//
+//        doTestNotModifyOperation(ccfg);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testDoubleRemoveAtomicWithStore() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            1,
+//            ATOMIC,
+//            ONHEAP_TIERED,
+//            true);
+//
+//        doTestNotModifyOperation(ccfg);
+//    }
 
     /**
      * @throws Exception If failed.
@@ -487,97 +487,97 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
 
         doTestNotModifyOperation(ccfg);
     }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDoubleRemoveAtomicOffheapWithStore() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            0,
-            ATOMIC,
-            OFFHEAP_TIERED,
-            true);
-
-        doTestNotModifyOperation(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDoubleRemoveTx() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL,
-            ONHEAP_TIERED,
-            false);
-
-        doTestNotModifyOperation(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDoubleRemoveTxWithStore() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL,
-            ONHEAP_TIERED,
-            false);
-
-        doTestNotModifyOperation(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDoubleRemoveReplicatedTx() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
-            0,
-            TRANSACTIONAL,
-            ONHEAP_TIERED,
-            false);
-
-        doTestNotModifyOperation(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDoubleRemoveReplicatedTxWithStore() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
-            0,
-            TRANSACTIONAL,
-            ONHEAP_TIERED,
-            false);
-
-        doTestNotModifyOperation(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDoubleRemoveReplicatedAtomic() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
-            0,
-            ATOMIC,
-            ONHEAP_TIERED,
-            false);
-
-        doTestNotModifyOperation(ccfg);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDoubleRemoveReplicatedAtomicWithStore() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
-            0,
-            ATOMIC,
-            ONHEAP_TIERED,
-            true);
-
-        doTestNotModifyOperation(ccfg);
-    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testDoubleRemoveAtomicOffheapWithStore() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            0,
+//            ATOMIC,
+//            OFFHEAP_TIERED,
+//            true);
+//
+//        doTestNotModifyOperation(ccfg);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testDoubleRemoveTx() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            1,
+//            TRANSACTIONAL,
+//            ONHEAP_TIERED,
+//            false);
+//
+//        doTestNotModifyOperation(ccfg);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testDoubleRemoveTxWithStore() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            1,
+//            TRANSACTIONAL,
+//            ONHEAP_TIERED,
+//            false);
+//
+//        doTestNotModifyOperation(ccfg);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testDoubleRemoveReplicatedTx() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
+//            0,
+//            TRANSACTIONAL,
+//            ONHEAP_TIERED,
+//            false);
+//
+//        doTestNotModifyOperation(ccfg);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testDoubleRemoveReplicatedTxWithStore() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
+//            0,
+//            TRANSACTIONAL,
+//            ONHEAP_TIERED,
+//            false);
+//
+//        doTestNotModifyOperation(ccfg);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testDoubleRemoveReplicatedAtomic() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
+//            0,
+//            ATOMIC,
+//            ONHEAP_TIERED,
+//            false);
+//
+//        doTestNotModifyOperation(ccfg);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testDoubleRemoveReplicatedAtomicWithStore() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
+//            0,
+//            ATOMIC,
+//            ONHEAP_TIERED,
+//            true);
+//
+//        doTestNotModifyOperation(ccfg);
+//    }
 
     /**
      * @throws Exception If failed.
@@ -848,213 +848,213 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         assertEquals(event.getOldValue(), oldVal);
     }
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxClient() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL,
-            ONHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, CLIENT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxClientExplicit() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL,
-            ONHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, CLIENT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxReplicated() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
-            0,
-            TRANSACTIONAL,
-            ONHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, SERVER);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxReplicatedClient() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
-            0,
-            TRANSACTIONAL,
-            ONHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, CLIENT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffheapValues() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL,
-            OFFHEAP_VALUES,
-            false);
-
-        doTestContinuousQuery(ccfg, SERVER);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffheapValuesAllNodes() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL,
-            OFFHEAP_VALUES,
-            false);
-
-        doTestContinuousQuery(ccfg, ALL);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffheapValuesExplicit() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL,
-            OFFHEAP_VALUES,
-            false);
-
-        doTestContinuousQuery(ccfg, SERVER);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffheapValuesClient() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL,
-            OFFHEAP_VALUES,
-            false);
-
-        doTestContinuousQuery(ccfg, CLIENT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffheapTiered() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL,
-            OFFHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, SERVER);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffheapTieredAllNodes() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL,
-            OFFHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, ALL);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffheapTieredClient() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL,
-            OFFHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, CLIENT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxOffheapTieredClientExplicit() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            1,
-            TRANSACTIONAL,
-            OFFHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, CLIENT);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxNoBackups() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            0,
-            TRANSACTIONAL,
-            ONHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, SERVER);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxNoBackupsAllNodes() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            0,
-            TRANSACTIONAL,
-            ONHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, ALL);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxNoBackupsExplicit() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            0,
-            TRANSACTIONAL,
-            ONHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, SERVER);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testTxNoBackupsClient() throws Exception {
-        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
-            0,
-            TRANSACTIONAL,
-            ONHEAP_TIERED,
-            false);
-
-        doTestContinuousQuery(ccfg, CLIENT);
-    }
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testTxClient() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            1,
+//            TRANSACTIONAL,
+//            ONHEAP_TIERED,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, CLIENT);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testTxClientExplicit() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            1,
+//            TRANSACTIONAL,
+//            ONHEAP_TIERED,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, CLIENT);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testTxReplicated() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
+//            0,
+//            TRANSACTIONAL,
+//            ONHEAP_TIERED,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, SERVER);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testTxReplicatedClient() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(REPLICATED,
+//            0,
+//            TRANSACTIONAL,
+//            ONHEAP_TIERED,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, CLIENT);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testTxOffheapValues() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            1,
+//            TRANSACTIONAL,
+//            OFFHEAP_VALUES,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, SERVER);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testTxOffheapValuesAllNodes() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            1,
+//            TRANSACTIONAL,
+//            OFFHEAP_VALUES,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, ALL);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testTxOffheapValuesExplicit() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            1,
+//            TRANSACTIONAL,
+//            OFFHEAP_VALUES,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, SERVER);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testTxOffheapValuesClient() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            1,
+//            TRANSACTIONAL,
+//            OFFHEAP_VALUES,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, CLIENT);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testTxOffheapTiered() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            1,
+//            TRANSACTIONAL,
+//            OFFHEAP_TIERED,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, SERVER);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testTxOffheapTieredAllNodes() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            1,
+//            TRANSACTIONAL,
+//            OFFHEAP_TIERED,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, ALL);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testTxOffheapTieredClient() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            1,
+//            TRANSACTIONAL,
+//            OFFHEAP_TIERED,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, CLIENT);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testTxOffheapTieredClientExplicit() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            1,
+//            TRANSACTIONAL,
+//            OFFHEAP_TIERED,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, CLIENT);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testTxNoBackups() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            0,
+//            TRANSACTIONAL,
+//            ONHEAP_TIERED,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, SERVER);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testTxNoBackupsAllNodes() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            0,
+//            TRANSACTIONAL,
+//            ONHEAP_TIERED,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, ALL);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testTxNoBackupsExplicit() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            0,
+//            TRANSACTIONAL,
+//            ONHEAP_TIERED,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, SERVER);
+//    }
+//
+//    /**
+//     * @throws Exception If failed.
+//     */
+//    public void testTxNoBackupsClient() throws Exception {
+//        CacheConfiguration<Object, Object> ccfg = cacheConfiguration(PARTITIONED,
+//            0,
+//            TRANSACTIONAL,
+//            ONHEAP_TIERED,
+//            false);
+//
+//        doTestContinuousQuery(ccfg, CLIENT);
+//    }
 
     /**
      * @param ccfg Cache configuration.
