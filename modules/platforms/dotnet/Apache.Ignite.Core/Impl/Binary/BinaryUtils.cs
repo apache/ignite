@@ -681,18 +681,18 @@ namespace Apache.Ignite.Core.Impl.Binary
             {
                 c = *(chars + cnt);
 
-                if (c <= 0x007F)
+                if (c >= 0x0001 && c <= 0x007F)
                     *(data + position++) = (byte)c;
                 else if (c > 0x07FF)
                 {
-                    *(data + position++) = (byte)(0xE0 | c >> 12 & 0x0F);
-                    *(data + position++) = (byte)(0x80 | c >> 6 & 0x3F);
-                    *(data + position++) = (byte)(0x80 | c & 0x3F);
+                    *(data + position++) = (byte)(0xE0 | ((c >> 12) & 0x0F));
+                    *(data + position++) = (byte)(0x80 | ((c >> 6) & 0x3F));
+                    *(data + position++) = (byte)(0x80 | (c & 0x3F));
                 }
                 else
                 {
-                    *(data + position++) = (byte)(0xC0 | c >> 6 & 0x1F);
-                    *(data + position++) = (byte)(0x80 | c & 0x3F);
+                    *(data + position++) = (byte)(0xC0 | ((c >> 6) & 0x1F));
+                    *(data + position++) = (byte)(0x80 | (c & 0x3F));
                 }
             }
 
@@ -714,7 +714,7 @@ namespace Apache.Ignite.Core.Impl.Binary
                 var c = *(chars + cnt);
 
                 // ASCII
-                if (c <= 0x007F)
+                if (c >= 0x0001 && c <= 0x007F)
                     utfLen++;
                 // Special symbols (surrogates)
                 else if (c > 0x07FF)
