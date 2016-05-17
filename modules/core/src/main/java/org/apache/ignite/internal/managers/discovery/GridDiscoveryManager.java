@@ -1122,7 +1122,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     ", rmtAddrs=" + U.addressesAsString(n) + ']');
             }
 
-
             if (n.version().compareToIgnoreTimestamp(GridServiceProcessor.LAZY_SERVICES_CFG_SINCE) >= 0) {
                 Boolean rmtSrvcCompatibilityEnabled = n.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);
 
@@ -1136,8 +1135,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         ", locNodeAddrs=" + U.addressesAsString(locNode) +
                         ", rmtNodeAddrs=" + U.addressesAsString(n) +
                         ", locNodeId=" + locNode.id() + ", rmtNodeId=" + n.id() + ']');
-
                 }
+            }
+            else if (Boolean.FALSE.equals(locSrvcCompatibilityEnabled)) {
+                throw new IgniteCheckedException("Remote node doesn't support lazy services configuration and " +
+                    "cannot be joined to local node because local node's "
+                    + IGNITE_SERVICES_COMPATIBILITY_MODE + " property value explicitly set to 'false'" +
+                    "[locNodeAddrs=" + U.addressesAsString(locNode) +
+                    ", rmtNodeAddrs=" + U.addressesAsString(n) +
+                    ", locNodeId=" + locNode.id() + ", rmtNodeId=" + n.id() + ']');
             }
         }
 

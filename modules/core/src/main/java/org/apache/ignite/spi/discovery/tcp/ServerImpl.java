@@ -3416,9 +3416,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                     return;
                 }
 
-                if (node.version().compareTo(GridServiceProcessor.LAZY_SERVICES_CFG_SINCE) >= 0) {
-                    final Boolean locSrvcCompatibilityEnabled = locNode.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);
+                final Boolean locSrvcCompatibilityEnabled = locNode.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);
 
+                if (node.version().compareTo(GridServiceProcessor.LAZY_SERVICES_CFG_SINCE) >= 0) {
                     final Boolean rmtSrvcCompatibilityEnabled = node.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);
 
                     if (!F.eq(locSrvcCompatibilityEnabled, rmtSrvcCompatibilityEnabled)) {
@@ -3455,6 +3455,34 @@ class ServerImpl extends TcpDiscoveryImpl {
                         // Ignore join request.
                         return;
                     }
+                }
+                else if (Boolean.FALSE.equals(locSrvcCompatibilityEnabled)) {
+                    utilityPool.submit(
+                        new Runnable() {
+                            @Override public void run() {
+                                String errMsg = "Remote node doesn't support lazy services configuration and " +
+                                    "cannot be joined to local node because local node's "
+                                    + IGNITE_SERVICES_COMPATIBILITY_MODE + " property value explicitly set to 'false'" +
+                                    "[locNodeAddrs=" + U.addressesAsString(locNode) +
+                                    ", rmtNodeAddrs=" + U.addressesAsString(node) +
+                                    ", locNodeId=" + locNode.id() + ", rmtNodeId=" + node.id() + ']';
+
+                                String sndMsg = "Local node doesn't support lazy services configuration and " +
+                                    "cannot be joined to local node because remote node's "
+                                    + IGNITE_SERVICES_COMPATIBILITY_MODE + " property value explicitly set to 'false'" +
+                                    "[locNodeAddrs=" + U.addressesAsString(node) +
+                                    ", rmtNodeAddrs=" + U.addressesAsString(locNode) +
+                                    ", locNodeId=" + node.id() + ", rmtNodeId=" + locNode.id() + ']';
+
+                                nodeCheckError(
+                                    node,
+                                    errMsg,
+                                    sndMsg);
+                            }
+                        });
+
+                    // Ignore join request.
+                    return;
                 }
 
                 // Handle join.
