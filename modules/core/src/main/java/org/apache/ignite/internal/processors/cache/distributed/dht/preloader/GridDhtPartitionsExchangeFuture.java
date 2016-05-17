@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
+import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -1251,7 +1252,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         if (msgs.isEmpty())
             return;
 
-
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             for (int p = 0; p < cacheCtx.affinity().partitions(); p++) {
                 assignRolesByCounters(cacheCtx.topology(), p);
@@ -1267,14 +1267,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         long maxCntr = 0;
 
         for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : msgs.entrySet()) {
-            // TODO GG-11122 assert partitionUpdateCounters not null.
-            if (e.getValue().partitionUpdateCounters(top.cacheId()) == null)
-                continue;
-
-            if (!e.getValue().partitionUpdateCounters(top.cacheId()).containsKey(p))
-                continue;
+            assert e.getValue().partitionUpdateCounters(top.cacheId()) != null;
 
             Long cntr = e.getValue().partitionUpdateCounters(top.cacheId()).get(p);
+
+            if (cntr == null)
+                continue;
 
             if (cntr > maxCntr)
                 maxCntr = cntr;
@@ -1286,14 +1284,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         Set<UUID> owners = new HashSet<>();
 
         for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : msgs.entrySet()) {
-            // TODO GG-11122 assert partitionUpdateCounters not null.
-            if (e.getValue().partitionUpdateCounters(top.cacheId()) == null)
-                continue;
-
-            if (!e.getValue().partitionUpdateCounters(top.cacheId()).containsKey(p))
-                continue;
+            assert e.getValue().partitionUpdateCounters(top.cacheId()) != null;
 
             Long cntr = e.getValue().partitionUpdateCounters(top.cacheId()).get(p);
+
+            if (cntr == null)
+                continue;
 
             assert cntr <= maxCntr;
 
@@ -1318,8 +1314,15 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 }
             }
 
-            // TODO : find better place, execute only when needed (server joined, cache state changed).
-            assignRolesByCounters();
+            if (discoEvt.type() == EVT_NODE_JOINED) {
+                assignRolesByCounters();
+            }
+            else if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
+                assert discoEvt instanceof DiscoveryCustomEvent;
+
+                if (((DiscoveryCustomEvent)discoEvt).customMessage() instanceof DynamicCacheChangeBatch)
+                    assignRolesByCounters();
+            }
 
             updateLastVersion(cctx.versions().last());
 

@@ -1383,9 +1383,10 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             assignsMap = new HashMap<>();
 
                             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                                long delay = cacheCtx.config().getRebalanceDelay();
+                                if (!cacheCtx.cache().state().active())
+                                    continue;
 
-                                // TODO GG-11122 check active state here.
+                                long delay = cacheCtx.config().getRebalanceDelay();
 
                                 GridDhtPreloaderAssignments assigns = null;
 
@@ -1413,9 +1414,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             int cacheId = e.getKey();
 
                             GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
-
-                            if (!cacheCtx.cache().state().active())
-                                continue;
 
                             int order = cacheCtx.config().getRebalanceOrder();
 

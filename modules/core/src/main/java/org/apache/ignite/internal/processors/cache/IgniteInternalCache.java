@@ -1883,8 +1883,7 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
 
     /**
      * @param state New cache state.
-     * @param topVer Topology version.
      * @return {@code True} if state was changed.
      */
-    public boolean state(CacheState state, AffinityTopologyVersion topVer);
+    public boolean state(CacheState state);
 }

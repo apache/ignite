@@ -753,7 +753,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     caches.put(maskNull(name), cache);
 
                     if (desc.state() != null)
-                        cache.state(desc.state(), desc.startTopologyVersion());
+                        cache.state(desc.state());
 
                     startCache(cache);
 
@@ -1739,7 +1739,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     GridCacheAdapter<Object, Object> cache = internalCache(req.cacheName());
 
                     if (cache != null)
-                        cache.state(req.state(), topVer);
+                        cache.state(req.state());
                 }
 
                 if (req.stop()) {
