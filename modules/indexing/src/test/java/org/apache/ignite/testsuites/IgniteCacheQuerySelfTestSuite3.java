@@ -91,15 +91,6 @@ public class IgniteCacheQuerySelfTestSuite3 extends TestSuite {
 //        suite.addTestSuite(IgniteCacheContinuousQueryClientReconnectTest.class);
 //        suite.addTestSuite(IgniteCacheContinuousQueryClientTxReconnectTest.class);
         suite.addTestSuite(CacheContinuousQueryRandomOperationsTest.class);
-        suite.addTestSuite(CacheContinuousQueryRandomOperationsTest.class);
-        suite.addTestSuite(CacheContinuousQueryRandomOperationsTest.class);
-        suite.addTestSuite(CacheContinuousQueryRandomOperationsTest.class);
-        suite.addTestSuite(CacheContinuousQueryRandomOperationsTest.class);
-        suite.addTestSuite(CacheContinuousQueryRandomOperationsTest.class);
-        suite.addTestSuite(CacheContinuousQueryRandomOperationsTest.class);
-        suite.addTestSuite(CacheContinuousQueryRandomOperationsTest.class);
-        suite.addTestSuite(CacheContinuousQueryRandomOperationsTest.class);
-        suite.addTestSuite(CacheContinuousQueryRandomOperationsTest.class);
 //        suite.addTestSuite(CacheContinuousQueryRandomOperationsTwoNodesTest.class);
 //        suite.addTestSuite(GridCacheContinuousQueryConcurrentTest.class);
 //        suite.addTestSuite(CacheContinuousQueryAsyncFilterListenerTest.class);
