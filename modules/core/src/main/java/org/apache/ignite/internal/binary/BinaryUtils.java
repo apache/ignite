@@ -46,6 +46,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryCollectionFactory;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryMapFactory;
@@ -63,6 +64,7 @@ import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
@@ -74,6 +76,10 @@ public class BinaryUtils {
 
     /** */
     public static final Map<Byte, Class<?>> FLAG_TO_CLASS = new HashMap<>();
+
+    /** */
+    public static final boolean USE_STR_SERIALIZATION_VER_2 = IgniteSystemProperties.getBoolean(
+        IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, false);
 
     /** {@code true} if serialized value of this type cannot contain references to objects. */
     private static final boolean[] PLAIN_TYPE_FLAG = new boolean[102];
@@ -415,7 +421,7 @@ public class BinaryUtils {
                 break;
 
             case GridBinaryMarshaller.TIMESTAMP:
-                writer.doWriteTimestamp((Timestamp) val);
+                writer.doWriteTimestamp((Timestamp)val);
 
                 break;
 
@@ -614,7 +620,8 @@ public class BinaryUtils {
     }
 
     /**
-     * Attempts to create a new map of the same type as {@code map} has. Otherwise returns new {@code HashMap} instance.
+     * Attempts to create a new map of the same type as {@code map} has. Otherwise returns new {@code HashMap}
+     * instance.
      *
      * @param map Original map.
      * @return New map.
@@ -648,8 +655,7 @@ public class BinaryUtils {
     }
 
     /**
-     * Attempts to create a new collection of the same known type. Will return null if collection type is
-     * unknown.
+     * Attempts to create a new collection of the same known type. Will return null if collection type is unknown.
      *
      * @param col Collection.
      * @return New empty collection.
@@ -674,7 +680,8 @@ public class BinaryUtils {
     }
 
     /**
-     * Attempts to create a new set of the same type as {@code set} has. Otherwise returns new {@code HashSet} instance.
+     * Attempts to create a new set of the same type as {@code set} has. Otherwise returns new {@code HashSet}
+     * instance.
      *
      * @param set Original set.
      * @return New set.
@@ -780,7 +787,7 @@ public class BinaryUtils {
 
         int len = length(in, start);
 
-        if (hasSchema(flags)){
+        if (hasSchema(flags)) {
             // Schema exists.
             if (hasRaw(flags))
                 // Raw offset is set, it is at the very end of the object.
@@ -1150,15 +1157,28 @@ public class BinaryUtils {
      * @return Value.
      */
     public static String doReadString(BinaryInputStream in) {
-        if (!in.hasArray())
-            return new String(doReadByteArray(in), UTF_8);
+        if (!in.hasArray()) {
+            byte[] arr = doReadByteArray(in);
+
+            if (USE_STR_SERIALIZATION_VER_2)
+                return utf8BytesToStr(arr, 0, arr.length);
+            else
+                return new String(arr, UTF_8);
+        }
 
         int strLen = in.readInt();
 
         int pos = in.position();
 
         // String will copy necessary array part for us.
-        String res = new String(in.array(), pos, strLen, UTF_8);
+        String res;
+
+        if (USE_STR_SERIALIZATION_VER_2) {
+            res = utf8BytesToStr(in.array(), pos, strLen);
+        }
+        else {
+            res = new String(in.array(), pos, strLen, UTF_8);
+        }
 
         in.position(pos + strLen);
 
@@ -1485,7 +1505,7 @@ public class BinaryUtils {
     private static Object[] doReadBinaryEnumArray(BinaryInputStream in, BinaryContext ctx) {
         int len = in.readInt();
 
-        Object[] arr = (Object[]) Array.newInstance(BinaryObject.class, len);
+        Object[] arr = (Object[])Array.newInstance(BinaryObject.class, len);
 
         for (int i = 0; i < len; i++) {
             byte flag = in.readByte();
@@ -1524,7 +1544,7 @@ public class BinaryUtils {
         throws BinaryObjectException {
         int len = in.readInt();
 
-        Object[] arr = (Object[]) Array.newInstance(cls, len);
+        Object[] arr = (Object[])Array.newInstance(cls, len);
 
         for (int i = 0; i < len; i++) {
             byte flag = in.readByte();
@@ -2010,6 +2030,140 @@ public class BinaryUtils {
         }
         else
             return null;
+    }
+
+    /**
+     * Reconstructs string from UTF-8 bytes.
+     *
+     * @param arr array Byte array.
+     * @param off offset Offset in the array.
+     * @param len length Byte array lenght.
+     * @return string Resulting string.
+     */
+    public static String utf8BytesToStr(byte[] arr, int off, int len) {
+        int c, charArrCnt = 0, total = off + len;
+        int c2, c3;
+        char[] res = new char[len];
+
+        // try reading ascii
+        while (off < total) {
+            c = (int)arr[off] & 0xff;
+
+            if (c > 127)
+                break;
+
+            off++;
+
+            res[charArrCnt++] = (char)c;
+        }
+
+        // read other
+        while (off < total) {
+            c = (int)arr[off] & 0xff;
+
+            switch (c >> 4) {
+                case 0:
+                case 1:
+                case 2:
+                case 3:
+                case 4:
+                case 5:
+                case 6:
+                case 7:
+                    /* 0xxxxxxx*/
+                    off++;
+
+                    res[charArrCnt++] = (char)c;
+
+                    break;
+                case 12:
+                case 13:
+                    /* 110x xxxx   10xx xxxx*/
+                    off += 2;
+
+                    if (off > total)
+                        throw new BinaryObjectException("Malformed input: partial character at end");
+
+                    c2 = (int)arr[off - 1];
+
+                    if ((c2 & 0xC0) != 0x80)
+                        throw new BinaryObjectException("Malformed input around byte: " + off);
+
+                    res[charArrCnt++] = (char)(((c & 0x1F) << 6) | (c2 & 0x3F));
+
+                    break;
+                case 14:
+                    /* 1110 xxxx  10xx xxxx  10xx xxxx */
+                    off += 3;
+
+                    if (off > total)
+                        throw new BinaryObjectException("Malformed input: partial character at end");
+
+                    c2 = (int)arr[off - 2];
+
+                    c3 = (int)arr[off - 1];
+
+                    if (((c2 & 0xC0) != 0x80) || ((c3 & 0xC0) != 0x80))
+                        throw new BinaryObjectException("Malformed input around byte: " + (off - 1));
+
+                    res[charArrCnt++] = (char)(((c & 0x0F) << 12) |
+                        ((c2 & 0x3F) << 6) |
+                        ((c3 & 0x3F) << 0));
+
+                    break;
+                default:
+                    /* 10xx xxxx,  1111 xxxx */
+                    throw new BinaryObjectException("Malformed input around byte: " + off);
+            }
+        }
+
+        return len == charArrCnt ? new String(res) : new String(res, 0, charArrCnt);
+    }
+
+    /**
+     * Converts the string into UTF-8 byte array considering special symbols like the surrogates.
+     *
+     * @param val String to convert.
+     * @return Resulting byte array.
+     */
+    public static byte[] strToUtf8Bytes(String val) {
+        int strLen = val.length();
+        int utfLen = 0;
+        int c, cnt;
+
+        // Determine length of resulting byte array.
+        for (cnt = 0; cnt < strLen; cnt++) {
+            c = val.charAt(cnt);
+
+            if (c >= 0x0001 && c <= 0x007F)
+                utfLen++;
+            else if (c > 0x07FF)
+                utfLen += 3;
+            else
+                utfLen += 2;
+        }
+
+        byte[] arr = new byte[utfLen];
+
+        int position = 0;
+
+        for (cnt = 0; cnt < strLen; cnt++) {
+            c = val.charAt(cnt);
+
+            if (c >= 0x0001 && c <= 0x007F)
+                arr[position++] = (byte)c;
+            else if (c > 0x07FF) {
+                arr[position++] = (byte)(0xE0 | (c >> 12) & 0x0F);
+                arr[position++] = (byte)(0x80 | (c >> 6) & 0x3F);
+                arr[position++] = (byte)(0x80 | (c & 0x3F));
+            }
+            else {
+                arr[position++] = (byte)(0xC0 | ((c >> 6) & 0x1F));
+                arr[position++] = (byte)(0x80 | (c  & 0x3F));
+            }
+        }
+
+        return arr;
     }
 
     /**
