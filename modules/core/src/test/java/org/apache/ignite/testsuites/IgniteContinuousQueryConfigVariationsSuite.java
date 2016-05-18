@@ -26,7 +26,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_
 /**
  * Test suite for cache queries.
  */
-public class IgniteContinuousQueryVarSuite extends TestSuite {
+public class IgniteContinuousQueryConfigVariationsSuite extends TestSuite {
     /**
      * @return Test suite.
      * @throws Exception If failed.
@@ -34,12 +34,27 @@ public class IgniteContinuousQueryVarSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         System.setProperty(IGNITE_DISCOVERY_HISTORY_SIZE, "100");
 
-        return new ConfigVariationsTestSuiteBuilder(
-            "Ignite Continuous Query Config Variations Suite",
+        TestSuite suite = new TestSuite("Ignite Continuous Query Config Variations Suite");
+
+        CacheContinuousQueryVariationsTest.singleNode = false;
+
+        suite.addTest(new ConfigVariationsTestSuiteBuilder(
+            "5 nodes 1 backup",
             CacheContinuousQueryVariationsTest.class)
             .withBasicCacheParams()
             .gridsCount(5)
             .backups(2)
-            .build();
+            .build());
+
+        CacheContinuousQueryVariationsTest.singleNode = true;
+
+        suite.addTest(new ConfigVariationsTestSuiteBuilder(
+            "Single node",
+            CacheContinuousQueryVariationsTest.class)
+            .withBasicCacheParams()
+            .gridsCount(1)
+            .build());
+
+        return suite;
     }
 }

@@ -90,11 +90,14 @@ public class CacheContinuousQueryVariationsTest extends IgniteCacheConfigVariati
     /** */
     private static final int VALS = 10;
 
+    /** */
+    public static boolean singleNode = false;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setClientMode(gridName.endsWith("0"));
+        cfg.setClientMode(gridName.endsWith("0") && !singleNode);
 
         return cfg;
     }
