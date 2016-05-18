@@ -1693,7 +1693,7 @@ consoleModule.controller('resetPassword', [
 // TODO IGNITE-1936 Refactor this controller.
 consoleModule.controller('auth', ['$scope', '$focus', 'Auth', 'IgniteCountries', ($scope, $focus, Auth, Countries) => {
     $scope.auth = Auth.auth;
-
+    $scope.forgotPassword = Auth.forgotPassword;
     $scope.action = 'signin';
     $scope.countries = Countries.getAll();
 
