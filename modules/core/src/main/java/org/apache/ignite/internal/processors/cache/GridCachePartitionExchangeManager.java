@@ -1331,6 +1331,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                     boolean dummyReassign = exchFut.dummyReassign();
                     boolean forcePreload = exchFut.forcePreload();
 
+                    boolean activated = cctx.discovery().activated(cctx.localNode(), exchFut.topologyVersion());
+
                     try {
                         if (isCancelled())
                             break;
@@ -1356,7 +1358,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             // same event.
 
                             // TODO GG-11010 get activate state for topology version.
-                            if (cctx.discovery().activated(cctx.localNode(), exchFut.topologyVersion())) {
+                            if (activated) {
                                 for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                                     if (cacheCtx.isLocal())
                                         continue;
@@ -1412,7 +1414,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         busy = false;
                     }
 
-                    // TODO GG-11010 do not call anything if inactive.
+                    if (!activated)
+                        continue;
+
                     if (assignsMap != null) {
                         int size = assignsMap.size();
 
