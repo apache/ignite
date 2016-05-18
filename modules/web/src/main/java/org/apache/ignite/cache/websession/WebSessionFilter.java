@@ -515,7 +515,7 @@ public class WebSessionFilter implements Filter {
                     final WebSessionEntity entity = binaryCache.get(sesId);
 
                     if (entity != null)
-                        cached = new WebSessionV2(sesId, null, false, ctx, entity, marshaller);
+                        cached = new WebSessionV2(sesId, httpReq.getSession(false), false, ctx, entity, marshaller);
 
                     break;
                 }
@@ -687,6 +687,13 @@ public class WebSessionFilter implements Filter {
         }
     }
 
+    /**
+     * Creates a new web session with the specified id.
+     *
+     * @param ses Base session.
+     * @param sesId Session id.
+     * @return New session.
+     */
     private WebSessionV2 createSessionV2(final HttpSession ses, final String sesId) throws IOException {
         if (log.isDebugEnabled())
             log.debug("Session created: " + sesId);
@@ -703,9 +710,9 @@ public class WebSessionFilter implements Filter {
                 final WebSessionEntity old = cache0.getAndPutIfAbsent(sesId, marshaledEntity);
 
                 if (old != null)
-                    cached = new WebSessionV2(sesId, null, false, ctx, old, marshaller);
+                    cached = new WebSessionV2(sesId, ses, false, ctx, old, marshaller);
                 else
-                    cached = new WebSessionV2(sesId, null, false, ctx, marshaledEntity, marshaller);
+                    cached = new WebSessionV2(sesId, ses, false, ctx, marshaledEntity, marshaller);
 
                 break;
             }
