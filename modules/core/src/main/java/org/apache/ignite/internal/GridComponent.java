@@ -43,7 +43,10 @@ public interface GridComponent {
         PLUGIN,
 
         /** */
-        CLUSTER_PROC
+        CLUSTER_PROC,
+
+        /** */
+        DISCOVERY_PROC
     }
 
     /**

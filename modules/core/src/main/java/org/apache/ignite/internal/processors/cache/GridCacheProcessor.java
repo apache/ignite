@@ -119,6 +119,7 @@ import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.spi.IgniteNodeValidationResult;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeActivatedMessage;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
@@ -2521,6 +2522,11 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         AffinityTopologyVersion topVer) {
         if (msg instanceof CacheAffinityChangeMessage)
             return sharedCtx.affinity().onCustomEvent(((CacheAffinityChangeMessage)msg));
+
+        if (msg instanceof TcpDiscoveryNodeActivatedMessage) {
+            ClusterNode node = ctx.discovery().node(((TcpDiscoveryNodeActivatedMessage)msg).nodeId());
+            return !ctx.discovery().activated(node, topVer);
+        }
 
         return msg instanceof DynamicCacheChangeBatch && onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
     }

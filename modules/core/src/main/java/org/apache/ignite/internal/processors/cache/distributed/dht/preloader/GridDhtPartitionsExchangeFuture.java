@@ -45,6 +45,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryTopologySnapshot;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
@@ -73,6 +74,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeActivatedMessage;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -447,7 +449,16 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             Collection<DynamicCacheDescriptor> receivedCaches;
 
             if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
-                if (!F.isEmpty(reqs))
+                assert discoEvt instanceof DiscoveryCustomEvent;
+
+                DiscoveryCustomMessage customMessage = ((DiscoveryCustomEvent)discoEvt).customMessage();
+
+                if (customMessage instanceof TcpDiscoveryNodeActivatedMessage) {
+                    assert !CU.clientNode(discoEvt.eventNode());
+
+                    exchange = onServerNodeEvent(crdNode);
+                }
+                else if (!F.isEmpty(reqs))
                     exchange = onCacheChangeRequest(crdNode);
                 else {
                     assert affChangeMsg != null : this;
@@ -472,6 +483,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             updateTopologies(crdNode);
 
             cctx.database().beforeExchange(discoEvt);
+
+            // Possible if there are no active nodes.
+            if (exchange == ExchangeType.ALL && crd == null)
+                exchange = ExchangeType.NONE;
 
             switch (exchange) {
                 case ALL: {
@@ -645,7 +660,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             centralizedAff = cctx.affinity().onServerLeft(this);
         }
         else {
-            assert discoEvt.type() == EVT_NODE_JOINED : discoEvt;
+            assert discoEvt.type() == EVT_NODE_JOINED || discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT : discoEvt;
 
             cctx.affinity().onServerJoin(this, crd);
         }
