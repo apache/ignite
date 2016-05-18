@@ -21,6 +21,8 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
@@ -40,17 +42,20 @@ import org.jsr166.ConcurrentHashMap8;
  * Metadata storage.
  */
 public class MetadataStorage implements MetaStore {
-    /** */
+    /** Max index name length (symbols num) */
     public static final int MAX_IDX_NAME_LEN = 30;
 
-    /** */
+    /** Page memory. */
     private PageMemory pageMem;
 
-    /** */
+    /** Increments on each root page allocation. */
     private final AtomicLong rootId = new AtomicLong(0);
 
-    /** */
+    /** Allocated trees for caches. */
     private final ConcurrentMap<Integer, GridFutureAdapter<MetaTree>> trees = new ConcurrentHashMap8<>();
+
+    /** Separate locks for each tree. */
+    private final ConcurrentMap<Integer, Lock> treeLocks = new ConcurrentHashMap8<>();
 
     /**
      * @param pageMem Page memory.
@@ -62,9 +67,16 @@ public class MetadataStorage implements MetaStore {
     /** {@inheritDoc} */
     @Override public RootPage getOrAllocateForTree(final int cacheId, final String idxName, final boolean idx)
         throws IgniteCheckedException {
+        if (idxName.length() > MAX_IDX_NAME_LEN)
+            throw new IllegalArgumentException("Too long indexName [max allowed length=" + MAX_IDX_NAME_LEN +
+                ", current length=" + idxName.length() + "]");
+
         final MetaTree tree = metaTree(cacheId);
 
-        synchronized (this) {
+        final Lock lock = treeLock(cacheId);
+
+        lock.lock();
+        try {
             byte[] idxNameBytes = idxName.getBytes(StandardCharsets.UTF_8);
 
             final IndexItem row = tree.findOne(new IndexItem(idxNameBytes, 0));
@@ -83,6 +95,9 @@ public class MetadataStorage implements MetaStore {
                 return new RootPage(pageId, false, rootId.get());
             }
         }
+        finally {
+            lock.unlock();
+        }
     }
 
     /** {@inheritDoc} */
@@ -96,6 +111,8 @@ public class MetadataStorage implements MetaStore {
 
         if (row != null)
             pageMem.freePage(new FullPageId(row.pageId, cacheId));
+
+        // TODO Do we need to free memory used by this tree if it's became empty?
 
         return row != null;
     }
@@ -413,5 +430,23 @@ public class MetadataStorage implements MetaStore {
         }
 
         return fut.get();
+    }
+
+    /**
+     * @param cacheId Cache ID.
+     * @return Lock for tree.
+     */
+    private Lock treeLock(final int cacheId) {
+        if (treeLocks.containsKey(cacheId))
+            return treeLocks.get(cacheId);
+
+        final Lock lock = new ReentrantLock();
+
+        final Lock old = treeLocks.putIfAbsent(cacheId, lock);
+
+        if (old == null)
+            return lock;
+
+        return old;
     }
 }
