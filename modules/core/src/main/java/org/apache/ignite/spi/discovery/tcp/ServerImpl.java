@@ -3426,10 +3426,23 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         ", rmtNodeAddr=" + U.addressesAsString(locNode) + ", locNodeId=" + node.id() +
                                         ", rmtNodeId=" + locNode.id() + ']';
 
-                                    nodeCheckError(
-                                        node,
-                                        errMsg,
-                                        sndMsg);
+                                    LT.warn(log, null, errMsg);
+
+                                    // Always output in debug.
+                                    if (log.isDebugEnabled())
+                                        log.debug(errMsg);
+
+                                    try {
+                                        trySendMessageDirectly(node, new TcpDiscoveryCheckFailedMessage(locNode.id(), sndMsg));
+                                    }
+                                    catch (IgniteSpiException e) {
+                                        if (log.isDebugEnabled())
+                                            log.debug("Failed to send marshaller check failed message to node " +
+                                                "[node=" + node + ", err=" + e.getMessage() + ']');
+
+                                        onException("Failed to send marshaller check failed message to node " +
+                                            "[node=" + node + ", err=" + e.getMessage() + ']', e);
+                                    }
                                 }
                             });
 
@@ -3455,10 +3468,23 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     ", rmtNodeAddrs=" + U.addressesAsString(locNode) +
                                     ", locNodeId=" + node.id() + ", rmtNodeId=" + locNode.id() + ']';
 
-                                nodeCheckError(
-                                    node,
-                                    errMsg,
-                                    sndMsg);
+                                LT.warn(log, null, errMsg);
+
+                                // Always output in debug.
+                                if (log.isDebugEnabled())
+                                    log.debug(errMsg);
+
+                                try {
+                                    trySendMessageDirectly(node, new TcpDiscoveryCheckFailedMessage(locNode.id(), sndMsg));
+                                }
+                                catch (IgniteSpiException e) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Failed to send marshaller check failed message to node " +
+                                            "[node=" + node + ", err=" + e.getMessage() + ']');
+
+                                    onException("Failed to send marshaller check failed message to node " +
+                                        "[node=" + node + ", err=" + e.getMessage() + ']', e);
+                                }
                             }
                         });
 
