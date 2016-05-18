@@ -19,7 +19,7 @@ package org.apache.ignite.tests.load;
 
 /**
  * Generator abstraction which could be used by tests to generate next key/value pair for Ignite cache
- * from provided int number (which sequentially incremented in load test driver loop)
+ * from provided int number (which sequentially incremented in load test driver loop).
  */
 public interface Generator {
     /** */

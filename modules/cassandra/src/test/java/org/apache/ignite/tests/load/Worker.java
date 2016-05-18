@@ -357,6 +357,11 @@ public abstract class Worker extends Thread {
         }
     }
 
+    /**
+     * TODO IGNITE-1371 Comment absent.
+     *
+     * @param itemsFailed Failed item.
+     */
     private void updateErrorMetrics(int itemsFailed) {
         if (!warmup)
             msgFailed += itemsFailed;

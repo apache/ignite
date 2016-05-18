@@ -17,14 +17,14 @@
 
 package org.apache.ignite.cache.store.cassandra.serializer;
 
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Serializer based on standard Java serialization.

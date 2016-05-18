@@ -17,8 +17,6 @@
 
 package org.apache.ignite.tests.load;
 
-import org.apache.ignite.cache.store.cassandra.common.SystemHelper;
-
 /**
  * Implementation of {@link org.apache.ignite.tests.load.Generator} generating {@link String} instance.
  */

@@ -230,7 +230,7 @@ public abstract class PersistenceSettings implements Serializable {
             if (builder.length() > 0)
                 builder.append(",\n");
 
-            builder.append("  " + field.getColumnDDL());
+            builder.append("  ").append(field.getColumnDDL());
         }
 
         if (builder.length() == 0) {

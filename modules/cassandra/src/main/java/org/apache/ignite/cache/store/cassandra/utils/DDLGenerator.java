@@ -17,14 +17,18 @@
 
 package org.apache.ignite.cache.store.cassandra.utils;
 
+import java.io.File;
 import org.apache.ignite.cache.store.cassandra.persistence.KeyValuePersistenceSettings;
 
-import java.io.File;
-
 /**
- * Generates Cassandra DDL statements from persistence descriptor xml file
+ * Generates Cassandra DDL statements from persistence descriptor xml file.
  */
 public class DDLGenerator {
+    /**
+     * DDLGenerator entry point.
+     *
+     * @param args Arguments for DDLGenerator.
+     */
     public static void main(String[] args) {
         if (args == null || args.length == 0)
             return;

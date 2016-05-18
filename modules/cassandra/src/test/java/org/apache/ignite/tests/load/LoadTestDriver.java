@@ -27,7 +27,7 @@ import org.apache.ignite.tests.utils.TestsHelper;
 import org.apache.log4j.Logger;
 
 /**
- * Basic load test driver to be inherited by specific implementation for particular use-case
+ * Basic load test driver to be inherited by specific implementation for particular use-case.
  */
 public abstract class LoadTestDriver {
     /** Number of attempts to setup load test */
@@ -41,6 +41,7 @@ public abstract class LoadTestDriver {
         logger().info("Running " + testName + " test");
 
         Object cfg = null;
+
         int attempt;
 
         logger().info("Setting up load tests driver");
@@ -60,7 +61,9 @@ public abstract class LoadTestDriver {
 
                 try {
                     Thread.sleep(SETUP_ATTEMPT_TIMEOUT);
-                } catch (InterruptedException ignored) {
+                }
+                catch (InterruptedException ignored) {
+                    // No-op.
                 }
             }
         }
@@ -71,7 +74,7 @@ public abstract class LoadTestDriver {
         }
 
         // calculates host unique prefix based on its subnet IP address
-        long hostUniqPrefix = getHostUniquePrefix();
+        long hostUniqePrefix = getHostUniquePrefix();
 
         logger().info("Load tests driver setup successfully completed");
 
@@ -84,8 +87,8 @@ public abstract class LoadTestDriver {
 
             for (int i = 0; i < TestsHelper.getLoadTestsThreadsCount(); i++) {
                 Worker worker = createWorker(clazz, cfg,
-                        hostUniqPrefix + startPosition,
-                        hostUniqPrefix + startPosition + 100000000);
+                    hostUniqePrefix + startPosition,
+                    hostUniqePrefix + startPosition + 100000000);
                 workers.add(worker);
                 worker.setName(testName + "-worker-" + i);
                 worker.start();
@@ -182,7 +185,6 @@ public abstract class LoadTestDriver {
         long errCnt = 0;
         long speed = 0;
 
-
         for (Worker worker : workers) {
             cnt += worker.getMsgProcessed();
             errCnt += worker.getErrorsCount();
@@ -190,8 +192,8 @@ public abstract class LoadTestDriver {
         }
 
         float errPercent = errCnt == 0 ?
-                0 :
-                cnt + errCnt ==  0 ? 0 : (float)(errCnt * 100 ) / (float)(cnt + errCnt);
+            0 :
+            cnt + errCnt ==  0 ? 0 : (float)(errCnt * 100 ) / (float)(cnt + errCnt);
 
         StringBuilder builder = new StringBuilder();
         builder.append(SystemHelper.LINE_SEPARATOR);

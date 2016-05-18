@@ -58,7 +58,7 @@ public class CassandraSessionImpl implements CassandraSession {
     /** Max timeout between CQL query execution attempts. */
     private static final int CQL_EXECUTION_ATTEMPT_MAX_TIMEOUT = 500;
 
-    /** Timeout icrement for CQL query execution attempts. */
+    /** Timeout increment for CQL query execution attempts. */
     private static final int CQL_ATTEMPTS_TIMEOUT_INCREMENT = 100;
 
     /** Cassandra cluster builder. */
@@ -85,8 +85,8 @@ public class CassandraSessionImpl implements CassandraSession {
     /** Logger. */
     private IgniteLogger log;
 
-    /** Table absense error handlers counter. */
-    private final AtomicInteger tblAbsenseHandlersCnt = new AtomicInteger(-1);
+    /** Table absence error handlers counter. */
+    private final AtomicInteger tblAbsenceHandlersCnt = new AtomicInteger(-1);
 
     /** Prepared statement cluster disconnection error handlers counter. */
     private final AtomicInteger prepStatementHandlersCnt = new AtomicInteger(-1);
@@ -158,7 +158,7 @@ public class CassandraSessionImpl implements CassandraSession {
                     else if (CassandraHelper.isPreparedStatementClusterError(e))
                         handlePreparedStatementClusterError(e);
                     else
-                        // for an error which we don't know how to handle, we will not try next attempts and terminate
+                        // For an error which we don't know how to handle, we will not try next attempts and terminate.
                         throw new IgniteException(errorMsg, e);
                 }
 
@@ -227,7 +227,7 @@ public class CassandraSessionImpl implements CassandraSession {
                         }
                         catch (Throwable e) {
                             if (CassandraHelper.isTableAbsenceError(e)) {
-                                // if there are table absence error and it is not required for the operation we can return
+                                // If there are table absence error and it is not required for the operation we can return.
                                 if (!assistant.tableExistenceRequired())
                                     return assistant.processedData();
 
@@ -237,7 +237,7 @@ public class CassandraSessionImpl implements CassandraSession {
                             else if (CassandraHelper.isHostsAvailabilityError(e)) {
                                 hostsAvailEx = e;
 
-                                //handle host availability only once
+                                // Handle host availability only once.
                                 if (hostsAvailEx == null)
                                     handleHostsAvailabilityError(e, attempt, errorMsg);
                             }
@@ -255,11 +255,11 @@ public class CassandraSessionImpl implements CassandraSession {
 
                 dataSize = seqNum;
 
-                // for an error which we don't know how to handle, we will not try next attempts and terminate
+                // For an error which we don't know how to handle, we will not try next attempts and terminate.
                 if (unknownEx != null)
                     throw new IgniteException(errorMsg, unknownEx);
 
-                // remembering any of last errors
+                // Remembering any of last errors.
                 if (tblAbsenceEx != null)
                     error = tblAbsenceEx;
                 else if (hostsAvailEx != null)
@@ -267,7 +267,7 @@ public class CassandraSessionImpl implements CassandraSession {
                 else if (prepStatEx != null)
                     error = prepStatEx;
 
-                //clean errors info before next communication with Cassandra
+                // Clean errors info before next communication with Cassandra.
                 unknownEx = null;
                 tblAbsenceEx = null;
                 hostsAvailEx = null;
@@ -293,16 +293,16 @@ public class CassandraSessionImpl implements CassandraSession {
                     }
                 }
 
-                // for an error which we don't know how to handle, we will not try next attempts and terminate
+                // For an error which we don't know how to handle, we will not try next attempts and terminate.
                 if (unknownEx != null)
                     throw new IgniteException(errorMsg, unknownEx);
 
-                // if there are no errors occurred it means that operation successfully completed and we can return
+                // If there are no errors occurred it means that operation successfully completed and we can return.
                 if (tblAbsenceEx == null && hostsAvailEx == null && prepStatEx == null)
                     return assistant.processedData();
 
                 if (tblAbsenceEx != null) {
-                    // if there are table absence error and it is not required for the operation we can return
+                    // If there are table absence error and it is not required for the operation we can return.
                     if (!assistant.tableExistenceRequired())
                         return assistant.processedData();
 
@@ -353,9 +353,8 @@ public class CassandraSessionImpl implements CassandraSession {
 
         try {
             while (attempt < CQL_EXECUTION_ATTEMPTS_COUNT) {
-                if (attempt != 0) {
+                if (attempt != 0)
                     log.warning("Trying " + (attempt + 1) + " attempt to load Ignite cache");
-                }
 
                 Statement statement = tuneStatementExecutionOptions(assistant.getStatement());
 
@@ -381,7 +380,7 @@ public class CassandraSessionImpl implements CassandraSession {
                     else if (CassandraHelper.isPreparedStatementClusterError(e))
                         handlePreparedStatementClusterError(e);
                     else
-                        // for an error which we don't know how to handle, we will not try next attempts and terminate
+                        // For an error which we don't know how to handle, we will not try next attempts and terminate.
                         throw new IgniteException(errorMsg, e);
                 }
 
@@ -545,7 +544,7 @@ public class CassandraSessionImpl implements CassandraSession {
                 log.info("-----------------------------------------------------------------------");
                 log.info("Creating Cassandra keyspace '" + settings.getKeyspace() + "'");
                 log.info("-----------------------------------------------------------------------\n\n" +
-                        settings.getKeyspaceDDLStatement() + "\n");
+                    settings.getKeyspaceDDLStatement() + "\n");
                 log.info("-----------------------------------------------------------------------");
                 session().execute(settings.getKeyspaceDDLStatement());
                 log.info("Cassandra keyspace '" + settings.getKeyspace() + "' was successfully created");
@@ -585,7 +584,7 @@ public class CassandraSessionImpl implements CassandraSession {
                 log.info("-----------------------------------------------------------------------");
                 log.info("Creating Cassandra table '" + settings.getTableFullName() + "'");
                 log.info("-----------------------------------------------------------------------\n\n" +
-                        settings.getTableDDLStatement() + "\n");
+                    settings.getTableDDLStatement() + "\n");
                 log.info("-----------------------------------------------------------------------");
                 session().execute(settings.getTableDDLStatement());
                 log.info("Cassandra table '" + settings.getTableFullName() + "' was successfully created");
@@ -702,18 +701,18 @@ public class CassandraSessionImpl implements CassandraSession {
      * @param settings Persistence settings.
      */
     private void handleTableAbsenceError(KeyValuePersistenceSettings settings) {
-        int hndNum = tblAbsenseHandlersCnt.incrementAndGet();
+        int hndNum = tblAbsenceHandlersCnt.incrementAndGet();
 
         try {
-            synchronized (tblAbsenseHandlersCnt) {
+            synchronized (tblAbsenceHandlersCnt) {
                 // Oooops... I am not the first thread who tried to handle table absence problem.
                 if (hndNum != 0) {
-                    log.warning("Table " + settings.getTableFullName() + " absense problem detected. " +
+                    log.warning("Table " + settings.getTableFullName() + " absence problem detected. " +
                             "Another thread already fixed it.");
                     return;
                 }
 
-                log.warning("Table " + settings.getTableFullName() + " absense problem detected. " +
+                log.warning("Table " + settings.getTableFullName() + " absence problem detected. " +
                         "Trying to create table.");
 
                 IgniteException error = new IgniteException("Failed to create Cassandra table " + settings.getTableFullName());
@@ -746,7 +745,7 @@ public class CassandraSessionImpl implements CassandraSession {
         }
         finally {
             if (hndNum == 0)
-                tblAbsenseHandlersCnt.set(-1);
+                tblAbsenceHandlersCnt.set(-1);
         }
     }
 
@@ -822,6 +821,9 @@ public class CassandraSessionImpl implements CassandraSession {
         return false;
     }
 
+    /**
+     * @return New random sleeper.
+     */
     private RandomSleeper newSleeper() {
         return new RandomSleeper(CQL_EXECUTION_ATTEMPT_MIN_TIMEOUT,
                 CQL_EXECUTION_ATTEMPT_MAX_TIMEOUT,

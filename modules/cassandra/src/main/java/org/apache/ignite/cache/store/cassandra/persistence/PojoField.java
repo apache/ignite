@@ -21,7 +21,6 @@ import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.Row;
 import java.beans.PropertyDescriptor;
 import java.io.Serializable;
-
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.cache.store.cassandra.common.PropertyMappingHelper;

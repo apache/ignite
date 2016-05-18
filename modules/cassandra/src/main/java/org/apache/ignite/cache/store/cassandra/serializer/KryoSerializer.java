@@ -20,11 +20,11 @@ package org.apache.ignite.cache.store.cassandra.serializer;
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Serializer based on Kryo serialization.

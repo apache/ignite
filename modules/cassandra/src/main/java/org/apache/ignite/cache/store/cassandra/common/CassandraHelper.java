@@ -22,8 +22,8 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.InvalidQueryException;
 import com.datastax.driver.core.exceptions.NoHostAvailableException;
 import com.datastax.driver.core.exceptions.ReadTimeoutException;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import java.util.regex.Pattern;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Helper class providing methods to work with Cassandra session and exceptions
