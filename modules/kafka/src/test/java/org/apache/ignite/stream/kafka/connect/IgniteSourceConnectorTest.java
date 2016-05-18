@@ -101,12 +101,12 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         kafkaBroker = new TestKafkaBroker();
 
-        WorkerConfig workerConfig = new StandaloneConfig(makeWorkerProps());
+        WorkerConfig workerCfg = new StandaloneConfig(makeWorkerProps());
 
-        MemoryOffsetBackingStore offsetBackingStore = new MemoryOffsetBackingStore();
-        offsetBackingStore.configure(workerConfig.originals());
+        MemoryOffsetBackingStore offBackingStore = new MemoryOffsetBackingStore();
+        offBackingStore.configure(workerCfg.originals());
 
-        worker = new Worker(workerConfig, offsetBackingStore);
+        worker = new Worker(workerCfg, offBackingStore);
         worker.start();
 
         herder = new StandaloneHerder(worker);
@@ -220,6 +220,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
      * Sends messages to the grid.
      *
      * @return Map of key value messages.
+     * @throws IOException If failed.
      */
     private Map<String, String> sendData() throws IOException {
         Map<String, String> keyValMap = new HashMap<>();
@@ -329,6 +330,7 @@ public class IgniteSourceConnectorTest extends GridCommonAbstractTest {
      * Creates properties for Kafka Connect workers.
      *
      * @return Worker configurations.
+     * @throws IOException If failed.
      */
     private Map<String, String> makeWorkerProps() throws IOException {
         Map<String, String> props = new HashMap<>();

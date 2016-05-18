@@ -162,7 +162,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
             attrVals.add(new IgfsAttributes(
                 igfsCfg.getName(),
                 igfsCfg.getBlockSize(),
-                ((IgfsGroupDataBlocksKeyMapper)affMapper).groupSize(),
+                ((IgfsGroupDataBlocksKeyMapper)affMapper).getGroupSize(),
                 igfsCfg.getMetaCacheName(),
                 igfsCfg.getDataCacheName(),
                 igfsCfg.getDefaultMode(),
