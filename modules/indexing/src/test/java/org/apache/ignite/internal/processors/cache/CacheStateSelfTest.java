@@ -18,6 +18,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
 import java.util.concurrent.locks.Lock;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
@@ -58,8 +59,9 @@ public class CacheStateSelfTest extends GridCommonAbstractTest {
         CacheConfiguration ccfg = new CacheConfiguration(cacheName);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        ccfg.setCacheMode(CacheMode.REPLICATED);
+        ccfg.setCacheMode(CacheMode.PARTITIONED);
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+        ccfg.setBackups(0);
 
         return ccfg;
     }
@@ -313,5 +315,54 @@ public class CacheStateSelfTest extends GridCommonAbstractTest {
         assert ignite1.cachex().context().topology().localPartition(0, true).updateCounter() == 20;
         assert ignite2.cachex().context().topology().localPartition(0, true).updateCounter() == 20;
         assert ignite3.cachex().context().topology().localPartition(0, true).updateCounter() == 20;
+    }
+
+    public void testLostPartitions() throws Exception {
+        final IgniteEx ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
+        final IgniteEx ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
+
+        final IgniteCache cache1 = ignite1.cache(null);
+        final IgniteCache cache2 = ignite2.cache(null);
+
+        assert cache1.active();
+        assert cache2.active();
+
+        awaitPartitionMapExchange();
+
+        final int partition = ignite1.affinity(null).allPartitions(ignite1.localNode())[0];
+
+        cache1.put(partition, 1);
+        assert cache2.get(partition).equals(1);
+
+        ignite1.close();
+
+        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return cache2.lostPartitions().contains(partition);
+            }
+        }, 5000);
+
+        boolean ex = false;
+
+        try {
+            cache2.get(partition);
+        }
+        catch (CacheException e) {
+            ex = true;
+        }
+
+        assert ex;
+
+        cache2.recoverPartitions(Collections.singleton(partition));
+
+        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return !cache2.lostPartitions().contains(partition);
+            }
+        }, 5000);
+
+        cache2.put(partition, 2);
+
+        assert cache2.get(partition).equals(2);
     }
 }

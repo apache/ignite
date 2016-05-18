@@ -865,4 +865,8 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      * @return Future that will be done when state is changed.
      */
     public IgniteFuture<?> active(boolean active);
+
+    public Set<Integer> lostPartitions();
+
+    public IgniteFuture<?> recoverPartitions(Collection<Integer> partitions);
 }

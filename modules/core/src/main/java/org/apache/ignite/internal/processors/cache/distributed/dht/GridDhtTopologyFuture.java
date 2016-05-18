@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import java.util.Set;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -45,4 +46,6 @@ public interface GridDhtTopologyFuture extends IgniteInternalFuture<AffinityTopo
      * @return valid ot not.
      */
     @Nullable public Throwable validateCache(GridCacheContext cctx);
+
+    @Nullable public Throwable validateCache(GridCacheContext cctx, @Nullable Set<Integer> partitions);
 }

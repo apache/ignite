@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -465,10 +466,10 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @return Cursor.
      */
     @SuppressWarnings("unchecked")
-    private QueryCursor<Cache.Entry<K,V>> query(final Query filter, @Nullable ClusterGroup grp)
+    private QueryCursor<Cache.Entry<K, V>> query(final Query filter, @Nullable ClusterGroup grp)
         throws IgniteCheckedException {
-        final CacheQuery<Map.Entry<K,V>> qry;
-        final CacheQueryFuture<Map.Entry<K,V>> fut;
+        final CacheQuery<Map.Entry<K, V>> qry;
+        final CacheQueryFuture<Map.Entry<K, V>> fut;
 
         boolean isKeepBinary = opCtx != null && opCtx.isKeepBinary();
 
@@ -523,15 +524,15 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             throw new CacheException("Unsupported query type: " + filter);
         }
 
-        return new QueryCursorImpl<>(new GridCloseableIteratorAdapter<Entry<K,V>>() {
+        return new QueryCursorImpl<>(new GridCloseableIteratorAdapter<Entry<K, V>>() {
             /** */
-            private Map.Entry<K,V> cur;
+            private Map.Entry<K, V> cur;
 
-            @Override protected Entry<K,V> onNext() throws IgniteCheckedException {
+            @Override protected Entry<K, V> onNext() throws IgniteCheckedException {
                 if (!onHasNext())
                     throw new NoSuchElementException();
 
-                Map.Entry<K,V> e = cur;
+                Map.Entry<K, V> e = cur;
 
                 cur = null;
 
@@ -817,7 +818,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         }
     }
 
-
     /** {@inheritDoc} */
     @Override public int localSize(CachePeekMode... peekModes) {
         GridCacheGateway<K, V> gate = this.gate;
@@ -928,7 +928,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<CacheEntry<K, V>>  getEntries(Set<? extends K> keys) {
+    @Override public Collection<CacheEntry<K, V>> getEntries(Set<? extends K> keys) {
         try {
             GridCacheGateway<K, V> gate = this.gate;
 
@@ -2055,6 +2055,21 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     /** {@inheritDoc} */
     @Override public IgniteFuture<?> active(boolean active) {
         return new IgniteFutureImpl<>(ctx.kernalContext().cache().changeCacheState(getName(), new CacheState(active)));
+    }
+
+    @Override public Set<Integer> lostPartitions() {
+        return delegate.state().lostPartitions();
+    }
+
+    @Override public IgniteFuture<?> recoverPartitions(Collection<Integer> partitions) {
+
+        CacheState state = delegate.state();
+
+        Set<Integer> lostParts = new HashSet<>(state.lostPartitions());
+
+        lostParts.removeAll(partitions);
+
+        return new IgniteFutureImpl<>(ctx.kernalContext().cache().changeCacheState(getName(), new CacheState(state.active(), lostParts)));
     }
 
     /** {@inheritDoc} */
