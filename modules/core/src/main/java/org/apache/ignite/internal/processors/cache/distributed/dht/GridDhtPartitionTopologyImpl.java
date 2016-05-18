@@ -404,6 +404,8 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
                     locPart = createPartition(p);
 
                     locPart.own();
+
+                    updateLocal(p, loc.id(), locPart.state(), updateSeq);
                 }
             }
         }
@@ -1376,22 +1378,24 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
             }
         }
 
-        GridDhtPartitionMap2 map = node2part.get(nodeId);
+        if (node2part != null) {
+            GridDhtPartitionMap2 map = node2part.get(nodeId);
 
-        if (map == null)
-            node2part.put(nodeId, map = new GridDhtPartitionMap2(nodeId, updateSeq, topVer,
-                Collections.<Integer, GridDhtPartitionState>emptyMap(), false));
+            if (map == null)
+                node2part.put(nodeId, map = new GridDhtPartitionMap2(nodeId, updateSeq, topVer,
+                    Collections.<Integer, GridDhtPartitionState>emptyMap(), false));
 
-        map.updateSequence(updateSeq, topVer);
+            map.updateSequence(updateSeq, topVer);
 
-        map.put(p, state);
+            map.put(p, state);
 
-        Set<UUID> ids = part2node.get(p);
+            Set<UUID> ids = part2node.get(p);
 
-        if (ids == null)
-            part2node.put(p, ids = U.newHashSet(3));
+            if (ids == null)
+                part2node.put(p, ids = U.newHashSet(3));
 
-        ids.add(nodeId);
+            ids.add(nodeId);
+        }
     }
 
     /**
