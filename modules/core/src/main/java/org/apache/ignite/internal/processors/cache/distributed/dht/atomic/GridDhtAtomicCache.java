@@ -39,6 +39,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -144,7 +145,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     /** Update reply closure. */
     private CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> updateReplyClos;
 
-    /** Pending  */
+    /** Pending */
     private ConcurrentMap<UUID, DeferredResponseBuffer> pendingResponses = new ConcurrentHashMap8<>();
 
     /** */
@@ -1314,15 +1315,61 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     ) {
         IgniteInternalFuture<Object> forceFut = preldr.request(req.keys(), req.topologyVersion());
 
-        if (forceFut.isDone())
+        if (forceFut.isDone()) {
+            try {
+                forceFut.get();
+            }
+            catch (NodeStoppingException e) {
+                return;
+            }
+            catch (IgniteCheckedException e) {
+                onForceKeysError(nodeId, req, completionCb, e);
+
+                return;
+            }
+
             updateAllAsyncInternal0(nodeId, req, completionCb);
+        }
         else {
             forceFut.listen(new CI1<IgniteInternalFuture<Object>>() {
-                @Override public void apply(IgniteInternalFuture<Object> t) {
+                @Override public void apply(IgniteInternalFuture<Object> fut) {
+                    try {
+                        fut.get();
+                    }
+                    catch (NodeStoppingException e) {
+                        return;
+                    }
+                    catch (IgniteCheckedException e) {
+                        onForceKeysError(nodeId, req, completionCb, e);
+
+                        return;
+                    }
+
                     updateAllAsyncInternal0(nodeId, req, completionCb);
                 }
             });
         }
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param req Update request.
+     * @param completionCb Completion callback.
+     * @param e Error.
+     */
+    private void onForceKeysError(final UUID nodeId,
+        final GridNearAtomicUpdateRequest req,
+        final CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
+        IgniteCheckedException e
+    ) {
+        GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(ctx.cacheId(),
+            nodeId,
+            req.futureVersion(),
+            ctx.deploymentEnabled());
+
+        res.addFailedKeys(req.keys(), e);
+
+        completionCb.apply(req, res);
     }
 
     /**
@@ -1414,10 +1461,11 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                         GridCacheReturn retVal = null;
 
-                        if (keys.size() > 1 &&                             // Several keys ...
-                            writeThrough() && !req.skipStore() &&          // and store is enabled ...
-                            !ctx.store().isLocal() &&                      // and this is not local store ...
-                            !ctx.dr().receiveEnabled()                     // and no DR.
+                        if (keys.size() > 1 &&                    // Several keys ...
+                            writeThrough() && !req.skipStore() && // and store is enabled ...
+                            !ctx.store().isLocal() &&             // and this is not local store ...
+                                                                  // (conflict resolver should be used for local store)
+                            !ctx.dr().receiveEnabled()            // and no DR.
                             ) {
                             // This method can only be used when there are no replicated entries in the batch.
                             UpdateBatchResult updRes = updateWithBatch(node,
@@ -2043,7 +2091,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     op,
                     writeVal,
                     req.invokeArguments(),
-                    primary && writeThrough() && !req.skipStore(),
+                    (primary || (ctx.store().isLocal() && !ctx.shared().localStorePrimaryOnly()))
+                        && writeThrough() && !req.skipStore(),
                     !req.skipStore(),
                     sndPrevVal || req.returnValue(),
                     req.keepBinary(),
@@ -2801,7 +2850,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             op,
                             op == TRANSFORM ? entryProcessor : val,
                             op == TRANSFORM ? req.invokeArguments() : null,
-                            /*write-through*/false,
+                            /*write-through*/(ctx.store().isLocal() && !ctx.shared().localStorePrimaryOnly())
+                                && writeThrough() && !req.skipStore(),
                             /*read-through*/false,
                             /*retval*/false,
                             req.keepBinary(),

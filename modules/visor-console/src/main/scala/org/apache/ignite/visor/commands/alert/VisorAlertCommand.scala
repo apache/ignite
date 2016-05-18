@@ -17,6 +17,10 @@
 
 package org.apache.ignite.visor.commands.alert
 
+import java.io.{File, FileNotFoundException}
+import java.util.UUID
+import java.util.concurrent.atomic._
+
 import org.apache.ignite._
 import org.apache.ignite.cluster.ClusterNode
 import org.apache.ignite.events.EventType._
@@ -25,14 +29,14 @@ import org.apache.ignite.internal.util.scala.impl
 import org.apache.ignite.internal.util.{IgniteUtils => U}
 import org.apache.ignite.lang.IgnitePredicate
 import org.apache.ignite.visor.VisorTag
+import org.apache.ignite.visor.commands.alert.VisorAlertCommand._
 import org.apache.ignite.visor.commands.common.{VisorConsoleCommand, VisorTextTable}
 import org.apache.ignite.visor.visor._
 
-import java.util.UUID
-import java.util.concurrent.atomic._
-
-import scala.collection.immutable._
+import scala.collection.immutable.HashMap
+import scala.collection.mutable
 import scala.language.implicitConversions
+import scala.sys.process.{Process, ProcessLogger}
 import scala.util.control.Breaks._
 
 /**
@@ -56,6 +60,8 @@ import scala.util.control.Breaks._
  *
  * ====Arguments====
  * {{{
+ *     -n
+ *         Alert name
  *     -u
  *         Unregisters alert(s). Either '-a' flag or '-id' parameter is required.
  *         Note that only one of the '-u' or '-r' is allowed.
@@ -68,10 +74,19 @@ import scala.util.control.Breaks._
  *         Register new alert with mnemonic predicate(s).
  *         Note that only one of the '-u' or '-r' is allowed.
  *         If neither '-u' or '-r' provided - all alerts will be printed.
- *
  *     -t
- *         Defines notification frequency in seconds. Default is 15 minutes.
+ *         Defines notification frequency in seconds. Default is 60 seconds.
  *         This parameter can only appear with '-r'.
+ *     -s
+ *         Define script for execution when alert triggered.
+ *         For configuration of throttle period see -i argument.
+ *         Script will receive following arguments:
+ *             1) Alert name or alert ID when name is not defined.
+ *             2) Alert condition as string.
+ *             3, ...) Values of alert conditions ordered as in alert command.
+ *     -i
+ *         Configure alert notification minimal throttling interval in seconds. Default is 60 seconds.
+ *
  *     -<metric>
  *         This defines a mnemonic for the metric that will be measured:
  *
@@ -117,19 +132,19 @@ import scala.util.control.Breaks._
  *         Unregisters alert with provided ID.
  *     alert "-r -t=900 -cc=gte4 -cl=gt50"
  *         Notify every 15 min if grid has >= 4 CPUs and > 50% CPU load.
+ *     alert "-r -n=Nodes -t=15 -nc=gte3 -s=/home/user/scripts/alert.sh -i=300"
+ *         Notify every 15 second if grid has >= 3 nodes and execute script "/home/user/scripts/alert.sh" with
+ *         repeat interval not less than 5 min.
  * }}}
  */
 class VisorAlertCommand extends VisorConsoleCommand {
     @impl protected val name = "alert"
 
-    /** Default alert frequency. */
-    val DFLT_FREQ = 15L * 60L
-
     /** Alerts. */
     private var alerts = new HashMap[String, VisorAlert]
 
     /** Map of last sent notification per alert ID. */
-    private var sent = new HashMap[(String, UUID), Long]
+    private var sent = new HashMap[String, Long]
 
     /** Map of alert statistics. */
     private var stats = new HashMap[String, VisorStats]
@@ -190,42 +205,52 @@ class VisorAlertCommand extends VisorConsoleCommand {
     }
 
     /**
+     * Create function to check specific node condition.
+     *
      * @param exprStr Expression string.
-     * @param f Node filter
      * @param value Value generator.
      */
-    private def makeNodeFilter(exprStr: String, f: ClusterNode => Boolean, value: ClusterNode => Long):
-        ClusterNode => Boolean = {
+    private def makeNodeFilter(exprStr: String, value: (ClusterNode) => Long): Option[(ClusterNode) => (Long, Boolean)] = {
         assert(exprStr != null)
-        assert(f != null)
         assert(value != null)
 
         val expr = makeExpression(exprStr)
 
         // Note that if 'f(n)' is false - 'value' won't be evaluated.
-        if (expr.isDefined)
-            (n: ClusterNode) => f(n) && expr.get.apply(value(n))
-        else
-            throw new IgniteException("Invalid expression: " + exprStr)
+        expr match {
+            case Some(f) => Some((n: ClusterNode) => {
+                val v = value(n)
+
+                (v, f.apply(v))
+            })
+
+            case _ => throw new IgniteException("Invalid expression: " + exprStr)
+        }
     }
 
     /**
+     * Create function to check specific grid condition.
+     *
      * @param exprStr Expression string.
-     * @param f Grid filter
      * @param value Value generator.
      */
-    private def makeGridFilter(exprStr: String, f: () => Boolean, value: () => Long): () => Boolean = {
+    private def makeGridFilter(exprStr: String, value: () => Long): Option[() => (Long, Boolean)] = {
         assert(exprStr != null)
-        assert(f != null)
         assert(value != null)
 
         val expr = makeExpression(exprStr)
 
         // Note that if 'f' is false - 'value' won't be evaluated.
-        if (expr.isDefined)
-            () => f() && expr.get.apply(value())
-        else
-            throw new IgniteException("Invalid expression: " + exprStr)
+        expr match {
+            case Some(f) =>
+                Some(() => {
+                    val v = value()
+
+                    (v, f.apply(v))
+                })
+            case _ =>
+                throw new IgniteException("Invalid expression: " + exprStr)
+        }
     }
 
     /**
@@ -238,43 +263,30 @@ class VisorAlertCommand extends VisorConsoleCommand {
             if (!isConnected)
                 adviseToConnect()
             else {
-                val dfltNodeF = (_: ClusterNode) => true
-                val dfltGridF = () => true
-
-                var nf = dfltNodeF
-                var gf = dfltGridF
-
+                var name: Option[String] = None
+                var script: Option[String] = None
+                val conditions = mutable.ArrayBuffer.empty[VisorAlertCondition]
                 var freq = DFLT_FREQ
+                var interval = DFLT_FREQ
 
                 try {
-                    args foreach (arg => {
+                    args.foreach(arg => {
                         val (n, v) = arg
 
                         n match {
-                            // Grid-wide metrics (not node specific).
-                            case "cc" if v != null => gf = makeGridFilter(v, gf, ignite.cluster.metrics().getTotalCpus)
-                            case "nc" if v != null => gf = makeGridFilter(v, gf, ignite.cluster.nodes().size)
-                            case "hc" if v != null => gf = makeGridFilter(v, gf,
-                                U.neighborhood(ignite.cluster.nodes()).size)
-                            case "cl" if v != null => gf = makeGridFilter(v, gf,
-                                () => (ignite.cluster.metrics().getAverageCpuLoad * 100).toLong)
+                            case c if alertDescr.contains(c) && v != null =>
+                                val meta = alertDescr(c)
 
-                            // Per-node current metrics.
-                            case "aj" if v != null => nf = makeNodeFilter(v, nf, _.metrics().getCurrentActiveJobs)
-                            case "cj" if v != null => nf = makeNodeFilter(v, nf, _.metrics().getCurrentCancelledJobs)
-                            case "tc" if v != null => nf = makeNodeFilter(v, nf, _.metrics().getCurrentThreadCount)
-                            case "ut" if v != null => nf = makeNodeFilter(v, nf, _.metrics().getUpTime)
-                            case "je" if v != null => nf = makeNodeFilter(v, nf, _.metrics().getCurrentJobExecuteTime)
-                            case "jw" if v != null => nf = makeNodeFilter(v, nf, _.metrics().getCurrentJobWaitTime)
-                            case "wj" if v != null => nf = makeNodeFilter(v, nf, _.metrics().getCurrentWaitingJobs)
-                            case "rj" if v != null => nf = makeNodeFilter(v, nf, _.metrics().getCurrentRejectedJobs)
-                            case "hu" if v != null => nf = makeNodeFilter(v, nf, _.metrics().getHeapMemoryUsed)
-                            case "hm" if v != null => nf = makeNodeFilter(v, nf, _.metrics().getHeapMemoryMaximum)
-                            case "cd" if v != null => nf = makeNodeFilter(v, nf,
-                                (n: ClusterNode) => (n.metrics().getCurrentCpuLoad * 100).toLong)
+                                if (meta.byGrid)
+                                    conditions += VisorAlertCondition(arg, gridFunc = makeGridFilter(v, meta.gridFunc))
+                                else
+                                    conditions += VisorAlertCondition(arg, nodeFunc = makeNodeFilter(v, meta.nodeFunc))
 
                             // Other tags.
+                            case "n" if v != null => name = Some(v)
                             case "t" if v != null => freq = v.toLong
+                            case "s" if v != null => script = Option(v)
+                            case "i" if v != null => interval = v.toLong
                             case "r" => () // Skipping.
                             case _ => throw new IgniteException("Invalid argument: " + makeArg(arg))
                         }
@@ -292,7 +304,7 @@ class VisorAlertCommand extends VisorConsoleCommand {
                         break()
                 }
 
-                if (nf == null && gf == null) {
+                if (conditions.isEmpty) {
                     scold("No predicates have been provided in args: " + makeArgs(args))
 
                     break()
@@ -300,14 +312,19 @@ class VisorAlertCommand extends VisorConsoleCommand {
 
                 val alert = new VisorAlert(
                     id = id8,
-                    nodeFilter = nf,
-                    gridFilter = gf,
-                    perNode = nf != dfltNodeF,
-                    perGrid = gf != dfltGridF,
+                    name = name,
+                    conditions = conditions.toSeq,
+                    perGrid = conditions.exists(_.gridFunc.isDefined),
+                    perNode = conditions.exists(_.nodeFunc.isDefined),
                     spec = makeArgs(args),
+                    conditionSpec = makeArgs(conditions.map(_.arg)),
                     freq = freq,
                     createdOn = System.currentTimeMillis(),
-                    varName = setVar(id8, "a")
+                    varName = setVar(id8, "a"),
+                    notification = new VisorAlertNotification(
+                        script = script,
+                        throttleInterval = interval * 1000
+                    )
                 )
 
                 // Subscribe for node metric updates - if needed.
@@ -337,43 +354,50 @@ class VisorAlertCommand extends VisorConsoleCommand {
 
                     val node = ignite.cluster.node(discoEvt.eventNode().id())
 
-                    if (node != null)
+                    if (node != null && !node.isDaemon)
                         alerts foreach (t => {
                             val (id, alert) = t
 
-                            var nb = false
-                            var gb = false
+                            var check = (true, true)
 
-                            try {
-                                nb = alert.nodeFilter(node)
-                                gb = alert.gridFilter()
-                            }
+                            val values = mutable.ArrayBuffer.empty[String]
+
+                            try
+                                check = alert.conditions.foldLeft(check) {
+                                    (res, cond) => {
+                                        val gridRes = cond.gridFunc.map(f => {
+                                            val (value, check) = f()
+
+                                            values += value.toString
+
+                                            check
+                                        }).getOrElse(true)
+
+                                        val nodeRes = cond.nodeFunc.map(f => {
+                                            val (value, check) = f(node)
+
+                                            values += value.toString
+
+                                            check
+                                        }).getOrElse(true)
+
+                                        (res._1 && gridRes) -> (res._2 && nodeRes)
+                                    }
+                                }
                             catch {
                                 // In case of exception (like an empty projection) - simply return.
                                 case _: Throwable => return true
                             }
 
-                            if (nb && gb) {
+                            if (check._1 && check._2) {
                                 val now = System.currentTimeMillis()
-
-                                val nKey = id -> node.id
-                                val gKey = id -> null
 
                                 var go: Boolean = false
 
-                                if (nb && alert.perNode)
-                                    go = (now - sent.getOrElse(nKey, 0L)) / 1000 >= alert.freq
-
-                                if (!go && gb && alert.perGrid)
-                                    go = (now - sent.getOrElse(gKey, 0L)) / 1000 >= alert.freq
+                                go = (now - sent.getOrElse(id, 0L)) / 1000 >= alert.freq
 
                                 if (go) {
-                                    // Update throttling.
-                                    if (nb && alert.perNode)
-                                        sent = sent + (nKey -> now)
-
-                                    if (gb && alert.perGrid)
-                                        sent = sent + (gKey -> now)
+                                    sent = sent + (id -> now)
 
                                     val stat: VisorStats = stats(id)
 
@@ -397,8 +421,11 @@ class VisorAlertCommand extends VisorConsoleCommand {
                                         "]"
                                     )
 
+                                    executeAlertScript(alert, node, values.toSeq)
+
                                     last10 = VisorSentAlert(
                                         id = alert.id,
+                                        name = alert.name.getOrElse("(Not set)"),
                                         spec = alert.spec,
                                         createdOn = alert.createdOn,
                                         sentTs = now
@@ -408,6 +435,8 @@ class VisorAlertCommand extends VisorConsoleCommand {
                                         last10 = last10.take(10)
                                 }
                             }
+                            else
+                                alert.notification.notified = false
                         })
 
                     true
@@ -542,10 +571,10 @@ class VisorAlertCommand extends VisorConsoleCommand {
         else {
             val last10T = VisorTextTable()
 
-            last10T #= ("ID(@)", "Spec", "Sent", "Registered", "Count")
+            last10T #= ("ID(@)/Name", "Spec", "Sent", "Registered", "Count")
 
             last10.foreach((a: VisorSentAlert) => last10T += (
-                a.idVar,
+                a.idVar + "/" + a.name,
                 a.spec,
                 formatDateTime(a.sentTs),
                 formatDateTime(a.createdOn),
@@ -560,7 +589,7 @@ class VisorAlertCommand extends VisorConsoleCommand {
         if (alerts.nonEmpty) {
             val tbl = new VisorTextTable()
 
-            tbl #= ("ID(@)", "Spec", "Count", "Registered", "First Send", "Last Send")
+            tbl #= ("ID(@)/Name", "Spec", "Count", "Registered", "First Send", "Last Send")
 
             val sorted = alerts.values.toSeq.sortWith(_.varName < _.varName)
 
@@ -568,7 +597,7 @@ class VisorAlertCommand extends VisorConsoleCommand {
                 val stat = stats(a.id)
 
                 tbl += (
-                    a.id + "(@" + a.varName + ')',
+                    a.id + "(@" + a.varName + ')' + "/" + a.name.getOrElse("Not set"),
                     a.spec,
                     stat.cnt,
                     formatDateTime(a.createdOn),
@@ -604,21 +633,74 @@ class VisorAlertCommand extends VisorConsoleCommand {
 
         ""
     }
+
+    /**
+     * Try to execute specified script on alert.
+     *
+     * @param alert Alarmed alert.
+     * @param node Node where alert is alarmed.
+     * @param values Values ith that alert is generated.
+     */
+    private def executeAlertScript(alert: VisorAlert, node: ClusterNode, values: Seq[String]) {
+        val n = alert.notification
+
+        try {
+            n.script.foreach(script => {
+                if (!n.notified && (n.notifiedTime < 0 || (System.currentTimeMillis() - n.notifiedTime) > n.throttleInterval)) {
+                    val scriptFile = new File(script)
+
+                    if (!scriptFile.exists())
+                        throw new FileNotFoundException("Script/executable not found: " + script)
+
+                    val scriptFolder = scriptFile.getParentFile
+
+                    val p = Process(Seq(script, alert.name.getOrElse(alert.id), alert.conditionSpec) ++ values,
+                        Some(scriptFolder))
+
+                    p.run(ProcessLogger((fn: String) => {}))
+
+                    n.notifiedTime = System.currentTimeMillis()
+
+                    n.notified = true
+                }
+            })
+        }
+        catch {
+            case e: Throwable => logText("Script execution failed [" +
+                    "id=" + alert.id + "(@" + alert.varName + "), " +
+                    "error=" + e.getMessage + ", " +
+                "]")
+        }
+    }
 }
 
 /**
  * Visor alert.
+ *
+ * @param id Alert id.
+ * @param name Alert name.
+ * @param conditions List of alert condition metadata.
+ * @param perGrid Condition per grid exists.
+ * @param perNode Condition per node exists.
+ * @param freq Freq of alert check.
+ * @param spec Alert command specification.
+ * @param conditionSpec Alert condition command specification.
+ * @param varName Alert id short name.
+ * @param createdOn Timestamp of alert creation.
+ * @param notification Alert notification information.
  */
-sealed private case class VisorAlert(
+private case class VisorAlert(
     id: String,
-    nodeFilter: ClusterNode => Boolean,
-    gridFilter: () => Boolean,
+    name: Option[String],
+    conditions: Seq[VisorAlertCondition],
+    perGrid: Boolean,
+    perNode: Boolean,
     freq: Long,
     spec: String,
+    conditionSpec: String,
     varName: String,
-    perNode: Boolean,
-    perGrid: Boolean,
-    createdOn: Long
+    createdOn: Long,
+    notification: VisorAlertNotification
 ) {
     assert(id != null)
     assert(spec != null)
@@ -626,10 +708,41 @@ sealed private case class VisorAlert(
 }
 
 /**
+  * Visor alert notification information.
+  *
+  * @param script Script to execute on alert firing.
+  * @param throttleInterval Minimal interval between script execution.
+  * @param notified `True` when on previous check of condition alert was fired or `false` otherwise.
+  * @param notifiedTime Time of first alert notification in series of firings.
+  */
+private case class VisorAlertNotification(
+    script: Option[String],
+    throttleInterval: Long,
+    var notified: Boolean = false,
+    var notifiedTime: Long = -1L
+) {
+    assert(script != null)
+}
+
+/**
+ * Visor alert condition information.
+ *
+ * @param arg Configuration argument.
+ * @param gridFunc Function to check grid condition.
+ * @param nodeFunc Function to check node condition.
+ */
+private case class VisorAlertCondition(
+    arg: (String, String),
+    gridFunc: Option[() => (Long, Boolean)] = None,
+    nodeFunc: Option[(ClusterNode) => (Long, Boolean)] = None
+)
+
+/**
  * Snapshot of the sent alert.
  */
 private case class VisorSentAlert(
     id: String,
+    name: String,
     sentTs: Long,
     createdOn: Long,
     spec: String
@@ -647,16 +760,57 @@ private case class VisorSentAlert(
 /**
  * Statistics holder for visor alert.
  */
-sealed private case class VisorStats(
+private case class VisorStats(
     var cnt: Int = 0,
     var firstSnd: Long = 0,
     var lastSnd: Long = 0
 )
 
 /**
+  * Metadata object for visor alert.
+  *
+  * @param byGrid If `true` then `gridFunc` should be used.
+  * @param gridFunc Function to extract value to check in case of alert for grid metrics.
+  * @param nodeFunc Function to extract value to check in case of alert for node metrics
+  */
+private case class VisorAlertMeta(
+    byGrid: Boolean,
+    gridFunc: () => Long,
+    nodeFunc: (ClusterNode) => Long
+)
+
+/**
  * Companion object that does initialization of the command.
  */
 object VisorAlertCommand {
+    /** Default alert frequency. */
+    val DFLT_FREQ = 60L
+
+    private val dfltNodeValF = (_: ClusterNode) => 0L
+    private val dfltGridValF = () => 0L
+
+    private def cl(): IgniteCluster = ignite.cluster()
+
+    private[this] val BY_GRID = true
+    private[this] val BY_NODE = false
+
+    private val alertDescr = Map(
+        "cc" -> VisorAlertMeta(BY_GRID, () => cl().metrics().getTotalCpus, dfltNodeValF),
+        "nc" -> VisorAlertMeta(BY_GRID, () => cl().nodes().size, dfltNodeValF),
+        "hc" -> VisorAlertMeta(BY_GRID, () => U.neighborhood(cl().nodes()).size, dfltNodeValF),
+        "cl" -> VisorAlertMeta(BY_GRID, () => (cl().metrics().getAverageCpuLoad * 100).toLong, dfltNodeValF),
+        "aj" -> VisorAlertMeta(BY_NODE, dfltGridValF, (node) => node.metrics().getCurrentActiveJobs),
+        "cj" -> VisorAlertMeta(BY_NODE, dfltGridValF, (node) => node.metrics().getCurrentCancelledJobs),
+        "tc" -> VisorAlertMeta(BY_NODE, dfltGridValF, (node) => node.metrics().getCurrentThreadCount),
+        "ut" -> VisorAlertMeta(BY_NODE, dfltGridValF, (node) => node.metrics().getUpTime),
+        "je" -> VisorAlertMeta(BY_NODE, dfltGridValF, (node) => node.metrics().getCurrentJobExecuteTime),
+        "jw" -> VisorAlertMeta(BY_NODE, dfltGridValF, (node) => node.metrics().getCurrentJobWaitTime),
+        "wj" -> VisorAlertMeta(BY_NODE, dfltGridValF, (node) => node.metrics().getCurrentWaitingJobs),
+        "rj" -> VisorAlertMeta(BY_NODE, dfltGridValF, (node) => node.metrics().getCurrentRejectedJobs),
+        "hu" -> VisorAlertMeta(BY_NODE, dfltGridValF, (node) => node.metrics().getHeapMemoryUsed),
+        "cd" -> VisorAlertMeta(BY_NODE, dfltGridValF, (node) => node.metrics().getHeapMemoryMaximum),
+        "hm" -> VisorAlertMeta(BY_NODE, dfltGridValF, (node) => (node.metrics().getCurrentCpuLoad * 100).toLong))
+
     /** Singleton command. */
     private val cmd = new VisorAlertCommand
 
@@ -673,6 +827,8 @@ object VisorAlertCommand {
             "alert -r {-t=<sec>} {-<metric>=<condition><value>} ... {-<metric>=<condition><value>}"
         ),
         args = Seq(
+            "-n" ->
+                "Alert name",
             "-u" -> Seq(
                 "Unregisters alert(s). Either '-a' flag or '-id' parameter is required.",
                 "Note that only one of the '-u' or '-r' is allowed.",
@@ -689,9 +845,18 @@ object VisorAlertCommand {
                 "If neither '-u' or '-r' provided - all alerts will be printed."
             ),
             "-t" -> Seq(
-                "Defines notification frequency in seconds. Default is 15 minutes.",
+                "Defines notification frequency in seconds. Default is 60 seconds.",
                 "This parameter can only appear with '-r'."
-             ),
+            ),
+            "-s" -> Seq(
+                "Define script for execution when alert triggered.",
+                "For configuration of throttle period see -i argument.",
+                "Script will receive following arguments:",
+                "    1) Alert name or alert ID when name is not defined.",
+                "    2) Alert condition as string.",
+                "    3, ...) Values of alert conditions ordered as in alert command."
+            ),
+            "-i" -> "Configure alert notification minimal throttling interval in seconds. Default is 60 seconds.",
             "-<metric>" -> Seq(
                 "This defines a mnemonic for the metric that will be measured:",
                 "",
@@ -737,8 +902,12 @@ object VisorAlertCommand {
             "alert -u -id=@a0" ->
                 "Unregisters alert with provided ID taken from '@a0' memory variable.",
             "alert -r -t=900 -cc=gte4 -cl=gt50" ->
-                "Notify every 15 min if grid has >= 4 CPUs and > 50% CPU load."
+                "Notify every 15 min if grid has >= 4 CPUs and > 50% CPU load.",
+            "alert \"-r -n=Nodes -t=15 -nc=gte3 -s=/home/user/scripts/alert.sh -i=300" ->
+                ("Notify every 15 second if grid has >= 3 nodes and execute script \"/home/user/scripts/alert.sh\" with " +
+                "repeat interval not less than 5 min.")
         ),
+
         emptyArgs = cmd.alert,
         withArgs = cmd.alert
     )

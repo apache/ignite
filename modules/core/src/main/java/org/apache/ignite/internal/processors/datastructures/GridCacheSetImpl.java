@@ -389,7 +389,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
 
             CacheQueryFuture<Map.Entry<T, ?>> fut = qry.execute();
 
-            CacheWeakQueryIteratorsHolder.WeakQueryFutureIterator it =
+            CacheWeakQueryIteratorsHolder.WeakReferenceCloseableIterator it =
                 ctx.itHolder().iterator(fut, new CacheIteratorConverter<T, Map.Entry<T, ?>>() {
                     @Override protected T convert(Map.Entry<T, ?> e) {
                         return e.getKey();
