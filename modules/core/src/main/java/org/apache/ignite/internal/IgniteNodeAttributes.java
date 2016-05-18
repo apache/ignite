@@ -154,6 +154,9 @@ public final class IgniteNodeAttributes {
     /** Binary configuration. */
     public static final String ATTR_BINARY_CONFIGURATION = ATTR_PREFIX + ".binary.config";
 
+    /** Ignite services compatibility mode (can be {@code null}). */
+    public static final String ATTR_SERVICES_COMPATIBILITY_MODE = ATTR_PREFIX + ".services.compatibility.enabled";
+
     /**
      * Enforces singleton.
      */
