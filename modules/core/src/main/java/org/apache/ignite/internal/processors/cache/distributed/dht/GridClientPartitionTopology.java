@@ -127,7 +127,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     /**
      * @return Full map string representation.
      */
-    @SuppressWarnings( {"ConstantConditions"})
+    @SuppressWarnings({"ConstantConditions"})
     private String fullMapString() {
         return node2part == null ? "null" : FULL_MAP_DEBUG ? node2part.toFullString() : node2part.toString();
     }
@@ -136,7 +136,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
      * @param map Map to get string for.
      * @return Full map string representation.
      */
-    @SuppressWarnings( {"ConstantConditions"})
+    @SuppressWarnings({"ConstantConditions"})
     private String mapString(GridDhtPartitionMap2 map) {
         return map == null ? "null" : FULL_MAP_DEBUG ? map.toFullString() : map.toString();
     }
@@ -147,7 +147,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings( {"LockAcquiredButNotSafelyReleased"})
+    @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
     @Override public void readLock() {
         lock.readLock().lock();
     }
@@ -431,7 +431,8 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
      * @param states Additional partition states.
      * @return List of nodes for the partition.
      */
-    private List<ClusterNode> nodes(int p, AffinityTopologyVersion topVer, GridDhtPartitionState state, GridDhtPartitionState... states) {
+    private List<ClusterNode> nodes(int p, AffinityTopologyVersion topVer, GridDhtPartitionState state,
+        GridDhtPartitionState... states) {
         Collection<UUID> allIds = topVer.topologyVersion() > 0 ? F.nodeIds(CU.allNodes(cctx, topVer)) : null;
 
         lock.readLock().lock();
@@ -576,7 +577,7 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
                     }
                 }
 
-                for (Iterator<UUID> it = partMap.keySet().iterator(); it.hasNext();) {
+                for (Iterator<UUID> it = partMap.keySet().iterator(); it.hasNext(); ) {
                     UUID nodeId = it.next();
 
                     if (!cctx.discovery().alive(nodeId)) {
@@ -876,8 +877,26 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void setOwners(int p, Set<UUID> owners) {
-        // TODO GG-11122 implement.
+        lock.writeLock().lock();
+
+        try {
+            for (Map.Entry<UUID, GridDhtPartitionMap2> e : node2part.entrySet()) {
+                if (!e.getValue().containsKey(p))
+                    continue;
+
+                if (e.getValue().get(p) == OWNING && !owners.contains(e.getKey()))
+                    e.getValue().put(p, MOVING);
+                else if (owners.contains(e.getKey()))
+                    e.getValue().put(p, OWNING);
+            }
+
+            part2node.put(p, owners);
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */

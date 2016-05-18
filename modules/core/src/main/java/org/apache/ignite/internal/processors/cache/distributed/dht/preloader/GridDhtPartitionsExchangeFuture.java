@@ -188,6 +188,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** */
     private boolean centralizedAff;
 
+    /** */
     private final ConcurrentMap<UUID, GridDhtPartitionsSingleMessage> msgs = new ConcurrentHashMap8<>();
 
     /**
@@ -1246,6 +1247,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
     }
 
+    /**
+     * Assign node roles by partition update counters.
+     */
     private void assignRolesByCounters() {
         assert crd.isLocal();
 
@@ -1261,6 +1265,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
     }
 
+    /**
+     * Assign node roles by partition update counters for a given topology.
+     * @param top Topology.
+     */
     private void assignRolesByCounters(GridDhtPartitionTopology top) {
         Map<Integer, Long> maxCntrs = new HashMap<>();
 

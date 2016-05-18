@@ -124,6 +124,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         locParts = new GridDhtLocalPartition[cctx.config().getAffinity().partitions()];
     }
 
+    /** {@inheritDoc} */
     @Override public int cacheId() {
         return cctx.cacheId();
     }
@@ -1266,6 +1267,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         }
     }
 
+    /** {@inheritDoc} */
     @Override public void setOwners(int p, Set<UUID> owners) {
         lock.writeLock().lock();
 
