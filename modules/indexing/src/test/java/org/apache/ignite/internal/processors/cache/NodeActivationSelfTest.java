@@ -71,7 +71,7 @@ public class NodeActivationSelfTest extends GridCommonAbstractTest {
 
         assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return ignite1.context().discovery().activated(ignite1.localNode().id());
+                return ignite1.context().discovery().activated(ignite1.localNode());
             }
         }, 5000);
 
@@ -85,15 +85,15 @@ public class NodeActivationSelfTest extends GridCommonAbstractTest {
 
         assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return ignite2.context().discovery().activated(ignite2.localNode().id());
+                return ignite2.context().discovery().activated(ignite2.localNode());
             }
         }, 5000);
 
         assert ignite1.context().discovery().topologyVersionEx().minorTopologyVersion() > 0;
         assert ignite1.context().discovery().topologyVersionEx().equals(ignite2.context().discovery().topologyVersionEx());
-        assert ignite1.context().discovery().activated(ignite1.localNode().id());
-        assert ignite1.context().discovery().activated(ignite2.localNode().id());
-        assert ignite2.context().discovery().activated(ignite1.localNode().id());
+        assert ignite1.context().discovery().activated(ignite1.localNode());
+        assert ignite1.context().discovery().activated(ignite2.localNode());
+        assert ignite2.context().discovery().activated(ignite1.localNode());
 
         final IgniteCache cache2 = ignite2.cache(null);
 

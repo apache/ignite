@@ -1356,7 +1356,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             // same event.
 
                             // TODO GG-11010 get activate state for topology version.
-                            if (cctx.discovery().activated(cctx.localNodeId())) {
+                            if (cctx.discovery().activated(cctx.localNode(), exchFut.topologyVersion())) {
                                 for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                                     if (cacheCtx.isLocal())
                                         continue;

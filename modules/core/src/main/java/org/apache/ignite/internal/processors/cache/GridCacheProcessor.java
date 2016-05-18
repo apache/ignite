@@ -2481,8 +2481,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (msg instanceof CacheAffinityChangeMessage)
             return sharedCtx.affinity().onCustomEvent(((CacheAffinityChangeMessage)msg));
 
-        if (msg instanceof TcpDiscoveryNodeActivatedMessage)
-            return !ctx.discovery().activated(((TcpDiscoveryNodeActivatedMessage)msg).nodeId());
+        if (msg instanceof TcpDiscoveryNodeActivatedMessage) {
+            ClusterNode node = ctx.discovery().node(((TcpDiscoveryNodeActivatedMessage)msg).nodeId());
+            return !ctx.discovery().activated(node, topVer);
+        }
 
         return msg instanceof DynamicCacheChangeBatch && onCacheChangeRequested((DynamicCacheChangeBatch)msg, topVer);
     }
