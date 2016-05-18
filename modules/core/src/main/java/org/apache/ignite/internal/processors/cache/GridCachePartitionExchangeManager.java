@@ -261,7 +261,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         else
                             exchangeFuture(msg.exchangeId(), null, null, null).onAffinityChangeMessage(customEvt.eventNode(), msg);
                     }
-
                     else if (customEvt.customMessage() instanceof TcpDiscoveryNodeActivatedMessage) {
                         TcpDiscoveryNodeActivatedMessage msg = (TcpDiscoveryNodeActivatedMessage)customEvt.customMessage();
 

@@ -25,19 +25,26 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * Message for node activation.
- *
- * TODO GG-11010 add node id in message.
  */
 public class TcpDiscoveryNodeActivatedMessage implements DiscoveryCustomMessage {
     /** */
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
+    /** */
     private final UUID nodeId;
 
+    /**
+     * Constructor
+     * @param nodeId ID of activated node.
+     */
     public TcpDiscoveryNodeActivatedMessage(UUID nodeId) {
         this.nodeId = nodeId;
     }
 
+    /**
+     * Node ID.
+     * @return ID of activated node.
+     */
     public UUID nodeId() {
         return nodeId;
     }

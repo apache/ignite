@@ -262,6 +262,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** */
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
+    /** */
     private final Set<UUID> activatedNodes = Collections.newSetFromMap(new ConcurrentHashMap<UUID, Boolean>());
 
     /** */
@@ -775,6 +776,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         localNodeInitLsnrs.add(lsnr);
     }
 
+    /** {@inheritDoc} */
     @Override public DiscoveryDataExchangeType discoveryDataType() {
         return DiscoveryDataExchangeType.DISCOVERY_PROC;
     }
