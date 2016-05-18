@@ -1519,20 +1519,19 @@ consoleModule.controller('sqlController', [
             $scope.metadata = [];
 
             agentMonitor.metadata()
-                .then(function (metadata) {
-                    $scope.metadata = _.sortBy(_.filter(metadata, function (meta) {
-                        var cache = _.find($scope.caches, { name: meta.cacheName });
+                .then((metadata) => {
+                    $scope.metadata = _.sortBy(_.filter(metadata, (meta) => {
+                        const cache = _.find($scope.caches, { name: meta.cacheName });
 
-                            if (cache) {
-                                meta.name = (cache.sqlSchema ? cache.sqlSchema : '"' + meta.cacheName + '"') + '.' + meta.typeName;
+                        if (cache) {
+                            meta.name = (cache.sqlSchema || '"' + meta.cacheName + '"') + '.' + meta.typeName;
+                            meta.displayName = (cache.sqlSchema || $scope.maskCacheName(meta.cacheName)) + '.' + meta.typeName;
 
-                                meta.displayMame = $scope.maskCacheName(meta.cacheName) + '.' + meta.typeName;
+                            if (cache.sqlSchema)
+                                meta.children.unshift({type: 'plain', name: 'cacheName: ' + $scope.maskCacheName(meta.cacheName)});
 
-                                if (cache.sqlSchema)
-                                    meta.children.unshift({type: 'plain', name: 'sqlSchema: ' + cache.sqlSchema});
-
-                                meta.children.unshift({type: 'plain', name: 'mode: ' + cache.mode});
-                            }
+                            meta.children.unshift({type: 'plain', name: 'mode: ' + cache.mode});
+                        }
 
                         return cache;
                     }), 'name');
