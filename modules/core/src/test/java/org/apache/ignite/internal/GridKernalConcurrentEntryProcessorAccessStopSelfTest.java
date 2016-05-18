@@ -49,6 +49,7 @@ public class GridKernalConcurrentEntryProcessorAccessStopSelfTest extends GridCo
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
         invoker.start();
+
         stopGrid();
     }
 
@@ -60,13 +61,12 @@ public class GridKernalConcurrentEntryProcessorAccessStopSelfTest extends GridCo
 
         Ignite ignite = grid();
 
-        IgniteCache<Object, Object> dfltCache = ignite.getOrCreateCache(ccfg);
+        final IgniteCache<Object, Object> dfltCache = ignite.getOrCreateCache(ccfg);
 
         dfltCache.put("1", "1");
 
         invoker = new Thread(new Runnable() {
             @Override public void run() {
-
                 dfltCache.invoke("1", new EntryProcessor<Object, Object, Object>() {
                     @Override public Object process(MutableEntry<Object, Object> entry,
                         Object... arguments) throws EntryProcessorException {
