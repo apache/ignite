@@ -263,7 +263,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private final CountDownLatch startLatch = new CountDownLatch(1);
 
     /** */
-    private final Set<ClusterNode> activatedNodes = Collections.newSetFromMap(new ConcurrentHashMap<ClusterNode, Boolean>());
+    private final Set<ClusterNode> discoveredActivatedNodes = Collections.newSetFromMap(new ConcurrentHashMap<ClusterNode, Boolean>());
 
     /** */
     private Object consistentId;
@@ -553,11 +553,31 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     }
                 }
 
+                Set<ClusterNode> activatedNodes = new HashSet<>();
+
+                Snapshot snapshot = topSnap.get();
+
+                if (snapshot.topVer.equals(AffinityTopologyVersion.ZERO))
+                    activatedNodes.addAll(discoveredActivatedNodes);
+                else {
+                    assert snapshot.discoCache != null;
+
+                    activatedNodes.addAll(snapshot.discoCache.activatedNodes);
+                }
+
+                if (customMsg != null && customMsg instanceof TcpDiscoveryNodeActivatedMessage) {
+                    ClusterNode activatedNode = node(((TcpDiscoveryNodeActivatedMessage)customMsg).nodeId());
+
+                    assert activatedNode != null;
+
+                    activatedNodes.add(activatedNode);
+                }
+
                 // Put topology snapshot into discovery history.
                 // There is no race possible between history maintenance and concurrent discovery
                 // event notifications, since SPI notifies manager about all events from this listener.
                 if (verChanged) {
-                    DiscoCache cache = new DiscoCache(locNode, F.view(topSnapshot, F.remoteNodes(locNode.id())), new HashSet<>(activatedNodes));
+                    DiscoCache cache = new DiscoCache(locNode, F.view(topSnapshot, F.remoteNodes(locNode.id())), activatedNodes);
 
                     discoCacheHist.put(nextTopVer, cache);
 
@@ -574,7 +594,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                         gridStartTime = getSpi().getGridStartTime();
 
                     updateTopologyVersionIfGreater(new AffinityTopologyVersion(locNode.order()),
-                        new DiscoCache(localNode(), F.view(topSnapshot, F.remoteNodes(locNode.id())), new HashSet<>(activatedNodes)));
+                        new DiscoCache(localNode(), F.view(topSnapshot, F.remoteNodes(locNode.id())), activatedNodes));
 
                     startLatch.countDown();
 
@@ -614,8 +634,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                     topHist.clear();
 
+                    discoveredActivatedNodes.clear();
+
                     topSnap.set(new Snapshot(AffinityTopologyVersion.ZERO,
-                        new DiscoCache(locNode, Collections.<ClusterNode>emptySet(), new HashSet<>(activatedNodes))));
+                        new DiscoCache(locNode, Collections.<ClusterNode>emptySet(), Collections.<ClusterNode>emptySet())));
                 }
                 else if (type == EVT_CLIENT_NODE_RECONNECTED) {
                     assert locNode.isClient() : locNode;
@@ -715,7 +737,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             @Override
             public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd,
                 TcpDiscoveryNodeActivatedMessage msg) {
-                activatedNodes.add(snd);
+                discoveredActivatedNodes.add(snd);
             }
         });
 
@@ -1905,7 +1927,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     @Override public Serializable collectDiscoveryData(UUID nodeId) {
         HashMap<String, Object> map = new HashMap<>();
 
-        map.put("activated", new HashSet<>(activatedNodes));
+        map.put("activated", new HashSet<>(discoveredActivatedNodes));
 
         return map;
     }
@@ -1915,10 +1937,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         if (data instanceof Map) {
             Map<String, Object> map = (Map<String, Object>)data;
 
-            Set<ClusterNode> activated = (Set<ClusterNode>) map.get("activated");
+            if (joiningNodeId.equals(ctx.localNodeId())) {
+                Set<ClusterNode> activated = (Set<ClusterNode>)map.get("activated");
 
-            if (activated != null)
-                this.activatedNodes.addAll(activated);
+                if (activated != null)
+                    discoveredActivatedNodes.addAll(activated);
+            }
         }
     }
 
@@ -1928,6 +1952,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
      * @return {@code True} if active.
      */
     public boolean activated(ClusterNode node, AffinityTopologyVersion topVer) {
+        if (topVer.equals(AffinityTopologyVersion.NONE))
+            return activated(node);
+
         return discoCache(topVer).activatedNodes.contains(node);
     }
 
@@ -1951,7 +1978,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         // call when locJoinEvt is already done.
         locJoinEvt.listen(new IgniteInClosure<IgniteInternalFuture<DiscoveryEvent>>() {
             @Override public void apply(IgniteInternalFuture<DiscoveryEvent> future) {
-                if (!activatedNodes.contains(ctx.localNodeId())) {
+                if (!discoveredActivatedNodes.contains(ctx.localNodeId())) {
                     try {
                         sendCustomEvent(new TcpDiscoveryNodeActivatedMessage(ctx.localNodeId()));
                     }
