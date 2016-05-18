@@ -22,6 +22,7 @@ import org.apache.ignite.internal.processors.cache.database.MetadataStorage;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryImpl;
+import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -54,6 +55,15 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testMetaIndexAllocation() throws Exception {
+        testMetaAllocation(true);
+        testMetaAllocation(false);
+    }
+
+    /**
+     * @param idx {@code True} if allocate in index space, {@code false} if in meta space.
+     * @throws Exception
+     */
+    private void testMetaAllocation(final boolean idx) throws Exception {
         PageMemory mem = memory(true);
 
         int[] cacheIds = new int[]{1, "partitioned".hashCode(), "replicated".hashCode()};
@@ -82,11 +92,11 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
                     idxName = randomName();
                 } while (idxMap.containsKey(idxName));
 
-                IgniteBiTuple<FullPageId, Boolean> rootPageId = metaStore.getOrAllocateForIndex(cacheId, idxName);
+                final RootPage rootPage = metaStore.getOrAllocateForTree(cacheId, idxName, idx);
 
-                assertTrue(rootPageId.get2());
+                assertTrue(rootPage.isAllocated());
 
-                idxMap.put(idxName, rootPageId.get1());
+                idxMap.put(idxName, rootPage.pageId());
             }
 
             for (int cacheId : cacheIds) {
@@ -96,8 +106,13 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
                     String idxName = entry.getKey();
                     FullPageId rootPageId = entry.getValue();
 
+                    final RootPage rootPage = metaStore.getOrAllocateForTree(cacheId, idxName, idx);
+
                     assertEquals("Invalid root page ID restored [cacheId=" + cacheId + ", idxName=" + idxName + ']',
-                        rootPageId, metaStore.getOrAllocateForIndex(cacheId, idxName).get1());
+                        rootPageId, rootPage.pageId());
+
+                    assertFalse("Root page already allocated [cacheId=" + cacheId + ", idxName=" + idxName + ']',
+                        rootPage.isAllocated());
                 }
             }
         }
@@ -120,7 +135,31 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
                     FullPageId rootPageId = entry.getValue();
 
                     assertEquals("Invalid root page ID restored [cacheId=" + cacheId + ", idxName=" + idxName + ']',
-                        rootPageId, meta.getOrAllocateForIndex(cacheId, idxName).get1());
+                        rootPageId, meta.getOrAllocateForTree(cacheId, idxName, idx).pageId());
+
+                }
+            }
+
+            for (int cacheId : cacheIds) {
+                Map<String, FullPageId> idxMap = allocatedIdxs.get(cacheId);
+
+                for (Map.Entry<String, FullPageId> entry : idxMap.entrySet()) {
+                    String idxName = entry.getKey();
+                    FullPageId rootPageId = entry.getValue();
+
+                    assertTrue("Page was not dropped [cacheId=" + cacheId + ", idxName=" + idxName + ']',
+                        meta.dropRootPage(cacheId, idxName));
+
+                    assertFalse("Page was dropped twice [cacheId=" + cacheId + ", idxName=" + idxName + ']',
+                        meta.dropRootPage(cacheId, idxName));
+
+                    // make sure it will be allocated again
+                    final RootPage rootPage = meta.getOrAllocateForTree(cacheId, idxName, idx);
+
+                    assertEquals("Invalid root page ID restored [cacheId=" + cacheId + ", idxName=" + idxName + ']',
+                        rootPageId, rootPage.pageId());
+
+                    assertTrue(rootPage.isAllocated());
                 }
             }
         }

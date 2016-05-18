@@ -77,6 +77,7 @@ import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -2183,18 +2184,18 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         ) throws IgniteCheckedException {
             IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
 
-            IgniteBiTuple<FullPageId, Boolean> page = dbMgr.meta().getOrAllocateForIndex(cctx.cacheId(), name);
+            final RootPage rootPage = dbMgr.meta().getOrAllocateForTree(cctx.cacheId(), name, false);
 
             if (log.isInfoEnabled())
                 log.info("Creating cache index [cacheId=" + cctx.cacheId() + ", idxName=" + name +
-                    ", rootPageId=" + page.get1() + ", allocated=" + page.get2() + ']');
+                    ", rootPageId=" + rootPage.pageId() + ", allocated=" + rootPage.isAllocated() + ']');
 
             H2TreeIndex idx = new H2TreeIndex(
                 cctx,
                 dbMgr.pageMemory(),
                 cctx.offheap().reuseList(),
-                page.get1(),
-                page.get2(),
+                rootPage.pageId(),
+                rootPage.isAllocated(),
                 keyCol,
                 valCol,
                 tbl,
