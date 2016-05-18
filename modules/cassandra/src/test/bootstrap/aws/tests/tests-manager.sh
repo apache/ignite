@@ -34,21 +34,9 @@ terminate()
 
     msg=$HOST_NAME
 
-    if [ -n "$1" ]; then
-        echo "[ERROR] $1"
-        echo "[ERROR]-----------------------------------------------------"
-        echo "[ERROR] Tests execution failed"
-        echo "[ERROR]-----------------------------------------------------"
-        msg=$1
-        reportFolder=${S3_TESTS_FAILURE_URL}${HOST_NAME}
-        reportFile=$reportFolder/__error__
-    else
-        echo "[INFO]-----------------------------------------------------"
-        echo "[INFO] Tests execution successfully completed"
-        echo "[INFO]-----------------------------------------------------"
-        reportFolder=${S3_TESTS_SUCCESS_URL}${HOST_NAME}
-        reportFile=$reportFolder/__success__
-    fi
+    msg=$1
+    reportFolder=${S3_TESTS_FAILURE_URL}${HOST_NAME}
+    reportFile=$reportFolder/__error__
 
     echo $msg > /opt/ignite-cassandra-tests/tests-result
 
@@ -71,90 +59,83 @@ terminate()
 
     aws s3 rm ${S3_TESTS_RUNNING_URL}${HOST_NAME}
     aws s3 rm ${S3_TESTS_WAITING_URL}${HOST_NAME}
+    aws s3 rm ${S3_TESTS_IDLE_URL}${HOST_NAME}
+    aws s3 rm ${S3_TESTS_PREPARING_URL}${HOST_NAME}
+    aws s3 rm --recursive ${S3_TESTS_SUCCESS_URL}${HOST_NAME}
 
     if [ "$FIRST_NODE" == "true" ]; then
-        waitAllTestNodesCompleted
         removeFirstNodeLock
-        reportScript=$(readlink -m $( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/tests-report.sh)
-        $reportScript
-
-        if [ -n "$S3_LOGS_TRIGGER_URL" ]; then
-            aws s3 cp --sse AES256 /opt/ignite-cassandra-tests/hostname $S3_LOGS_TRIGGER_URL
-            if [ $? -ne 0 ]; then
-                echo "[ERROR] Failed to trigger logs collection"
-            fi
-        fi
     fi
 
     rm -Rf /opt/ignite-cassandra-tests/tests-result /opt/ignite-cassandra-tests/hostname
 
-    if [ -n "$1" ]; then
-        exit 1
+    exit 1
+}
+
+switchToIdleState()
+{
+    if [ "$NODE_STATE" != "IDLE" ]; then
+        echo "[INFO] Switching node to IDLE state"
+        dropStateFlag "$S3_TESTS_WAITING_URL" "$S3_TESTS_PREPARING_URL" "$S3_TESTS_RUNNING_URL"
+        createStateFlag "$S3_TESTS_IDLE_URL"
+        NODE_STATE="IDLE"
+        echo "[INFO] Node was switched to IDLE state"
     fi
-
-    exit 0
 }
 
-cleanupMetadata()
+switchToPreparingState()
 {
-    echo "[INFO] Running cleanup"
-    aws s3 rm $S3_TESTS_SUMMARY_URL
-    aws s3 rm --recursive $S3_TEST_NODES_DISCOVERY_URL
-    aws s3 rm --recursive $S3_TESTS_RUNNING_URL
-    aws s3 rm --recursive $S3_TESTS_WAITING_URL
-    aws s3 rm --recursive $S3_TESTS_SUCCESS_URL
-    aws s3 rm --recursive $S3_TESTS_FAILURE_URL
-    echo "[INFO] Cleanup completed"
+    if [ "$NODE_STATE" != "PREPARING" ]; then
+        echo "[INFO] Switching node to PREPARING state"
+        dropStateFlag "$S3_TESTS_WAITING_URL" "$S3_TESTS_IDLE_URL" "$S3_TESTS_RUNNING_URL"
+        createStateFlag "$S3_TESTS_PREPARING_URL"
+        NODE_STATE="PREPARING"
+        echo "[INFO] Node was switched to PREPARING state"
+    fi
 }
 
-registerTestNode()
+switchToWaitingState()
 {
-    aws s3 cp --sse AES256 /opt/ignite-cassandra-tests/hostname ${S3_TEST_NODES_DISCOVERY_URL}${HOST_NAME}
+    if [ "$NODE_STATE" != "WAITING" ]; then
+        echo "[INFO] Switching node to PREPARING state"
+        dropStateFlag "$S3_TESTS_IDLE_URL" "$S3_TESTS_PREPARING_URL" "$S3_TESTS_RUNNING_URL"
+        createStateFlag "$S3_TESTS_WAITING_URL"
+        NODE_STATE="WAITING"
+        echo "[INFO] Node was switched to WAITING state"
+    fi
+}
+
+switchToRunningState()
+{
+    if [ "$NODE_STATE" != "RUNNING" ]; then
+        echo "[INFO] Switching node to RUNNING state"
+        dropStateFlag "$S3_TESTS_IDLE_URL" "$S3_TESTS_PREPARING_URL" "$S3_TESTS_WAITING_URL"
+        createStateFlag "$S3_TESTS_RUNNING_URL"
+        NODE_STATE="RUNNING"
+        echo "[INFO] Node was switched to RUNNING state"
+    fi
+}
+
+createStateFlag()
+{
+    aws s3 cp --sse AES256 /opt/ignite-cassandra-tests/hostname ${1}${HOST_NAME}
     if [ $? -ne 0 ]; then
-        terminate "Failed to create test node registration flag: ${S3_TEST_NODES_DISCOVERY_URL}${HOST_NAME}"
+        terminate "Failed to create state flag: ${1}${HOST_NAME}"
     fi
 }
 
-createRunningFlag()
+dropStateFlag()
 {
-    aws s3 cp --sse AES256 /opt/ignite-cassandra-tests/hostname ${S3_TESTS_RUNNING_URL}${HOST_NAME}
-    if [ $? -ne 0 ]; then
-        terminate "Failed to create tests running flag: ${S3_TESTS_RUNNING_URL}${HOST_NAME}"
-    fi
-}
-
-dropRunningFlag()
-{
-    exists=$(aws s3 ls ${S3_TESTS_RUNNING_URL}${HOST_NAME})
-    if [ -z "$exists" ]; then
-        return 0
-    fi
-
-    aws s3 rm ${S3_TESTS_RUNNING_URL}${HOST_NAME}
-    if [ $? -ne 0 ]; then
-        terminate "Failed to drop tests running flag: ${S3_TESTS_RUNNING_URL}${HOST_NAME}"
-    fi
-}
-
-createWaitingFlag()
-{
-    aws s3 cp --sse AES256 /opt/ignite-cassandra-tests/hostname ${S3_TESTS_WAITING_URL}${HOST_NAME}
-    if [ $? -ne 0 ]; then
-        terminate "Failed to create tests waiting flag: ${S3_TESTS_WAITING_URL}${HOST_NAME}"
-    fi
-}
-
-dropWaitingFlag()
-{
-    exists=$(aws s3 ls ${S3_TESTS_WAITING_URL}${HOST_NAME})
-    if [ -z "$exists" ]; then
-        return 0
-    fi
-
-    aws s3 rm ${S3_TESTS_WAITING_URL}${HOST_NAME}
-    if [ $? -ne 0 ]; then
-        terminate "Failed to drop tests waiting flag: ${S3_TESTS_WAITING_URL}${HOST_NAME}"
-    fi
+    for flagUrl in "$@"
+    do
+        exists=$(aws s3 ls ${flagUrl}${HOST_NAME})
+        if [ -n "$exists" ]; then
+            aws s3 rm ${flagUrl}${HOST_NAME}
+            if [ $? -ne 0 ]; then
+                terminate "Failed to drop state flag: ${flagUrl}${HOST_NAME}"
+            fi
+        fi
+    done
 }
 
 dropTestsSummary()
@@ -167,6 +148,14 @@ dropTestsSummary()
     aws s3 rm $S3_TESTS_SUMMARY_URL
     if [ $? -ne 0 ]; then
         terminate "Failed to drop tests summary info: $S3_TESTS_SUMMARY_URL"
+    fi
+}
+
+recreateCassandraArtifacts()
+{
+    /opt/ignite-cassandra-tests/recreate-cassandra-artifacts.sh
+    if [ $? -ne 0 ]; then
+        terminate "Failed to recreate Cassandra artifacts"
     fi
 }
 
@@ -194,6 +183,22 @@ validate()
 
     if [[ "$S3_TESTS_FAILURE_URL" != */ ]]; then
         S3_TESTS_FAILURE_URL=${S3_TESTS_FAILURE_URL}/
+    fi
+
+    if [ -z "$S3_TESTS_IDLE_URL" ]; then
+        terminate "Tests idle URL doesn't specified"
+    fi
+
+    if [[ "$S3_TESTS_IDLE_URL" != */ ]]; then
+        S3_TESTS_IDLE_URL=${S3_TESTS_IDLE_URL}/
+    fi
+
+    if [ -z "$S3_TESTS_PREPARING_URL" ]; then
+        terminate "Tests preparing URL doesn't specified"
+    fi
+
+    if [[ "$S3_TESTS_PREPARING_URL" != */ ]]; then
+        S3_TESTS_PREPARING_URL=${S3_TESTS_PREPARING_URL}/
     fi
 
     if [ -z "$S3_TESTS_RUNNING_URL" ]; then
@@ -242,14 +247,6 @@ validate()
 
     if [[ "$S3_CASSANDRA_FAILURE_URL" != */ ]]; then
         S3_CASSANDRA_FAILURE_URL=${S3_CASSANDRA_FAILURE_URL}/
-    fi
-
-    if [ -z "$S3_TEST_NODES_DISCOVERY_URL" ]; then
-        terminate "Tests S3 discovery URL doesn't specified"
-    fi
-
-    if [[ "$S3_TEST_NODES_DISCOVERY_URL" != */ ]]; then
-        S3_TEST_NODES_DISCOVERY_URL=${S3_TEST_NODES_DISCOVERY_URL}/
     fi
 
     if [ -z "$S3_CASSANDRA_NODES_DISCOVERY_URL" ]; then
@@ -333,17 +330,9 @@ setupCassandraSeeds()
             return 0
         fi
 
-        currentTime=$(date +%s)
-        duration=$(( $currentTime-$startTime ))
-        duration=$(( $duration/60 ))
-
-        if [ $duration -gt $NODE_STARTUP_TIME ]; then
-            terminate "${NODE_STARTUP_TIME}min timeout expired, but no Cassandra nodes is up and running"
-        fi
-
         echo "[INFO] Waiting for the first Cassandra node to start and publish its seed, time passed ${duration}min"
 
-        sleep 1m
+        sleep 30s
     done
 }
 
@@ -400,18 +389,18 @@ setupIgniteSeeds()
         duration=$(( $currentTime-$startTime ))
         duration=$(( $duration/60 ))
 
-        if [ $duration -gt $NODE_STARTUP_TIME ]; then
-            terminate "${NODE_STARTUP_TIME}min timeout expired, but no Ignite nodes is up and running"
-        fi
-
         echo "[INFO] Waiting for the first Ignite node to start and publish its seed, time passed ${duration}min"
 
-        sleep 1m
+        sleep 30s
     done
 }
 
 tryToGetFirstNodeLock()
 {
+    if [ "$FIRST_NODE" == "true" ]; then
+        return 0
+    fi
+
     echo "[INFO] Trying to get first node lock"
 
     checkFirstNodeLockExist
@@ -442,6 +431,8 @@ tryToGetFirstNodeLock()
 
     echo "[INFO] Congratulations, got first node lock"
 
+    FIRST_NODE="true"
+
     return 0
 }
 
@@ -471,6 +462,10 @@ createFirstNodeLock()
 
 removeFirstNodeLock()
 {
+    if [ "$FIRST_NODE" != "true" ]; then
+        return 0
+    fi
+
     exists=$(aws s3 ls $S3_TESTS_FIRST_NODE_LOCK_URL)
     if [ -z "$exists" ]; then
         return 0
@@ -481,6 +476,8 @@ removeFirstNodeLock()
         echo "[ERROR] Failed to remove first node lock"
         return 1
     fi
+
+    FIRST_NODE="true"
 
     echo "[INFO] Removed first node lock"
 }
@@ -495,19 +492,14 @@ waitAllIgniteNodesReady()
 
     while true; do
         successCount=$(aws s3 ls $S3_IGNITE_SUCCESS_URL | wc -l)
-        failureCount=$(aws s3 ls $S3_IGNITE_FAILURE_URL | wc -l)
 
         if [ $successCount -ge $IGNITE_NODES_COUNT ]; then
             break
         fi
 
-        if [ "$failureCount" != "0" ]; then
-            terminate "$failureCount Ignite nodes are failed to start. Thus it doesn't make sense to run tests."
-        fi
+        echo "[INFO] Waiting extra 30sec"
 
-        echo "[INFO] Waiting extra 1min"
-
-        sleep 1m
+        sleep 30s
     done
 
     echo "[INFO] Congratulation, all $IGNITE_NODES_COUNT Ignite nodes are up and running"
@@ -523,193 +515,325 @@ waitAllCassandraNodesReady()
 
     while true; do
         successCount=$(aws s3 ls $S3_CASSANDRA_SUCCESS_URL | wc -l)
-        failureCount=$(aws s3 ls $S3_CASSANDRA_FAILURE_URL | wc -l)
 
         if [ $successCount -ge $CASSANDRA_NODES_COUNT ]; then
             break
         fi
 
-        if [ "$failureCount" != "0" ]; then
-            terminate "$failureCount Cassandra nodes are failed to start. Thus it doesn't make sense to run tests."
-        fi
+        echo "[INFO] Waiting extra 30sec"
 
-        echo "[INFO] Waiting extra 1min"
-
-        sleep 1m
+        sleep 30s
     done
 
     echo "[INFO] Congratulation, all $CASSANDRA_NODES_COUNT Cassandra nodes are up and running"
 }
 
-waitFirstTestNodeRegistered()
+waitAllTestNodesReadyToRunTests()
 {
-    echo "[INFO] Waiting for the first test node to register"
-
-    while true; do
-        first_host=
-
-        exists=$(aws s3 ls $S3_TESTS_FIRST_NODE_LOCK_URL)
-        if [ -n "$exists" ]; then
-            rm -Rf /opt/ignite-cassandra-tests/first-node-lock
-
-            aws s3 cp $S3_TESTS_FIRST_NODE_LOCK_URL /opt/ignite-cassandra-tests/first-node-lock
-            if [ $? -ne 0 ]; then
-                terminate "Failed to check existing first node lock"
-            fi
-
-            first_host=$(cat /opt/ignite-cassandra-tests/first-node-lock)
-
-            rm -Rf /opt/ignite-cassandra-tests/first-node-lock
-        fi
-
-        if [ -n "$first_host" ]; then
-            exists=$(aws s3 ls ${S3_TEST_NODES_DISCOVERY_URL}${first_host})
-            if [ -n "$exists" ]; then
-                break
-            fi
-        fi
-
-        echo "[INFO] Waiting extra 1min"
-
-        sleep 1m
-    done
-
-    echo "[INFO] First test node registered"
-}
-
-waitAllTestNodesReady()
-{
-    createWaitingFlag
-
-    echo "[INFO] Waiting for all $TEST_NODES_COUNT test nodes up and running"
+    echo "[INFO] Waiting for all $TEST_NODES_COUNT test nodes switching to WAITING state"
 
     while true; do
 
-        nodesCount=$(aws s3 ls $S3_TEST_NODES_DISCOVERY_URL | wc -l)
+        nodesCount=$(aws s3 ls $S3_TESTS_WAITING_URL | wc -l)
 
         if [ $nodesCount -ge $TEST_NODES_COUNT ]; then
             break
         fi
 
-        echo "[INFO] Waiting extra 1min"
+        echo "[INFO] Waiting extra 30sec"
 
-        sleep 1m
+        sleep 30s
     done
 
-    echo "[INFO] Congratulation, all $TEST_NODES_COUNT test nodes are up and running"
-
-    dropWaitingFlag
-    createRunningFlag
+    echo "[INFO] Congratulation, all $TEST_NODES_COUNT test nodes switched to WAITING state"
 }
 
-waitAllTestNodesCompleted()
+waitAllTestNodesCompletedTests()
 {
-    echo "[INFO] Waiting for all $TEST_NODES_COUNT test nodes to complete their tests"
+    echo "[INFO] Waiting for all $TEST_NODES_COUNT to complete their tests"
 
     while true; do
-        successCount=$(aws s3 ls $S3_TESTS_SUCCESS_URL | wc -l)
-        failureCount=$(aws s3 ls $S3_TESTS_FAILURE_URL | wc -l)
-        count=$(( $successCount+$failureCount ))
 
-        if [ $count -ge $TEST_NODES_COUNT ]; then
+        nodesCount=$(aws s3 ls $S3_TESTS_RUNNING_URL | wc -l)
+
+        if [ $nodesCount -eq 0 ]; then
             break
         fi
 
-        echo "[INFO] Waiting extra 1min"
+        echo "[INFO] Waiting extra 30sec"
 
-        sleep 1m
+        sleep 30s
     done
 
     echo "[INFO] Congratulation, all $TEST_NODES_COUNT test nodes have completed their tests"
 }
 
-# Time (in minutes) to wait for Ignite/Cassandra node up and running and register it in S3
-NODE_STARTUP_TIME=10
+printTestsInfo()
+{
+    echo "[INFO]-----------------------------------------------------------------"
+    echo "[INFO] Test nodes count: $TEST_NODES_COUNT"
+    echo "[INFO] Ignite nodes count: $IGNITE_NODES_COUNT"
+    echo "[INFO] Cassandra nodes count: $CASSANDRA_NODES_COUNT"
+    echo "[INFO] Tests summary URL: $S3_TESTS_SUMMARY_URL"
+    echo "[INFO] Tests first node lock URL: $S3_TESTS_FIRST_NODE_LOCK_URL"
+    echo "[INFO] Tests package download URL: $TESTS_PACKAGE_DONLOAD_URL"
+    echo "[INFO] Ignite node discovery URL: $S3_IGNITE_NODES_DISCOVERY_URL"
+    echo "[INFO] Cassandra node discovery URL: $S3_CASSANDRA_NODES_DISCOVERY_URL"
+    echo "[INFO] Tests idle URL: $S3_TESTS_IDLE_URL"
+    echo "[INFO] Tests preparing URL: $S3_TESTS_PREPARING_URL"
+    echo "[INFO] Tests waiting URL: $S3_TESTS_WAITING_URL"
+    echo "[INFO] Tests running URL: $S3_TESTS_RUNNING_URL"
+    echo "[INFO] Tests success URL: $S3_TESTS_SUCCESS_URL"
+    echo "[INFO] Tests failure URL: $S3_TESTS_FAILURE_URL"
+    echo "[INFO] Ignite success URL: $S3_IGNITE_SUCCESS_URL"
+    echo "[INFO] Ignite failure URL: $S3_IGNITE_FAILURE_URL"
+    echo "[INFO] Cassandra success URL: $S3_CASSANDRA_SUCCESS_URL"
+    echo "[INFO] Cassandra failure URL: $S3_CASSANDRA_FAILURE_URL"
+    echo "[INFO] Logs trigger URL: $S3_LOGS_TRIGGER_URL"
+    echo "[INFO] Tests trigger URL: $S3_TESTS_TRIGGER_URL"
+    echo "[INFO] JAVA_HOME: $JAVA_HOME"
+    echo "[INFO] PATH: $PATH"
+    echo "[INFO]-----------------------------------------------------------------"
+}
+
+setupCassandraCredentials()
+{
+    echo "admin.user=cassandra" > /opt/ignite-cassandra-tests/settings/org/apache/ignite/tests/cassandra/credentials.properties
+    echo "admin.password=cassandra" >> /opt/ignite-cassandra-tests/settings/org/apache/ignite/tests/cassandra/credentials.properties
+    echo "regular.user=cassandra" >> /opt/ignite-cassandra-tests/settings/org/apache/ignite/tests/cassandra/credentials.properties
+    echo "regular.password=cassandra" >> /opt/ignite-cassandra-tests/settings/org/apache/ignite/tests/cassandra/credentials.properties
+}
+
+triggerFirstTimeTestsExecution()
+{
+    tryToGetFirstNodeLock
+    if [ $? -ne 0 ]; then
+        return 0
+    fi
+
+    sleep 30s
+
+    echo "[INFO] Triggering first time tests execution"
+
+    echo "TESTS_TYPE=$TESTS_TYPE" > /opt/ignite-cassandra-tests/tests-trigger
+    echo "--------------------------------------------------" >> /opt/ignite-cassandra-tests/tests-trigger
+    echo "" >> /opt/ignite-cassandra-tests/tests-trigger
+    cat /opt/ignite-cassandra-tests/settings/tests.properties >> /opt/ignite-cassandra-tests/tests-trigger
+
+    aws s3 cp --sse AES256 /opt/ignite-cassandra-tests/tests-trigger $S3_TESTS_TRIGGER_URL
+    code=$?
+
+    rm -f /opt/ignite-cassandra-tests/tests-trigger
+
+    if [ $code -ne 0 ]; then
+        terminate "Failed to create tests trigger: $S3_TESTS_TRIGGER_URL"
+    fi
+}
+
+cleanPreviousLogs()
+{
+	for logFile in /opt/ignite-cassandra-tests/logs/*
+	do
+	    managerLog=$(echo $logFile | grep "tests-manager")
+	    if [ -z "$managerLog" ]; then
+	        rm -Rf $logFile
+	    fi
+	done
+
+	aws s3 rm --recursive ${S3_TESTS_FAILURE_URL}${HOST_NAME}
+	aws s3 rm --recursive ${S3_TESTS_SUCCESS_URL}${HOST_NAME}
+}
+
+uploadTestsLogs()
+{
+    if [ -f "/opt/ignite-cassandra-tests/logs/__error__" ]; then
+        logsFolder=${S3_TESTS_FAILURE_URL}${HOST_NAME}
+    else
+        logsFolder=${S3_TESTS_SUCCESS_URL}${HOST_NAME}
+    fi
+
+    aws s3 rm --recursive $logsFolder
+    if [ $? -ne 0 ]; then
+        echo "[ERROR] Failed drop logs folder: $logsFolder"
+    fi
+
+    if [ -d "/opt/ignite-cassandra-tests/logs" ]; then
+        aws s3 sync --sse AES256 /opt/ignite-cassandra-tests/logs $reportFolder
+        if [ $? -ne 0 ]; then
+            echo "[ERROR] Failed to export tests logs to: $reportFolder"
+        fi
+    fi
+}
+
+buildTestsSummaryReport()
+{
+    reportScript=$(readlink -m $( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/tests-report.sh)
+    $reportScript
+
+    if [ -n "$S3_LOGS_TRIGGER_URL" ]; then
+        aws s3 cp --sse AES256 /opt/ignite-cassandra-tests/hostname $S3_LOGS_TRIGGER_URL
+        if [ $? -ne 0 ]; then
+            echo "[ERROR] Failed to trigger logs collection"
+        fi
+    fi
+}
+
+
+runLoadTests()
+{
+    cd /opt/ignite-cassandra-tests
+
+    if [ "$TESTS_TYPE" == "ignite" ]; then
+        echo "[INFO] Running Ignite load tests"
+        ./ignite-load-tests.sh &
+    else
+        echo "[INFO] Running Cassandra load tests"
+        ./cassandra-load-tests.sh &
+    fi
+
+    testsJobId=$!
+
+    echo "[INFO] Tests job id: $testsJobId"
+
+    sleep 1m
+
+    LOGS_SNAPSHOT=$(ls -al /opt/ignite-cassandra-tests/logs)
+    LOGS_SNAPSHOT_TIME=$(date +%s)
+
+    TERMINATED=
+
+    # tests monitoring
+    while true; do
+        proc=$(ps -ef | grep java | grep "org.apache.ignite.tests")
+        if [ -z "$proc" ]; then
+            break
+        fi
+
+        NEW_LOGS_SNAPSHOT=$(ls -al /opt/ignite-cassandra-tests/logs)
+        NEW_LOGS_SNAPSHOT_TIME=$(date +%s)
+
+        # if logs state updated it means that tests are running and not stuck
+        if [ "$LOGS_SNAPSHOT" != "$NEW_LOGS_SNAPSHOT" ]; then
+            LOGS_SNAPSHOT=$NEW_LOGS_SNAPSHOT
+            LOGS_SNAPSHOT_TIME=$NEW_LOGS_SNAPSHOT_TIME
+            continue
+        fi
+
+        duration=$(( $NEW_LOGS_SNAPSHOT_TIME-$LOGS_SNAPSHOT_TIME ))
+        duration=$(( $duration/60 ))
+
+        # if logs wasn't updated during 5min it means that load tests stuck
+        if [ $duration -gt 5 ]; then
+            proc=($proc)
+            kill -9 ${proc[1]}
+            TERMINATED="true"
+            break
+        fi
+
+        sleep 30s
+    done
+
+    cp -f /opt/ignite-cassandra-tests/settings/tests.properties /opt/ignite-cassandra-tests/logs
+
+    if [ "$TERMINATED" == "true" ]; then
+        echo "[ERROR] Load tests stuck, tests process terminated"
+        echo "Load tests stuck, tests process terminated" > /opt/ignite-cassandra-tests/logs/__error__
+        return 0
+    fi
+
+    failed=
+    if [ "$TESTS_TYPE" == "cassandra" ]; then
+        failed=$(cat /opt/ignite-cassandra-tests/cassandra-load-tests.log | grep "load tests execution failed")
+    else
+        failed=$(cat /opt/ignite-cassandra-tests/ignite-load-tests.log | grep "load tests execution failed")
+    fi
+
+    if [ -n "$failed" ]; then
+        echo "[ERROR] Load tests execution failed"
+        echo "Load tests execution failed" > /opt/ignite-cassandra-tests/logs/__error__
+    else
+        echo "[INFO] Load tests execution successfully completed"
+        echo "Load tests execution successfully completed" > /opt/ignite-cassandra-tests/logs/__success__
+    fi
+}
+
+sleep 1m
 
 HOST_NAME=$(hostname -f | tr '[:upper:]' '[:lower:]')
 echo $HOST_NAME > /opt/ignite-cassandra-tests/hostname
 
-validate
-
 FIRST_NODE="false"
+NODE_STATE=
+TRIGGER_STATE=
 
-tryToGetFirstNodeLock
+validate
+printTestsInfo
+setupCassandraCredentials
+switchToIdleState
 
-if [ $? -eq 0 ]; then
-    FIRST_NODE="true"
-fi
+triggerFirstTimeTestsExecution
 
-dropRunningFlag
-dropWaitingFlag
+while true; do
+    # switching state to IDLE
+    switchToIdleState
 
-echo "[INFO]-----------------------------------------------------------------"
+    sleep 30s
 
-if [ "$FIRST_NODE" == "true" ]; then
-    echo "[INFO] Running tests from first node"
-    dropTestsSummary
-else
-    echo "[INFO] Running tests"
-fi
+    trigger=$(aws s3 ls $S3_TESTS_TRIGGER_URL)
+    if [ -z "$trigger" ] || [ "$trigger" == "$TRIGGER_STATE" ]; then
+        continue
+    fi
 
-echo "[INFO]-----------------------------------------------------------------"
-echo "[INFO] Tests type: $TESTS_TYPE"
-echo "[INFO] Test nodes count: $TEST_NODES_COUNT"
-echo "[INFO] Ignite nodes count: $IGNITE_NODES_COUNT"
-echo "[INFO] Cassandra nodes count: $CASSANDRA_NODES_COUNT"
-echo "[INFO] Tests summary URL: $S3_TESTS_SUMMARY_URL"
-echo "[INFO] Tests first node lock URL: $S3_TESTS_FIRST_NODE_LOCK_URL"
-echo "[INFO] Tests package download URL: $TESTS_PACKAGE_DONLOAD_URL"
-echo "[INFO] Test node discovery URL: $S3_TEST_NODES_DISCOVERY_URL"
-echo "[INFO] Ignite node discovery URL: $S3_IGNITE_NODES_DISCOVERY_URL"
-echo "[INFO] Cassandra node discovery URL: $S3_CASSANDRA_NODES_DISCOVERY_URL"
-echo "[INFO] Tests running URL: $S3_TESTS_RUNNING_URL"
-echo "[INFO] Tests waiting URL: $S3_TESTS_WAITING_URL"
-echo "[INFO] Tests success URL: $S3_TESTS_SUCCESS_URL"
-echo "[INFO] Tests failure URL: $S3_TESTS_FAILURE_URL"
-echo "[INFO] Ignite success URL: $S3_IGNITE_SUCCESS_URL"
-echo "[INFO] Ignite failure URL: $S3_IGNITE_FAILURE_URL"
-echo "[INFO] Cassandra success URL: $S3_CASSANDRA_SUCCESS_URL"
-echo "[INFO] Cassandra failure URL: $S3_CASSANDRA_FAILURE_URL"
-echo "[INFO] Logs trigger URL: $S3_LOGS_TRIGGER_URL"
-echo "[INFO] JAVA_HOME: $JAVA_HOME"
-echo "[INFO] PATH: $PATH"
-echo "[INFO]-----------------------------------------------------------------"
+    TRIGGER_STATE=$STATE
 
-echo "admin.user=cassandra" > /opt/ignite-cassandra-tests/settings/org/apache/ignite/tests/cassandra/credentials.properties
-echo "admin.password=cassandra" >> /opt/ignite-cassandra-tests/settings/org/apache/ignite/tests/cassandra/credentials.properties
-echo "regular.user=cassandra" >> /opt/ignite-cassandra-tests/settings/org/apache/ignite/tests/cassandra/credentials.properties
-echo "regular.password=cassandra" >> /opt/ignite-cassandra-tests/settings/org/apache/ignite/tests/cassandra/credentials.properties
+    aws s3 cp $S3_TESTS_TRIGGER_URL /opt/ignite-cassandra-tests/tests-trigger
+    if [ $? -ne 0 ]; then
+        echo "[ERROR] Failed to download tests trigger info from: $S3_TESTS_TRIGGER_URL"
+        continue
+    fi
 
-waitAllCassandraNodesReady
-waitAllIgniteNodesReady
+    TESTS_TYPE=$(cat /opt/ignite-cassandra-tests/tests-trigger | grep TESTS_TYPE | xargs | sed -r "s/TESTS_TYPE=//g")
+    if [ "$TESTS_TYPE" != "ignite" ] && [ "$TESTS_TYPE" != "cassandra" ]; then
+        rm -f /opt/ignite-cassandra-tests/tests-trigger
+        echo "[ERROR] Incorrect tests type specified in the trigger info: $S3_TESTS_TRIGGER_URL"
+        continue
+    fi
 
-setupCassandraSeeds
-setupIgniteSeeds
+    rm -f /opt/ignite-cassandra-tests/settings/tests.properties
+    mv -f /opt/ignite-cassandra-tests/tests-trigger /opt/ignite-cassandra-tests/settings/tests.properties
 
-if [ "$FIRST_NODE" != "true" ]; then
-    waitFirstTestNodeRegistered
-else
-    cleanupMetadata
-fi
+    cleanPreviousLogs
 
-registerTestNode
+    # switching state to PREPARING
+    switchToPreparingState
 
-waitAllTestNodesReady
+    waitAllCassandraNodesReady
+    waitAllIgniteNodesReady
+    setupCassandraSeeds
+    setupIgniteSeeds
 
-cd /opt/ignite-cassandra-tests
+    waitAllTestNodesCompletedTests
 
-if [ "$TESTS_TYPE" == "ignite" ]; then
-    echo "[INFO] Running Ignite load tests"
-    ./ignite-load-tests.sh
-    result=$?
-else
-    echo "[INFO] Running Cassandra load tests"
-    ./cassandra-load-tests.sh
-    result=$?
-fi
+    tryToGetFirstNodeLock
+    if [ $? -ne 0 ]; then
+        dropTestsSummary
+        recreateCassandraArtifacts
+    fi
 
-if [ $result -ne 0 ]; then
-    terminate ""
-fi
+    # switching state to WAITING
+    switchToWaitingState
 
-terminate
+    waitAllTestNodesReadyToRunTests
+
+    # switching state to RUNNING
+    switchToRunningState
+
+    runLoadTests
+    uploadTestsLogs
+
+    if [ "$FIRST_NODE" != "true" ]; then
+        waitAllTestNodesCompletedTests
+        buildTestsSummaryReport
+        removeFirstNodeLock
+    fi
+done

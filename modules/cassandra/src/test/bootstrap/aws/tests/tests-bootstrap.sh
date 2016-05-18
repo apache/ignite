@@ -29,13 +29,15 @@ TESTS_PACKAGE_UNZIP_DIR=ignite-cassandra-tests
 
 S3_LOGS_URL=$S3_SYSTEM/logs/t-logs
 S3_LOGS_TRIGGER_URL=$S3_SYSTEM/logs-trigger
+S3_TESTS_TRIGGER_URL=$S3_SYSTEM/tests-trigger
 S3_IGNITE_NODES_DISCOVERY_URL=$S3_SYSTEM/i-discovery
 S3_CASSANDRA_NODES_DISCOVERY_URL=$S3_SYSTEM/c-discovery
-S3_TEST_NODES_DISCOVERY_URL=$S3_SYSTEM/t-discovery
 S3_TESTS_SUCCESS_URL=$S3_SYSTEM/t-success
 S3_TESTS_FAILURE_URL=$S3_SYSTEM/t-failure
-S3_TESTS_RUNNING_URL=$S3_SYSTEM/t-running
+S3_TESTS_IDLE_URL=$S3_SYSTEM/t-idle
+S3_TESTS_PREPARING_URL=$S3_SYSTEM/t-preparing
 S3_TESTS_WAITING_URL=$S3_SYSTEM/t-waiting
+S3_TESTS_RUNNING_URL=$S3_SYSTEM/t-running
 S3_IGNITE_SUCCESS_URL=$S3_SYSTEM/i-success
 S3_IGNITE_FAILURE_URL=$S3_SYSTEM/i-failure
 S3_CASSANDRA_SUCCESS_URL=$S3_SYSTEM/c-success
@@ -205,12 +207,14 @@ echo "[INFO] Tests summary URL: $S3_TESTS_SUMMARY_URL"
 echo "[INFO] Tests first node lock URL: $S3_TESTS_FIRST_NODE_LOCK_URL"
 echo "[INFO] Logs URL: $S3_LOGS_URL"
 echo "[INFO] Logs trigger URL: $S3_LOGS_TRIGGER_URL"
+echo "[INFO] Tests trigger URL: $S3_TESTS_TRIGGER_URL"
 echo "[INFO] Tests package download URL: $TESTS_PACKAGE_DONLOAD_URL"
-echo "[INFO] Test node discovery URL: $S3_TEST_NODES_DISCOVERY_URL"
 echo "[INFO] Ignite node discovery URL: $S3_IGNITE_NODES_DISCOVERY_URL"
 echo "[INFO] Cassandra node discovery URL: $S3_CASSANDRA_NODES_DISCOVERY_URL"
-echo "[INFO] Tests running URL: $S3_TESTS_RUNNING_URL"
+echo "[INFO] Tests idle URL: $S3_TESTS_IDLE_URL"
+echo "[INFO] Tests preparing URL: $S3_TESTS_PREPARING_URL"
 echo "[INFO] Tests waiting URL: $S3_TESTS_WAITING_URL"
+echo "[INFO] Tests running URL: $S3_TESTS_RUNNING_URL"
 echo "[INFO] Tests success URL: $S3_TESTS_SUCCESS_URL"
 echo "[INFO] Tests failure URL: $S3_TESTS_FAILURE_URL"
 echo "[INFO] Ignite success URL: $S3_IGNITE_SUCCESS_URL"
@@ -330,6 +334,10 @@ if [ ! -f "/opt/ignite-cassandra-tests/ignite-load-tests.sh" ]; then
     terminate "There are no ignite-load-tests.sh in tests package"
 fi
 
+if [ ! -f "/opt/ignite-cassandra-tests/recreate-cassandra-artifacts.sh" ]; then
+    terminate "There are no recreate-cassandra-artifacts.sh in tests package"
+fi
+
 if [ ! -f "/opt/ignite-cassandra-tests/bootstrap/aws/tests/ignite-cassandra-client-template.xml" ]; then
     terminate "There are no ignite-cassandra-client-template.xml in tests package"
 fi
@@ -338,6 +346,7 @@ if [ ! -f "/opt/$TESTS_PACKAGE_UNZIP_DIR/bootstrap/aws/logs-collector.sh" ]; the
     terminate "There are no logs-collector.sh in tests package"
 fi
 
+mkdir -p /opt/ignite-cassandra-tests/logs
 chown -R ignite:ignite /opt/ignite-cassandra-tests
 find /opt/ignite-cassandra-tests -type f -name "*.sh" -exec chmod ug+x {} \;
 
@@ -352,10 +361,11 @@ echo "export PATH=\$JAVA_HOME/bin:\IGNITE_HOME/bin:\$PATH" >> $profile
 echo "export TESTS_TYPE=$TESTS_TYPE" >> $profile
 echo "export S3_TESTS_SUMMARY_URL=$S3_TESTS_SUMMARY_URL" >> $profile
 echo "export S3_CASSANDRA_NODES_DISCOVERY_URL=$S3_CASSANDRA_NODES_DISCOVERY_URL" >> $profile
-echo "export S3_TEST_NODES_DISCOVERY_URL=$S3_TEST_NODES_DISCOVERY_URL" >> $profile
 echo "export S3_IGNITE_NODES_DISCOVERY_URL=$S3_IGNITE_NODES_DISCOVERY_URL" >> $profile
-echo "export S3_TESTS_RUNNING_URL=$S3_TESTS_RUNNING_URL" >> $profile
+echo "export S3_TESTS_IDLE_URL=$S3_TESTS_IDLE_URL" >> $profile
+echo "export S3_TESTS_PREPARING_URL=$S3_TESTS_PREPARING_URL" >> $profile
 echo "export S3_TESTS_WAITING_URL=$S3_TESTS_WAITING_URL" >> $profile
+echo "export S3_TESTS_RUNNING_URL=$S3_TESTS_RUNNING_URL" >> $profile
 echo "export S3_TESTS_SUCCESS_URL=$S3_TESTS_SUCCESS_URL" >> $profile
 echo "export S3_TESTS_FAILURE_URL=$S3_TESTS_FAILURE_URL" >> $profile
 echo "export S3_IGNITE_SUCCESS_URL=$S3_IGNITE_SUCCESS_URL" >> $profile
@@ -367,13 +377,19 @@ echo "export CASSANDRA_NODES_COUNT=$CASSANDRA_NODES_COUNT" >> $profile
 echo "export IGNITE_NODES_COUNT=$IGNITE_NODES_COUNT" >> $profile
 echo "export TEST_NODES_COUNT=$TEST_NODES_COUNT" >> $profile
 echo "export S3_LOGS_TRIGGER_URL=$S3_LOGS_TRIGGER_URL" >> $profile
+echo "export S3_TESTS_TRIGGER_URL=$S3_TESTS_TRIGGER_URL" >> $profile
+
+S3_TESTS_TRIGGER_URL=$S3_SYSTEM/tests-trigger
+
 
 HOST_NAME=$(hostname -f | tr '[:upper:]' '[:lower:]')
 
 /opt/logs-collector.sh "/opt/ignite-cassandra-tests/logs" "$S3_LOGS_URL/$HOST_NAME" "$S3_LOGS_TRIGGER_URL" > /opt/ignite-cassandra-tests/logs-collector.log &
 
-cmd="/opt/ignite-cassandra-tests/bootstrap/aws/tests/tests-run.sh"
+cmd="/opt/ignite-cassandra-tests/bootstrap/aws/tests/tests-manager.sh"
 
-#sudo -u ignite -g ignite sh -c "$cmd | tee /opt/ignite-cassandra-tests/start.log"
+#sudo -u ignite -g ignite sh -c "$cmd > /opt/ignite-cassandra-tests/tests-manager" &
 
-$cmd | tee /opt/ignite-cassandra-tests/start.log
+$cmd > /opt/ignite-cassandra-tests/logs/tests-manager.log &
+
+terminate
