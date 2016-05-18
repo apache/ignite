@@ -1253,51 +1253,60 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             return;
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-            for (int p = 0; p < cacheCtx.affinity().partitions(); p++) {
-                assignRolesByCounters(cacheCtx.topology(), p);
-            }
+            assignRolesByCounters(cacheCtx.topology());
         }
 
         for (GridClientPartitionTopology top : cctx.exchange().clientTopologies()) {
-            // TODO GG-11122 iterate over client topologies.
+            assignRolesByCounters(top);
         }
     }
 
-    private void assignRolesByCounters(GridDhtPartitionTopology top, int p) {
-        long maxCntr = 0;
+    private void assignRolesByCounters(GridDhtPartitionTopology top) {
+        Map<Integer, Long> maxCntrs = new HashMap<>();
 
         for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : msgs.entrySet()) {
             assert e.getValue().partitionUpdateCounters(top.cacheId()) != null;
 
-            Long cntr = e.getValue().partitionUpdateCounters(top.cacheId()).get(p);
+            for (Map.Entry<Integer, Long> e0 : e.getValue().partitionUpdateCounters(top.cacheId()).entrySet()) {
+                int p = e0.getKey();
 
-            if (cntr == null)
-                continue;
+                Long cntr = e.getValue().partitionUpdateCounters(top.cacheId()).get(p);
 
-            if (cntr > maxCntr)
-                maxCntr = cntr;
+                if (cntr == null)
+                    continue;
+
+                Long maxCntr = maxCntrs.get(p);
+
+                if (maxCntr == null || cntr > maxCntr)
+                    maxCntrs.put(p, cntr);
+            }
         }
 
-        if (maxCntr == 0)
-            return;
+        for (Map.Entry<Integer, Long> e : maxCntrs.entrySet()) {
+            int p = e.getKey();
+            long maxCntr = e.getValue();
 
-        Set<UUID> owners = new HashSet<>();
-
-        for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e : msgs.entrySet()) {
-            assert e.getValue().partitionUpdateCounters(top.cacheId()) != null;
-
-            Long cntr = e.getValue().partitionUpdateCounters(top.cacheId()).get(p);
-
-            if (cntr == null)
+            if (maxCntr == 0)
                 continue;
 
-            assert cntr <= maxCntr;
+            Set<UUID> owners = new HashSet<>();
 
-            if (cntr == maxCntr)
-                owners.add(e.getKey());
+            for (Map.Entry<UUID, GridDhtPartitionsSingleMessage> e0 : msgs.entrySet()) {
+                assert e0.getValue().partitionUpdateCounters(top.cacheId()) != null;
+
+                Long cntr = e0.getValue().partitionUpdateCounters(top.cacheId()).get(p);
+
+                if (cntr == null)
+                    continue;
+
+                assert cntr <= maxCntr;
+
+                if (cntr == maxCntr)
+                    owners.add(e0.getKey());
+            }
+
+            top.setOwners(p, owners);
         }
-
-        top.setOwners(p, owners);
     }
 
     /**
