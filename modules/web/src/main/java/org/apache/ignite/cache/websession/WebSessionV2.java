@@ -66,9 +66,6 @@ class WebSessionV2 implements HttpSession {
     /** Attributes. */
     protected Map<String, Object> attrs;
 
-    /** Attributes waiting for update in cache. */
-    private Map<String, Object> updatesMap;
-
     /** Timestamp that shows when this object was created. (Last access time from user request) */
     private final long accessTime;
 
@@ -87,6 +84,9 @@ class WebSessionV2 implements HttpSession {
     /** Grid marshaller. */
     private final Marshaller marshaller;
 
+    /** Original session to delegate invalidation. */
+    private final HttpSession genuineSes;
+
     /**
      * @param id Session ID.
      * @param ses Session.
@@ -102,6 +102,7 @@ class WebSessionV2 implements HttpSession {
         this.marshaller = marshaller;
         this.ctx = ctx;
         this.isNew = isNew;
+        this.genuineSes = ses;
 
         accessTime = System.currentTimeMillis();
 
@@ -134,8 +135,13 @@ class WebSessionV2 implements HttpSession {
 
     /** {@inheritDoc} */
     @Override public String getId() {
-        assertValid();
+        return entity.id();
+    }
 
+    /**
+     * @return Session ID without throwing exception.
+     */
+    public String id() {
         return entity.id();
     }
 
@@ -185,21 +191,20 @@ class WebSessionV2 implements HttpSession {
         if (attr == REMOVED_ATTR)
             return null;
 
-        if (attr != null)
-            return attr;
+        if (attr == null) {
+            final byte[] bytes = entity.attributes().get(name);
 
-        final byte[] bytes = entity.attributes().get(name);
+            if (bytes != null) {
+                // deserialize
+                try {
+                    attr = unmarshal(bytes);
+                }
+                catch (IOException e) {
+                    throw new IgniteException(e);
+                }
 
-        if (bytes != null) {
-            // deserialize
-            try {
-                attr = unmarshal(bytes);
+                attributes().put(name, attr);
             }
-            catch (IOException e) {
-                throw new IgniteException(e);
-            }
-
-            attributes().put(name, attr);
         }
 
         return attr;
@@ -214,9 +219,10 @@ class WebSessionV2 implements HttpSession {
     @Override public void setAttribute(final String name, final Object val) {
         assertValid();
 
-        attributes().put(name, val);
-
-        updatesMap().put(name, val);
+        if (val == null)
+            removeAttribute(name);
+        else
+            attributes().put(name, val);
     }
 
     /** {@inheritDoc} */
@@ -265,8 +271,6 @@ class WebSessionV2 implements HttpSession {
         assertValid();
 
         attributes().put(name, REMOVED_ATTR);
-
-        updatesMap().put(name, null);
     }
 
     /** {@inheritDoc} */
@@ -277,6 +281,15 @@ class WebSessionV2 implements HttpSession {
     /** {@inheritDoc} */
     @Override public void invalidate() {
         assertValid();
+
+        if (genuineSes != null) {
+            try {
+                genuineSes.invalidate();
+            }
+            catch (IllegalStateException e) {
+                // Already invalidated, keep going.
+            }
+        }
 
         invalidated = true;
     }
@@ -293,15 +306,18 @@ class WebSessionV2 implements HttpSession {
      * @throws IOException
      */
     public Map<String, byte[]> binaryUpdatesMap() throws IOException {
-        final Map<String, Object> map = updatesMap;
+        final Map<String, Object> map = attributes();
 
         if (F.isEmpty(map))
             return Collections.emptyMap();
 
         final Map<String, byte[]> res = new HashMap<>(map.size());
 
-        for (final Map.Entry<String, Object> entry : map.entrySet())
-            res.put(entry.getKey(), marshal(entry.getValue()));
+        for (final Map.Entry<String, Object> entry : map.entrySet()) {
+            Object val = entry.getValue() == REMOVED_ATTR ? null : entry.getValue();
+
+            res.put(entry.getKey(), marshal(val));
+        }
 
         return res;
     }
@@ -368,16 +384,6 @@ class WebSessionV2 implements HttpSession {
             attrs = new HashMap<>();
 
         return attrs;
-    }
-
-    /**
-     * @return Updates map.
-     */
-    private Map<String, Object> updatesMap() {
-        if (updatesMap == null)
-            updatesMap = new HashMap<>();
-
-        return updatesMap;
     }
 
     /**
