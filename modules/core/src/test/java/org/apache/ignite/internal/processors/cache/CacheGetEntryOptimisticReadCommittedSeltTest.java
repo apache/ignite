@@ -33,8 +33,4 @@ public class CacheGetEntryOptimisticReadCommittedSeltTest extends CacheGetEntryA
     @Override protected TransactionIsolation isolation() {
         return TransactionIsolation.READ_COMMITTED;
     }
-
-    @Override public void testLocal() throws Exception {
-        super.testLocal(); // TODO: CODE: implement.
-    }
 }
