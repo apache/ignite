@@ -1187,10 +1187,6 @@ public class  PageMemoryImpl implements PageMemory {
                 if (mem.compareAndSwapLong(lastAllocatedIdx, lastIdx, lastIdx + 1)) {
                     long absPtr = pagesBase + lastIdx * sysPageSize;
 
-                    assert (absPtr & CHUNK_INDEX_MASK) == 0L : "Invalid ptr [ptr=" + absPtr +
-                        ", lastIdx=" + lastIdx +
-                        ", chunk=" + this + ']';
-
                     long relative = relative(idx, lastIdx);
 
                     assert relative != INVALID_REL_PTR;
