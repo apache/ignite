@@ -19,9 +19,11 @@ package org.apache.ignite.internal.processors.service;
 
 import java.util.Map;
 import java.util.UUID;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.services.Service;
+import org.apache.ignite.services.ServiceConfiguration;
 import org.apache.ignite.services.ServiceDescriptor;
 import org.jetbrains.annotations.Nullable;
 
@@ -54,7 +56,20 @@ public class ServiceDescriptorImpl implements ServiceDescriptor {
 
     /** {@inheritDoc} */
     @Override public Class<? extends Service> serviceClass() {
-        return dep.configuration().getService().getClass();
+        ServiceConfiguration cfg = dep.configuration();
+
+        if (cfg instanceof LazyServiceConfiguration) {
+            String clsName = ((LazyServiceConfiguration)cfg).serviceClassName();
+
+            try {
+                return (Class<? extends Service>)Class.forName(clsName);
+            }
+            catch (ClassNotFoundException e) {
+                throw new IgniteException("Failed to find service class: " + clsName, e);
+            }
+        }
+        else
+            return dep.configuration().getService().getClass();
     }
 
     /** {@inheritDoc} */
