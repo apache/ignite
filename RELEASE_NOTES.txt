@@ -40,11 +40,7 @@ Ignite:
 * Fixed cluster stability with 500+ clients.
 * Fixed continuous queries to send filter factory instead of filter.
 * Fixed continuous query deployment in case originating node has left.
-* Fixed continuous query listener notification during concurrent key put.
-* Fixed continuous query listener notification handling.
-* Fixed continuous query not to call listener with empty set of events.
-* Fixed continuous query notification with cache listeners.
-* Fixed continuous query notification with single node topology.
+* Fixed issues with continuous query.
 * Fixed deadlock in services deployment when Spring is used.
 * Fixed discovery and node start procedure issues that may cause slowdowns during larger topologies start (>100 nodes).
 * Fixed eviction policy notification if swap or off heap is enabled and an entry is not loaded during preloading.
