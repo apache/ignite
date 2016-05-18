@@ -553,17 +553,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     }
                 }
 
-                Set<ClusterNode> activatedNodes = new HashSet<>();
-
-                Snapshot snapshot = topSnap.get();
-
-                if (snapshot.topVer.equals(AffinityTopologyVersion.ZERO))
-                    activatedNodes.addAll(discoveredActivatedNodes);
-                else {
-                    assert snapshot.discoCache != null;
-
-                    activatedNodes.addAll(snapshot.discoCache.activatedNodes);
-                }
+                Set<ClusterNode> activatedNodes = activated();
 
                 if (customMsg != null && customMsg instanceof TcpDiscoveryNodeActivatedMessage) {
                     ClusterNode activatedNode = node(((TcpDiscoveryNodeActivatedMessage)customMsg).nodeId());
@@ -1927,7 +1917,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     @Override public Serializable collectDiscoveryData(UUID nodeId) {
         HashMap<String, Object> map = new HashMap<>();
 
-        map.put("activated", new HashSet<>(discoveredActivatedNodes));
+        map.put("activated", new HashSet<>(activated()));
 
         return map;
     }
@@ -1938,10 +1928,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             Map<String, Object> map = (Map<String, Object>)data;
 
             if (joiningNodeId.equals(ctx.localNodeId())) {
-                Set<ClusterNode> activated = (Set<ClusterNode>)map.get("activated");
+            Set<ClusterNode> activated = (Set<ClusterNode>)map.get("activated");
 
-                if (activated != null)
-                    discoveredActivatedNodes.addAll(activated);
+            if (activated != null)
+                discoveredActivatedNodes.addAll(activated);
             }
         }
     }
@@ -1965,6 +1955,22 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             return false;
 
         return snapshot.discoCache.activatedNodes.contains(node);
+    }
+
+    private Set<ClusterNode> activated() {
+        Set<ClusterNode> activatedNodes = new HashSet<>();
+
+        Snapshot snapshot = topSnap.get();
+
+        if (snapshot.topVer.equals(AffinityTopologyVersion.ZERO))
+            activatedNodes.addAll(discoveredActivatedNodes);
+        else {
+            assert snapshot.discoCache != null;
+
+            activatedNodes.addAll(snapshot.discoCache.activatedNodes);
+        }
+
+        return activatedNodes;
     }
 
     /**

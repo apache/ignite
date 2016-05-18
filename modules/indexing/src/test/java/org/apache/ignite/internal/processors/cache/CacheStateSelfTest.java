@@ -327,8 +327,6 @@ public class CacheStateSelfTest extends GridCommonAbstractTest {
         assert cache1.active();
         assert cache2.active();
 
-        awaitPartitionMapExchange();
-
         final int partition = ignite1.affinity(null).allPartitions(ignite1.localNode())[0];
 
         cache1.put(partition, 1);
