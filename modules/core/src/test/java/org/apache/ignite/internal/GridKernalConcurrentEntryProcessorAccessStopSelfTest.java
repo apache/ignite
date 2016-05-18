@@ -31,6 +31,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  * Tests kernal stop while it is being accessed from EntryProcessor.
  */
 public class GridKernalConcurrentEntryProcessorAccessStopSelfTest extends GridCommonAbstractTest {
+    /** Invoker. */
     private Thread invoker;
 
     /**
