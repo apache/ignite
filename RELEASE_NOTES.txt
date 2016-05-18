@@ -24,6 +24,7 @@ Ignite:
 * Added asynchronous execution of ContinuousQuery's remote filter and local listener.
 * Added backup partitions storing to local store default behavior.
 * Added cache deadlock detection.
+* Added Cache Store implementation backed by Cassandra DB.
 * Added method to get versioned cache entry.
 * Added ODBC driver for Ignite.
 * Added support for join timeout while registering local addresses with IP finder in TcpDiscoverySpi.
