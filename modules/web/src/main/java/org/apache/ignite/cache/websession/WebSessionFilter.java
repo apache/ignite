@@ -515,7 +515,7 @@ public class WebSessionFilter implements Filter {
                     final WebSessionEntity entity = binaryCache.get(sesId);
 
                     if (entity != null)
-                        cached = new WebSessionV2(sesId, null, false, ctx, entity, marshaller);
+                        cached = new WebSessionV2(sesId, httpReq.getSession(false), false, ctx, entity, marshaller);
 
                     break;
                 }
