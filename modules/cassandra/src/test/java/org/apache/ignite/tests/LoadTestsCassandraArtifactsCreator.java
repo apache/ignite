@@ -33,12 +33,12 @@ public class LoadTestsCassandraArtifactsCreator {
      * @param args not used
      */
     public static void main(String[] args) {
-        System.out.println("Recreating Cassandra artifacts (keyspace, table, indexes) for load tests");
+        System.out.println("[INFO] Recreating Cassandra artifacts (keyspace, table, indexes) for load tests");
 
         KeyValuePersistenceSettings perSettings =
                 new KeyValuePersistenceSettings(TestsHelper.getLoadTestsPersistenceSettings());
 
-        System.out.println("Dropping test keyspace: " + perSettings.getKeyspace());
+        System.out.println("[INFO] Dropping test keyspace: " + perSettings.getKeyspace());
 
         try {
             CassandraHelper.dropTestKeyspaces();
@@ -47,9 +47,9 @@ public class LoadTestsCassandraArtifactsCreator {
             throw new RuntimeException("Failed to drop test keyspace: " + perSettings.getKeyspace(), e);
         }
 
-        System.out.println("Test keyspace '" + perSettings.getKeyspace() + "' was successfully dropped");
+        System.out.println("[INFO] Test keyspace '" + perSettings.getKeyspace() + "' was successfully dropped");
 
-        System.out.println("Creating test keyspace: " + perSettings.getKeyspace());
+        System.out.println("[INFO] Creating test keyspace: " + perSettings.getKeyspace());
 
         try {
             CassandraHelper.executeWithAdminCredentials(perSettings.getKeyspaceDDLStatement());
@@ -58,9 +58,9 @@ public class LoadTestsCassandraArtifactsCreator {
             throw new RuntimeException("Failed to create test keyspace: " + perSettings.getKeyspace(), e);
         }
 
-        System.out.println("Test keyspace '" + perSettings.getKeyspace() + "' was successfully created");
+        System.out.println("[INFO] Test keyspace '" + perSettings.getKeyspace() + "' was successfully created");
 
-        System.out.println("Creating test table: " + perSettings.getTable());
+        System.out.println("[INFO] Creating test table: " + perSettings.getTable());
 
         try {
             CassandraHelper.executeWithAdminCredentials(perSettings.getTableDDLStatement());
@@ -69,14 +69,14 @@ public class LoadTestsCassandraArtifactsCreator {
             throw new RuntimeException("Failed to create test table: " + perSettings.getTableDDLStatement(), e);
         }
 
-        System.out.println("Test table '" + perSettings.getTableDDLStatement() + "' was successfully created");
+        System.out.println("[INFO] Test table '" + perSettings.getTableDDLStatement() + "' was successfully created");
 
         List<String> statements = perSettings.getIndexDDLStatements();
         if (statements == null)
             statements = new LinkedList<>();
 
         for (String statement : statements) {
-            System.out.println("Creating test table index:");
+            System.out.println("[INFO] Creating test table index:");
             System.out.println(statement);
 
             try {
@@ -86,9 +86,9 @@ public class LoadTestsCassandraArtifactsCreator {
                 throw new RuntimeException("Failed to create test table index", e);
             }
 
-            System.out.println("Test table index was successfully created");
+            System.out.println("[INFO] Test table index was successfully created");
         }
 
-        System.out.println("All required Cassandra artifacts were successfully recreated");
+        System.out.println("[INFO] All required Cassandra artifacts were successfully recreated");
     }
 }
