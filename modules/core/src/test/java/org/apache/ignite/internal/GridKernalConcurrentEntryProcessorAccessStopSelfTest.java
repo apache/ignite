@@ -67,8 +67,7 @@ public class GridKernalConcurrentEntryProcessorAccessStopSelfTest extends GridCo
             @Override public void run() {
 
                 dfltCache.invoke("1", new EntryProcessor<Object, Object, Object>() {
-                    @Override
-                    public Object process(MutableEntry<Object, Object> entry,
+                    @Override public Object process(MutableEntry<Object, Object> entry,
                         Object... arguments) throws EntryProcessorException {
 
                         int i = 100000;
@@ -82,5 +81,7 @@ public class GridKernalConcurrentEntryProcessorAccessStopSelfTest extends GridCo
                 });
             }
         });
+
+        invoker.setName("ConcurrentEntryProcessorActionThread");
     }
 }
