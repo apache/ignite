@@ -220,18 +220,18 @@ reportTestsSummary()
 
 reportSucceedTestsStatistics()
 {
-    writeMsg=0
-    writeErrors=0
-    writeSpeed=0
-    blkWriteMsg=0
-    blkWriteErrors=0
-    blkWriteSpeed=0
-    readMsg=0
-    readErrors=0
-    readSpeed=0
-    blkReadMsg=0
-    blkReadErrors=0
-    blkReadSpeed=0
+    writeMsg="0"
+    writeErrors="0"
+    writeSpeed="0"
+    blkWriteMsg="0"
+    blkWriteErrors="0"
+    blkWriteSpeed="0"
+    readMsg="0"
+    readErrors="0"
+    readSpeed="0"
+    blkReadMsg="0"
+    blkReadErrors="0"
+    blkReadSpeed="0"
 
     writeErrNodes=
     blkWriteErrNodes=
@@ -271,7 +271,8 @@ reportSucceedTestsStatistics()
 
         cnt=$(cat $logFile | grep "^WRITE messages" | sed -r "s/WRITE messages: //g" | xargs)
         if [ -n "$cnt" ]; then
-            writeMsg=$(( $writeMsg+$cnt ))
+            writeMsg=$(bc <<< "$writeMsg + $cnt")
+            #writeMsg=$(( $writeMsg+$cnt ))
             if [ $cnt -ne 0 ]; then
                 echo "[INFO] WRITE messages: $cnt"
             else
@@ -292,7 +293,8 @@ reportSucceedTestsStatistics()
         cnt=$(cat $logFile | grep "^WRITE errors" | sed -r "s/WRITE errors: //g" | sed -r "s/,.*//g" | xargs)
         if [ -n "$cnt" ]; then
             echo "[INFO] WRITE errors: $cnt"
-            writeErrors=$(( $writeErrors+$cnt ))
+            writeErrors=$(bc <<< "$writeErrors + $cnt")
+            #writeErrors=$(( $writeErrors+$cnt ))
             if [ $cnt -ne 0 ]; then
                 if [ -n "$writeErrNodes" ]; then
                     writeErrNodes="${writeErrNodes}, "
@@ -309,7 +311,8 @@ reportSucceedTestsStatistics()
 
         cnt=$(cat $logFile | grep "^WRITE speed" | sed -r "s/WRITE speed: //g" | sed -r "s/ msg\/sec//g" | xargs)
         if [ -n "$cnt" ]; then
-            writeSpeed=$(( $writeSpeed+$cnt ))
+            writeSpeed=$(bc <<< "$writeSpeed + $cnt")
+            #writeSpeed=$(( $writeSpeed+$cnt ))
             if [ $cnt -ne 0 ]; then
                 echo "[INFO] WRITE speed: $cnt msg/sec"
             else
@@ -329,7 +332,8 @@ reportSucceedTestsStatistics()
 
         cnt=$(cat $logFile | grep "^BULK_WRITE messages" | sed -r "s/BULK_WRITE messages: //g" | xargs)
         if [ -n "$cnt" ]; then
-            blkWriteMsg=$(( $blkWriteMsg+$cnt ))
+            blkWriteMsg=$(bc <<< "$blkWriteMsg + $cnt")
+            #blkWriteMsg=$(( $blkWriteMsg+$cnt ))
             if [ $cnt -ne 0 ]; then
                 echo "[INFO] BULK_WRITE messages: $cnt"
             else
@@ -349,7 +353,8 @@ reportSucceedTestsStatistics()
 
         cnt=$(cat $logFile | grep "^BULK_WRITE errors" | sed -r "s/BULK_WRITE errors: //g" | sed -r "s/,.*//g" | xargs)
         if [ -n "$cnt" ]; then
-            blkWriteErrors=$(( $blkWriteErrors+$cnt ))
+            blkWriteErrors=$(bc <<< "$blkWriteErrors + $cnt")
+            #blkWriteErrors=$(( $blkWriteErrors+$cnt ))
             echo "[INFO] BULK_WRITE errors: $cnt"
             if [ $cnt -ne 0 ]; then
                 if [ -n "$blkWriteErrNodes" ]; then
@@ -367,7 +372,8 @@ reportSucceedTestsStatistics()
 
         cnt=$(cat $logFile | grep "^BULK_WRITE speed" | sed -r "s/BULK_WRITE speed: //g" | sed -r "s/ msg\/sec//g" | xargs)
         if [ -n "$cnt" ]; then
-            blkWriteSpeed=$(( $blkWriteSpeed+$cnt ))
+            blkWriteSpeed=$(bc <<< "$blkWriteSpeed + $cnt")
+            #blkWriteSpeed=$(( $blkWriteSpeed+$cnt ))
             if [ $cnt -ne 0 ]; then
                 echo "[INFO] BULK_WRITE speed: $cnt msg/sec"
             else
@@ -387,7 +393,8 @@ reportSucceedTestsStatistics()
 
         cnt=$(cat $logFile | grep "^READ messages" | sed -r "s/READ messages: //g" | xargs)
         if [ -n "$cnt" ]; then
-            readMsg=$(( $readMsg+$cnt ))
+            readMsg=$(bc <<< "$readMsg + $cnt")
+            #readMsg=$(( $readMsg+$cnt ))
             if [ $cnt -ne 0 ]; then
                 echo "[INFO] READ messages: $cnt"
             else
@@ -407,7 +414,8 @@ reportSucceedTestsStatistics()
 
         cnt=$(cat $logFile | grep "^READ errors" | sed -r "s/READ errors: //g" | sed -r "s/,.*//g" | xargs)
         if [ -n "$cnt" ]; then
-            readErrors=$(( $readErrors+$cnt ))
+            readErrors=$(bc <<< "$readErrors + $cnt")
+            #readErrors=$(( $readErrors+$cnt ))
             echo "[INFO] READ errors: $cnt"
             if [ $cnt -ne 0 ]; then
                 if [ -n "$readErrNodes" ]; then
@@ -425,7 +433,8 @@ reportSucceedTestsStatistics()
 
         cnt=$(cat $logFile | grep "^READ speed" | sed -r "s/READ speed: //g" | sed -r "s/ msg\/sec//g" | xargs)
         if [ -n "$cnt" ]; then
-            readSpeed=$(( $readSpeed+$cnt ))
+            readSpeed=$(bc <<< "$readSpeed + $cnt")
+            #readSpeed=$(( $readSpeed+$cnt ))
             if [ $cnt -ne 0 ]; then
                 echo "[INFO] READ speed: $cnt msg/sec"
             else
@@ -445,7 +454,8 @@ reportSucceedTestsStatistics()
 
         cnt=$(cat $logFile | grep "^BULK_READ messages" | sed -r "s/BULK_READ messages: //g" | xargs)
         if [ -n "$cnt" ]; then
-            blkReadMsg=$(( $blkReadMsg+$cnt ))
+            blkReadMsg=$(bc <<< "$blkReadMsg + $cnt")
+            #blkReadMsg=$(( $blkReadMsg+$cnt ))
             if [ $cnt -ne 0 ]; then
                 echo "[INFO] BULK_READ messages: $cnt"
             else
@@ -465,7 +475,8 @@ reportSucceedTestsStatistics()
 
         cnt=$(cat $logFile | grep "^BULK_READ errors" | sed -r "s/BULK_READ errors: //g" | sed -r "s/,.*//g" | xargs)
         if [ -n "$cnt" ]; then
-            blkReadErrors=$(( $blkReadErrors+$cnt ))
+            blkReadErrors=$(bc <<< "$blkReadErrors + $cnt")
+            #blkReadErrors=$(( $blkReadErrors+$cnt ))
             echo "[INFO] BULK_READ errors: $cnt"
             if [ $cnt -ne 0 ]; then
                 if [ -n "$blkReadErrNodes" ]; then
@@ -483,7 +494,8 @@ reportSucceedTestsStatistics()
 
         cnt=$(cat $logFile | grep "^BULK_READ speed" | sed -r "s/BULK_READ speed: //g" | sed -r "s/ msg\/sec//g" | xargs)
         if [ -n "$cnt" ]; then
-            blkReadSpeed=$(( $blkReadSpeed+$cnt ))
+            blkReadSpeed=$(bc <<< "$blkReadSpeed + $cnt")
+            #blkReadSpeed=$(( $blkReadSpeed+$cnt ))
             if [ $cnt -ne 0 ]; then
                 echo "[INFO] BULK_READ speed: $cnt msg/sec"
             else
