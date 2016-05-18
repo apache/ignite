@@ -1357,7 +1357,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             // invoke topology callback more than once for the
                             // same event.
 
-                            // TODO GG-11010 get activate state for topology version.
                             if (activated) {
                                 for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                                     if (cacheCtx.isLocal())
