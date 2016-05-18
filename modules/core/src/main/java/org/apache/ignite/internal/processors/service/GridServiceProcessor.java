@@ -110,7 +110,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
 @SuppressWarnings({"SynchronizationOnLocalVariableOrMethodParameter", "ConstantConditions"})
 public class GridServiceProcessor extends GridProcessorAdapter {
     /** */
-    // TODO check version before merge.
     public static final IgniteProductVersion LAZY_SERVICES_CFG_SINCE = IgniteProductVersion.fromString("1.5.22");
 
     /** */
@@ -1243,14 +1242,15 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         if (res != null)
             return res;
 
-        ClusterNode locNode = ctx.discovery().localNode();
-
         boolean rmtNodeIsOld = node.version().compareToIgnoreTimestamp(LAZY_SERVICES_CFG_SINCE) < 0;
+
+        if (!rmtNodeIsOld)
+            return null;
 
         while (true) {
             ServicesCompatibilityState state = compatibilityState.get();
 
-            if (!rmtNodeIsOld || state.srvcCompatibility)
+            if (state.srvcCompatibility)
                 return null;
 
             // Remote node is old and services are in not compatible mode.
@@ -1260,6 +1260,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
                 return null;
             }
+
+            ClusterNode locNode = ctx.discovery().localNode();
 
             return new IgniteNodeValidationResult(node.id(), "Local node uses IgniteServices and works in not " +
                 "compatible mode with old nodes (" + IGNITE_SERVICES_COMPATIBILITY_MODE + " system property can be " +
@@ -1271,10 +1273,25 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     }
 
     /**
-     * @param mode Services compatibility mode.
+     * @param nodes Remote nodes.
      */
-    public void compatibilityMode(boolean mode) {
-        if (srvcCompatibilitySysProp != null)
+    public void initCompatibilityMode(Collection<ClusterNode> nodes) {
+        boolean mode;
+
+        if (srvcCompatibilitySysProp == null) {
+            boolean clusterHasOldNode = false;
+
+            for (ClusterNode n : nodes) {
+                if (n.version().compareToIgnoreTimestamp(GridServiceProcessor.LAZY_SERVICES_CFG_SINCE) < 0) {
+                    clusterHasOldNode = true;
+
+                    break;
+                }
+            }
+
+            mode = clusterHasOldNode;
+        }
+        else
             mode = srvcCompatibilitySysProp;
 
         while (true) {
@@ -1794,7 +1811,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         private final boolean used;
 
         /**
-         * @param srvcCompatibility Services compatibility mode.
+         * @param srvcCompatibility Services compatibility mode ({@code true} if compatible with old nodes).
          * @param used Services has been used.
          */
         ServicesCompatibilityState(boolean srvcCompatibility, boolean used) {

@@ -3418,7 +3418,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 final Boolean locSrvcCompatibilityEnabled = locNode.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);
 
-                if (node.version().compareTo(GridServiceProcessor.LAZY_SERVICES_CFG_SINCE) >= 0) {
+                if (node.version().compareToIgnoreTimestamp(GridServiceProcessor.LAZY_SERVICES_CFG_SINCE) >= 0) {
                     final Boolean rmtSrvcCompatibilityEnabled = node.attribute(ATTR_SERVICES_COMPATIBILITY_MODE);
 
                     if (!F.eq(locSrvcCompatibilityEnabled, rmtSrvcCompatibilityEnabled)) {

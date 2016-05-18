@@ -699,27 +699,13 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         checkAttributes(discoCache().remoteNodes());
 
-        setServicesCompatibilityMode(discoCache().remoteNodes());
+        ctx.service().initCompatibilityMode(discoCache().remoteNodes());
 
         // Start discovery worker.
         new IgniteThread(discoWrk).start();
 
         if (log.isDebugEnabled())
             log.debug(startInfo());
-    }
-
-    /**
-     * @param nodes Remote nodes.
-     */
-    private void setServicesCompatibilityMode(Collection<ClusterNode> nodes) {
-        boolean clusterHasOldNode = false;
-
-        for (ClusterNode n : nodes) {
-            if (n.version().compareToIgnoreTimestamp(GridServiceProcessor.LAZY_SERVICES_CFG_SINCE) < 0)
-                clusterHasOldNode = true;
-        }
-
-        ctx.service().compatibilityMode(clusterHasOldNode);
     }
 
     /**
@@ -1139,7 +1125,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             }
             else if (Boolean.FALSE.equals(locSrvcCompatibilityEnabled)) {
                 throw new IgniteCheckedException("Remote node doesn't support lazy services configuration and " +
-                    "cannot be joined to local node because local node's "
+                    "local node cannot join node because local node's "
                     + IGNITE_SERVICES_COMPATIBILITY_MODE + " property value explicitly set to 'false'" +
                     "[locNodeAddrs=" + U.addressesAsString(locNode) +
                     ", rmtNodeAddrs=" + U.addressesAsString(n) +
