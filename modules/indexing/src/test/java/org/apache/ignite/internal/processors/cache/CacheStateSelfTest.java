@@ -18,6 +18,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collections;
 import java.util.concurrent.locks.Lock;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
@@ -299,7 +300,7 @@ public class CacheStateSelfTest extends GridCommonAbstractTest {
 
         assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return ignite2.cachex(null).state().lostPartitions().contains(partition);
+                return cache2.lostPartitions().contains(partition);
             }
         }, 5000);
 
@@ -313,5 +314,17 @@ public class CacheStateSelfTest extends GridCommonAbstractTest {
         }
 
         assert ex;
+
+        cache2.recoverPartitions(Collections.singleton(partition));
+
+        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return !cache2.lostPartitions().contains(partition);
+            }
+        }, 5000);
+
+        cache2.put(partition, 2);
+
+        assert cache2.get(partition).equals(2);
     }
 }
