@@ -19,6 +19,8 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCache;
@@ -67,8 +69,13 @@ public class CacheStateSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        G.stopAll(true);
+    }
+
+    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        G.stopAll(false);
+        G.stopAll(true);
     }
 
     /**
@@ -327,7 +334,22 @@ public class CacheStateSelfTest extends GridCommonAbstractTest {
         assert cache1.active();
         assert cache2.active();
 
-        final int partition = ignite1.affinity(null).allPartitions(ignite1.localNode())[0];
+        Set<Integer> ignite2Parts = new HashSet<>();
+
+        for (int p : ignite2.affinity(null).allPartitions(ignite2.localNode())) {
+            ignite2Parts.add(p);
+        }
+
+        int part = -1;
+
+        for (int p : ignite1.affinity(null).allPartitions(ignite1.localNode())) {
+            if (!ignite2Parts.contains(p)) {
+                part = p;
+                break;
+            }
+        }
+
+        final int partition = part;
 
         cache1.put(partition, 1);
         assert cache2.get(partition).equals(1);
