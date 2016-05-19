@@ -42,7 +42,7 @@ import org.apache.ignite.transactions.Transaction;
 /**
  * Tests functionality related to {@link CacheState}.
  */
-public class CacheStateSelfTest extends GridCommonAbstractTest {
+public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -57,16 +57,7 @@ public class CacheStateSelfTest extends GridCommonAbstractTest {
      * @param cacheName Cache name.
      * @return Cache configuration.
      */
-    protected static CacheConfiguration cacheConfiguration(String cacheName) {
-        CacheConfiguration ccfg = new CacheConfiguration(cacheName);
-
-        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        ccfg.setCacheMode(CacheMode.PARTITIONED);
-        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        ccfg.setBackups(0);
-
-        return ccfg;
-    }
+    protected abstract CacheConfiguration cacheConfiguration(String cacheName);
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
@@ -287,6 +278,9 @@ public class CacheStateSelfTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     public void testRebalancingUsingCounters() throws Exception {
+        if (cacheConfiguration(null).getCacheMode() != CacheMode.REPLICATED)
+            return;
+
         IgniteEx ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
 
         final IgniteCache cache1 = ignite1.cache(null);
@@ -329,6 +323,9 @@ public class CacheStateSelfTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     public void testLostPartitions() throws Exception {
+        if (cacheConfiguration(null).getBackups() != 0 || cacheConfiguration(null).getCacheMode() != CacheMode.PARTITIONED)
+            return;
+
         final IgniteEx ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
         final IgniteEx ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
 
