@@ -19,10 +19,12 @@ package org.apache.ignite.hadoop.fs;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.hadoop.fs.v1.IgniteHadoopFileSystem;
 import org.apache.ignite.internal.processors.hadoop.HadoopUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.jetbrains.annotations.Nullable;
@@ -56,6 +58,9 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
 
     /** Resulting URI. */
     protected transient URI fullUri;
+
+    /** Optional working directory. */
+    protected transient Path workDir;
 
     /**
      * Constructor.
@@ -115,7 +120,7 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
      * @throws InterruptedException if the current thread is interrupted.
      */
     protected FileSystem create(String usrName) throws IOException, InterruptedException {
-        return FileSystem.get(fullUri, cfg, usrName);
+        return withWorkingDirectory(FileSystem.get(fullUri, cfg, usrName));
     }
 
     /**
@@ -168,6 +173,19 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
         this.cfgPaths = cfgPaths;
     }
 
+    /**
+     * Return file system with correct working directory set.
+     *
+     * @param fs File system.
+     * @return File system with working directory.
+     */
+    protected FileSystem withWorkingDirectory(FileSystem fs) {
+        if (workDir != null)
+            fs.setWorkingDirectory(workDir);
+
+        return fs;
+    }
+
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
         cfg = HadoopUtils.safeCreateConfiguration();
@@ -201,6 +219,12 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
                 throw new IgniteException("Failed to resolve secondary file system URI: " + uri);
             }
         }
+
+        // Initialize working directory if needed (ignore empty or "/" paths),
+        String workDirPath = fullUri.getPath();
+
+        if (!F.isEmpty(workDirPath) && !F.eq("/", workDirPath))
+            workDir = new Path(workDirPath);
     }
 
     /** {@inheritDoc} */

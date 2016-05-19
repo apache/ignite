@@ -81,7 +81,7 @@ public class KerberosHadoopFileSystemFactory extends BasicHadoopFileSystemFactor
 
         return proxyUgi.doAs(new PrivilegedExceptionAction<FileSystem>() {
             @Override public FileSystem run() throws Exception {
-                return FileSystem.get(fullUri, cfg);
+                return withWorkingDirectory(FileSystem.get(fullUri, cfg));
             }
         });
     }
