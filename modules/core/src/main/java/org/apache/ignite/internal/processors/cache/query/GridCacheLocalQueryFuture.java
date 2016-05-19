@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.lang.GridPlainRunnable;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.marshaller.Marshaller;
@@ -112,10 +113,12 @@ public class GridCacheLocalQueryFuture<K, V, R> extends GridCacheQueryFutureAdap
             Marshaller marsh = cctx.marshaller();
 
             IgniteReducer<Object, Object> rdc = qry.reducer() != null ?
-                marsh.<IgniteReducer<Object, Object>>unmarshal(marsh.marshal(qry.reducer()), null) : null;
+                marsh.<IgniteReducer<Object, Object>>unmarshal(marsh.marshal(qry.reducer()),
+                    U.resolveClassLoader(cctx.gridConfig())) : null;
 
             IgniteClosure<Object, Object> trans = qry.transform() != null ?
-                marsh.<IgniteClosure<Object, Object>>unmarshal(marsh.marshal(qry.transform()), null) : null;
+                marsh.<IgniteClosure<Object, Object>>unmarshal(marsh.marshal(qry.transform()),
+                    U.resolveClassLoader(cctx.gridConfig())) : null;
 
             return new GridCacheQueryInfo(
                 true,

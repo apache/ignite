@@ -19,8 +19,11 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.Map;
-import java.util.Set;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryUtils;
@@ -161,13 +164,25 @@ import org.apache.ignite.internal.util.typedef.F;
      * @return Unwrapped collection.
      */
     public Collection<Object> unwrapBinariesIfNeeded(Collection<Object> col, boolean keepBinary, boolean cpy) {
-        if (col instanceof ArrayList)
-            return unwrapBinaries((ArrayList<Object>)col, keepBinary, cpy);
+        Collection<Object> col0 = BinaryUtils.newKnownCollection(col);
 
-        if (col instanceof Set)
-            return unwrapBinaries((Set<Object>)col, keepBinary, cpy);
+        if (col0 == null)
+            col0 = new ArrayList<>(col.size());
 
-        Collection<Object> col0 = new ArrayList<>(col.size());
+        for (Object obj : col)
+            col0.add(unwrapBinary(obj, keepBinary, cpy));
+
+        return col0;
+    }
+
+    /**
+     * @param col Collection to unwrap.
+     * @param keepBinary Keep binary flag.
+     * @param cpy Copy flag.
+     * @return Unwrapped collection.
+     */
+    private Collection<Object> unwrapKnownCollection(Collection<Object> col, boolean keepBinary, boolean cpy) {
+        Collection<Object> col0 = BinaryUtils.newKnownCollection(col);
 
         for (Object obj : col)
             col0.add(unwrapBinary(obj, keepBinary, cpy));
@@ -212,44 +227,6 @@ import org.apache.ignite.internal.util.typedef.F;
     }
 
     /**
-     * Unwraps array list.
-     *
-     * @param col List to unwrap.
-     * @return Unwrapped list.
-     */
-    private Collection<Object> unwrapBinaries(ArrayList<Object> col, boolean keepBinary, boolean cpy) {
-        int size = col.size();
-
-        col = new ArrayList<>(col);
-
-        for (int i = 0; i < size; i++) {
-            Object o = col.get(i);
-
-            Object unwrapped = unwrapBinary(o, keepBinary, cpy);
-
-            if (o != unwrapped)
-                col.set(i, unwrapped);
-        }
-
-        return col;
-    }
-
-    /**
-     * Unwraps set with binary.
-     *
-     * @param set Set to unwrap.
-     * @return Unwrapped set.
-     */
-    private Set<Object> unwrapBinaries(Set<Object> set, boolean keepBinary, boolean cpy) {
-        Set<Object> set0 = BinaryUtils.newSet(set);
-
-        for (Object obj : set)
-            set0.add(unwrapBinary(obj, keepBinary, cpy));
-
-        return set0;
-    }
-
-    /**
      * @param o Object to unwrap.
      * @return Unwrapped object.
      */
@@ -267,9 +244,9 @@ import org.apache.ignite.internal.util.typedef.F;
 
             return (key != uKey || val != uVal) ? F.t(uKey, uVal) : o;
         }
-        else if (o instanceof Collection)
-            return unwrapBinariesIfNeeded((Collection<Object>)o, keepBinary, cpy);
-        else if (o instanceof Map)
+        else if (BinaryUtils.knownCollection(o))
+            return unwrapKnownCollection((Collection<Object>)o, keepBinary, cpy);
+        else if (BinaryUtils.knownMap(o))
             return unwrapBinariesIfNeeded((Map<Object, Object>)o, keepBinary, cpy);
         else if (o instanceof Object[])
             return unwrapBinariesInArrayIfNeeded((Object[])o, keepBinary, cpy);
@@ -281,5 +258,25 @@ import org.apache.ignite.internal.util.typedef.F;
         }
 
         return o;
+    }
+
+    /**
+     * @param o Object to test.
+     * @return True if collection should be recursively unwrapped.
+     */
+    private boolean knownCollection(Object o) {
+        Class<?> cls = o == null ? null : o.getClass();
+
+        return cls == ArrayList.class || cls == LinkedList.class || cls == HashSet.class;
+    }
+
+    /**
+     * @param o Object to test.
+     * @return True if map should be recursively unwrapped.
+     */
+    private boolean knownMap(Object o) {
+        Class<?> cls = o == null ? null : o.getClass();
+
+        return cls == HashMap.class || cls == LinkedHashMap.class;
     }
 }

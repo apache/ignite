@@ -36,7 +36,7 @@ import org.jetbrains.annotations.Nullable;
  */
 public class CacheJtaManager extends CacheJtaManagerAdapter {
     /** */
-    private final ThreadLocal<GridCacheXAResource> xaRsrc = new ThreadLocal<>();
+    private final ThreadLocal<CacheJtaResource> rsrc = new ThreadLocal<>();
 
     /** */
     private TransactionManager jtaTm;
@@ -46,6 +46,9 @@ public class CacheJtaManager extends CacheJtaManagerAdapter {
 
     /** */
     private Factory<TransactionManager> tmFactory;
+
+    /** */
+    private boolean useJtaSync;
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
@@ -80,14 +83,15 @@ public class CacheJtaManager extends CacheJtaManagerAdapter {
                         + tmFactory + ", txMgr=" + txMgr + "]");
 
                 jtaTm = (TransactionManager)txMgr;
+            }
+            else {
+                String txLookupClsName = cctx.txConfig().getTxManagerLookupClassName();
 
-                return;
+                if (txLookupClsName != null)
+                    tmLookupRef.set(createTmLookup(txLookupClsName));
             }
 
-            String txLookupClsName = cctx.txConfig().getTxManagerLookupClassName();
-
-            if (txLookupClsName != null)
-                tmLookupRef.set(createTmLookup(txLookupClsName));
+            useJtaSync = cctx.txConfig().isUseJtaSynchronization();
         }
     }
 
@@ -140,7 +144,7 @@ public class CacheJtaManager extends CacheJtaManagerAdapter {
         }
 
         if (jtaTm != null) {
-            GridCacheXAResource rsrc = xaRsrc.get();
+            CacheJtaResource rsrc = this.rsrc.get();
 
             if (rsrc == null || rsrc.isFinished()) {
                 try {
@@ -165,12 +169,14 @@ public class CacheJtaManager extends CacheJtaManagerAdapter {
                             );
                         }
 
-                        rsrc = new GridCacheXAResource(tx, cctx.kernalContext());
+                        rsrc = new CacheJtaResource(tx, cctx.kernalContext());
 
-                        if (!jtaTx.enlistResource(rsrc))
+                        if (useJtaSync)
+                            jtaTx.registerSynchronization(rsrc);
+                        else if (!jtaTx.enlistResource(rsrc))
                             throw new IgniteCheckedException("Failed to enlist XA resource to JTA user transaction.");
 
-                        xaRsrc.set(rsrc);
+                        this.rsrc.set(rsrc);
                     }
                 }
                 catch (SystemException e) {

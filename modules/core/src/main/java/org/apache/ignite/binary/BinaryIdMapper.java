@@ -30,26 +30,29 @@ package org.apache.ignite.binary;
  * Binary ID mapper can be configured for all binary objects via
  * {@link org.apache.ignite.configuration.BinaryConfiguration#getIdMapper()} method,
  * or for a specific binary type via {@link BinaryTypeConfiguration#getIdMapper()} method.
+ * @see BinaryNameMapper
  */
 public interface BinaryIdMapper {
     /**
-     * Gets type ID for provided class name.
+     * Gets type ID for provided type name.
      * <p>
      * If {@code 0} is returned, hash code of class simple name will be used.
      *
-     * @param clsName Class name.
+     * @param typeName Type name. Type name is a result of {@link BinaryNameMapper#typeName(String)} call for an
+     *        initial class or type name.
      * @return Type ID.
+     * @see BinaryNameMapper#typeName(String)
      */
-    public int typeId(String clsName);
+    public int typeId(String typeName);
 
     /**
-     * Gets ID for provided field.
-     * <p>
-     * If {@code 0} is returned, hash code of field name will be used.
+     * Gets ID for provided field name. <p> If {@code 0} is returned, hash code of field name will be used.
      *
      * @param typeId Type ID.
-     * @param fieldName Field name.
+     * @param fieldName Field name. Filed anme is a result of {@link BinaryNameMapper#fieldName(String)} call for an
+     *        initial filed name.
      * @return Field ID.
+     * @see BinaryNameMapper#fieldName(String)
      */
     public int fieldId(int typeId, String fieldName);
 }

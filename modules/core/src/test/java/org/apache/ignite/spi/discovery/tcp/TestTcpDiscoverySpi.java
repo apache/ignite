@@ -18,6 +18,7 @@
 package org.apache.ignite.spi.discovery.tcp;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.Socket;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -31,12 +32,12 @@ public class TestTcpDiscoverySpi extends TcpDiscoverySpi {
     public boolean ignorePingResponse;
 
     /** {@inheritDoc} */
-    protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException,
+    protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg, long timeout) throws IOException,
         IgniteCheckedException {
         if (msg instanceof TcpDiscoveryPingResponse && ignorePingResponse)
             return;
         else
-            super.writeToSocket(sock, msg, timeout);
+            super.writeToSocket(sock, out, msg, timeout);
     }
 
     /** {@inheritDoc} */

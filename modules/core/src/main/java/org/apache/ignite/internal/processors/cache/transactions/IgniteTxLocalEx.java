@@ -47,11 +47,6 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
     @Nullable public Throwable commitError();
 
     /**
-     * @param e Commit error.
-     */
-    public void commitError(Throwable e);
-
-    /**
      * @throws IgniteCheckedException If commit failed.
      */
     public void userCommit() throws IgniteCheckedException;
@@ -76,7 +71,8 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
         boolean deserializeBinary,
         boolean skipVals,
         boolean keepCacheObjects,
-        boolean skipStore);
+        boolean skipStore,
+        boolean needVer);
 
     /**
      * @param cacheCtx Cache context.
