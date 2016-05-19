@@ -5,13 +5,12 @@ How to deploy locally:
 
 1. Install locally MongoDB (version >=3.x) follow instructions from site http://docs.mongodb.org/manual/installation
 2. Install locally NodeJS (version >=4.x) using installer from site https://nodejs.org for your OS.
-3. Checkout ignite-1.6 branch.
-4. Change directory '$IGNITE_HOME/modules/web-console/src/main/js'.
-5. Run "npm install" in terminal for download all dependencies.
-6. Build ignite-web-agent module follow instructions from 'modules/web-agent/README.txt'.
-7. Copy ignite-web-agent-<version>.zip from target of ignite-web-agent module to 'modules/web-console/src/main/js/serve/agent_dists' folder.
+3. Change directory '$IGNITE_HOME/modules/web-console/src/main/js'.
+4. Run "npm install" in terminal for download all dependencies.
+5. Build ignite-web-agent module follow instructions from 'modules/web-agent/README.txt'.
+6. Copy ignite-web-agent-<version>.zip from target of ignite-web-agent module to 'modules/web-console/src/main/js/serve/agent_dists' folder.
 
-Steps 1 - 7 should be executed once.
+Steps 1 - 6 should be executed once.
 
 How to run console in development mode:
 
