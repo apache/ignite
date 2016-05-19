@@ -48,7 +48,9 @@ import javax.cache.expiry.ExpiryPolicy;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.CLOCK;
@@ -396,7 +398,12 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             GridDhtTopologyFuture fut = cache.topology().topologyVersionFuture();
 
             if (fut.isDone()) {
-                Throwable err = fut.validateCache(cctx);
+                Throwable err;
+
+                if (key == null)
+                     err = fut.validateCache(cctx);
+                else
+                    err = fut.validateCache(cctx, Collections.singleton(cctx.affinity().partition(key)));
 
                 if (err != null) {
                     onDone(err);

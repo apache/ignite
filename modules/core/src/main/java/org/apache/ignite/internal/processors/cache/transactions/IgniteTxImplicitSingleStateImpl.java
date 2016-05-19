@@ -92,7 +92,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
 
         Set<Integer> parts = Collections.emptySet();
         if (!entry.isEmpty())
-            parts = Collections.singleton(cctx.cacheContext(entry.get(0).cacheId()).affinity().partition(entry.get(0).key()));
+            parts = Collections.singleton(cacheCtx.affinity().partition(entry.get(0).key()));
 
         Throwable err = topFut.validateCache(cacheCtx, parts);
 

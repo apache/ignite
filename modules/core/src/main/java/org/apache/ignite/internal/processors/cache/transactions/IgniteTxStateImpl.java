@@ -20,6 +20,8 @@ package org.apache.ignite.internal.processors.cache.transactions;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
@@ -28,6 +30,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.store.CacheStoreManager;
 import org.apache.ignite.internal.util.GridLongList;
@@ -98,14 +101,30 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
         GridDhtTopologyFuture topFut) {
         StringBuilder invalidCaches = null;
 
-        for (int i = 0; i < activeCacheIds.size(); i++) {
-            int cacheId = (int)activeCacheIds.get(i);
+        Map<Integer, Set<KeyCacheObject>> keysByCacheId = new HashMap<>();
+
+        for (IgniteTxKey key : txMap.keySet()) {
+            Set<KeyCacheObject> set = keysByCacheId.get(key.cacheId());
+
+            if (set == null)
+                keysByCacheId.put(key.cacheId(), set = new HashSet<>());
+
+            set.add(key.key());
+        }
+
+        for (Map.Entry<Integer, Set<KeyCacheObject>> e : keysByCacheId.entrySet()) {
+            int cacheId = e.getKey();
+
+            Set<Integer> parts = new HashSet<>();
 
             GridCacheContext ctx = cctx.cacheContext(cacheId);
 
             assert ctx != null : cacheId;
 
-            Throwable err = topFut.validateCache(ctx);
+            for (KeyCacheObject key : e.getValue())
+                parts.add(ctx.affinity().partition(key));
+
+            Throwable err = topFut.validateCache(ctx, parts);
 
             if (err != null) {
                 if (invalidCaches != null)
