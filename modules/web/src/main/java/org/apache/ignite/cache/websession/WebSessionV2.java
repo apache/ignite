@@ -135,8 +135,6 @@ class WebSessionV2 implements HttpSession {
 
     /** {@inheritDoc} */
     @Override public String getId() {
-        assertValid();
-
         return entity.id();
     }
 
