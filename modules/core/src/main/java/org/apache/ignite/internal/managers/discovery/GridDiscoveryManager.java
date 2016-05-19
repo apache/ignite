@@ -1575,6 +1575,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         return resolveDiscoCache(null, topVer).srvNodes;
     }
 
+    public Collection<ClusterNode> activatedNodes(AffinityTopologyVersion topVer) {
+        return resolveDiscoCache(null, topVer).activatedNodes;
+    }
+
     /**
      * Gets node from history for given topology version.
      *
@@ -2749,7 +2753,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                 assert node.order() != 0 : "Invalid node order [locNode=" + loc + ", node=" + node + ']';
                 assert !node.isDaemon();
 
-                if (!CU.clientNode(node) && activated.contains(node))
+                if (!CU.clientNode(node))
                     srvNodes.add(node);
 
                 if (node.order() > maxOrder0)
