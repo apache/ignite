@@ -424,6 +424,9 @@ public class WebSessionFilter implements Filter {
 
         String sesId = httpReq.getRequestedSessionId();
 
+        if (!httpReq.isRequestedSessionIdValid() && httpReq.getSession(false) != null)
+            sesId = httpReq.getSession(false).getId();
+
         if (sesId != null) {
             sesId = transformSessionId(sesId);
 
@@ -505,6 +508,9 @@ public class WebSessionFilter implements Filter {
         WebSessionV2 cached = null;
 
         String sesId = httpReq.getRequestedSessionId();
+
+        if (!httpReq.isRequestedSessionIdValid() && httpReq.getSession(false) != null)
+            sesId = httpReq.getSession(false).getId();
 
         if (sesId != null) {
             sesId = transformSessionId(sesId);
