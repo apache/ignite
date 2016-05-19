@@ -220,6 +220,7 @@ class IgniteRDD[K, V] (
         case "java.lang.Long" ⇒ LongType
         case "java.lang.Float" ⇒ FloatType
         case "java.lang.Double" ⇒ DoubleType
+        case "java.math.BigDecimal" ⇒ DecimalType.SYSTEM_DEFAULT
         case "java.lang.String" ⇒ StringType
         case "java.util.Date" ⇒ DateType
         case "java.sql.Timestamp" ⇒ TimestampType
