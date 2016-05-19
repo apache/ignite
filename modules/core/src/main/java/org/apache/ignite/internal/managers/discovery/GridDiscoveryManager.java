@@ -231,6 +231,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Local node join to topology event. */
     private GridFutureAdapter<DiscoveryEvent> locJoinEvt = new GridFutureAdapter<>();
 
+    private GridFutureAdapter<DiscoveryEvent> locActivationEvt = new GridFutureAdapter<>();
+
     /** GC CPU load. */
     private volatile double gcCpuLoad;
 
@@ -604,6 +606,24 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     locJoinEvt.onDone(discoEvt);
 
                     return;
+                }
+                else if (customMsg != null && customMsg instanceof TcpDiscoveryNodeActivatedMessage &&
+                    node.id().equals(locNode.id())) {
+
+                    DiscoveryCustomEvent discoEvt = new DiscoveryCustomEvent();
+
+                    discoEvt.node(ctx.discovery().localNode());
+                    discoEvt.eventNode(node);
+                    discoEvt.customMessage(customMsg);
+
+                    discoEvt.topologySnapshot(topVer, new ArrayList<>(
+                        F.viewReadOnly(topSnapshot, new C1<ClusterNode, ClusterNode>() {
+                            @Override public ClusterNode apply(ClusterNode e) {
+                                return e;
+                            }
+                        }, FILTER_DAEMON)));
+
+                    locActivationEvt.onDone(discoEvt);
                 }
                 else if (type == EVT_CLIENT_NODE_DISCONNECTED) {
                     /*
@@ -1847,6 +1867,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
     }
 
+    public DiscoveryEvent localActivationEvent() {
+        try {
+            return locActivationEvt.get();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
+    }
+
     /**
      * @param msg Custom message.
      * @throws IgniteCheckedException If failed.
@@ -1928,10 +1957,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             Map<String, Object> map = (Map<String, Object>)data;
 
             if (joiningNodeId.equals(ctx.localNodeId())) {
-            Set<ClusterNode> activated = (Set<ClusterNode>)map.get("activated");
+                Set<ClusterNode> activated = (Set<ClusterNode>)map.get("activated");
 
-            if (activated != null)
-                discoveredActivatedNodes.addAll(activated);
+                if (activated != null)
+                    discoveredActivatedNodes.addAll(activated);
             }
         }
     }
@@ -1984,7 +2013,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         // call when locJoinEvt is already done.
         locJoinEvt.listen(new IgniteInClosure<IgniteInternalFuture<DiscoveryEvent>>() {
             @Override public void apply(IgniteInternalFuture<DiscoveryEvent> future) {
-                if (!discoveredActivatedNodes.contains(ctx.localNodeId())) {
+                if (!activated(localNode())) {
                     try {
                         sendCustomEvent(new TcpDiscoveryNodeActivatedMessage(ctx.localNodeId()));
                     }

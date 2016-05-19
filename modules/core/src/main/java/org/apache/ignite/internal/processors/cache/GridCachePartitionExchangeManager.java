@@ -354,7 +354,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         assert startTime > 0;
 
         // Generate dummy discovery event for local node joining.
-        DiscoveryEvent discoEvt = cctx.discovery().localJoinEvent();
+        DiscoveryEvent discoEvt = cctx.discovery().localActivationEvent();
 
         GridDhtPartitionExchangeId exchId = initialExchangeId();
 
@@ -1392,7 +1392,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             }
                         }
 
-                        if (!exchFut.skipPreload()) {
+                        if (activated && !exchFut.skipPreload()) {
                             assignsMap = new HashMap<>();
 
                             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
