@@ -231,6 +231,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** Local node join to topology event. */
     private GridFutureAdapter<DiscoveryEvent> locJoinEvt = new GridFutureAdapter<>();
 
+    /** Local node activation event. */
     private GridFutureAdapter<DiscoveryEvent> locActivationEvt = new GridFutureAdapter<>();
 
     /** GC CPU load. */
@@ -1575,6 +1576,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         return resolveDiscoCache(null, topVer).srvNodes;
     }
 
+    /**
+     * @param topVer Topology version
+     * @return All activated nodes for given topology version.
+     */
     public Collection<ClusterNode> activatedNodes(AffinityTopologyVersion topVer) {
         return resolveDiscoCache(null, topVer).activatedNodes;
     }
@@ -1872,6 +1877,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
     }
 
+    /** @return Event that represents a local node activation. */
     public DiscoveryEvent localActivationEvent() {
         try {
             return locActivationEvt.get();
@@ -2705,6 +2711,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
          */
         private final Collection<ClusterNode> aliveRmtSrvNodesWithCaches;
 
+        /**
+         * Activated nodes.
+         */
         private final Collection<ClusterNode> activatedNodes;
 
         /**

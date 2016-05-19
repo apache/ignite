@@ -46,6 +46,7 @@ public class GridDhtPartitionsSingleRequest extends GridDhtPartitionsAbstractMes
         super(id, null);
     }
 
+    /** {@inheritDoc} */
     @Override public Map<Integer, Long> partitionUpdateCounters(int cacheId) {
         return Collections.emptyMap();
     }

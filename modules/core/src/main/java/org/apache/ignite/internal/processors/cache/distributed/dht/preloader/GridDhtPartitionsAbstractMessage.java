@@ -73,6 +73,10 @@ abstract class GridDhtPartitionsAbstractMessage extends GridCacheMessage {
         return exchId;
     }
 
+    /**
+     * @param cacheId Cache ID.
+     * @return Parition update counters.
+     */
     public abstract Map<Integer, Long> partitionUpdateCounters(int cacheId);
 
     /**

@@ -324,6 +324,10 @@ public class CacheStateSelfTest extends GridCommonAbstractTest {
         assert ignite3.cachex().context().topology().localPartition(0, true).updateCounter() == 20;
     }
 
+    /**
+     * Test lost partitions.
+     * @throws Exception If fails.
+     */
     public void testLostPartitions() throws Exception {
         final IgniteEx ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
         final IgniteEx ignite2 = (IgniteEx)G.start(getConfiguration("test2"));

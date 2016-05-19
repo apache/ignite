@@ -1130,6 +1130,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         return validateCache(cctx, Collections.<Integer>emptySet());
     }
 
+    /** {@inheritDoc} */
     @Nullable @Override public Throwable validateCache(GridCacheContext cctx, Set<Integer> partitions) {
         Throwable err = error();
 

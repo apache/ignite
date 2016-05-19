@@ -30,6 +30,7 @@ public class CacheState implements Serializable {
     /** Active flag. */
     private final boolean active;
 
+    /** Lost partitions. */
     private final Set<Integer> lostParts;
 
     /**
@@ -40,6 +41,11 @@ public class CacheState implements Serializable {
         this(active, null);
     }
 
+    /**
+     * Constructor.
+     * @param active Active flag.
+     * @param lostParts Lost partitions.
+     */
     public CacheState(boolean active, Set<Integer> lostParts) {
         this.active = active;
         this.lostParts = lostParts != null ? Collections.unmodifiableSet(lostParts) : Collections.<Integer>emptySet();
@@ -52,10 +58,14 @@ public class CacheState implements Serializable {
         return active;
     }
 
+    /**
+     * @return Lost partitions.
+     */
     public Set<Integer> lostPartitions() {
         return lostParts;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean equals(Object o) {
         if (this == o)
             return true;
@@ -70,6 +80,7 @@ public class CacheState implements Serializable {
 
     }
 
+    /** {@inheritDoc} */
     @Override public int hashCode() {
         int result = (active ? 1 : 0);
         result = 31 * result + (lostParts != null ? lostParts.hashCode() : 0);

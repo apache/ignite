@@ -2057,10 +2057,12 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         return new IgniteFutureImpl<>(ctx.kernalContext().cache().changeCacheState(getName(), new CacheState(active)));
     }
 
+    /** {@inheritDoc} */
     @Override public Set<Integer> lostPartitions() {
         return delegate.state().lostPartitions();
     }
 
+    /** {@inheritDoc} */
     @Override public IgniteFuture<?> recoverPartitions(Collection<Integer> partitions) {
 
         CacheState state = delegate.state();

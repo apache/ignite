@@ -47,5 +47,12 @@ public interface GridDhtTopologyFuture extends IgniteInternalFuture<AffinityTopo
      */
     @Nullable public Throwable validateCache(GridCacheContext cctx);
 
+    /**
+     * Returns error is cache topology is not valid.
+     *
+     * @param cctx Cache context.
+     * @param partitions Partitions involved in cache operation.
+     * @return valid ot not.
+     */
     @Nullable public Throwable validateCache(GridCacheContext cctx, @Nullable Set<Integer> partitions);
 }
