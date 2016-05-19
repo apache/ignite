@@ -428,7 +428,13 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                                 }
                             }
 
-                            txEntry.entryProcessorCalculatedValue(new T2<>(op, op == NOOP ? null : val));
+                            if (true) {
+                                txEntry.op(op);
+                                txEntry.value(val, true, false);
+                                txEntry.entryProcessors(null);
+                            }
+                            else
+                                txEntry.entryProcessorCalculatedValue(new T2<>(op, op == NOOP ? null : val));
 
                             if (retVal) {
                                 if (err != null || procRes != null)
