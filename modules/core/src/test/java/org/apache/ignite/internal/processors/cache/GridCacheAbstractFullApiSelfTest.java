@@ -4370,7 +4370,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (hasNext)
             assertFalse("Cache has value: " + it.next(), hasNext);
 
-        final int SIZE = 100;
+        final int SIZE = 10_000;
 
         Map<String, Integer> entries = new HashMap<>();
 
