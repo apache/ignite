@@ -111,6 +111,9 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     /** Optional backup filter. First node is primary, second node is a node being tested. */
     private IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter;
 
+    /** Optional backup filter. First node is primary, second node is a node being tested.*/
+    private IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter;
+
     /** Hash ID resolver. */
     private AffinityNodeHashResolver hashIdRslvr = null;
 
@@ -277,9 +280,37 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      *
      * @param backupFilter Optional backup filter.
+     * @Deprecated use setAffinityBackupFilter
      */
+    @Deprecated
     public void setBackupFilter(@Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
         this.backupFilter = backupFilter;
+    }
+
+    /**
+     * Gets optional backup filter. If not {@code null}, backups will be selected
+     * from all nodes that pass this filter. First node passed to this filter is a node being tested,
+     * and second parameter is a list of nodes which partition will be assigned (primary node will first in list).
+     * <p>
+     * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     *
+     * @return Optional backup filter.
+     */
+    @Nullable public IgniteBiPredicate<ClusterNode, List<ClusterNode>> getAffinityBackupFilter() {
+        return affinityBackupFilter;
+    }
+
+    /**
+     * Sets optional backup filter. If provided, then backups will be selected from all
+     * nodes that pass this filter. First node being passed to this filter is a node being tested,
+     * and second parameter is a list of nodes which partition will be assigned (primary node will first in list).
+     * <p>
+     * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     *
+     * @param affinityBackupFilter Optional backup filter.
+     */
+    public void setAffinityBackupFilter(@Nullable IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter) {
+        this.affinityBackupFilter = affinityBackupFilter;
     }
 
     /**
@@ -384,7 +415,11 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
                     if (!allNeighbors.contains(node))
                         res.add(node);
                 }
-                else if (backupFilter == null || backupFilter.apply(primary, node))
+                else if (affinityBackupFilter != null && affinityBackupFilter.apply(node, res))
+                    res.add(next.get2());
+                else if (backupFilter != null && backupFilter.apply(primary, node))
+                    res.add(next.get2());
+                else if (affinityBackupFilter == null && backupFilter == null)
                     res.add(next.get2());
             }
         }

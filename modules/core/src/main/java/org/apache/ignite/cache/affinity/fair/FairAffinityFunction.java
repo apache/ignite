@@ -102,6 +102,9 @@ public class FairAffinityFunction implements AffinityFunction {
     /** Optional backup filter. First node is primary, second node is a node being tested. */
     private IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter;
 
+    /** Optional backup filter. First node is primary, second node is a node being tested.*/
+    private IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter;
+
     /**
      * Empty constructor with all defaults.
      */
@@ -220,9 +223,37 @@ public class FairAffinityFunction implements AffinityFunction {
      * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      *
      * @param backupFilter Optional backup filter.
+     * @Deprecated affinityBackupFilter Optional backup filter.
      */
+    @Deprecated
     public void setBackupFilter(@Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
         this.backupFilter = backupFilter;
+    }
+
+    /**
+     * Gets optional backup filter. If not {@code null}, backups will be selected
+     * from all nodes that pass this filter. First node passed to this filter is a node being tested,
+     * and second parameter is a list of nodes which partition will be assigned (primary node will first in list).
+     * <p>
+     * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     *
+     * @return Optional backup filter.
+     */
+    @Nullable public IgniteBiPredicate<ClusterNode, List<ClusterNode>> getAffinityBackupFilter() {
+        return affinityBackupFilter;
+    }
+
+    /**
+     * Sets optional backup filter. If provided, then backups will be selected from all
+     * nodes that pass this filter. First node being passed to this filter is a node being tested,
+     * and second parameter is a list of nodes which partition will be assigned (primary node will first in list).
+     * <p>
+     * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
+     *
+     * @param affinityBackupFilter Optional backup filter.
+     */
+    public void setAffinityBackupFilter(@Nullable IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter) {
+        this.affinityBackupFilter = affinityBackupFilter;
     }
 
     /**
@@ -865,6 +896,7 @@ public class FairAffinityFunction implements AffinityFunction {
          * @param tier Tier.
          * @param node Node.
          * @param allowNeighbors Allow neighbors.
+         * @return Can partition assign to node.
          */
         private boolean isAssignable(int part, int tier, final ClusterNode node, boolean allowNeighbors) {
             if (containsPartition(part, node))
@@ -872,9 +904,9 @@ public class FairAffinityFunction implements AffinityFunction {
 
             if (exclNeighbors)
                 return allowNeighbors || !neighborsContainPartition(node, part);
-            else if (backupFilter == null)
-                return true;
-            else {
+            else if (affinityBackupFilter != null)
+                return affinityBackupFilter.apply(node, assignments.get(part));
+            else if (backupFilter != null) {
                 if (tier == 0) {
                     List<ClusterNode> assigment = assignments.get(part);
 
@@ -891,6 +923,8 @@ public class FairAffinityFunction implements AffinityFunction {
                 else
                     return (backupFilter.apply(assignments.get(part).get(0), node));
             }
+            else
+                return true;
         }
 
         /**
