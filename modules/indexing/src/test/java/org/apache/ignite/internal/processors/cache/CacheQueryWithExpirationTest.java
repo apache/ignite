@@ -32,6 +32,7 @@ import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -56,22 +57,26 @@ public class CacheQueryWithExpirationTest extends GridCommonAbstractTest {
      * @param atomicityMode Atomicity mode.
      * @param memoryMode Memory mode.
      * @param offheapMem Offheap memory size.
+     * @param idx Indexing enabled flag.
      * @return Cache configuration.
      */
     private CacheConfiguration<String, TestIndexedType> cacheConfiguration(CacheAtomicityMode atomicityMode,
         CacheMemoryMode memoryMode,
-        long offheapMem) {
+        long offheapMem,
+        boolean idx) {
         CacheConfiguration<String, TestIndexedType> ccfg = new CacheConfiguration<>();
 
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setMemoryMode(memoryMode);
         ccfg.setOffHeapMaxMemory(offheapMem);
-        ccfg.setIndexedTypes(String.class, TestIndexedType.class);
         ccfg.setSwapEnabled(false);
         ccfg.setBackups(1);
         ccfg.setAtomicWriteOrderMode(PRIMARY);
         ccfg.setWriteSynchronizationMode(PRIMARY_SYNC);
         ccfg.setStatisticsEnabled(true);
+
+        if (idx)
+            ccfg.setIndexedTypes(String.class, TestIndexedType.class);
 
         return ccfg;
     }
@@ -93,36 +98,71 @@ public class CacheQueryWithExpirationTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testAtomicOffheapLimitedIndexEnabled() throws Exception {
+        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(ATOMIC, OFFHEAP_TIERED, 1024 * 1024, true));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAtomicOffheapIndexEnabled() throws Exception {
+        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(ATOMIC, OFFHEAP_TIERED, 0, true));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAtomicIndexEnabled() throws Exception {
+        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(ATOMIC, ONHEAP_TIERED, 0, true));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTxOffheapLimitedIndexEnabled() throws Exception {
+        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(TRANSACTIONAL, OFFHEAP_TIERED, 1024 * 1024, true));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTxOffheapIndexEnabled() throws Exception {
+        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(TRANSACTIONAL, OFFHEAP_TIERED, 0, true));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testAtomicOffheapLimited() throws Exception {
-        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(ATOMIC, OFFHEAP_TIERED, 1024 * 1024));
+        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(ATOMIC, OFFHEAP_TIERED, 1024 * 1024, false));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAtomicOffheap() throws Exception {
-        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(ATOMIC, OFFHEAP_TIERED, 0));
+        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(ATOMIC, OFFHEAP_TIERED, 0, false));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testAtomic() throws Exception {
-        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(ATOMIC, ONHEAP_TIERED, 0));
+        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(ATOMIC, ONHEAP_TIERED, 0, false));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testTxOffheapLimited() throws Exception {
-        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(TRANSACTIONAL, OFFHEAP_TIERED, 1024 * 1024));
+        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(TRANSACTIONAL, OFFHEAP_TIERED, 1024 * 1024, false));
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testTxOffheap() throws Exception {
-        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(TRANSACTIONAL, OFFHEAP_TIERED, 0));
+        concurrentPutGetRemoveExpireAndQuery(cacheConfiguration(TRANSACTIONAL, OFFHEAP_TIERED, 0, false));
     }
 
     /**
@@ -135,13 +175,15 @@ public class CacheQueryWithExpirationTest extends GridCommonAbstractTest {
 
         final IgniteCache<String, TestIndexedType> cache = ignite.createCache(ccfg);
 
+        final boolean qryEnabled = !F.isEmpty(ccfg.getQueryEntities());
+
         try {
-            final long stopTime = U.currentTimeMillis() + 60_000;
+            final long stopTime = U.currentTimeMillis() + 30_000;
 
             GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
                 @Override public void apply(Integer idx) {
                     while (U.currentTimeMillis() < stopTime) {
-                        if (idx % 2 == 0)
+                        if (!qryEnabled || idx % 2 == 0)
                             putGet(cache);
                         else
                             query(cache);

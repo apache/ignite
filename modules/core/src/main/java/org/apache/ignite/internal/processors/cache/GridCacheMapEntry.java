@@ -488,9 +488,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      */
     @Nullable @Override public CacheObject unswap(boolean needVal)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
-        boolean swapEnabled = cctx.swap().swapEnabled();
-
-        if (!swapEnabled && !cctx.isOffHeapEnabled())
+        if (!cctx.isSwapOrOffheapEnabled())
             return null;
 
         synchronized (this) {
@@ -544,8 +542,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                         return val;
                     }
-                    else
-                        clearIndex(e.value());
+                    else {
+                        CacheObject expiredVal = e.offheapPointer() > 0 ? cctx.fromOffheap(e.offheapPointer(), false) :
+                            e.value();
+
+                        clearIndex(expiredVal);
+                    }
                 }
             }
         }
@@ -646,9 +648,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      */
     protected final void releaseSwap() throws IgniteCheckedException {
         if (cctx.isSwapOrOffheapEnabled()) {
-            synchronized (this) {
-                cctx.swap().remove(key());
-            }
+            assert Thread.holdsLock(this);
+
+            cctx.swap().remove(key(), partition());
 
             if (log.isDebugEnabled())
                 log.debug("Removed swap entry [entry=" + this + ']');
@@ -780,7 +782,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             owner = mvcc == null ? null : mvcc.anyOwner();
 
-            double delta;
+            long delta;
 
             long expireTime = expireTimeExtras();
 
@@ -1916,7 +1918,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             checkObsolete();
 
             // Load and remove from swap if it is new.
-            if (isNew())
+            if (isStartVersion())
                 unswap(retval);
 
             Object transformClo = null;
@@ -3650,57 +3652,60 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onTtlExpired(GridCacheVersion obsoleteVer) {
+    @Override public boolean onTtlExpired(GridCacheVersion obsoleteVer) throws GridCacheEntryRemovedException {
         boolean obsolete = false;
         boolean deferred = false;
         GridCacheVersion ver0 = null;
 
         try {
             synchronized (this) {
-                CacheObject expiredVal = saveOldValueUnlocked(false);
+                checkObsolete();
 
-                boolean hasOldBytes = hasOffHeapPointer();
+                CacheObject expiredVal;
 
-                boolean expired = checkExpired();
+                if (isStartVersion()) {
+                    if (cctx.isSwapOrOffheapEnabled() && ((flags & IS_UNSWAPPED_MASK) == 0)) {
+                        GridCacheSwapEntry e;
 
-                if (expired) {
-                    if (!obsolete()) {
-                        if (cctx.deferredDelete() && !detached() && !isInternal()) {
-                            if (!deletedUnlocked()) {
-                                update(null, 0L, 0L, ver0 = ver, true);
+                        if (cctx.offheapTiered())
+                            e = cctx.swap().readOffheapPointer(this);
+                        else
+                            e = cctx.swap().read(this, true, true, true, false);
 
-                                deletedUnlocked(true);
+                        if (e == null || e.expireTime() == 0 || (e.expireTime() - U.currentTimeMillis()) > 0) {
+                            if (e != null && e.offheapPointer() > 0)
+                                cctx.swap().enableOffheapEviction(key, partition());
 
-                                deferred = true;
-                            }
+                            return false;
                         }
-                        else {
-                            if (markObsolete0(obsoleteVer, true, null))
-                                obsolete = true; // Success, will return "true".
-                        }
+
+                        if (e.offheapPointer() > 0)
+                            expiredVal = cctx.fromOffheap(e.offheapPointer(), false);
+                        else
+                            expiredVal = e.value();
+
+                        this.ver = e.version();
                     }
+                    else
+                        return false;
+                }
+                else {
+                    long expireTime = expireTimeExtras();
 
-                    clearIndex(expiredVal);
+                    if (expireTime == 0 || (expireTime - U.currentTimeMillis() > 0))
+                        return false;
 
-                    releaseSwap();
+                    expiredVal = saveOldValueUnlocked(false);
+                }
 
-                    if (cctx.events().isRecordable(EVT_CACHE_OBJECT_EXPIRED)) {
-                        cctx.events().addEvent(partition(),
-                            key,
-                            cctx.localNodeId(),
-                            null,
-                            EVT_CACHE_OBJECT_EXPIRED,
-                            null,
-                            false,
-                            expiredVal,
-                            expiredVal != null || hasOldBytes,
-                            null,
-                            null,
-                            null,
-                            true);
+                if (onExpired(expiredVal, obsoleteVer)) {
+                    if (cctx.deferredDelete()) {
+                        deferred = true;
+
+                        ver0 = this.ver;
                     }
-
-                    cctx.continuousQueries().onEntryExpired(this, key, expiredVal);
+                    else
+                        obsolete = true;
                 }
             }
         }
@@ -3724,7 +3729,52 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 cctx.cache().metrics0().onEvict();
         }
 
-        return obsolete;
+        return true;
+    }
+
+    private boolean onExpired(CacheObject expiredVal, GridCacheVersion obsoleteVer) throws IgniteCheckedException {
+        boolean rmvd = false;
+
+        if (cctx.deferredDelete()) {
+            if (!deletedUnlocked()) {
+                update(null, 0L, 0L, ver, true);
+
+                deletedUnlocked(true);
+
+                rmvd = true;
+            }
+        }
+        else {
+            if (obsoleteVer == null)
+                obsoleteVer = cctx.versions().next(ver);
+
+            if (markObsolete0(obsoleteVer, true, null))
+                rmvd = true;
+        }
+
+        clearIndex(expiredVal);
+
+        releaseSwap();
+
+        if (cctx.events().isRecordable(EVT_CACHE_OBJECT_EXPIRED)) {
+            cctx.events().addEvent(partition(),
+                key,
+                cctx.localNodeId(),
+                null,
+                EVT_CACHE_OBJECT_EXPIRED,
+                null,
+                false,
+                expiredVal,
+                expiredVal != null,
+                null,
+                null,
+                null,
+                true);
+        }
+
+        cctx.continuousQueries().onEntryExpired(this, key, expiredVal);
+
+        return rmvd;
     }
 
     /** {@inheritDoc} */

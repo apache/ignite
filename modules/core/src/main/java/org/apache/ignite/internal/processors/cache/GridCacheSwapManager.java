@@ -1224,17 +1224,16 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
     /**
      * @param key Key to remove.
+     * @param part Partition.
      * @throws IgniteCheckedException If failed.
      */
-    public void remove(final KeyCacheObject key) throws IgniteCheckedException {
+    public void remove(final KeyCacheObject key, int part) throws IgniteCheckedException {
         if (!offheapEnabled && !swapEnabled)
             return;
 
         checkIteratorQueue();
 
         final GridCacheQueryManager qryMgr = cctx.queries();
-
-        int part = cctx.affinity().partition(key);
 
         // First try offheap.
         if (offheapEnabled) {
