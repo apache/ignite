@@ -1451,6 +1451,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             deferred = cctx.deferredDelete() && !detached() && !isInternal();
 
+            if (intercept) {
+                entry0.updateCounter(updateCntr0);
+
+                cctx.config().getInterceptor().onAfterRemove(entry0);
+            }
+
             if (cctx.offheapTiered() && hadValPtr) {
                 boolean rmv = cctx.swap().removeOffheap(key);
 
@@ -1481,12 +1487,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             assert !deferred;
 
             onMarkedObsolete();
-        }
-
-        if (intercept) {
-            entry0.updateCounter(updateCntr0);
-
-            cctx.config().getInterceptor().onAfterRemove(entry0);
         }
 
         if (valid) {
