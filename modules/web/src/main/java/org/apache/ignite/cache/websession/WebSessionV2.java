@@ -394,6 +394,13 @@ class WebSessionV2 implements HttpSession {
     }
 
     /**
+     * @return Genuine session.
+     */
+    @Nullable public HttpSession genuineSession() {
+        return genuineSes;
+    }
+
+    /**
      * Throw {@link IllegalStateException} if session was invalidated.
      */
     private void assertValid() {
