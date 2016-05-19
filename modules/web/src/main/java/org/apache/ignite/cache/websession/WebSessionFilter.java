@@ -422,9 +422,11 @@ public class WebSessionFilter implements Filter {
         ServletException, CacheException {
         WebSession cached = null;
 
-        String sesId = httpReq.getRequestedSessionId();
+        String sesId = null;
 
-        if (!httpReq.isRequestedSessionIdValid() && httpReq.getSession(false) != null)
+        if (httpReq.isRequestedSessionIdValid())
+            sesId = httpReq.getRequestedSessionId();
+        else if (httpReq.getSession(false) != null)
             sesId = httpReq.getSession(false).getId();
 
         if (sesId != null) {
@@ -507,9 +509,11 @@ public class WebSessionFilter implements Filter {
         throws IOException, ServletException, CacheException {
         WebSessionV2 cached = null;
 
-        String sesId = httpReq.getRequestedSessionId();
+        String sesId = null;
 
-        if (!httpReq.isRequestedSessionIdValid() && httpReq.getSession(false) != null)
+        if (httpReq.isRequestedSessionIdValid())
+            sesId = httpReq.getRequestedSessionId();
+        else if (httpReq.getSession(false) != null)
             sesId = httpReq.getSession(false).getId();
 
         if (sesId != null) {
