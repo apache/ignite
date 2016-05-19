@@ -17,8 +17,6 @@
 
 package org.apache.ignite.spark;
 
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -38,6 +36,9 @@ import org.apache.spark.sql.Column;
 import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.Row;
 import scala.Tuple2;
+
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Tests for {@link JavaIgniteRDD} (embedded mode).
@@ -127,7 +128,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
             ic = new JavaIgniteContext<>(sc, new IgniteConfigProvider(), false);
 
             ic.fromCache(PARTITIONED_CACHE_NAME)
-                .savePairs(sc.parallelize(F.range(0, KEYS_CNT), GRID_CNT).mapToPair(TO_PAIR_F));
+                .savePairs(sc.parallelize(F.range(0, KEYS_CNT), GRID_CNT).mapToPair(TO_PAIR_F), true);
 
             Ignite ignite = ic.ignite();
 
@@ -186,8 +187,6 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryObjectsFromIgnite() throws Exception {
-        fail("IGNITE-3009");
-
         JavaSparkContext sc = createContext();
 
         JavaIgniteContext<String, Entity> ic = null;
@@ -198,10 +197,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
             JavaIgniteRDD<String, Entity> cache = ic.fromCache(PARTITIONED_CACHE_NAME);
 
             int cnt = 1001;
-
-            List<Integer> numbers = F.range(0, cnt);
-
-            cache.savePairs(sc.parallelize(numbers, GRID_CNT).mapToPair(INT_TO_ENTITY_F));
+            cache.savePairs(sc.parallelize(F.range(0, cnt), GRID_CNT).mapToPair(INT_TO_ENTITY_F), true);
 
             List<Entity> res = cache.objectSql("Entity", "name = ? and salary = ?", "name50", 5000)
                 .map(STR_ENTITY_PAIR_TO_ENTITY_F).collect();
@@ -238,7 +234,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
 
             JavaIgniteRDD<String, Entity> cache = ic.fromCache(PARTITIONED_CACHE_NAME);
 
-            cache.savePairs(sc.parallelize(F.range(0, 1001), GRID_CNT).mapToPair(INT_TO_ENTITY_F));
+            cache.savePairs(sc.parallelize(F.range(0, 1001), GRID_CNT).mapToPair(INT_TO_ENTITY_F), true);
 
             DataFrame df =
                 cache.sql("select id, name, salary from Entity where name = ? and salary = ?", "name50", 5000);
