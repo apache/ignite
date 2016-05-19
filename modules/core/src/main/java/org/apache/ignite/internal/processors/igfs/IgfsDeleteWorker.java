@@ -27,7 +27,6 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 
@@ -169,11 +168,14 @@ public class IgfsDeleteWorker extends IgfsThread {
         try {
             info = meta.info(trashId);
         }
-        catch (ClusterTopologyServerNotFoundException e) {
-            LT.warn(log, e, "Server nodes not found.");
+        catch (ClusterTopologyServerNotFoundException ignore) {
+            // Ignore.
         }
         catch (IgniteCheckedException e) {
-            U.error(log, "Cannot obtain trash directory info.", e);
+            U.warn(log, "Cannot obtain trash directory info (is node stopping?)");
+
+            if (log.isDebugEnabled())
+                U.error(log, "Cannot obtain trash directory info.", e);
         }
 
         if (info != null) {

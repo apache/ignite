@@ -20,7 +20,8 @@
 <!--
     POM file.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
@@ -36,6 +37,8 @@
 
     <properties>
         <mesos.version>0.22.0</mesos.version>
+        <ignite.latest.url>http://ignite.run/download_ignite.php</ignite.latest.url>
+        <ignite.direct.url>https://archive.apache.org/dist/ignite/%s/apache-ignite-fabric-%s-bin.zip</ignite.direct.url>
     </properties>
 
     <dependencies>
@@ -70,6 +73,44 @@
                     <source>1.7</source>
                     <target>1.7</target>
                 </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.7</version>
+                <executions>
+                    <execution>
+                        <id>update-versions</id>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <phase>generate-sources</phase>
+                        <configuration>
+                            <target>
+                                <echo message="Update download url in mesos module." />
+                                <echo message="Direct link ${ignite.direct.url}." />
+                                <echo message="Latest link ${ignite.latest.url}." />
+
+                                <replaceregexp byline="true" encoding="UTF-8">
+                                    <regexp pattern="(.*DOWNLOAD_LINK = &quot;)(.*)(&quot;.*)" />
+                                    <substitution expression="\1${ignite.latest.url}\3"/>
+                                    <fileset dir="${basedir}/">
+                                        <include name="**/IgniteProvider.java" />
+                                    </fileset>
+                                </replaceregexp>
+
+                                <replaceregexp byline="true" encoding="UTF-8">
+                                    <regexp pattern="(.*DOWNLOAD_URL_PATTERN = &quot;)(.*)(&quot;.*)" />
+                                    <substitution expression="\1${ignite.direct.url}\3"/>
+                                    <fileset dir="${basedir}/">
+                                        <include name="**/IgniteProvider.java" />
+                                    </fileset>
+                                </replaceregexp>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>

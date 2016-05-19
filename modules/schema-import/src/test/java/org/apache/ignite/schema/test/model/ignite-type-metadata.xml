@@ -507,9 +507,9 @@
             </util:map>
         </property>
         <property name="aliases">
-            <util:map map-class="java.util.LinkedHashMap">
+            <map>
                 <entry key="fieldWithAlias" value="FIELD_WITH_ALIAS"/>
-            </util:map>
+            </map>
         </property>
         <property name="indexes">
             <list>
@@ -551,9 +551,9 @@
             </util:map>
         </property>
         <property name="aliases">
-            <util:map map-class="java.util.LinkedHashMap">
+            <map>
                 <entry key="fieldWithAlias" value="FIELD_WITH_ALIAS"/>
-            </util:map>
+            </map>
         </property>
         <property name="indexes">
             <list>
@@ -595,9 +595,9 @@
             </util:map>
         </property>
         <property name="aliases">
-            <util:map map-class="java.util.LinkedHashMap">
+            <map>
                 <entry key="fieldWithAlias" value="FIELD_WITH_ALIAS"/>
-            </util:map>
+            </map>
         </property>
         <property name="indexes">
             <list>
