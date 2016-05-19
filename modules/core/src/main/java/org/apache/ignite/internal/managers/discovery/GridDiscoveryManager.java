@@ -615,6 +615,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     discoEvt.node(ctx.discovery().localNode());
                     discoEvt.eventNode(node);
                     discoEvt.customMessage(customMsg);
+                    discoEvt.affinityTopologyVersion(nextTopVer);
 
                     discoEvt.topologySnapshot(topVer, new ArrayList<>(
                         F.viewReadOnly(topSnapshot, new C1<ClusterNode, ClusterNode>() {
