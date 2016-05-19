@@ -33,6 +33,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -311,6 +312,29 @@ public class AgentClusterDemo {
     }
 
     /**
+     * Configure default cache.
+     */
+    private static <K, V> CacheConfiguration<K, V> cacheDefault() {
+        CacheConfiguration<K, V> ccfg = cacheConfiguration(null);
+
+        ccfg.setCacheMode(CacheMode.REPLICATED);
+
+        // Configure default cache types.
+        Collection<QueryEntity> qryEntities = new ArrayList<>();
+
+        QueryEntity type = new QueryEntity();
+
+        qryEntities.add(type);
+
+        type.setKeyType(String.class.getName());
+        type.setValueType(String.class.getName());
+
+        ccfg.setQueryEntities(qryEntities);
+
+        return ccfg;
+    }
+
+    /**
      * Configure node.
      * @param gridIdx Grid name index.
      * @param client If {@code true} then start client node.
@@ -355,7 +379,8 @@ public class AgentClusterDemo {
         if (client)
             cfg.setClientMode(true);
         else
-            cfg.setCacheConfiguration(cacheCountry(), cacheDepartment(), cacheEmployee(), cacheParking(), cacheCar());
+            cfg.setCacheConfiguration(cacheDefault(), cacheCountry(), cacheDepartment(),
+                cacheEmployee(), cacheParking(), cacheCar());
 
         return cfg;
     }

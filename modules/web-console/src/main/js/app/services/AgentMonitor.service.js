@@ -238,6 +238,19 @@ class IgniteAgentMonitor {
     }
 
     /**
+     *
+     * @param {String|Array.<String>} cacheNames
+     * @returns {String|Array.<String>}
+     * @private
+     */
+    _maskCacheName(cacheNames) {
+        if (_.isArray(cacheNames))
+            return _.map(cacheNames, (cacheName) => cacheName || 'null');
+
+        return cacheNames || 'null';
+    }
+
+    /**
      * @param {Boolean} [attr]
      * @param {Boolean} [mtr]
      * @returns {Promise}
@@ -301,7 +314,7 @@ class IgniteAgentMonitor {
      * @returns {Promise}
      */
     cacheClear(nid, cacheName) {
-        return this._rest('node:cache:clear', nid, cacheName);
+        return this._rest('node:cache:clear', nid, this._maskCacheName(cacheName));
     }
 
     /**
@@ -311,7 +324,7 @@ class IgniteAgentMonitor {
      * @returns {Promise}
      */
     cacheStop(nid, cacheName) {
-        return this._rest('node:cache:stop', nid, cacheName);
+        return this._rest('node:cache:stop', nid, this._maskCacheName(cacheName));
     }
 
     /**
