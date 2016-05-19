@@ -45,7 +45,6 @@ import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandle
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridTreePrinter;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -645,7 +644,7 @@ public abstract class BPlusTree<L, T extends L> {
             ByteBuffer buf = first.getForRead(); // We always merge pages backwards, the first page is never removed.
 
             try {
-                cursor.bootstrap(buf, 0);
+                cursor.bootstrap(buf, io(buf), 0);
             }
             finally {
                 first.releaseRead();
@@ -1632,7 +1631,7 @@ public abstract class BPlusTree<L, T extends L> {
             if (!io.isLeaf())
                 return false;
 
-            cursor.bootstrap(buf, idx);
+            cursor.bootstrap(buf, io, idx);
 
             return true;
         }
@@ -1646,7 +1645,7 @@ public abstract class BPlusTree<L, T extends L> {
 
             assert io.isLeaf();
 
-            cursor.bootstrap(buf, idx);
+            cursor.bootstrap(buf, io, idx);
 
             return true;
         }
@@ -2737,10 +2736,7 @@ public abstract class BPlusTree<L, T extends L> {
         private int row;
 
         /** */
-        private Page page;
-
-        /** */
-        private ByteBuffer buf;
+        private long nextPageId;
 
         /** */
         private final L upperBound;
@@ -2754,85 +2750,54 @@ public abstract class BPlusTree<L, T extends L> {
 
         /**
          * @param buf Buffer.
+         * @param io IO.
          * @param startIdx Start index.
+         * @throws IgniteCheckedException If failed.
          */
-        private void bootstrap(ByteBuffer buf, int startIdx) throws IgniteCheckedException {
+        private void bootstrap(ByteBuffer buf, BPlusIO<L> io,  int startIdx) throws IgniteCheckedException {
             assert buf != null;
+            assert io != null;
+            assert rows == null;
 
+            rows = new ArrayList<>();
             row = -1;
 
-            this.buf = buf;
-
-            fillFromBuffer(startIdx);
+            fillFromBuffer(buf, io, startIdx);
         }
 
         /**
+         * @param buf Buffer.
+         * @param io IO.
          * @param startIdx Start index.
+         * @throws IgniteCheckedException If failed.
          */
-        private boolean fillFromBuffer(int startIdx) throws IgniteCheckedException {
-            if (buf == null)
-                return false;
+        private void fillFromBuffer(ByteBuffer buf, BPlusIO<L> io, int startIdx) throws IgniteCheckedException {
+            assert buf != null;
+            assert io.isLeaf();
+            assert io.canGetRow();
 
-            for (;;) {
-                BPlusIO<L> io = io(buf);
+            nextPageId = io.getForward(buf);
+            int cnt = io.getCount(buf);
 
-                assert io.isLeaf();
-                assert io.canGetRow();
+            if (cnt == 0)
+                return;
 
-                int cnt = io.getCount(buf);
-                long fwdId = io.getForward(buf);
+            assert cnt > 0: cnt;
 
-                if (cnt > 0) {
-                    if (upperBound != null) {
-                        int cmp = compare(io, buf, cnt - 1, upperBound);
+            if (upperBound != null) {
+                int cmp = compare(io, buf, cnt - 1, upperBound);
 
-                        if (cmp > 0) {
-                            int idx = findInsertionPoint(io, buf, cnt, upperBound);
+                if (cmp > 0) {
+                    int idx = findInsertionPoint(io, buf, cnt, upperBound);
 
-                            cnt = idx < 0 ? -idx : idx + 1;
+                    cnt = idx < 0 ? -idx : idx + 1;
 
-                            fwdId = 0; // The End.
-                        }
-                    }
+                    nextPageId = 0; // The End.
                 }
-
-                if (cnt > startIdx) {
-                    if (rows == null)
-                        rows = new ArrayList<>();
-
-                    for (int i = startIdx; i < cnt; i++)
-                        rows.add(getRow(io, buf, i));
-                }
-
-                Page prevPage = page;
-
-                if (fwdId != 0) { // Lock next page.
-                    page = page(fwdId);
-                    buf = page.getForRead(); // We keep read lock on previous page, thus forward page can't be removed.
-                }
-                else { // Clear.
-                    page = null;
-                    buf = null;
-                }
-
-                if (prevPage != null) { // Release previous page.
-                    try {
-                        prevPage.releaseRead();
-                    }
-                    finally {
-                        prevPage.close();
-                    }
-                }
-
-                if (F.isEmpty(rows)) {
-                    if (buf == null)
-                        return false;
-
-                    continue;
-                }
-
-                return true;
             }
+
+            for (int i = startIdx; i < cnt; i++)
+                rows.add(getRow(io, buf, i));
         }
 
         /** {@inheritDoc} */
@@ -2846,7 +2811,28 @@ public abstract class BPlusTree<L, T extends L> {
             row = 0;
             rows.clear();
 
-            return fillFromBuffer(0);
+            while (nextPageId != 0) {
+                try (Page next = page(nextPageId)) {
+                    ByteBuffer buf = next.getForRead();
+
+                    try {
+                        if (PageIO.getPageId(buf) != nextPageId)
+                            throw new IgniteCheckedException("Concurrent merge.");
+
+                        fillFromBuffer(buf, io(buf), 0);
+
+                        if (!rows.isEmpty())
+                            return true;
+                    }
+                    finally {
+                        next.releaseRead();
+                    }
+                }
+            }
+
+            rows = null;
+
+            return false;
         }
 
         /** {@inheritDoc} */
