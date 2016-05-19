@@ -1000,9 +1000,10 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
 
         IgniteCache<DbKey, DbValue> cache = ignite.cache("non-primitive");
 
-        Affinity aff = ignite.affinity(cache.getName());
+        Affinity<Object> aff = ignite.affinity(cache.getName());
 
         Map<UUID, Integer> cntrs = new HashMap<>();
+        Map<Integer, Integer> partCntrs = new HashMap<>();
 
         final int ENTRIES = 10_000;
 
@@ -1022,6 +1023,17 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
                 cntr += 1;
 
             cntrs.put(nodeId, cntr);
+
+            int part = aff.partition(k);
+
+            Integer partCntr = partCntrs.get(part);
+
+            if (partCntr == null)
+                partCntr = 1;
+            else
+                partCntr += 1;
+
+            partCntrs.put(part, partCntr);
         }
 
         checkLocalEntries(ENTRIES, cntrs);
@@ -1029,6 +1041,8 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
         checkLocalScan(ENTRIES, cntrs);
 
         checkScan(ENTRIES);
+
+        checkScanPartition(partCntrs);
     }
 
     /**
@@ -1078,14 +1092,31 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
 
             QueryCursor<Cache.Entry<DbKey, DbValue>> cur = cache0.query(qry);
 
+            Map<Integer, Integer> partCntrs = new HashMap<>();
+
+            Affinity<Object> aff = ignite0.affinity(cache0.getName());
+
             for (Cache.Entry<DbKey, DbValue> e : cur) {
                 cnt++;
 
                 allKeys.add(e.getKey());
                 assertEquals(e.getKey().val, e.getValue().iVal);
+
+                int part = aff.partition(e.getKey());
+
+                Integer partCntr = partCntrs.get(part);
+
+                if (partCntr == null)
+                    partCntr = 1;
+                else
+                    partCntr += 1;
+
+                partCntrs.put(part, partCntr);
             }
 
             assertEquals(cntrs.get(ignite0.cluster().localNode().id()), (Integer)cnt);
+
+            checkScanPartition(ignite0, cache0, partCntrs, true);
         }
 
         assertEquals(total, allKeys.size());
@@ -1112,6 +1143,57 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
             }
 
             assertEquals(total, allKeys.size());
+        }
+    }
+
+    /**
+     * @param partCntrs Expected per-partition entries count.
+     */
+    private void checkScanPartition(Map<Integer, Integer> partCntrs) {
+        for (int i = 0; i < gridCount(); i++) {
+            Ignite ignite0 = grid(i);
+
+            IgniteCache<DbKey, DbValue> cache0 = ignite0.cache("non-primitive");
+
+            checkScanPartition(ignite0, cache0, partCntrs, false);
+        }
+    }
+
+    /**
+     * @param partCntrs Expected per-partition entries count.
+     */
+    private void checkScanPartition(Ignite ignite,
+        IgniteCache<DbKey, DbValue> cache,
+        Map<Integer, Integer> partCntrs,
+        boolean loc) {
+        Affinity<Object> aff = ignite.affinity(cache.getName());
+
+        int parts = aff.partitions();
+
+        for (int p = 0; p < parts; p++) {
+            ScanQuery<DbKey, DbValue> qry = new ScanQuery<>();
+
+            qry.setPartition(p);
+            qry.setLocal(loc);
+
+            if (loc && !ignite.cluster().localNode().equals(aff.mapPartitionToNode(p)))
+                continue;
+
+            QueryCursor<Cache.Entry<DbKey, DbValue>> cur = cache.query(qry);
+
+            Set<DbKey> allKeys = new HashSet<>();
+
+            for (Cache.Entry<DbKey, DbValue> e : cur) {
+                allKeys.add(e.getKey());
+                assertEquals(e.getKey().val, e.getValue().iVal);
+            }
+
+            Integer exp = partCntrs.get(p);
+
+            if (exp == null)
+                exp = 0;
+
+            assertEquals(exp, (Integer)allKeys.size());
         }
     }
 
