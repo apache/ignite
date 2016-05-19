@@ -1979,6 +1979,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /**
      * Checks that node is activated.
      * @param node Node.
+     * @param topVer Topology version
      * @return {@code True} if active.
      */
     public boolean activated(ClusterNode node, AffinityTopologyVersion topVer) {
@@ -1988,6 +1989,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         return discoCache(topVer).activatedNodes.contains(node);
     }
 
+    /**
+     * Checks that node is activated.
+     * @param node Node.
+     * @return {@code True} if active.
+     */
     public boolean activated(ClusterNode node) {
         Snapshot snapshot = topSnap.get();
 
@@ -1997,17 +2003,20 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         return snapshot.discoCache.activatedNodes.contains(node);
     }
 
+    /**
+     * @return Activated nodes for latest topology version.
+     */
     private Set<ClusterNode> activated() {
-        Set<ClusterNode> activatedNodes = new HashSet<>();
+        Set<ClusterNode> activatedNodes;
 
         Snapshot snapshot = topSnap.get();
 
         if (snapshot.topVer.equals(AffinityTopologyVersion.ZERO))
-            activatedNodes.addAll(discoveredActivatedNodes);
+            activatedNodes = new HashSet<>(discoveredActivatedNodes);
         else {
             assert snapshot.discoCache != null;
 
-            activatedNodes.addAll(snapshot.discoCache.activatedNodes);
+            activatedNodes = new HashSet<>(snapshot.discoCache.activatedNodes);
         }
 
         return activatedNodes;

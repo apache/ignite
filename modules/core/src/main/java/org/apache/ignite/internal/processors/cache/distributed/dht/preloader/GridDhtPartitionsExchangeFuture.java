@@ -1134,16 +1134,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     @Nullable @Override public Throwable validateCache(GridCacheContext cctx, Set<Integer> partitions) {
         Throwable err = error();
 
-        // TODO GG-11122: store cache state in exchange future.
-        if (!cctx.cache().state().active())
-            return new CacheInvalidStateException("Failed to perform cache operation " +
-                "(cache state is not valid): " + cctx.name());
-
         if (err != null)
             return err;
 
         CacheState state = cctx.cache().state();
 
+        // TODO GG-11122: store cache state in exchange future.
         if (!state.active())
             return new CacheInvalidStateException("Failed to perform cache operation " +
                 "(cache state is not valid): " + cctx.name());
@@ -1352,16 +1348,23 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         }
     }
 
+    /**
+     * Detect lost partitions.
+     */
     private void detectLostPartitions() {
         assert crd.isLocal();
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (cacheCtx.cache().state().active())
-                checkPartitionLost(cacheCtx);
+                detectLostPartitions(cacheCtx);
         }
     }
 
-    private void checkPartitionLost(GridCacheContext cacheCtx) {
+    /**
+     * Detect lost partitions.
+     * @param cacheCtx Cache context.
+     */
+    private void detectLostPartitions(GridCacheContext cacheCtx) {
         int parts = cacheCtx.affinity().partitions();
         Set<Integer> partsWithOwner = new HashSet<>();
 
@@ -1380,7 +1383,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 GridDhtPartitionsAbstractMessage msg = e.getValue();
 
                 if (msg instanceof GridDhtPartitionsSingleMessage) {
-                    GridDhtPartitionsSingleMessage singleMsg = (GridDhtPartitionsSingleMessage) msg;
+                    GridDhtPartitionsSingleMessage singleMsg = (GridDhtPartitionsSingleMessage)msg;
 
                     if (!singleMsg.partitions().containsKey(cacheCtx.cacheId()))
                         continue;
@@ -1393,7 +1396,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     }
                 }
                 else if (msg instanceof GridDhtPartitionsFullMessage) {
-                    GridDhtPartitionsFullMessage fullMsg = (GridDhtPartitionsFullMessage) msg;
+                    GridDhtPartitionsFullMessage fullMsg = (GridDhtPartitionsFullMessage)msg;
 
                     for (Map.Entry<UUID, GridDhtPartitionMap2> e0 : fullMsg.partitions().get(cacheCtx.cacheId()).entrySet()) {
                         if (!e0.getValue().containsKey(p))

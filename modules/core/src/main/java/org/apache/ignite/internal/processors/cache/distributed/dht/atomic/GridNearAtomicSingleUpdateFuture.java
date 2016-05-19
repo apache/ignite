@@ -399,7 +399,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
                 Throwable err;
 
                 if (key == null)
-                     err = fut.validateCache(cctx);
+                    err = fut.validateCache(cctx);
                 else
                     err = fut.validateCache(cctx, Collections.singleton(cctx.affinity().partition(key)));
 
