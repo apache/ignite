@@ -517,7 +517,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             flags |= IS_OFFHEAP_PTR_MASK;
 
                             if (needVal) {
-                                CacheObject val = cctx.fromOffheap(offHeapPointer(), false);
+                                CacheObject val = cctx.fromOffheap(e.offheapPointer(), false);
 
                                 e.value(val);
                             }
