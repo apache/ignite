@@ -69,7 +69,7 @@ consoleModule.controller('sqlController', [
             }
         };
 
-        $scope.maskCacheName = (cacheName) => _.isEmpty(cacheName) ? "&lt;default&gt;" : cacheName;
+        $scope.maskCacheName = (cacheName) => _.isEmpty(cacheName) ? '<default>' : cacheName;
 
         var _handleException = function(err) {
             $common.showError(err);
@@ -252,7 +252,12 @@ consoleModule.controller('sqlController', [
 
                     const caches = _.flattenDeep(clusters.map((cluster) => cluster.caches));
 
-                    $scope.caches = _.sortBy(_.uniqBy(_.reject(caches, { mode: 'LOCAL' }), 'name'), 'name');
+                    $scope.caches = _.sortBy(_.map(_.uniqBy(_.reject(caches, { mode: 'LOCAL' }), 'name'),
+                        (cache) => {
+                            cache.label = $scope.maskCacheName(cache.name);
+
+                            return cache;
+                        }), 'label');
 
                     _setActiveCache();
                 })
