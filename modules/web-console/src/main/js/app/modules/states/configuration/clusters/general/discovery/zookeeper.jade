@@ -16,6 +16,8 @@
 
 include ../../../../../../../app/helpers/jade/mixins.jade
 
+-var discoveryKind = 'ZooKeeper'
+-var required = 'backupItem.discovery.kind == "' + discoveryKind + '"'
 -var model = 'backupItem.discovery.ZooKeeper'
 
 div
@@ -25,7 +27,7 @@ div
             By default generates curator of org.apache.curator. framework.imps.CuratorFrameworkImpl\
             class with configured connect string, retry policy, and default session and connection timeouts')
     .details-row
-        +text('Connect string:', model + '.zkConnectionString', 'zkConnectionString', 'true', 'host:port[chroot][,host:port[chroot]]',
+        +text('Connect string:', model + '.zkConnectionString', ZooKeeper + 'ConnectionString', required, 'host:port[chroot][,host:port[chroot]]',
             'When "IGNITE_ZK_CONNECTION_STRING" system property is not configured this property will be used')
     .details-row
         +dropdown('Retry policy:', model + '.retryPolicy.kind', 'retryPolicy', 'true', 'Default',
