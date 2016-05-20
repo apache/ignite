@@ -24,7 +24,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.cache.expiry.Duration;
-import javax.cache.expiry.TouchedExpiryPolicy;
+import javax.cache.expiry.ModifiedExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -49,7 +49,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
 /**
  *
  */
-public class CacheQueryWithExpirationTest extends GridCommonAbstractTest {
+public class CacheOperationsWithExpirationTest extends GridCommonAbstractTest {
     /** */
     private static final int KEYS = 10_000;
 
@@ -89,10 +89,10 @@ public class CacheQueryWithExpirationTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected void afterTest() throws Exception {
+    @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
 
-        super.afterTest();
+        super.afterTestsStopped();
     }
 
     /**
@@ -193,7 +193,7 @@ public class CacheQueryWithExpirationTest extends GridCommonAbstractTest {
                 void putGet(IgniteCache<String, TestIndexedType> cache) {
                     ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                    cache = cache.withExpiryPolicy(new TouchedExpiryPolicy(
+                    cache = cache.withExpiryPolicy(new ModifiedExpiryPolicy(
                         new Duration(MILLISECONDS, rnd.nextLong(100) + 1)));
 
                     for (int i = 0; i < KEYS; i++) {

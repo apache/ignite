@@ -336,7 +336,9 @@ public class ConfigVariationsTestSuiteBuilder {
      * @param filters Ignite configuration filters.
      * @return {@code this} for chaining.
      */
-    public ConfigVariationsTestSuiteBuilder withIgniteConfigFilters(IgnitePredicate<IgniteConfiguration>... filters) {
+    @SafeVarargs
+    public final ConfigVariationsTestSuiteBuilder withIgniteConfigFilters(
+        IgnitePredicate<IgniteConfiguration>... filters) {
         igniteCfgFilters = filters;
 
         return this;
