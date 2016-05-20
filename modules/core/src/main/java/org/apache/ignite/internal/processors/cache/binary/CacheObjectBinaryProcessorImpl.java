@@ -570,6 +570,22 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public BinaryMetadata binaryMetadata(final int typeId) throws IgniteException {
+        if (clientNode)
+            return metaDataCache.getTopologySafe(new BinaryMetadataKey(typeId));
+        else {
+            BinaryMetadataKey key = new BinaryMetadataKey(typeId);
+
+            BinaryMetadata meta = metaDataCache.localPeek(key);
+
+            if (meta == null && !metaDataCache.context().preloader().syncFuture().isDone())
+                meta = metaDataCache.getTopologySafe(key);
+
+            return meta;
+        }
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public BinaryType metadata(final int typeId) throws BinaryObjectException {
         try {
             if (clientNode) {
@@ -577,21 +593,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
                 if (typeMeta != null)
                     return typeMeta;
-
-                BinaryMetadata meta = metaDataCache.getTopologySafe(new BinaryMetadataKey(typeId));
-
-                return meta != null ? meta.wrap(binaryCtx) : null;
             }
-            else {
-                BinaryMetadataKey key = new BinaryMetadataKey(typeId);
 
-                BinaryMetadata meta = metaDataCache.localPeek(key);
-
-                if (meta == null && !metaDataCache.context().preloader().syncFuture().isDone())
-                    meta = metaDataCache.getTopologySafe(key);
-
-                return meta != null ? meta.wrap(binaryCtx) : null;
-            }
+            return new BinaryTypeImpl(binaryCtx, null, this, typeId);
         }
         catch (CacheException e) {
             throw new BinaryObjectException(e);

@@ -20,6 +20,8 @@ package org.apache.ignite.internal.binary;
 import org.apache.ignite.binary.BinaryType;
 
 import java.util.Collection;
+
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -32,7 +34,13 @@ public class BinaryTypeImpl implements BinaryType {
     private final BinaryContext ctx;
 
     /** Type metadata. */
-    private final BinaryMetadata meta;
+    private volatile BinaryMetadata meta;
+
+    /** Processor for lazy loading binary metadata. */
+    private final CacheObjectBinaryProcessor processor;
+
+    /** Type ID. */
+    private final int typeId;
 
     /**
      * Constructor.
@@ -41,43 +49,60 @@ public class BinaryTypeImpl implements BinaryType {
      * @param meta Type  metadata.
      */
     public BinaryTypeImpl(BinaryContext ctx, BinaryMetadata meta) {
+        this(ctx, meta, null, meta.typeId());
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param ctx Binary context.
+     * @param meta Type metadata.
+     * @param processor Object binary processor
+     * @param typeId Type ID.
+     */
+    public BinaryTypeImpl(final BinaryContext ctx, final BinaryMetadata meta,
+        final CacheObjectBinaryProcessor processor, final int typeId) {
+        assert meta != null || processor != null;
+
         this.ctx = ctx;
         this.meta = meta;
+        this.processor = processor;
+        this.typeId = typeId;
     }
 
     /** {@inheritDoc} */
     @Override public String typeName() {
-        return meta.typeName();
+        return metadata().typeName();
     }
 
     /** {@inheritDoc} */
     @Override public int typeId() {
-        return meta.typeId();
+        return typeId;
     }
 
     /** {@inheritDoc} */
     @Override public Collection<String> fieldNames() {
-        return meta.fields();
+        return metadata().fields();
     }
 
     /** {@inheritDoc} */
     @Override public String fieldTypeName(String fieldName) {
-        return meta.fieldTypeName(fieldName);
+        return metadata().fieldTypeName(fieldName);
     }
 
     /** {@inheritDoc} */
     @Override public BinaryFieldImpl field(String fieldName) {
-        return ctx.createField(meta.typeId(), fieldName);
+        return ctx.createField(typeId, fieldName);
     }
 
     /** {@inheritDoc} */
     @Override public String affinityKeyFieldName() {
-        return meta.affinityKeyFieldName();
+        return metadata().affinityKeyFieldName();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isEnum() {
-        return meta.isEnum();
+        return metadata().isEnum();
     }
 
     /**
@@ -91,6 +116,13 @@ public class BinaryTypeImpl implements BinaryType {
      * @return Metadata.
      */
     public BinaryMetadata metadata() {
+        if (meta == null) {
+            synchronized (this) {
+                if (meta == null)
+                    meta = processor.binaryMetadata(typeId);
+            }
+        }
+
         return meta;
     }
 
