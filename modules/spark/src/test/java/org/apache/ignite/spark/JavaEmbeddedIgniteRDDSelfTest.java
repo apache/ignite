@@ -17,8 +17,6 @@
 
 package org.apache.ignite.spark;
 
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -38,6 +36,9 @@ import org.apache.spark.sql.Column;
 import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.Row;
 import scala.Tuple2;
+
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Tests for {@link JavaIgniteRDD} (embedded mode).
