@@ -112,6 +112,29 @@ class IgniteContext[K, V](
         new IgniteRDD[K, V](this, cacheName, null)
     }
 
+
+    /**
+     * Creates an `IgniteRDD` instance from the given cache name. If the cache does not exist, it will be
+     * automatically started from template on the first invoked RDD action.
+     *
+     * @param cacheName Cache name.
+     * @return `IgniteRDD` instance.
+     */
+    def getCache(cacheName: String): IgniteRDD[K, V] = {
+        new IgniteRDD[K,V](this, cacheName, null)
+    }
+
+    /**
+     * Creates an `IgniteRDD` instance from the given cache configuration. If the cache does not exist, it will be
+     * automatically started using the configuration provided on the first invoked RDD action.
+     *
+     * @param cacheCfg Cache configuration to use.
+     * @return `IgniteRDD` instance.
+     */
+    def getCache(cacheCfg: CacheConfiguration[K, V]) = {
+        new IgniteRDD[K, V](this, cacheCfg.getName, cacheCfg)
+    }
+
     /**
      * Creates an `IgniteRDD` instance from the given cache configuration. If the cache does not exist, it will be
      * automatically started using the configuration provided on the first invoked RDD action.
