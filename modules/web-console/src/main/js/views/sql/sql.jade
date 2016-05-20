@@ -105,13 +105,13 @@ mixin chart-settings(mdl)
                                         lable.labelField.labelFormField Caches:
                                         i.fa.fa-database.tipField(title='Click to show cache types metadata dialog' bs-popover data-template-url='/sql/cache-metadata.html', data-placement='bottom', data-trigger='click')
                                         .input-tip
-                                            input.form-control(type='text' st-search='name' placeholder='Filter caches...')
+                                            input.form-control(type='text' st-search='label' placeholder='Filter caches...')
                                         table.links
-                                            tbody.scrollable-y(style='max-height: 15em;display:block;' ng-model='paragraph.cacheName' bs-radio-group)
+                                            tbody.scrollable-y(style='max-height: 15em; display: block;')
                                                 tr(ng-repeat='cache in displayedCaches track by cache.name')
                                                     td(style='width: 100%')
-                                                        input.labelField(type='radio' value='{{cache.name}}')
-                                                        label(ng-bind-html='maskCacheName(cache.name)')
+                                                        input.labelField(id='cache{{$index}}' type='radio' value='{{cache.name}}' ng-model='paragraph.cacheName')
+                                                        label(for='cache{{$index}}' ng-bind='cache.label')
                                     .empty-caches(ng-show='displayedCaches.length == 0 && caches.length != 0')
                                         label Wrong caches filter
                                     .empty-caches(ng-show='caches.length == 0')
@@ -165,7 +165,7 @@ mixin chart-settings(mdl)
                                         .row
                                             .col-xs-4.col-xs-offset-4
                                                 +result-toolbar
-                                        label.margin-top-dflt Charts do not support&nbsp
+                                        label.margin-top-dflt Charts do not support&nbsp;
                                             b Explain
                                             | &nbsp;and&nbsp;
                                             b Scan

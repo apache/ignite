@@ -1918,16 +1918,16 @@ $generatorJava.clusterCaches = function (caches, igfss, isSrvCfg, res) {
 // Generate cluster caches.
 $generatorJava.clusterCacheUse = function (caches, igfss, res) {
     function clusterCacheInvoke(cache, names) {
-        names.push($generatorJava.nextVariableName('cache', cache, names) + '()');
+        names.push($generatorJava.nextVariableName('cache', cache, names));
     }
 
     if (!res)
         res = $generatorCommon.builder();
 
-    var names = [];
+    var cacheNames = [];
 
     _.forEach(caches, function (cache) {
-        clusterCacheInvoke(cache, names);
+        clusterCacheInvoke(cache, cacheNames);
     });
 
     var igfsNames = [];
@@ -1937,12 +1937,10 @@ $generatorJava.clusterCacheUse = function (caches, igfss, res) {
         clusterCacheInvoke($generatorCommon.igfsMetaCache(igfs), igfsNames);
     });
 
-    if (names.length > 0 || igfsNames.length > 0) {
-        _.forEach(igfsNames, function (igfsName) {
-            names.push(igfsName);
-        });
+    var allCacheNames = cacheNames.concat(igfsNames);
 
-        res.line('cfg.setCacheConfiguration(' + names.join(', ') + ');');
+    if (allCacheNames.length) {
+        res.line('cfg.setCacheConfiguration(' + allCacheNames.join('(), ') + '());');
 
         res.needEmptyLine = true;
     }
