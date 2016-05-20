@@ -252,12 +252,11 @@ consoleModule.controller('sqlController', [
 
                     const caches = _.flattenDeep(clusters.map((cluster) => cluster.caches));
 
-                    $scope.caches = _.sortBy(_.map(_.uniqBy(_.reject(caches, { mode: 'LOCAL' }), 'name'),
-                        (cache) => {
-                            cache.label = $scope.maskCacheName(cache.name);
+                    $scope.caches = _.sortBy(_.map(_.uniqBy(_.reject(caches, {mode: 'LOCAL'}), 'name'), (cache) => {
+                        cache.label = $scope.maskCacheName(cache.name);
 
-                            return cache;
-                        }), 'label');
+                        return cache;
+                    }), 'label');
 
                     _setActiveCache();
                 })

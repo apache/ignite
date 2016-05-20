@@ -278,9 +278,9 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
 
 
                 // Ping node and return result to browser.
-                socket.on('node:ping', (nid, cb) => {
+                socket.on('node:ping', (taskNid, nid, cb) => {
                     agentMgr.findAgent(user._id)
-                        .then((agent) => agent.ping(demo, nid))
+                        .then((agent) => agent.ping(demo, taskNid, nid))
                         .then((data) => {
                             if (data.finished)
                                 return cb(null, data.result);

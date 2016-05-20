@@ -348,13 +348,14 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
 
         /**
          * @param {Boolean} demo Is need run command on demo node.
-         * @param {String} nid Node id.
+         * @param {String} taskNid node that is not node we want to ping.
+         * @param {String} nid Id of the node to ping.
          * @returns {Promise}
          */
-        ping(demo, nid) {
+        ping(demo, taskNid, nid) {
             const cmd = new Command(demo, 'exe')
                 .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
-                .addParam('p1', 'null')
+                .addParam('p1', taskNid)
                 .addParam('p2', 'org.apache.ignite.internal.visor.node.VisorNodePingTask')
                 .addParam('p3', 'java.util.UUID')
                 .addParam('p4', nid);

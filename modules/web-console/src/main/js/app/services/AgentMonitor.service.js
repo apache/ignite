@@ -329,11 +329,12 @@ class IgniteAgentMonitor {
 
     /**
      * Ping node.
-     * @param {String} nid Node id.
+     * @param {String} taskNid node that is not node we want to ping.
+     * @param {String} nid Id of the node to ping.
      * @returns {Promise}
      */
-    ping(nid) {
-        return this._rest('node:ping', nid);
+    ping(taskNid, nid) {
+        return this._rest('node:ping', taskNid, nid);
     }
 
     stopWatch() {
