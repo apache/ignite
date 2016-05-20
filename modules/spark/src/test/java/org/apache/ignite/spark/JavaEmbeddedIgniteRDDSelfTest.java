@@ -106,6 +106,8 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
 
     /**
      * Creates default spark context
+     *
+     * @return Context.
      */
     private JavaSparkContext createContext() {
         SparkConf conf = new SparkConf();
@@ -127,7 +129,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
             ic = new JavaIgniteContext<>(sc, new IgniteConfigProvider(), false);
 
             ic.fromCache(PARTITIONED_CACHE_NAME)
-                .savePairs(sc.parallelize(F.range(0, KEYS_CNT), GRID_CNT).mapToPair(TO_PAIR_F));
+                .savePairs(sc.parallelize(F.range(0, KEYS_CNT), GRID_CNT).mapToPair(TO_PAIR_F), true);
 
             Ignite ignite = ic.ignite();
 
@@ -186,8 +188,6 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testQueryObjectsFromIgnite() throws Exception {
-        fail("IGNITE-3009");
-
         JavaSparkContext sc = createContext();
 
         JavaIgniteContext<String, Entity> ic = null;
@@ -198,10 +198,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
             JavaIgniteRDD<String, Entity> cache = ic.fromCache(PARTITIONED_CACHE_NAME);
 
             int cnt = 1001;
-
-            List<Integer> numbers = F.range(0, cnt);
-
-            cache.savePairs(sc.parallelize(numbers, GRID_CNT).mapToPair(INT_TO_ENTITY_F));
+            cache.savePairs(sc.parallelize(F.range(0, cnt), GRID_CNT).mapToPair(INT_TO_ENTITY_F), true);
 
             List<Entity> res = cache.objectSql("Entity", "name = ? and salary = ?", "name50", 5000)
                 .map(STR_ENTITY_PAIR_TO_ENTITY_F).collect();
@@ -238,7 +235,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
 
             JavaIgniteRDD<String, Entity> cache = ic.fromCache(PARTITIONED_CACHE_NAME);
 
-            cache.savePairs(sc.parallelize(F.range(0, 1001), GRID_CNT).mapToPair(INT_TO_ENTITY_F));
+            cache.savePairs(sc.parallelize(F.range(0, 1001), GRID_CNT).mapToPair(INT_TO_ENTITY_F), true);
 
             DataFrame df =
                 cache.sql("select id, name, salary from Entity where name = ? and salary = ?", "name50", 5000);
@@ -281,6 +278,8 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
     /**
      * @param gridName Grid name.
      * @param client Client.
+     * @throws Exception If failed.
+     * @return Confiuration.
      */
     private static IgniteConfiguration getConfiguration(String gridName, boolean client) throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
@@ -302,6 +301,8 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
 
     /**
      * Creates cache configuration.
+     *
+     * @return Cache configuration.
      */
     private static CacheConfiguration<Object, Object> cacheConfiguration() {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
