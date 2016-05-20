@@ -201,16 +201,8 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     }
 
     /**
-     * @return Tested grid is client node or not.
-     */
-    protected boolean isClient() {
-        return testedGrid().configuration().isClientMode();
-    }
-
-    /**
      * @return Tested grid in client mode or not.
      */
-    // TODO delete one of isCLient methods
     protected boolean isClientMode() {
         return grid(testedNodeIdx).configuration().isClientMode();
     }
