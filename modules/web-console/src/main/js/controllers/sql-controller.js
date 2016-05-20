@@ -21,16 +21,16 @@ import consoleModule from 'controllers/common-module';
 consoleModule.controller('sqlController', [
     '$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$modal', '$popover', '$loading', '$common', '$confirm', 'IgniteAgentMonitor', 'IgniteChartColors', 'QueryNotebooks', 'uiGridExporterConstants',
     function ($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $modal, $popover, $loading, $common, $confirm, agentMonitor, IgniteChartColors, QueryNotebooks, uiGridExporterConstants) {
-        var stopTopology = null;
+        let stopTopology = null;
 
-        $scope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
+        const _stopTopologyRefresh = () => {
             $interval.cancel(stopTopology);
 
             if ($scope.notebook && $scope.notebook.paragraphs)
-                $scope.notebook.paragraphs.forEach(function (paragraph) {
-                    _tryStopRefresh(paragraph);
-                });
-        });
+                $scope.notebook.paragraphs.forEach((paragraph) => _tryStopRefresh(paragraph));
+        };
+
+        $scope.$on('$stateChangeStart', _stopTopologyRefresh);
 
         $scope.caches = [];
 
@@ -245,7 +245,7 @@ consoleModule.controller('sqlController', [
                 });
         };
 
-        const _refreshFn = () =>
+        const _updateTopology = () =>
             agentMonitor.topology()
                 .then((clusters) => {
                     agentMonitor.checkModal();
@@ -264,8 +264,23 @@ consoleModule.controller('sqlController', [
                     if (err.code === 2)
                         return agentMonitor.showNodeError('Agent is failed to authenticate in grid. Please check agent\'s login and password.');
 
-                    agentMonitor.showNodeError(err.message)}
-                );
+                    agentMonitor.showNodeError(err)
+                });
+
+        const _startTopologyRefresh = () => {
+            $loading.start('sqlLoading');
+
+            agentMonitor.awaitAgent()
+                .then(_updateTopology)
+                .finally(() => {
+                    if ($root.IgniteDemoMode)
+                        _.forEach($scope.notebook.paragraphs, $scope.execute);
+
+                    $loading.finish('sqlLoading');
+
+                    stopTopology = $interval(_updateTopology, 5000, 0, false);
+                });
+        };
 
         var loadNotebook = function (notebook) {
             $scope.notebook = notebook;
@@ -292,21 +307,14 @@ consoleModule.controller('sqlController', [
             agentMonitor.startWatch({
                     state: 'base.configuration.clusters',
                     text: 'Back to Configuration',
-                    goal: 'execute sql statements'
+                    goal: 'execute sql statements',
+                    onDisconnect: () => {
+                        _stopTopologyRefresh();
+
+                        _startTopologyRefresh();
+                    }
                 })
-                .then(() => {
-                    $loading.start('sqlLoading');
-
-                    _refreshFn()
-                        .finally(() => {
-                            if ($root.IgniteDemoMode)
-                                _.forEach($scope.notebook.paragraphs, $scope.execute);
-
-                            $loading.finish('sqlLoading');
-
-                            stopTopology = $interval(_refreshFn, 5000, 0, false);
-                        });
-                });
+                .then(_startTopologyRefresh)
         };
 
         QueryNotebooks.read($state.params.noteId)

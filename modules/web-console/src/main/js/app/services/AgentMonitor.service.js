@@ -115,7 +115,7 @@ class IgniteAgentMonitor {
             if (success)
                 return latch.resolve();
 
-            latch.reject();
+            latch.reject('Connection to agent was closed');
         });
 
         return latch.promise;
@@ -133,8 +133,7 @@ class IgniteAgentMonitor {
 
             this.checkModal();
 
-            if (this._scope.hasAgents)
-                this._scope.$broadcast('agent:connected', true);
+            this._scope.$broadcast('agent:connected', this._scope.hasAgents);
         });
 
         this._socket.on('disconnect', () => {
@@ -154,6 +153,9 @@ class IgniteAgentMonitor {
 
         this._scope.agentGoal = back.goal;
 
+        if (back.onDisconnect)
+            this._scope.offDisconnect = this._scope.$on('agent:connected', (e, success) => success || back.onDisconnect());
+
         this._scope.showModal = true;
 
         return this.awaitAgent();
@@ -168,7 +170,7 @@ class IgniteAgentMonitor {
      */
     _emit(event, ...args) {
         if (!this._socket)
-            return this._$q.reject('Failed to connect to agent');
+            return this._$q.reject('Failed to connect to server');
 
         const latch = this._$q.defer();
 
@@ -217,12 +219,14 @@ class IgniteAgentMonitor {
     }
 
     /**
-     * @param {String} errMsg
+     * @param {Object} err
      */
-    showNodeError(errMsg) {
-        this._downloadAgentModal.show();
+    showNodeError(err) {
+        if (this._scope.showModal) {
+            this._downloadAgentModal.$promise.then(this._downloadAgentModal.show);
 
-        this._$common.showError(errMsg);
+            this._$common.showError(err);
+        }
     }
 
     /**
@@ -341,6 +345,8 @@ class IgniteAgentMonitor {
         this._scope.showModal = false;
 
         this.checkModal();
+
+        this._scope.offDisconnect && this._scope.offDisconnect();
 
         this._scope.$broadcast('agent:connected', false);
     }
