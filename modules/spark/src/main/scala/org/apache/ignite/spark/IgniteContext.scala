@@ -30,10 +30,8 @@ import org.apache.spark.sql.SQLContext
  *
  * @param sparkContext Spark context.
  * @param cfgF Configuration factory.
- * @tparam K Key type.
- * @tparam V Value type.
  */
-class IgniteContext[K, V](
+class IgniteContext(
     @transient val sparkContext: SparkContext,
     cfgF: () ⇒ IgniteConfiguration,
     client: Boolean = true
@@ -109,6 +107,7 @@ class IgniteContext[K, V](
      * @return `IgniteRDD` instance.
      */
     def fromCache(cacheName: String): IgniteRDD[K, V] = {
+        val K =
         new IgniteRDD[K, V](this, cacheName, null)
     }
 
