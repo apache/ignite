@@ -393,9 +393,9 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     private void checkNormal(BinaryMarshaller marsh, String fieldName, boolean exists) throws Exception {
-        TestContext testCtx = context(marsh, fieldName);
+        check0(fieldName, context(marsh, fieldName, false), exists);
 
-        check0(fieldName, testCtx, exists);
+        check0(fieldName, context(marsh, fieldName, true), exists);
     }
 
     /**
@@ -407,9 +407,9 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      * @throws Exception If failed.
      */
     private void checkNested(BinaryMarshaller marsh, String fieldName, boolean exists) throws Exception {
-        TestContext testCtx = nestedContext(marsh, fieldName);
+        check0(fieldName, nestedContext(marsh, fieldName, false), exists);
 
-        check0(fieldName, testCtx, exists);
+        check0(fieldName, nestedContext(marsh, fieldName, true), exists);
     }
 
     /**
@@ -485,12 +485,13 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      * @return Test context.
      * @throws Exception If failed.
      */
-    private TestContext context(BinaryMarshaller marsh, String fieldName) throws Exception {
+    private TestContext context(BinaryMarshaller marsh, String fieldName, boolean cachedType) throws Exception {
         TestObject obj = createObject();
 
         BinaryObjectExImpl portObj = toBinary(marsh, obj);
 
-        BinaryField field = portObj.type().field(fieldName);
+        BinaryField field = cachedType ? portObj.fieldType(fieldName)
+            : portObj.type().field(fieldName);
 
         return new TestContext(obj, portObj, field);
     }
@@ -503,7 +504,7 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
      * @return Test context.
      * @throws Exception If failed.
      */
-    private TestContext nestedContext(BinaryMarshaller marsh, String fieldName)
+    private TestContext nestedContext(BinaryMarshaller marsh, String fieldName, boolean cachedType)
         throws Exception {
         TestObject obj = createObject();
         TestOuterObject outObj = new TestOuterObject(obj);
@@ -513,7 +514,8 @@ public abstract class BinaryFieldsAbstractSelfTest extends GridCommonAbstractTes
 
         assert portObj != null;
 
-        BinaryField field = portObj.type().field(fieldName);
+        BinaryField field = cachedType ? portObj.fieldType(fieldName)
+            : portObj.type().field(fieldName);
 
         return new TestContext(obj, portObj, field);
     }

@@ -28,10 +28,12 @@ import java.sql.Timestamp;
 import java.util.Date;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
+import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.binary.builder.BinaryObjectBuilderImpl;
 import org.apache.ignite.internal.binary.streams.BinaryOffheapInputStream;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -61,6 +63,10 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
 
     /** */
     private final int size;
+
+    /** Used only for {@link #fieldType(String)} */
+    @GridDirectTransient
+    private BinaryType cachedType;
 
     /**
      * For {@link Externalizable} (not supported).
@@ -149,7 +155,17 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
         if (ctx == null)
             throw new BinaryObjectException("BinaryContext is not set for the object.");
 
-        return ctx.metadata(typeId());
+        cachedType = ctx.metadata(typeId());
+
+        return cachedType;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public BinaryField fieldType(final String fieldName) {
+        if (cachedType == null)
+            cachedType = type();
+
+        return cachedType == null ? null : cachedType.field(fieldName);
     }
 
     /** {@inheritDoc} */

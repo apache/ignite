@@ -23,6 +23,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -57,6 +58,10 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
     /** Ordinal. */
     private int ord;
+
+    /** Used only for {@link #fieldType(String)} */
+    @GridDirectTransient
+    private BinaryType cachedType;
 
     /**
      * {@link Externalizable} support.
@@ -130,7 +135,17 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
     /** {@inheritDoc} */
     @Override public BinaryType type() throws BinaryObjectException {
-        return ctx.metadata(typeId());
+        cachedType = ctx.metadata(typeId());
+
+        return cachedType;
+    }
+
+    /** {@inheritDoc} */
+    @Override public BinaryField fieldType(final String fieldName) {
+        if (cachedType == null)
+            cachedType = type();
+
+        return cachedType == null ? null : cachedType.field(fieldName);
     }
 
     /** {@inheritDoc} */

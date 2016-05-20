@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryField;
 import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
@@ -75,6 +76,10 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
     /** */
     @GridDirectTransient
     private int part = -1;
+
+    /** Used only for {@link #fieldType(String)} */
+    @GridDirectTransient
+    private BinaryType cachedType;
 
     /**
      * For {@link Externalizable}.
@@ -260,7 +265,17 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
         if (ctx == null)
             throw new BinaryObjectException("BinaryContext is not set for the object.");
 
-        return ctx.metadata(typeId());
+        cachedType = ctx.metadata(typeId());
+
+        return cachedType;
+    }
+
+    /** {@inheritDoc} */
+    @Override public BinaryField fieldType(final String fieldName) {
+        if (cachedType == null)
+            cachedType = type();
+
+        return cachedType == null ? null : cachedType.field(fieldName);
     }
 
     /** {@inheritDoc} */
