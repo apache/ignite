@@ -17,8 +17,6 @@
 
 package org.apache.ignite.binary;
 
-import org.jetbrains.annotations.Nullable;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -108,22 +106,6 @@ public interface BinaryObject extends Serializable, Cloneable {
      * @throws BinaryObjectException In case of error.
      */
     public BinaryType type() throws BinaryObjectException;
-
-    /**
-     * Get {@link BinaryField} for the given field name. Later this field can be used for fast field's value
-     * retrieval from concrete {@link BinaryObject}.
-     * <p>
-     *     It's faster implementation of
-     *     <pre>
-     *         BinaryField field = binaryObject.type().field(fieldName);
-     *     </pre>
-     *     due to {@link BinaryType} caching which is located each time the {@link #type()} method is called.
-     * </p>
-     *
-     * @param fieldName Field name.
-     * @return Binary field.
-     */
-    @Nullable public BinaryField fieldType(String fieldName);
 
     /**
      * Gets field value.
