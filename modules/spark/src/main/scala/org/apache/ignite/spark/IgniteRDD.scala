@@ -43,7 +43,7 @@ import scala.collection.JavaConversions._
  * @tparam V Value type.
  */
 class IgniteRDD[K, V] (
-    val ic: IgniteContext[K, V],
+    val ic: IgniteContext,
     val cacheName: String,
     val cacheCfg: CacheConfiguration[K, V]
 ) extends IgniteAbstractRDD[(K, V), K, V] (ic, cacheName, cacheCfg) {
