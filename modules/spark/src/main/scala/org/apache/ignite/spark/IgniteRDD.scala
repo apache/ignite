@@ -246,4 +246,5 @@ class IgniteRDD[K, V] (
         val cache = ensureCache()
         return cache.size() == 0
     }
+
 }
