@@ -77,7 +77,7 @@ terminate()
 
     aws s3 rm --recursive $reportFolder
     if [ $? -ne 0 ]; then
-        echo "[ERROR] Failed drop report folder: $reportFolder"
+        echo "[ERROR] Failed to drop report folder: $reportFolder"
     fi
 
     aws s3 cp --sse AES256 /opt/bootstrap-result $reportFile
