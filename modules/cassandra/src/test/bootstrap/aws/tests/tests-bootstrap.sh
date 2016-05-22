@@ -30,6 +30,7 @@ TESTS_PACKAGE_UNZIP_DIR=ignite-cassandra-tests
 S3_LOGS_URL=$S3_SYSTEM/logs/t-logs
 S3_LOGS_TRIGGER_URL=$S3_SYSTEM/logs-trigger
 S3_TESTS_TRIGGER_URL=$S3_SYSTEM/tests-trigger
+S3_TEST_NODES_DISCOVERY_URL=$S3_SYSTEM/t-discovery
 S3_IGNITE_NODES_DISCOVERY_URL=$S3_SYSTEM/i-discovery
 S3_CASSANDRA_NODES_DISCOVERY_URL=$S3_SYSTEM/c-discovery
 S3_TESTS_SUCCESS_URL=$S3_SYSTEM/t-success
@@ -209,6 +210,7 @@ echo "[INFO] Logs URL: $S3_LOGS_URL"
 echo "[INFO] Logs trigger URL: $S3_LOGS_TRIGGER_URL"
 echo "[INFO] Tests trigger URL: $S3_TESTS_TRIGGER_URL"
 echo "[INFO] Tests package download URL: $TESTS_PACKAGE_DONLOAD_URL"
+echo "[INFO] Test node discovery URL: $S3_TEST_NODES_DISCOVERY_URL"
 echo "[INFO] Ignite node discovery URL: $S3_IGNITE_NODES_DISCOVERY_URL"
 echo "[INFO] Cassandra node discovery URL: $S3_CASSANDRA_NODES_DISCOVERY_URL"
 echo "[INFO] Tests idle URL: $S3_TESTS_IDLE_URL"
@@ -360,6 +362,7 @@ echo "export JAVA_HOME=/opt/jdk1.8.0_77" >> $profile
 echo "export PATH=\$JAVA_HOME/bin:\IGNITE_HOME/bin:\$PATH" >> $profile
 echo "export TESTS_TYPE=$TESTS_TYPE" >> $profile
 echo "export S3_TESTS_SUMMARY_URL=$S3_TESTS_SUMMARY_URL" >> $profile
+echo "export S3_TEST_NODES_DISCOVERY_URL=$S3_TEST_NODES_DISCOVERY_URL" >> $profile
 echo "export S3_CASSANDRA_NODES_DISCOVERY_URL=$S3_CASSANDRA_NODES_DISCOVERY_URL" >> $profile
 echo "export S3_IGNITE_NODES_DISCOVERY_URL=$S3_IGNITE_NODES_DISCOVERY_URL" >> $profile
 echo "export S3_TESTS_IDLE_URL=$S3_TESTS_IDLE_URL" >> $profile

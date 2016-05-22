@@ -69,6 +69,8 @@ terminate()
 
     rm -Rf /opt/ignite-cassandra-tests/tests-result /opt/ignite-cassandra-tests/hostname
 
+    unregisterNode
+
     exit 1
 }
 
@@ -271,6 +273,14 @@ validate()
 
     if [[ "$S3_IGNITE_NODES_DISCOVERY_URL" != */ ]]; then
         S3_IGNITE_NODES_DISCOVERY_URL=${S3_IGNITE_NODES_DISCOVERY_URL}/
+    fi
+
+    if [ -z "$S3_TEST_NODES_DISCOVERY_URL" ]; then
+        terminate "Tests S3 discovery URL doesn't specified"
+    fi
+
+    if [[ "$S3_TEST_NODES_DISCOVERY_URL" != */ ]]; then
+        S3_TEST_NODES_DISCOVERY_URL=${S3_TEST_NODES_DISCOVERY_URL}/
     fi
 }
 
@@ -582,6 +592,7 @@ printTestsInfo()
     echo "[INFO] Tests summary URL: $S3_TESTS_SUMMARY_URL"
     echo "[INFO] Tests first node lock URL: $S3_TESTS_FIRST_NODE_LOCK_URL"
     echo "[INFO] Tests package download URL: $TESTS_PACKAGE_DONLOAD_URL"
+    echo "[INFO] Test node discovery URL: $S3_TEST_NODES_DISCOVERY_URL"
     echo "[INFO] Ignite node discovery URL: $S3_IGNITE_NODES_DISCOVERY_URL"
     echo "[INFO] Cassandra node discovery URL: $S3_CASSANDRA_NODES_DISCOVERY_URL"
     echo "[INFO] Tests idle URL: $S3_TESTS_IDLE_URL"
@@ -611,6 +622,10 @@ setupCassandraCredentials()
 
 triggerFirstTimeTestsExecution()
 {
+    if [ -z "$TESTS_TYPE" ]; then
+        return 0
+    fi
+
     tryToGetFirstNodeLock
     if [ $? -ne 0 ]; then
         return 0
@@ -764,6 +779,26 @@ runLoadTests()
     fi
 }
 
+registerNode()
+{
+    echo "[INFO] Registering Test node seed: ${S3_TEST_NODES_DISCOVERY_URL}$HOST_NAME"
+
+    aws s3 cp --sse AES256 /opt/ignite-cassandra-tests/hostname ${S3_TEST_NODES_DISCOVERY_URL}$HOST_NAME
+    if [ $? -ne 0 ]; then
+        terminate "Failed to register Test node seed: ${S3_TEST_NODES_DISCOVERY_URL}$HOST_NAME"
+    fi
+
+    echo "[INFO] Test node successfully registered"
+}
+
+unregisterNode()
+{
+    echo "[INFO] Removing Test node registration from: ${S3_TEST_NODES_DISCOVERY_URL}$HOST_NAME"
+    aws s3 rm ${S3_TEST_NODES_DISCOVERY_URL}$HOST_NAME
+    echo "[INFO] Test node registration removed"
+}
+
+
 sleep 1m
 
 HOST_NAME=$(hostname -f | tr '[:upper:]' '[:lower:]')
@@ -779,6 +814,8 @@ setupCassandraCredentials
 switchToIdleState
 
 triggerFirstTimeTestsExecution
+
+registerNode
 
 while true; do
     # switching state to IDLE
