@@ -54,7 +54,7 @@ terminate()
 
     aws s3 rm --recursive $reportFolder
     if [ $? -ne 0 ]; then
-        echo "[ERROR] Failed drop report folder: $reportFolder"
+        echo "[ERROR] Failed to drop report folder: $reportFolder"
     fi
 
     if [ -d "/opt/ignite/work/log" ]; then
