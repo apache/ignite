@@ -498,6 +498,8 @@ startIgnite()
 
     echo "[INFO] Ignite job id: $!"
 
+    sleep 1m
+
     START_ATTEMPT=$(( $START_ATTEMPT+1 ))
 }
 
