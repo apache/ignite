@@ -97,7 +97,7 @@ switchToPreparingState()
 switchToWaitingState()
 {
     if [ "$NODE_STATE" != "WAITING" ]; then
-        echo "[INFO] Switching node to PREPARING state"
+        echo "[INFO] Switching node to WAITING state"
         dropStateFlag "$S3_TESTS_IDLE_URL" "$S3_TESTS_PREPARING_URL" "$S3_TESTS_RUNNING_URL"
         createStateFlag "$S3_TESTS_WAITING_URL"
         NODE_STATE="WAITING"
@@ -477,7 +477,7 @@ removeFirstNodeLock()
         return 1
     fi
 
-    FIRST_NODE="true"
+    FIRST_NODE="false"
 
     echo "[INFO] Removed first node lock"
 }
@@ -530,31 +530,36 @@ waitAllCassandraNodesReady()
 
 waitAllTestNodesReadyToRunTests()
 {
-    echo "[INFO] Waiting for all $TEST_NODES_COUNT test nodes switching to WAITING state"
+    echo "[INFO] Waiting for all $TEST_NODES_COUNT test nodes ready to run tests"
 
     while true; do
 
-        nodesCount=$(aws s3 ls $S3_TESTS_WAITING_URL | wc -l)
+        count1=$(aws s3 ls $S3_TESTS_WAITING_URL | wc -l)
+        count2=$(aws s3 ls $S3_TESTS_RUNNING_URL | wc -l)
 
-        if [ $nodesCount -ge $TEST_NODES_COUNT ]; then
+        count=$(( $count1+$count2 ))
+
+        if [ $count -ge $TEST_NODES_COUNT ]; then
             break
         fi
 
-        echo "[INFO] Waiting extra 30sec"
+        echo "[INFO] $count nodes are ready to run tests, waiting for other nodes for extra 30sec"
 
         sleep 30s
     done
 
-    echo "[INFO] Congratulation, all $TEST_NODES_COUNT test nodes switched to WAITING state"
+    sleep 1m
+
+    echo "[INFO] Congratulation, all $TEST_NODES_COUNT test nodes are ready to run tests"
 }
 
 waitAllTestNodesCompletedTests()
 {
-    echo "[INFO] Waiting for all $TEST_NODES_COUNT to complete their tests"
+    echo "[INFO] Waiting for all $TEST_NODES_COUNT test nodes to complete their tests"
 
     while true; do
 
-        nodesCount=$(aws s3 ls $S3_TESTS_RUNNING_URL | wc -l)
+        nodesCount=$(aws s3 ls $S3_TESTS_RUNNING_URL | grep -v $HOST_NAME | wc -l)
 
         if [ $nodesCount -eq 0 ]; then
             break
@@ -646,21 +651,21 @@ cleanPreviousLogs()
 
 uploadTestsLogs()
 {
-    if [ -f "/opt/ignite-cassandra-tests/logs/__error__" ]; then
-        logsFolder=${S3_TESTS_FAILURE_URL}${HOST_NAME}
-    else
+    if [ -f "/opt/ignite-cassandra-tests/logs/__success__" ]; then
         logsFolder=${S3_TESTS_SUCCESS_URL}${HOST_NAME}
+    else
+        logsFolder=${S3_TESTS_FAILURE_URL}${HOST_NAME}
     fi
 
     aws s3 rm --recursive $logsFolder
     if [ $? -ne 0 ]; then
-        echo "[ERROR] Failed drop logs folder: $logsFolder"
+        echo "[ERROR] Failed to drop logs folder: $logsFolder"
     fi
 
     if [ -d "/opt/ignite-cassandra-tests/logs" ]; then
-        aws s3 sync --sse AES256 /opt/ignite-cassandra-tests/logs $reportFolder
+        aws s3 sync --sse AES256 /opt/ignite-cassandra-tests/logs $logsFolder
         if [ $? -ne 0 ]; then
-            echo "[ERROR] Failed to export tests logs to: $reportFolder"
+            echo "[ERROR] Failed to export tests logs to: $logsFolder"
         fi
     fi
 }
@@ -730,6 +735,8 @@ runLoadTests()
             break
         fi
 
+        echo "[INFO] Waiting extra 30sec for load tests to complete"
+
         sleep 30s
     done
 
@@ -779,12 +786,20 @@ while true; do
 
     sleep 30s
 
-    trigger=$(aws s3 ls $S3_TESTS_TRIGGER_URL)
-    if [ -z "$trigger" ] || [ "$trigger" == "$TRIGGER_STATE" ]; then
+    NEW_TRIGGER_STATE=$(aws s3 ls $S3_TESTS_TRIGGER_URL | xargs)
+    if [ -z "$NEW_TRIGGER_STATE" ] || [ "$NEW_TRIGGER_STATE" == "$TRIGGER_STATE" ]; then
         continue
     fi
 
-    TRIGGER_STATE=$STATE
+    echo "----------------------------------------------------------------------"
+    echo "[INFO] Tests trigger changed"
+    echo "----------------------------------------------------------------------"
+    echo "[INFO] Old trigger: $TRIGGER_STATE"
+    echo "----------------------------------------------------------------------"
+    echo "[INFO] New trigger: $NEW_TRIGGER_STATE"
+    echo "----------------------------------------------------------------------"
+
+    TRIGGER_STATE=$NEW_TRIGGER_STATE
 
     aws s3 cp $S3_TESTS_TRIGGER_URL /opt/ignite-cassandra-tests/tests-trigger
     if [ $? -ne 0 ]; then
@@ -801,9 +816,9 @@ while true; do
 
     rm -f /opt/ignite-cassandra-tests/settings/tests.properties
     mv -f /opt/ignite-cassandra-tests/tests-trigger /opt/ignite-cassandra-tests/settings/tests.properties
-
-    cleanPreviousLogs
-
+	
+	waitAllTestNodesCompletedTests
+	
     # switching state to PREPARING
     switchToPreparingState
 
@@ -811,11 +826,11 @@ while true; do
     waitAllIgniteNodesReady
     setupCassandraSeeds
     setupIgniteSeeds
-
-    waitAllTestNodesCompletedTests
+	
+	cleanPreviousLogs
 
     tryToGetFirstNodeLock
-    if [ $? -ne 0 ]; then
+    if [ $? -eq 0 ]; then
         dropTestsSummary
         recreateCassandraArtifacts
     fi
@@ -824,14 +839,15 @@ while true; do
     switchToWaitingState
 
     waitAllTestNodesReadyToRunTests
-
+	
     # switching state to RUNNING
     switchToRunningState
 
     runLoadTests
     uploadTestsLogs
 
-    if [ "$FIRST_NODE" != "true" ]; then
+    tryToGetFirstNodeLock
+    if [ $? -eq 0 ]; then
         waitAllTestNodesCompletedTests
         buildTestsSummaryReport
         removeFirstNodeLock
