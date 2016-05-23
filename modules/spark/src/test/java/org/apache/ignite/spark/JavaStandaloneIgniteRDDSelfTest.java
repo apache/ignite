@@ -89,6 +89,7 @@ public class JavaStandaloneIgniteRDDSelfTest extends GridCommonAbstractTest {
             }
         };
 
+    /** */
     private static final PairFunction<Integer, String, EntityTestAllTypeFields> INT_TO_ENTITY_ALL_FIELDS_F =
         new PairFunction<Integer, String, EntityTestAllTypeFields>() {
             @Override public Tuple2<String, EntityTestAllTypeFields> call(Integer i) throws Exception {
@@ -252,6 +253,7 @@ public class JavaStandaloneIgniteRDDSelfTest extends GridCommonAbstractTest {
      */
     public void testAllFieldsTypes() throws Exception {
         JavaSparkContext sc = new JavaSparkContext("local[*]", "test");
+
         final int cnt = 100;
 
         try {
@@ -264,19 +266,24 @@ public class JavaStandaloneIgniteRDDSelfTest extends GridCommonAbstractTest {
             EntityTestAllTypeFields e = new EntityTestAllTypeFields(cnt / 2);
             for(Field f : EntityTestAllTypeFields.class.getDeclaredFields()) {
                 String fieldName = f.getName();
+
                 Object val = GridTestUtils.getFieldValue(e, fieldName);
-                DataFrame df = cache.sql(String.format("select %s from EntityTestAllTypeFields where %s = ?",
-                    fieldName, fieldName),
+
+                DataFrame df = cache.sql(
+                    String.format("select %s from EntityTestAllTypeFields where %s = ?", fieldName, fieldName),
                     val);
 
-                if(val instanceof BigDecimal) {
+                if (val instanceof BigDecimal) {
                     Object res = df.collect()[0].get(0);
+
                     assertTrue(String.format("+++ Fail on %s field", fieldName),
                         ((Comparable<BigDecimal>)val).compareTo((BigDecimal)res) == 0);
-                } else if(val.getClass().isArray())
+                }
+                else if (val.getClass().isArray())
                     assertTrue(String.format("+++ Fail on %s field", fieldName), 1 <= df.count());
                 else
                     assertEquals(String.format("+++ Fail on %s field", fieldName), val, df.collect()[0].get(0));
+
                 info(String.format("+++ Query on the filed: %s : %s passed", fieldName, f.getType().getSimpleName()));
             }
         }
