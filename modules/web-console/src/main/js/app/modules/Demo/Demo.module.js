@@ -111,8 +111,10 @@ angular
         return items;
     }];
 }])
-.service('DemoInfo', ['$rootScope', '$modal', '$state', 'igniteDemoInfo', 'IgniteAgentMonitor', ($rootScope, $modal, $state, igniteDemoInfo, agentMonitor) => {
+.service('DemoInfo', ['$rootScope', '$modal', '$state', '$q', 'igniteDemoInfo', 'IgniteAgentMonitor', ($rootScope, $modal, $state, $q, igniteDemoInfo, agentMonitor) => {
     const scope = $rootScope.$new();
+
+    let closePromise = null;
 
     function _fillPage() {
         const model = igniteDemoInfo;
@@ -131,10 +133,8 @@ angular
 
     scope.close = () => {
         dialog.hide();
-    };
 
-    scope.gotoConfiguration = () => {
-        scope.$$postDigest(() => $state.go('base.configuration.clusters'));
+        closePromise && closePromise.resolve();
     };
 
     scope.downloadAgent = () => {
@@ -154,11 +154,13 @@ angular
 
     return {
         show: () => {
+            closePromise = $q.defer();
+
             _fillPage();
 
-            dialog.$promise
+            return dialog.$promise
                 .then(dialog.show)
-                .then(() => agentMonitor.awaitAgent())
+                .then(() => Promise.race([agentMonitor.awaitAgent(), closePromise.promise]))
                 .then(() => scope.hasAgents = true);
         }
     };

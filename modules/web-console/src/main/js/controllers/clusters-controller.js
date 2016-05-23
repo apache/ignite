@@ -161,14 +161,11 @@ consoleModule.controller('clustersController', [
                         form.$setDirty();
                 }, true);
 
-                if ($root.IgniteDemoMode) {
-                    if (sessionStorage.showDemoInfo !== 'true') {
-                        sessionStorage.showDemoInfo = 'true';
+                if ($root.IgniteDemoMode && sessionStorage.showDemoInfo !== 'true') {
+                    sessionStorage.showDemoInfo = 'true';
 
-                        DemoInfo.show();
-                    }
+                    DemoInfo.show();
                 }
-
             })
             .catch(function (errMsg) {
                 $common.showError(errMsg);

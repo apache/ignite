@@ -56,6 +56,8 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.log4j.Logger;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_UPDATE_NOTIFIER;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_NO_ASCII;
 import static org.apache.ignite.events.EventType.EVTS_DISCOVERY;
@@ -578,6 +580,8 @@ public class AgentClusterDemo {
             log.info("DEMO: Starting embedded nodes for demo...");
 
             System.setProperty(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE, "1");
+            System.setProperty(IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED, "true");
+            System.setProperty(IGNITE_UPDATE_NOTIFIER, "false");
 
             System.setProperty(IGNITE_JETTY_PORT, "60800");
             System.setProperty(IGNITE_NO_ASCII, "true");
