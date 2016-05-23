@@ -326,8 +326,8 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         // Filter out client nodes for the default projection
         // We can't do this in projection() method because grid may not be started in there
-        if (grp0.isDefault())
-            prj = (ClusterGroupEx)prj.forServers();
+        // if (grp0.isDefault())
+        //     prj = (ClusterGroupEx)prj.forServers();
 
         return new PlatformCompute(platformCtx, prj, PlatformUtils.ATTR_PLATFORM);
     }
