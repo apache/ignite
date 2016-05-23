@@ -1907,11 +1907,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 Thread.currentThread().interrupt();
 
             try {
-                GridCacheProcessor cache = ctx.cache();
-
-                if (cache != null)
-                    cache.blockGateways();
-
                 assert gw.getState() == STARTED || gw.getState() == STARTING || gw.getState() == DISCONNECTED;
 
                 // No more kernal calls from this point on.
@@ -1925,6 +1920,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             finally {
                 gw.writeUnlock();
             }
+
+            // Stopping cache operations.
+            GridCacheProcessor cache = ctx.cache();
+
+            if (cache != null)
+                cache.blockGateways();
 
             // Unregister MBeans.
             if (!(
