@@ -31,6 +31,7 @@ import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.cache.eviction.sorted.SortedEvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.cache.CacheEvictableEntryImpl;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -40,7 +41,10 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 
+import static org.apache.ignite.cache.CacheAtomicWriteOrderMode.PRIMARY;
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
+import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
@@ -48,7 +52,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED
 /**
  *
  */
-public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAbstractTest {
+public abstract class GridCacheConcurrentEvictionConsistencyAbstractTest extends GridCommonAbstractTest {
     /** IP finder. */
     private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
@@ -74,17 +78,14 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
         c.getTransactionConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
         c.getTransactionConfiguration().setDefaultTxIsolation(READ_COMMITTED);
 
-        CacheConfiguration cc = defaultCacheConfiguration();
+        CacheConfiguration cc = cacheConfiguration();
 
-        cc.setCacheMode(LOCAL);
-
-        cc.setSwapEnabled(false);
-
-        cc.setWriteSynchronizationMode(FULL_SYNC);
-
+        cc.setStartSize(1024);
+        cc.setAtomicWriteOrderMode(PRIMARY);
         cc.setNearConfiguration(null);
-
+        cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setEvictionPolicy(plc);
+        cc.setSwapEnabled(false);
 
         c.setCacheConfiguration(cc);
 
@@ -97,6 +98,8 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
         return c;
     }
 
+    protected abstract CacheConfiguration cacheConfiguration();
+
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return 5 * 60 * 1000; // 5 min.
@@ -105,7 +108,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
-    public void testPolicyConsistencyFifoLocalTwoKeys() throws Exception {
+    public void testPolicyConsistencyFifoTwoKeys() throws Exception {
         FifoEvictionPolicy<Object, Object> plc = new FifoEvictionPolicy<>();
         plc.setMaxSize(1);
 
@@ -120,7 +123,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
-    public void testPolicyConsistencyLruLocalTwoKeys() throws Exception {
+    public void testPolicyConsistencyLruTwoKeys() throws Exception {
         LruEvictionPolicy<Object, Object> plc = new LruEvictionPolicy<>();
         plc.setMaxSize(1);
 
@@ -135,7 +138,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
-    public void testPolicyConsistencySortedLocalTwoKeys() throws Exception {
+    public void testPolicyConsistencySortedTwoKeys() throws Exception {
         SortedEvictionPolicy<Object, Object> plc = new SortedEvictionPolicy<>();
         plc.setMaxSize(1);
 
@@ -150,7 +153,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
-    public void testPolicyConsistencyFifoLocalFewKeys() throws Exception {
+    public void testPolicyConsistencyFifoFewKeys() throws Exception {
         FifoEvictionPolicy<Object, Object> plc = new FifoEvictionPolicy<>();
         plc.setMaxSize(POLICY_QUEUE_SIZE);
 
@@ -164,7 +167,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
-    public void testPolicyConsistencyLruLocalFewKeys() throws Exception {
+    public void testPolicyConsistencyLruFewKeys() throws Exception {
         LruEvictionPolicy<Object, Object> plc = new LruEvictionPolicy<>();
         plc.setMaxSize(POLICY_QUEUE_SIZE);
 
@@ -178,7 +181,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
-    public void testPolicyConsistencySortedLocalFewKeys() throws Exception {
+    public void testPolicyConsistencySortedFewKeys() throws Exception {
         SortedEvictionPolicy<Object, Object> plc = new SortedEvictionPolicy<>();
         plc.setMaxSize(POLICY_QUEUE_SIZE);
 
@@ -192,7 +195,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
-    public void testPolicyConsistencyFifoLocal() throws Exception {
+    public void testPolicyConsistencyFifo() throws Exception {
         FifoEvictionPolicy<Object, Object> plc = new FifoEvictionPolicy<>();
         plc.setMaxSize(POLICY_QUEUE_SIZE);
 
@@ -206,7 +209,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
-    public void testPolicyConsistencyLruLocal() throws Exception {
+    public void testPolicyConsistencyLru() throws Exception {
         LruEvictionPolicy<Object, Object> plc = new LruEvictionPolicy<>();
         plc.setMaxSize(POLICY_QUEUE_SIZE);
 
@@ -220,7 +223,7 @@ public class GridCacheConcurrentEvictionConsistencySelfTest extends GridCommonAb
     /**
      * @throws Exception If failed.
      */
-    public void testPolicyConsistencySortedLocal() throws Exception {
+    public void testPolicyConsistencySorted() throws Exception {
         SortedEvictionPolicy<Object, Object> plc = new SortedEvictionPolicy<>();
         plc.setMaxSize(POLICY_QUEUE_SIZE);
 

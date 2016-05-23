@@ -23,7 +23,10 @@ import org.apache.ignite.internal.processors.cache.GridCachePreloadingEvictionsS
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheAtomicNearEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridCacheNearEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheBatchEvictUnswapSelfTest;
-import org.apache.ignite.internal.processors.cache.eviction.GridCacheConcurrentEvictionConsistencySelfTest;
+import org.apache.ignite.internal.processors.cache.eviction.GridCacheConcurrentEvictionConsistencyLocalAtomicSelfTest;
+import org.apache.ignite.internal.processors.cache.eviction.GridCacheConcurrentEvictionConsistencyLocalTxSelfTest;
+import org.apache.ignite.internal.processors.cache.eviction.GridCacheConcurrentEvictionConsistencyReplicatedAtomicSelfTest;
+import org.apache.ignite.internal.processors.cache.eviction.GridCacheConcurrentEvictionConsistencyReplicatedTxSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheConcurrentEvictionsSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheDistributedEvictionsSelfTest;
 import org.apache.ignite.internal.processors.cache.eviction.GridCacheEmptyEntriesLocalSelfTest;
@@ -59,7 +62,10 @@ public class IgniteCacheEvictionSelfTestSuite extends TestSuite {
         suite.addTest(new TestSuite(GridCacheAtomicNearEvictionSelfTest.class));
         suite.addTest(new TestSuite(GridCacheEvictionFilterSelfTest.class));
         suite.addTest(new TestSuite(GridCacheConcurrentEvictionsSelfTest.class));
-        suite.addTest(new TestSuite(GridCacheConcurrentEvictionConsistencySelfTest.class));
+        suite.addTest(new TestSuite(GridCacheConcurrentEvictionConsistencyLocalAtomicSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheConcurrentEvictionConsistencyLocalTxSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheConcurrentEvictionConsistencyReplicatedAtomicSelfTest.class));
+        suite.addTest(new TestSuite(GridCacheConcurrentEvictionConsistencyReplicatedTxSelfTest.class));
         suite.addTest(new TestSuite(GridCacheEvictionTouchSelfTest.class));
         suite.addTest(new TestSuite(GridCacheDistributedEvictionsSelfTest.class));
         suite.addTest(new TestSuite(GridCacheEvictionLockUnlockSelfTest.class));
