@@ -104,18 +104,20 @@ class IgniteAgentMonitor {
         if (this._scope.hasAgents)
             return this._$q.when();
 
-        if (this._scope.hasAgents !== null)
-            this.checkModal();
-
         const latch = this._$q.defer();
 
-        const offConnected = this._scope.$on('agent:connected', (event, success) => {
+        const offConnected = this._scope.$on('agent:watch', (event, state) => {
             offConnected();
 
-            if (success)
-                return latch.resolve();
+            switch (state) {
+                case 'CONNECTED':
+                    return latch.resolve();
 
-            latch.reject('Connection to agent was closed');
+                case 'STOPPED':
+                    return latch.reject('Agent watch stopped.');
+
+                default:
+            }
         });
 
         return latch.promise;
@@ -124,22 +126,23 @@ class IgniteAgentMonitor {
     init() {
         this._socket = this._socketFactory();
 
-        this._socket.on('connect_error', () => {
+        const disconnectFn = () => {
             this._scope.hasAgents = false;
-        });
+
+            this.checkModal();
+
+            this._scope.$broadcast('agent:watch', 'DISCONNECTED');
+        };
+
+        this._socket.on('connect_error', disconnectFn);
+        this._socket.on('disconnect', disconnectFn);
 
         this._socket.on('agent:count', ({count}) => {
             this._scope.hasAgents = count > 0;
 
             this.checkModal();
 
-            this._scope.$broadcast('agent:connected', this._scope.hasAgents);
-        });
-
-        this._socket.on('disconnect', () => {
-            this._scope.hasAgents = false;
-
-            this.checkModal();
+            this._scope.$broadcast('agent:watch', this._scope.hasAgents ? 'CONNECTED' : 'DISCONNECTED');
         });
     }
 
@@ -153,10 +156,16 @@ class IgniteAgentMonitor {
 
         this._scope.agentGoal = back.goal;
 
-        if (back.onDisconnect)
-            this._scope.offDisconnect = this._scope.$on('agent:connected', (e, success) => success || back.onDisconnect());
+        if (back.onDisconnect) {
+            this._scope.offDisconnect = this._scope.$on('agent:watch', (e, state) =>
+                state === 'DISCONNECTED' && back.onDisconnect());
+        }
 
         this._scope.showModal = true;
+
+        // Remove blinking on init.
+        if (this._scope.hasAgents !== null)
+            this.checkModal();
 
         return this.awaitAgent();
     }
@@ -348,7 +357,7 @@ class IgniteAgentMonitor {
 
         this._scope.offDisconnect && this._scope.offDisconnect();
 
-        this._scope.$broadcast('agent:connected', false);
+        this._scope.$broadcast('agent:watch', 'STOPPED');
     }
 }
 

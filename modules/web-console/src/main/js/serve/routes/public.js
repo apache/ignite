@@ -113,14 +113,14 @@ module.exports.factory = function(express, passport, nodemailer, settings, mail,
 
                     return account.save()
                         .then(() => {
-                            const resetLink = `http://'${req.headers.host}/password/reset?token=${user.resetPasswordToken}`;
+                            const resetLink = `http://'${req.headers.host}/password/reset?token=${account.resetPasswordToken}`;
 
                             mail.send(account, `Thanks for signing up for ${settings.smtp.username}.`,
                                 `Hello ${account.firstName} ${account.lastName}!<br><br>` +
                                 `You are receiving this email because you have signed up to use <a href="http://${req.headers.host}">${settings.smtp.username}</a>.<br><br>` +
                                 'If you have not done the sign up and do not know what this email is about, please ignore it.<br>' +
                                 'You may reset the password by clicking on the following link, or paste this into your browser:<br><br>' +
-                                `<a href="${resetLink}">${resetLink}</a>`)
+                                `<a href="${resetLink}">${resetLink}</a>`);
                         });
                 })
                 .catch((err) => {
@@ -179,7 +179,7 @@ module.exports.factory = function(express, passport, nodemailer, settings, mail,
                         'Please click on the following link, or paste this into your browser to complete the process:<br><br>' +
                         `<a href="${resetLink}">${resetLink}</a><br><br>` +
                         'If you did not request this, please ignore this email and your password will remain unchanged.',
-                        'Failed to send email with reset link!')
+                        'Failed to send email with reset link!');
                 })
                 .then(() => res.status(200).send('An email has been sent with further instructions.'))
                 .catch((err) => {
