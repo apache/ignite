@@ -32,27 +32,27 @@ form.panel.panel-default(name=form novalidate)
                 .settings-row
                     +dropdown('Logger:', model + '.kind', 'logger', 'true', 'Default',
                         '[\
+                            {value: "Log4j", label: "Apache Log4j"},\
                             {value: "Log4j2", label: "Apache Log4j 2"},\
-                            {value: "Null", label: "Null logger"},\
-                            {value: "HadoopIgfsJcl", label: "JCL logger wrapper for Hadoop"},\
-                            {value: "Java", label: "Java Logger"},\
-                            {value: "JCL", label: "Jakarta Commons Logging (JCL)"},\
                             {value: "SLF4J", label: "Simple Logging Facade (SLF4J)"},\
-                            {value: "Log4j", label: "Apache log4j"},\
+                            {value: "Java", label: "Java logger (JUL)"},\
+                            {value: "JCL", label: "Jakarta Commons Logging (JCL)"},\
+                            {value: "Null", label: "Null logger"},\
+                            {value: "HadoopIgfsJcl", label: "JCL wrapper for Hadoop"},\
                             {value: "Custom", label: "Custom"},\
                             {value: undefined, label: "Default"}\
                         ]',
-                        'Logger implementation\
+                        'Logger implementations\
                         <ul>\
-                            <li>Apache Log4j 2 - this logger should be used by loaders that have prefer log4j2-based logging</li>\
+                            <li>Apache Log4j - log4j-based logger</li>\
+                            <li>Apache Log4j 2 - Log4j2-based logger</li>\
+                            <li>Simple Logging Facade (SLF4J) - SLF4j-based logger</li>\
+                            <li>Java logger (JUL) - built in java logger</li>\
+                            <li>Jakarta Commons Logging (JCL) - wraps any JCL (Jakarta Commons Logging) loggers</li>\
                             <li>Null logger - logger which does not output anything</li>\
-                            <li>JCL logger wrapper for Hadoop</li>\
-                            <li>Logger to use with Java logging</li>\
-                            <li>Jakarta Commons Logging (JCL) - Wraps any JCL (Jakarta Commons Logging) loggers</li>\
-                            <li>Simple Logging Facade for Java (SLF4J) - This logger should be used by loaders that have prefer slf4j - based logging</li>\
-                            <li>Apache log4j - This logger should be used by loaders that have prefer log4j-based logging.</li>\
-                            <li>Custom - Custom logger implementation</li>\
-                            <li>Default - Default logger configuration</li>\
+                            <li>JCL wrapper for Hadoop - special logger to use with IGFS and Hadoop</li>\
+                            <li>Custom - custom logger implementation</li>\
+                            <li>Default - default logger configuration (Log4j)</li>\
                         </ul>')
                 .settings-row(ng-if='#{model}.kind && #{model}.kind !== "Null"')
                     .panel-details
