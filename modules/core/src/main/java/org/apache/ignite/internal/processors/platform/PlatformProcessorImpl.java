@@ -30,7 +30,6 @@ import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.cluster.ClusterGroupEx;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
@@ -312,24 +311,14 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** {@inheritDoc} */
     @Override public PlatformTarget projection() throws IgniteCheckedException {
-        return new PlatformClusterGroup(platformCtx, ctx.grid().cluster(), true);
+        return new PlatformClusterGroup(platformCtx, ctx.grid().cluster());
     }
 
     /** {@inheritDoc} */
     @Override public PlatformTarget compute(PlatformTarget grp) {
         PlatformClusterGroup grp0 = (PlatformClusterGroup)grp;
 
-        ClusterGroupEx prj = grp0.projection();
-
-        // TODO
-        // * what if user explicitly provides us the default projection?
-
-        // Filter out client nodes for the default projection
-        // We can't do this in projection() method because grid may not be started in there
-        // if (grp0.isDefault())
-        //     prj = (ClusterGroupEx)prj.forServers();
-
-        return new PlatformCompute(platformCtx, prj, PlatformUtils.ATTR_PLATFORM);
+        return new PlatformCompute(platformCtx, grp0.projection(), PlatformUtils.ATTR_PLATFORM);
     }
 
     /** {@inheritDoc} */
