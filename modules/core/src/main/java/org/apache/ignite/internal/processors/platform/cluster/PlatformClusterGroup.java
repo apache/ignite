@@ -83,6 +83,9 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
     /** Projection. */
     private final ClusterGroupEx prj;
 
+    /** Default flag. */
+    private final boolean isDefault;
+
     /**
      * Constructor.
      *
@@ -90,9 +93,20 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
      * @param prj Projection.
      */
     public PlatformClusterGroup(PlatformContext platformCtx, ClusterGroupEx prj) {
+        this(platformCtx, prj, false);
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param platformCtx Context.
+     * @param prj Projection.
+     */
+    public PlatformClusterGroup(PlatformContext platformCtx, ClusterGroupEx prj, boolean isDefault) {
         super(platformCtx);
 
         this.prj = prj;
+        this.isDefault = isDefault;
     }
 
     /** {@inheritDoc} */
@@ -308,6 +322,13 @@ public class PlatformClusterGroup extends PlatformAbstractTarget {
      */
     public ClusterGroupEx projection() {
         return prj;
+    }
+
+    /**
+     * @return Whether this is a default projection (result of ignite().cluster() call)
+     */
+    public boolean isDefault() {
+        return isDefault;
     }
 
     /**

@@ -312,7 +312,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
     /** {@inheritDoc} */
     @Override public PlatformTarget projection() throws IgniteCheckedException {
-        return new PlatformClusterGroup(platformCtx, ctx.grid().cluster());
+        return new PlatformClusterGroup(platformCtx, ctx.grid().cluster(), true);
     }
 
     /** {@inheritDoc} */
@@ -323,7 +323,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
         // Filter out client nodes for the default projection
         // We can't do this in projection() method because grid may not be started in there
-        if (prj == ctx.grid().cluster())
+        if (grp0.isDefault())
             prj = (ClusterGroupEx)prj.forServers();
 
         return new PlatformCompute(platformCtx, prj, PlatformUtils.ATTR_PLATFORM);
