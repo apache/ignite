@@ -569,7 +569,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
                     KeyCacheObject key = cctx.toCacheKeyObject(keyBytes);
 
-                    cctx.swap().remove(key);
+                    cctx.swap().remove(key, id);
 
                     if (isLocStore)
                         cctx.store().remove(null, key.value(cctx.cacheObjectContext(), false));
