@@ -1377,7 +1377,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 -1L,
                                 null,
                                 skipStore,
-                                !deserializeBinary);
+                                !deserializeBinary,
+                                false);
 
                             // As optimization, mark as checked immediately
                             // for non-pessimistic if value is not null.
@@ -2348,6 +2349,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
         IgniteTxEntry txEntry = entry(txKey);
 
+        boolean sendValToBackup = cacheCtx.operationContextPerCall() != null &&
+            cacheCtx.operationContextPerCall().isSendValToBackup();
+
         // First time access.
         if (txEntry == null) {
             while (true) {
@@ -2437,7 +2441,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                 -1L,
                                 null,
                                 skipStore,
-                                keepBinary);
+                                keepBinary,
+                                false
+                            );
 
                             txEntry.markValid();
 
@@ -2469,7 +2475,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                         drExpireTime,
                         drVer,
                         skipStore,
-                        keepBinary);
+                        keepBinary,
+                        sendValToBackup);
 
                     if (!implicit() && readCommitted() && !cacheCtx.offheapTiered())
                         cacheCtx.evicts().touch(entry, topologyVersion());
@@ -2575,7 +2582,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     drExpireTime,
                     drVer,
                     skipStore,
-                    keepBinary);
+                    keepBinary,
+                    sendValToBackup);
 
                 if (enlisted != null)
                     enlisted.add(cacheKey);
@@ -3582,6 +3590,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
      * @param drExpireTime DR expire time (if any).
      * @param drVer DR version.
      * @param skipStore Skip store flag.
+     * @param sendValToBackup Send to backup value insted of entry processor.
      * @return Transaction entry.
      */
     protected final IgniteTxEntry addEntry(GridCacheOperation op,
@@ -3596,7 +3605,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         long drExpireTime,
         @Nullable GridCacheVersion drVer,
         boolean skipStore,
-        boolean keepBinary
+        boolean keepBinary,
+        boolean sendValToBackup
     ) {
         assert invokeArgs == null || op == TRANSFORM;
 
@@ -3628,6 +3638,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                 // Will change the op.
                 old.addEntryProcessor(entryProcessor, invokeArgs);
+
+                old.sendValueToBackup(sendValToBackup);
             }
             else {
                 assert old.op() != TRANSFORM;
@@ -3683,6 +3695,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
             if (log.isDebugEnabled())
                 log.debug("Created transaction entry: " + txEntry);
+
+            txEntry.sendValueToBackup(sendValToBackup);
         }
 
         txEntry.filtersSet(filtersSet);

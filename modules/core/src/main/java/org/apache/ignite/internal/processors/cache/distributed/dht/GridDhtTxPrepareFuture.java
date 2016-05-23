@@ -428,7 +428,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                                 }
                             }
 
-                            if (true) {
+                            if (txEntry.sendValueToBackup()) {
                                 txEntry.op(op);
                                 txEntry.value(val, true, false);
                                 txEntry.entryProcessors(null);

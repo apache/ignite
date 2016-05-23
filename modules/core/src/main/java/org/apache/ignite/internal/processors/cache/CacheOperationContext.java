@@ -51,6 +51,10 @@ public class CacheOperationContext implements Serializable {
     /** Data center Id. */
     private final Byte dataCenterId;
 
+    /** If {@code true} then entry processor will be invoked only primary node. */
+    @GridToStringInclude
+    private final boolean sendValToBackup;
+
     /**
      * Constructor with default values.
      */
@@ -66,6 +70,8 @@ public class CacheOperationContext implements Serializable {
         noRetries = false;
 
         dataCenterId = null;
+
+        sendValToBackup = false;
     }
 
     /**
@@ -74,6 +80,7 @@ public class CacheOperationContext implements Serializable {
      * @param keepBinary Keep binary flag.
      * @param expiryPlc Expiry policy.
      * @param dataCenterId Data center id.
+     * @param sendValToBackup Send value to backup instead of entry processor.
      */
     public CacheOperationContext(
         boolean skipStore,
@@ -81,7 +88,8 @@ public class CacheOperationContext implements Serializable {
         boolean keepBinary,
         @Nullable ExpiryPolicy expiryPlc,
         boolean noRetries,
-        @Nullable Byte dataCenterId) {
+        @Nullable Byte dataCenterId,
+        boolean sendValToBackup) {
         this.skipStore = skipStore;
 
         this.subjId = subjId;
@@ -93,6 +101,8 @@ public class CacheOperationContext implements Serializable {
         this.noRetries = noRetries;
 
         this.dataCenterId = dataCenterId;
+
+        this.sendValToBackup = sendValToBackup;
     }
 
     /**
@@ -110,6 +120,14 @@ public class CacheOperationContext implements Serializable {
     }
 
     /**
+     * @return If {@code True} then entry processor will be invoked only primary node.
+     *      And resulting value instead of entry processor will be sent to backup nodes.
+     */
+    public boolean isSendValToBackup() {
+        return sendValToBackup;
+    }
+
+    /**
      * See {@link IgniteInternalCache#keepBinary()}.
      *
      * @return New instance of CacheOperationContext with keep binary flag.
@@ -121,7 +139,8 @@ public class CacheOperationContext implements Serializable {
             true,
             expiryPlc,
             noRetries,
-            dataCenterId);
+            dataCenterId,
+            sendValToBackup);
     }
 
     /**
@@ -155,7 +174,8 @@ public class CacheOperationContext implements Serializable {
             keepBinary,
             expiryPlc,
             noRetries,
-            dataCenterId);
+            dataCenterId,
+            sendValToBackup);
     }
 
     /**
@@ -178,7 +198,8 @@ public class CacheOperationContext implements Serializable {
             keepBinary,
             expiryPlc,
             noRetries,
-            dataCenterId);
+            dataCenterId,
+            sendValToBackup);
     }
 
     /**
@@ -201,7 +222,8 @@ public class CacheOperationContext implements Serializable {
             true,
             plc,
             noRetries,
-            dataCenterId);
+            dataCenterId,
+            sendValToBackup);
     }
 
     /**
@@ -215,7 +237,23 @@ public class CacheOperationContext implements Serializable {
             keepBinary,
             expiryPlc,
             noRetries,
-            dataCenterId);
+            dataCenterId,
+            sendValToBackup);
+    }
+
+    /**
+     * @param sendValToBackup Send value to backup instead of entry processors.
+     * @return Operation context.
+     */
+    public CacheOperationContext setSendValueToBackup(boolean sendValToBackup) {
+        return new CacheOperationContext(
+            skipStore,
+            subjId,
+            keepBinary,
+            expiryPlc,
+            noRetries,
+            dataCenterId,
+            sendValToBackup);
     }
 
     /**

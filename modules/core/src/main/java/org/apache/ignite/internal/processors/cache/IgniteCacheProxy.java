@@ -319,7 +319,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         try {
             CacheOperationContext prj0 = opCtx != null ? opCtx.withExpiryPolicy(plc) :
-                new CacheOperationContext(false, null, false, plc, false, null);
+                new CacheOperationContext(false, null, false, plc, false, null, false);
 
             return new IgniteCacheProxy<>(ctx, delegate, prj0, isAsync(), lock);
         }
@@ -351,7 +351,33 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 return this;
 
             CacheOperationContext opCtx0 = opCtx != null ? opCtx.setNoRetries(true) :
-                new CacheOperationContext(false, null, false, null, true, null);
+                new CacheOperationContext(false, null, false, null, true, null, false);
+
+            return new IgniteCacheProxy<>(ctx,
+                delegate,
+                opCtx0,
+                isAsync(),
+                lock);
+        }
+        finally {
+            onLeave(gate, prev);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteCache<K, V> withSendValueToBackup() {
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
+
+        try {
+            boolean sendValueToBackup = opCtx != null && opCtx.isSendValToBackup();
+
+            if (sendValueToBackup)
+                return this;
+
+            CacheOperationContext opCtx0 = opCtx != null ? opCtx.setSendValueToBackup(true) :
+                new CacheOperationContext(false, null, false, null, true, null, true);
 
             return new IgniteCacheProxy<>(ctx,
                 delegate,
@@ -1885,7 +1911,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     true,
                     opCtx != null ? opCtx.expiry() : null,
                     opCtx != null && opCtx.noRetries(),
-                    opCtx != null ? opCtx.dataCenterId() : null);
+                    opCtx != null ? opCtx.dataCenterId() : null,
+                    opCtx != null && opCtx.isSendValToBackup());
 
             return new IgniteCacheProxy<>((GridCacheContext<K1, V1>)ctx,
                 (GridCacheAdapter<K1, V1>)delegate,
@@ -1918,7 +1945,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     opCtx != null && opCtx.isKeepBinary(),
                     opCtx != null ? opCtx.expiry() : null,
                     opCtx != null && opCtx.noRetries(),
-                    dataCenterId);
+                    dataCenterId,
+                    opCtx != null && opCtx.isSendValToBackup());
 
             return new IgniteCacheProxy<>(ctx,
                 delegate,
@@ -1951,7 +1979,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     opCtx != null && opCtx.isKeepBinary(),
                     opCtx != null ? opCtx.expiry() : null,
                     opCtx != null && opCtx.noRetries(),
-                    opCtx != null ? opCtx.dataCenterId() : null);
+                    opCtx != null ? opCtx.dataCenterId() : null,
+                    opCtx != null && opCtx.isSendValToBackup());
 
             return new IgniteCacheProxy<>(ctx,
                 delegate,

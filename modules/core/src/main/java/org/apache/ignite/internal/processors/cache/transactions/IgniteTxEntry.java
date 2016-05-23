@@ -40,7 +40,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridPeerDeployAware;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -58,6 +57,7 @@ import org.jetbrains.annotations.Nullable;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.READ;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.KEEP_BINARY_FLAG_MASK;
+import static org.apache.ignite.internal.processors.cache.GridCacheUtils.SEND_VALUE_TO_BACKUP;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.SKIP_STORE_FLAG_MASK;
 
 /**
@@ -507,6 +507,22 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      */
     public boolean keepBinary() {
         return isFlag(KEEP_BINARY_FLAG_MASK);
+    }
+
+    /**
+     * Sets send value to backup flag value.
+     *
+     * @param sendValToBackup Keep binary flag value.
+     */
+    public void sendValueToBackup(boolean sendValToBackup) {
+        setFlag(sendValToBackup, SEND_VALUE_TO_BACKUP);
+    }
+
+    /**
+     * @return Send value to backup flag value.
+     */
+    public boolean sendValueToBackup() {
+        return isFlag(SEND_VALUE_TO_BACKUP);
     }
 
     /**

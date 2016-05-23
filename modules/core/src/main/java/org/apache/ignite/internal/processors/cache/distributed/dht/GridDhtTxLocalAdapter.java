@@ -490,6 +490,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                 existing.ttl(e.ttl());
                 existing.filters(e.filters());
                 existing.expiry(e.expiry());
+                existing.sendValueToBackup(e.sendValueToBackup());
 
                 existing.conflictExpireTime(e.conflictExpireTime());
                 existing.conflictVersion(e.conflictVersion());
@@ -617,7 +618,8 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
                         -1L,
                         null,
                         skipStore,
-                        keepBinary);
+                        keepBinary,
+                        false);
 
                     if (read)
                         txEntry.ttl(accessTtl);

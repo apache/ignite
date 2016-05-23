@@ -137,6 +137,11 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
     public IgniteCache<K, V> withNoRetries();
 
     /**
+     * @return Cache with send result of entry processor instead of entry processor.
+     */
+    public IgniteCache<K, V> withSendValueToBackup();
+
+    /**
      * Returns cache that will operate with binary objects.
      * <p>
      * Cache returned by this method will not be forced to deserialize binary objects,

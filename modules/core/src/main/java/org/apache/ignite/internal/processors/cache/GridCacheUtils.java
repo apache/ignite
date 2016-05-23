@@ -149,6 +149,9 @@ public class GridCacheUtils {
     /** Keep serialized flag. */
     public static final int KEEP_BINARY_FLAG_MASK = 0x2;
 
+    /** Send value to backups instead of entry processor. */
+    public static final int SEND_VALUE_TO_BACKUP = 0x3;
+
     /** Empty predicate array. */
     private static final IgnitePredicate[] EMPTY = new IgnitePredicate[0];
 
