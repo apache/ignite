@@ -356,13 +356,13 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeMessage("newVal", isFiltered() ? null : key))
+                if (!writer.writeMessage("newVal", isFiltered() ? null : newVal))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeMessage("oldVal", isFiltered() ? null : key))
+                if (!writer.writeMessage("oldVal", isFiltered() ? null : oldVal))
                     return false;
 
                 writer.incrementState();
