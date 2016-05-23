@@ -1617,7 +1617,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         if (keys.size() > 1 &&                    // Several keys ...
                             writeThrough() && !req.skipStore() && // and store is enabled ...
                             !ctx.store().isLocal() &&             // and this is not local store ...
-                                                                  // (conflict resolver should be used for local store)
+                            // (conflict resolver should be used for local store)
                             !ctx.dr().receiveEnabled()            // and no DR.
                             ) {
                             // This method can only be used when there are no replicated entries in the batch.
@@ -2001,8 +2001,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
                     if (intercept) {
                         CacheObject old = entry.innerGet(
-                             null,
-                             null,
+                            null,
+                            null,
                             /*read swap*/true,
                             /*read through*/ctx.loadPreviousValue(),
                             /*fail fast*/false,
@@ -2755,28 +2755,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         // Process deleted entries before locks release.
         assert ctx.deferredDelete() : this;
 
-        // Entries to skip eviction manager notification for.
-        // Enqueue entries while holding locks.
-        Collection<KeyCacheObject> skip = null;
-
-        try {
-            for (GridCacheMapEntry entry : locked) {
-                if (entry != null && entry.deleted()) {
-                    if (skip == null)
-                        skip = new HashSet<>(locked.size(), 1.0f);
-
-                    skip.add(entry.key());
-                }
-            }
-        }
-        finally {
-            // At least RuntimeException can be thrown by the code above when GridCacheContext is cleaned and there is
-            // an attempt to use cleaned resources.
-            // That's why releasing locks in the finally block..
-            for (GridCacheMapEntry entry : locked) {
-                if (entry != null)
-                    GridUnsafe.monitorExit(entry);
-            }
+        for (GridCacheMapEntry entry : locked) {
+            if (entry != null)
+                GridUnsafe.monitorExit(entry);
         }
 
         // Try evict partitions.
@@ -2785,14 +2766,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 entry.onUnlock();
         }
 
-        if (skip != null && skip.size() == locked.size())
-            // Optimization.
-            return;
-
         // Must touch all entries since update may have deleted entries.
         // Eviction manager will remove empty entries.
         for (GridCacheMapEntry entry : locked) {
-            if (entry != null && (skip == null || !skip.contains(entry.key())))
+            if (entry != null)
                 ctx.evicts().touch(entry, topVer);
         }
     }
