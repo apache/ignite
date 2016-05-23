@@ -36,6 +36,7 @@ import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -2023,7 +2024,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
             if (field0 == null && !fieldTaken) {
                 BinaryType type = obj.type();
 
-                if (type != null) {
+                if (type != null && BinaryUtils.isMetadataAvailable(type)) {
                     field0 = type.field(propName);
 
                     assert field0 != null;
