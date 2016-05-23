@@ -323,6 +323,17 @@ class IgniteAgentMonitor {
     /**
      * Reset metrics specified cache on specified node.
      * @param {String} nid Node id.
+     * @param {Array.<String>} cacheNames Cache name.
+     * @returns {Promise}
+     */
+    cacheSwapBackups(nid, cacheNames) {
+        return this._rest('node:cache:swap:backups', nid,
+            _.map(cacheNames, (c) => this._maskCacheName(cacheNames)).join(','));
+    }
+
+    /**
+     * Reset metrics specified cache on specified node.
+     * @param {String} nid Node id.
      * @param {String} cacheName Cache name.
      * @returns {Promise}
      */

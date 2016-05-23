@@ -365,6 +365,24 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
 
         /**
          * @param {Boolean} demo Is need run command on demo node.
+         * @param {String} nid Node id.
+         * @param {String} cacheNames Cache names separated by comma.
+         * @returns {Promise}
+         */
+        cacheSwapBackups(demo, nid, cacheNames) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', nid)
+                .addParam('p2', 'org.apache.ignite.internal.visor.cache.VisorCacheSwapBackupsTask')
+                .addParam('p3', 'java.util.Set')
+                .addParam('p4', 'java.lang.String')
+                .addParam('p5', cacheNames);
+
+            return this.executeRest(cmd);
+        }
+
+        /**
+         * @param {Boolean} demo Is need run command on demo node.
          * @param {String} taskNid node that is not node we want to ping.
          * @param {String} nid Id of the node to ping.
          * @returns {Promise}
