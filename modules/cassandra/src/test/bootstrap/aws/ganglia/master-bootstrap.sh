@@ -23,10 +23,11 @@ JDK_DOWNLOAD_URL=http://download.oracle.com/otn-pub/java/jdk/8u77-b03/jdk-8u77-l
 
 TESTS_PACKAGE_DONLOAD_URL=s3://bucket/folder/ignite-cassandra-tests-1.6.0-SNAPSHOT.zip
 
+
 terminate()
 {
-    SUCCESS_URL=$S3_CASSANDRA_BOOTSTRAP_SUCCESS
-    FAILURE_URL=$S3_CASSANDRA_BOOTSTRAP_FAILURE
+    SUCCESS_URL=$S3_GANGLIA_BOOTSTRAP_SUCCESS
+    FAILURE_URL=$S3_GANGLIA_BOOTSTRAP_FAILURE
 
     if [ -n "$SUCCESS_URL" ] && [[ "$SUCCESS_URL" != */ ]]; then
         SUCCESS_URL=${SUCCESS_URL}/
@@ -42,7 +43,7 @@ terminate()
     if [ -n "$1" ]; then
         echo "[ERROR] $1"
         echo "[ERROR]-----------------------------------------------------"
-        echo "[ERROR] Cassandra node bootstrap failed"
+        echo "[ERROR] Ganglia master node bootstrap failed"
         echo "[ERROR]-----------------------------------------------------"
         msg=$1
 
@@ -54,7 +55,7 @@ terminate()
         reportFile=$reportFolder/__error__
     else
         echo "[INFO]-----------------------------------------------------"
-        echo "[INFO] Cassandra node bootstrap successfully completed"
+        echo "[INFO] Ganglia master node bootstrap successfully completed"
         echo "[INFO]-----------------------------------------------------"
 
         if [ -z "$SUCCESS_URL" ]; then
@@ -253,97 +254,209 @@ setupTestsPackage()
 
     find /opt/ignite-cassandra-tests -type f -name "*.sh" -exec chmod ug+x {} \;
 
-    . /opt/ignite-cassandra-tests/bootstrap/aws/common.sh "cassandra"
-    . /opt/ignite-cassandra-tests/bootstrap/aws/ganglia/agent-bootstrap.sh
+    . /opt/ignite-cassandra-tests/bootstrap/aws/common.sh "ganglia"
 
     printInstanceInfo
     tagInstance
-    bootstrapGangliaAgent "cassandra"
 }
 
-downloadCassandra()
+setupGangliaPackages()
 {
-    downloadPackage "$CASSANDRA_DOWNLOAD_URL" "/opt/apache-cassandra.tar.gz" "Cassandra"
+    echo "[INFO] Installing Ganglia required packages"
 
-    rm -Rf /opt/cassandra
+    yum -y install apr-devel apr-util check-devel cairo-devel pango-devel pango \
+    libxml2-devel glib2-devel dbus-devel freetype-devel freetype \
+    libpng-devel libart_lgpl-devel fontconfig-devel gcc-c++ expat-devel \
+    python-devel libXrender-devel perl-devel perl-CPAN gettext git sysstat \
+    automake autoconf ltmain.sh pkg-config gperf libtool pcre-devel libconfuse-devel \
+    php-devel php-pear phpize
 
-    echo "[INFO] Untaring Cassandra package"
-    tar -xvzf /opt/apache-cassandra.tar.gz -C /opt
     if [ $? -ne 0 ]; then
-        terminate "Failed to untar Cassandra package"
+        terminate "Failed to install all Ganglia required packages"
     fi
 
-    rm -f /opt/apache-cassandra.tar.gz
+    echo "[INFO] Installing rrdtool"
 
-    unzipDir=$(ls /opt | grep "cassandra" | grep "apache")
-    if [ "$unzipDir" != "cassandra" ]; then
-        mv /opt/$unzipDir /opt/cassandra
-    fi
-}
+    downloadPackage "$RRD_DOWNLOAD_URL" "/opt/rrdtool.tar.gz" "rrdtool"
 
-setupCassandra()
-{
-    echo "[INFO] Creating 'cassandra' group"
-    exists=$(cat /etc/group | grep cassandra)
-    if [ -z "$exists" ]; then
-        groupadd cassandra
-        if [ $? -ne 0 ]; then
-            terminate "Failed to create 'cassandra' group"
-        fi
-    fi
-
-    echo "[INFO] Creating 'cassandra' user"
-    exists=$(cat /etc/passwd | grep cassandra)
-    if [ -z "$exists" ]; then
-        useradd -g cassandra cassandra
-        if [ $? -ne 0 ]; then
-            terminate "Failed to create 'cassandra' user"
-        fi
-    fi
-
-    rm -Rf /storage/cassandra
-
-    echo "[INFO] Creating '/storage/cassandra' storage"
-    mkdir -p /storage/cassandra
-    chown -R cassandra:cassandra /storage/cassandra
+    tar -xvzf /opt/rrdtool.tar.gz -C /opt
     if [ $? -ne 0 ]; then
-        terminate "Failed to setup Cassandra storage dir: /storage/cassandra"
+        terminate "Failed to untar rrdtool tarball"
     fi
 
-    rm -f /opt/cassandra/conf/cassandra-env.sh /opt/cassandra/conf/cassandra-template.yaml
+    rm -Rf /opt/rrdtool.tar.gz
 
-    cp /opt/ignite-cassandra-tests/bootstrap/aws/cassandra/cassandra-env.sh /opt/cassandra/conf
-    cp /opt/ignite-cassandra-tests/bootstrap/aws/cassandra/cassandra-template.yaml /opt/cassandra/conf
+    unzipDir=$(ls /opt | grep "rrdtool")
+    if [ "$unzipDir" != "rrdtool" ]; then
+        mv /opt/$unzipDir /opt/rrdtool
+    fi
 
-    chown -R cassandra:cassandra /opt/cassandra /opt/ignite-cassandra-tests
+    export PKG_CONFIG_PATH=/usr/lib/pkgconfig/
+    cd /opt/rrdtool
 
-    echo "export JAVA_HOME=/opt/java" >> $1
-    echo "export CASSANDRA_HOME=/opt/cassandra" >> $1
-    echo "export PATH=\$JAVA_HOME/bin:\$CASSANDRA_HOME/bin:\$PATH" >> $1
+    ./configure --prefix=/usr/local/rrdtool
+    if [ $? -ne 0 ]; then
+        terminate "Failed to configure rrdtool"
+    fi
 
-    echo "[INFO] Starting logs collector daemon"
+    make
+    if [ $? -ne 0 ]; then
+        terminate "Failed to make rrdtool"
+    fi
 
-    HOST_NAME=$(hostname -f | tr '[:upper:]' '[:lower:]')
-    /opt/ignite-cassandra-tests/bootstrap/aws/logs-collector.sh "/opt/cassandra/logs" "$S3_CASSANDRA_LOGS/$HOST_NAME" "$S3_LOGS_TRIGGER" > /opt/cassandra/logs-collector.log &
+    make install
+    if [ $? -ne 0 ]; then
+        terminate "Failed to install rrdtool"
+    fi
 
-    echo "[INFO] Logs collector daemon started: $!"
+    ln -s /usr/local/rrdtool/bin/rrdtool /usr/bin/rrdtool
+
+    chown -R nobody:nobody /usr/local/rrdtool /usr/bin/rrdtool
+
+    rm -Rf /opt/rrdtool
+
+    echo "[INFO] rrdtool successfully installed"
+
+    echo "[INFO] Installig ganglia-core"
+
+    cd /opt
+
+    git clone $GANGLIA_CORE_DOWNLOAD_URL
+
+    if [ $? -ne 0 ]; then
+        terminate "Failed to clone ganglia-core from github: $GANGLIA_CORE_DOWNLOAD_URL"
+    fi
+
+    cd /opt/monitor-core
+
+    ./bootstrap
+
+    if [ $? -ne 0 ]; then
+        terminate "Failed to prepare ganglia-core for compilation"
+    fi
+
+    ./configure --with-gmetad --with-librrd=/usr/local/rrdtool
+
+    if [ $? -ne 0 ]; then
+        terminate "Failed to configure ganglia-core"
+    fi
+
+    make
+    if [ $? -ne 0 ]; then
+        terminate "Failed to make ganglia-core"
+    fi
+
+    make install
+    if [ $? -ne 0 ]; then
+        terminate "Failed to install ganglia-core"
+    fi
+
+    rm -Rf /opt/monitor-core
+
+    echo "[INFO] ganglia-core successfully installed"
+
+    echo "[INFO] Installing ganglia-web"
+
+    cd /opt
+
+    git clone $GANGLIA_WEB_URL
+
+    if [ $? -ne 0 ]; then
+        terminate "Failed to clone ganglia-web from github: $GANGLIA_WEB_URL"
+    fi
+
+    echo "" >> /etc/httpd/conf/httpd.conf
+    echo "Alias /ganglia /opt/ganglia-web" >> /etc/httpd/conf/httpd.conf
+    echo "<Directory \"/opt/ganglia-web\">" >> /etc/httpd/conf/httpd.conf
+    echo "       AllowOverride All" >> /etc/httpd/conf/httpd.conf
+    echo "       Order allow,deny" >> /etc/httpd/conf/httpd.conf
+    echo "       Allow from all" >> /etc/httpd/conf/httpd.conf
+    echo "       Deny from none" >> /etc/httpd/conf/httpd.conf
+    echo "</Directory>" >> /etc/httpd/conf/httpd.conf
+
+    service httpd start
+
+    if [ $? -ne 0 ]; then
+        terminate "Failed to start httpd service"
+    fi
+
+    sleep 30s
+
+    exists=$(service httpd status | grep running)
+    if [ -z "$exists" ]; then
+        terminate "httpd service process terminated"
+    fi
+
+    if [ ! -d "/var/lib/ganglia-web/dwoo" ]; then
+        mkdir -p /var/lib/ganglia-web/dwoo
+        chmod -R a+rw /var/lib/ganglia-web
+    fi
+
+    chmod -R a+rw /var/lib/ganglia-web/dwoo
+
+    echo "[INFO] ganglia-web successfully installed"
 }
 
 ###################################################################################################################
 
 echo "[INFO]-----------------------------------------------------------------"
-echo "[INFO] Bootstrapping Cassandra node"
+echo "[INFO] Bootstrapping Ganglia master server"
 echo "[INFO]-----------------------------------------------------------------"
+
+exists=$(chkconfig --list | grep httpd)
+if [ -z "$exists" ]; then
+    echo "[INFO] Installing httpd service"
+
+    yum -y install httpd
+
+    if [ $? -ne 0 ]; then
+        terminate "Failed to install httpd service"
+    fi
+fi
+
+if [ ! -f "/etc/httpd/conf/httpd.conf" ]; then
+    terminate "It's not possible to install Ganglia in this host cause it doens't have /etc/httpd/conf/httpd.conf"
+fi
 
 setupPreRequisites
 setupJava
 setupAWSCLI
 setupTestsPackage
-downloadCassandra
-setupCassandra "/root/.bash_profile"
+setupGangliaPackages
 
-cmd="/opt/ignite-cassandra-tests/bootstrap/aws/cassandra/cassandra-start.sh"
+registerNode
 
-#sudo -u cassandra -g cassandra sh -c "$cmd | tee /opt/cassandra/start.log"
+setupClusterSeeds "cassandra"
+CASSANDRA_SEEDS=$CLUSTER_SEEDS
 
-$cmd | tee /opt/cassandra/start.log
+setupClusterSeeds "ignite"
+IGNITE_SEEDS=$CLUSTER_SEEDS
+
+setupClusterSeeds "test"
+TEST_SEEDS=$CLUSTER_SEEDS
+
+echo "data_source \"cassandra\" $CASSANDRA_SEEDS" > /opt/gmetad.conf
+echo "data_source \"ignite\" $IGNITE_SEEDS" >> /opt/gmetad.conf
+echo "data_source \"tests\" $TEST_SEEDS" >> /opt/gmetad.conf
+echo "setuid_username \"nobody\"" >> /opt/gmetad.conf
+echo "case_sensitive_hostnames 0" >> /opt/gmetad.conf
+
+echo "[INFO] Starting gmetad daemon"
+
+gmetad --conf=/opt/gmetad.conf
+
+if [ $? -ne 0 ]; then
+    terminate "Failed to start gmetad daemon"
+fi
+
+sleep 10s
+
+exists=$(ps -ef | grep gmetad)
+
+if [ -z "$exists" ]; then
+    terminate "gmetad daemon process terminated"
+fi
+
+echo "[INFO] gmetad daemon successfully started"
+
+terminate
