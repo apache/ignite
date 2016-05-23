@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spark;
 
-import java.util.List;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -28,6 +27,7 @@ import org.apache.ignite.lang.IgniteOutClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -38,6 +38,10 @@ import org.apache.spark.sql.Column;
 import org.apache.spark.sql.DataFrame;
 import org.apache.spark.sql.Row;
 import scala.Tuple2;
+
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * Tests for {@link JavaIgniteRDD} (standalone mode).
@@ -82,6 +86,14 @@ public class JavaStandaloneIgniteRDDSelfTest extends GridCommonAbstractTest {
         new PairFunction<Integer, String, Entity>() {
             @Override public Tuple2<String, Entity> call(Integer i) throws Exception {
                 return new Tuple2<>(String.valueOf(i), new Entity(i, "name" + i, i * 100));
+            }
+        };
+
+    /** */
+    private static final PairFunction<Integer, String, EntityTestAllTypeFields> INT_TO_ENTITY_ALL_FIELDS_F =
+        new PairFunction<Integer, String, EntityTestAllTypeFields>() {
+            @Override public Tuple2<String, EntityTestAllTypeFields> call(Integer i) throws Exception {
+                return new Tuple2<>(String.valueOf(i), new EntityTestAllTypeFields(i));
             }
         };
 
@@ -234,7 +246,50 @@ public class JavaStandaloneIgniteRDDSelfTest extends GridCommonAbstractTest {
         finally {
             sc.stop();
         }
+    }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAllFieldsTypes() throws Exception {
+        JavaSparkContext sc = new JavaSparkContext("local[*]", "test");
+
+        final int cnt = 100;
+
+        try {
+            JavaIgniteContext<String, EntityTestAllTypeFields> ic = new JavaIgniteContext<>(sc, new IgniteConfigProvider());
+
+            JavaIgniteRDD<String, EntityTestAllTypeFields> cache = ic.fromCache(PARTITIONED_CACHE_NAME);
+
+            cache.savePairs(sc.parallelize(F.range(0, cnt), 2).mapToPair(INT_TO_ENTITY_ALL_FIELDS_F));
+
+            EntityTestAllTypeFields e = new EntityTestAllTypeFields(cnt / 2);
+            for(Field f : EntityTestAllTypeFields.class.getDeclaredFields()) {
+                String fieldName = f.getName();
+
+                Object val = GridTestUtils.getFieldValue(e, fieldName);
+
+                DataFrame df = cache.sql(
+                    String.format("select %s from EntityTestAllTypeFields where %s = ?", fieldName, fieldName),
+                    val);
+
+                if (val instanceof BigDecimal) {
+                    Object res = df.collect()[0].get(0);
+
+                    assertTrue(String.format("+++ Fail on %s field", fieldName),
+                        ((Comparable<BigDecimal>)val).compareTo((BigDecimal)res) == 0);
+                }
+                else if (val.getClass().isArray())
+                    assertTrue(String.format("+++ Fail on %s field", fieldName), 1 <= df.count());
+                else
+                    assertEquals(String.format("+++ Fail on %s field", fieldName), val, df.collect()[0].get(0));
+
+                info(String.format("+++ Query on the filed: %s : %s passed", fieldName, f.getType().getSimpleName()));
+            }
+        }
+        finally {
+            sc.stop();
+        }
     }
 
     /**
@@ -269,7 +324,8 @@ public class JavaStandaloneIgniteRDDSelfTest extends GridCommonAbstractTest {
 
         ccfg.setName(PARTITIONED_CACHE_NAME);
 
-        ccfg.setIndexedTypes(String.class, Entity.class);
+        ccfg.setIndexedTypes(String.class, Entity.class,
+            String.class, EntityTestAllTypeFields.class);
 
         return ccfg;
     }

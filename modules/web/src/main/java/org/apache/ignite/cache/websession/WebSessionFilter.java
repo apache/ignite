@@ -854,8 +854,8 @@ public class WebSessionFilter implements Filter {
      */
     private void handleAttributeUpdateException(final String sesId, final int tryCnt, final RuntimeException e) {
         if (tryCnt == retries - 1) {
-            U.warn(log, "Failed to apply updates for session (maximum number of retries exceeded) [sesId=" +
-                sesId + ", retries=" + retries + ']');
+            U.error(log, "Failed to apply updates for session (maximum number of retries exceeded) [sesId=" +
+                sesId + ", retries=" + retries + ']', e);
         }
         else {
             U.warn(log, "Failed to apply updates for session (will retry): " + sesId);
