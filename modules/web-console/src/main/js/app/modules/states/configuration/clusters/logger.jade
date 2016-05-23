@@ -1,0 +1,74 @@
+//-
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    (the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+
+         http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+include ../../../../../app/helpers/jade/mixins.jade
+
+-var model = 'backupItem.logger'
+-var form = 'logger'
+
+form.panel.panel-default(name=form novalidate)
+    .panel-heading(bs-collapse-toggle ng-click='ui.loadPanel("#{form}")')
+        ignite-form-panel-chevron
+        label Logger configuration
+        ignite-form-field-tooltip.tipLabel
+            | Logging functionality used throughout the system
+        ignite-form-revert
+    .panel-collapse(role='tabpanel' bs-collapse-target id=form)
+        .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
+            .col-sm-6
+                .settings-row
+                    +dropdown('Logger:', model + '.kind', 'logger', 'true', 'Default',
+                        '[\
+                            {value: "Log4j2", label: "Apache Log4j 2"},\
+                            {value: "Null", label: "Null logger"},\
+                            {value: "HadoopIgfsJcl", label: "JCL logger wrapper for Hadoop"},\
+                            {value: "Java", label: "Java Logger"},\
+                            {value: "JCL", label: "Jakarta Commons Logging (JCL)"},\
+                            {value: "SLF4J", label: "Simple Logging Facade (SLF4J)"},\
+                            {value: "Log4j", label: "Apache log4j"},\
+                            {value: "Custom", label: "Custom"},\
+                            {value: undefined, label: "Default"}\
+                        ]',
+                        'Logger implementation\
+                        <ul>\
+                            <li>Apache Log4j 2 - this logger should be used by loaders that have prefer log4j2-based logging</li>\
+                            <li>Null logger - logger which does not output anything</li>\
+                            <li>JCL logger wrapper for Hadoop</li>\
+                            <li>Logger to use with Java logging</li>\
+                            <li>Jakarta Commons Logging (JCL) - Wraps any JCL (Jakarta Commons Logging) loggers</li>\
+                            <li>Simple Logging Facade for Java (SLF4J) - This logger should be used by loaders that have prefer slf4j - based logging</li>\
+                            <li>Apache log4j - This logger should be used by loaders that have prefer log4j-based logging.</li>\
+                            <li>Custom - Custom logger implementation</li>\
+                            <li>Default - Default logger configuration</li>\
+                        </ul>')
+                .settings-row(ng-if='#{model}.kind && #{model}.kind !== "Null"')
+                    .panel-details
+                        ignite-configuration-clusters-logger-log4j2(
+                            ng-if='#{model}.kind === "Log4j2"')
+                        ignite-configuration-clusters-logger-hadoop(
+                            ng-if='#{model}.kind === "HadoopIgfsJcl"')
+                        ignite-configuration-clusters-logger-java(
+                            ng-if='#{model}.kind === "Java"')
+                        ignite-configuration-clusters-logger-jcl(
+                            ng-if='#{model}.kind === "JCL"')
+                        ignite-configuration-clusters-logger-slf4j(
+                            ng-if='#{model}.kind === "SLF4J"')
+                        ignite-configuration-clusters-logger-log4j(
+                            ng-if='#{model}.kind === "Log4j"')
+                        ignite-configuration-clusters-logger-custom(
+                            ng-if='#{model}.kind === "Custom"')
+            .col-sm-6
+                +preview-xml-java(model, 'clusterLogger')

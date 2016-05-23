@@ -780,6 +780,86 @@ $generatorJava.binaryTypeConfigurations = function (binary, res) {
     return res;
 };
 
+// Generate collision group.
+$generatorJava.clusterCollision = function (collision, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    if (collision && collision.kind !== 'Noop') {
+        let spi = collision[collision.kind];
+
+        const varName = 'collisionSpi';
+
+        switch (collision.kind) {
+            case 'JobStealing':
+                $generatorJava.declareVariable(res, varName, 'org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi');
+
+                $generatorJava.property(res, varName, spi, 'activeJobsThreshold', null, null, 95);
+                $generatorJava.property(res, varName, spi, 'waitJobsThreshold', null, null, 0);
+                $generatorJava.property(res, varName, spi, 'messageExpireTime', null, null, 1000);
+                $generatorJava.property(res, varName, spi, 'maximumStealingAttempts', null, null, 5);
+                $generatorJava.property(res, varName, spi, 'stealingEnabled', null, null, true);
+
+                if ($generatorCommon.isDefinedAndNotEmpty(spi.externalCollisionListener))
+                    res.line(varName + '.' + $generatorJava.setterName('externalCollisionListener') +
+                        '(new ' + res.importClass(spi.externalCollisionListener) + '());');
+
+                if ($generatorCommon.isDefinedAndNotEmpty(spi.stealingAttributes)) {
+                    const stealingAttrsVar = 'stealingAttrs';
+
+                    res.needEmptyLine = true;
+
+                    $generatorJava.declareVariable(res, stealingAttrsVar, 'java.util.Map', 'java.util.HashMap', 'String', 'java.io.Serializable');
+
+                    _.forEach(spi.stealingAttributes, function (attr) {
+                        res.line(stealingAttrsVar + '.put("' + attr.name + '", "' + attr.value + '");');
+                    });
+
+                    res.needEmptyLine = true;
+
+                    res.line(varName + '.setStealingAttributes(' + stealingAttrsVar + ');');
+                }
+
+                break;
+
+            case 'FifoQueue':
+                $generatorJava.declareVariable(res, varName, 'org.apache.ignite.spi.collision.fifoqueue.FifoQueueCollisionSpi');
+
+                $generatorJava.property(res, varName, spi, 'parallelJobsNumber');
+                $generatorJava.property(res, varName, spi, 'waitingJobsNumber');
+
+                break;
+
+            case 'PriorityQueue':
+                $generatorJava.declareVariable(res, varName, 'org.apache.ignite.spi.collision.priorityqueue.PriorityQueueCollisionSpi');
+
+                $generatorJava.property(res, varName, spi, 'parallelJobsNumber');
+                $generatorJava.property(res, varName, spi, 'waitingJobsNumber');
+                $generatorJava.property(res, varName, spi, 'priorityAttributeKey', null, null, 'grid.task.priority');
+                $generatorJava.property(res, varName, spi, 'jobPriorityAttributeKey', null, null, 'grid.job.priority');
+                $generatorJava.property(res, varName, spi, 'defaultPriority', null, null, 0);
+                $generatorJava.property(res, varName, spi, 'starvationIncrement', null, null, 1);
+                $generatorJava.property(res, varName, spi, 'starvationPreventionEnabled', null, null, true);
+
+                break;
+
+            case 'Custom':
+                if ($generatorCommon.isDefinedAndNotEmpty(spi.class))
+                    $generatorJava.declareVariable(res, varName, spi.class);
+
+                break;
+        }
+
+        res.needEmptyLine = true;
+
+        res.line('cfg.setCollisionSpi(' + varName + ');');
+
+        res.needEmptyLine = true;
+    }
+
+    return res;
+};
+
 // Generate communication group.
 $generatorJava.clusterCommunication = function (cluster, res) {
     if (!res)
@@ -970,6 +1050,192 @@ $generatorJava.clusterEvents = function (cluster, res) {
     return res;
 };
 
+// Generate failover group.
+$generatorJava.clusterFailover = function (cluster, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    if ($generatorCommon.isDefinedAndNotEmpty(cluster.failoverSpi) && _.findIndex(cluster.failoverSpi, function (spi) {
+            return $generatorCommon.isDefinedAndNotEmpty(spi.kind) && (spi.kind !== 'Custom' || $generatorCommon.isDefinedAndNotEmpty(_.get(spi, spi.kind + '.class')));
+        }) >= 0) {
+        let arrayVarName = 'failoverSpiList';
+
+        $generatorJava.declareVariable(res, arrayVarName, 'java.util.List', 'java.util.ArrayList', 'org.apache.ignite.spi.failover.FailoverSpi');
+
+        _.forEach(cluster.failoverSpi, function (spi) {
+            if (spi.kind && (spi.kind !== 'Custom' || $generatorCommon.isDefinedAndNotEmpty(_.get(spi, spi.kind + '.class')))) {
+                let varName = 'failoverSpi';
+
+                let maxAttempts = _.get(spi, spi.kind + '.maximumFailoverAttempts');
+
+                if ((spi.kind === 'JobStealing' || spi.kind === 'Always') && $generatorCommon.isDefinedAndNotEmpty(maxAttempts) && maxAttempts !== 5) {
+                    const spiCls = res.importClass($generatorCommon.failoverSpiClass(spi));
+
+                    $generatorJava.declareVariableCustom(res, varName, 'org.apache.ignite.spi.failover.FailoverSpi', 'new ' + spiCls + '()');
+
+                    if ($generatorCommon.isDefinedAndNotEmpty(spi[spi.kind].maximumFailoverAttempts))
+                        res.line('((' + spiCls + ') ' + varName + ').setMaximumFailoverAttempts(' + spi[spi.kind].maximumFailoverAttempts + ');');
+
+                    res.needEmptyLine = true;
+
+                    res.line(arrayVarName + '.add(' + varName + ');');
+                }
+                else
+                    res.line(arrayVarName + '.add(new ' + res.importClass($generatorCommon.failoverSpiClass(spi)) + '());');
+
+                res.needEmptyLine = true;
+            }
+        });
+
+        res.line('cfg.setFailoverSpi(' + arrayVarName + '.toArray(new FailoverSpi[' + arrayVarName + '.size()]));');
+
+        res.needEmptyLine = true;
+    }
+
+    return res;
+};
+
+// Generate marshaller group.
+$generatorJava.clusterLogger = function (logger, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    if ($generatorCommon.loggerConfigured(logger)) {
+        const varName = 'logger';
+
+        const log = logger[logger.kind];
+
+        switch (logger.kind) {
+            case 'Log4j2':
+                let args = '';
+
+                switch (log.mode) {
+                    case 'Logger':
+                        args = 'new ' + res.importClass(log.logger) + '(), ';
+
+                        args += $generatorCommon.isDefinedAndNotEmpty(log.consoleLogger) ?
+                            'new ' + res.importClass(log.consoleLogger) + '()' : 'null';
+
+                        break;
+
+                    case 'Path':
+                        args = '"' + log.path + '"';
+
+                        break;
+                }
+
+                $generatorJava.declareVariableCustom(res, varName, 'org.apache.ignite.logger.log4j2.Log4J2Logger',
+                    'new Log4J2Logger(' + args + ')');
+
+                res.needEmptyLine = true;
+
+                if ($generatorCommon.isDefinedAndNotEmpty(log.level))
+                    res.line(varName + '.setLevel(' + res.importClass('org.apache.logging.log4j.Level') + '.' + log.level + ');');
+
+                break;
+
+            case 'Null':
+                $generatorJava.declareVariable(res, varName, 'org.apache.ignite.logger.NullLogger');
+
+                break;
+
+            case 'HadoopIgfsJcl':
+                $generatorJava.declareVariableCustom(res, varName, 'org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsJclLogger',
+                    'new HadoopIgfsJclLogger(' + res.importClass(log.logger) + '())');
+
+                break;
+
+            case 'Java':
+                if (log.mode === 'default')
+                    $generatorJava.declareVariable(res, varName, 'org.apache.ignite.logger.java.JavaLogger');
+                else {
+                    let arg = '';
+
+                    switch (log.mode) {
+                        case 'Logger':
+                            arg = 'new ' + res.importClass(log.logger) + '()';
+
+                            break;
+
+                        case 'configure':
+                            arg = (log.configure || false).toString();
+
+                            break;
+                    }
+
+                    $generatorJava.declareVariableCustom(res, varName, 'org.apache.ignite.logger.java.JavaLogger',
+                        'new JavaLogger(' + arg + ')')
+                }
+
+                break;
+
+            case 'JCL':
+                if (log && $generatorCommon.isDefinedAndNotEmpty(log.logger))
+                    $generatorJava.declareVariableCustom(res, varName, 'org.apache.ignite.logger.jcl.JclLogger',
+                        'new JclLogger(new ' + res.importClass(log.logger) + '())');
+                else
+                    $generatorJava.declareVariable(res, varName, 'org.apache.ignite.logger.jcl.JclLogger');
+
+                break;
+
+            case 'SLF4J':
+                if (log && $generatorCommon.isDefinedAndNotEmpty(log.logger)) {
+                    $generatorJava.declareVariableCustom(res, varName, 'org.apache.ignite.logger.slf4j.Slf4jLogger',
+                        'new Slf4jLogger(new ' + res.importClass(log.logger) + '())');
+                }
+                else
+                    $generatorJava.declareVariable(res, varName, 'org.apache.ignite.logger.slf4j.Slf4jLogger');
+
+                break;
+
+            case 'Log4j':
+                if (log.mode === 'default' && !$generatorCommon.isDefinedAndNotEmpty(log.level))
+                    $generatorJava.declareVariable(res, varName, 'org.apache.ignite.logger.log4j.Log4JLogger');
+                else {
+                    let arg = '';
+
+                    switch (log.mode) {
+                        case 'Logger':
+                            arg = 'new ' + res.importClass(log.logger) + '()';
+
+                            break;
+
+                        case 'Configure':
+                            arg = (log.configure || false).toString();
+
+                            break;
+
+                        case 'Path':
+                            arg = '"' + log.path + '"';
+
+                            break;
+                    }
+
+                    $generatorJava.declareVariableCustom(res, varName, 'org.apache.ignite.logger.log4j.Log4JLogger',
+                        'new Log4JLogger(' + arg + ')');
+
+                    if ($generatorCommon.isDefinedAndNotEmpty(log.level))
+                        res.line(varName + '.setLevel(' + res.importClass('org.apache.log4j.Level') + '.' + log.level + ');');
+                }
+
+                break;
+
+            case 'Custom':
+                $generatorJava.declareVariable(res, varName, log.class);
+
+                break;
+        }
+
+        res.needEmptyLine = true;
+
+        res.line('cfg.setGridLogger(' + varName + ');');
+
+        res.needEmptyLine = true;
+    }
+
+    return res;
+};
+
 // Generate marshaller group.
 $generatorJava.clusterMarshaller = function (cluster, res) {
     if (!res)
@@ -1067,6 +1333,31 @@ $generatorJava.clusterTransactions = function (transactionConfiguration, res) {
 
     return res;
 };
+
+// Generate user attributes group.
+$generatorJava.clusterUserAttributes = function (cluster, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    if ($generatorCommon.isDefinedAndNotEmpty(cluster.attributes)) {
+        $generatorJava.declareVariable(res, 'attributes', 'java.util.Map', 'java.util.HashMap', 'java.lang.String', 'java.lang.String');
+
+        _.forEach(cluster.attributes, function (attr) {
+            res.line('attributes.put("' + attr.name + '", "' + attr.value + '");');
+        });
+
+        res.needEmptyLine = true;
+
+        res.line('cfg.setUserAttributes(attributes);');
+
+        res.needEmptyLine = true;
+    }
+
+    res.needEmptyLine = true;
+
+    return res;
+};
+
 
 // Generate cache general group.
 $generatorJava.cacheGeneral = function (cache, varName, res) {
@@ -2497,6 +2788,8 @@ $generatorJava.clusterConfiguration = function (cluster, clientNearCfg, res) {
 
     $generatorJava.clusterBinary(cluster.binaryConfiguration, res);
 
+    $generatorJava.clusterCollision(cluster.collision, res);
+
     $generatorJava.clusterCommunication(cluster, res);
 
     $generatorJava.clusterConnector(cluster.connector, res);
@@ -2504,6 +2797,10 @@ $generatorJava.clusterConfiguration = function (cluster, clientNearCfg, res) {
     $generatorJava.clusterDeployment(cluster, res);
 
     $generatorJava.clusterEvents(cluster, res);
+
+    $generatorJava.clusterFailover(cluster, res);
+
+    $generatorJava.clusterLogger(cluster.logger, res);
 
     $generatorJava.clusterMarshaller(cluster, res);
 
@@ -2526,6 +2823,8 @@ $generatorJava.clusterConfiguration = function (cluster, clientNearCfg, res) {
 
     if (isSrvCfg)
         $generatorJava.igfss(cluster.igfss, 'cfg', res);
+
+    $generatorJava.clusterUserAttributes(cluster, res);
 
     return res;
 };

@@ -564,6 +564,86 @@ $generatorXml.clusterBinary = function (binary, res) {
     return res;
 };
 
+// Generate collision group.
+$generatorXml.clusterCollision = function (collision, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    if (collision && collision.kind !== 'Noop') {
+        res.startBlock('<property name="collisionSpi">');
+
+        let spi = collision[collision.kind];
+
+        switch (collision.kind) {
+            case 'JobStealing':
+                res.startBlock('<bean class="org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi">');
+                $generatorXml.property(res, spi, 'activeJobsThreshold', null, 95);
+                $generatorXml.property(res, spi, 'waitJobsThreshold', null, 0);
+                $generatorXml.property(res, spi, 'messageExpireTime', null, 1000);
+                $generatorXml.property(res, spi, 'maximumStealingAttempts', null, 5);
+                $generatorXml.property(res, spi, 'stealingEnabled', null, true);
+
+                if ($generatorCommon.isDefinedAndNotEmpty(spi.externalCollisionListener)) {
+                    res.needEmptyLine = true;
+
+                    res.startBlock('<property name="externalCollisionListener">');
+                    res.line('<bean class="' + spi.externalCollisionListener + ' "/>');
+                    res.endBlock('</property>');
+                }
+
+                if ($generatorCommon.isDefinedAndNotEmpty(spi.stealingAttributes)) {
+                    res.needEmptyLine = true;
+
+                    res.startBlock('<property name="stealingAttributes">');
+                    res.startBlock('<map>');
+
+                    _.forEach(spi.stealingAttributes, function (attr) {
+                        $generatorXml.element(res, 'entry', 'key', attr.name, 'value', attr.value);
+                    });
+
+                    res.endBlock('</map>');
+                    res.endBlock('</property>');
+                }
+
+                res.endBlock('</bean>');
+
+                break;
+
+            case 'FifoQueue':
+                res.startBlock('<bean class="org.apache.ignite.spi.collision.fifoqueue.FifoQueueCollisionSpi">');
+                $generatorXml.property(res, spi, 'parallelJobsNumber');
+                $generatorXml.property(res, spi, 'waitingJobsNumber');
+                res.endBlock('</bean>');
+
+                break;
+
+            case 'PriorityQueue':
+                res.startBlock('<bean class="org.apache.ignite.spi.collision.priorityqueue.PriorityQueueCollisionSpi">');
+                $generatorXml.property(res, spi, 'parallelJobsNumber');
+                $generatorXml.property(res, spi, 'waitingJobsNumber');
+                $generatorXml.property(res, spi, 'priorityAttributeKey', null, 'grid.task.priority');
+                $generatorXml.property(res, spi, 'jobPriorityAttributeKey', null, 'grid.job.priority');
+                $generatorXml.property(res, spi, 'defaultPriority', null, 0);
+                $generatorXml.property(res, spi, 'starvationIncrement', null, 1);
+                $generatorXml.property(res, spi, 'starvationPreventionEnabled', null, true);
+                res.endBlock('</bean>');
+
+                break;
+
+            case 'Custom': {
+                if ($generatorCommon.isDefinedAndNotEmpty(spi.class))
+                    res.line('<bean class="' + spi.class + '"/>');
+
+                break;
+            }
+        }
+
+        res.endBlock('</property>')
+    }
+
+    return res;
+};
+
 // Generate communication group.
 $generatorXml.clusterCommunication = function (cluster, res) {
     if (!res)
@@ -720,6 +800,196 @@ $generatorXml.clusterEvents = function (cluster, res) {
     return res;
 };
 
+// Generate failover group.
+$generatorXml.clusterFailover = function (cluster, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    if ($generatorCommon.isDefinedAndNotEmpty(cluster.failoverSpi) && _.findIndex(cluster.failoverSpi, function (spi) {
+            return $generatorCommon.isDefinedAndNotEmpty(spi.kind) && (spi.kind !== 'Custom' || $generatorCommon.isDefinedAndNotEmpty(_.get(spi, spi.kind + '.class')));
+        }) >= 0) {
+        res.startBlock('<property name="failoverSpi">');
+        res.startBlock('<list>');
+
+        _.forEach(cluster.failoverSpi, function (spi) {
+            if (spi.kind && (spi.kind !== 'Custom' || $generatorCommon.isDefinedAndNotEmpty(_.get(spi, spi.kind + '.class')))) {
+                let maxAttempts = _.get(spi, spi.kind + '.maximumFailoverAttempts');
+
+                if ((spi.kind === 'JobStealing' || spi.kind === 'Always') && $generatorCommon.isDefinedAndNotEmpty(maxAttempts) && maxAttempts !== 5) {
+                    res.startBlock('<bean class="' + $generatorCommon.failoverSpiClass(spi) + '">');
+
+                    $generatorXml.property(res, spi[spi.kind], 'maximumFailoverAttempts', null, 5);
+
+                    res.endBlock('</bean>');
+                }
+                else
+                    res.line('<bean class="' + $generatorCommon.failoverSpiClass(spi) + '"/>');
+
+                res.needEmptyLine = true;
+            }
+        });
+
+        res.needEmptyLine = true;
+
+        res.endBlock('</list>');
+        res.endBlock('</property>');
+    }
+
+    return res;
+};
+
+// Generate marshaller group.
+$generatorXml.clusterLogger = function (logger, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    if ($generatorCommon.loggerConfigured(logger)) {
+        res.startBlock('<property name="gridLogger">');
+
+        const log = logger[logger.kind];
+
+        switch (logger.kind) {
+            case 'Log4j2':
+                res.startBlock('<bean class="org.apache.ignite.logger.log4j2.Log4J2Logger">');
+
+                switch (log.mode) {
+                    case 'Logger':
+                        res.startBlock('<constructor-arg>');
+                        res.line('<bean class="' + log.logger + '"/>');
+                        res.endBlock('</constructor-arg>');
+
+                        res.startBlock('<constructor-arg>');
+
+                        if ($generatorCommon.isDefinedAndNotEmpty(log.consoleLogger))
+                            res.line('<bean class="' + log.consoleLogger + '"/>');
+                        else
+                            res.line('<null/>');
+
+                        res.endBlock('</constructor-arg>');
+
+                        break;
+
+                    case 'Path':
+                        res.line('<constructor-arg value="' + $generatorXml.escape(log.path) + '"/>');
+
+                        break;
+                }
+
+
+                $generatorXml.property(res, log, 'level');
+                res.endBlock('</bean>');
+
+                break;
+
+            case 'Null':
+                res.line('<bean class="org.apache.ignite.logger.NullLogger"/>');
+                break;
+
+            case 'HadoopIgfsJcl':
+                res.startBlock('<bean class="org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsJclLogger">');
+                res.startBlock('<constructor-arg>');
+                res.line('<bean class="' + log.logger + '"/>');
+                res.endBlock('</constructor-arg>');
+                res.endBlock('</bean>');
+
+                break;
+
+            case 'Java':
+                if (log.mode === 'Default')
+                    res.line('<bean class="org.apache.ignite.logger.java.JavaLogger"/>');
+                else {
+                    res.startBlock('<bean class="org.apache.ignite.logger.java.JavaLogger">');
+
+                    switch (log.mode) {
+                        case 'Logger':
+                            res.startBlock('<constructor-arg>');
+                            res.line('<bean class="' + log.logger + '"/>');
+                            res.endBlock('</constructor-arg>');
+
+                            break;
+
+                        case 'Configure':
+                            res.line('<constructor-arg type="boolean" value="' + (log.configure || false) + '"/>');
+
+                            break;
+                    }
+
+                    res.endBlock('</bean>');
+                }
+
+                break;
+
+            case 'JCL':
+                if (log && $generatorCommon.isDefinedAndNotEmpty(log.logger)) {
+                    res.startBlock('<bean class="org.apache.ignite.logger.jcl.JclLogger">');
+                    res.startBlock('<constructor-arg>');
+                    res.line('<bean class="' + log.logger + '"/>');
+                    res.endBlock('</constructor-arg>');
+                    res.endBlock('</bean>');
+                }
+                else
+                    res.line('<bean class="org.apache.ignite.logger.jcl.JclLogger"/>');
+
+                break;
+
+            case 'SLF4J':
+                if (log && $generatorCommon.isDefinedAndNotEmpty(log.logger)) {
+                    res.startBlock('<bean class="org.apache.ignite.logger.slf4j.Slf4jLogger">');
+                    res.startBlock('<constructor-arg>');
+                    res.line('<bean class="' + log.logger + '"/>');
+                    res.endBlock('</constructor-arg>');
+                    res.endBlock('</bean>');
+                }
+                else
+                    res.line('<bean class="org.apache.ignite.logger.slf4j.Slf4jLogger"/>');
+
+                break;
+
+            case 'Log4j':
+                if (log.mode === 'Default' && !$generatorCommon.isDefinedAndNotEmpty(log.level))
+                    res.line('<bean class="org.apache.ignite.logger.log4j.Log4JLogger"/>');
+                else {
+                    res.startBlock('<bean class="org.apache.ignite.logger.log4j.Log4JLogger">');
+
+                    switch (log.mode) {
+                        case 'Logger':
+                            res.startBlock('<constructor-arg>');
+                            res.line('<bean class="' + log.logger + '"/>');
+                            res.endBlock('</constructor-arg>');
+
+                            break;
+
+                        case 'Configure':
+                            res.line('<constructor-arg type="boolean" value="' + (log.configure || false) + '"/>');
+
+                            break;
+
+                        case 'Path':
+                            res.line('<constructor-arg value="' + $generatorXml.escape(log.path) + '"/>');
+
+                            break;
+                    }
+
+                    $generatorXml.property(res, log, 'level');
+                    res.endBlock('</bean>');
+                }
+
+                break;
+
+            case 'Custom':
+                res.line('<bean class="' + log.class + '"/>');
+
+                break;
+        }
+
+        res.endBlock('</property>');
+
+        res.needEmptyLine = true;
+    }
+
+    return res;
+};
+
 // Generate marshaller group.
 $generatorXml.clusterMarshaller = function (cluster, res) {
     if (!res)
@@ -808,6 +1078,28 @@ $generatorXml.clusterTransactions = function (transactionConfiguration, res) {
         res = $generatorCommon.builder();
 
     $generatorXml.beanProperty(res, transactionConfiguration, 'transactionConfiguration', $generatorCommon.TRANSACTION_CONFIGURATION, false);
+
+    res.needEmptyLine = true;
+
+    return res;
+};
+
+// Generate user attributes group.
+$generatorXml.clusterUserAttributes = function (cluster, res) {
+    if (!res)
+        res = $generatorCommon.builder();
+
+    if ($generatorCommon.isDefinedAndNotEmpty(cluster.attributes)) {
+        res.startBlock('<property name="userAttributes">');
+        res.startBlock('<map>');
+
+        _.forEach(cluster.attributes, function (attr) {
+            $generatorXml.element(res, 'entry', 'key', attr.name, 'value', attr.value);
+        });
+
+        res.endBlock('</map>');
+        res.endBlock('</property>');
+    }
 
     res.needEmptyLine = true;
 
@@ -1673,6 +1965,8 @@ $generatorXml.clusterConfiguration = function (cluster, clientNearCfg, res) {
 
     $generatorXml.clusterBinary(cluster.binaryConfiguration, res);
 
+    $generatorXml.clusterCollision(cluster.collision, res);
+
     $generatorXml.clusterCommunication(cluster, res);
 
     $generatorXml.clusterConnector(cluster.connector, res);
@@ -1680,6 +1974,10 @@ $generatorXml.clusterConfiguration = function (cluster, clientNearCfg, res) {
     $generatorXml.clusterDeployment(cluster, res);
 
     $generatorXml.clusterEvents(cluster, res);
+
+    $generatorXml.clusterFailover(cluster, res);
+
+    $generatorXml.clusterLogger(cluster.logger, res);
 
     $generatorXml.clusterMarshaller(cluster, res);
 
@@ -1699,6 +1997,8 @@ $generatorXml.clusterConfiguration = function (cluster, clientNearCfg, res) {
 
     if (isSrvCfg)
         $generatorXml.igfss(cluster.igfss, res);
+
+    $generatorXml.clusterUserAttributes(cluster, res);
 
     return res;
 };

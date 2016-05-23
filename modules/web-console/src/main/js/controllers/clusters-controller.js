@@ -19,8 +19,8 @@
 import consoleModule from 'controllers/common-module';
 
 consoleModule.controller('clustersController', [
-    '$rootScope', '$scope', '$http', '$state', '$timeout', '$common', '$confirm', '$clone', '$loading', '$cleanup', '$unsavedChangesGuard', 'igniteEventGroups', 'DemoInfo',
-    function ($root, $scope, $http, $state, $timeout, $common, $confirm, $clone, $loading, $cleanup, $unsavedChangesGuard, igniteEventGroups, DemoInfo) {
+    '$rootScope', '$scope', '$http', '$state', '$timeout', '$common', '$confirm', '$clone', '$loading', '$cleanup', '$unsavedChangesGuard', 'igniteEventGroups', 'DemoInfo', '$table',
+    function ($root, $scope, $http, $state, $timeout, $common, $confirm, $clone, $loading, $cleanup, $unsavedChangesGuard, igniteEventGroups, DemoInfo, $table) {
         $unsavedChangesGuard.install($scope);
 
         var emptyCluster = {empty: true};
@@ -36,7 +36,111 @@ consoleModule.controller('clustersController', [
             marshaller: {},
             sslContextFactory: {},
             swapSpaceSpi: {},
-            transactionConfiguration: {}
+            transactionConfiguration: {},
+            collision: {}
+        };
+
+        var pairFields = {
+            fields: {
+                msg: 'Query field class',
+                id: 'QryField',
+                idPrefix: 'Key',
+                searchCol: 'name',
+                valueCol: 'key',
+                classValidation: true,
+                dupObjName: 'name'
+            },
+            aliases: {id: 'Alias', idPrefix: 'Value', searchCol: 'alias', valueCol: 'value', dupObjName: 'alias'}
+        };
+
+        $scope.tablePairValid = function (item, field, index) {
+            var pairField = pairFields[field.model];
+
+            var pairValue = $table.tablePairValue(field, index);
+
+            if (pairField) {
+                var model = item[field.model];
+
+                if ($common.isDefined(model)) {
+                    var idx = _.findIndex(model, function (pair) {
+                        return pair[pairField.searchCol] === pairValue[pairField.valueCol];
+                    });
+
+                    // Found duplicate by key.
+                    if (idx >= 0 && idx !== index)
+                        return showPopoverMessage($scope.ui, 'query', $table.tableFieldId(index, pairField.idPrefix + pairField.id), 'Field with such ' + pairField.dupObjName + ' already exists!');
+                }
+
+                if (pairField.classValidation && !$common.isValidJavaClass(pairField.msg, pairValue.value, true, $table.tableFieldId(index, 'Value' + pairField.id), false, $scope.ui, 'query'))
+                    return $table.tableFocusInvalidField(index, 'Value' + pairField.id);
+            }
+
+            return true;
+        };
+
+        $scope.tableSave = function (field, index, stopEdit) {
+            if ($table.tableEditing({model: 'table-index-fields'}, $table.tableEditedRowIndex())) {
+                if ($scope.tableIndexItemSaveVisible(field, index))
+                    return $scope.tableIndexItemSave(field, field.indexIdx, index, stopEdit);
+            }
+            else {
+                switch (field.type) {
+                    case 'attributes':
+                        if ($table.tablePairSaveVisible(field, index))
+                            return $table.tablePairSave($scope.tablePairValid, $scope.backupItem, field, index, stopEdit);
+
+                        break;
+                }
+            }
+
+            return true;
+        };
+
+        $scope.tableReset = function (save) {
+            var field = $table.tableField();
+
+            if (!save || !$common.isDefined(field) || $scope.tableSave(field, $table.tableEditedRowIndex(), true)) {
+                $table.tableReset();
+
+                return true;
+            }
+
+            return false;
+        };
+
+        $scope.tableNewItem = function (field) {
+            if ($scope.tableReset(true)) {
+                if (field.type === 'failoverSpi') {
+                    if ($common.isDefined($scope.backupItem.failoverSpi))
+                        $scope.backupItem.failoverSpi.push({});
+                    else
+                        $scope.backupItem.failoverSpi = {};
+                }
+                else
+                    $table.tableNewItem(field);
+            }
+        };
+
+        $scope.tableNewItemActive = $table.tableNewItemActive;
+
+        $scope.tableStartEdit = function (item, field, index) {
+            if ($scope.tableReset(true))
+                $table.tableStartEdit(item, field, index);
+        };
+
+        $scope.tableEditing = $table.tableEditing;
+
+        $scope.tableRemove = function (item, field, index) {
+            if ($scope.tableReset(true))
+                $table.tableRemove(item, field, index);
+        };
+
+        $scope.tablePairStartEdit = $table.tablePairStartEdit;
+        $scope.tablePairSave = $table.tablePairSave;
+        $scope.tablePairSaveVisible = $table.tablePairSaveVisible;
+
+        $scope.removeFailoverConfiguration = function (idx) {
+            $scope.backupItem.failoverSpi.splice(idx, 1);
         };
 
         // We need to initialize backupItem with empty object in order to properly used from angular directives.
@@ -115,6 +219,22 @@ consoleModule.controller('clustersController', [
                 });
 
                 $scope.clusters = data.clusters;
+
+                _.forEach($scope.clusters, function (cluster) {
+                    if (!cluster.collision)
+                        cluster.collision = {
+                            kind: 'Noop',
+                            JobStealing: {
+                                stealingEnabled: true
+                            },
+                            PriorityQueue: {
+                                starvationPreventionEnabled: true
+                            }
+                        };
+
+                    if (!cluster.failoverSpi)
+                        cluster.failoverSpi = [];
+                });
 
                 $scope.caches = _.map(data.caches, function (cache) {
                     return {value: cache._id, label: cache.name, cache: cache};
@@ -224,7 +344,17 @@ consoleModule.controller('clustersController', [
                 },
                 connector: {
                     noDelay: true
-                }
+                },
+                collision: {
+                    kind: 'Noop',
+                    JobStealing: {
+                        stealingEnabled: true
+                    },
+                    PriorityQueue: {
+                        starvationPreventionEnabled: true
+                    }
+                },
+                failoverSpi: []
             };
 
             newItem = angular.merge({}, blank, newItem);

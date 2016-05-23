@@ -187,6 +187,21 @@ class GeneratorPom {
         if (_.find(caches, blobStoreFactory))
             this.addDependency(deps, 'org.apache.ignite', 'ignite-hibernate', igniteVersion);
 
+        if (cluster.logger && cluster.logger.kind) {
+            const kind = cluster.logger.kind;
+
+            if (kind === 'Log4j2')
+                this.addDependency(deps, 'org.apache.ignite', 'ignite-log4j2', igniteVersion);
+            else if (kind === 'HadoopIgfsJcl')
+                this.addDependency(deps, 'org.apache.ignite', 'ignite-hadoop', igniteVersion);
+            else if (kind === 'JCL')
+                this.addDependency(deps, 'org.apache.ignite', 'ignite-jcl', igniteVersion);
+            else if (kind === 'SLF4J')
+                this.addDependency(deps, 'org.apache.ignite', 'ignite-slf4j', igniteVersion);
+            else if (kind === 'Log4j')
+                this.addDependency(deps, 'org.apache.ignite', 'ignite-log4j', igniteVersion);
+        }
+
         dialect.Generic && this.addDependency(deps, 'com.mchange', 'c3p0', '0.9.5.1');
 
         dialect.MySQL && this.addDependency(deps, 'mysql', 'mysql-connector-java', '5.1.37');

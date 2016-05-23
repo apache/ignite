@@ -567,4 +567,77 @@ $generatorCommon.hasProperty = function (obj, props) {
     return false;
 };
 
+/**
+ * Get class for selected implementation of Failover SPI.
+ *
+ * @param spi Failover SPI configuration.
+ * @returns {*} Class for selected implementation of Failover SPI.
+ */
+$generatorCommon.failoverSpiClass = function (spi) {
+    switch (spi.kind) {
+        case 'JobStealing': return 'org.apache.ignite.spi.failover.jobstealing.JobStealingFailoverSpi';
+        case 'Never': return 'org.apache.ignite.spi.failover.never.NeverFailoverSpi';
+        case 'Always': return 'org.apache.ignite.spi.failover.always.AlwaysFailoverSpi';
+        case 'Custom': return _.get(spi, 'custom.class');
+    }
+};
+
+$generatorCommon.loggerConfigured = function (logger) {
+    if (logger && logger.kind) {
+        const log = logger[logger.kind];
+
+        switch (logger.kind) {
+            case 'Log4j2':
+                if (!log || !log.mode)
+                    return false;
+
+                switch (log.mode) {
+                    case 'Logger': return $generatorCommon.isDefinedAndNotEmpty(log.logger);
+                    case 'Path': return $generatorCommon.isDefinedAndNotEmpty(log.path);
+                }
+
+                return true;
+
+            case 'Null': return true;
+
+            case 'HadoopIgfsJcl':
+                if (!log)
+                    return false;
+
+                return $generatorCommon.isDefinedAndNotEmpty(log.logger);
+
+            case 'Java':
+                if (!log || !log.mode)
+                    return false;
+
+                switch (log.mode) {
+                    case 'Logger': return $generatorCommon.isDefinedAndNotEmpty(log.logger);
+                }
+
+                return true;
+
+            case 'JCL':
+            case 'SLF4J':
+                return true;
+
+            case 'Log4j':
+                if (!log || !log.mode)
+                    return false;
+
+                switch (log.mode) {
+                    case 'Logger': return $generatorCommon.isDefinedAndNotEmpty(log.logger);
+                    case 'Path': return $generatorCommon.isDefinedAndNotEmpty(log.path);
+                }
+
+                return true;
+
+            case 'Custom': return $generatorCommon.isDefinedAndNotEmpty(log.class);
+        }
+
+        return false;
+    }
+
+    return false;
+};
+
 export default $generatorCommon;

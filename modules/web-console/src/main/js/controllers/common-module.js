@@ -1374,26 +1374,28 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
 
                 var pairModel = {};
 
+                var container = _.get(item, field.model);
+
                 if (index < 0) {
                     pairModel[field.keyName] = pairValue.key;
                     pairModel[field.valueName] = pairValue.value;
 
-                    if (item[field.model])
-                        item[field.model].push(pairModel);
+                    if (container)
+                        container.push(pairModel);
                     else
-                        item[field.model] = [pairModel];
+                        container = [pairModel];
 
                     if (!stopEdit)
                         _tableNewItem(field);
                 }
                 else {
-                    pairModel = item[field.model][index];
+                    pairModel = container[index];
 
                     pairModel[field.keyName] = pairValue.key;
                     pairModel[field.valueName] = pairValue.value;
 
                     if (!stopEdit) {
-                        if (index < item[field.model].length - 1)
+                        if (index < container.length - 1)
                             _tableStartEdit(item, field, index + 1);
                         else
                             _tableNewItem(field);

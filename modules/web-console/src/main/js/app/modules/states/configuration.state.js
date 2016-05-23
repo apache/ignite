@@ -55,6 +55,23 @@ import clustersSwap from './configuration/clusters/swap.directive';
 import clustersTime from './configuration/clusters/time.directive';
 import clustersThread from './configuration/clusters/thread.directive';
 import clustersTransactions from './configuration/clusters/transactions.directive';
+import clustersUserAttributes from './configuration/clusters/attributes.directive';
+import clustersCollision from './configuration/clusters/collision.directive';
+import clustersFailover from './configuration/clusters/failover.directive';
+import clustersLogger from './configuration/clusters/logger.directive';
+
+import clustersCollisionJobStealing from './configuration/clusters/collision/job-stealing.directive';
+import clustersCollisionFifoQueue from './configuration/clusters/collision/fifo-queue.directive';
+import clustersCollisionPriorityQueue from './configuration/clusters/collision/priority-queue.directive';
+import clustersCollisionCustom from './configuration/clusters/collision/custom.directive';
+
+import clustersLoggerLog4j2 from './configuration/clusters/logger/log4j2.directive';
+import clustersLoggerHadoop from './configuration/clusters/logger/hadoop.directive';
+import clustersLoggerJava from './configuration/clusters/logger/java.directive';
+import clustersLoggerJcl from './configuration/clusters/logger/jcl.directive';
+import clustersLoggerSlf4j from './configuration/clusters/logger/slf4j.directive';
+import clustersLoggerLog4j from './configuration/clusters/logger/log4j.directive';
+import clustersLoggerCustom from './configuration/clusters/logger/custom.directive';
 
 // Domains screen.
 import domainsGeneral from './configuration/domains/general.directive';
@@ -87,6 +104,21 @@ import summaryTabs from './configuration/summary/summary-tabs.directive';
 angular.module('ignite-console.states.configuration', ['ui.router'])
     // Clusters screen.
     .directive(...previewPanel)
+    .directive(...clustersLoggerCustom)
+    .directive(...clustersLoggerLog4j)
+    .directive(...clustersLoggerSlf4j)
+    .directive(...clustersLoggerJcl)
+    .directive(...clustersLoggerJava)
+    .directive(...clustersLoggerHadoop)
+    .directive(...clustersLoggerLog4j2)
+    .directive(...clustersLogger)
+    .directive(...clustersFailover)
+    .directive(...clustersCollisionCustom)
+    .directive(...clustersCollisionPriorityQueue)
+    .directive(...clustersCollisionFifoQueue)
+    .directive(...clustersCollisionJobStealing)
+    .directive(...clustersCollision)
+    .directive(...clustersUserAttributes)
     .directive(...clustersTransactions)
     .directive(...clustersThread)
     .directive(...clustersTime)
