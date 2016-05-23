@@ -316,6 +316,19 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                         .catch((err) => cb(_errorToJson(err)));
                 });
 
+                // GC node and return result to browser.
+                socket.on('node:gc', (nid, cb) => {
+                    agentMgr.findAgent(user._id)
+                        .then((agent) => agent.gc(demo, nid))
+                        .then((data) => {
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
                 const count = agentMgr.addAgentListener(user._id, socket);
 
                 socket.emit('agent:count', {count});

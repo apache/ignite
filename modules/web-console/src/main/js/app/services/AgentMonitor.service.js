@@ -362,6 +362,15 @@ class IgniteAgentMonitor {
     }
 
     /**
+     * GC node.
+     * @param {String} nid Node id.
+     * @returns {Promise}
+     */
+    gc(nid) {
+        return this._rest('node:gc', nid);
+    }
+
+    /**
      * Ping node.
      * @param {String} taskNid node that is not node we want to ping.
      * @param {String} nid Id of the node to ping.
