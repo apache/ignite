@@ -76,12 +76,12 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
     /** New value. */
     @GridToStringInclude
-    @GridCodegenConverter(get = "isFiltered() ? null : key")
+    @GridCodegenConverter(get = "isFiltered() ? null : newVal")
     private CacheObject newVal;
 
     /** Old value. */
     @GridToStringInclude
-    @GridCodegenConverter(get = "isFiltered() ? null : key")
+    @GridCodegenConverter(get = "isFiltered() ? null : oldVal")
     private CacheObject oldVal;
 
     /** Cache name. */
