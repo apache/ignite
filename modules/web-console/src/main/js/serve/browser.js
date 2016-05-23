@@ -250,6 +250,19 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                         .catch((err) => cb(_errorToJson(err)));
                 });
 
+                // Reset metrics specified cache on specified node and return result to browser.
+                socket.on('node:cache:reset:metrics', (nid, cacheName, cb) => {
+                    agentMgr.findAgent(user._id)
+                        .then((agent) => agent.cacheResetMetrics(demo, nid, cacheName))
+                        .then((data) => {
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
                 // Clear specified cache on specified node and return result to browser.
                 socket.on('node:cache:clear', (nid, cacheName, cb) => {
                     agentMgr.findAgent(user._id)

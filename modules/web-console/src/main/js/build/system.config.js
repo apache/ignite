@@ -43,7 +43,7 @@ System.config({
     "jquery": "github:components/jquery@2.2.1",
     "json": "github:systemjs/plugin-json@0.1.2",
     "jszip": "github:Stuk/jszip@2.6.0",
-    "lodash": "github:lodash/lodash@4.12.0",
+    "lodash": "github:lodash/lodash@4.13.0",
     "pdfmake": "github:bpampuch/pdfmake@0.1.20",
     "query-command-supported": "github:zenorocha/document.queryCommandSupported@1.0.0",
     "socket.io-client": "github:socketio/socket.io-client@1.4.5",
@@ -131,7 +131,7 @@ System.config({
       "angular-sanitize": "github:angular/bower-angular-sanitize@1.5.5"
     },
     "github:twbs/bootstrap@3.3.6": {
-      "jquery": "npm:jquery@2.2.3"
+      "jquery": "npm:jquery@2.2.4"
     },
     "npm:acorn-globals@1.0.9": {
       "acorn": "npm:acorn@2.7.0"
@@ -239,7 +239,8 @@ System.config({
       "css-parse": "npm:css-parse@1.0.4",
       "css-stringify": "npm:css-stringify@1.0.5",
       "fs": "github:jspm/nodelibs-fs@0.1.2",
-      "process": "github:jspm/nodelibs-process@0.1.2"
+      "process": "github:jspm/nodelibs-process@0.1.2",
+      "systemjs-json": "github:systemjs/plugin-json@0.1.2"
     },
     "npm:font-awesome@4.5.0": {
       "css": "github:systemjs/plugin-css@0.1.21"
@@ -255,6 +256,9 @@ System.config({
     },
     "npm:is-buffer@1.1.3": {
       "buffer": "github:jspm/nodelibs-buffer@0.1.0"
+    },
+    "npm:isarray@1.0.0": {
+      "systemjs-json": "github:systemjs/plugin-json@0.1.2"
     },
     "npm:jade@1.11.0": {
       "buffer": "github:jspm/nodelibs-buffer@0.1.0",

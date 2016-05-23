@@ -321,6 +321,16 @@ class IgniteAgentMonitor {
     }
 
     /**
+     * Reset metrics specified cache on specified node.
+     * @param {String} nid Node id.
+     * @param {String} cacheName Cache name.
+     * @returns {Promise}
+     */
+    cacheResetMetrics(nid, cacheName) {
+        return this._rest('node:cache:reset:metrics', nid, this._maskCacheName(cacheName));
+    }
+
+    /**
      * Clear specified cache on specified node.
      * @param {String} nid Node id.
      * @param {String} cacheName Cache name.
