@@ -71,7 +71,7 @@ public class IgniteCacheCreateRestartSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStopOriginatingNode() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1690");
+//        fail("https://issues.apache.org/jira/browse/IGNITE-1690");
 
         startGrids(NODES);
 
