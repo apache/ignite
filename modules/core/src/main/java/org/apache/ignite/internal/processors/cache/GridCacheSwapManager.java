@@ -1281,6 +1281,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * @param expireTime Swap entry expiration time.
      * @param keyClsLdrId Class loader ID for entry key.
      * @param valClsLdrId Class loader ID for entry value.
+     * @param wasUnswapped {@code True} if currently value is removed from swap.
      * @throws IgniteCheckedException If failed.
      */
     void write(KeyCacheObject key,
@@ -1290,7 +1291,8 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         long ttl,
         long expireTime,
         @Nullable IgniteUuid keyClsLdrId,
-        @Nullable IgniteUuid valClsLdrId)
+        @Nullable IgniteUuid valClsLdrId,
+        boolean wasUnswapped)
         throws IgniteCheckedException {
         if (!offheapEnabled && !swapEnabled)
             return;
@@ -1322,7 +1324,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
         GridCacheQueryManager qryMgr = cctx.queries();
 
-        if (qryMgr.enabled())
+        if (wasUnswapped && qryMgr.enabled())
             qryMgr.onSwap(key);
     }
 

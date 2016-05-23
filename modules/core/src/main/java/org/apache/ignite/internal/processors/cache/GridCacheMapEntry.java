@@ -591,7 +591,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         if (cctx.isSwapOrOffheapEnabled() && !deletedUnlocked() && (hasValueUnlocked() || swapNeeded) && !detached()) {
             assert Thread.holdsLock(this);
 
-            if (cctx.offheapTiered() && hasOffHeapPointer() && !swapNeeded) {
+            boolean offheapPtr = hasOffHeapPointer();
+
+            if (cctx.offheapTiered() && offheapPtr && !swapNeeded) {
                 if (log.isDebugEnabled())
                     log.debug("Value did not change, skip write swap entry: " + this);
 
@@ -623,7 +625,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 ttlExtras(),
                 expireTimeExtras(),
                 keyClsLdrId,
-                valClsLdrId);
+                valClsLdrId,
+                !offheapPtr);
 
             flags &= ~IS_SWAPPING_REQUIRED;
 
