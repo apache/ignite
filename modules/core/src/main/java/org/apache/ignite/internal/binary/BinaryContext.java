@@ -1111,6 +1111,11 @@ public class BinaryContext {
         return metaHnd != null ? metaHnd.metadata(typeId) : null;
     }
 
+    /**
+     * @param typeId Type ID.
+     * @return Binary metadata.
+     * @throws BinaryObjectException
+     */
     @Nullable public BinaryMetadata binaryMetadata(int typeId) throws BinaryObjectException {
         return metaHnd != null ? metaHnd.binaryMetadata(typeId) : null;
     }

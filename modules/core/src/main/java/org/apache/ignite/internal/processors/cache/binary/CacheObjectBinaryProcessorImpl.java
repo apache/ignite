@@ -690,7 +690,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         try {
             BinaryType meta = po.type();
 
-            if (meta != null) {
+            if (meta != null && metadataAvailable(meta)) {
                 String affKeyFieldName = meta.affinityKeyFieldName();
 
                 if (affKeyFieldName != null)
@@ -710,6 +710,17 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         }
 
         return po;
+    }
+
+    /**
+     * @param binaryType Metadata.
+     * @return {@code True} if metadata could be used.
+     */
+    private boolean metadataAvailable(final BinaryType binaryType) {
+        if (binaryType instanceof BinaryTypeImpl)
+            return ((BinaryTypeImpl) binaryType).isMetadataAvailable();
+
+        return true;
     }
 
     /** {@inheritDoc} */

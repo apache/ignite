@@ -100,18 +100,35 @@ public class BinaryTypeImpl implements BinaryType {
      * @return Metadata.
      */
     public BinaryMetadata metadata() {
-        if (meta == null) {
-            synchronized (this) {
-                if (meta == null)
-                    meta = ctx.binaryMetadata(typeId);
-            }
-        }
+        loadMetadata();
 
         if (meta == null)
             throw new IgniteException("No binary metadata available for type ID: " + typeId);
 
         return meta;
     }
+
+    /**
+     * Load metadata if need.
+     */
+    private void loadMetadata() {
+        if (meta == null) {
+            synchronized (this) {
+                if (meta == null)
+                    meta = ctx.binaryMetadata(typeId);
+            }
+        }
+    }
+
+    /**
+     * @return {@code True} if metadata available.
+     */
+    public boolean isMetadataAvailable() {
+        loadMetadata();
+
+        return meta != null;
+    }
+
 
     /** {@inheritDoc} */
     public String toString() {
