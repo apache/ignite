@@ -19,6 +19,7 @@ package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * No-op metadata handler.
@@ -48,6 +49,11 @@ public class BinaryNoopMetadataHandler implements BinaryMetadataHandler {
 
     /** {@inheritDoc} */
     @Override public BinaryType metadata(int typeId) throws BinaryObjectException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public BinaryMetadata binaryMetadata(final int typeId) throws BinaryObjectException {
         return null;
     }
 }

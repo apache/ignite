@@ -17,11 +17,11 @@
 
 package org.apache.ignite.internal.binary;
 
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryType;
 
 import java.util.Collection;
 
-import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -36,37 +36,21 @@ public class BinaryTypeImpl implements BinaryType {
     /** Type metadata. */
     private volatile BinaryMetadata meta;
 
-    /** Processor for lazy loading binary metadata. */
-    private final CacheObjectBinaryProcessor processor;
-
     /** Type ID. */
     private final int typeId;
 
     /**
      * Constructor.
      *
+     * @param typeId Type ID.
      * @param ctx Binary context.
      * @param meta Type  metadata.
      */
-    public BinaryTypeImpl(BinaryContext ctx, BinaryMetadata meta) {
-        this(ctx, meta, null, meta.typeId());
-    }
-
-    /**
-     * Constructor.
-     *
-     * @param ctx Binary context.
-     * @param meta Type metadata.
-     * @param processor Object binary processor
-     * @param typeId Type ID.
-     */
-    public BinaryTypeImpl(final BinaryContext ctx, final BinaryMetadata meta,
-        final CacheObjectBinaryProcessor processor, final int typeId) {
-        assert meta != null || processor != null;
+    public BinaryTypeImpl(int typeId, BinaryContext ctx, BinaryMetadata meta) {
+        assert ctx != null;
 
         this.ctx = ctx;
         this.meta = meta;
-        this.processor = processor;
         this.typeId = typeId;
     }
 
@@ -119,9 +103,12 @@ public class BinaryTypeImpl implements BinaryType {
         if (meta == null) {
             synchronized (this) {
                 if (meta == null)
-                    meta = processor.binaryMetadata(typeId);
+                    meta = ctx.binaryMetadata(typeId);
             }
         }
+
+        if (meta == null)
+            throw new IgniteException("No binary metadata available for type ID: " + typeId);
 
         return meta;
     }

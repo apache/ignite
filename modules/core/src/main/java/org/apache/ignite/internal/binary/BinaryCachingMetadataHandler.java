@@ -19,6 +19,7 @@ package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 
@@ -66,5 +67,12 @@ public class BinaryCachingMetadataHandler implements BinaryMetadataHandler {
     /** {@inheritDoc} */
     @Override public synchronized BinaryType metadata(int typeId) throws BinaryObjectException {
         return metas.get(typeId);
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public BinaryMetadata binaryMetadata(final int typeId) throws BinaryObjectException {
+        final BinaryType type = metas.get(typeId);
+
+        return type != null && type instanceof BinaryTypeImpl ? ((BinaryTypeImpl)type).metadata() : null;
     }
 }

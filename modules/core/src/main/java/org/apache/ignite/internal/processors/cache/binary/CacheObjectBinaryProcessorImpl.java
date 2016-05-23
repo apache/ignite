@@ -210,6 +210,14 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
                     return CacheObjectBinaryProcessorImpl.this.metadata(typeId);
                 }
+
+                @Nullable @Override public BinaryMetadata binaryMetadata(
+                    final int typeId) throws BinaryObjectException {
+                    if (metaDataCache == null)
+                        U.awaitQuiet(startLatch);
+
+                    return CacheObjectBinaryProcessorImpl.this.binaryMetadata(typeId);
+                }
             };
 
             BinaryMarshaller bMarsh0 = (BinaryMarshaller)marsh;
@@ -595,7 +603,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                     return typeMeta;
             }
 
-            return new BinaryTypeImpl(binaryCtx, null, this, typeId);
+            final BinaryMetadata meta = binaryMetadata(typeId);
+
+            return meta != null ? meta.wrap(binaryCtx) : null;
         }
         catch (CacheException e) {
             throw new BinaryObjectException(e);

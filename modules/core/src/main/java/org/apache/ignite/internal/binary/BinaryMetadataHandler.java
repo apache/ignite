@@ -19,6 +19,7 @@ package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Binary meta data handler.
@@ -41,4 +42,13 @@ public interface BinaryMetadataHandler {
      * @throws org.apache.ignite.binary.BinaryObjectException In case of error.
      */
     public BinaryType metadata(int typeId) throws BinaryObjectException;
+
+    /**
+     * Gets binary metadata for provided type ID.
+     *
+     * @param typeId Type ID
+     * @return Binary metadata or {@code null} if not available.
+     * @throws BinaryObjectException
+     */
+    @Nullable public BinaryMetadata binaryMetadata(int typeId) throws BinaryObjectException;
 }
