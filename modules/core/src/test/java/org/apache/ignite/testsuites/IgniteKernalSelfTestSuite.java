@@ -26,6 +26,7 @@ import org.apache.ignite.internal.GridDiscoverySelfTest;
 import org.apache.ignite.internal.GridFailedInputParametersSelfTest;
 import org.apache.ignite.internal.GridHomePathSelfTest;
 import org.apache.ignite.internal.GridKernalConcurrentAccessStopSelfTest;
+import org.apache.ignite.internal.GridKernalConcurrentEntryProcessorAccessStopSelfTest;
 import org.apache.ignite.internal.GridListenActorSelfTest;
 import org.apache.ignite.internal.GridLocalEventListenerSelfTest;
 import org.apache.ignite.internal.GridNodeFilterSelfTest;
@@ -112,6 +113,7 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridListenActorSelfTest.class);
         suite.addTestSuite(GridNodeLocalSelfTest.class);
         suite.addTestSuite(GridKernalConcurrentAccessStopSelfTest.class);
+        suite.addTestSuite(GridKernalConcurrentEntryProcessorAccessStopSelfTest.class);
         suite.addTestSuite(GridUpdateNotifierSelfTest.class);
         suite.addTestSuite(IgniteUpdateNotifierPerClusterSettingSelfTest.class);
         suite.addTestSuite(GridLocalEventListenerSelfTest.class);
