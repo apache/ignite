@@ -27,7 +27,6 @@ header#header.header
         .row
             .text-center(ng-if='!token')
                 p Further instructions for password reset have been sent to your e-mail address.
-                button.btn.btn-primary(ui-sref='signin') Sign in
             .text-center(ng-if='error')
                 p {{::error}}
             div(ng-if='token && !error')
