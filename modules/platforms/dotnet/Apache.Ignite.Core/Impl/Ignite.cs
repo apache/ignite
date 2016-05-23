@@ -201,6 +201,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public ICompute GetCompute()
         {
+            // TODO: For servers
             return _prj.GetCompute();
         }
 
@@ -536,6 +537,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IServices GetServices()
         {
+            // TODO: For servers
             return _prj.GetServices();
         }
 
