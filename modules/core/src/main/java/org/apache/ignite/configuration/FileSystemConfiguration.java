@@ -59,10 +59,10 @@ public class FileSystemConfiguration {
     public static final String DFLT_IGFS_LOG_DIR = "work/igfs/log";
 
     /** Default per node buffer size. */
-    public static final int DFLT_PER_NODE_BATCH_SIZE = 100;
+    public static final int DFLT_PER_NODE_BATCH_SIZE = 512;
 
     /** Default number of per node parallel operations. */
-    public static final int DFLT_PER_NODE_PARALLEL_BATCH_CNT = 8;
+    public static final int DFLT_PER_NODE_PARALLEL_BATCH_CNT = 16;
 
     /** Default IGFS mode. */
     public static final IgfsMode DFLT_MODE = IgfsMode.DUAL_ASYNC;
