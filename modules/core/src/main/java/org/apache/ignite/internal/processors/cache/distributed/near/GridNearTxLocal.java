@@ -1174,7 +1174,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         assert pessimistic();
 
         try {
-            checkValid(false);
+            checkValid(true);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(e);

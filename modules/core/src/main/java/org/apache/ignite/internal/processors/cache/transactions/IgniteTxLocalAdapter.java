@@ -561,7 +561,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             throw new IgniteCheckedException("Invalid transaction state for prepare [state=" + state + ", tx=" + this + ']');
         }
 
-        checkValid(state() != PREPARING);
+        //checkValid(state() != PREPARING);
+        checkValid(false);
 
         try {
             cctx.tm().prepareTx(this);
@@ -1585,7 +1586,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         boolean single = keysCnt == 1;
 
         try {
-            checkValid(false);
+            checkValid(true);
 
             final Map<K, V> retMap = new GridLeanMap<>(keysCnt);
 
@@ -2816,7 +2817,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         if (retval)
             needReturnValue(true);
 
-        checkValid(false);
+        checkValid(true);
 
         init();
     }
@@ -3276,7 +3277,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         }
 
         try {
-            checkValid(false);
+            checkValid(true);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(e);
@@ -3512,6 +3513,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             throw new IgniteCheckedException("Cache transaction marked as rollback-only: " + this);
         }
 
+/*
         if (remainingTime() == -1 && rollbackOnTimeout && setRollbackOnly()) {
             log.info("!!! userCommit remainingTime -1 state=" + state() + "\n xid=" + xidVersion() +
                     "\n nearXid=" + nearXidVersion());
@@ -3519,6 +3521,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             throw new IgniteTxTimeoutCheckedException("Cache transaction timed out " +
                     "(was rolled back automatically): " + this);
         }
+*/
     }
 
     /** {@inheritDoc} */

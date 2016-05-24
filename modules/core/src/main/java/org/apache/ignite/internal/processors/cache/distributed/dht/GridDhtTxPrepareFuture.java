@@ -1135,97 +1135,95 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                     if (F.isEmpty(dhtWrites) && F.isEmpty(nearWrites))
                         continue;
 
-                    if (timedOut)
-                        return;
+                    synchronized (this) {
+                        if (timedOut)
+                            return;
 
-                    MiniFuture fut = new MiniFuture(n.id(), dhtMapping, nearMapping);
+                        MiniFuture fut = new MiniFuture(n.id(), dhtMapping, nearMapping);
 
-                    add(fut); // Append new future.
+                        add(fut); // Append new future.
 
-                    assert txNodes != null;
+                        assert txNodes != null;
 
-                    GridDhtTxPrepareRequest req = new GridDhtTxPrepareRequest(
-                        futId,
-                        fut.futureId(),
-                        tx.topologyVersion(),
-                        tx,
-                        timeout,
-                        dhtWrites,
-                        nearWrites,
-                        txNodes,
-                        tx.nearXidVersion(),
-                        true,
-                        tx.onePhaseCommit(),
-                        tx.subjectId(),
-                        tx.taskNameHash(),
-                        tx.activeCachesDeploymentEnabled());
+                        GridDhtTxPrepareRequest req = new GridDhtTxPrepareRequest(
+                                futId,
+                                fut.futureId(),
+                                tx.topologyVersion(),
+                                tx,
+                                timeout,
+                                dhtWrites,
+                                nearWrites,
+                                txNodes,
+                                tx.nearXidVersion(),
+                                true,
+                                tx.onePhaseCommit(),
+                                tx.subjectId(),
+                                tx.taskNameHash(),
+                                tx.activeCachesDeploymentEnabled());
 
-                    int idx = 0;
+                        int idx = 0;
 
-                    for (IgniteTxEntry entry : dhtWrites) {
-                        try {
-                            GridDhtCacheEntry cached = (GridDhtCacheEntry)entry.cached();
-
-                            GridCacheContext<?, ?> cacheCtx = cached.context();
-
-                            // Do not invalidate near entry on originating transaction node.
-                            req.invalidateNearEntry(idx, !tx.nearNodeId().equals(n.id()) &&
-                                cached.readerId(n.id()) != null);
-
-                            if (cached.isNewLocked()) {
-                                List<ClusterNode> owners = cacheCtx.topology().owners(cached.partition(),
-                                    tx != null ? tx.topologyVersion() : cacheCtx.affinity().affinityTopologyVersion());
-
-                                // Do not preload if local node is a partition owner.
-                                if (!owners.contains(cctx.localNode()))
-                                    req.markKeyForPreload(idx);
-                            }
-
-                            break;
-                        }
-                        catch (GridCacheEntryRemovedException ignore) {
-                            U.error(log, "!!! GridCacheEntryRemovedException \n" + tx(), ignore);
-
-                            assert false : "Got removed exception on entry with dht local candidate: " + entry;
-                        }
-
-                        idx++;
-                    }
-
-                    if (!F.isEmpty(nearWrites)) {
-                        for (IgniteTxEntry entry : nearWrites) {
+                        for (IgniteTxEntry entry : dhtWrites) {
                             try {
-                                if (entry.explicitVersion() == null) {
-                                    GridCacheMvccCandidate added = entry.cached().candidate(version());
+                                GridDhtCacheEntry cached = (GridDhtCacheEntry) entry.cached();
 
-                                    assert added != null : "Missing candidate for cache entry:" + entry;
-                                    assert added.dhtLocal();
+                                GridCacheContext<?, ?> cacheCtx = cached.context();
 
-                                    if (added.ownerVersion() != null)
-                                        req.owned(entry.txKey(), added.ownerVersion());
+                                // Do not invalidate near entry on originating transaction node.
+                                req.invalidateNearEntry(idx, !tx.nearNodeId().equals(n.id()) &&
+                                        cached.readerId(n.id()) != null);
+
+                                if (cached.isNewLocked()) {
+                                    List<ClusterNode> owners = cacheCtx.topology().owners(cached.partition(),
+                                            tx != null ? tx.topologyVersion() : cacheCtx.affinity().affinityTopologyVersion());
+
+                                    // Do not preload if local node is a partition owner.
+                                    if (!owners.contains(cctx.localNode()))
+                                        req.markKeyForPreload(idx);
                                 }
 
                                 break;
-                            }
-                            catch (GridCacheEntryRemovedException ignore) {
+                            } catch (GridCacheEntryRemovedException ignore) {
+                                U.error(log, "!!! GridCacheEntryRemovedException \n" + tx(), ignore);
+
                                 assert false : "Got removed exception on entry with dht local candidate: " + entry;
                             }
+
+                            idx++;
                         }
-                    }
 
-                    assert req.transactionNodes() != null;
+                        if (!F.isEmpty(nearWrites)) {
+                            for (IgniteTxEntry entry : nearWrites) {
+                                try {
+                                    if (entry.explicitVersion() == null) {
+                                        GridCacheMvccCandidate added = entry.cached().candidate(version());
 
-                    try {
-                        log.info("!!! dht tx prepare send request \n" + tx.xidVersion() + "\n" + tx.nearXidVersion());
+                                        assert added != null : "Missing candidate for cache entry:" + entry;
+                                        assert added.dhtLocal();
 
-                        cctx.io().send(n, req, tx.ioPolicy());
-                    }
-                    catch (ClusterTopologyCheckedException e) {
-                        fut.onNodeLeft(e);
-                    }
-                    catch (IgniteCheckedException e) {
-                        if (!cctx.kernalContext().isStopping())
-                            fut.onResult(e);
+                                        if (added.ownerVersion() != null)
+                                            req.owned(entry.txKey(), added.ownerVersion());
+                                    }
+
+                                    break;
+                                } catch (GridCacheEntryRemovedException ignore) {
+                                    assert false : "Got removed exception on entry with dht local candidate: " + entry;
+                                }
+                            }
+                        }
+
+                        assert req.transactionNodes() != null;
+
+                        try {
+                            log.info("!!! dht tx prepare send request \n" + tx.xidVersion() + "\n" + tx.nearXidVersion());
+
+                            cctx.io().send(n, req, tx.ioPolicy());
+                        } catch (ClusterTopologyCheckedException e) {
+                            fut.onNodeLeft(e);
+                        } catch (IgniteCheckedException e) {
+                            if (!cctx.kernalContext().isStopping())
+                                fut.onResult(e);
+                        }
                     }
                 }
 
@@ -1233,61 +1231,60 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                     if (!tx.dhtMap().containsKey(nearMapping.node().id())) {
                         assert nearMapping.writes() != null;
 
-                        if (timedOut)
-                            return;
+                        synchronized (this) {
+                            if (timedOut)
+                                return;
 
-                        MiniFuture fut = new MiniFuture(nearMapping.node().id(), null, nearMapping);
+                            MiniFuture fut = new MiniFuture(nearMapping.node().id(), null, nearMapping);
 
-                        add(fut); // Append new future.
+                            add(fut); // Append new future.
 
-                        GridDhtTxPrepareRequest req = new GridDhtTxPrepareRequest(
-                            futId,
-                            fut.futureId(),
-                            tx.topologyVersion(),
-                            tx,
-                            timeout,
-                            null,
-                            nearMapping.writes(),
-                            tx.transactionNodes(),
-                            tx.nearXidVersion(),
-                            true,
-                            tx.onePhaseCommit(),
-                            tx.subjectId(),
-                            tx.taskNameHash(),
-                            tx.activeCachesDeploymentEnabled());
+                            GridDhtTxPrepareRequest req = new GridDhtTxPrepareRequest(
+                                    futId,
+                                    fut.futureId(),
+                                    tx.topologyVersion(),
+                                    tx,
+                                    timeout,
+                                    null,
+                                    nearMapping.writes(),
+                                    tx.transactionNodes(),
+                                    tx.nearXidVersion(),
+                                    true,
+                                    tx.onePhaseCommit(),
+                                    tx.subjectId(),
+                                    tx.taskNameHash(),
+                                    tx.activeCachesDeploymentEnabled());
 
-                        for (IgniteTxEntry entry : nearMapping.writes()) {
-                            try {
-                                if (entry.explicitVersion() == null) {
-                                    GridCacheMvccCandidate added = entry.cached().candidate(version());
+                            for (IgniteTxEntry entry : nearMapping.writes()) {
+                                try {
+                                    if (entry.explicitVersion() == null) {
+                                        GridCacheMvccCandidate added = entry.cached().candidate(version());
 
-                                assert added != null : "Null candidate for non-group-lock entry " +
-                                    "[added=" + added + ", entry=" + entry + ']';
-                                assert added.dhtLocal() : "Got non-dht-local candidate for prepare future" +
-                                    "[added=" + added + ", entry=" + entry + ']';
+                                        assert added != null : "Null candidate for non-group-lock entry " +
+                                                "[added=" + added + ", entry=" + entry + ']';
+                                        assert added.dhtLocal() : "Got non-dht-local candidate for prepare future" +
+                                                "[added=" + added + ", entry=" + entry + ']';
 
-                                    if (added != null && added.ownerVersion() != null)
-                                        req.owned(entry.txKey(), added.ownerVersion());
+                                        if (added != null && added.ownerVersion() != null)
+                                            req.owned(entry.txKey(), added.ownerVersion());
+                                    }
+
+                                    break;
+                                } catch (GridCacheEntryRemovedException ignore) {
+                                    assert false : "Got removed exception on entry with dht local candidate: " + entry;
                                 }
-
-                                break;
                             }
-                            catch (GridCacheEntryRemovedException ignore) {
-                                assert false : "Got removed exception on entry with dht local candidate: " + entry;
+
+                            assert req.transactionNodes() != null;
+
+                            try {
+                                cctx.io().send(nearMapping.node(), req, tx.ioPolicy());
+                            } catch (ClusterTopologyCheckedException e) {
+                                fut.onNodeLeft(e);
+                            } catch (IgniteCheckedException e) {
+                                if (!cctx.kernalContext().isStopping())
+                                    fut.onResult(e);
                             }
-                        }
-
-                        assert req.transactionNodes() != null;
-
-                        try {
-                            cctx.io().send(nearMapping.node(), req, tx.ioPolicy());
-                        }
-                        catch (ClusterTopologyCheckedException e) {
-                            fut.onNodeLeft(e);
-                        }
-                        catch (IgniteCheckedException e) {
-                            if (!cctx.kernalContext().isStopping())
-                                fut.onResult(e);
                         }
                     }
                 }

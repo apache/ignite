@@ -196,7 +196,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         log.info("!!! onResult \n xid=" + tx.xidVersion() + "\n nearXid=" + tx.nearXidVersion() +
             "\n dstNodeId=" + nodeId + "\n miniId=" +  res.miniId());
 
-        if (!isDone() || !timedOut) {
+        if (!isDone() && !timedOut) {
             MiniFuture mini = miniFuture(res.miniId());
 
             if (mini != null) {
@@ -526,11 +526,11 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
             final ClusterNode n = m.node();
 
-            long timeout = tx.remainingTime();
-
             synchronized (this) {
                 if (timedOut)
                     return;
+
+                long timeout = tx.remainingTime();
 
                 GridNearTxPrepareRequest req = new GridNearTxPrepareRequest(
                         futId,
@@ -1005,7 +1005,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                         }
                     }
 
-                    log.info("!!! ON TIMEOUT RUNNABLE \n" + tx.xidVersion() + "\n" + tx.nearXidVersion() + "\n" + keys);
+                    log.info("!!! ON TIMEOUT KEYS \n" + tx.xidVersion() + "\n" + tx.nearXidVersion() + "\n" + keys);
 
                     IgniteInternalFuture<TxDeadlock> fut = cctx.tm().detectDeadlock(tx, keys);
 
@@ -1013,6 +1013,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                         @Override public void apply(IgniteInternalFuture<TxDeadlock> fut) {
                             try {
                                 TxDeadlock deadlock = fut.get();
+
+                                log.info("!!! ON TIMEOUT FINISHED " + (deadlock == null) + "\n" + tx.xidVersion() + "\n" + tx.nearXidVersion());
 
                                 err.compareAndSet(null, new IgniteTxTimeoutCheckedException("Failed to acquire lock " +
                                         "within provided timeout for transaction [timeout=" + tx.timeout() +
@@ -1024,6 +1026,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                                 err.compareAndSet(null, e);
 
                                 U.warn(log, "Failed to detect deadlock.", e);
+
+                                log.info("!!! ON TIMEOUT Failed to detect deadlock. " +
+                                        "\n" + tx.xidVersion() + "\n" + tx.nearXidVersion());
                             }
 
                             onComplete();
