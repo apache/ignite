@@ -49,8 +49,6 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestTaskAdapter()
         {
-            Console.WriteLine("Starting TestTaskAdapter!");
-
             Assert.AreEqual(3, Grid1.GetCluster().GetNodes().Count);
 
             HashSet<Guid> allNodes = new HashSet<Guid>(); 
