@@ -627,12 +627,12 @@ public class AgentClusterDemo {
 
                 acfg.demoNodeUri(String.format("http://%s:%d", host, port));
 
-                log.info("DEMO: Embedded nodes for sql test-drive successfully started");
+                log.info("DEMO: Embedded nodes for sql and monitoring demo successfully started");
 
                 startLoad(ignite, 20);
             }
             catch (Exception e) {
-                log.error("DEMO: Failed to start embedded node for sql test-drive!", e);
+                log.error("DEMO: Failed to start embedded node for sql and monitoring demo!", e);
 
                 return false;
             }
