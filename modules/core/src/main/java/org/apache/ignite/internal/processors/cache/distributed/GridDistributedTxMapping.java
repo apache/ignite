@@ -44,7 +44,7 @@ public class GridDistributedTxMapping implements Externalizable {
     private static final long serialVersionUID = 0L;
 
     /** Mapped node. */
-    @GridToStringExclude
+    //@GridToStringExclude
     private ClusterNode node;
 
     /** Entries. */

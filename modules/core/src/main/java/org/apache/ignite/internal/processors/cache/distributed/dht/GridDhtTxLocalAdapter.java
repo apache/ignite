@@ -550,7 +550,7 @@ public abstract class GridDhtTxLocalAdapter extends IgniteTxLocalAdapter {
         boolean keepBinary
     ) {
         try {
-            checkValid();
+            checkValid(false);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(e);

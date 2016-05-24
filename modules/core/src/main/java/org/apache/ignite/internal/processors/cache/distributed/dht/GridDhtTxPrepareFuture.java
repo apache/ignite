@@ -191,6 +191,9 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     /** Timeout. */
     private long timeout;
 
+    /** Timed out flag. */
+    private volatile boolean timedOut;
+
     /** Timeout object. */
     private GridTimeoutObject timeoutObj;
 
@@ -261,16 +264,24 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
     /** {@inheritDoc} */
     @Override public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner) {
+        if (isDone())
+            return false;
+
         if (log.isDebugEnabled())
             log.debug("Transaction future received owner changed callback: " + entry);
 
-        boolean rmv;
+        synchronized (this) {
+            if (timedOut)
+                return false;
 
-        synchronized (lockKeys) {
-            rmv = lockKeys.remove(entry.txKey());
+            boolean rmv;
+
+            synchronized (lockKeys) {
+                rmv = lockKeys.remove(entry.txKey());
+            }
+
+            return rmv && mapIfLocked();
         }
-
-        return rmv && mapIfLocked();
     }
 
     /** {@inheritDoc} */
@@ -481,7 +492,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
      * @param res Result.
      */
     public void onResult(UUID nodeId, GridDhtTxPrepareResponse res) {
-        if (!isDone()) {
+        if (!isDone() || !timedOut) {
             MiniFuture mini = miniFuture(res.miniId());
 
             if (mini != null) {
@@ -1124,9 +1135,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                     if (F.isEmpty(dhtWrites) && F.isEmpty(nearWrites))
                         continue;
 
-                    long timeout = tx.remainingTime();
-
-                    if (timeout == -1)
+                    if (timedOut)
                         return;
 
                     MiniFuture fut = new MiniFuture(n.id(), dhtMapping, nearMapping);
@@ -1175,6 +1184,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                             break;
                         }
                         catch (GridCacheEntryRemovedException ignore) {
+                            U.error(log, "!!! GridCacheEntryRemovedException \n" + tx(), ignore);
+
                             assert false : "Got removed exception on entry with dht local candidate: " + entry;
                         }
 
@@ -1205,6 +1216,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                     assert req.transactionNodes() != null;
 
                     try {
+                        log.info("!!! dht tx prepare send request \n" + tx.xidVersion() + "\n" + tx.nearXidVersion());
+
                         cctx.io().send(n, req, tx.ioPolicy());
                     }
                     catch (ClusterTopologyCheckedException e) {
@@ -1220,9 +1233,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                     if (!tx.dhtMap().containsKey(nearMapping.node().id())) {
                         assert nearMapping.writes() != null;
 
-                        long timeout = tx.remainingTime();
-
-                        if (timeout == -1)
+                        if (timedOut)
                             return;
 
                         MiniFuture fut = new MiniFuture(nearMapping.node().id(), null, nearMapping);
@@ -1643,10 +1654,14 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
         /** {@inheritDoc} */
         @Override public void onTimeout() {
-            err.compareAndSet(null, new IgniteTxTimeoutCheckedException("Failed to acquire lock within " +
-                "provided timeout for transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']'));
+            synchronized (GridDhtTxPrepareFuture.this) {
+                timedOut = true;
 
-            onComplete(null);
+                err.compareAndSet(null, new IgniteTxTimeoutCheckedException("Failed to acquire lock within " +
+                        "provided timeout for transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']'));
+
+                onComplete(null);
+            }
         }
 
         /** {@inheritDoc} */

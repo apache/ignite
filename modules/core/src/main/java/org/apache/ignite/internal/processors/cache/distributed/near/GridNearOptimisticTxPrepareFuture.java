@@ -108,11 +108,16 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         if (log.isDebugEnabled())
             log.debug("Transaction future received owner changed callback: " + entry);
 
-        if ((entry.context().isNear() || entry.context().isLocal()) && owner != null && tx.hasWriteKey(entry.txKey())) {
-            if (keyLockFut != null)
-                keyLockFut.onKeyLocked(entry.txKey());
+        synchronized (this) {
+            if (timedOut)
+                return false;
 
-            return true;
+            if ((entry.context().isNear() || entry.context().isLocal()) && owner != null && tx.hasWriteKey(entry.txKey())) {
+                if (keyLockFut != null)
+                    keyLockFut.onKeyLocked(entry.txKey());
+
+                return true;
+            }
         }
 
         return false;
@@ -120,6 +125,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
     /** {@inheritDoc} */
     @Override public boolean onNodeLeft(UUID nodeId) {
+        log.info("!!! onNodeLeft \n xid=" + tx.xidVersion() + "\n nearXid=" + tx.nearXidVersion() +
+            "\n nodeId=" + nodeId);
+
         boolean found = false;
 
         for (IgniteInternalFuture<?> fut : futures()) {
@@ -131,6 +139,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                         nodeId);
 
                     e.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+
+                    log.info("!!! onNodeLeft \n xid=" + tx.xidVersion() + "\n nearXid=" + tx.nearXidVersion() +
+                        "\n nodeId=" + nodeId + "\n miniId=" + f.futureId());
 
                     f.onResult(e);
 
@@ -146,6 +157,12 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
      * @param e Error.
      */
     void onError(Throwable e) {
+        log.info("!!! onError \n xid=" + tx.xidVersion() + "\n nearXid=" + tx.nearXidVersion() +
+                "\n err=" + e);
+
+        if (e instanceof IgniteTxTimeoutCheckedException && cctx.tm().deadlockDetectionEnabled())
+            return;
+
         if (X.hasCause(e, ClusterTopologyCheckedException.class) || X.hasCause(e, ClusterTopologyException.class)) {
             if (tx.onePhaseCommit()) {
                 tx.markForBackupCheck();
@@ -176,20 +193,35 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
     /** {@inheritDoc} */
     @Override public void onResult(UUID nodeId, GridNearTxPrepareResponse res) {
-        if (!isDone()) {
+        log.info("!!! onResult \n xid=" + tx.xidVersion() + "\n nearXid=" + tx.nearXidVersion() +
+            "\n dstNodeId=" + nodeId + "\n miniId=" +  res.miniId());
+
+        if (!isDone() || !timedOut) {
             MiniFuture mini = miniFuture(res.miniId());
 
             if (mini != null) {
+                log.info("!!! onResult mini future found \n xid=" + tx.xidVersion() +
+                    "\n nearXid=" + tx.nearXidVersion() + "\n dstNodeId=" + nodeId + "\n miniId=" +  res.miniId());
+
                 assert mini.node().id().equals(nodeId);
 
                 mini.onResult(nodeId, res);
             }
+            else {
+                log.info("!!! onResult mini future is not found \n xid=" + tx.xidVersion() +
+                    "\n nearXid=" + tx.nearXidVersion() + "\n dstNodeId=" + nodeId + "\n miniId=" +  res.miniId());
+            }
+        }
+        else {
+            log.info("!!! onResult future is done \n xid=" + tx.xidVersion() + "\n nearXid=" + tx.nearXidVersion() +
+                "\n dstNodeId=" + nodeId + "\n miniId=" +  res.miniId());
         }
     }
 
     /**
      * @return Keys for which {@link MiniFuture} isn't completed.
      */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public Set<KeyCacheObject> requestedKeys() {
         if (futs != null && !futs.isEmpty()) {
             for (int i = 0; i < futs.size(); i++) {
@@ -248,11 +280,21 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onDone(IgniteInternalTx t, Throwable err) {
-        if (isDone())
-            return false;
+    @Override public boolean onDone(IgniteInternalTx t, Throwable e) {
+        log.info("!!! onDone tx \n xid=" + tx.xidVersion() + "\n nearXid=" + tx.nearXidVersion() +
+            "\n err=" + e);
 
-        this.err.compareAndSet(null, err);
+        if (isDone()) {
+            log.info("!!! onDone tx future is done \n xid=" + tx.xidVersion() + "\n nearXid=" + tx.nearXidVersion() +
+                "\n err=" + e);
+
+            return false;
+        }
+
+        log.info("!!! onDone tx future is not done \n xid=" + tx.xidVersion() + "\n nearXid=" + tx.nearXidVersion() +
+            "\n err=" + e);
+
+        err.compareAndSet(null, e);
 
         return onComplete();
     }
@@ -272,6 +314,9 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
      */
     private boolean onComplete() {
         Throwable err0 = err.get();
+
+        log.info("!!! onComplete tx future is done \n xid=" + tx.xidVersion() + "\n nearXid=" + tx.nearXidVersion() +
+            "\n err=" + err0);
 
         if (err0 == null || tx.needCheckBackup())
             tx.state(PREPARED);
@@ -464,8 +509,15 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
      * @param mappings Queue of mappings.
      */
     private void proceedPrepare(GridDistributedTxMapping m, @Nullable final Queue<GridDistributedTxMapping> mappings) {
-        if (isDone())
+        log.info("!!! proceedPrepare \n xid=" + tx.xidVersion() + "\n nearXid=" + tx.nearXidVersion() +
+            "\n m=" + m + "\n mappings.size=" + mappings.size());
+
+        if (isDone()) {
+            log.info("!!! proceedPrepare future is done \n xid=" + tx.xidVersion() +
+                "\n nearXid=" + tx.nearXidVersion());
+
             return;
+        }
 
         boolean set = cctx.tm().setTxTopologyHint(tx.topologyVersionSnapshot());
 
@@ -476,83 +528,89 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
             long timeout = tx.remainingTime();
 
-            if (timeout == -1)
-                return;
+            synchronized (this) {
+                if (timedOut)
+                    return;
 
-            GridNearTxPrepareRequest req = new GridNearTxPrepareRequest(
-                futId,
-                tx.topologyVersion(),
-                tx,
-                timeout,
-                null,
-                m.writes(),
-                m.near(),
-                txMapping.transactionNodes(),
-                m.last(),
-                tx.onePhaseCommit(),
-                tx.needReturnValue() && tx.implicit(),
-                tx.implicitSingle(),
-                m.explicitLock(),
-                tx.subjectId(),
-                tx.taskNameHash(),
-                m.clientFirst(),
-                tx.activeCachesDeploymentEnabled());
+                GridNearTxPrepareRequest req = new GridNearTxPrepareRequest(
+                        futId,
+                        tx.topologyVersion(),
+                        tx,
+                        timeout,
+                        null,
+                        m.writes(),
+                        m.near(),
+                        txMapping.transactionNodes(),
+                        m.last(),
+                        tx.onePhaseCommit(),
+                        tx.needReturnValue() && tx.implicit(),
+                        tx.implicitSingle(),
+                        m.explicitLock(),
+                        tx.subjectId(),
+                        tx.taskNameHash(),
+                        m.clientFirst(),
+                        tx.activeCachesDeploymentEnabled());
 
-            for (IgniteTxEntry txEntry : m.writes()) {
-                if (txEntry.op() == TRANSFORM)
-                    req.addDhtVersion(txEntry.txKey(), null);
-            }
-
-            // Must lock near entries separately.
-            if (m.near()) {
-                try {
-                    tx.optimisticLockEntries(req.writes());
-
-                    tx.userPrepare();
+                for (IgniteTxEntry txEntry : m.writes()) {
+                    if (txEntry.op() == TRANSFORM)
+                        req.addDhtVersion(txEntry.txKey(), null);
                 }
-                catch (IgniteCheckedException e) {
-                    onError(e);
-                }
-            }
 
-            if (timedOut)
-                return;
+                // Must lock near entries separately.
+                if (m.near()) {
+                    try {
+                        tx.optimisticLockEntries(req.writes());
 
-            final MiniFuture fut = new MiniFuture(m, mappings);
-
-            req.miniId(fut.futureId());
-
-            add(fut); // Append new future.
-
-            // If this is the primary node for the keys.
-            if (n.isLocal()) {
-                // At this point, if any new node joined, then it is
-                // waiting for this transaction to complete, so
-                // partition reassignments are not possible here.
-                IgniteInternalFuture<GridNearTxPrepareResponse> prepFut = cctx.tm().txHandler().prepareTx(n.id(), tx, req);
-
-                prepFut.listen(new CI1<IgniteInternalFuture<GridNearTxPrepareResponse>>() {
-                    @Override public void apply(IgniteInternalFuture<GridNearTxPrepareResponse> prepFut) {
-                        try {
-                            fut.onResult(n.id(), prepFut.get());
-                        }
-                        catch (IgniteCheckedException e) {
-                            fut.onResult(e);
-                        }
+                        tx.userPrepare();
+                    } catch (IgniteCheckedException e) {
+                        onError(e);
                     }
-                });
-            }
-            else {
-                try {
-                    cctx.io().send(n, req, tx.ioPolicy());
                 }
-                catch (ClusterTopologyCheckedException e) {
-                    e.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
 
-                    fut.onResult(e);
-                }
-                catch (IgniteCheckedException e) {
-                    fut.onResult(e);
+                final MiniFuture fut = new MiniFuture(m, mappings);
+
+                req.miniId(fut.futureId());
+
+                add(fut); // Append new future.
+
+                log.info("!!! proceedPrepare miniFuture created \n xid=" + tx.xidVersion() +
+                        "\n nearXid=" + tx.nearXidVersion() + "\n miniId=" + fut.futureId());
+
+                // If this is the primary node for the keys.
+                if (n.isLocal()) {
+                    log.info("!!! proceedPrepare near prepare locally \n xid=" + tx.xidVersion() +
+                            "\n nearXid=" + tx.nearXidVersion() + "\n miniId=" + fut.futureId() +
+                            "\n dstNodeId=" + n.id());
+
+                    // At this point, if any new node joined, then it is
+                    // waiting for this transaction to complete, so
+                    // partition reassignments are not possible here.
+                    IgniteInternalFuture<GridNearTxPrepareResponse> prepFut = cctx.tm().txHandler().prepareTx(n.id(), tx, req);
+
+                    prepFut.listen(new CI1<IgniteInternalFuture<GridNearTxPrepareResponse>>() {
+                        @Override
+                        public void apply(IgniteInternalFuture<GridNearTxPrepareResponse> prepFut) {
+                            try {
+                                fut.onResult(n.id(), prepFut.get());
+                            } catch (IgniteCheckedException e) {
+                                fut.onResult(e);
+                            }
+                        }
+                    });
+                } else {
+                    try {
+                        cctx.io().send(n, req, tx.ioPolicy());
+
+                        log.info("!!! proceedPrepare miniFuture near prepare remotely \n xid=" + tx.xidVersion() +
+                                "\n nearXid=" + tx.nearXidVersion() + "\n miniId=" + fut.futureId() +
+                                "\n dstNodeId=" + n.id());
+                    } catch (ClusterTopologyCheckedException e) {
+                        e.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+
+                        fut.onResult(e);
+                    } catch (IgniteCheckedException e) {
+                        fut.onResult(e);
+                    }
                 }
             }
         }
@@ -736,28 +794,49 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
          * @param e Error.
          */
         void onResult(Throwable e) {
+            log.info("!!! MiniFuture.onResult throwable \n xid=" + tx.xidVersion() +
+                "\n nearXid=" + tx.nearXidVersion() + "\n miniId=" + futId + "\n err=" + e);
+
             if (rcvRes.compareAndSet(false, true)) {
                 if (log.isDebugEnabled())
                     log.debug("Failed to get future result [fut=" + this + ", err=" + e + ']');
 
+                log.info("!!! MiniFuture.onResult throwable once\n xid=" + tx.xidVersion() +
+                    "\n nearXid=" + tx.nearXidVersion() + "\n miniId=" + futId + "\n err=" + e);
+
                 // Fail.
                 onDone(e);
             }
-            else
+            else {
+/*
                 U.warn(log, "Received error after another result has been processed [fut=" +
                     GridNearOptimisticTxPrepareFuture.this + ", mini=" + this + ']', e);
+*/
+                log.info("!!! MiniFuture.onResult throwable again\n xid=" + tx.xidVersion() +
+                    "\n nearXid=" + tx.nearXidVersion() + "\n miniId=" + futId + "\n err=" + e);
+            }
         }
 
         /**
          * @param e Node failure.
          */
         void onResult(ClusterTopologyCheckedException e) {
-            if (isDone())
+            log.info("!!! MiniFuture.onResult cluster topology error\n xid=" + tx.xidVersion() +
+                "\n nearXid=" + tx.nearXidVersion() + "\n miniId=" + futId + "\n err=" + e);
+
+            if (isDone()) {
+                log.info("!!! MiniFuture.onResult cluster topology error future is done\n xid=" + tx.xidVersion() +
+                    "\n nearXid=" + tx.nearXidVersion() + "\n miniId=" + futId + "\n err=" + e);
+
                 return;
+            }
 
             if (rcvRes.compareAndSet(false, true)) {
                 if (log.isDebugEnabled())
                     log.debug("Remote node left grid while sending or waiting for reply (will not retry): " + this);
+
+                log.info("!!! MiniFuture.onResult cluster topology error ok\n xid=" + tx.xidVersion() +
+                    "\n nearXid=" + tx.nearXidVersion() + "\n miniId=" + futId + "\n err=" + e);
 
                 // Fail the whole future (make sure not to remap on different primary node
                 // to prevent multiple lock coordinators).
@@ -770,19 +849,40 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
          * @param res Result callback.
          */
         void onResult(UUID nodeId, final GridNearTxPrepareResponse res) {
-            if (isDone())
+            log.info("!!! MiniFuture.onResult \n xid=" + tx.xidVersion() +
+                "\n nearXid=" + tx.nearXidVersion() + "\n dstNodeId=" + nodeId + "\n miniId=" +  res.miniId());
+
+            if (isDone()) {
+                log.info("!!! MiniFuture.onResult is done \n xid=" + tx.xidVersion() +
+                    "\n nearXid=" + tx.nearXidVersion() + "\n dstNodeId=" + nodeId + "\n miniId=" +  res.miniId());
+
                 return;
+            }
 
             if (rcvRes.compareAndSet(false, true)) {
+                if (cctx.tm().deadlockDetectionEnabled() &&
+                    (timedOut || res.error() instanceof IgniteTxTimeoutCheckedException)) {
+                    log.info("!!! MiniFuture.onResult timed out \n xid=" + tx.xidVersion() +
+                        "\n nearXid=" + tx.nearXidVersion() + "\n dstNodeId=" + nodeId +
+                        "\n miniId=" + res.miniId() + "\n err=" + res.error());
+
+                    return;
+                }
+
                 if (res.error() != null) {
-                    if (res.error() instanceof IgniteTxTimeoutCheckedException && cctx.tm().deadlockDetectionEnabled())
-                        return;
+                    log.info("!!! MiniFuture.onResult is not timed out (task is null)\n xid=" + tx.xidVersion() +
+                        "\n nearXid=" + tx.nearXidVersion() + "\n dstNodeId=" + nodeId +
+                        "\n miniId=" +  res.miniId() + "\n err=" + res.error());
 
                     // Fail the whole compound future.
                     onError(res.error());
                 }
                 else {
                     if (res.clientRemapVersion() != null) {
+                        log.info("!!! MiniFuture.onResult client remap\n xid=" + tx.xidVersion() +
+                            "\n nearXid=" + tx.nearXidVersion() + "\n dstNodeId=" + nodeId +
+                            "\n miniId=" +  res.miniId() + "\n err=" + res.error());
+
                         assert cctx.kernalContext().clientNode();
                         assert m.clientFirst();
 
@@ -806,17 +906,41 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                             remap();
                     }
                     else {
+                        log.info("!!! MiniFuture.onResult proceed normal \n xid=" + tx.xidVersion() +
+                            "\n nearXid=" + tx.nearXidVersion() + "\n dstNodeId=" + nodeId +
+                            "\n miniId=" +  res.miniId() + "\n err=" + res.error());
+
                         onPrepareResponse(m, res);
 
                         // Proceed prepare before finishing mini future.
-                        if (mappings != null)
+                        if (mappings != null) {
+                            log.info("!!! MiniFuture.onResult mappings not null proceed prepare\n xid=" +
+                                tx.xidVersion() +
+                                "\n nearXid=" + tx.nearXidVersion() + "\n dstNodeId=" + nodeId +
+                                "\n miniId=" +  res.miniId() + "\n err=" + res.error());
+
                             proceedPrepare(mappings);
+                        }
+                        else {
+                            log.info("!!! MiniFuture.onResult mappings null onDone\n xid=" +
+                                tx.xidVersion() +
+                                "\n nearXid=" + tx.nearXidVersion() + "\n dstNodeId=" + nodeId +
+                                "\n miniId=" +  res.miniId() + "\n err=" + res.error());
+                        }
 
                         // Finish this mini future.
                         onDone((GridNearTxPrepareResponse)null);
                     }
                 }
             }
+        }
+
+        @Override public boolean onDone(@Nullable GridNearTxPrepareResponse res, @Nullable Throwable err) {
+            log.info("!!! MiniFuture.onDone \n xid=" + tx.xidVersion() +
+                "\n nearXid=" + tx.nearXidVersion() +
+                "\n miniId=" + futId + "\n err=" + err);
+
+            return super.onDone(res, err);
         }
 
         /**
@@ -848,64 +972,69 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("ForLoopReplaceableByForEach")
         @Override public void onTimeout() {
-            timedOut = true;
+            synchronized (GridNearOptimisticTxPrepareFuture.this) {
+                timedOut = true;
 
-            if (cctx.tm().deadlockDetectionEnabled()) {
-                Set<IgniteTxKey> keys = null;
+                if (cctx.tm().deadlockDetectionEnabled()) {
+                    log.info("!!! ON TIMEOUT \n" + tx.xidVersion() + "\n" + tx.nearXidVersion());
 
-                if (keyLockFut != null)
-                    keys = new HashSet<>(keyLockFut.lockKeys);
-                else {
-                    if (futs != null && !futs.isEmpty()) {
-                        for (int i = 0; i < futs.size(); i++) {
-                            IgniteInternalFuture<GridNearTxPrepareResponse> fut = futs.get(i);
+                    Set<IgniteTxKey> keys = null;
 
-                            if (isMini(fut) && !fut.isDone()) {
-                                MiniFuture miniFut = (MiniFuture)fut;
+                    if (keyLockFut != null)
+                        keys = new HashSet<>(keyLockFut.lockKeys);
+                    else {
+                        if (futs != null && !futs.isEmpty()) {
+                            for (int i = 0; i < futs.size(); i++) {
+                                IgniteInternalFuture<GridNearTxPrepareResponse> fut = futs.get(i);
 
-                                if (miniFut.rcvRes.get())
-                                    continue;
+                                if (isMini(fut) && !fut.isDone()) {
+                                    MiniFuture miniFut = (MiniFuture) fut;
 
-                                Collection<IgniteTxEntry> entries = miniFut.mapping().entries();
+                                    Collection<IgniteTxEntry> entries = miniFut.mapping().entries();
 
-                                keys = U.newHashSet(entries.size());
+                                    keys = U.newHashSet(entries.size());
 
-                                for (IgniteTxEntry entry : entries)
-                                    keys.add(entry.txKey());
+                                    for (IgniteTxEntry entry : entries)
+                                        keys.add(entry.txKey());
 
-                                break;
+                                    break;
+                                }
                             }
                         }
                     }
+
+                    log.info("!!! ON TIMEOUT RUNNABLE \n" + tx.xidVersion() + "\n" + tx.nearXidVersion() + "\n" + keys);
+
+                    IgniteInternalFuture<TxDeadlock> fut = cctx.tm().detectDeadlock(tx, keys);
+
+                    fut.listen(new IgniteInClosure<IgniteInternalFuture<TxDeadlock>>() {
+                        @Override public void apply(IgniteInternalFuture<TxDeadlock> fut) {
+                            try {
+                                TxDeadlock deadlock = fut.get();
+
+                                err.compareAndSet(null, new IgniteTxTimeoutCheckedException("Failed to acquire lock " +
+                                        "within provided timeout for transaction [timeout=" + tx.timeout() +
+                                        ", tx=" + tx + ']',
+                                        deadlock != null
+                                                ? new TransactionDeadlockException(deadlock.toString(cctx))
+                                                : null));
+                            } catch (IgniteCheckedException e) {
+                                err.compareAndSet(null, e);
+
+                                U.warn(log, "Failed to detect deadlock.", e);
+                            }
+
+                            onComplete();
+                        }
+                    });
+                } else {
+                    err.compareAndSet(null, new IgniteTxTimeoutCheckedException("Failed to acquire lock " +
+                            "within provided timeout for transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']'));
+
+                    onComplete();
                 }
-
-                IgniteInternalFuture<TxDeadlock> fut = cctx.tm().detectDeadlock(tx.nearXidVersion(), keys);
-
-                fut.listen(new IgniteInClosure<IgniteInternalFuture<TxDeadlock>>() {
-                    @Override public void apply(IgniteInternalFuture<TxDeadlock> fut) {
-                        try {
-                            TxDeadlock deadlock = fut.get();
-
-                            err.compareAndSet(null, new IgniteTxTimeoutCheckedException("Failed to acquire lock " +
-                                "within provided timeout for transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']',
-                                deadlock != null ? new TransactionDeadlockException(deadlock.toString(cctx)) : null));
-                        }
-                        catch (IgniteCheckedException e) {
-                            err.compareAndSet(null, e);
-
-                            U.warn(log, "Failed to detect deadlock.", e);
-                        }
-
-                        onComplete();
-                    }
-                });
-            }
-            else {
-                err.compareAndSet(null, new IgniteTxTimeoutCheckedException("Failed to acquire lock " +
-                    "within provided timeout for transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']'));
-
-                onComplete();
             }
         }
 

@@ -264,6 +264,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
      * @return {@code True} in case there is at least one synchronous {@code MiniFuture} to wait for.
      */
     private boolean rollbackLockTransactions(Collection<ClusterNode> nodes) {
+        log.info("!!! rollbackLockTransactions \n" + tx.xidVersion() + "\n" + tx.nearXidVersion());
+
         assert !commit;
         assert !F.isEmpty(nodes);
 
@@ -336,6 +338,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
      */
     private boolean finish(Map<UUID, GridDistributedTxMapping> dhtMap,
         Map<UUID, GridDistributedTxMapping> nearMap) {
+
         if (tx.onePhaseCommit())
             return false;
 
@@ -343,6 +346,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
 
         if (tx.explicitLock())
             sync = true;
+
+        log.info("!!! finish \n" + tx.xidVersion() + "\n" + tx.nearXidVersion() + "\n, sync=" + sync);
 
         boolean res = false;
 
@@ -398,6 +403,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
             try {
                 cctx.io().send(n, req, tx.ioPolicy());
 
+                log.info("!!! finish dht sent\n" + tx.xidVersion() + "\n" + tx.nearXidVersion());
+
                 if (sync)
                     res = true;
                 else
@@ -451,6 +458,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
 
                 try {
                     cctx.io().send(nearMapping.node(), req, tx.ioPolicy());
+
+                    log.info("!!! finish dht sent\n" + tx.xidVersion() + "\n" + tx.nearXidVersion());
 
                     if (sync)
                         res = true;

@@ -260,6 +260,8 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
                 int txTimeout = 500 + txCnt * 100;
 
                 try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, txTimeout, 0)) {
+                    log.info("!!! started thread=" + tx.threadId());
+
                     involvedTxs.add(((TransactionProxyImpl)tx).tx());
 
                     Integer key = keys.get(0);

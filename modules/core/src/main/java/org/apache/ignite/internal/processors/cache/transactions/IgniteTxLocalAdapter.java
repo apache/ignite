@@ -561,7 +561,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             throw new IgniteCheckedException("Invalid transaction state for prepare [state=" + state + ", tx=" + this + ']');
         }
 
-        checkValid();
+        checkValid(state() != PREPARING);
 
         try {
             cctx.tm().prepareTx(this);
@@ -632,6 +632,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     @Override public void userCommit() throws IgniteCheckedException {
         TransactionState state = state();
 
+        log.info("!!! userCommit state=" + state + "\n xid=" + xidVersion() +
+                "\n nearXid=" + nearXidVersion());
+
         if (state != COMMITTING) {
             if (timedOut())
                 throw new IgniteTxTimeoutCheckedException("Transaction timed out: " + this);
@@ -641,7 +644,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             throw new IgniteCheckedException("Invalid transaction state for commit [state=" + state + ", tx=" + this + ']');
         }
 
-        checkValid();
+        checkValid(state != COMMITTING);
 
         Collection<IgniteTxEntry> commitEntries = near() ? allEntries() : writeEntries();
 
@@ -1582,7 +1585,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         boolean single = keysCnt == 1;
 
         try {
-            checkValid();
+            checkValid(false);
 
             final Map<K, V> retMap = new GridLeanMap<>(keysCnt);
 
@@ -2813,7 +2816,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         if (retval)
             needReturnValue(true);
 
-        checkValid();
+        checkValid(false);
 
         init();
     }
@@ -3273,7 +3276,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         }
 
         try {
-            checkValid();
+            checkValid(false);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(e);
@@ -3489,8 +3492,9 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      * Checks transaction expiration.
      *
      * @throws IgniteCheckedException If transaction check failed.
+     * @param rollbackOnTimeout
      */
-    protected void checkValid() throws IgniteCheckedException {
+    protected void checkValid(boolean rollbackOnTimeout) throws IgniteCheckedException {
         if (isRollbackOnly()) {
             if (timedOut())
                 throw new IgniteTxTimeoutCheckedException("Cache transaction timed out: " + this);
@@ -3508,9 +3512,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
             throw new IgniteCheckedException("Cache transaction marked as rollback-only: " + this);
         }
 
-        if (remainingTime() == -1 && setRollbackOnly())
+        if (remainingTime() == -1 && rollbackOnTimeout && setRollbackOnly()) {
+            log.info("!!! userCommit remainingTime -1 state=" + state() + "\n xid=" + xidVersion() +
+                    "\n nearXid=" + nearXidVersion());
+
             throw new IgniteTxTimeoutCheckedException("Cache transaction timed out " +
-                "(was rolled back automatically): " + this);
+                    "(was rolled back automatically): " + this);
+        }
     }
 
     /** {@inheritDoc} */

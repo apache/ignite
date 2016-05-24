@@ -246,6 +246,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                     req.subjectId(),
                                     req.taskNameHash());
 
+                                log.info("!!! dht tx remote created 2 \n" + tx.xidVersion() +
+                                        "\n" + tx.nearXidVersion());
+
                                 tx = ctx.tm().onCreated(null, tx);
 
                                 if (tx == null || !ctx.tm().onStarted(tx))

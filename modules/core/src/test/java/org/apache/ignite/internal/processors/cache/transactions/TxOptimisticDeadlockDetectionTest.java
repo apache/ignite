@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,6 +34,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
@@ -48,14 +50,16 @@ import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareRequest;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -64,6 +68,8 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionDeadlockException;
+import org.apache.ignite.transactions.TransactionTimeoutException;
+import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -92,6 +98,10 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
     /** Client mode flag. */
     private static boolean client;
+
+    @Override public boolean isDebug() {
+        return false;
+    }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -140,6 +150,8 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testDeadlocksPartitioned() throws Exception {
+        //doTestDeadlocks(createCache(PARTITIONED, CacheWriteSynchronizationMode.FULL_SYNC, false), NO_OP_TRANSFORMER);
+
         for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
             doTestDeadlocks(createCache(PARTITIONED, syncMode, false), NO_OP_TRANSFORMER);
             doTestDeadlocks(createCache(PARTITIONED, syncMode, false), WRAPPING_TRANSFORMER);
@@ -222,7 +234,7 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
             doTestDeadlock(4, false, false, false, transformer);
             doTestDeadlock(4, false, false, true, transformer);
         }
-        catch (Exception e) {
+        catch (Throwable e) {
             U.error(log, "Unexpected exception: ", e);
 
             fail();
@@ -247,6 +259,8 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
             ", clientTx=" + clientTx + ", transformer=" + transformer.getClass().getName() + ']');
 
         TestCommunicationSpi.init(txCnt);
+
+        TestCommunicationSpi.log = log;
 
         final AtomicInteger threadCnt = new AtomicInteger();
 
@@ -273,6 +287,10 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
                 int txTimeout = 500 + txCnt * 100;
 
                 try (Transaction tx = ignite.transactions().txStart(OPTIMISTIC, REPEATABLE_READ, txTimeout, 0)) {
+                    IgniteInternalTx tx0 = ((TransactionProxyImpl)tx).tx();
+
+                    log.info("!!! tx started \n xid=" + tx0.xidVersion() + "\n nearXid=" + tx0.nearXidVersion());
+
                     involvedTxs.add(((TransactionProxyImpl)tx).tx());
 
                     Integer key = keys.get(0);
@@ -327,7 +345,7 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
                     U.error(log, "Expected exception: ", e);
 
                     // At least one stack trace should contain TransactionDeadlockException.
-                    if (hasCause(e, IgniteTxTimeoutCheckedException.class) &&
+                    if (hasCause(e, TransactionTimeoutException.class) &&
                         hasCause(e, TransactionDeadlockException.class)
                         ) {
                         if (deadlockErr.compareAndSet(null, cause(e, TransactionDeadlockException.class)))
@@ -338,52 +356,81 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
             }
         }, loc ? 2 : txCnt, "tx-thread");
 
-        fut.get();
+        try {
+            fut.get();
+        }
+        catch (IgniteCheckedException e) {
+            log.info("!!! ERROR " + e);
+            U.error(null, "Unexpected exception", e);
+
+            fail();
+        }
 
         U.sleep(1000);
+
+        log.info("!!! ASSERTS START " + deadlockErr.get());
 
         TransactionDeadlockException deadlockE = deadlockErr.get();
 
         assertNotNull(deadlockE);
 
-        // Check transactions, futures and entry locks state.
-        for (int i = 0; i < NODES_CNT * 2; i++) {
-            Ignite ignite = ignite(i);
+        try {
+            boolean fail = false;
 
-            int cacheId = ((IgniteCacheProxy)ignite.cache(CACHE_NAME)).context().cacheId();
+            // Check transactions, futures and entry locks state.
+            for (int i = 0; i < NODES_CNT * 2; i++) {
+                Ignite ignite = ignite(i);
 
-            IgniteTxManager txMgr = ((IgniteKernal)ignite).context().cache().context().tm();
+                int cacheId = ((IgniteCacheProxy)ignite.cache(CACHE_NAME)).context().cacheId();
 
-            Collection<IgniteInternalTx> activeTxs = txMgr.activeTransactions();
+                IgniteTxManager txMgr = ((IgniteKernal)ignite).context().cache().context().tm();
 
-            for (IgniteInternalTx tx : activeTxs) {
-                Collection<IgniteTxEntry> entries = tx.allEntries();
+                Collection<IgniteInternalTx> activeTxs = txMgr.activeTransactions();
 
-                for (IgniteTxEntry entry : entries) {
-                    if (entry.cacheId() == cacheId)
-                        fail("Transaction still exists: " + tx);
+                for (IgniteInternalTx tx : activeTxs) {
+                    Collection<IgniteTxEntry> entries = tx.allEntries();
+
+                    for (IgniteTxEntry entry : entries) {
+                        if (entry.cacheId() == cacheId) {
+                            fail = true;
+
+                            U.error(log, "Transaction still exists: " + tx);
+                        }
+                    }
+                }
+
+                ConcurrentMap<Long, TxDeadlockDetection.TxDeadlockFuture> futs =
+                    GridTestUtils.getFieldValue(txMgr, IgniteTxManager.class, "deadlockDetectFuts");
+
+                assertTrue(futs.isEmpty());
+
+                GridCacheAdapter<Object, Integer> intCache = internalCache(i, CACHE_NAME);
+
+                GridCacheConcurrentMap map = intCache.map();
+
+                for (Integer key : involvedKeys) {
+                    Object key0 = transformer.apply(key);
+
+                    KeyCacheObject keyCacheObj = intCache.context().toCacheKeyObject(key0);
+
+                    GridCacheMapEntry entry = map.getEntry(keyCacheObj);
+
+                    if (entry != null)
+                        assertNull("Entry still has locks " + entry, entry.mvccAllLocal());
                 }
             }
 
-            ConcurrentMap<Long, TxDeadlockDetection.TxDeadlockFuture> futs =
-                GridTestUtils.getFieldValue(txMgr, IgniteTxManager.class, "deadlockDetectFuts");
+            if (fail)
+                fail();
+        }
+        catch (Throwable e) {
+            if (e instanceof AssertionError) {
+                log.info("!!! ASSERTS ERROR " + e);
 
-            assertTrue(futs.isEmpty());
-
-            GridCacheAdapter<Object, Integer> intCache = internalCache(i, CACHE_NAME);
-
-            GridCacheConcurrentMap map = intCache.map();
-
-            for (Integer key : involvedKeys) {
-                Object key0 = transformer.apply(key);
-
-                KeyCacheObject keyCacheObj = intCache.context().toCacheKeyObject(key0);
-
-                GridCacheMapEntry entry = map.getEntry(keyCacheObj);
-
-                if (entry != null)
-                    assertNull("Entry still has locks " + entry, entry.mvccAllLocal());
+                throw e;
             }
+
+            e.printStackTrace();
         }
 
         // Check deadlock report
@@ -399,6 +446,8 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
             else
                 assertFalse(msg.contains("[key=" + transformer.apply(key)));
         }
+
+        log.info("!!! ASSERTS FINISHED");
     }
 
     /**
@@ -510,11 +559,15 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
      *
      */
     private static class TestCommunicationSpi extends TcpCommunicationSpi {
+        private static volatile IgniteLogger log;
+
         /** Tx count. */
         private static volatile int TX_CNT;
 
         /** Tx ids. */
         private static final Set<GridCacheVersion> TX_IDS = new GridConcurrentHashSet<>();
+
+        //private static final ConcurrentHashMap8<GridCacheVersion, IgniteUuid> TXS = new ConcurrentHashMap8<>();
 
         /**
          * @param txCnt Tx count.
@@ -538,10 +591,15 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
                     GridCacheVersion txId = req.version();
 
+                    log.info("!!! REQ thread=" + req.threadId() + " " + txId);
+
                     if (TX_IDS.contains(txId)) {
                         while (TX_IDS.size() != TX_CNT) {
                             try {
-                                U.sleep(10);
+                                U.sleep(50);
+
+                                log.info("!!! REQ thread=" + req.threadId() + " " + txId + " wait " +
+                                    TX_IDS.size() + "/" + TX_CNT/* + "\n" + req*/);
                             }
                             catch (IgniteInterruptedCheckedException e) {
                                 e.printStackTrace();
@@ -553,6 +611,8 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
                     GridNearTxPrepareResponse res = (GridNearTxPrepareResponse)msg0;
 
                     GridCacheVersion txId = res.version();
+
+                    log.info("!!! RES " + txId + "\n" + res);
 
                     TX_IDS.add(txId);
                 }

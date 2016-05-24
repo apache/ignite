@@ -801,8 +801,14 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                     fut = new GridNearOptimisticTxPrepareFuture(cctx, this, timeout);
                 }
             }
-            else
+            else {
+                long timeout = remainingTime();
+
+                if (timeout == -1)
+                    return new GridFinishedFuture<>(timeoutException());
+
                 fut = new GridNearPessimisticTxPrepareFuture(cctx, this);
+            }
 
             if (!prepFut.compareAndSet(null, fut))
                 return prepFut.get();
@@ -973,12 +979,12 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                 new IgniteCheckedException("Invalid transaction state for prepare [state=" + state() + ", tx=" + this + ']'));
         }
 
-        init();
-
         long timeout = remainingTime();
 
         if (timeout == -1)
             return new GridFinishedFuture<>(timeoutException());
+
+        init();
 
         GridDhtTxPrepareFuture fut = new GridDhtTxPrepareFuture(
             cctx,
@@ -1168,7 +1174,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         assert pessimistic();
 
         try {
-            checkValid();
+            checkValid(false);
         }
         catch (IgniteCheckedException e) {
             return new GridFinishedFuture<>(e);
