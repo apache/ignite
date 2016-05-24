@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.cache.database;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * Meta store.
@@ -43,8 +41,8 @@ public interface MetaStore {
      *
      * @param cacheId Cache ID.
      * @param idxName Index name.
-     * @return {@code True} if page was removed.
+     * @return Root ID or -1 if no page was removed.
      * @throws IgniteCheckedException
      */
-    public boolean dropRootPage(int cacheId, String idxName) throws IgniteCheckedException;
+    public long dropRootPage(int cacheId, String idxName) throws IgniteCheckedException;
 }

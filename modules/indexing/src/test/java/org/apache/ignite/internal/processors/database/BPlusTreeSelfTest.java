@@ -103,7 +103,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
                 return new RootPage(allocateMetaPage(), true, 0);
             }
 
-            @Override public boolean dropRootPage(final int cacheId, final String idxName) throws IgniteCheckedException {
+            @Override public long dropRootPage(final int cacheId, final String idxName) throws IgniteCheckedException {
                 throw new UnsupportedOperationException();
             }
         });

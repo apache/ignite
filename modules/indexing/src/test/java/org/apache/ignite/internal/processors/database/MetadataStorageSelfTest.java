@@ -68,7 +68,7 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
 
         int[] cacheIds = new int[]{1, "partitioned".hashCode(), "replicated".hashCode()};
 
-        Map<Integer, Map<String, FullPageId>> allocatedIdxs = new HashMap<>();
+        Map<Integer, Map<String, RootPage>> allocatedIdxs = new HashMap<>();
 
         mem.start();
 
@@ -78,7 +78,7 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 1_000; i++) {
                 int cacheId = cacheIds[i % cacheIds.length];
 
-                Map<String, FullPageId> idxMap = allocatedIdxs.get(cacheId);
+                Map<String, RootPage> idxMap = allocatedIdxs.get(cacheId);
 
                 if (idxMap == null) {
                     idxMap = new HashMap<>();
@@ -96,15 +96,15 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
 
                 assertTrue(rootPage.isAllocated());
 
-                idxMap.put(idxName, rootPage.pageId());
+                idxMap.put(idxName, rootPage);
             }
 
             for (int cacheId : cacheIds) {
-                Map<String, FullPageId> idxMap = allocatedIdxs.get(cacheId);
+                Map<String, RootPage> idxMap = allocatedIdxs.get(cacheId);
 
-                for (Map.Entry<String, FullPageId> entry : idxMap.entrySet()) {
+                for (Map.Entry<String, RootPage> entry : idxMap.entrySet()) {
                     String idxName = entry.getKey();
-                    FullPageId rootPageId = entry.getValue();
+                    FullPageId rootPageId = entry.getValue().pageId();
 
                     final RootPage rootPage = metaStore.getOrAllocateForTree(cacheId, idxName, idx);
 
@@ -128,11 +128,11 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
             MetadataStorage meta = new MetadataStorage(mem);
 
             for (int cacheId : cacheIds) {
-                Map<String, FullPageId> idxMap = allocatedIdxs.get(cacheId);
+                Map<String, RootPage> idxMap = allocatedIdxs.get(cacheId);
 
-                for (Map.Entry<String, FullPageId> entry : idxMap.entrySet()) {
+                for (Map.Entry<String, RootPage> entry : idxMap.entrySet()) {
                     String idxName = entry.getKey();
-                    FullPageId rootPageId = entry.getValue();
+                    FullPageId rootPageId = entry.getValue().pageId();
 
                     assertEquals("Invalid root page ID restored [cacheId=" + cacheId + ", idxName=" + idxName + ']',
                         rootPageId, meta.getOrAllocateForTree(cacheId, idxName, idx).pageId());
@@ -141,25 +141,32 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
             }
 
             for (int cacheId : cacheIds) {
-                Map<String, FullPageId> idxMap = allocatedIdxs.get(cacheId);
+                Map<String, RootPage> idxMap = allocatedIdxs.get(cacheId);
 
-                for (Map.Entry<String, FullPageId> entry : idxMap.entrySet()) {
+                for (Map.Entry<String, RootPage> entry : idxMap.entrySet()) {
                     String idxName = entry.getKey();
-                    FullPageId rootPageId = entry.getValue();
+                    RootPage rootPage = entry.getValue();
+                    FullPageId rootPageId = rootPage.pageId();
 
-                    assertTrue("Page was not dropped [cacheId=" + cacheId + ", idxName=" + idxName + ']',
-                        meta.dropRootPage(cacheId, idxName));
+                    final long droppedRootId = meta.dropRootPage(cacheId, idxName);
 
-                    assertFalse("Page was dropped twice [cacheId=" + cacheId + ", idxName=" + idxName + ']',
-                        meta.dropRootPage(cacheId, idxName));
+                    assertEquals("Drop failure [cacheId=" + cacheId + ", idxName=" + idxName + ", stored rootPageId="
+                        + rootPage.rootId() + ", dropped rootPageId=" + droppedRootId + ']',
+                        rootPage.rootId(), droppedRootId);
+
+                    final long secondDropRootId = meta.dropRootPage(cacheId, idxName);
+
+                    assertEquals("Page was dropped twice [cacheId=" + cacheId + ", idxName=" + idxName
+                        + ", drop result=" + secondDropRootId + ']',
+                        -1, secondDropRootId);
 
                     // make sure it will be allocated again
-                    final RootPage rootPage = meta.getOrAllocateForTree(cacheId, idxName, idx);
+                    final RootPage newRootPage = meta.getOrAllocateForTree(cacheId, idxName, idx);
 
                     assertEquals("Invalid root page ID restored [cacheId=" + cacheId + ", idxName=" + idxName + ']',
-                        rootPageId, rootPage.pageId());
+                        rootPageId, newRootPage.pageId());
 
-                    assertTrue(rootPage.isAllocated());
+                    assertTrue(newRootPage.isAllocated());
                 }
             }
         }
