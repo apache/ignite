@@ -21,11 +21,14 @@ package org.apache.ignite.internal.processors.cache.eviction;
 import org.apache.ignite.configuration.CacheConfiguration;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
-import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 
+/**
+ *
+ */
 public class GridCacheConcurrentEvictionConsistencyLocalAtomicSelfTest extends GridCacheConcurrentEvictionConsistencyAbstractTest {
 
+    /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration() {
         CacheConfiguration cfg = new CacheConfiguration();
 

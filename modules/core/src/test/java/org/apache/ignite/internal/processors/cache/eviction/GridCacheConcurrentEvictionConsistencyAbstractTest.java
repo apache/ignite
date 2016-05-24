@@ -98,6 +98,9 @@ public abstract class GridCacheConcurrentEvictionConsistencyAbstractTest extends
         return c;
     }
 
+    /**
+     * @return Cache configuration.
+     */
     protected abstract CacheConfiguration cacheConfiguration();
 
     /** {@inheritDoc} */
