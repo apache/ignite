@@ -468,7 +468,7 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             var svc = new TestIgniteServiceSerializable { ThrowCancel = true };
 
-            Services.DeployMultiple(SvcName, svc, Grids.Length, 1);
+            Services.DeployMultiple(SvcName, svc, 2, 1);
 
             CheckServiceStarted(Grid1);
 
