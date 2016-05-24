@@ -45,6 +45,7 @@ import org.apache.ignite.internal.processors.cache.CacheNamesSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheNamesWithSpecialCharactersTest;
 import org.apache.ignite.internal.processors.cache.CachePutEventListenerErrorSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheTxFastFinishTest;
+import org.apache.ignite.internal.processors.cache.CacheWithKeepBinarySelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityApiSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityMapperSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheAffinityRoutingSelfTest;
@@ -304,6 +305,8 @@ public class IgniteCacheTestSuite extends TestSuite {
         suite.addTestSuite(IgniteTxConfigCacheSelfTest.class);
 
         suite.addTestSuite(CacheTxFastFinishTest.class);
+
+        suite.addTestSuite(CacheWithKeepBinarySelfTest.class);
 
         return suite;
     }
