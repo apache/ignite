@@ -13,24 +13,22 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ *
  */
 
-package org.apache.ignite.internal.processors.cache;
-
-import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionIsolation;
+package org.apache.ignite.internal.processors.cache.transactions;
 
 /**
- * Test getEntry and getEntries methods.
+ * Marker interface for messages with transient TX state
  */
-public class CacheGetEntryOptimisticReadCommittedSeltTest extends CacheGetEntryAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected TransactionConcurrency concurrency() {
-        return TransactionConcurrency.OPTIMISTIC;
-    }
+public interface IgniteTxStateAware {
+    /**
+     * @return Transient TX state.
+     */
+    public IgniteTxState txState();
 
-    /** {@inheritDoc} */
-    @Override protected TransactionIsolation isolation() {
-        return TransactionIsolation.READ_COMMITTED;
-    }
+    /**
+     * @param txState Transient TX state.
+     */
+    public void txState(IgniteTxState txState);
 }
