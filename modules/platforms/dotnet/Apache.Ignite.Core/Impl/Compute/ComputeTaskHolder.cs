@@ -154,6 +154,8 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             if (reader.ReadBoolean())
             {
+                Console.WriteLine("Getting nodes from reader");
+
                 long topVer = reader.ReadLong();
 
                 List<IClusterNode> nodes = new List<IClusterNode>(reader.ReadInt());
@@ -180,6 +182,8 @@ namespace Apache.Ignite.Core.Impl.Compute
             }
             else
             {
+                Console.WriteLine("Getting nodes from _compute");
+
                 IList<IClusterNode> nodes = prj.NodesNoRefresh();
 
                 Debug.Assert(nodes != null, "At least one topology update should have occurred.");
@@ -193,6 +197,8 @@ namespace Apache.Ignite.Core.Impl.Compute
 
             try
             {
+                Console.WriteLine("ComputeTaskHolder.Map: " + subgrid.Count);
+
                 map = _task.Map(subgrid, _arg);
 
                 err = null;

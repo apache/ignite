@@ -46,13 +46,18 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestTaskAdapter()
         {
+            Console.WriteLine("Starting TestTaskAdapter!");
+
             Assert.AreEqual(3, Grid1.GetCluster().GetNodes().Count);
 
             HashSet<Guid> allNodes = new HashSet<Guid>(); 
 
             for (int i = 0; i < 20 && allNodes.Count < 2; i++)
             {
-                HashSet<Guid> res = Grid1.GetCompute().Execute(new TestSplitTask(), 1);
+                var compute = Grid1.GetCompute();
+                Assert.AreEqual(2, compute.ClusterGroup.GetNodes().Count);
+
+                HashSet<Guid> res = compute.Execute(new TestSplitTask(), 1);
 
                 Assert.AreEqual(1, res.Count);
 
