@@ -159,6 +159,8 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                             };
 
                             const _typeMapper = (meta, typeName) => {
+                                const maskedName = _.isEmpty(meta.cacheName) ? '<default>' : meta.cacheName;
+
                                 let fields = meta.fields[typeName];
 
                                 let columns = [];
@@ -173,7 +175,8 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                                             clazz: fieldClass,
                                             system: fieldName === '_KEY' || fieldName === '_VAL',
                                             cacheName: meta.cacheName,
-                                            typeName
+                                            typeName,
+                                            maskedName
                                         });
                                     }
                                 }
@@ -190,7 +193,8 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                                             order: index.descendings.indexOf(field) < 0,
                                             unique: index.unique,
                                             cacheName: meta.cacheName,
-                                            typeName
+                                            typeName,
+                                            maskedName
                                         });
                                     }
 
@@ -200,7 +204,8 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                                             name: index.name,
                                             children: fields,
                                             cacheName: meta.cacheName,
-                                            typeName
+                                            typeName,
+                                            maskedName
                                         });
                                     }
                                 }
@@ -213,6 +218,7 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                                         name: 'Indexes',
                                         cacheName: meta.cacheName,
                                         typeName,
+                                        maskedName,
                                         children: indexes
                                     });
                                 }
@@ -221,6 +227,7 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                                     type: 'type',
                                     cacheName: meta.cacheName || '',
                                     typeName,
+                                    maskedName,
                                     children: columns
                                 };
                             };

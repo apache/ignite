@@ -1537,12 +1537,12 @@ consoleModule.controller('sqlController', [
 
                         if (cache) {
                             meta.name = (cache.sqlSchema || '"' + meta.cacheName + '"') + '.' + meta.typeName;
-                            meta.displayName = (cache.sqlSchema || $scope.maskCacheName(meta.cacheName)) + '.' + meta.typeName;
+                            meta.displayName = (cache.sqlSchema || meta.maskedName) + '.' + meta.typeName;
 
                             if (cache.sqlSchema)
-                                meta.children.unshift({type: 'plain', name: 'cacheName: ' + $scope.maskCacheName(meta.cacheName)});
+                                meta.children.unshift({type: 'plain', name: 'cacheName: ' + meta.maskedName, maskedName: meta.maskedName});
 
-                            meta.children.unshift({type: 'plain', name: 'mode: ' + cache.mode});
+                            meta.children.unshift({type: 'plain', name: 'mode: ' + cache.mode, maskedName: meta.maskedName});
                         }
 
                         return cache;
