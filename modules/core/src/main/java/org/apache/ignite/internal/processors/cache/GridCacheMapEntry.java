@@ -3670,6 +3670,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 CacheObject expiredVal = rawGetOrUnmarshal(false);
 
+                if (expiredVal == null)
+                    return false;
+
                 if (onExpired(expiredVal, obsoleteVer)) {
                     if (cctx.deferredDelete()) {
                         deferred = true;
