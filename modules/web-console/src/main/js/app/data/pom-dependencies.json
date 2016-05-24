@@ -1,0 +1,20 @@
+{
+    "Cloud": {"artifactId": "ignite-cloud"},
+    "S3": {"artifactId": "ignite-aws"},
+    "GoogleStorage": {"artifactId": "ignite-gce"},
+    "ZooKeeper": {"artifactId": "ignite-zookeeper"},
+
+    "Log4j": {"artifactId": "ignite-log4j"},
+    "Log4j2": {"artifactId": "ignite-log4j2"},
+    "JCL": {"artifactId": "ignite-jcl"},
+    "HadoopIgfsJcl": {"artifactId": "ignite-hadoop"},
+    "SLF4J": {"artifactId": "ignite-slf4j"},
+
+    "Generic": {"groupId": "com.mchange", "artifactId": "c3p0", "version": "0.9.5.1"},
+    "MySQL": {"groupId": "mysql", "artifactId": "mysql-connector-java", "version": "5.1.37"},
+    "PostgreSQL": {"groupId": "org.postgresql", "artifactId": "postgresql", "version": "9.4-1204-jdbc42"},
+    "H2": {"groupId": "com.h2database", "artifactId": "h2", "version": "1.3.175"},
+    "Oracle": {"groupId": "oracle", "artifactId": "jdbc", "version": "11.2", "jar": "ojdbc6.jar"},
+    "DB2": {"groupId": "ibm", "artifactId": "jdbc", "version": "4.19.26", "jar": "db2jcc4.jar"},
+    "SQLServer": {"groupId": "microsoft", "artifactId": "jdbc", "version": "4.1", "jar": "sqljdbc41.jar"}
+}

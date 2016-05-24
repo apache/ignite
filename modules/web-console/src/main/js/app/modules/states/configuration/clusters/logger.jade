@@ -57,18 +57,18 @@ form.panel.panel-default(name=form novalidate)
                 .settings-row(ng-if='#{model}.kind && #{model}.kind !== "Null"')
                     .panel-details
                         ignite-configuration-clusters-logger-log4j2(
-                            ng-if='#{model}.kind === "Log4j2"')
+                            ng-show='#{model}.kind === "Log4j2"')
                         ignite-configuration-clusters-logger-hadoop(
-                            ng-if='#{model}.kind === "HadoopIgfsJcl"')
+                            ng-show='#{model}.kind === "HadoopIgfsJcl"')
                         ignite-configuration-clusters-logger-java(
-                            ng-if='#{model}.kind === "Java"')
+                            ng-show='#{model}.kind === "Java"')
                         ignite-configuration-clusters-logger-jcl(
-                            ng-if='#{model}.kind === "JCL"')
+                            ng-show='#{model}.kind === "JCL"')
                         ignite-configuration-clusters-logger-slf4j(
-                            ng-if='#{model}.kind === "SLF4J"')
+                            ng-show='#{model}.kind === "SLF4J"')
                         ignite-configuration-clusters-logger-log4j(
-                            ng-if='#{model}.kind === "Log4j"')
+                            ng-show='#{model}.kind === "Log4j"')
                         ignite-configuration-clusters-logger-custom(
-                            ng-if='#{model}.kind === "Custom"')
+                            ng-show='#{model}.kind === "Custom"')
             .col-sm-6
                 +preview-xml-java(model, 'clusterLogger')

@@ -1141,7 +1141,7 @@ $generatorJava.clusterLogger = function (logger, res) {
 
             case 'HadoopIgfsJcl':
                 $generatorJava.declareVariableCustom(res, varName, 'org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsJclLogger',
-                    'new HadoopIgfsJclLogger(' + res.importClass(log.logger) + '())');
+                    'new HadoopIgfsJclLogger(new ' + res.importClass(log.logger) + '())');
 
                 break;
 
@@ -1157,7 +1157,7 @@ $generatorJava.clusterLogger = function (logger, res) {
 
                             break;
 
-                        case 'configure':
+                        case 'Configure':
                             arg = (log.configure || false).toString();
 
                             break;

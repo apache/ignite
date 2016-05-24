@@ -17,7 +17,8 @@
 include ../../../../../../app/helpers/jade/mixins.jade
 
 -var model = 'backupItem.logger.Log4j'
--var form = 'loggerLog4j'
+-var loggerMode = model + '.mode === "Logger"'
+-var pathMode = model + '.mode === "Path"'
 
 div
     .details-row
@@ -35,7 +36,7 @@ div
             ]',
             'Level for internal log4j implementation')
     .details-row
-        +dropdown-required('Logger configuration:', model + '.mode', 'javaMode', 'true', 'true', 'Choose logger mode',
+        +dropdown-required('Logger configuration:', model + '.mode', 'log4jMode', 'true', 'true', 'Choose logger mode',
             '[\
                 {value: "Default", label: "Default"},\
                 {value: "Logger", label: "Logger"},\
@@ -48,9 +49,9 @@ div
                 <li>Path - path or URI to XML configuration</li>\
                 <li>Configure - configure default logger</li>\
             </ul>')
-    .details-row(ng-if='#{model}.mode === "Logger"')
-        +java-class('Logger:', model + '.logger', 'Log4jLogger', 'true', 'true', 'Logger implementation for use')
-    .details-row(ng-if='#{model}.mode === "Configure"')
-        +checkbox("Configure", model + '.configure', 'javaInit', tip)
-    .details-row(ng-if='#{model}.mode === "Path"')
-        +text('Path:', model + '.path', 'log4j2Path', 'true', 'Input path', 'Path or URI to XML configuration')
+    .details-row(ng-show=loggerMode)
+        +java-class('Logger:', model + '.logger', 'log4jLogger', 'true', loggerMode, 'Logger implementation for use')
+    .details-row(ng-show='#{model}.mode === "Configure"')
+        +checkbox("Configure", model + '.configure', 'log4jInit', tip)
+    .details-row(ng-show=pathMode)
+        +text('Path:', model + '.path', 'log4jPath', pathMode, 'Input path', 'Path or URI to XML configuration')

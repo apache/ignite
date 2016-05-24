@@ -17,8 +17,8 @@
 include ../../../../../../app/helpers/jade/mixins.jade
 
 -var model = 'backupItem.logger.HadoopIgfsJcl'
--var form = 'loggerHadoopIgfsJcl'
+-var required = 'backupItem.logger.kind === "HadoopIgfsJcl"'
 
 div
     .details-row
-        +java-class('Logger:', model + '.logger', 'hadoopLogger', 'true', 'true', 'Logger implementation for use')
+        +java-class('Logger:', model + '.logger', 'hadoopLogger', 'true', required, 'Logger implementation for use')

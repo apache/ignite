@@ -16,9 +16,9 @@
 
 include ../../../../../../app/helpers/jade/mixins.jade
 
--var model = 'backupItem.logger.custom'
--var form = 'loggerSLF4J'
+-var model = 'backupItem.logger.Custom'
+-var required = 'backupItem.logger.kind === "Custom"'
 
 div
     .details-row
-        +java-class('Class:', model + '.class', 'customLogger', 'true', 'true', 'Logger implementation class')
+        +java-class('Class:', model + '.class', 'customLogger', 'true', required, 'Logger implementation class')

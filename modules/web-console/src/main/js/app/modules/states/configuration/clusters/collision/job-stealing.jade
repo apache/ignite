@@ -22,22 +22,22 @@ include ../../../../../../app/helpers/jade/mixins.jade
 
 div
     .details-row
-        +number('Active jobs threshold:', model + '.activeJobsThreshold', 'activeJobsThreshold', 'true', '95', '0',
+        +number('Active jobs threshold:', model + '.activeJobsThreshold', 'jsActiveJobsThreshold', 'true', '95', '0',
             'Number of jobs that can be executed in parallel')
     .details-row
-        +number('Wait jobs threshold:', model + '.waitJobsThreshold', 'waitJobsThreshold', 'true', '0', '0',
+        +number('Wait jobs threshold:', model + '.waitJobsThreshold', 'jsWaitJobsThreshold', 'true', '0', '0',
             'Job count threshold at which this node will start stealing jobs from other nodes')
     .details-row
-        +number('Message expire time:', model + '.messageExpireTime', 'messageExpireTime', 'true', '1000', '1',
+        +number('Message expire time:', model + '.messageExpireTime', 'jsMessageExpireTime', 'true', '1000', '1',
             'Message expire time in ms')
     .details-row
-        +number('Maximum stealing attempts:', model + '.maximumStealingAttempts', 'maximumStealingAttempts', 'true', '5', '1',
+        +number('Maximum stealing attempts:', model + '.maximumStealingAttempts', 'jsMaximumStealingAttempts', 'true', '5', '1',
             'Maximum number of attempts to steal job by another node')
     .details-row
-        +checkbox('Stealing enabled', model + '.stealingEnabled', 'stealingEnabled',
+        +checkbox('Stealing enabled', model + '.stealingEnabled', 'jsStealingEnabled',
             'Node should attempt to steal jobs from other nodes')
     .details-row
-        +java-class('External listener:', model + '.externalCollisionListener', 'externalCollisionListener', 'true', 'false',
+        +java-class('External listener:', model + '.externalCollisionListener', 'jsExternalCollisionListener', 'true', 'false',
             'Listener to be set for notification of external collision events')
     .details-row(ng-init='stealingAttributesTbl={type: "attributes", model: "collision.JobStealing.stealingAttributes", focusId: "Attribute", ui: "table-pair", keyName: "name", valueName: "value"}')
         ignite-form-group(ng-model='#{stealingAttributes}' ng-form='#{form}')

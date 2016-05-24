@@ -16,9 +16,9 @@
 
 include ../../../../../../app/helpers/jade/mixins.jade
 
--var model = 'backupItem.collision.custom'
--var form = 'collisionSLF4J'
+-var model = 'backupItem.collision.Custom'
+-var required = 'backupItem.collision.kind === "Custom"'
 
 div
     .details-row
-        +java-class('Class:', model + '.class', 'collisionCustom', 'true', 'true', 'CollisionSpi implementation class')
+        +java-class('Class:', model + '.class', 'collisionCustom', 'true', required, 'CollisionSpi implementation class')

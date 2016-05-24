@@ -578,7 +578,7 @@ $generatorCommon.failoverSpiClass = function (spi) {
         case 'JobStealing': return 'org.apache.ignite.spi.failover.jobstealing.JobStealingFailoverSpi';
         case 'Never': return 'org.apache.ignite.spi.failover.never.NeverFailoverSpi';
         case 'Always': return 'org.apache.ignite.spi.failover.always.AlwaysFailoverSpi';
-        case 'Custom': return _.get(spi, 'custom.class');
+        case 'Custom': return _.get(spi, 'Custom.class');
     }
 };
 

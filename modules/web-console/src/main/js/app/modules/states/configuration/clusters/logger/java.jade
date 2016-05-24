@@ -17,7 +17,7 @@
 include ../../../../../../app/helpers/jade/mixins.jade
 
 -var model = 'backupItem.logger.Java'
--var form = 'loggerJava'
+-var loggerMode = model + '.mode === "Logger"'
 
 div
     .details-row
@@ -33,7 +33,7 @@ div
                 <li>Logger - created logger object</li>\
                 <li>Configure - configure default logger</li>\
             </ul>')
-    .details-row(ng-if='#{model}.mode === "Logger"')
-        +java-class('Logger:', model + '.logger', 'JavaLogger', 'true', 'true', 'Logger implementation for use')
-    .details-row(ng-if='#{model}.mode === "Configure"')
+    .details-row(ng-show=loggerMode)
+        +java-class('Logger:', model + '.logger', 'javaLogger', 'true', loggerMode, 'Logger implementation for use')
+    .details-row(ng-show='#{model}.mode === "Configure"')
         +checkbox("Configure", model + '.configure', 'javaInit', tip)
