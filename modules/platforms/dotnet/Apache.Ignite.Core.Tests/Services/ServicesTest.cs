@@ -624,7 +624,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             for (int i = 0; i < Grids.Length; i++)
             {
-                Console.WriteLine("Grid{0}: " + Grids[i].GetCluster().GetLocalNode().Id);
+                Console.WriteLine("Grid{0}: {1}", i, Grids[i].GetCluster().GetLocalNode().Id);
             }
         }
 
