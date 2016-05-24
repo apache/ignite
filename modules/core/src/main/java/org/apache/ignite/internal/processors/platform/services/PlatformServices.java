@@ -265,6 +265,7 @@ public class PlatformServices extends PlatformAbstractTarget {
                     PlatformUtils.writeInvocationResult(writer, result, null);
                 }
                 catch (Exception e) {
+                    e.printStackTrace();
                     PlatformUtils.writeInvocationResult(writer, null, e);
                 }
 
