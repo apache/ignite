@@ -205,9 +205,14 @@ public class FreeList {
 
                 ByteBuffer buf = page.getForInitialWrite();
 
-                io.initNewPage(buf, page.id());
+                try {
+                    io.initNewPage(buf, page.id());
 
-                writeRow.run(page.id(), page, buf, row, entrySize);
+                    writeRow.run(page.id(), page, buf, row, entrySize);
+                }
+                finally {
+                    page.finishInitialWrite();
+                }
             }
             else
                 writePage(page.id(), page, writeRow, row, entrySize);

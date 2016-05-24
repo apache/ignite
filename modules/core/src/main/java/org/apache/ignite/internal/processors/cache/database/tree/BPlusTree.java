@@ -569,17 +569,29 @@ public abstract class BPlusTree<L, T extends L> {
         try (Page meta = page(metaPageId)) {
             ByteBuffer buf = meta.getForInitialWrite();
 
-            BPlusMetaIO io = BPlusMetaIO.VERSIONS.latest();
+            try {
+                BPlusMetaIO io = BPlusMetaIO.VERSIONS.latest();
 
-            io.initNewPage(buf, metaPageId);
+                io.initNewPage(buf, metaPageId);
 
-            long rootId = allocatePage(null);
+                long rootId = allocatePage(null);
 
-            try (Page root = page(rootId)) {
-                latestLeafIO().initNewPage(root.getForInitialWrite(), rootId);
+                try (Page root = page(rootId)) {
+                    ByteBuffer rootBuf = root.getForInitialWrite();
 
-                io.setLevelsCount(buf, 1);
-                io.setFirstPageId(buf, 0, rootId);
+                    try {
+                        latestLeafIO().initNewPage(rootBuf, rootId);
+                    }
+                    finally {
+                        root.finishInitialWrite();
+                    }
+
+                    io.setLevelsCount(buf, 1);
+                    io.setFirstPageId(buf, 0, rootId);
+                }
+            }
+            finally {
+                meta.finishInitialWrite();
             }
         }
     }
@@ -1794,57 +1806,69 @@ public abstract class BPlusTree<L, T extends L> {
                 boolean hadFwd = io.getForward(buf) != 0;
 
                 ByteBuffer fwdBuf = fwd.getForInitialWrite();
-                io.initNewPage(fwdBuf, fwdId);
 
-                boolean midShift = splitPage(io, buf, fwdBuf, idx);
+                try {
+                    io.initNewPage(fwdBuf, fwdId);
 
-                // Do insert.
-                int cnt = io.getCount(buf);
+                    boolean midShift = splitPage(io, buf, fwdBuf, idx);
 
-                if (idx < cnt || (idx == cnt && !midShift)) { // Insert into back page.
-                    insertSimple(io, buf, idx);
+                    // Do insert.
+                    int cnt = io.getCount(buf);
 
-                    // Fix leftmost child of forward page, because newly inserted row will go up.
-                    if (idx == cnt && !io.isLeaf())
-                        inner(io).setLeft(fwdBuf, 0, rightId);
-                }
-                else // Insert into newly allocated forward page.
-                    insertSimple(io, fwdBuf, idx - cnt);
+                    if (idx < cnt || (idx == cnt && !midShift)) { // Insert into back page.
+                        insertSimple(io, buf, idx);
 
-                // Do move up.
-                cnt = io.getCount(buf);
+                        // Fix leftmost child of forward page, because newly inserted row will go up.
+                        if (idx == cnt && !io.isLeaf())
+                            inner(io).setLeft(fwdBuf, 0, rightId);
+                    }
+                    else // Insert into newly allocated forward page.
+                        insertSimple(io, fwdBuf, idx - cnt);
 
-                L moveUpRow = io.getLookupRow(BPlusTree.this, buf, cnt - 1); // Last item from backward row goes up.
+                    // Do move up.
+                    cnt = io.getCount(buf);
 
-                if (!io.isLeaf()) // Leaf pages must contain all the links, inner pages remove moveUpLink.
-                    io.setCount(buf, cnt - 1);
+                    // Last item from backward row goes up.
+                    L moveUpRow = io.getLookupRow(BPlusTree.this, buf, cnt - 1);
 
-                if (!hadFwd && lvl == getRootLevel(meta)) { // We are splitting root.
-                    long newRootId = allocatePage(bag);
+                    if (!io.isLeaf()) // Leaf pages must contain all the links, inner pages remove moveUpLink.
+                        io.setCount(buf, cnt - 1);
 
-                    try (Page newRoot = page(newRootId)) {
-                        if (io.isLeaf())
-                            io = latestInnerIO();
+                    if (!hadFwd && lvl == getRootLevel(meta)) { // We are splitting root.
+                        long newRootId = allocatePage(bag);
 
-                        ByteBuffer newRootBuf = newRoot.getForInitialWrite();
+                        try (Page newRoot = page(newRootId)) {
+                            if (io.isLeaf())
+                                io = latestInnerIO();
 
-                        io.initNewPage(newRootBuf, newRootId);
+                            ByteBuffer newRootBuf = newRoot.getForInitialWrite();
 
-                        io.setCount(newRootBuf, 1);
-                        inner(io).setLeft(newRootBuf, 0, PageIO.getPageId(buf));
-                        io.store(newRootBuf, 0, moveUpRow);
-                        inner(io).setRight(newRootBuf, 0, fwdId);
+                            try {
+                                io.initNewPage(newRootBuf, newRootId);
+
+                                io.setCount(newRootBuf, 1);
+                                inner(io).setLeft(newRootBuf, 0, PageIO.getPageId(buf));
+                                io.store(newRootBuf, 0, moveUpRow);
+                                inner(io).setRight(newRootBuf, 0, fwdId);
+                            }
+                            finally {
+                                newRoot.finishInitialWrite();
+                            }
+                        }
+
+                        int res = writePage(metaPageId, meta, newRoot, newRootId, lvl + 1);
+
+                        assert res == TRUE : "failed to update meta page";
+
+                        return null; // We've just moved link up to root, nothing to return here.
                     }
 
-                    int res = writePage(metaPageId, meta, newRoot, newRootId, lvl + 1);
-
-                    assert res == TRUE : "failed to update meta page";
-
-                    return null; // We've just moved link up to root, nothing to return here.
+                    // Regular split.
+                    return moveUpRow;
                 }
-
-                // Regular split.
-                return moveUpRow;
+                finally {
+                    fwd.finishInitialWrite();
+                }
             }
         }
     }

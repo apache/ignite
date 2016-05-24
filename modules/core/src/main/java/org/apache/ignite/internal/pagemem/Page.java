@@ -55,11 +55,17 @@ public interface Page extends AutoCloseable {
     /**
      * This method assumes that the page is new and invisible for other threads,
      * thus it does not do any protection against concurrent access.
-     * Does not require calling {@link #releaseWrite(boolean)}, thus automatically dirty.
+     * Does not require calling {@link #releaseWrite(boolean)}, instead requires {@link #finishInitialWrite()}
+     * method to be called.
      *
      * @return ByteBuffer for initial page write.
      */
     public ByteBuffer getForInitialWrite();
+
+    /**
+     *
+     */
+    public void finishInitialWrite();
 
     /**
      * Releases reserved page. Released page can be evicted from RAM after flushing modifications to disk.

@@ -756,10 +756,10 @@ public class  PageMemoryImpl implements PageMemory {
      *
      * @param absPtr Absolute pointer.
      * @param dirty {@code True} dirty flag.
-     * @param flushCp If this flag is {@code true}, then the page will be added to the dirty set regardless whether
+     * @param forceAdd If this flag is {@code true}, then the page will be added to the dirty set regardless whether
      *      the old flag was dirty or not.
      */
-    void setDirty(FullPageId pageId, long absPtr, boolean dirty, boolean flushCp) {
+    void setDirty(FullPageId pageId, long absPtr, boolean dirty, boolean forceAdd) {
         long relPtrWithFlags = mem.readLong(absPtr + RELATIVE_PTR_OFFSET);
 
         boolean wasDirty = (relPtrWithFlags & DIRTY_FLAG) != 0;
@@ -771,7 +771,7 @@ public class  PageMemoryImpl implements PageMemory {
 
         mem.writeLong(absPtr + RELATIVE_PTR_OFFSET, relPtrWithFlags);
 
-        if (dirty && (!wasDirty || flushCp))
+        if (dirty && (!wasDirty || forceAdd))
             dirtyPages.add(pageId);
         else if (!dirty && wasDirty)
             dirtyPages.remove(pageId);
