@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests LocalListen.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestLocalListen()
         {
             TestLocalListen(null);
@@ -140,7 +140,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests LocalListen with projection.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestLocalListenProjection()
         {
             TestLocalListenProjection(null);
@@ -180,7 +180,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests LocalListen in multithreaded mode.
         /// </summary>
-        [Test]
+        //[Test]
         [SuppressMessage("ReSharper", "AccessToModifiedClosure")]
         [Category(TestUtils.CategoryIntensive)]
         public void TestLocalListenMultithreaded()
@@ -263,7 +263,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests RemoteListen.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestRemoteListen()
         {
             TestRemoteListen(null);
@@ -274,7 +274,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests RemoteListen with async mode enabled.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestRemoteListenAsync()
         {
             TestRemoteListen(null, true);
@@ -330,7 +330,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests RemoteListen with a projection.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestRemoteListenProjection()
         {
             TestRemoteListenProjection(null);
@@ -357,7 +357,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests LocalListen in multithreaded mode.
         /// </summary>
-        [Test]
+        //[Test]
         [Category(TestUtils.CategoryIntensive)]
         public void TestRemoteListenMultithreaded()
         {

@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Set up.
         /// </summary>
-        [TestFixtureSetUp]
+        //[TestFixtureSetUp]
         public void SetUp()
         {
             const string springConfigUrl = "config\\compute\\compute-grid1.xml";
@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Tear down.
         /// </summary>
-        [TestFixtureTearDown]
+        //[TestFixtureTearDown]
         public void TearDown()
         {
             IgniteProcess.KillAll();
@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Tests cache clear.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestClearCache()
         {
             _grid.GetCache<object, object>(null).Clear();

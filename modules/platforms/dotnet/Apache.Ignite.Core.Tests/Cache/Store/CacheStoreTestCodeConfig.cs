@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         /// <summary>
         /// Fixture setup.
         /// </summary>
-        [TestFixtureSetUp]
+        //[TestFixtureSetUp]
         public override void BeforeTests()
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())

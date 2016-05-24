@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests generic type resolve.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestGenerics()
         {
             var testTypes = new[]
@@ -69,7 +69,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests loading a type from referenced assembly that is not yet loaded.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestReferencedAssemblyLoading()
         {
             const string dllName = "Apache.Ignite.Core.Tests.TestDll";

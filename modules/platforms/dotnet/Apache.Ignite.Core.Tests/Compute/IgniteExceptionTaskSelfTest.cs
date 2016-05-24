@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test error occurred during map step.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestMapError()
         {
             Mode = ErrorMode.MapErr;
@@ -68,7 +68,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test not-marshalable error occurred during map step.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestMapNotMarshalableError()
         {
             Mode = ErrorMode.MapErrNotMarshalable;
@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test task behavior when job produced by mapper is not marshalable.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestMapNotMarshalableJob()
         {
             Mode = ErrorMode.MapJobNotMarshalable;
@@ -96,7 +96,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test local job error.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestLocalJobError()
         {
             Mode = ErrorMode.LocJobErr;
@@ -113,7 +113,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test local not-marshalable job error.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestLocalJobErrorNotMarshalable()
         {
             Mode = ErrorMode.LocJobErrNotMarshalable;
@@ -129,7 +129,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test local not-marshalable job result.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestLocalJobResultNotMarshalable()
         {
             Mode = ErrorMode.LocJobResNotMarshalable;
@@ -144,7 +144,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test remote job error.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestRemoteJobError()
         {
             Mode = ErrorMode.RmtJobErr;
@@ -165,7 +165,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test remote not-marshalable job error.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestRemoteJobErrorNotMarshalable()
         {
             Mode = ErrorMode.RmtJobErrNotMarshalable;
@@ -183,7 +183,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test local not-marshalable job result.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestRemoteJobResultNotMarshalable()
         {
             Mode = ErrorMode.RmtJobResNotMarshalable;
@@ -201,7 +201,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test local result error.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestLocalResultError()
         {
             Mode = ErrorMode.LocResErr;
@@ -216,7 +216,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test local result not-marshalable error.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestLocalResultErrorNotMarshalable()
         {
             Mode = ErrorMode.LocResErrNotMarshalable;
@@ -231,7 +231,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test remote result error.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestRemoteResultError()
         {
             Mode = ErrorMode.RmtResErr;
@@ -246,7 +246,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test remote result not-marshalable error.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestRemoteResultErrorNotMarshalable()
         {
             Mode = ErrorMode.RmtResErrNotMarshalable;
@@ -261,7 +261,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test reduce with error.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestReduceError()
         {
             Mode = ErrorMode.ReduceErr;
@@ -276,7 +276,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test reduce with not-marshalable error.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestReduceErrorNotMarshalable()
         {
             Mode = ErrorMode.ReduceErrNotMarshalable;
@@ -291,7 +291,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test reduce with not-marshalable result.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestReduceResultNotMarshalable()
         {
             Mode = ErrorMode.ReduceResNotMarshalable;

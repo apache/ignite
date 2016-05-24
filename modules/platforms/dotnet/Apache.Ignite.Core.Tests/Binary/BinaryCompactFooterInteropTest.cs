@@ -60,7 +60,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Tests an object that comes from Java.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestFromJava([Values(true, false)] bool client)
         {
             var grid = client ? _clientGrid : _grid;
@@ -74,7 +74,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Tests an object that comes from .NET in Java.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestFromDotNet([Values(true, false)] bool client)
         {
             var grid = client ? _clientGrid : _grid;
@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Tests the indexing.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestIndexing([Values(true, false)] bool client)
         {
             var grid = client ? _clientGrid : _grid;

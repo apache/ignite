@@ -35,7 +35,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Test fixture set up.
         /// </summary>
-        [TestFixtureSetUp]
+        //[TestFixtureSetUp]
         public void TestFixtureSetUp()
         {
             StopServiceAndUninstall();
@@ -44,7 +44,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Test fixture tear down.
         /// </summary>
-        [TestFixtureTearDown]
+        //[TestFixtureTearDown]
         public void TestFixtureTearDown()
         {
             StopServiceAndUninstall();
@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests that service stops when Ignition stops.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestStopFromJava()
         {
             var exePath = typeof(IgniteRunner).Assembly.Location;

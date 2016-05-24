@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     /// <summary>
     /// Contains tests for binary type structure.
     /// </summary>
-    [TestFixture]
+    //[TestFixture]
     public class BinaryStructureTest
     {
         /** Repeat count. */
@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// <summary>
         /// Test object write with different structures.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestStructure()
         {
             for (int i = 1; i <= RepeatCnt; i++)

@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests the disconnected exception.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestDisconnectedException()
         {
             var cfg = new IgniteConfiguration
@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Fixture tear down.
         /// </summary>
-        [TestFixtureTearDown]
+        //[TestFixtureTearDown]
         public void FixtureTearDown()
         {
             IgniteProcess.KillAll();

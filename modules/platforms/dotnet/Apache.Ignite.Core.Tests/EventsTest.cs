@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Tests
         /** */
         public static int IdGen;
 
-        [TestFixtureTearDown]
+        //[TestFixtureTearDown]
         public void FixtureTearDown()
         {
             StopGrids();
@@ -97,7 +97,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests enable/disable of event types.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestEnableDisable()
         {
             var events = _grid1.GetEvents();
@@ -122,7 +122,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests LocalListen.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestLocalListen()
         {
             var events = _grid1.GetEvents();
@@ -160,7 +160,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests LocalListen.
         /// </summary>
-        [Test]
+        //[Test]
         [Ignore("IGNITE-879")]
         public void TestLocalListenRepeatedSubscription()
         {
@@ -195,7 +195,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests all available event types/classes.
         /// </summary>
-        [Test, TestCaseSource("TestCases")]
+        //[Test, TestCaseSource("TestCases")]
         public void TestEventTypes(EventTestCase testCase)
         {
             var events = _grid1.GetEvents();
@@ -279,7 +279,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests the LocalQuery.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestLocalQuery()
         {
             var events = _grid1.GetEvents();
@@ -301,7 +301,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests the WaitForLocal.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestWaitForLocal([Values(true, false)] bool async)
         {
             var events = _grid1.GetEvents();
@@ -362,7 +362,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests RemoteListen.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestRemoteListen(
             [Values(true, false)] bool async, 
             [Values(true, false)] bool binarizable,
@@ -427,7 +427,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests RemoteQuery.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestRemoteQuery([Values(true, false)] bool async)
         {
             foreach (var g in _grids)
@@ -455,7 +455,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests serialization.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestSerialization()
         {
             var grid = (Ignite) _grid1;

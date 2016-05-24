@@ -56,7 +56,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests exceptions.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestExceptions()
         {
             var grid = StartGrid();
@@ -100,7 +100,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests CachePartialUpdateException keys propagation.
         /// </summary>
-        [Test]
+        //[Test]
         [Category(TestUtils.CategoryIntensive)]
         public void TestPartialUpdateException()
         {
@@ -114,7 +114,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests CachePartialUpdateException keys propagation in binary mode.
         /// </summary>
-        [Test]
+        //[Test]
         [Category(TestUtils.CategoryIntensive)]
         public void TestPartialUpdateExceptionBinarizable()
         {
@@ -125,7 +125,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests CachePartialUpdateException serialization.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestPartialUpdateExceptionSerialization()
         {
             // Inner exception
@@ -188,7 +188,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests CachePartialUpdateException keys propagation.
         /// </summary>
-        [Test]
+        //[Test]
         [Category(TestUtils.CategoryIntensive)]
         public void TestPartialUpdateExceptionAsync()
         {
@@ -202,7 +202,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests CachePartialUpdateException keys propagation in binary mode.
         /// </summary>
-        [Test]
+        //[Test]
         [Category(TestUtils.CategoryIntensive)]
         public void TestPartialUpdateExceptionAsyncBinarizable()
         {

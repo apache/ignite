@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             // No-op.
         }
 
-        [Test]
+        //[Test]
         public void TestTask()
         {
             TestTask((c, t) => c.ExecuteAsync(new Task(), t));
@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             TestTask((c, t) => c.ExecuteAsync<object, int, IList<IComputeJobResult<int>>>(typeof(Task), 1, t));
         }
 
-        [Test]
+        //[Test]
         public void TestJavaTask()
         {
             using (var cts = new CancellationTokenSource())
@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             }
         }
 
-        [Test]
+        //[Test]
         public void TestClosures()
         {
             TestClosure((c, t) => c.BroadcastAsync(new ComputeAction(), t));

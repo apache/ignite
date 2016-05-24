@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test for task adapter.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestTaskAdapter()
         {
             Assert.AreEqual(3, Grid1.GetCluster().GetNodes().Count);
@@ -73,7 +73,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test for job adapter.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestSerializableJobAdapter()
         {
             for (int i = 0; i < 10; i++)
@@ -87,7 +87,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test for job adapter.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestBinarizableJobAdapter()
         {
             for (int i = 0; i < 10; i++)

@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Initialization routine.
         /// </summary>
-        [TestFixtureSetUp]
+        //[TestFixtureSetUp]
         public void InitClient()
         {
             TestUtils.KillProcesses();
@@ -125,7 +125,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             Console.WriteLine("Test started: " + TestContext.CurrentContext.Test.Name);
         }
 
-        [TestFixtureTearDown]
+        //[TestFixtureTearDown]
         public void StopClient()
         {
             if (Grid1 != null)
