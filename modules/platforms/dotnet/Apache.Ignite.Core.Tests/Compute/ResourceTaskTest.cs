@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             int res = Grid1.GetCompute().Execute(new InjectionTask(), 0);
 
-            Assert.AreEqual(2, res);
+            Assert.AreEqual(GetServerCount(), res);
         }
 
         /// <summary>
@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             var res = Grid1.GetCompute().Broadcast(new InjectionClosure(), 1);
 
-            Assert.AreEqual(2, res.Sum());
+            Assert.AreEqual(GetServerCount(), res.Sum());
         }
 
         /// <summary>
@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             int res = Grid1.GetCompute().Execute(new NoResultCacheTask(), 0);
 
-            Assert.AreEqual(2, res);
+            Assert.AreEqual(GetServerCount(), res);
         }
 
         /// <summary>
