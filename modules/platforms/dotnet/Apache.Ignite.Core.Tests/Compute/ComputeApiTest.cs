@@ -560,6 +560,26 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
+        /// Tests ForServers projection.
+        /// </summary>
+        [Test]
+        public void TestForServers()
+        {
+            var cluster = _grid1.GetCluster();
+
+            var servers = cluster.ForServers().GetNodes();
+            Assert.AreEqual(2, servers.Count);
+            Assert.IsTrue(servers.All(x => !x.IsClient));
+
+            var serverAndClient =
+                cluster.ForNodeIds(new[] { _grid2, _grid3 }.Select(x => x.GetCluster().GetLocalNode().Id));
+            Assert.AreEqual(1, serverAndClient.ForServers().GetNodes().Count);
+
+            var client = cluster.ForNodeIds(new[] { _grid3 }.Select(x => x.GetCluster().GetLocalNode().Id));
+            Assert.AreEqual(0, client.ForServers().GetNodes().Count);
+        }
+
+        /// <summary>
         /// Test for attribute projection.
         /// </summary>
         [Test]
