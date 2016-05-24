@@ -28,9 +28,8 @@ import javax.cache.processor.MutableEntry;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.testframework.GridTestUtils;
@@ -173,28 +172,29 @@ public abstract class GridCacheOffHeapTieredEvictionAbstractSelfTest extends Gri
      * @throws Exception If failed.
      */
     public void testTransform() throws Exception {
-        /* we need to enforce binary marshaller in this test since IGNITE-2693 */
-        final IgniteConfiguration iCfg = new IgniteConfiguration();
-        final Ignite ignite = Ignition.start(iCfg);
-        final IgniteCache<Integer, Object> cache = ignite.cache("test_cache").withKeepBinary();
+        Ignite ignite = grid(0);
 
-        GridTestUtils.runMultiThreaded(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                ThreadLocalRandom rnd = ThreadLocalRandom.current();
+        if (ignite.configuration().getMarshaller() instanceof BinaryMarshaller) {
+            final IgniteCache<Integer, Object> cache = ignite.cache(null).withKeepBinary();
 
-                for (int i = 0; i < iterations(); i++) {
-                    int key = rnd.nextInt(KEYS);
+            GridTestUtils.runMultiThreaded(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    ThreadLocalRandom rnd = ThreadLocalRandom.current();
 
-                    final TestValue val = vals.get(key % VAL_SIZE);
+                    for (int i = 0; i < iterations(); i++) {
+                        int key = rnd.nextInt(KEYS);
 
-                    TestProcessor c = testClosure(val.val, false);
+                        final TestValue val = vals.get(key % VAL_SIZE);
 
-                    cache.invoke(key, c);
+                        TestProcessor c = testClosure(val.val, false);
+
+                        cache.invoke(key, c);
+                    }
+
+                    return null;
                 }
-
-                return null;
-            }
-        }, 16, "test");
+            }, 16, "test");
+        }
     }
 
     /**

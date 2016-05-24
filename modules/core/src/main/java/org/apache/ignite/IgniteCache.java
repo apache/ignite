@@ -173,7 +173,7 @@ public interface IgniteCache<K, V> extends javax.cache.Cache<K, V>, IgniteAsyncS
      *
      * @return New cache instance for binary objects.
      */
-    public <K1, V1> IgniteCache<K1, V1> withKeepBinary() throws IgniteException;
+    public <K1, V1> IgniteCache<K1, V1> withKeepBinary();
 
     /**
      * Executes {@link #localLoadCache(IgniteBiPredicate, Object...)} on all cache nodes.
