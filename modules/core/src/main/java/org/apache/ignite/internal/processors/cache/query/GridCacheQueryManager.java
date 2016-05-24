@@ -17,29 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.sql.SQLException;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Queue;
-import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentMap;
-import javax.cache.Cache;
-import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -114,6 +91,31 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
+
+import javax.cache.Cache;
+import javax.cache.expiry.ExpiryPolicy;
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.sql.SQLException;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Queue;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentMap;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
@@ -1837,7 +1839,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         Map<Long, GridFutureAdapter<QueryResult<K, V>>> futs = qryIters.get(sndId);
 
         if (futs == null) {
-            futs = new LinkedHashMap<Long, GridFutureAdapter<QueryResult<K, V>>>(16, 0.75f, true) {
+            futs = new CanceledKeyMap<Long, GridFutureAdapter<QueryResult<K, V>>>(16, 0.75f, true) {
                 @Override protected boolean removeEldestEntry(Map.Entry<Long, GridFutureAdapter<QueryResult<K, V>>> e) {
                     boolean rmv = size() > maxIterCnt;
 
@@ -3501,6 +3503,45 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                         return null;
                 }
             }
+        }
+    }
+
+    /**
+     * The map prevent put a (key, value) pair in case the specified key has been removed previously
+     */
+    private class CanceledKeyMap<K, V> extends LinkedHashMap<K, V> {
+        /** Count of canceled keys */
+        private static final int CANCELED_COUNT = 128;
+        /** Canceled keys store to the set in case remove(key) is called before put(key, val). */
+        private final Set<K> canceled;
+
+        /**
+         */
+        CanceledKeyMap(int initialCapacity,
+            float loadFactor,
+            boolean accessOrder) {
+            super(initialCapacity, loadFactor, accessOrder);
+            canceled = Collections.newSetFromMap(
+                new LinkedHashMap<K, Boolean>(initialCapacity, loadFactor, accessOrder) {
+                @Override protected boolean removeEldestEntry(Map.Entry<K, Boolean> eldest) {
+                    return size() > CANCELED_COUNT;
+                }
+            });
+        }
+
+        /** {@inheritDoc} */
+        @Override public V remove(Object key) {
+            if (containsKey(key))
+                return super.remove(key);
+            else {
+                canceled.add((K)key);
+                return null;
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public V put(K key, V value) {
+            return !canceled.contains(key) ? super.put(key, value) : value;
         }
     }
 }
