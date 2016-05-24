@@ -179,33 +179,6 @@ namespace ignite
          */
         IGNITE_IMPORT_EXPORT bool FileExists(const std::string& path);
 
-        /**
-         * Safe array which automatically reclaims occupied memory when out of scope.
-         */
-        template<typename T>
-        struct IGNITE_IMPORT_EXPORT SafeArray
-        {
-            /** Target array. */
-            T* target;
-
-            /**
-             * Constructor.
-             */
-            SafeArray(int cap)
-            {
-                target = new T[cap];
-            }
-
-            /**
-             * Destructor.
-             */
-            ~SafeArray()
-            {
-                delete[] target;
-            }
-
-            IGNITE_NO_COPY_ASSIGNMENT(SafeArray);
-        };
     }
 }
 
