@@ -106,7 +106,11 @@ public class MetadataStorage implements MetaStore {
 
         byte[] idxNameBytes = idxName.getBytes(StandardCharsets.UTF_8);
 
-        final IndexItem row = tree.remove(new IndexItem(idxNameBytes, 0, cacheId, 0));
+        final IndexItem row;
+
+        synchronized (this) {
+            row = tree.remove(new IndexItem(idxNameBytes, 0, cacheId, 0));
+        }
 
         if (row != null)
             pageMem.freePage(new FullPageId(row.pageId, cacheId));
