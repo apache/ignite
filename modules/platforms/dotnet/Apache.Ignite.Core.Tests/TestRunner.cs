@@ -33,9 +33,9 @@ namespace Apache.Ignite.Core.Tests
             Debug.Listeners.Add(new TextWriterTraceListener(Console.Out));
             Debug.AutoFlush = true;
 
-            //TestOne(typeof(CacheLinqTest), "TestExcept");
+            TestOne(typeof(ServicesTest), "TestCallJavaService");
 
-            TestAll(typeof (ServicesTest));
+            //TestAll(typeof (ServicesTest));
             //TestAllInAssembly();
         }
 

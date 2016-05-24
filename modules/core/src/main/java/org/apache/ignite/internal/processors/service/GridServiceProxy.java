@@ -151,6 +151,8 @@ public class GridServiceProxy<T> implements Serializable {
                 try {
                     node = nodeForService(name, sticky);
 
+                    System.out.println("Using node: " + node.id());
+
                     if (node == null)
                         throw new IgniteException("Failed to find deployed service: " + name);
 

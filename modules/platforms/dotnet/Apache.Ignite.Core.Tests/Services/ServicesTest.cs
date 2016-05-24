@@ -621,6 +621,11 @@ namespace Apache.Ignite.Core.Tests.Services
             Grid3 = Ignition.Start(GetConfiguration("config\\compute\\compute-grid3.xml"));
 
             Grids = new[] { Grid1, Grid2, Grid3 };
+
+            for (int i = 0; i < Grids.Length; i++)
+            {
+                Console.WriteLine("Grid{0}: " + Grids[i].GetCluster().GetLocalNode().Id);
+            }
         }
 
         /// <summary>
