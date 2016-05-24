@@ -155,7 +155,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Assert.AreEqual(1, Grid1.GetServices().GetServices<ITestIgniteService>(SvcName).Count);
             Assert.AreEqual(1, Grid2.GetServices().GetServices<ITestIgniteService>(SvcName).Count);
-            Assert.AreEqual(1, Grid3.GetServices().GetServices<ITestIgniteService>(SvcName).Count);
+            Assert.AreEqual(0, Grid3.GetServices().GetServices<ITestIgniteService>(SvcName).Count);
         }
 
         /// <summary>
@@ -204,7 +204,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Services.DeployMultiple(SvcName, svc, Grids.Length * 5, 5);
 
-            foreach (var grid in Grids)
+            foreach (var grid in Grids.Where(x => !x.GetConfiguration().ClientMode))
                 CheckServiceStarted(grid, 5);
         }
 
