@@ -52,7 +52,7 @@ bootstrapGangliaAgent()
     fi
 
     export PKG_CONFIG_PATH=/usr/lib/pkgconfig/
-    cd /opt/rrdtool
+    pushd /opt/rrdtool
 
     ./configure --prefix=/usr/local/rrdtool
     if [ $? -ne 0 ]; then
@@ -75,11 +75,13 @@ bootstrapGangliaAgent()
 
     rm -Rf /opt/rrdtool
 
+    popd
+
     echo "[INFO] rrdtool successfully installed"
 
     echo "[INFO] Installig ganglia-core"
 
-    cd /opt
+    pushd /opt
 
     git clone $GANGLIA_CORE_DOWNLOAD_URL
 
@@ -87,7 +89,9 @@ bootstrapGangliaAgent()
         terminate "Failed to clone ganglia-core from github: $GANGLIA_CORE_DOWNLOAD_URL"
     fi
 
-    cd /opt/monitor-core
+    popd
+
+    pushd /opt/monitor-core
 
     ./bootstrap
 
@@ -111,7 +115,11 @@ bootstrapGangliaAgent()
         terminate "Failed to install ganglia-core"
     fi
 
-    rm -Rf /opt/monitor-core
+    #rm -Rf /opt/monitor-core
+
+    sleep 10s
+
+    popd
 
     echo "[INFO] ganglia-core successfully installed"
 

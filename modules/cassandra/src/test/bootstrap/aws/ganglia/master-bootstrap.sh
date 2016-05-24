@@ -23,7 +23,6 @@ JDK_DOWNLOAD_URL=http://download.oracle.com/otn-pub/java/jdk/8u77-b03/jdk-8u77-l
 
 TESTS_PACKAGE_DONLOAD_URL=s3://bucket/folder/ignite-cassandra-tests-1.6.0-SNAPSHOT.zip
 
-
 terminate()
 {
     SUCCESS_URL=$S3_GANGLIA_BOOTSTRAP_SUCCESS
@@ -256,7 +255,9 @@ setupTestsPackage()
 
     . /opt/ignite-cassandra-tests/bootstrap/aws/common.sh "ganglia"
 
+    echo "----------------------------------------------------------------------------------------"
     printInstanceInfo
+    echo "----------------------------------------------------------------------------------------"
     tagInstance
 }
 
@@ -359,10 +360,10 @@ setupGangliaPackages()
 
     cd /opt
 
-    git clone $GANGLIA_WEB_URL
+    git clone $GANGLIA_WEB_DOWNLOAD_URL
 
     if [ $? -ne 0 ]; then
-        terminate "Failed to clone ganglia-web from github: $GANGLIA_WEB_URL"
+        terminate "Failed to clone ganglia-web from github: $GANGLIA_WEB_DOWNLOAD_URL"
     fi
 
     echo "" >> /etc/httpd/conf/httpd.conf

@@ -21,11 +21,31 @@
 
 echo "[INFO] Running Ganglia agent discovery daemon for '$1' cluster"
 
+gmondCmd="gmond"
+
+location=$(whereis gmond)
+if [ -z "$location" ]; then
+    echo "[WARN] Failed to automatically detect gmond daemon"
+
+    if [ ! -f "/usr/local/sbin/gmond" ]; then
+        echo "[ERROR] gmond daemon doesn't exist in /usr/local/sbin/gmond"
+        exit 1
+    fi
+
+    gmondCmd="/usr/local/sbin/gmond"
+
+    echo "[INFO] Using gmond daemon from /usr/local/sbin/gmond"
+fi
+
+
 waitFirstClusterNodeRegistered
 
 DISCOVERY_URL=$(getDiscoveryUrl)
 
-masterNode=$(aws s3 ls $DISCOVERY_URL | sed -r "s/PRE//g" | sed -r "s/\///g" | head -1 | xargs)
+masterNode=$(aws s3 ls $DISCOVERY_URL | head -1)
+masterNode=($masterNode)
+masterNode=${masterNode[3]}
+masterNode=$(echo $masterNode | xargs)
 
 if [ $? -ne 0 ] || [ -z "$masterNode" ]; then
     echo "[ERROR] Failed to get Ganglia master node from: $DISCOVERY_URL"
@@ -35,23 +55,27 @@ echo "[INFO] Got Ganglia master node: $masterNode"
 
 echo "[INFO] Creating gmond config file"
 
-gmond --default_config > /opt/gmond.conf
-
-cat /opt/gmond.conf | sed -r "s/deaf = no/deaf = yes/g" | sed -r "s/name = \"unspecified\"/name = \"$1\"/g" | sed -r "s/#bind_hostname/bind_hostname/g" | sed -r "s/mcast_join = 239.2.11.71/host = $masterNode/g" | sed -r "s/bind = 239.2.11.71//g" > /opt/gmond1.conf
-rm -r /opt/gmond.conf
-mv /opt/gmond1.conf /opt/gmond.conf
+$gmondCmd --default_config > /opt/gmond-default.conf
+cat /opt/gmond-default.conf | sed -r "s/deaf = no/deaf = yes/g" | sed -r "s/name = \"unspecified\"/name = \"$1\"/g" | sed -r "s/#bind_hostname/bind_hostname/g" | sed "0,/mcast_join = 239.2.11.71/s/mcast_join = 239.2.11.71/host = $masterNode/g" | sed -r "s/mcast_join = 239.2.11.71//g" | sed -r "s/bind = 239.2.11.71//g" > /opt/gmond.conf
 
 echo "[INFO] Running gmond daemon to report to gmetad on $masterNode"
 
-gmond --conf=/opt/gmond.conf
+$gmondCmd --conf=/opt/gmond.conf -p /opt/gmond.pid
 
-sleep 10s
+sleep 2s
 
-exists=$(ps -ef | grep gmond)
+if [ ! -f "/opt/gmond.pid" ]; then
+    echo "[ERROR] Failed to start gmond daemon, pid file doesn't exist"
+    exit 1
+fi
+
+pid=$(cat /opt/gmond.pid)
+
+echo "[INFO] gmond daemon started, pid=$pid"
+
+exists=$(ps $pid | grep gmond)
 
 if [ -z "$exists" ]; then
     echo "[ERROR] gmond daemon abnormally terminated"
     exit 1
 fi
-
-echo "[ERROR] gmond daemon successfully started"

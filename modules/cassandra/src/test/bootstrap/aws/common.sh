@@ -256,7 +256,7 @@ tagInstance()
 
     if [ -n "$INSTANCE_NAME" ]; then
         ec2-create-tags $INSTANCE_ID --tag Name=${INSTANCE_NAME} --region $EC2_INSTANCE_REGION
-        if [ $code -ne 0 ]; then
+        if [ $? -ne 0 ]; then
             echo "[ERROR] Failed to tag EC2 instance with: Name=${INSTANCE_NAME}"
             exit 1
         fi
@@ -264,7 +264,7 @@ tagInstance()
 
     if [ -n "$EC2_OWNER_TAG" ]; then
         ec2-create-tags $INSTANCE_ID --tag owner=${EC2_OWNER_TAG} --region $EC2_INSTANCE_REGION
-        if [ $code -ne 0 ]; then
+        if [ $? -ne 0 ]; then
             echo "[ERROR] Failed to tag EC2 instance with: owner=${EC2_OWNER_TAG}"
             exit 1
         fi
@@ -272,7 +272,7 @@ tagInstance()
 
     if [ -n "$EC2_PROJECT_TAG" ]; then
         ec2-create-tags $INSTANCE_ID --tag project=${EC2_PROJECT_TAG} --region $EC2_INSTANCE_REGION
-        if [ $code -ne 0 ]; then
+        if [ $? -ne 0 ]; then
             echo "[ERROR] Failed to tag EC2 instance with: project=${EC2_PROJECT_TAG}"
             exit 1
         fi
@@ -490,12 +490,18 @@ unregisterNode()
 
     echo "[INFO] Removing $NODE_TYPE node registration from: ${DISCOVERY_URL}${HOST_NAME}"
 
-    aws s3 rm ${DISCOVERY_URL}${HOST_NAME}
+    exists=$(aws s3 ls ${DISCOVERY_URL}${HOST_NAME})
 
-    if [ $? -ne 0 ]; then
-        echo "[ERROR] Failed to remove $NODE_TYPE node registration"
+    if [ -n "$exists" ]; then
+        aws s3 rm ${DISCOVERY_URL}${HOST_NAME}
+
+        if [ $? -ne 0 ]; then
+            echo "[ERROR] Failed to remove $NODE_TYPE node registration"
+        else
+            echo "[INFO] $NODE_TYPE node registration removed"
+        fi
     else
-        echo "[INFO] $NODE_TYPE node registration removed"
+        echo "[INFO] Node registration actually haven't been previously created"
     fi
 }
 
@@ -777,11 +783,11 @@ setupClusterSeeds()
             return 0
         fi
 
-        if [ "$2" == "true" ]; then
-            currentTime=$(date +%s)
-            duration=$(( $currentTime-$startTime ))
-            duration=$(( $duration/60 ))
+        currentTime=$(date +%s)
+        duration=$(( $currentTime-$startTime ))
+        duration=$(( $duration/60 ))
 
+        if [ "$2" == "true" ]; then
             if [ $duration -gt $SERVICE_STARTUP_TIME ]; then
                 terminate "${SERVICE_STARTUP_TIME}min timeout expired, but first $1 node is still not up and running"
             fi

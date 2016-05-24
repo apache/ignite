@@ -256,7 +256,9 @@ setupTestsPackage()
     . /opt/ignite-cassandra-tests/bootstrap/aws/common.sh "ignite"
     . /opt/ignite-cassandra-tests/bootstrap/aws/ganglia/agent-bootstrap.sh
 
+    echo "----------------------------------------------------------------------------------------"
     printInstanceInfo
+    echo "----------------------------------------------------------------------------------------"
     tagInstance
     bootstrapGangliaAgent "ignite"
 }
