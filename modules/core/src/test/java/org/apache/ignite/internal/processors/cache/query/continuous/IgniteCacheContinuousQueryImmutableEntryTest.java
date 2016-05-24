@@ -17,6 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
+import java.io.Serializable;
+import java.nio.ByteBuffer;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import javax.cache.configuration.Factory;
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryEventFilter;
+import javax.cache.event.CacheEntryUpdatedListener;
+import javax.cache.event.EventType;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -28,17 +36,10 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObjectImpl;
 import org.apache.ignite.internal.processors.cache.KeyCacheObjectImpl;
 import org.apache.ignite.internal.util.GridLongList;
+import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-
-import javax.cache.configuration.Factory;
-import javax.cache.event.CacheEntryEvent;
-import javax.cache.event.CacheEntryEventFilter;
-import javax.cache.event.CacheEntryListenerException;
-import javax.cache.event.CacheEntryUpdatedListener;
-import javax.cache.event.EventType;
-import java.io.Serializable;
-import java.nio.ByteBuffer;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -48,10 +49,15 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  *
  */
 public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbstractTest {
+    /** */
+    private static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
     /** Keys count. */
     private static final int KEYS_COUNT = 10;
+
     /** Grid count. */
     private static final int GRID_COUNT = 3;
+
     /** Events. */
     private static final ConcurrentLinkedQueue<CacheEntryEvent<?, ?>> events = new ConcurrentLinkedQueue<>();
 
@@ -66,6 +72,8 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
 
         cfg.setCacheConfiguration(ccfg);
 
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
+
         return cfg;
     }
 
@@ -74,11 +82,6 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
         super.afterTest();
 
         stopAllGrids();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        super.beforeTest();
 
         events.clear();
     }
@@ -94,24 +97,27 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
         ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
         qry.setLocalListener(lsnr);
         qry.setRemoteFilterFactory(new FilterFactory());
+
         Object keys[] = new Object[GRID_COUNT];
 
         // Add initial values.
         for (int i = 0; i < GRID_COUNT; ++i) {
             keys[i] = primaryKey(grid(i).cache(null));
+
             grid(0).cache(null).put(keys[i], -1);
         }
 
         try (QueryCursor<?> cur = grid(0).cache(null).query(qry)) {
-
             // Replace values on the keys.
             for (int i = 0; i < KEYS_COUNT; i++) {
                 log.info("Put key: " + i);
+
                 grid(i % GRID_COUNT).cache(null).put(keys[i % GRID_COUNT], i);
             }
         }
 
         assertTrue("There are not filtered events", !events.isEmpty());
+
         for (CacheEntryEvent<?, ?> event : events) {
             assertNotNull("Key is null", event.getKey());
             assertNotNull("Value is null", event.getValue());
@@ -169,6 +175,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
      *
      */
     private static class FilterFactory implements Factory<CacheEntryEventFilter<Object, Object>> {
+        /** {@inheritDoc} */
         @Override public CacheEntryEventFilter<Object, Object> create() {
             return new CacheEventFilter();
         }
@@ -181,6 +188,7 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
         /** {@inheritDoc} */
          @Override public boolean evaluate(CacheEntryEvent<?, ?> evt) {
             events.add(evt);
+
             return false;
         }
     }

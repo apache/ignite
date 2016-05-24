@@ -89,7 +89,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
     /** Deployment info. */
     @GridToStringExclude
-    @GridDirectTransient()
+    @GridDirectTransient
     private GridDeploymentInfo depInfo;
 
     /** Partition. */
@@ -196,6 +196,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      */
     void markFiltered() {
         flags |= FILTERED_ENTRY;
+        depInfo = null;
     }
 
     /**

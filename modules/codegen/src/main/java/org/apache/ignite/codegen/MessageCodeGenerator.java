@@ -17,18 +17,6 @@
 
 package org.apache.ignite.codegen;
 
-import org.apache.ignite.internal.GridCodegenConverter;
-import org.apache.ignite.internal.GridDirectCollection;
-import org.apache.ignite.internal.GridDirectMap;
-import org.apache.ignite.internal.GridDirectTransient;
-import org.apache.ignite.internal.IgniteCodeGeneratingFail;
-import org.apache.ignite.internal.util.typedef.internal.SB;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.plugin.extensions.communication.Message;
-import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
-import org.jetbrains.annotations.Nullable;
-
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -51,6 +39,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
+import org.apache.ignite.internal.GridCodegenConverter;
+import org.apache.ignite.internal.GridDirectCollection;
+import org.apache.ignite.internal.GridDirectMap;
+import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.IgniteCodeGeneratingFail;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteUuid;
+import org.apache.ignite.plugin.extensions.communication.Message;
+import org.apache.ignite.plugin.extensions.communication.MessageCollectionItemType;
+import org.jetbrains.annotations.Nullable;
 
 import static java.lang.reflect.Modifier.isStatic;
 import static java.lang.reflect.Modifier.isTransient;
@@ -167,7 +166,6 @@ public class MessageCodeGenerator {
 
         MessageCodeGenerator gen = new MessageCodeGenerator(srcDir);
 
-//        gen.generateAndWrite(CacheContinuousQueryEntry.class);
 //        gen.generateAll(true);
 
 //        gen.generateAndWrite(GridNearAtomicUpdateRequest.class);
@@ -788,11 +786,12 @@ public class MessageCodeGenerator {
             argsStr = argsStr.substring(0, argsStr.length() - 2);
         }
 
-        if(setConverter.isEmpty())
+        if (setConverter.isEmpty())
             read.add(builder().a(var).a(" = ").a(mtd).a("(").a(argsStr).a(");").toString());
-        else
+        else {
             read.add(builder().a(var).a(" = ").a(setConverter
                 .replace("$val$", new SB().a(mtd).a("(").a(argsStr).a(")").toString())).a(";").toString());
+        }
         read.add(EMPTY);
 
         read.add(builder().a("if (!reader.isLastRead())").toString());
