@@ -18,13 +18,13 @@
 #include <algorithm>
 #include <cassert>
 
-#include "ignite/common/math.h"
+#include "ignite/common/bits.h"
 
 namespace ignite
 {
     namespace common
     {
-        namespace math
+        namespace bits
         {
             int32_t NumberOfTrailingZerosI32(int32_t i)
             {
@@ -152,6 +152,23 @@ namespace ignite
             int32_t BitLengthI32(int32_t i)
             {
                 return 32 - NumberOfLeadingZerosI32(i);
+            }
+
+            int32_t GetCapasityForSize(int32_t size)
+            {
+                assert(size > 0);
+
+                if (size <= 8)
+                    return 8;
+
+                int32_t bl = BitLengthI32(size);
+
+                if (bl > 30)
+                    return INT32_MAX;
+
+                int32_t res = 1 << bl;
+
+                return size > res ? res << 1 : res;
             }
         }
     }

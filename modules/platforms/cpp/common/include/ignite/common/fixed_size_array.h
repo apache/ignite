@@ -32,7 +32,7 @@ namespace ignite
         /**
          * Fixed size array is safe array abstraction with a fixed size.
          * The size can be set during runtime though once array is created
-         * its size can not be changed.
+         * its size can not be changed without resetting arrays content.
          */
         template<typename T>
         class IGNITE_IMPORT_EXPORT FixedSizeArray
@@ -251,8 +251,8 @@ namespace ignite
             }
 
             /**
-             * Resets the state of the array setting
-             * it to the specified size and zeroed content.
+             * Resets the state of the array setting it to the specified size
+             * and erasing its content.
              *
              * @param newSize New array size.
              */

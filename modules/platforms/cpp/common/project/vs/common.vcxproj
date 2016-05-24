@@ -165,9 +165,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\include\ignite\common\big_integer.h" />
     <ClInclude Include="..\..\include\ignite\common\concurrent.h" />
+    <ClInclude Include="..\..\include\ignite\common\default_allocator.h" />
+    <ClInclude Include="..\..\include\ignite\common\dynamic_size_array.h" />
     <ClInclude Include="..\..\include\ignite\common\fixed_size_array.h" />
-    <ClInclude Include="..\..\include\ignite\common\math.h" />
+    <ClInclude Include="..\..\include\ignite\common\bits.h" />
     <ClInclude Include="..\..\include\ignite\common\utils.h" />
     <ClInclude Include="..\..\include\ignite\date.h" />
     <ClInclude Include="..\..\include\ignite\guid.h" />
@@ -180,12 +183,13 @@
   <ItemGroup>
     <ClCompile Include="..\..\os\win\src\common\concurrent_os.cpp" />
     <ClCompile Include="..\..\os\win\src\common\utils.cpp" />
+    <ClCompile Include="..\..\src\common\big_integer.cpp" />
     <ClCompile Include="..\..\src\common\concurrent.cpp" />
     <ClCompile Include="..\..\src\date.cpp" />
     <ClCompile Include="..\..\src\guid.cpp" />
     <ClCompile Include="..\..\src\ignite_error.cpp" />
     <ClCompile Include="..\..\src\timestamp.cpp" />
-    <ClCompile Include="..\..\src\math.cpp" />
+    <ClCompile Include="..\..\src\bits.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

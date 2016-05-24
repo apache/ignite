@@ -21,12 +21,12 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <ignite/common/math.h>
+#include <ignite/common/bits.h>
 
 using namespace ignite;
-using namespace ignite::common::math;
+using namespace ignite::common::bits;
 
-BOOST_AUTO_TEST_SUITE(MathTestSuite)
+BOOST_AUTO_TEST_SUITE(BitsTestSuite)
 
 BOOST_AUTO_TEST_CASE(TestNumberOfLeadingZeroes)
 {

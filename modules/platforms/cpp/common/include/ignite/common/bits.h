@@ -26,7 +26,7 @@ namespace ignite
 {
     namespace common
     {
-        namespace math
+        namespace bits
         {
             /**
              * Get number of trailing zero bits in the two's complement binary
@@ -76,6 +76,15 @@ namespace ignite
              *     representation of the specified 32-bit int value.
              */
             IGNITE_IMPORT_EXPORT int32_t BitLengthI32(int32_t i);
+
+            /**
+             * Calcutale capasity for required size.
+             * Rounds up to the nearest power of two.
+             *
+             * @param size Needed capasity.
+             * @return Recomended capasity to allocate.
+             */
+            IGNITE_IMPORT_EXPORT int32_t GetCapasityForSize(int32_t size);
 
             /**
              * Get the signum function of the specified 64-bit integer value.
