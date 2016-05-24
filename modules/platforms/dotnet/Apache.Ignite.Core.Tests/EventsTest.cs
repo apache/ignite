@@ -255,7 +255,7 @@ namespace Apache.Ignite.Core.Tests
                     EventType = EventType.JobExecutionAll,
                     EventObjectType = typeof (JobEvent),
                     GenerateEvent = g => GenerateTaskEvent(g),
-                    EventCount = 9
+                    EventCount = 7
                 };
                 
                 yield return new EventTestCase
@@ -447,7 +447,7 @@ namespace Apache.Ignite.Core.Tests
 
             var qryResult = remoteQuery.Except(oldEvents).Cast<JobEvent>().ToList();
 
-            Assert.AreEqual(_grids.Length, qryResult.Count);
+            Assert.AreEqual(_grids.Length - 1, qryResult.Count);
 
             Assert.IsTrue(qryResult.All(x => x.Type == EventType.JobStarted));
         }
