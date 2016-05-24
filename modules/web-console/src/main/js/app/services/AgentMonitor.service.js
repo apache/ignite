@@ -107,17 +107,14 @@ class IgniteAgentMonitor {
         const latch = this._$q.defer();
 
         const offConnected = this._scope.$on('agent:watch', (event, state) => {
-            offConnected();
+            if (state !== 'DISCONNECTED')
+                offConnected();
 
-            switch (state) {
-                case 'CONNECTED':
-                    return latch.resolve();
+            if (state === 'CONNECTED')
+                return latch.resolve();
 
-                case 'STOPPED':
-                    return latch.reject('Agent watch stopped.');
-
-                default:
-            }
+            if (state === 'STOPPED')
+                return latch.reject('Agent watch stopped.');
         });
 
         return latch.promise;
