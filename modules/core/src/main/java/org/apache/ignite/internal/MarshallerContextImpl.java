@@ -79,20 +79,17 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
      * @throws IgniteCheckedException In case of error.
      */
     public void onMarshallerCacheStarted(GridKernalContext ctx) throws IgniteCheckedException {
-        ctx.cache().marshallerCache().context().continuousQueries().executeInternalQuery(
-            new ContinuousQueryListener(ctx.log(MarshallerContextImpl.class), workDir),
-            null,
-            ctx.cache().marshallerCache().context().affinityNode(),
-            true
-        );
-    }
-
-    /**
-     * @param ctx Kernal context.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public void onMarshallerCachePreloaded(GridKernalContext ctx) throws IgniteCheckedException {
         assert ctx != null;
+
+        if (!ctx.isDaemon()) {
+            ctx.cache().marshallerCache().context().continuousQueries().executeInternalQuery(
+                new ContinuousQueryListener(ctx.log(MarshallerContextImpl.class), workDir),
+                null,
+                ctx.cache().marshallerCache().context().affinityNode(),
+                true,
+                false
+            );
+        }
 
         log = ctx.log(MarshallerContextImpl.class);
 
@@ -118,7 +115,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         String old;
 
         try {
-            old = cache0.tryPutIfAbsent(id, clsName);
+            old = cache0.tryGetAndPut(id, clsName);
 
             if (old != null && !old.equals(clsName))
                 throw new IgniteCheckedException("Type ID collision detected [id=" + id + ", clsName1=" + clsName +
@@ -176,8 +173,9 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                     }
                 }
                 catch (IOException e) {
-                    throw new IgniteCheckedException("Failed to read class name from file [id=" + id +
-                        ", file=" + file.getAbsolutePath() + ']', e);
+                    throw new IgniteCheckedException("Class definition was not found " +
+                        "at marshaller cache and local file. " +
+                        "[id=" + id + ", file=" + file.getAbsolutePath() + ']');
                 }
             }
             finally {

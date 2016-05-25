@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -46,6 +47,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteTransactions;
+import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.store.CacheStore;
@@ -575,6 +577,20 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTxCommitReadOnlyGetAll() throws Exception {
+        testTxCommitReadOnlyGetAll(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTxCommitReadOnlyGetEntries() throws Exception {
+        testTxCommitReadOnlyGetAll(true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTxCommitReadOnlyGetAll(boolean needVer) throws Exception {
         Ignite ignite0 = ignite(0);
 
         final IgniteTransactions txs = ignite0.transactions();
@@ -591,9 +607,16 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                     keys.add(i);
 
                 try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
-                    Map<Integer, Integer> map = cache.getAll(keys);
+                    if (needVer) {
+                        Collection<CacheEntry<Integer, Integer>> c = cache.getEntries(keys);
 
-                    assertTrue(map.isEmpty());
+                        assertTrue(c.isEmpty());
+                    }
+                    else {
+                        Map<Integer, Integer> map = cache.getAll(keys);
+
+                        assertTrue(map.isEmpty());
+                    }
 
                     tx.commit();
                 }
@@ -602,9 +625,16 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                     checkValue(key, null, cache.getName());
 
                 try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
-                    Map<Integer, Integer> map = cache.getAll(keys);
+                    if (needVer) {
+                        Collection<CacheEntry<Integer, Integer>> c = cache.getEntries(keys);
 
-                    assertTrue(map.isEmpty());
+                        assertTrue(c.isEmpty());
+                    }
+                    else {
+                        Map<Integer, Integer> map = cache.getAll(keys);
+
+                        assertTrue(map.isEmpty());
+                    }
 
                     tx.rollback();
                 }
@@ -653,21 +683,35 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTxConflictRead1() throws Exception {
-        txConflictRead(true);
+        txConflictRead(true, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testTxConflictRead2() throws Exception {
-        txConflictRead(false);
+        txConflictRead(false, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTxConflictReadEntry1() throws Exception {
+        txConflictRead(true, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTxConflictReadEntry2() throws Exception {
+        txConflictRead(false, true);
     }
 
     /**
      * @param noVal If {@code true} there is no cache value when read in tx.
      * @throws Exception If failed.
      */
-    private void txConflictRead(boolean noVal) throws Exception {
+    private void txConflictRead(boolean noVal, boolean needVer) throws Exception {
         Ignite ignite0 = ignite(0);
 
         final IgniteTransactions txs = ignite0.transactions();
@@ -693,9 +737,16 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
                     try {
                         try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
-                            Integer val = cache.get(key);
+                            if (needVer) {
+                                CacheEntry<Integer, Integer> val = cache.getEntry(key);
 
-                            assertEquals(expVal, val);
+                                assertEquals(expVal, val == null ? null : val.getValue());
+                            }
+                            else {
+                                Integer val = cache.get(key);
+
+                                assertEquals(expVal, val);
+                            }
 
                             updateKey(cache, key, 1);
 
@@ -711,9 +762,16 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                     checkValue(key, 1, cache.getName());
 
                     try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
-                        Object val = cache.get(key);
+                        if (needVer) {
+                            CacheEntry<Integer, Integer> val = cache.getEntry(key);
 
-                        assertEquals(1, val);
+                            assertEquals((Integer)1, val.getValue());
+                        }
+                        else {
+                            Object val = cache.get(key);
+
+                            assertEquals(1, val);
+                        }
 
                         tx.commit();
                     }
@@ -731,28 +789,56 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTxConflictReadWrite1() throws Exception {
-        txConflictReadWrite(true, false);
+        txConflictReadWrite(true, false, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testTxConflictReadWrite2() throws Exception {
-        txConflictReadWrite(false, false);
+        txConflictReadWrite(false, false, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testTxConflictReadRemove1() throws Exception {
-        txConflictReadWrite(true, true);
+        txConflictReadWrite(true, true, false);
     }
 
     /**
      * @throws Exception If failed.
      */
     public void testTxConflictReadRemove2() throws Exception {
-        txConflictReadWrite(false, true);
+        txConflictReadWrite(false, true, false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTxConflictReadEntryWrite1() throws Exception {
+        txConflictReadWrite(true, false, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTxConflictReadEntryWrite2() throws Exception {
+        txConflictReadWrite(false, false, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTxConflictReadEntryRemove1() throws Exception {
+        txConflictReadWrite(true, true, true);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTxConflictReadEntryRemove2() throws Exception {
+        txConflictReadWrite(false, true, true);
     }
 
     /**
@@ -760,7 +846,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
      * @param rmv If {@code true} tests remove, otherwise put.
      * @throws Exception If failed.
      */
-    private void txConflictReadWrite(boolean noVal, boolean rmv) throws Exception {
+    private void txConflictReadWrite(boolean noVal, boolean rmv, boolean needVer) throws Exception {
         Ignite ignite0 = ignite(0);
 
         final IgniteTransactions txs = ignite0.transactions();
@@ -786,9 +872,16 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
 
                     try {
                         try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
-                            Integer val = cache.get(key);
+                            if (needVer) {
+                                CacheEntry<Integer, Integer> val = cache.getEntry(key);
 
-                            assertEquals(expVal, val);
+                                assertEquals(expVal, val == null ? null : val.getValue());
+                            }
+                            else {
+                                Integer val = cache.get(key);
+
+                                assertEquals(expVal, val);
+                            }
 
                             updateKey(cache, key, 1);
 
@@ -809,9 +902,16 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                     checkValue(key, 1, cache.getName());
 
                     try (Transaction tx = txs.txStart(OPTIMISTIC, SERIALIZABLE)) {
-                        Integer val = cache.get(key);
+                        if (needVer) {
+                            CacheEntry<Integer, Integer> val = cache.getEntry(key);
 
-                        assertEquals(1, (Object) val);
+                            assertEquals(1, (Object)val.getValue());
+                        }
+                        else {
+                            Integer val = cache.get(key);
+
+                            assertEquals(1, (Object)val);
+                        }
 
                         if (rmv)
                             cache.remove(key);
@@ -4239,7 +4339,7 @@ public class CacheSerializableTransactionsTest extends GridCommonAbstractTest {
                 ignite.destroyCache(cacheName);
             }
             catch (IgniteException ignore) {
-                // No-op.                
+                // No-op.
             }
 
             GridTestSwapSpaceSpi spi = (GridTestSwapSpaceSpi)ignite.configuration().getSwapSpaceSpi();

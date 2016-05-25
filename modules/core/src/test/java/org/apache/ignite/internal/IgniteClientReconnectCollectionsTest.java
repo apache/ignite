@@ -312,7 +312,7 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
 
         assertFalse(srvSet.add("1"));
 
-        BlockTpcCommunicationSpi commSpi = commSpi(srv);
+        BlockTcpCommunicationSpi commSpi = commSpi(srv);
 
         if (colCfg.getAtomicityMode() == ATOMIC)
             commSpi.blockMessage(GridNearAtomicUpdateResponse.class);
@@ -454,7 +454,7 @@ public class IgniteClientReconnectCollectionsTest extends IgniteClientReconnectA
 
         assertTrue(srvQueue.contains("1"));
 
-        BlockTpcCommunicationSpi commSpi = commSpi(srv);
+        BlockTcpCommunicationSpi commSpi = commSpi(srv);
 
         if (colCfg.getAtomicityMode() == ATOMIC)
             commSpi.blockMessage(GridNearAtomicUpdateResponse.class);

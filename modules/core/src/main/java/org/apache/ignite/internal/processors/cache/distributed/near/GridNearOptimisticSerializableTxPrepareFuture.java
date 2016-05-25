@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
@@ -90,9 +89,11 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         super(cctx, tx);
 
         assert tx.optimistic() && tx.serializable() : tx;
+    }
 
-        // Should wait for all mini futures completion before finishing tx.
-        ignoreChildFailures(IgniteCheckedException.class);
+    /** {@inheritDoc} */
+    @Override protected boolean ignoreFailure(Throwable err) {
+        return IgniteCheckedException.class.isAssignableFrom(err.getClass());
     }
 
     /** {@inheritDoc} */
@@ -105,7 +106,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
             if (txEntry != null) {
                 if (entry.context().isLocal()) {
-                    GridCacheVersion serReadVer = txEntry.serializableReadVersion();
+                    GridCacheVersion serReadVer = txEntry.entryReadVersion();
 
                     if (serReadVer != null) {
                         GridCacheContext ctx = entry.context();
@@ -125,7 +126,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                                 break;
                             }
                             catch (GridCacheEntryRemovedException e) {
-                                entry = ctx.cache().entryEx(entry.key());
+                                entry = ctx.cache().entryEx(entry.key(), tx.topologyVersion());
 
                                 txEntry.cached(entry);
                             }
@@ -441,7 +442,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             m.clientFirst(),
             tx.activeCachesDeploymentEnabled());
 
-        for (IgniteTxEntry txEntry : m.writes()) {
+        for (IgniteTxEntry txEntry : m.entries()) {
             if (txEntry.op() == TRANSFORM)
                 req.addDhtVersion(txEntry.txKey(), null);
         }
@@ -449,7 +450,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
         // Must lock near entries separately.
         if (m.near()) {
             try {
-                tx.optimisticLockEntries(F.concat(false, m.writes(), m.reads()));
+                tx.optimisticLockEntries(m.entries());
 
                 tx.userPrepare();
             }
@@ -599,7 +600,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
                     break;
                 }
                 catch (GridCacheEntryRemovedException ignore) {
-                    entry.cached(cacheCtx.near().entryEx(entry.key()));
+                    entry.cached(cacheCtx.near().entryEx(entry.key(), topVer));
                 }
             }
         }
@@ -629,32 +630,43 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
     }
 
     /**
-     *
+     * Client remap future.
      */
     private static class ClientRemapFuture extends GridCompoundFuture<GridNearTxPrepareResponse, Boolean> {
         /** */
-        private boolean remap = true;
+        private static final long serialVersionUID = 0L;
 
         /**
-         *
+         * Constructor.
          */
         public ClientRemapFuture() {
-            super();
+            super(new ClientRemapFutureReducer());
+        }
+    }
 
-            reducer(new IgniteReducer<GridNearTxPrepareResponse, Boolean>() {
-                @Override public boolean collect(GridNearTxPrepareResponse res) {
-                    assert res != null;
+    /**
+     * Client remap future reducer.
+     */
+    private static class ClientRemapFutureReducer implements IgniteReducer<GridNearTxPrepareResponse, Boolean> {
+        /** */
+        private static final long serialVersionUID = 0L;
 
-                    if (res.clientRemapVersion() == null)
-                        remap = false;
+        /** Remap flag. */
+        private boolean remap = true;
 
-                    return true;
-                }
+        /** {@inheritDoc} */
+        @Override public boolean collect(@Nullable GridNearTxPrepareResponse res) {
+            assert res != null;
 
-                @Override public Boolean reduce() {
-                    return remap;
-                }
-            });
+            if (res.clientRemapVersion() == null)
+                remap = false;
+
+            return true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Boolean reduce() {
+            return remap;
         }
     }
 

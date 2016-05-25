@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core.Impl.Memory
 {
+    using System.Diagnostics.CodeAnalysis;
+
     /// <summary>
     /// Platform memory stream for big endian platforms.
     /// </summary>
@@ -45,6 +47,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         }
 
         /** <inheritDoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public override unsafe void WriteShortArray(short[] val)
         {
             byte* curPos = Data + EnsureWriteCapacityAndShift(val.Length << Shift2);
@@ -67,6 +70,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         }
 
         /** <inheritDoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public override unsafe void WriteCharArray(char[] val)
         {
             byte* curPos = Data + EnsureWriteCapacityAndShift(val.Length << Shift2);
@@ -111,6 +115,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         }
 
         /** <inheritDoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public override unsafe void WriteIntArray(int[] val)
         {
             byte* curPos = Data + EnsureWriteCapacityAndShift(val.Length << Shift4);
@@ -146,6 +151,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         }
 
         /** <inheritDoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public override unsafe void WriteLongArray(long[] val)
         {
             byte* curPos = Data + EnsureWriteCapacityAndShift(val.Length << Shift8);
@@ -174,6 +180,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         }
 
         /** <inheritDoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public override unsafe void WriteFloatArray(float[] val)
         {
             byte* curPos = Data + EnsureWriteCapacityAndShift(val.Length << Shift4);
@@ -198,6 +205,7 @@ namespace Apache.Ignite.Core.Impl.Memory
         }
 
         /** <inheritDoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public override unsafe void WriteDoubleArray(double[] val)
         {
             byte* curPos = Data + EnsureWriteCapacityAndShift(val.Length << Shift8);

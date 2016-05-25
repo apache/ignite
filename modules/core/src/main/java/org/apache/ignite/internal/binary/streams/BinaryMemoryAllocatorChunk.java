@@ -19,7 +19,6 @@ package org.apache.ignite.internal.binary.streams;
 
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import sun.misc.Unsafe;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHAL_BUFFERS_RECHECK;
 
@@ -27,12 +26,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_MARSHAL_BUFFERS_RE
  * Memory allocator chunk.
  */
 public class BinaryMemoryAllocatorChunk {
-    /** Unsafe instance. */
-    protected static final Unsafe UNSAFE = GridUnsafe.unsafe();
-
-    /** Array offset: byte. */
-    protected static final long BYTE_ARR_OFF = UNSAFE.arrayBaseOffset(byte[].class);
-
     /** Buffer size re-check frequency. */
     private static final Long CHECK_FREQ = Long.getLong(IGNITE_MARSHAL_BUFFERS_RECHECK, 10000);
 
@@ -79,7 +72,7 @@ public class BinaryMemoryAllocatorChunk {
         if (this.data == data)
             this.data = newData;
 
-        UNSAFE.copyMemory(data, BYTE_ARR_OFF, newData, BYTE_ARR_OFF, data.length);
+        GridUnsafe.copyMemory(data, GridUnsafe.BYTE_ARR_OFF, newData, GridUnsafe.BYTE_ARR_OFF, data.length);
 
         return newData;
     }

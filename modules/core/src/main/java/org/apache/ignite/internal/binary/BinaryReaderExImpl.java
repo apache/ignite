@@ -26,9 +26,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 import java.util.UUID;
-
 import org.apache.ignite.binary.BinaryCollectionFactory;
-import org.apache.ignite.binary.BinaryIdMapper;
 import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.binary.BinaryMapFactory;
 import org.apache.ignite.binary.BinaryObject;
@@ -40,6 +38,7 @@ import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.BINARY_OBJ;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.BOOLEAN;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.BOOLEAN_ARR;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.BYTE;
@@ -69,7 +68,7 @@ import static org.apache.ignite.internal.binary.GridBinaryMarshaller.NULL;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.OBJ;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.OBJ_ARR;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.OPTM_MARSH;
-import static org.apache.ignite.internal.binary.GridBinaryMarshaller.BINARY_OBJ;
+import static org.apache.ignite.internal.binary.GridBinaryMarshaller.PROXY;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.SHORT;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.SHORT_ARR;
 import static org.apache.ignite.internal.binary.GridBinaryMarshaller.STRING;
@@ -115,8 +114,11 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     /** Footer end. */
     private final int footerLen;
 
-    /** ID mapper. */
-    private final BinaryIdMapper idMapper;
+    /** Class descriptor. */
+    private BinaryClassDescriptor desc;
+
+    /** Mapper. */
+    private final BinaryInternalMapper mapper;
 
     /** Schema Id. */
     private final int schemaId;
@@ -128,7 +130,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     private final int fieldIdLen;
 
     /** Offset size in bytes. */
-    private final int fieldOffsetLen;
+    private final int fieldOffLen;
 
     /** Object schema. */
     private final BinarySchema schema;
@@ -148,9 +150,14 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @param ctx Context.
      * @param in Input stream.
      * @param ldr Class loader.
+     * @param forUnmarshal {@code True} if reader is needed to unmarshal object.
      */
-    public BinaryReaderExImpl(BinaryContext ctx, BinaryInputStream in, ClassLoader ldr) {
-        this(ctx, in, ldr, null);
+    public BinaryReaderExImpl(BinaryContext ctx, BinaryInputStream in, ClassLoader ldr, boolean forUnmarshal) {
+        this(ctx,
+            in,
+            ldr,
+            null,
+            forUnmarshal);
     }
 
     /**
@@ -160,10 +167,19 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @param in Input stream.
      * @param ldr Class loader.
      * @param hnds Context.
+     * @param forUnmarshal {@code True} if reader is need to unmarshal object.
      */
-    public BinaryReaderExImpl(BinaryContext ctx, BinaryInputStream in, ClassLoader ldr,
-        @Nullable BinaryReaderHandles hnds) {
-        this(ctx, in, ldr, hnds, false);
+    public BinaryReaderExImpl(BinaryContext ctx,
+        BinaryInputStream in,
+        ClassLoader ldr,
+        @Nullable BinaryReaderHandles hnds,
+        boolean forUnmarshal) {
+        this(ctx,
+            in,
+            ldr,
+            hnds,
+            false,
+            forUnmarshal);
     }
 
     /**
@@ -174,9 +190,14 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @param ldr Class loader.
      * @param hnds Context.
      * @param skipHdrCheck Whether to skip header check.
+     * @param forUnmarshal {@code True} if reader is need to unmarshal object.
      */
-    public BinaryReaderExImpl(BinaryContext ctx, BinaryInputStream in, ClassLoader ldr,
-        @Nullable BinaryReaderHandles hnds, boolean skipHdrCheck) {
+    public BinaryReaderExImpl(BinaryContext ctx,
+        BinaryInputStream in,
+        ClassLoader ldr,
+        @Nullable BinaryReaderHandles hnds,
+        boolean skipHdrCheck,
+        boolean forUnmarshal) {
         // Initialize base members.
         this.ctx = ctx;
         this.in = in;
@@ -203,7 +224,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             // Get trivial flag values.
             userType = BinaryUtils.isUserType(flags);
             fieldIdLen = BinaryUtils.fieldIdLength(flags);
-            fieldOffsetLen = BinaryUtils.fieldOffsetLength(flags);
+            fieldOffLen = BinaryUtils.fieldOffsetLength(flags);
 
             // Calculate footer borders and raw offset.
             if (BinaryUtils.hasSchema(flags)) {
@@ -234,8 +255,14 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             if (typeId0 == UNREGISTERED_TYPE_ID) {
                 int off = in.position();
 
-                // Registers class by type ID, at least locally if the cache is not ready yet.
-                typeId = ctx.descriptorForClass(BinaryUtils.doReadClass(in, ctx, ldr, typeId0), false).typeId();
+                if (forUnmarshal) {
+                    // Registers class by type ID, at least locally if the cache is not ready yet.
+                    desc = ctx.descriptorForClass(BinaryUtils.doReadClass(in, ctx, ldr, typeId0), false);
+
+                    typeId = desc.typeId();
+                }
+                else
+                    typeId = ctx.typeId(BinaryUtils.doReadClassName(in));
 
                 int clsNameLen = in.position() - off;
 
@@ -247,7 +274,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 dataStart = start + DFLT_HDR_LEN;
             }
 
-            idMapper = userType ? ctx.userTypeIdMapper(typeId) : BinaryInternalIdMapper.defaultInstance();
+            mapper = userType ? ctx.userTypeMapper(typeId) : BinaryContext.defaultMapper();
             schema = BinaryUtils.hasSchema(flags) ? getOrCreateSchema() : null;
         }
         else {
@@ -256,11 +283,11 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
             rawOff = 0;
             footerStart = 0;
             footerLen = 0;
-            idMapper = null;
+            mapper = null;
             schemaId = 0;
             userType = false;
             fieldIdLen = 0;
-            fieldOffsetLen = 0;
+            fieldOffLen = 0;
             schema = null;
         }
 
@@ -278,7 +305,10 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      * @return Descriptor.
      */
     BinaryClassDescriptor descriptor() {
-        return ctx.descriptorForTypeId(userType, typeId, ldr, true);
+        if (desc == null)
+            desc = ctx.descriptorForTypeId(userType, typeId, ldr, true);
+
+        return desc;
     }
 
     /**
@@ -1440,7 +1470,8 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
                 break;
 
             case OBJ:
-                BinaryClassDescriptor desc = ctx.descriptorForTypeId(userType, typeId, ldr, true);
+                if (desc == null)
+                    desc = ctx.descriptorForTypeId(userType, typeId, ldr, true);
 
                 streamPosition(dataStart);
 
@@ -1623,6 +1654,11 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
                 break;
 
+            case PROXY:
+                obj = BinaryUtils.doReadProxy(in, ctx, ldr, this);
+
+                break;
+
             case OPTM_MARSH:
                 obj = BinaryUtils.doReadOptimized(in, ctx, ldr);
 
@@ -1636,6 +1672,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     }
 
     /**
+     * @param fieldId Field ID.
      * @return Deserialized object.
      * @throws BinaryObjectException If failed.
      */
@@ -1643,7 +1680,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
         if (!findFieldById(fieldId))
             return null;
 
-        return new BinaryReaderExImpl(ctx, in, ldr, hnds).deserialize();
+        return new BinaryReaderExImpl(ctx, in, ldr, hnds, true).deserialize();
     }
 
     /**
@@ -1653,7 +1690,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     private int fieldId(String name) {
         assert name != null;
 
-        return idMapper.fieldId(typeId, name);
+        return mapper.fieldId(typeId, name);
     }
 
     /**
@@ -1713,7 +1750,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
             builder.addField(fieldId);
 
-            searchPos += BinaryUtils.FIELD_ID_LEN + fieldOffsetLen;
+            searchPos += BinaryUtils.FIELD_ID_LEN + fieldOffLen;
         }
 
         return builder.build();
@@ -1847,9 +1884,9 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
      */
     private boolean trySetUserFieldPosition(int order) {
         if (order != BinarySchema.ORDER_NOT_FOUND) {
-            int offsetPos = footerStart + order * (fieldIdLen + fieldOffsetLen) + fieldIdLen;
+            int offsetPos = footerStart + order * (fieldIdLen + fieldOffLen) + fieldIdLen;
 
-            int pos = start + BinaryUtils.fieldOffsetRelative(in, offsetPos, fieldOffsetLen);
+            int pos = start + BinaryUtils.fieldOffsetRelative(in, offsetPos, fieldOffLen);
 
             streamPosition(pos);
 
@@ -1880,14 +1917,14 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
 
             if (id0 == id) {
                 int pos = start + BinaryUtils.fieldOffsetRelative(in, searchPos + BinaryUtils.FIELD_ID_LEN,
-                    fieldOffsetLen);
+                    fieldOffLen);
 
                 streamPosition(pos);
 
                 return true;
             }
 
-            searchPos += BinaryUtils.FIELD_ID_LEN + fieldOffsetLen;
+            searchPos += BinaryUtils.FIELD_ID_LEN + fieldOffLen;
         }
     }
 
@@ -2015,7 +2052,7 @@ public class BinaryReaderExImpl implements BinaryReader, BinaryRawReaderEx, Bina
     /**
      * Flag.
      */
-    private static enum Flag {
+    private enum Flag {
         /** Regular. */
         NORMAL,
 

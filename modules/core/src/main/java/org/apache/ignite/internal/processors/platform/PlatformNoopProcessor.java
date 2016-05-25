@@ -45,7 +45,9 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
 
     /** {@inheritDoc} */
     @Override public PlatformContext context() {
-        return null;
+        throw new IgniteException("Platforms are not available [nodeId=" + ctx.grid().localNode().id() + "] " +
+            "(Use Apache.Ignite.Core.Ignition.Start() or Apache.Ignite.exe to start Ignite.NET nodes; " +
+            "ignite::Ignition::Start() or ignite.exe to start Ignite C++ nodes).");
     }
 
     /** {@inheritDoc} */
@@ -71,6 +73,21 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
     /** {@inheritDoc} */
     @Override public PlatformTarget getOrCreateCache(@Nullable String name) throws IgniteCheckedException {
         return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget createCacheFromConfig(long memPtr) throws IgniteCheckedException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget getOrCreateCacheFromConfig(long memPtr) throws IgniteCheckedException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void destroyCache(@Nullable String name) throws IgniteCheckedException {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -126,6 +143,36 @@ public class PlatformNoopProcessor extends GridProcessorAdapter implements Platf
 
     /** {@inheritDoc} */
     @Override public PlatformTarget atomicLong(String name, long initVal, boolean create) throws IgniteException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void getIgniteConfiguration(long memPtr) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void getCacheNames(long memPtr) {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget atomicSequence(String name, long initVal, boolean create) throws IgniteException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget atomicReference(String name, long memPtr, boolean create) throws IgniteException {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget createNearCache(@Nullable String cacheName, long memPtr) {
+        return null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformTarget getOrCreateNearCache(@Nullable String cacheName, long memPtr) {
         return null;
     }
 }

@@ -23,6 +23,7 @@ import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheReturn;
@@ -47,11 +48,6 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
     @Nullable public Throwable commitError();
 
     /**
-     * @param e Commit error.
-     */
-    public void commitError(Throwable e);
-
-    /**
      * @throws IgniteCheckedException If commit failed.
      */
     public void userCommit() throws IgniteCheckedException;
@@ -72,24 +68,25 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
      */
     public <K, V> IgniteInternalFuture<Map<K, V>> getAllAsync(
         GridCacheContext cacheCtx,
+        @Nullable AffinityTopologyVersion entryTopVer,
         Collection<KeyCacheObject> keys,
         boolean deserializeBinary,
         boolean skipVals,
         boolean keepCacheObjects,
-        boolean skipStore);
+        boolean skipStore,
+        boolean needVer);
 
     /**
      * @param cacheCtx Cache context.
      * @param map Map to put.
      * @param retval Flag indicating whether a value should be returned.
-     * @param filter Filter.
      * @return Future for put operation.
      */
     public <K, V> IgniteInternalFuture<GridCacheReturn> putAllAsync(
         GridCacheContext cacheCtx,
+        @Nullable AffinityTopologyVersion entryTopVer,
         Map<? extends K, ? extends V> map,
-        boolean retval,
-        CacheEntryPredicate[] filter);
+        boolean retval);
 
     /**
      * @param cacheCtx Cache context.
@@ -101,10 +98,11 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
      */
     public <K, V> IgniteInternalFuture<GridCacheReturn> putAsync(
         GridCacheContext cacheCtx,
+        @Nullable AffinityTopologyVersion entryTopVer,
         K key,
         V val,
         boolean retval,
-        CacheEntryPredicate[] filter);
+        CacheEntryPredicate filter);
 
     /**
      * @param cacheCtx Cache context.
@@ -115,6 +113,7 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
      */
     public <K, V> IgniteInternalFuture<GridCacheReturn> invokeAsync(
         GridCacheContext cacheCtx,
+        @Nullable AffinityTopologyVersion entryTopVer,
         K key,
         EntryProcessor<K, V, Object> entryProcessor,
         Object... invokeArgs);
@@ -127,6 +126,7 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
      */
     public <K, V, T> IgniteInternalFuture<GridCacheReturn> invokeAsync(
         GridCacheContext cacheCtx,
+        @Nullable AffinityTopologyVersion entryTopVer,
         Map<? extends K, ? extends EntryProcessor<K, V, Object>> map,
         Object... invokeArgs);
 
@@ -140,9 +140,10 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
      */
     public <K, V> IgniteInternalFuture<GridCacheReturn> removeAllAsync(
         GridCacheContext cacheCtx,
+        @Nullable AffinityTopologyVersion entryTopVer,
         Collection<? extends K> keys,
         boolean retval,
-        CacheEntryPredicate[] filter,
+        CacheEntryPredicate filter,
         boolean singleRmv);
 
     /**
@@ -162,11 +163,6 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
     public IgniteInternalFuture<?> removeAllDrAsync(
         GridCacheContext cacheCtx,
         Map<KeyCacheObject, GridCacheVersion> drMap);
-
-    /**
-     * @return Return value for
-     */
-    public GridCacheReturn implicitSingleResult();
 
     /**
      * Finishes transaction (either commit or rollback).
@@ -189,6 +185,7 @@ public interface IgniteTxLocalEx extends IgniteInternalTx {
      */
     public IgniteInternalFuture<Void> loadMissing(
         GridCacheContext cacheCtx,
+        AffinityTopologyVersion topVer,
         boolean readThrough,
         boolean async,
         Collection<KeyCacheObject> keys,

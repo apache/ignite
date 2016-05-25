@@ -17,13 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
@@ -36,7 +37,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 
 /**
  *
@@ -45,8 +46,8 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     /** */
     private GridCacheContext cacheCtx;
 
-    /** */
-    private IgniteTxEntry entry;
+    /** Entry is stored as singleton list for performance optimization. */
+    private List<IgniteTxEntry> entry;
 
     /** */
     private boolean init;
@@ -69,6 +70,19 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     @Nullable @Override public Integer firstCacheId() {
         return cacheCtx != null ? cacheCtx.cacheId() : null;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unwindEvicts(GridCacheSharedContext cctx) {
+        if (entry == null || entry.isEmpty())
+            return;
+
+        assert entry.size() == 1;
+
+        GridCacheContext ctx = cctx.cacheContext(entry.get(0).cacheId());
+
+        if (ctx != null)
+            CU.unwindEvicts(ctx);
     }
 
     /** {@inheritDoc} */
@@ -105,8 +119,8 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean sync(GridCacheSharedContext cctx) {
-        return cacheCtx != null && cacheCtx.config().getWriteSynchronizationMode() == FULL_SYNC;
+    @Override public CacheWriteSynchronizationMode syncMode(GridCacheSharedContext cctx) {
+        return cacheCtx != null ? cacheCtx.config().getWriteSynchronizationMode() : FULL_ASYNC;
     }
 
     /** {@inheritDoc} */
@@ -163,13 +177,8 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
 
         CacheStoreManager store = cacheCtx.store();
 
-        if (store.configured()) {
-            HashSet<CacheStoreManager> set = new HashSet<>(3, 0.75f);
-
-            set.add(store);
-
-            return set;
-        }
+        if (store.configured())
+            return Collections.singleton(store);
 
         return null;
     }
@@ -182,15 +191,15 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Override public IgniteTxEntry entry(IgniteTxKey key) {
-        if (entry != null && entry.txKey().equals(key))
-            return entry;
+        if (entry != null && entry.get(0).txKey().equals(key))
+            return entry.get(0);
 
         return null;
     }
 
     /** {@inheritDoc} */
     @Override public boolean hasWriteKey(IgniteTxKey key) {
-        return entry != null && entry.txKey().equals(key);
+        return entry != null && entry.get(0).txKey().equals(key);
     }
 
     /** {@inheritDoc} */
@@ -203,7 +212,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
         if (entry != null) {
             HashSet<IgniteTxKey> set = new HashSet<>(3, 0.75f);
 
-            set.add(entry.txKey());
+            set.add(entry.get(0).txKey());
 
             return set;
         }
@@ -213,7 +222,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteTxEntry> writeEntries() {
-        return entry != null ? Arrays.asList(entry) : Collections.<IgniteTxEntry>emptyList();
+        return entry != null ? entry : Collections.<IgniteTxEntry>emptyList();
     }
 
     /** {@inheritDoc} */
@@ -223,7 +232,8 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Override public Map<IgniteTxKey, IgniteTxEntry> writeMap() {
-        return entry != null ? F.asMap(entry.txKey(), entry) : Collections.<IgniteTxKey, IgniteTxEntry>emptyMap();
+        return entry != null ? F.asMap(entry.get(0).txKey(), entry.get(0)) :
+            Collections.<IgniteTxKey, IgniteTxEntry>emptyMap();
     }
 
     /** {@inheritDoc} */
@@ -238,7 +248,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Override public Collection<IgniteTxEntry> allEntries() {
-        return entry != null ? Arrays.asList(entry) : Collections.<IgniteTxEntry>emptyList();
+        return entry != null ? entry : Collections.<IgniteTxEntry>emptyList();
     }
 
     /** {@inheritDoc} */
@@ -261,7 +271,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     @Override public void addEntry(IgniteTxEntry entry) {
         assert this.entry == null : "Entry already set [cur=" + this.entry + ", new=" + entry + ']';
 
-        this.entry = entry;
+        this.entry = Collections.singletonList(entry);
     }
 
     /** {@inheritDoc} */
@@ -271,7 +281,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
 
     /** {@inheritDoc} */
     @Override public IgniteTxEntry singleWrite() {
-        return entry;
+        return entry != null ? entry.get(0) : null;
     }
 
     /** {@inheritDoc} */

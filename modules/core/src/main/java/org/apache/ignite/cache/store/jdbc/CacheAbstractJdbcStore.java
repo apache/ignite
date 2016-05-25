@@ -481,6 +481,10 @@ public abstract class CacheAbstractJdbcStore<K, V> implements CacheStore<K, V>, 
                 return UUID.fromString((String)val);
         }
 
+        // Workaround for known issue with Oracle JDBC driver https://community.oracle.com/thread/2355464?tstart=0
+        if (type == java.sql.Date.class && val instanceof java.util.Date)
+            return new java.sql.Date(((java.util.Date)val).getTime());
+
         return val;
     }
 

@@ -87,10 +87,10 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
     @SuppressWarnings("ConstantConditions")
     public GridCacheTxRecoveryFuture(GridCacheSharedContext<?, ?> cctx,
         IgniteInternalTx tx,
-         UUID failedNodeId,
+        UUID failedNodeId,
         Map<UUID, Collection<UUID>> txNodes)
     {
-        super(cctx.kernalContext(), CU.boolReducer());
+        super(CU.boolReducer());
 
         this.cctx = cctx;
         this.tx = tx;
@@ -380,6 +380,13 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
         }
 
         return null;
+    }
+
+    /**
+     * @return Transaction.
+     */
+    public IgniteInternalTx tx() {
+        return tx;
     }
 
     /** {@inheritDoc} */

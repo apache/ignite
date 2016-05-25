@@ -66,7 +66,7 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
 
     /** {@inheritDoc} */
     @Override public FileSystem get(String usrName) throws IOException {
-        return create0(IgfsUtils.fixUserName(usrName));
+        return get0(IgfsUtils.fixUserName(usrName));
     }
 
     /**
@@ -76,17 +76,46 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
      * @return File system.
      * @throws IOException If failed.
      */
-    protected FileSystem create0(String usrName) throws IOException {
+    protected FileSystem get0(String usrName) throws IOException {
         assert cfg != null;
 
         try {
-            return FileSystem.get(fullUri, cfg, usrName);
+            // FileSystem.get() might delegate to ServiceLoader to get the list of file system implementation.
+            // And ServiceLoader is known to be sensitive to context classloader. Therefore, we change context
+            // classloader to classloader of current class to avoid strange class-cast-exceptions.
+            ClassLoader ctxClsLdr = Thread.currentThread().getContextClassLoader();
+            ClassLoader clsLdr = getClass().getClassLoader();
+
+            if (ctxClsLdr == clsLdr)
+                return create(usrName);
+            else {
+                Thread.currentThread().setContextClassLoader(clsLdr);
+
+                try {
+                    return create(usrName);
+                }
+                finally {
+                    Thread.currentThread().setContextClassLoader(ctxClsLdr);
+                }
+            }
         }
         catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
             throw new IOException("Failed to create file system due to interrupt.", e);
         }
+    }
+
+    /**
+     * Internal file system creation routine, invoked in correct class loader context.
+     *
+     * @param usrName User name.
+     * @return File system.
+     * @throws IOException If failed.
+     * @throws InterruptedException if the current thread is interrupted.
+     */
+    protected FileSystem create(String usrName) throws IOException, InterruptedException {
+        return FileSystem.get(fullUri, cfg, usrName);
     }
 
     /**
@@ -135,7 +164,7 @@ public class BasicHadoopFileSystemFactory implements HadoopFileSystemFactory, Ex
      *
      * @param cfgPaths Paths to file system configuration files.
      */
-    public void setConfigPaths(String... cfgPaths) {
+    public void setConfigPaths(@Nullable String... cfgPaths) {
         this.cfgPaths = cfgPaths;
     }
 

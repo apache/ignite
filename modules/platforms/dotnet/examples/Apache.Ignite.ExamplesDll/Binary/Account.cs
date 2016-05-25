@@ -22,7 +22,6 @@ namespace Apache.Ignite.ExamplesDll.Binary
     /// <summary>
     /// Account object. Used in transaction example.
     /// </summary>
-    [Serializable]
     public class Account
     {
         /// <summary>

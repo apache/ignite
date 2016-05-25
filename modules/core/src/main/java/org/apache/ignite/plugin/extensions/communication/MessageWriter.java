@@ -38,6 +38,13 @@ public interface MessageWriter {
     public void setBuffer(ByteBuffer buf);
 
     /**
+     * Sets type of message currently written.
+     *
+     * @param msgCls Message type.
+     */
+    public void setCurrentWriteClass(Class<? extends Message> msgCls);
+
+    /**
      * Writes message header.
      *
      * @param type Message type.

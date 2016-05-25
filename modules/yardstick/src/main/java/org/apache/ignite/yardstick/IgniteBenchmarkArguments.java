@@ -24,6 +24,9 @@ import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Input arguments for Ignite benchmarks.
  */
@@ -37,8 +40,13 @@ public class IgniteBenchmarkArguments {
     @Parameter(names = {"-b", "--backups"}, description = "Backups")
     private int backups;
 
+    /** */
     @Parameter(names = {"-cfg", "--Config"}, description = "Configuration file")
     private String cfg = "config/ignite-localhost-config.xml";
+
+    /** */
+    @Parameter(names = {"-ltqf", "--loadTestQueriesFile"}, description = "File with predefined SQL queries")
+    private String loadTestQueriesFile = null;
 
     /** */
     @Parameter(names = {"-sm", "--syncMode"}, description = "Synchronization mode")
@@ -86,7 +94,11 @@ public class IgniteBenchmarkArguments {
 
     /** */
     @Parameter(names = {"-r", "--range"}, description = "Key range")
-    private int range = 1_000_000;
+    public int range = 1_000_000;
+
+    /** */
+    @Parameter(names = {"-pa", "--preloadAmount"}, description = "Data pre-loading amount for load tests")
+    public int preloadAmount = 500_000;
 
     /** */
     @Parameter(names = {"-j", "--jobs"}, description = "Number of jobs for compute benchmarks")
@@ -135,6 +147,28 @@ public class IgniteBenchmarkArguments {
     /** */
     @Parameter(names = {"-kpt", "--keysPerThread"}, description = "Use not intersecting keys in putAll benchmark")
     private boolean keysPerThread;
+
+    /** */
+    @Parameter(names = {"-pp", "--printPartitionStats"}, description = "Print partition statistics")
+    private boolean printPartStats;
+
+    /** */
+    @Parameter(names = {"-ltops", "--allowedLoadTestOperations"}, variableArity = true, description = "List of enabled load test operations")
+    private List<String> allowedLoadTestOps = new ArrayList<>();
+
+    /**
+     * @return List of enabled load test operations.
+     */
+    public List<String> allowedLoadTestOps() {
+        return allowedLoadTestOps;
+    }
+
+    /**
+     * @return If {@code true} when need to print partition statistics.
+     */
+    public boolean printPartitionStatistics() {
+        return printPartStats;
+    }
 
     /**
      * @return JDBC url.
@@ -249,10 +283,24 @@ public class IgniteBenchmarkArguments {
     }
 
     /**
+     * @return Preload key range, from {@code 0} to this number.
+     */
+    public int preloadAmount() {
+        return preloadAmount;
+    }
+
+    /**
      * @return Configuration file.
      */
     public String configuration() {
         return cfg;
+    }
+
+    /**
+     * @return File with predefined SQL queries.
+     */
+    public String loadTestQueriesFile() {
+        return loadTestQueriesFile;
     }
 
     /**

@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
@@ -44,6 +45,12 @@ public interface IgniteTxState {
     @Nullable public Integer firstCacheId();
 
     /**
+     * Unwind evicts for caches involved in this transaction.
+     * @param cctx Grid cache shared context.
+     */
+    public void unwindEvicts(GridCacheSharedContext cctx);
+
+    /**
      * @param cctx Context.
      * @return cctx Non-null cache context if tx has only one active cache.
      */
@@ -63,9 +70,9 @@ public interface IgniteTxState {
 
     /**
      * @param cctx Context.
-     * @return {@code True} if transaction is fully synchronous.
+     * @return Write synchronization mode.
      */
-    public boolean sync(GridCacheSharedContext cctx);
+    public CacheWriteSynchronizationMode syncMode(GridCacheSharedContext cctx);
 
     /**
      * @param cctx Context.

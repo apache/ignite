@@ -77,6 +77,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private readonly GCHandle _thisHnd;
 
         /** Callbacks pointer. */
+        [SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
         private readonly IntPtr _cbsPtr;
 
         /** Error type: generic. */
@@ -161,6 +162,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate long ExtensionCallbackInLongOutLongDelegate(void* target, int typ, long arg1);
         private delegate long ExtensionCallbackInLongLongOutLongDelegate(void* target, int typ, long arg1, long arg2);
 
+        private delegate void OnClientDisconnectedDelegate(void* target);
+        private delegate void OnClientReconnectedDelegate(void* target, bool clusterRestarted);
+
         /// <summary>
         /// constructor.
         /// </summary>
@@ -240,7 +244,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 error = CreateFunctionPointer((ErrorCallbackDelegate)Error),
                 
                 extensionCbInLongOutLong = CreateFunctionPointer((ExtensionCallbackInLongOutLongDelegate)ExtensionCallbackInLongOutLong),
-                extensionCbInLongLongOutLong = CreateFunctionPointer((ExtensionCallbackInLongLongOutLongDelegate)ExtensionCallbackInLongLongOutLong)
+                extensionCbInLongLongOutLong = CreateFunctionPointer((ExtensionCallbackInLongLongOutLongDelegate)ExtensionCallbackInLongLongOutLong),
+
+                onClientDisconnected = CreateFunctionPointer((OnClientDisconnectedDelegate)OnClientDisconnected),
+                ocClientReconnected = CreateFunctionPointer((OnClientReconnectedDelegate)OnClientReconnected),
             };
 
             _cbsPtr = Marshal.AllocHGlobal(UU.HandlersSize());
@@ -275,7 +282,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                         if (_ignite != null)
                             cacheStore.Init(_ignite);
                         else
-                            _initActions.Add(g => cacheStore.Init(g));
+                            _initActions.Add(cacheStore.Init);
                     }
                 }
 
@@ -283,6 +290,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }, true);
         }
 
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         private int CacheStoreInvoke(void* target, long objPtr, long memPtr, void* cb)
         {
             return SafeCall(() =>
@@ -603,6 +611,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
+        [SuppressMessage("Microsoft.Reliability", "CA2000:Dispose objects before losing scope")]
         private void DataStreamerStreamReceiverInvoke(void* target, long rcvPtr, void* cache, long memPtr, 
             byte keepBinary)
         {
@@ -725,7 +734,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     string errCls = reader.ReadString();
                     string errMsg = reader.ReadString();
 
-                    Exception err = ExceptionUtils.GetException(errCls, errMsg, reader);
+                    Exception err = ExceptionUtils.GetException(_ignite, errCls, errMsg, reader);
 
                     ProcessFuture(futPtr, fut => { fut.OnError(err); });
                 }
@@ -1024,6 +1033,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
             // Allow context to be collected, which will cause resource cleanup in finalizer.
             _ctx = null;
+
+            // Notify grid
+            var ignite = _ignite;
+
+            if (ignite != null)
+                ignite.AfterNodeStop();
         }
         
         private void Error(void* target, int errType, sbyte* errClsChars, int errClsCharsLen, sbyte* errMsgChars,
@@ -1040,10 +1055,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                         // Stream disposal intentionally omitted: IGNITE-1598
                         var stream = new PlatformRawMemory(errData, errDataLen).GetStream();
 
-                        throw ExceptionUtils.GetException(errCls, errMsg, _ignite.Marshaller.StartUnmarshal(stream));
+                        throw ExceptionUtils.GetException(_ignite, errCls, errMsg, _ignite.Marshaller.StartUnmarshal(stream));
                     }
 
-                    throw ExceptionUtils.GetException(errCls, errMsg);
+                    throw ExceptionUtils.GetException(_ignite, errCls, errMsg);
 
                 case ErrJvmInit:
                     throw ExceptionUtils.GetJvmInitializeException(errCls, errMsg);
@@ -1056,8 +1071,24 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
         }
 
+        private void OnClientDisconnected(void* target)
+        {
+            SafeCall(() =>
+            {
+                _ignite.OnClientDisconnected();
+            });
+        }
+
+        private void OnClientReconnected(void* target, bool clusterRestarted)
+        {
+            SafeCall(() =>
+            {
+                _ignite.OnClientReconnected(clusterRestarted);
+            });
+        }
+
         #endregion
-        
+
         #region HELPERS
 
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]

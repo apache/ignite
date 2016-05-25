@@ -70,6 +70,12 @@ public class TransactionConfiguration implements Serializable {
     private Factory txManagerFactory;
 
     /**
+     * Whether to use JTA {@code javax.transaction.Synchronization}
+     * instead of {@code javax.transaction.xa.XAResource}.
+     */
+    private boolean useJtaSync;
+
+    /**
      * Empty constructor.
      */
     public TransactionConfiguration() {
@@ -88,6 +94,7 @@ public class TransactionConfiguration implements Serializable {
         txSerEnabled = cfg.isTxSerializableEnabled();
         tmLookupClsName = cfg.getTxManagerLookupClassName();
         txManagerFactory = cfg.getTxManagerFactory();
+        useJtaSync = cfg.isUseJtaSynchronization();
     }
 
     /**
@@ -243,6 +250,7 @@ public class TransactionConfiguration implements Serializable {
      *
      * @param <T> Instance of {@code javax.transaction.TransactionManager}.
      * @return Transaction manager factory.
+     * @see #isUseJtaSynchronization()
      */
     @SuppressWarnings("unchecked")
     public <T> Factory<T> getTxManagerFactory() {
@@ -262,6 +270,14 @@ public class TransactionConfiguration implements Serializable {
      *  {@code org.apache.ignite.cache.jta.jndi.CacheJndiTmFactory} utilizes configured JNDI names to look up
      *  a transaction manager.
      * </li>
+     * <li>
+     *  {@code org.apache.ignite.cache.jta.websphere.WebSphereTmFactory} an implementation of Transaction Manager
+     *  factory to be used within WebSphere Application Server.
+     * </li>
+     * <li>
+     *  {@code org.apache.ignite.cache.jta.websphere.WebSphereLibertyTmFactory} an implementation of Transaction Manager
+     *  factory to be used within WebSphere Liberty.
+     * </li>
      * </ul>
      *
      * Ignite will throw IgniteCheckedException if {@link Factory#create()} method throws any exception,
@@ -269,8 +285,32 @@ public class TransactionConfiguration implements Serializable {
      *
      * @param factory Transaction manager factory.
      * @param <T> Instance of {@code javax.transaction.TransactionManager}.
+     * @see #setUseJtaSynchronization(boolean)
      */
     public <T> void setTxManagerFactory(Factory<T> factory) {
         txManagerFactory = factory;
+    }
+
+    /**
+     * @return Whether to use JTA {@code javax.transaction.Synchronization}
+     *      instead of {@code javax.transaction.xa.XAResource}.
+     * @see #getTxManagerFactory()
+     */
+    public boolean isUseJtaSynchronization() {
+        return useJtaSync;
+    }
+
+    /**
+     * Sets the flag that defines whether to use lightweight JTA synchronization callback to enlist
+     * into JTA transaction instead of creating a separate XA resource. In some cases this can give
+     * performance improvement, but keep in mind that most of the transaction managers do not allow
+     * to add more that one callback to a single transaction.
+     *
+     * @param useJtaSync Whether to use JTA {@code javax.transaction.Synchronization}
+     *      instead of {@code javax.transaction.xa.XAResource}.
+     * @see #setTxManagerFactory(Factory)
+     */
+    public void setUseJtaSynchronization(boolean useJtaSync) {
+        this.useJtaSync = useJtaSync;
     }
 }

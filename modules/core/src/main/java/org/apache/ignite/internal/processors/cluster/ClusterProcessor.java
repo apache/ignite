@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
@@ -57,7 +58,7 @@ public class ClusterProcessor extends GridProcessorAdapter {
     private IgniteClusterImpl cluster;
 
     /** */
-    private boolean notifyEnabled;
+    private final AtomicBoolean notifyEnabled = new AtomicBoolean();
 
     /** */
     @GridToStringExclude
@@ -73,8 +74,8 @@ public class ClusterProcessor extends GridProcessorAdapter {
     public ClusterProcessor(GridKernalContext ctx) {
         super(ctx);
 
-        notifyEnabled = IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER,
-            Boolean.parseBoolean(IgniteProperties.get("ignite.update.notifier.enabled.by.default")));
+        notifyEnabled.set(IgniteSystemProperties.getBoolean(IGNITE_UPDATE_NOTIFIER,
+            Boolean.parseBoolean(IgniteProperties.get("ignite.update.notifier.enabled.by.default"))));
 
         cluster = new IgniteClusterImpl(ctx);
     }
@@ -104,7 +105,7 @@ public class ClusterProcessor extends GridProcessorAdapter {
     @Nullable @Override public Serializable collectDiscoveryData(UUID nodeId) {
         HashMap<String, Object> map = new HashMap<>();
 
-        map.put(ATTR_UPDATE_NOTIFIER_STATUS, notifyEnabled);
+        map.put(ATTR_UPDATE_NOTIFIER_STATUS, notifyEnabled.get());
 
         return map;
     }
@@ -116,13 +117,13 @@ public class ClusterProcessor extends GridProcessorAdapter {
             Map<String, Object> map = (Map<String, Object>)data;
 
             if (map != null && map.containsKey(ATTR_UPDATE_NOTIFIER_STATUS))
-                notifyEnabled = (Boolean)map.get(ATTR_UPDATE_NOTIFIER_STATUS);
+                notifyEnabled.set((Boolean)map.get(ATTR_UPDATE_NOTIFIER_STATUS));
         }
     }
 
     /** {@inheritDoc} */
     @Override public void onKernalStart() throws IgniteCheckedException {
-        if (notifyEnabled) {
+        if (notifyEnabled.get()) {
             try {
                 verChecker = new GridUpdateNotifier(ctx.gridName(),
                     VER_STR,
@@ -133,7 +134,8 @@ public class ClusterProcessor extends GridProcessorAdapter {
                 updateNtfTimer = new Timer("ignite-update-notifier-timer", true);
 
                 // Setup periodic version check.
-                updateNtfTimer.scheduleAtFixedRate(new UpdateNotifierTimerTask((IgniteKernal)ctx.grid(), verChecker),
+                updateNtfTimer.scheduleAtFixedRate(
+                    new UpdateNotifierTimerTask((IgniteKernal)ctx.grid(), verChecker, notifyEnabled),
                     0, PERIODIC_VER_CHECK_DELAY);
             }
             catch (IgniteCheckedException e) {
@@ -155,10 +157,17 @@ public class ClusterProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * Disables update notifier.
+     */
+    public void disableUpdateNotifier() {
+        notifyEnabled.set(false);
+    }
+
+    /**
      * @return Update notifier status.
      */
     public boolean updateNotifierEnabled() {
-        return notifyEnabled;
+        return notifyEnabled.get();
     }
 
     /**
@@ -184,22 +193,30 @@ public class ClusterProcessor extends GridProcessorAdapter {
         /** Whether this is the first run. */
         private boolean first = true;
 
+        /** */
+        private final AtomicBoolean notifyEnabled;
+
         /**
          * Constructor.
          *
          * @param kernal Kernal.
          * @param verChecker Version checker.
          */
-        private UpdateNotifierTimerTask(IgniteKernal kernal, GridUpdateNotifier verChecker) {
+        private UpdateNotifierTimerTask(IgniteKernal kernal, GridUpdateNotifier verChecker,
+            AtomicBoolean notifyEnabled) {
             kernalRef = new WeakReference<>(kernal);
 
             log = kernal.context().log(UpdateNotifierTimerTask.class);
 
             this.verChecker = verChecker;
+            this.notifyEnabled = notifyEnabled;
         }
 
         /** {@inheritDoc} */
         @Override public void safeRun() throws InterruptedException {
+            if (!notifyEnabled.get())
+                return;
+
             if (!first) {
                 IgniteKernal kernal = kernalRef.get();
 

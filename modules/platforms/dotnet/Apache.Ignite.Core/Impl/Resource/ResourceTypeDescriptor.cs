@@ -46,7 +46,7 @@ namespace Apache.Ignite.Core.Impl.Resource
         private static readonly Type TypComputeTaskNoResCache = typeof(ComputeTaskNoResultCacheAttribute);
 
         /** Cached binding flags. */
-        private static readonly BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public |
+        private const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public | 
             BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
 
         /** Ignite injectors. */

@@ -25,10 +25,9 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import kafka.consumer.ConsumerConfig;
-import kafka.producer.KeyedMessage;
-import kafka.producer.Producer;
 import kafka.serializer.StringDecoder;
 import kafka.utils.VerifiableProperties;
 import org.apache.ignite.Ignite;
@@ -38,16 +37,16 @@ import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+import org.apache.kafka.clients.producer.ProducerRecord;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
-import static org.apache.ignite.stream.kafka.KafkaEmbeddedBroker.getZKAddress;
 
 /**
  * Tests {@link KafkaStreamer}.
  */
 public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
     /** Embedded Kafka. */
-    private KafkaEmbeddedBroker embeddedBroker;
+    private TestKafkaBroker embeddedBroker;
 
     /** Count. */
     private static final int CNT = 100;
@@ -77,7 +76,7 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
     @Override protected void beforeTest() throws Exception {
         grid().<Integer, String>getOrCreateCache(defaultCacheConfiguration());
 
-        embeddedBroker = new KafkaEmbeddedBroker();
+        embeddedBroker = new TestKafkaBroker();
     }
 
     /** {@inheritDoc} */
@@ -116,7 +115,7 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
 
         Collections.shuffle(subnet);
 
-        List<KeyedMessage<String, String>> messages = new ArrayList<>(CNT);
+        List<ProducerRecord<String, String>> messages = new ArrayList<>(CNT);
 
         Map<String, String> keyValMap = new HashMap<>();
 
@@ -127,14 +126,12 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
 
             String msg = runtime + VALUE_URL + ip;
 
-            messages.add(new KeyedMessage<>(topic, ip, msg));
+            messages.add(new ProducerRecord<>(topic, ip, msg));
 
             keyValMap.put(ip, msg);
         }
 
-        Producer<String, String> producer = embeddedBroker.sendMessages(messages);
-
-        producer.close();
+        embeddedBroker.sendMessages(messages);
 
         return keyValMap;
     }
@@ -176,7 +173,7 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
             kafkaStmr.setThreads(4);
 
             // Set the consumer configuration.
-            kafkaStmr.setConsumerConfig(createDefaultConsumerConfig(getZKAddress(), "groupX"));
+            kafkaStmr.setConsumerConfig(createDefaultConsumerConfig(embeddedBroker.getZookeeperAddress(), "groupX"));
 
             // Set the decoders.
             StringDecoder strDecoder = new StringDecoder(new VerifiableProperties());
@@ -199,7 +196,8 @@ public class KafkaIgniteStreamerSelfTest extends GridCommonAbstractTest {
 
             ignite.events(ignite.cluster().forCacheNodes(null)).remoteListen(locLsnr, null, EVT_CACHE_OBJECT_PUT);
 
-            latch.await();
+            // Checks all events successfully processed in 10 seconds.
+            assertTrue(latch.await(10, TimeUnit.SECONDS));
 
             for (Map.Entry<String, String> entry : keyValMap.entrySet())
                 assertEquals(entry.getValue(), cache.get(entry.getKey()));

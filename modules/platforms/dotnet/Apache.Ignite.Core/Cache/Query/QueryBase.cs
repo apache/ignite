@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Cache.Query
     /// </summary>
     public abstract class QueryBase
     {
-        /** Default page size. */
+        /// <summary> Default page size. </summary>
         public const int DfltPageSize = 1024;
 
         /// <summary>

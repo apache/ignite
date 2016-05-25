@@ -303,7 +303,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
 
         try {
             // Dummy call to fetch affinity function from remote node
-            master.cluster().mapKeyToNode(CACHE_NAME, "Dummy");
+            master.affinity(CACHE_NAME).mapKeyToNode("Dummy");
 
             Random rnd = new Random();
 
@@ -517,7 +517,7 @@ public class GridCachePutAllFailoverSelfTest extends GridCommonAbstractTest {
             IgniteCompute comp = compute(master.cluster().forPredicate(workerNodesFilter)).withAsync();
 
             for (Integer key : testKeys) {
-                ClusterNode mappedNode = master.cluster().mapKeyToNode(CACHE_NAME, key);
+                ClusterNode mappedNode = master.affinity(CACHE_NAME).mapKeyToNode(key);
 
                 UUID nodeId = mappedNode.id();
 

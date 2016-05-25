@@ -25,7 +25,7 @@ import org.apache.ignite.internal.processors.cache.distributed.GridCacheAbstract
 import org.apache.ignite.transactions.TransactionConcurrency;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 
 /**
@@ -53,7 +53,7 @@ public class GridCachePartitionedOptimisticTxNodeRestartTest extends GridCacheAb
 
         cc.setName(CACHE_NAME);
         cc.setCacheMode(PARTITIONED);
-        cc.setWriteSynchronizationMode(FULL_ASYNC);
+        cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setStartSize(20);
         cc.setRebalanceMode(rebalancMode);
         cc.setRebalanceBatchSize(rebalancBatchSize);

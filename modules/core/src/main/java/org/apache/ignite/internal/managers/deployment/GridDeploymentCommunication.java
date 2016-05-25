@@ -35,7 +35,6 @@ import org.apache.ignite.internal.util.GridBusyLock;
 import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteNotPeerDeployable;
 import org.apache.ignite.lang.IgniteUuid;
@@ -183,7 +182,7 @@ class GridDeploymentCommunication {
 
         if (req.responseTopic() == null) {
             try {
-                req.responseTopic(marsh.unmarshal(req.responseTopicBytes(), null));
+                req.responseTopic(marsh.unmarshal(req.responseTopicBytes(), U.resolveClassLoader(ctx.config())));
             }
             catch (IgniteCheckedException e) {
                 U.error(log, "Failed to process deployment request (will ignore): " + req, e);
@@ -380,7 +379,7 @@ class GridDeploymentCommunication {
 
         final Object qryMux = new Object();
 
-        final GridTuple<GridDeploymentResponse> res = F.t1();
+        final GridTuple<GridDeploymentResponse> res = new GridTuple<>();
 
         GridLocalEventListener discoLsnr = new GridLocalEventListener() {
             @Override public void onEvent(Event evt) {
