@@ -22,7 +22,10 @@ namespace Apache.Ignite.AspNet
     using System;
     using System.Collections.Generic;
     using System.Collections.Specialized;
+    using System.Configuration;
     using System.Diagnostics.CodeAnalysis;
+    using System.IO;
+    using System.Web;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Expiry;
@@ -124,10 +127,48 @@ namespace Apache.Ignite.AspNet
             var cfgSection = config[IgniteConfigurationSectionName];
 
             var grid = cfgSection != null
-                ? Ignition.StartFromApplicationConfiguration(cfgSection)
+                ? StartFromApplicationConfiguration(cfgSection)
                 : Ignition.GetIgnite(gridName);
 
             _cache = grid.GetOrCreateCache<string, object>(cacheName);
+        }
+
+        /// <summary>
+        /// Starts Ignite from application configuration.
+        /// </summary>
+        private static IIgnite StartFromApplicationConfiguration(string sectionName)
+        {
+            var section = ConfigurationManager.GetSection(sectionName) as IgniteConfigurationSection;
+
+            if (section == null)
+                throw new ConfigurationErrorsException(string.Format("Could not find {0} with name '{1}'",
+                    typeof(IgniteConfigurationSection).Name, sectionName));
+
+            var config = section.IgniteConfiguration;
+
+            if (string.IsNullOrWhiteSpace(config.JvmClasspath))
+            {
+                // Classpath not set by user: populate from default directory
+                config = new IgniteConfiguration(config) {JvmClasspath = GetDefaultWebClasspath()};
+            }
+
+            return Ignition.Start(config);
+        }
+
+        /// <summary>
+        /// Gets the classpath from default location in web deployment (application_root\bin\Libs).
+        /// Ignite can not detect classpath in a standard way because IIS uses temporary folders for dlls.
+        /// </summary>
+        private static string GetDefaultWebClasspath()
+        {
+            var ctx = HttpContext.Current;
+
+            if (ctx == null)
+                return null;
+
+            var dir = ctx.Server.MapPath(@"~\bin\libs");
+
+            return Directory.Exists(dir) ? string.Join(";", Directory.GetFiles(dir)) : null;
         }
 
         /// <summary>
