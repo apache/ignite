@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import angular from 'angular';
 import io from 'socket.io-client'; // eslint-disable-line no-unused-vars
 
 class IgniteAgentMonitor {
@@ -71,9 +72,6 @@ class IgniteAgentMonitor {
 
         this._scope.hasAgents = null;
         this._scope.showModal = false;
-
-        this._evtOrderKey = $common.randomString(20);
-        this._evtThrottleCntrKey = $common.randomString(20);
 
         /**
          * @type {Socket}
@@ -248,19 +246,6 @@ class IgniteAgentMonitor {
     }
 
     /**
-     *
-     * @param {String|Array.<String>} cacheNames
-     * @returns {String|Array.<String>}
-     * @private
-     */
-    _maskCacheName(cacheNames) {
-        if (_.isArray(cacheNames))
-            return _.map(cacheNames, (cacheName) => cacheName || 'null');
-
-        return cacheNames || 'null';
-    }
-
-    /**
      * @param {Boolean} [attr]
      * @param {Boolean} [mtr]
      * @returns {Promise}
@@ -313,69 +298,6 @@ class IgniteAgentMonitor {
         return this._rest('node:query:fetch', queryId, pageSize);
     }
 
-    collect() {
-        return this._rest('node:visor:collect', this._evtOrderKey, this._evtThrottleCntrKey);
-    }
-
-    /**
-     * Reset metrics specified cache on specified node.
-     * @param {String} nid Node id.
-     * @param {Array.<String>} cacheNames Cache name.
-     * @returns {Promise}
-     */
-    cacheSwapBackups(nid, cacheNames) {
-        return this._rest('node:cache:swap:backups', nid, _.map(cacheNames, this._maskCacheName).join(';'));
-    }
-
-    /**
-     * Reset metrics specified cache on specified node.
-     * @param {String} nid Node id.
-     * @param {String} cacheName Cache name.
-     * @returns {Promise}
-     */
-    cacheResetMetrics(nid, cacheName) {
-        return this._rest('node:cache:reset:metrics', nid, this._maskCacheName(cacheName));
-    }
-
-    /**
-     * Clear specified cache on specified node.
-     * @param {String} nid Node id.
-     * @param {String} cacheName Cache name.
-     * @returns {Promise}
-     */
-    cacheClear(nid, cacheName) {
-        return this._rest('node:cache:clear', nid, this._maskCacheName(cacheName));
-    }
-
-    /**
-     * Stop specified cache on specified node.
-     * @param {String} nid Node id.
-     * @param {String} cacheName Cache name.
-     * @returns {Promise}
-     */
-    cacheStop(nid, cacheName) {
-        return this._rest('node:cache:stop', nid, this._maskCacheName(cacheName));
-    }
-
-    /**
-     * GC node.
-     * @param {Array.<String>} nids Node ids.
-     * @returns {Promise}
-     */
-    gc(nids) {
-        return this._rest('node:gc', nids.join(';'));
-    }
-
-    /**
-     * Ping node.
-     * @param {String} taskNid node that is not node we want to ping.
-     * @param {String} nid Id of the node to ping.
-     * @returns {Promise}
-     */
-    ping(taskNid, nid) {
-        return this._rest('node:ping', taskNid, nid);
-    }
-
     stopWatch() {
         this._scope.showModal = false;
 
@@ -389,4 +311,8 @@ class IgniteAgentMonitor {
 
 IgniteAgentMonitor.$inject = ['igniteSocketFactory', '$rootScope', '$q', '$state', '$modal', '$common'];
 
-export default ['IgniteAgentMonitor', IgniteAgentMonitor];
+angular
+    .module('ignite-console.agent', [
+
+    ])
+    .service('IgniteAgentMonitor', IgniteAgentMonitor);
