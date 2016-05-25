@@ -60,7 +60,7 @@ import './services/JavaTypes.service.js';
 import './modules/form/form.module';
 import './modules/agent/agent.module.js';
 import './modules/query-notebooks/query-notebooks.module';
-import './modules/demo/demo.module.js';
+import './modules/demo/Demo.module.js';
 
 import './modules/states/signin.state';
 import './modules/states/logout.state';
