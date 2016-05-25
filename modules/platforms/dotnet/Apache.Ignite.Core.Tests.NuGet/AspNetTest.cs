@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Tests.NuGet
         /// Tests cache put/get.
         /// </summary>
         [Test]
-        public void TestPutGet()
+        public void TestSetGet()
         {
             var cacheProvider = new IgniteOutputCacheProvider();
 
