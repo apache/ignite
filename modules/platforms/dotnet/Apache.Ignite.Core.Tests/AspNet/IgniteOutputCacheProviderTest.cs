@@ -50,12 +50,7 @@ namespace Apache.Ignite.Core.Tests.AspNet
         [TestFixtureSetUp]
         public void TestFixtureSetUp()
         {
-            Ignition.Start(new IgniteConfiguration
-            {
-                SpringConfigUrl = "config\\compute\\compute-grid1.xml",
-                JvmClasspath = TestUtils.CreateTestClasspath(),
-                JvmOptions = TestUtils.TestJavaOptions()
-            });
+            Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration()) {GridName = GridName});
         }
 
         /// <summary>
@@ -90,7 +85,6 @@ namespace Apache.Ignite.Core.Tests.AspNet
             cacheProvider = GetProvider();
 
             cacheProvider.Set("1", 1, DateTime.MaxValue);
-
             Assert.AreEqual(1, cacheProvider.Get("1"));
         }
 
