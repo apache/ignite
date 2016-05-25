@@ -35,6 +35,9 @@ namespace Apache.Ignite.Core.Tests.AspNet
         /** Cache name XML config attribute. */
         private const string CacheNameAttr = "cacheName";
 
+        /** Cache name XML config attribute. */
+        private const string SectionNameAttr = "igniteConfigurationSectionName";
+
         /** Grid name. */
         private const string GridName = "grid1";
 
@@ -98,6 +101,16 @@ namespace Apache.Ignite.Core.Tests.AspNet
         public void TestStartFromWebConfigSection()
         {
             // TODO
+            // igniteConfiguration2
+
+            var cacheProvider = new IgniteOutputCacheProvider();
+
+            cacheProvider.Initialize("testName2", new NameValueCollection
+            {
+                {GridNameAttr, GridName},
+                {CacheNameAttr, CacheName}
+            });
+
         }
 
         /// <summary>

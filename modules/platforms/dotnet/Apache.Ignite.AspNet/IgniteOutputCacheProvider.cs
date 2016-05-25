@@ -29,6 +29,13 @@ namespace Apache.Ignite.AspNet
 
     /// <summary>
     /// ASP.NET output cache provider that uses Ignite cache as a storage.
+    /// <para />
+    /// You can either start Ignite yourself, and provide <c>gridName</c> attribute, 
+    /// or provide <c>igniteConfigurationSectionName</c> attribute to start Ignite automatically from specified
+    /// configuration section (see <see cref="IgniteConfigurationSection"/>).
+    /// <para />
+    /// <c>cacheName</c> attribute specifies Ignite cache name to use for data storage. This attribute can be omitted 
+    /// if cache name is null.
     /// </summary>
     public class IgniteOutputCacheProvider : OutputCacheProvider
     {
