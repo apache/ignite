@@ -2122,6 +2122,9 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
                             IgniteUuid valLdrId = swapEntry.valueClassLoaderId();
 
                             if (ldrId.equals(swapEntry.keyClassLoaderId())) {
+                                if (log.isTraceEnabled())
+                                    log.trace("onUndeploy remove key [ldrId=" + ldrId + ']');
+
                                 iter.removeX();
 
                                 undeployCnt++;
@@ -2138,6 +2141,9 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
                                     if (val != null)
                                         valLdrId = cctx.deploy().getClassLoaderId(val.getClass().getClassLoader());
                                 }
+
+                                if (log.isTraceEnabled())
+                                    log.trace("onUndeploy remove value [ldrId=" + ldrId + ']');
 
                                 if (ldrId.equals(valLdrId)) {
                                     iter.removeX();
