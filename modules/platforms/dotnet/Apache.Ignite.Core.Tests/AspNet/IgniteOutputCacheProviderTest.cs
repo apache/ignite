@@ -100,17 +100,16 @@ namespace Apache.Ignite.Core.Tests.AspNet
         [Test]
         public void TestStartFromWebConfigSection()
         {
-            // TODO
-            // igniteConfiguration2
-
             var cacheProvider = new IgniteOutputCacheProvider();
 
             cacheProvider.Initialize("testName2", new NameValueCollection
             {
-                {GridNameAttr, GridName},
-                {CacheNameAttr, CacheName}
+                {SectionNameAttr, "igniteConfiguration2"},
+                {CacheNameAttr, "cacheName2"}
             });
 
+            cacheProvider.Set("1", 3, DateTime.MaxValue);
+            Assert.AreEqual(3, cacheProvider.Get("1"));
         }
 
         /// <summary>
