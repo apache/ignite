@@ -97,9 +97,12 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Web" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AspNetTest.cs" />
     <Compile Include="ComputeTest.cs" />
     <Compile Include="StartupTest.cs" />
     <Compile Include="CacheTest.cs" />
