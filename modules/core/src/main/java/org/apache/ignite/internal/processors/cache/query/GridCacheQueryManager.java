@@ -3510,6 +3510,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * The map prevent put a (key, value) pair in case the specified key has been removed previously
      */
     private class CanceledKeyMap<K, V> extends LinkedHashMap<K, V> {
+        /** */
+        private static final long serialVersionUID = 0L;
         /** Count of canceled keys */
         private static final int CANCELED_COUNT = 128;
         /** Canceled keys store to the set in case remove(key) is called before put(key, val). */
@@ -3517,12 +3519,12 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         /**
          */
-        CanceledKeyMap(int initialCapacity,
+        CanceledKeyMap(int initCap,
             float loadFactor,
             boolean accessOrder) {
-            super(initialCapacity, loadFactor, accessOrder);
+            super(initCap, loadFactor, accessOrder);
             canceled = Collections.newSetFromMap(
-                new LinkedHashMap<K, Boolean>(initialCapacity, loadFactor, accessOrder) {
+                new LinkedHashMap<K, Boolean>(initCap, loadFactor, accessOrder) {
                 @Override protected boolean removeEldestEntry(Map.Entry<K, Boolean> eldest) {
                     return size() > CANCELED_COUNT;
                 }
@@ -3540,8 +3542,8 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         }
 
         /** {@inheritDoc} */
-        @Override public V put(K key, V value) {
-            return !canceled.contains(key) ? super.put(key, value) : value;
+        @Override public V put(K key, V val) {
+            return !canceled.contains(key) ? super.put(key, val) : val;
         }
     }
 }
