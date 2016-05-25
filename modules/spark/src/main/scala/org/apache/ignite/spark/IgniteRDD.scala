@@ -95,6 +95,26 @@ class IgniteRDD[K, V] (
     }
 
     /**
+     * Tells whether this IgniteRDD is empty or not.
+     *
+     * @return Whether this IgniteRDD is empty or not.
+     */
+    override def isEmpty(): Boolean = {
+        count() == 0
+    }
+
+    /**
+     * Gets number of tuples in this IgniteRDD.
+     *
+     * @return Number of tuples in this IgniteRDD.
+     */
+    override def count(): Long = {
+        val cache = ensureCache()
+
+        cache.size()
+    }
+
+    /**
      * Runs an object SQL on corresponding Ignite cache.
      *
      * @param typeName Type name to run SQL against.
