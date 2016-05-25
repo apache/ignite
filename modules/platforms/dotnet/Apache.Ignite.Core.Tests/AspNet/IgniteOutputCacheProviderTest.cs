@@ -92,6 +92,15 @@ namespace Apache.Ignite.Core.Tests.AspNet
         }
 
         /// <summary>
+        /// Tests autostart from web configuration section.
+        /// </summary>
+        [Test]
+        public void TestStartFromWebConfigSection()
+        {
+            // TODO
+        }
+
+        /// <summary>
         /// Tests provider caching.
         /// </summary>
         [Test]

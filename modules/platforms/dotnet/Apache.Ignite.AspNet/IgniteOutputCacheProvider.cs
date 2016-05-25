@@ -38,6 +38,9 @@ namespace Apache.Ignite.AspNet
         /** */
         private const string CacheName = "cacheName";
 
+        /** */
+        private const string IgniteConfigurationSectionName = "igniteConfigurationSectionName";
+
         /** Max number of cached expiry caches. */
         private const int MaxExpiryCaches = 1000;
 
@@ -111,8 +114,11 @@ namespace Apache.Ignite.AspNet
 
             var gridName = config[GridName];
             var cacheName = config[CacheName];
+            var cfgSection = config[IgniteConfigurationSectionName];
 
-            var grid = Ignition.GetIgnite(gridName);
+            var grid = cfgSection != null
+                ? Ignition.StartFromApplicationConfiguration(cfgSection)
+                : Ignition.GetIgnite(gridName);
 
             _cache = grid.GetOrCreateCache<string, object>(cacheName);
         }
