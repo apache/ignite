@@ -170,15 +170,15 @@ class IgniteRDDSpec extends FunSpec with Matchers with BeforeAndAfterAll with Be
             val sc = new SparkContext("local[*]", "test")
 
             try {
-                val ic = new IgniteContext[Integer, WithObjectField](sc,
+                val ic = new IgniteContext[String, Entity](sc,
                     () ⇒ configuration("client", client = true))
 
-                val cache: IgniteRDD[Integer, WithObjectField] = ic.fromCache(PARTITIONED_CACHE_NAME)
+                val cache: IgniteRDD[String, Entity] = ic.fromCache(PARTITIONED_CACHE_NAME)
 
                 assert(cache.count() == 0)
                 assert(cache.isEmpty())
 
-                cache.savePairs(sc.parallelize(0 until 1000, 2).map(i ⇒ (i:java.lang.Integer, new WithObjectField(i, new Entity(i, "", i)))))
+                cache.savePairs(sc.parallelize(0 until 1000, 2).map(i ⇒ (String.valueOf(i), new Entity(i, "", i))))
 
                 assert(cache.count() == 1000)
                 assert(!cache.isEmpty())
