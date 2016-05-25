@@ -110,6 +110,9 @@ public class AgentClusterDemo {
     /** Departments count */
     private static final int PARK_CNT = 10;
 
+    /** Departments count */
+    private static final int DEFAULT_CNT = 100;
+
     /** Counter for threads in pool. */
     private static final AtomicInteger THREAD_CNT = new AtomicInteger(0);
 
@@ -328,7 +331,7 @@ public class AgentClusterDemo {
 
         qryEntities.add(type);
 
-        type.setKeyType(String.class.getName());
+        type.setKeyType(Integer.class.getName());
         type.setValueType(String.class.getName());
 
         ccfg.setQueryEntities(qryEntities);
@@ -346,9 +349,7 @@ public class AgentClusterDemo {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setGridName((client ? "demo-server-" : "demo-client-") + gridIdx);
-
         cfg.setLocalHost("127.0.0.1");
-
         cfg.setIncludeEventTypes(EVTS_DISCOVERY);
 
         TcpDiscoveryVmIpFinder ipFinder = new TcpDiscoveryVmIpFinder();
@@ -359,7 +360,6 @@ public class AgentClusterDemo {
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setLocalPort(60900);
-
         discoSpi.setIpFinder(ipFinder);
 
         cfg.setDiscoverySpi(discoSpi);
@@ -367,22 +367,20 @@ public class AgentClusterDemo {
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
         commSpi.setSharedMemoryPort(-1);
-
         commSpi.setLocalPort(60800);
 
         cfg.setCommunicationSpi(commSpi);
-
         cfg.setGridLogger(new Log4JLogger(log));
-
         cfg.setMetricsLogFrequency(0);
-
         cfg.getConnectorConfiguration().setPort(60700);
 
-        if (client)
+        if (client) {
             cfg.setClientMode(true);
+            cfg.setCacheConfiguration(cacheCountry(), cacheDepartment(), cacheEmployee(), cacheParking(), cacheCar());
+        }
         else
-            cfg.setCacheConfiguration(cacheDefault(), cacheCountry(), cacheDepartment(),
-                cacheEmployee(), cacheParking(), cacheCar());
+            cfg.setCacheConfiguration(cacheDefault(), cacheCountry(), cacheDepartment(), cacheEmployee(),
+                cacheParking(), cacheCar());
 
         return cfg;
     }
@@ -468,6 +466,22 @@ public class AgentClusterDemo {
     }
 
     /**
+     * @param ignite Ignite.
+     */
+    private static void populateCacheDefault(Ignite ignite) {
+        if (log.isDebugEnabled())
+            log.debug("DEMO: Start default cache population...");
+
+        IgniteCache<Integer, String> cacheDflt = ignite.cache(null);
+
+        for (int i = 0; i < DEFAULT_CNT; i++)
+            cacheDflt.put(i, "default-" + i);
+
+        if (log.isDebugEnabled())
+            log.debug("DEMO: Finished default cache population.");
+    }
+
+    /**
      * Creates a thread pool that can schedule commands to run after a given delay, or to execute periodically.
      *
      * @param corePoolSize Number of threads to keep in the pool, even if they are idle.
@@ -504,40 +518,53 @@ public class AgentClusterDemo {
         final long diff = new java.util.Date().getTime();
 
         populateCacheEmployee(ignite, diff);
-
         populateCacheCar(ignite);
+        populateCacheDefault(ignite);
 
         ScheduledExecutorService cachePool = newScheduledThreadPool(2, "demo-sql-load-cache-tasks");
 
         cachePool.scheduleWithFixedDelay(new Runnable() {
             @Override public void run() {
                 try {
+                    IgniteCache<Integer, String> cacheDflt = ignite.cache(null);
+
+                    if (cacheDflt != null) {
+                        for (int i = 0, n = 1; i < cnt; i++, n++) {
+                            Integer key = rnd.nextInt(1000);
+
+                            String val = cacheDflt.get(key);
+
+                            if (val == null)
+                                cacheDflt.put(key, "default-" + key);
+                            else if (rnd.nextInt(100) < 30)
+                                cacheDflt.remove(key);
+                        }
+                    }
+
                     IgniteCache<Integer, Employee> cacheEmployee = ignite.cache(EMPLOYEE_CACHE_NAME);
 
-                    if (cacheEmployee == null)
-                        return;
+                    if (cacheEmployee != null)
+                        try(Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
+                            for (int i = 0, n = 1; i < cnt; i++, n++) {
+                                Integer id = rnd.nextInt(EMPL_CNT);
 
-                    try(Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                        for (int i = 0, n = 1; i < cnt; i++, n++) {
-                            Integer id = rnd.nextInt(EMPL_CNT);
+                                Integer depId = rnd.nextInt(DEP_CNT);
 
-                            Integer depId = rnd.nextInt(DEP_CNT);
+                                double r = rnd.nextDouble();
 
-                            double r = rnd.nextDouble();
+                                cacheEmployee.put(id, new Employee(id, depId, depId, "First name employee #" + n,
+                                    "Last name employee #" + n, "Email employee #" + n, "Phone number employee #" + n,
+                                    new java.sql.Date((long)(r * diff)), "Job employee #" + n, 500 + round(r * 2000, 2)));
 
-                            cacheEmployee.put(id, new Employee(id, depId, depId, "First name employee #" + n,
-                                "Last name employee #" + n, "Email employee #" + n, "Phone number employee #" + n,
-                                new java.sql.Date((long)(r * diff)), "Job employee #" + n, 500 + round(r * 2000, 2)));
+                                if (rnd.nextBoolean())
+                                    cacheEmployee.remove(rnd.nextInt(EMPL_CNT));
 
-                            if (rnd.nextBoolean())
-                                cacheEmployee.remove(rnd.nextInt(EMPL_CNT));
+                                cacheEmployee.get(rnd.nextInt(EMPL_CNT));
+                            }
 
-                            cacheEmployee.get(rnd.nextInt(EMPL_CNT));
+                            if (rnd.nextInt(100) > 20)
+                                tx.commit();
                         }
-
-                        if (rnd.nextInt(100) > 20)
-                            tx.commit();
-                    }
                 }
                 catch (Throwable e) {
                     if (!e.getMessage().contains("cache is stopped"))
