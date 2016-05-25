@@ -959,7 +959,7 @@ public class IgniteTxEntry implements GridPeerDeployAware, Message {
      * @param ver Entry version.
      */
     public void entryReadVersion(GridCacheVersion ver) {
-        assert this.serReadVer == null;
+        assert this.serReadVer == null: "Wrong version [serReadVer=" + serReadVer + ", ver=" + ver + "]";
         assert ver != null;
 
         this.serReadVer = ver;

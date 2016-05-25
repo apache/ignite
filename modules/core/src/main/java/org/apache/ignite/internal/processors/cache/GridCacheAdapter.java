@@ -1388,10 +1388,18 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         long start = statsEnabled ? System.nanoTime() : 0L;
 
-        V val = get(key, !ctx.keepBinary(), false);
+        boolean keeyBinary = ctx.keepBinary();
 
-        if (ctx.config().getInterceptor() != null)
+        if (keeyBinary)
+            key = (K)ctx.toCacheKeyObject(key);
+
+        V val = get(key, !keeyBinary, false);
+
+        if (ctx.config().getInterceptor() != null) {
+            key = keeyBinary ? (K) ctx.unwrapBinaryIfNeeded(key, true, false) : key;
+
             val = (V)ctx.config().getInterceptor().onGet(key, val);
+        }
 
         if (statsEnabled)
             metrics0().addGetTimeNanos(System.nanoTime() - start);
@@ -1407,11 +1415,22 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         long start = statsEnabled ? System.nanoTime() : 0L;
 
-        T2<V, GridCacheVersion> t = (T2<V, GridCacheVersion>)get(key, !ctx.keepBinary(), true);
+        boolean keepBinary = ctx.keepBinary();
 
-        CacheEntry<K, V> val = t != null ? new CacheEntryImplEx<>(key, t.get1(), t.get2()) : null;
+        if (keepBinary)
+            key = (K)ctx.toCacheKeyObject(key);
+
+        T2<V, GridCacheVersion> t = (T2<V, GridCacheVersion>)get(key, !keepBinary, true);
+
+        CacheEntry<K, V> val = t != null ? new CacheEntryImplEx<>(
+            keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key, true, false) : key,
+            t.get1(),
+            t.get2())
+            : null;
 
         if (ctx.config().getInterceptor() != null) {
+            key = keepBinary ? (K) ctx.unwrapBinaryIfNeeded(key, true, false) : key;
+
             V val0 = (V)ctx.config().getInterceptor().onGet(key, t != null ? val.getValue() : null);
 
             val = (val0 != null) ? new CacheEntryImplEx<>(key, val0, t != null ? t.get2() : null) : null;
@@ -1431,11 +1450,17 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
 
-        IgniteInternalFuture<V> fut = getAsync(key, !ctx.keepBinary(), false);
+        final boolean keepBinary = ctx.keepBinary();
+
+        final K key0 = keepBinary ? (K)ctx.toCacheKeyObject(key) : key;
+
+        IgniteInternalFuture<V> fut = getAsync(key, !keepBinary, false);
 
         if (ctx.config().getInterceptor() != null)
             fut = fut.chain(new CX1<IgniteInternalFuture<V>, V>() {
                 @Override public V applyx(IgniteInternalFuture<V> f) throws IgniteCheckedException {
+                    K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false) : key0;
+
                     return (V)ctx.config().getInterceptor().onGet(key, f.get());
                 }
             });
@@ -1454,8 +1479,12 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         final long start = statsEnabled ? System.nanoTime() : 0L;
 
+        final boolean keepBinary = ctx.keepBinary();
+
+        final K key0 = keepBinary ? (K)ctx.toCacheKeyObject(key) : key;
+
         IgniteInternalFuture<T2<V, GridCacheVersion>> fut =
-            (IgniteInternalFuture<T2<V, GridCacheVersion>>)getAsync(key, !ctx.keepBinary(), true);
+            (IgniteInternalFuture<T2<V, GridCacheVersion>>)getAsync(key0, !keepBinary, true);
 
         final boolean intercept = ctx.config().getInterceptor() != null;
 
@@ -1465,16 +1494,23 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     throws IgniteCheckedException {
                     T2<V, GridCacheVersion> t = f.get();
 
-                    CacheEntry<K, V> val = t != null ? new CacheEntryImplEx<>(key, t.get1(), t.get2()) : null;
-                    if (intercept) {
-                        V val0 = (V)ctx.config().getInterceptor().onGet(key, t != null ? val.getValue() : null);
+                K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false) : key0;
 
-                        return new CacheEntryImplEx<>(key, val0, t != null ? t.get2() : null);
-                    }
-                    else
-                        return val;
+                CacheEntry val = t != null ? new CacheEntryImplEx<>(
+                    key,
+                    t.get1(),
+                    t.get2())
+                    : null;
+
+                if (intercept) {
+                    V val0 = (V)ctx.config().getInterceptor().onGet(key, t != null ? val.getValue() : null);
+
+                    return val0 != null ? new CacheEntryImplEx(key, val0, t != null ? t.get2() : null) : null;
                 }
-            });
+                else
+                    return val;
+            }
+        });
 
         if (statsEnabled)
             fut.listen(new UpdateGetTimeStatClosure<T2<V, GridCacheVersion>>(metrics0(), start));
@@ -1720,7 +1756,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                         return (V)(val);
                     }
 
-                    return map.get(key);
+                    return F.firstValue(map);
                 }
             });
     }
@@ -2856,17 +2892,24 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (keyCheck)
             validateCacheKey(key);
 
+        final boolean keepBinary = ctx.keepBinary();
+
         V prevVal = syncOp(new SyncOp<V>(true) {
             @Override public V op(IgniteTxLocalAdapter tx) throws IgniteCheckedException {
+                K key0 = keepBinary ? (K)ctx.toCacheKeyObject(key) : key;
+
                 V ret = tx.removeAllAsync(ctx,
                     null,
-                    Collections.singletonList(key),
+                    Collections.singletonList(key0),
                     /*retval*/true,
                     null,
                     /*singleRmv*/false).get().value();
 
-                if (ctx.config().getInterceptor() != null)
+                if (ctx.config().getInterceptor() != null) {
+                    K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false) : key0;
+
                     return (V)ctx.config().getInterceptor().onBeforeRemove(new CacheEntryImpl(key, ret)).get2();
+                }
 
                 return ret;
             }

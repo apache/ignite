@@ -2832,10 +2832,10 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
             }
 
             if (res != null)
-                ret.addEntryProcessResult(ctx, txEntry.key(), key0, res, null);
+                ret.addEntryProcessResult(ctx, txEntry.key(), key0, res, null, txEntry.keepBinary());
         }
         catch (Exception e) {
-            ret.addEntryProcessResult(ctx, txEntry.key(), key0, null, e);
+            ret.addEntryProcessResult(ctx, txEntry.key(), key0, null, e, txEntry.keepBinary());
         }
     }
 
