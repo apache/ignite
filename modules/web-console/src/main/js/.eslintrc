@@ -34,6 +34,7 @@ globals:
     $generatorOptional: true
     saveAs: true
     process: true
+    d3: true
 
 rules:
     arrow-parens: [1, "always"]
