@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
@@ -44,7 +45,6 @@ import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandle
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridTreePrinter;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -55,6 +55,9 @@ import static org.apache.ignite.internal.processors.cache.database.tree.util.Pag
  * Abstract B+Tree.
  */
 public abstract class BPlusTree<L, T extends L> {
+    /** */
+    public static Random rnd;
+
     /** */
     private static final byte FALSE = 0;
 
@@ -566,17 +569,29 @@ public abstract class BPlusTree<L, T extends L> {
         try (Page meta = page(metaPageId)) {
             ByteBuffer buf = meta.getForInitialWrite();
 
-            BPlusMetaIO io = BPlusMetaIO.VERSIONS.latest();
+            try {
+                BPlusMetaIO io = BPlusMetaIO.VERSIONS.latest();
 
-            io.initNewPage(buf, metaPageId);
+                io.initNewPage(buf, metaPageId);
 
-            long rootId = allocatePage(null);
+                long rootId = allocatePage(null);
 
-            try (Page root = page(rootId)) {
-                latestLeafIO().initNewPage(root.getForInitialWrite(), rootId);
+                try (Page root = page(rootId)) {
+                    ByteBuffer rootBuf = root.getForInitialWrite();
 
-                io.setLevelsCount(buf, 1);
-                io.setFirstPageId(buf, 0, rootId);
+                    try {
+                        latestLeafIO().initNewPage(rootBuf, rootId);
+                    }
+                    finally {
+                        root.finishInitialWrite();
+                    }
+
+                    io.setLevelsCount(buf, 1);
+                    io.setFirstPageId(buf, 0, rootId);
+                }
+            }
+            finally {
+                meta.finishInitialWrite();
             }
         }
     }
@@ -636,7 +651,7 @@ public abstract class BPlusTree<L, T extends L> {
             ByteBuffer buf = first.getForRead(); // We always merge pages backwards, the first page is never removed.
 
             try {
-                cursor.bootstrap(buf, 0);
+                cursor.bootstrap(buf, io(buf), 0);
             }
             finally {
                 first.releaseRead();
@@ -775,6 +790,148 @@ public abstract class BPlusTree<L, T extends L> {
         }
 
         return treePrinter.print(rootPageId);
+    }
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
+    public final void validateTree() throws IgniteCheckedException {
+        long rootPageId;
+        int rootLvl;
+
+        try (Page meta = page(metaPageId)) {
+            rootLvl = getRootLevel(meta);
+
+            if (rootLvl < 0)
+                fail("Root level: " + rootLvl);
+
+            validateFirstPages(meta, rootLvl);
+
+            rootPageId = getFirstPageId(meta, rootLvl);
+
+            validateDown(meta, rootPageId, 0L, rootLvl);
+        }
+    }
+
+    /**
+     * @param meta Meta page.
+     * @param rootLvl Root level.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void validateFirstPages(Page meta, int rootLvl) throws IgniteCheckedException {
+        for (int lvl = rootLvl; lvl > 0; lvl--)
+            validateFirstPage(meta, lvl);
+    }
+
+    /**
+     * @param msg Message.
+     */
+    private static void fail(Object msg) {
+        throw new AssertionError(msg);
+    }
+
+    /**
+     * @param meta Meta page.
+     * @param lvl Level.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void validateFirstPage(Page meta, int lvl) throws IgniteCheckedException {
+        if (lvl == 0)
+            fail("Leaf level: " + lvl);
+
+        long pageId = getFirstPageId(meta, lvl);
+
+        long leftmostChildId;
+
+        try (Page page = page(pageId)) {
+            ByteBuffer buf = page.getForRead();
+
+            try {
+                BPlusIO<L> io = io(buf);
+
+                if (io.isLeaf())
+                    fail("Leaf.");
+
+                leftmostChildId = inner(io).getLeft(buf, 0);
+            }
+            finally {
+                page.releaseRead();
+            }
+        }
+
+        long firstDownPageId = getFirstPageId(meta, lvl - 1);
+
+        if (firstDownPageId != leftmostChildId)
+            fail(new SB("First: meta ").appendHex(firstDownPageId).a(", child ").appendHex(leftmostChildId));
+    }
+
+    /**
+     * @param meta Meta page.
+     * @param pageId Page ID.
+     * @param fwdId Forward ID.
+     * @param lvl Level.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void validateDown(Page meta, long pageId, long fwdId, final int lvl) throws IgniteCheckedException {
+        try (Page page = page(pageId)) {
+            ByteBuffer buf = page.getForRead();
+
+            try {
+                long realPageId = BPlusIO.getPageId(buf);
+
+                if (realPageId != pageId)
+                    fail(new SB("ABA on page ID: ref ").appendHex(pageId).a(", buf ").appendHex(realPageId));
+
+                BPlusIO<L> io = io(buf);
+
+                if (io.isLeaf() != (lvl == 0)) // Leaf pages only at the level 0.
+                    fail("Leaf level mismatch: " + lvl);
+
+                long actualFwdId = io.getForward(buf);
+
+                if (actualFwdId != fwdId)
+                    fail(new SB("Triangle: expected fwd ").appendHex(fwdId).a(", actual fwd ").appendHex(actualFwdId));
+
+                int cnt = io.getCount(buf);
+
+                if (cnt < 0)
+                    fail("Negative count: " + cnt);
+
+                if (io.isLeaf()) {
+                    if (cnt == 0 && getRootLevel(meta) != 0)
+                        fail("Empty leaf page.");
+                }
+                else {
+                    // Recursively go down if we are on inner level.
+                    for (int i = 0; i < cnt; i++)
+                        validateDown(meta, inner(io).getLeft(buf, i), inner(io).getRight(buf, i), lvl - 1);
+
+                    if (fwdId != 0) {
+                        // For the rightmost child ask neighbor.
+                        try (Page fwd = page(fwdId)) {
+                            ByteBuffer fwdBuf = fwd.getForRead();
+
+                            try {
+                                if (io(fwdBuf) != io)
+                                    fail("IO on the same level must be the same");
+
+                                fwdId = inner(io).getLeft(fwdBuf, 0);
+                            }
+                            finally {
+                                fwd.releaseRead();
+                            }
+                        }
+                    }
+
+                    pageId = inner(io).getLeft(buf, cnt); // The same as io.getRight(cnt - 1) but works for routing pages.
+
+                    validateDown(meta, pageId, fwdId, lvl - 1);
+                }
+            }
+            finally {
+                page.releaseRead();
+            }
+        }
     }
 
     /**
@@ -1049,8 +1206,10 @@ public abstract class BPlusTree<L, T extends L> {
      * @param max Max.
      * @return Random value from {@code 0} (inclusive) to the given max value (exclusive).
      */
-    public int randomInt(int max) {
-         return ThreadLocalRandom.current().nextInt(max);
+    public static int randomInt(int max) {
+        Random rnd0 = rnd != null ? rnd : ThreadLocalRandom.current();
+
+        return rnd0.nextInt(max);
      }
 
     /**
@@ -1480,7 +1639,7 @@ public abstract class BPlusTree<L, T extends L> {
             if (!io.isLeaf())
                 return false;
 
-            cursor.bootstrap(buf, idx);
+            cursor.bootstrap(buf, io, idx);
 
             return true;
         }
@@ -1494,7 +1653,7 @@ public abstract class BPlusTree<L, T extends L> {
 
             assert io.isLeaf();
 
-            cursor.bootstrap(buf, idx);
+            cursor.bootstrap(buf, io, idx);
 
             return true;
         }
@@ -1647,57 +1806,69 @@ public abstract class BPlusTree<L, T extends L> {
                 boolean hadFwd = io.getForward(buf) != 0;
 
                 ByteBuffer fwdBuf = fwd.getForInitialWrite();
-                io.initNewPage(fwdBuf, fwdId);
 
-                boolean midShift = splitPage(io, buf, fwdBuf, idx);
+                try {
+                    io.initNewPage(fwdBuf, fwdId);
 
-                // Do insert.
-                int cnt = io.getCount(buf);
+                    boolean midShift = splitPage(io, buf, fwdBuf, idx);
 
-                if (idx < cnt || (idx == cnt && !midShift)) { // Insert into back page.
-                    insertSimple(io, buf, idx);
+                    // Do insert.
+                    int cnt = io.getCount(buf);
 
-                    // Fix leftmost child of forward page, because newly inserted row will go up.
-                    if (idx == cnt && !io.isLeaf())
-                        inner(io).setLeft(fwdBuf, 0, rightId);
-                }
-                else // Insert into newly allocated forward page.
-                    insertSimple(io, fwdBuf, idx - cnt);
+                    if (idx < cnt || (idx == cnt && !midShift)) { // Insert into back page.
+                        insertSimple(io, buf, idx);
 
-                // Do move up.
-                cnt = io.getCount(buf);
+                        // Fix leftmost child of forward page, because newly inserted row will go up.
+                        if (idx == cnt && !io.isLeaf())
+                            inner(io).setLeft(fwdBuf, 0, rightId);
+                    }
+                    else // Insert into newly allocated forward page.
+                        insertSimple(io, fwdBuf, idx - cnt);
 
-                L moveUpRow = io.getLookupRow(BPlusTree.this, buf, cnt - 1); // Last item from backward row goes up.
+                    // Do move up.
+                    cnt = io.getCount(buf);
 
-                if (!io.isLeaf()) // Leaf pages must contain all the links, inner pages remove moveUpLink.
-                    io.setCount(buf, cnt - 1);
+                    // Last item from backward row goes up.
+                    L moveUpRow = io.getLookupRow(BPlusTree.this, buf, cnt - 1);
 
-                if (!hadFwd && lvl == getRootLevel(meta)) { // We are splitting root.
-                    long newRootId = allocatePage(bag);
+                    if (!io.isLeaf()) // Leaf pages must contain all the links, inner pages remove moveUpLink.
+                        io.setCount(buf, cnt - 1);
 
-                    try (Page newRoot = page(newRootId)) {
-                        if (io.isLeaf())
-                            io = latestInnerIO();
+                    if (!hadFwd && lvl == getRootLevel(meta)) { // We are splitting root.
+                        long newRootId = allocatePage(bag);
 
-                        ByteBuffer newRootBuf = newRoot.getForInitialWrite();
+                        try (Page newRoot = page(newRootId)) {
+                            if (io.isLeaf())
+                                io = latestInnerIO();
 
-                        io.initNewPage(newRootBuf, newRootId);
+                            ByteBuffer newRootBuf = newRoot.getForInitialWrite();
 
-                        io.setCount(newRootBuf, 1);
-                        inner(io).setLeft(newRootBuf, 0, PageIO.getPageId(buf));
-                        io.store(newRootBuf, 0, moveUpRow);
-                        inner(io).setRight(newRootBuf, 0, fwdId);
+                            try {
+                                io.initNewPage(newRootBuf, newRootId);
+
+                                io.setCount(newRootBuf, 1);
+                                inner(io).setLeft(newRootBuf, 0, PageIO.getPageId(buf));
+                                io.store(newRootBuf, 0, moveUpRow);
+                                inner(io).setRight(newRootBuf, 0, fwdId);
+                            }
+                            finally {
+                                newRoot.finishInitialWrite();
+                            }
+                        }
+
+                        int res = writePage(metaPageId, meta, newRoot, newRootId, lvl + 1);
+
+                        assert res == TRUE : "failed to update meta page";
+
+                        return null; // We've just moved link up to root, nothing to return here.
                     }
 
-                    int res = writePage(metaPageId, meta, newRoot, newRootId, lvl + 1);
-
-                    assert res == TRUE : "failed to update meta page";
-
-                    return null; // We've just moved link up to root, nothing to return here.
+                    // Regular split.
+                    return moveUpRow;
                 }
-
-                // Regular split.
-                return moveUpRow;
+                finally {
+                    fwd.finishInitialWrite();
+                }
             }
         }
     }
@@ -2585,10 +2756,7 @@ public abstract class BPlusTree<L, T extends L> {
         private int row;
 
         /** */
-        private Page page;
-
-        /** */
-        private ByteBuffer buf;
+        private long nextPageId;
 
         /** */
         private final L upperBound;
@@ -2602,85 +2770,54 @@ public abstract class BPlusTree<L, T extends L> {
 
         /**
          * @param buf Buffer.
+         * @param io IO.
          * @param startIdx Start index.
+         * @throws IgniteCheckedException If failed.
          */
-        private void bootstrap(ByteBuffer buf, int startIdx) throws IgniteCheckedException {
+        private void bootstrap(ByteBuffer buf, BPlusIO<L> io,  int startIdx) throws IgniteCheckedException {
             assert buf != null;
+            assert io != null;
+            assert rows == null;
 
+            rows = new ArrayList<>();
             row = -1;
 
-            this.buf = buf;
-
-            fillFromBuffer(startIdx);
+            fillFromBuffer(buf, io, startIdx);
         }
 
         /**
+         * @param buf Buffer.
+         * @param io IO.
          * @param startIdx Start index.
+         * @throws IgniteCheckedException If failed.
          */
-        private boolean fillFromBuffer(int startIdx) throws IgniteCheckedException {
-            if (buf == null)
-                return false;
+        private void fillFromBuffer(ByteBuffer buf, BPlusIO<L> io, int startIdx) throws IgniteCheckedException {
+            assert buf != null;
+            assert io.isLeaf();
+            assert io.canGetRow();
 
-            for (;;) {
-                BPlusIO<L> io = io(buf);
+            nextPageId = io.getForward(buf);
+            int cnt = io.getCount(buf);
 
-                assert io.isLeaf();
-                assert io.canGetRow();
+            if (cnt == 0)
+                return;
 
-                int cnt = io.getCount(buf);
-                long fwdId = io.getForward(buf);
+            assert cnt > 0: cnt;
 
-                if (cnt > 0) {
-                    if (upperBound != null) {
-                        int cmp = compare(io, buf, cnt - 1, upperBound);
+            if (upperBound != null) {
+                int cmp = compare(io, buf, cnt - 1, upperBound);
 
-                        if (cmp > 0) {
-                            int idx = findInsertionPoint(io, buf, cnt, upperBound);
+                if (cmp > 0) {
+                    int idx = findInsertionPoint(io, buf, cnt, upperBound);
 
-                            cnt = idx < 0 ? -idx : idx + 1;
+                    cnt = idx < 0 ? -idx : idx + 1;
 
-                            fwdId = 0; // The End.
-                        }
-                    }
+                    nextPageId = 0; // The End.
                 }
-
-                if (cnt > startIdx) {
-                    if (rows == null)
-                        rows = new ArrayList<>();
-
-                    for (int i = startIdx; i < cnt; i++)
-                        rows.add(getRow(io, buf, i));
-                }
-
-                Page prevPage = page;
-
-                if (fwdId != 0) { // Lock next page.
-                    page = page(fwdId);
-                    buf = page.getForRead(); // We keep read lock on previous page, thus forward page can't be removed.
-                }
-                else { // Clear.
-                    page = null;
-                    buf = null;
-                }
-
-                if (prevPage != null) { // Release previous page.
-                    try {
-                        prevPage.releaseRead();
-                    }
-                    finally {
-                        prevPage.close();
-                    }
-                }
-
-                if (F.isEmpty(rows)) {
-                    if (buf == null)
-                        return false;
-
-                    continue;
-                }
-
-                return true;
             }
+
+            for (int i = startIdx; i < cnt; i++)
+                rows.add(getRow(io, buf, i));
         }
 
         /** {@inheritDoc} */
@@ -2694,7 +2831,28 @@ public abstract class BPlusTree<L, T extends L> {
             row = 0;
             rows.clear();
 
-            return fillFromBuffer(0);
+            while (nextPageId != 0) {
+                try (Page next = page(nextPageId)) {
+                    ByteBuffer buf = next.getForRead();
+
+                    try {
+                        if (PageIO.getPageId(buf) != nextPageId)
+                            throw new IgniteCheckedException("Concurrent merge.");
+
+                        fillFromBuffer(buf, io(buf), 0);
+
+                        if (!rows.isEmpty())
+                            return true;
+                    }
+                    finally {
+                        next.releaseRead();
+                    }
+                }
+            }
+
+            rows = null;
+
+            return false;
         }
 
         /** {@inheritDoc} */

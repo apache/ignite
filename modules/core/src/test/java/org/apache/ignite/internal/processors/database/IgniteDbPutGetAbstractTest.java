@@ -27,7 +27,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
-
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -46,6 +45,7 @@ import org.apache.ignite.configuration.DatabaseConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.util.GridRandom;
 import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.X;
@@ -124,6 +124,12 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
+        long seed = System.currentTimeMillis();
+
+        info("Seed: " + seed);
+
+        BPlusTree.rnd = new Random(seed);
+
         startGrids(gridCount());
 
         awaitPartitionMapExchange();
@@ -131,7 +137,70 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
+        BPlusTree.rnd = null;
+
         stopAllGrids();
+    }
+
+    public void testGradualRandomPutAllRemoveAll() {
+        IgniteEx ig = grid(0);
+
+        IgniteCache<Integer, DbValue> cache = ig.cache(null);
+
+        final int cnt = 100_000;
+
+        Random rnd = BPlusTree.rnd;
+
+        assert rnd != null;
+
+        Map<Integer, DbValue> map = new HashMap<>();
+
+        for (int i = 0; i < 5; i++) {
+            info("Iteration: " + i);
+
+            info("Grow...");
+
+            while (map.size() < cnt / 2)
+                doPutRemoveAll(rnd, cache, map, cnt, true);
+
+            info("Shrink...");
+
+            while (map.size() > cnt / 4)
+                doPutRemoveAll(rnd, cache, map, cnt, false);
+
+            info("Check...");
+
+            for (Integer key : map.keySet())
+                assertEquals(map.get(key), cache.get(key));
+        }
+    }
+
+    private void doPutRemoveAll(Random rnd, IgniteCache<Integer, DbValue> cache, Map<Integer, DbValue> map,
+        int keysCnt, boolean grow) {
+        int putCnt = grow ? 20 + rnd.nextInt(10) : 1 + rnd.nextInt(5);
+        int rmvCnt = grow ? 1 + rnd.nextInt(5) : 20 + rnd.nextInt(10);
+
+        Map<Integer, DbValue> put = new HashMap<>(putCnt);
+
+        for (int i = 0; i < putCnt; i++) {
+            int k = rnd.nextInt(keysCnt);
+
+            put.put(k, new DbValue(rnd.nextInt(500), rnd.nextInt(500) + "-value", i));
+        }
+
+        map.putAll(put);
+        cache.putAll(put);
+
+        Set<Integer> rmv = new HashSet<>();
+
+        for (int i = 0; i < rmvCnt; i++) {
+            int k = rnd.nextInt(keysCnt);
+
+            rmv.add(k);
+            map.remove(k);
+        }
+
+        cache.removeAll(rmv);
     }
 
     /**
@@ -931,9 +1000,10 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
 
         IgniteCache<DbKey, DbValue> cache = ignite.cache("non-primitive");
 
-        Affinity aff = ignite.affinity(cache.getName());
+        Affinity<Object> aff = ignite.affinity(cache.getName());
 
         Map<UUID, Integer> cntrs = new HashMap<>();
+        Map<Integer, Integer> partCntrs = new HashMap<>();
 
         final int ENTRIES = 10_000;
 
@@ -953,6 +1023,17 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
                 cntr += 1;
 
             cntrs.put(nodeId, cntr);
+
+            int part = aff.partition(k);
+
+            Integer partCntr = partCntrs.get(part);
+
+            if (partCntr == null)
+                partCntr = 1;
+            else
+                partCntr += 1;
+
+            partCntrs.put(part, partCntr);
         }
 
         checkLocalEntries(ENTRIES, cntrs);
@@ -960,6 +1041,8 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
         checkLocalScan(ENTRIES, cntrs);
 
         checkScan(ENTRIES);
+
+        checkScanPartition(partCntrs);
     }
 
     /**
@@ -1009,14 +1092,31 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
 
             QueryCursor<Cache.Entry<DbKey, DbValue>> cur = cache0.query(qry);
 
+            Map<Integer, Integer> partCntrs = new HashMap<>();
+
+            Affinity<Object> aff = ignite0.affinity(cache0.getName());
+
             for (Cache.Entry<DbKey, DbValue> e : cur) {
                 cnt++;
 
                 allKeys.add(e.getKey());
                 assertEquals(e.getKey().val, e.getValue().iVal);
+
+                int part = aff.partition(e.getKey());
+
+                Integer partCntr = partCntrs.get(part);
+
+                if (partCntr == null)
+                    partCntr = 1;
+                else
+                    partCntr += 1;
+
+                partCntrs.put(part, partCntr);
             }
 
             assertEquals(cntrs.get(ignite0.cluster().localNode().id()), (Integer)cnt);
+
+            checkScanPartition(ignite0, cache0, partCntrs, true);
         }
 
         assertEquals(total, allKeys.size());
@@ -1043,6 +1143,57 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
             }
 
             assertEquals(total, allKeys.size());
+        }
+    }
+
+    /**
+     * @param partCntrs Expected per-partition entries count.
+     */
+    private void checkScanPartition(Map<Integer, Integer> partCntrs) {
+        for (int i = 0; i < gridCount(); i++) {
+            Ignite ignite0 = grid(i);
+
+            IgniteCache<DbKey, DbValue> cache0 = ignite0.cache("non-primitive");
+
+            checkScanPartition(ignite0, cache0, partCntrs, false);
+        }
+    }
+
+    /**
+     * @param partCntrs Expected per-partition entries count.
+     */
+    private void checkScanPartition(Ignite ignite,
+        IgniteCache<DbKey, DbValue> cache,
+        Map<Integer, Integer> partCntrs,
+        boolean loc) {
+        Affinity<Object> aff = ignite.affinity(cache.getName());
+
+        int parts = aff.partitions();
+
+        for (int p = 0; p < parts; p++) {
+            ScanQuery<DbKey, DbValue> qry = new ScanQuery<>();
+
+            qry.setPartition(p);
+            qry.setLocal(loc);
+
+            if (loc && !ignite.cluster().localNode().equals(aff.mapPartitionToNode(p)))
+                continue;
+
+            QueryCursor<Cache.Entry<DbKey, DbValue>> cur = cache.query(qry);
+
+            Set<DbKey> allKeys = new HashSet<>();
+
+            for (Cache.Entry<DbKey, DbValue> e : cur) {
+                allKeys.add(e.getKey());
+                assertEquals(e.getKey().val, e.getValue().iVal);
+            }
+
+            Integer exp = partCntrs.get(p);
+
+            if (exp == null)
+                exp = 0;
+
+            assertEquals(exp, (Integer)allKeys.size());
         }
     }
 
