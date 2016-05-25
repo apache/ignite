@@ -383,13 +383,13 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
 
         /**
          * @param {Boolean} demo Is need run command on demo node.
-         * @param {String} nid Node id.
+         * @param {String} nids Node ids.
          * @returns {Promise}
          */
-        gc(demo, nid) {
+        gc(demo, nids) {
             const cmd = new Command(demo, 'exe')
                 .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
-                .addParam('p1', nid)
+                .addParam('p1', nids)
                 .addParam('p2', 'org.apache.ignite.internal.visor.node.VisorNodeGcTask')
                 .addParam('p3', 'java.lang.Void');
 

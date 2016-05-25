@@ -324,9 +324,9 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                 });
 
                 // GC node and return result to browser.
-                socket.on('node:gc', (nid, cb) => {
+                socket.on('node:gc', (nids, cb) => {
                     agentMgr.findAgent(user._id)
-                        .then((agent) => agent.gc(demo, nid))
+                        .then((agent) => agent.gc(demo, nids))
                         .then((data) => {
                             if (data.finished)
                                 return cb(null, data.result);

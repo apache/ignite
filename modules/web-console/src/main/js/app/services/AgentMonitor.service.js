@@ -324,7 +324,7 @@ class IgniteAgentMonitor {
      * @returns {Promise}
      */
     cacheSwapBackups(nid, cacheNames) {
-        return this._rest('node:cache:swap:backups', nid, _.map(cacheNames, this._maskCacheName).join(','));
+        return this._rest('node:cache:swap:backups', nid, _.map(cacheNames, this._maskCacheName).join(';'));
     }
 
     /**
@@ -359,11 +359,11 @@ class IgniteAgentMonitor {
 
     /**
      * GC node.
-     * @param {String} nid Node id.
+     * @param {Array.<String>} nids Node ids.
      * @returns {Promise}
      */
-    gc(nid) {
-        return this._rest('node:gc', nid);
+    gc(nids) {
+        return this._rest('node:gc', nids.join(';'));
     }
 
     /**
