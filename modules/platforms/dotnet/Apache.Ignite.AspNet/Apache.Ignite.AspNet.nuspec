@@ -22,7 +22,7 @@
 Creating NuGet package:
 1) Build Apache.Ignite.sln (AnyCPU configuration)
 2) Create package (use csproj instead of nuspec so that template substitution works): 
-   nuget pack Apache.Ignite.AspNet.csproj -Prop Configuration=Release
+   nuget pack Apache.Ignite.AspNet.csproj -Prop Configuration=Release -Prop Platform=AnyCPU
 
 -->
 
