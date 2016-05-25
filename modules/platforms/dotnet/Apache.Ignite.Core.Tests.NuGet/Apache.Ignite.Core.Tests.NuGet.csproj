@@ -80,6 +80,11 @@
       <HintPath>packages\Apache.Ignite.Linq.1.6.0\lib\net40\Apache.Ignite.Linq.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Apache.Ignite.AspNet">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>packages\Apache.Ignite.AspNet.1.6.0\lib\net40\Apache.Ignite.AspNet.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="nunit-console-runner">
       <HintPath>..\libs\nunit-console-runner.dll</HintPath>
     </Reference>
