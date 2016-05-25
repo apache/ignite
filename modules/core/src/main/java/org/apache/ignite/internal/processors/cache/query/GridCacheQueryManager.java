@@ -1156,8 +1156,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     K key = e.key();
                     V val = e.value();
 
+                    key = (K)cctx.unwrapBinaryIfNeeded(key, keepBinary);
+
                     if (filter != null || locNode) {
-                        key = (K)cctx.unwrapBinaryIfNeeded(key, keepBinary);
                         val = (V)cctx.unwrapBinaryIfNeeded(val, keepBinary);
                     }
 
