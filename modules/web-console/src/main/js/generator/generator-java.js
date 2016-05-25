@@ -1107,25 +1107,8 @@ $generatorJava.clusterLogger = function (logger, res) {
 
         switch (logger.kind) {
             case 'Log4j2':
-                let args = '';
-
-                switch (log.mode) {
-                    case 'Logger':
-                        args = 'new ' + res.importClass(log.logger) + '(), ';
-
-                        args += $generatorCommon.isDefinedAndNotEmpty(log.consoleLogger) ?
-                            'new ' + res.importClass(log.consoleLogger) + '()' : 'null';
-
-                        break;
-
-                    case 'Path':
-                        args = '"' + log.path + '"';
-
-                        break;
-                }
-
                 $generatorJava.declareVariableCustom(res, varName, 'org.apache.ignite.logger.log4j2.Log4J2Logger',
-                    'new Log4J2Logger(' + args + ')');
+                    'new Log4J2Logger("' + log.path + '")');
 
                 res.needEmptyLine = true;
 
@@ -1139,80 +1122,27 @@ $generatorJava.clusterLogger = function (logger, res) {
 
                 break;
 
-            case 'HadoopIgfsJcl':
-                $generatorJava.declareVariableCustom(res, varName, 'org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsJclLogger',
-                    'new HadoopIgfsJclLogger(new ' + res.importClass(log.logger) + '())');
-
-                break;
-
             case 'Java':
-                if (log.mode === 'default')
-                    $generatorJava.declareVariable(res, varName, 'org.apache.ignite.logger.java.JavaLogger');
-                else {
-                    let arg = '';
-
-                    switch (log.mode) {
-                        case 'Logger':
-                            arg = 'new ' + res.importClass(log.logger) + '()';
-
-                            break;
-
-                        case 'Configure':
-                            arg = (log.configure || false).toString();
-
-                            break;
-                    }
-
-                    $generatorJava.declareVariableCustom(res, varName, 'org.apache.ignite.logger.java.JavaLogger',
-                        'new JavaLogger(' + arg + ')')
-                }
+                $generatorJava.declareVariable(res, varName, 'org.apache.ignite.logger.java.JavaLogger');
 
                 break;
 
             case 'JCL':
-                if (log && $generatorCommon.isDefinedAndNotEmpty(log.logger))
-                    $generatorJava.declareVariableCustom(res, varName, 'org.apache.ignite.logger.jcl.JclLogger',
-                        'new JclLogger(new ' + res.importClass(log.logger) + '())');
-                else
-                    $generatorJava.declareVariable(res, varName, 'org.apache.ignite.logger.jcl.JclLogger');
+                $generatorJava.declareVariable(res, varName, 'org.apache.ignite.logger.jcl.JclLogger');
 
                 break;
 
             case 'SLF4J':
-                if (log && $generatorCommon.isDefinedAndNotEmpty(log.logger)) {
-                    $generatorJava.declareVariableCustom(res, varName, 'org.apache.ignite.logger.slf4j.Slf4jLogger',
-                        'new Slf4jLogger(new ' + res.importClass(log.logger) + '())');
-                }
-                else
-                    $generatorJava.declareVariable(res, varName, 'org.apache.ignite.logger.slf4j.Slf4jLogger');
+                $generatorJava.declareVariable(res, varName, 'org.apache.ignite.logger.slf4j.Slf4jLogger');
 
                 break;
 
             case 'Log4j':
-                if (log.mode === 'default' && !$generatorCommon.isDefinedAndNotEmpty(log.level))
+                if (log.mode === 'Default' && !$generatorCommon.isDefinedAndNotEmpty(log.level))
                     $generatorJava.declareVariable(res, varName, 'org.apache.ignite.logger.log4j.Log4JLogger');
                 else {
-                    let arg = '';
-
-                    switch (log.mode) {
-                        case 'Logger':
-                            arg = 'new ' + res.importClass(log.logger) + '()';
-
-                            break;
-
-                        case 'Configure':
-                            arg = (log.configure || false).toString();
-
-                            break;
-
-                        case 'Path':
-                            arg = '"' + log.path + '"';
-
-                            break;
-                    }
-
                     $generatorJava.declareVariableCustom(res, varName, 'org.apache.ignite.logger.log4j.Log4JLogger',
-                        'new Log4JLogger(' + arg + ')');
+                        'new Log4JLogger("' + log.path + '")');
 
                     if ($generatorCommon.isDefinedAndNotEmpty(log.level))
                         res.line(varName + '.setLevel(' + res.importClass('org.apache.log4j.Level') + '.' + log.level + ');');

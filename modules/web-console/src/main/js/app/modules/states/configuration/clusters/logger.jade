@@ -18,6 +18,7 @@ include ../../../../../app/helpers/jade/mixins.jade
 
 -var model = 'backupItem.logger'
 -var form = 'logger'
+-var kind = model + '.kind'
 
 form.panel.panel-default(name=form novalidate)
     .panel-heading(bs-collapse-toggle ng-click='ui.loadPanel("#{form}")')
@@ -30,7 +31,7 @@ form.panel.panel-default(name=form novalidate)
         .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
             .col-sm-6
                 .settings-row
-                    +dropdown('Logger:', model + '.kind', 'logger', 'true', 'Default',
+                    +dropdown('Logger:', kind, 'logger', 'true', 'Default',
                         '[\
                             {value: "Log4j", label: "Apache Log4j"},\
                             {value: "Log4j2", label: "Apache Log4j 2"},\
@@ -38,7 +39,6 @@ form.panel.panel-default(name=form novalidate)
                             {value: "Java", label: "Java logger (JUL)"},\
                             {value: "JCL", label: "Jakarta Commons Logging (JCL)"},\
                             {value: "Null", label: "Null logger"},\
-                            {value: "HadoopIgfsJcl", label: "JCL wrapper for Hadoop"},\
                             {value: "Custom", label: "Custom"},\
                             {value: undefined, label: "Default"}\
                         ]',
@@ -50,25 +50,16 @@ form.panel.panel-default(name=form novalidate)
                             <li>Java logger (JUL) - built in java logger</li>\
                             <li>Jakarta Commons Logging (JCL) - wraps any JCL (Jakarta Commons Logging) loggers</li>\
                             <li>Null logger - logger which does not output anything</li>\
-                            <li>JCL wrapper for Hadoop - special logger to use with IGFS and Hadoop</li>\
                             <li>Custom - custom logger implementation</li>\
-                            <li>Default - default logger configuration (Log4j)</li>\
+                            <li>Default - Apache Log4j if awailable on classpath or Java logger otherwise</li>\
                         </ul>')
-                .settings-row(ng-if='#{model}.kind && #{model}.kind !== "Null"')
+                .settings-row(ng-show='#{kind} && (#{kind} === "Log4j2" || #{kind} === "Log4j" || #{kind} === "Custom")')
                     .panel-details
                         ignite-configuration-clusters-logger-log4j2(
-                            ng-show='#{model}.kind === "Log4j2"')
-                        ignite-configuration-clusters-logger-hadoop(
-                            ng-show='#{model}.kind === "HadoopIgfsJcl"')
-                        ignite-configuration-clusters-logger-java(
-                            ng-show='#{model}.kind === "Java"')
-                        ignite-configuration-clusters-logger-jcl(
-                            ng-show='#{model}.kind === "JCL"')
-                        ignite-configuration-clusters-logger-slf4j(
-                            ng-show='#{model}.kind === "SLF4J"')
+                            ng-show='#{kind} === "Log4j2"')
                         ignite-configuration-clusters-logger-log4j(
-                            ng-show='#{model}.kind === "Log4j"')
+                            ng-show='#{kind} === "Log4j"')
                         ignite-configuration-clusters-logger-custom(
-                            ng-show='#{model}.kind === "Custom"')
+                            ng-show='#{kind} === "Custom"')
             .col-sm-6
                 +preview-xml-java(model, 'clusterLogger')

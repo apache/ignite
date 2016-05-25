@@ -236,11 +236,7 @@ consoleModule.controller('clustersController', [
                         cluster.failoverSpi = [];
 
                     if (!cluster.logger)
-                        cluster.logger = {
-                            Log4j: { mode: 'Default' },
-                            Log4j2: { mode: 'Logger' },
-                            Java: { mode: 'Default' }
-                        };
+                        cluster.logger = { Log4j: { mode: 'Default' } };
                 });
 
                 $scope.caches = _.map(data.caches, function (cache) {
@@ -362,11 +358,7 @@ consoleModule.controller('clustersController', [
                     }
                 },
                 failoverSpi: [],
-                logger: {
-                    Log4j: { mode: 'Default' },
-                    Log4j2: { mode: 'Logger' },
-                    Java: { mode: 'Default' }
-                }
+                logger: { Log4j: { mode: 'Default' } }
             };
 
             newItem = angular.merge({}, blank, newItem);

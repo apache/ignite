@@ -851,31 +851,7 @@ $generatorXml.clusterLogger = function (logger, res) {
         switch (logger.kind) {
             case 'Log4j2':
                 res.startBlock('<bean class="org.apache.ignite.logger.log4j2.Log4J2Logger">');
-
-                switch (log.mode) {
-                    case 'Logger':
-                        res.startBlock('<constructor-arg>');
-                        res.line('<bean class="' + log.logger + '"/>');
-                        res.endBlock('</constructor-arg>');
-
-                        res.startBlock('<constructor-arg>');
-
-                        if ($generatorCommon.isDefinedAndNotEmpty(log.consoleLogger))
-                            res.line('<bean class="' + log.consoleLogger + '"/>');
-                        else
-                            res.line('<null/>');
-
-                        res.endBlock('</constructor-arg>');
-
-                        break;
-
-                    case 'Path':
-                        res.line('<constructor-arg value="' + $generatorXml.escape(log.path) + '"/>');
-
-                        break;
-                }
-
-
+                res.line('<constructor-arg value="' + $generatorXml.escape(log.path) + '"/>');
                 $generatorXml.property(res, log, 'level');
                 res.endBlock('</bean>');
 
@@ -883,65 +859,21 @@ $generatorXml.clusterLogger = function (logger, res) {
 
             case 'Null':
                 res.line('<bean class="org.apache.ignite.logger.NullLogger"/>');
-                break;
-
-            case 'HadoopIgfsJcl':
-                res.startBlock('<bean class="org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsJclLogger">');
-                res.startBlock('<constructor-arg>');
-                res.line('<bean class="' + log.logger + '"/>');
-                res.endBlock('</constructor-arg>');
-                res.endBlock('</bean>');
 
                 break;
 
             case 'Java':
-                if (log.mode === 'Default')
-                    res.line('<bean class="org.apache.ignite.logger.java.JavaLogger"/>');
-                else {
-                    res.startBlock('<bean class="org.apache.ignite.logger.java.JavaLogger">');
-
-                    switch (log.mode) {
-                        case 'Logger':
-                            res.startBlock('<constructor-arg>');
-                            res.line('<bean class="' + log.logger + '"/>');
-                            res.endBlock('</constructor-arg>');
-
-                            break;
-
-                        case 'Configure':
-                            res.line('<constructor-arg type="boolean" value="' + (log.configure || false) + '"/>');
-
-                            break;
-                    }
-
-                    res.endBlock('</bean>');
-                }
+                res.line('<bean class="org.apache.ignite.logger.java.JavaLogger"/>');
 
                 break;
 
             case 'JCL':
-                if (log && $generatorCommon.isDefinedAndNotEmpty(log.logger)) {
-                    res.startBlock('<bean class="org.apache.ignite.logger.jcl.JclLogger">');
-                    res.startBlock('<constructor-arg>');
-                    res.line('<bean class="' + log.logger + '"/>');
-                    res.endBlock('</constructor-arg>');
-                    res.endBlock('</bean>');
-                }
-                else
-                    res.line('<bean class="org.apache.ignite.logger.jcl.JclLogger"/>');
+                res.line('<bean class="org.apache.ignite.logger.jcl.JclLogger"/>');
 
                 break;
 
             case 'SLF4J':
-                if (log && $generatorCommon.isDefinedAndNotEmpty(log.logger)) {
-                    res.startBlock('<bean class="org.apache.ignite.logger.slf4j.Slf4jLogger">');
-                    res.startBlock('<constructor-arg>');
-                    res.line('<bean class="' + log.logger + '"/>');
-                    res.endBlock('</constructor-arg>');
-                    res.endBlock('</bean>');
-                }
-                else
-                    res.line('<bean class="org.apache.ignite.logger.slf4j.Slf4jLogger"/>');
+                res.line('<bean class="org.apache.ignite.logger.slf4j.Slf4jLogger"/>');
 
                 break;
 
@@ -950,26 +882,7 @@ $generatorXml.clusterLogger = function (logger, res) {
                     res.line('<bean class="org.apache.ignite.logger.log4j.Log4JLogger"/>');
                 else {
                     res.startBlock('<bean class="org.apache.ignite.logger.log4j.Log4JLogger">');
-
-                    switch (log.mode) {
-                        case 'Logger':
-                            res.startBlock('<constructor-arg>');
-                            res.line('<bean class="' + log.logger + '"/>');
-                            res.endBlock('</constructor-arg>');
-
-                            break;
-
-                        case 'Configure':
-                            res.line('<constructor-arg type="boolean" value="' + (log.configure || false) + '"/>');
-
-                            break;
-
-                        case 'Path':
-                            res.line('<constructor-arg value="' + $generatorXml.escape(log.path) + '"/>');
-
-                            break;
-                    }
-
+                    res.line('<constructor-arg value="' + $generatorXml.escape(log.path) + '"/>');
                     $generatorXml.property(res, log, 'level');
                     res.endBlock('</bean>');
                 }

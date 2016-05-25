@@ -66,10 +66,6 @@ import clustersCollisionPriorityQueue from './configuration/clusters/collision/p
 import clustersCollisionCustom from './configuration/clusters/collision/custom.directive';
 
 import clustersLoggerLog4j2 from './configuration/clusters/logger/log4j2.directive';
-import clustersLoggerHadoop from './configuration/clusters/logger/hadoop.directive';
-import clustersLoggerJava from './configuration/clusters/logger/java.directive';
-import clustersLoggerJcl from './configuration/clusters/logger/jcl.directive';
-import clustersLoggerSlf4j from './configuration/clusters/logger/slf4j.directive';
 import clustersLoggerLog4j from './configuration/clusters/logger/log4j.directive';
 import clustersLoggerCustom from './configuration/clusters/logger/custom.directive';
 
@@ -106,10 +102,6 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
     .directive(...previewPanel)
     .directive(...clustersLoggerCustom)
     .directive(...clustersLoggerLog4j)
-    .directive(...clustersLoggerSlf4j)
-    .directive(...clustersLoggerJcl)
-    .directive(...clustersLoggerJava)
-    .directive(...clustersLoggerHadoop)
     .directive(...clustersLoggerLog4j2)
     .directive(...clustersLogger)
     .directive(...clustersFailover)

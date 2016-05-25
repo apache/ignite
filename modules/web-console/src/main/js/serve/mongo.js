@@ -583,34 +583,15 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
             }
         }],
         logger: {
-            kind: {type: 'String', enum: ['Log4j2', 'Null', 'HadoopIgfsJcl', 'Java', 'JCL', 'SLF4J', 'Log4j', 'Custom']},
+            kind: {type: 'String', enum: ['Log4j2', 'Null', 'Java', 'JCL', 'SLF4J', 'Log4j', 'Custom']},
             Log4j2: {
                 level: {type: String, enum: ['OFF', 'FATAL', 'ERROR', 'WARN', 'INFO', 'DEBUG', 'TRACE', 'ALL']},
-                mode: {type: String, enum: ['Logger', 'Path']},
-                logger: String,
-                consoleLogger: String,
                 path: String
             },
-            HadoopIgfsJcl: {
-                logger: String
-            },
-            Java: {
-                mode: {type: String, enum: ['Default', 'Logger', 'Configure']},
-                logger: String,
-                configure: Boolean
-            },
-            JCL: {
-                logger: String
-            },
-            SLF4J: {
-                logger: String
-            },
             Log4j: {
-                mode: {type: String, enum: ['Default', 'Logger', 'Configure', 'Path']},
+                mode: {type: String, enum: ['Default', 'Path']},
                 level: {type: String, enum: ['OFF', 'FATAL', 'ERROR', 'WARN', 'INFO', 'DEBUG', 'TRACE', 'ALL']},
-                logger: String,
-                path: String,
-                configure: Boolean
+                path: String
             },
             Custom: {
                 class: String
