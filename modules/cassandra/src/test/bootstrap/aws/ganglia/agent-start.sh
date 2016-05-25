@@ -21,22 +21,12 @@
 
 echo "[INFO] Running Ganglia agent discovery daemon for '$1' cluster"
 
-gmondCmd="gmond"
+gmondCmd="/usr/local/sbin/gmond"
 
-location=$(whereis gmond)
-if [ -z "$location" ]; then
-    echo "[WARN] Failed to automatically detect gmond daemon"
-
-    if [ ! -f "/usr/local/sbin/gmond" ]; then
-        echo "[ERROR] gmond daemon doesn't exist in /usr/local/sbin/gmond"
-        exit 1
-    fi
-
-    gmondCmd="/usr/local/sbin/gmond"
-
-    echo "[INFO] Using gmond daemon from /usr/local/sbin/gmond"
+if [ ! -f "$gmondCmd" ]; then
+    echo "[ERROR] gmond daemon doesn't exist in $gmondCmd"
+    exit 1
 fi
-
 
 waitFirstClusterNodeRegistered
 
