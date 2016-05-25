@@ -18,6 +18,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -87,7 +89,15 @@ public class CacheRebalancingWithPersistenceSelfTest extends GridCommonAbstractT
         IgniteEx ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
         IgniteEx ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
 
+        awaitPartitionMapExchange();
+
         IgniteCache cache1 = ignite1.cache(null);
+
+        Set<Integer> parts = new HashSet<>();
+
+        for (int p = 0; p < ignite1.affinity(null).partitions(); p++) {
+            parts.add(p);
+        }
 
         for (int i = 0; i < 10000; i++) {
             cache1.put(i, i);
@@ -96,14 +106,22 @@ public class CacheRebalancingWithPersistenceSelfTest extends GridCommonAbstractT
         ignite3.close();
         ignite4.close();
 
+        awaitPartitionMapExchange();
+
+        assert !cache1.lostPartitions().isEmpty();
+
+        cache1.recoverPartitions(parts).get();
+
+        assert cache1.lostPartitions().isEmpty();
+
         for (int i = 0; i < 10000; i++) {
             cache1.put(i, i * 2);
         }
 
-        useDb = false;
-
         ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
         ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
+
+        awaitPartitionMapExchange();
 
         IgniteCache cache3 = ignite3.cache(null);
         IgniteCache cache4 = ignite4.cache(null);
@@ -119,6 +137,8 @@ public class CacheRebalancingWithPersistenceSelfTest extends GridCommonAbstractT
         IgniteEx ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
         IgniteEx ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
         IgniteEx ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
+
+        awaitPartitionMapExchange();
 
         IgniteCache cache1 = ignite1.cache(null);
 
@@ -137,6 +157,8 @@ public class CacheRebalancingWithPersistenceSelfTest extends GridCommonAbstractT
         ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
         ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
         ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
+
+        awaitPartitionMapExchange();
 
         cache1 = ignite1.cache(null);
         IgniteCache cache2 = ignite2.cache(null);
@@ -159,7 +181,7 @@ public class CacheRebalancingWithPersistenceSelfTest extends GridCommonAbstractT
         IgniteEx ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
         IgniteEx ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
 
-        U.sleep(3000);
+        awaitPartitionMapExchange();
 
         IgniteCache cache1 = ignite1.cache(null);
 
@@ -176,6 +198,8 @@ public class CacheRebalancingWithPersistenceSelfTest extends GridCommonAbstractT
         ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
         ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
         ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
+
+        awaitPartitionMapExchange();
 
         cache1 = ignite1.cache(null);
         IgniteCache cache2 = ignite2.cache(null);
