@@ -20,7 +20,7 @@ package org.apache.ignite.spark
 
 import org.apache.ignite.internal.IgnitionEx
 import org.apache.ignite.internal.util.IgniteUtils
-import org.apache.ignite.{IgniteSystemProperties, Ignition, Ignite}
+import org.apache.ignite.{IgniteException, IgniteSystemProperties, Ignition, Ignite}
 import org.apache.ignite.configuration.{CacheConfiguration, IgniteConfiguration}
 import org.apache.spark.{Logging, SparkContext}
 import org.apache.spark.sql.SQLContext
