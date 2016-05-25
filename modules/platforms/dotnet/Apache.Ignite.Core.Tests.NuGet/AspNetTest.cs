@@ -25,7 +25,7 @@ namespace Apache.Ignite.Core.Tests.NuGet
     using NUnit.Framework;
 
     /// <summary>
-    /// AspNet test.
+    /// ASP.NET test.
     /// </summary>
     public class AspNetTest
     {
