@@ -111,7 +111,8 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     /** Optional backup filter. First node is primary, second node is a node being tested. */
     private IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter;
 
-    /** Optional backup filter. First node is primary, second node is a node being tested.*/
+    /** Optional affinity backups filter. The first node is a node being tested,
+     *  the second is a list of nodes that are already assigned for a given partition (the first node in the list is primary). */
     private IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter;
 
     /** Hash ID resolver. */
@@ -280,7 +281,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      *
      * @param backupFilter Optional backup filter.
-     * @Deprecated use setAffinityBackupFilter
+     * @Deprecated Use {@code affinityBackupFilter} instead.
      */
     @Deprecated
     public void setBackupFilter(@Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
@@ -290,7 +291,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     /**
      * Gets optional backup filter. If not {@code null}, backups will be selected
      * from all nodes that pass this filter. First node passed to this filter is a node being tested,
-     * and second parameter is a list of nodes which partition will be assigned (primary node will first in list).
+     * and the second parameter is a list of nodes that are already assigned for a given partition (primary node is the first in the list).
      * <p>
      * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      *
@@ -303,7 +304,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
     /**
      * Sets optional backup filter. If provided, then backups will be selected from all
      * nodes that pass this filter. First node being passed to this filter is a node being tested,
-     * and second parameter is a list of nodes which partition will be assigned (primary node will first in list).
+     * and the second parameter is a list of nodes that are already assigned for a given partition (primary node is the first in the list).
      * <p>
      * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      *

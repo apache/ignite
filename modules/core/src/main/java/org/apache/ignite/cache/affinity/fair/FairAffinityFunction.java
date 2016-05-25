@@ -102,7 +102,7 @@ public class FairAffinityFunction implements AffinityFunction {
     /** Optional backup filter. First node is primary, second node is a node being tested. */
     private IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter;
 
-    /** Optional backup filter. First node is primary, second node is a node being tested.*/
+    /** Optional affinity backups filter. The first node is a node being tested, the second is a list of nodes that are already assigned for a given partition. */
     private IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter;
 
     /**
@@ -223,7 +223,7 @@ public class FairAffinityFunction implements AffinityFunction {
      * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      *
      * @param backupFilter Optional backup filter.
-     * @Deprecated affinityBackupFilter Optional backup filter.
+     * Use {@code affinityBackupFilter} instead.
      */
     @Deprecated
     public void setBackupFilter(@Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
@@ -233,7 +233,7 @@ public class FairAffinityFunction implements AffinityFunction {
     /**
      * Gets optional backup filter. If not {@code null}, backups will be selected
      * from all nodes that pass this filter. First node passed to this filter is a node being tested,
-     * and second parameter is a list of nodes which partition will be assigned (primary node will first in list).
+     * and the second parameter is a list of nodes that are already assigned for a given partition.
      * <p>
      * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      *
@@ -246,7 +246,7 @@ public class FairAffinityFunction implements AffinityFunction {
     /**
      * Sets optional backup filter. If provided, then backups will be selected from all
      * nodes that pass this filter. First node being passed to this filter is a node being tested,
-     * and second parameter is a list of nodes which partition will be assigned (primary node will first in list).
+     * and the second parameter is a list of nodes that are already assigned for a given partition.
      * <p>
      * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      *
@@ -904,8 +904,28 @@ public class FairAffinityFunction implements AffinityFunction {
 
             if (exclNeighbors)
                 return allowNeighbors || !neighborsContainPartition(node, part);
-            else if (affinityBackupFilter != null)
-                return affinityBackupFilter.apply(node, assignments.get(part));
+            else if (affinityBackupFilter != null) {
+                List<ClusterNode> assigment = assignments.get(part);
+
+                List<ClusterNode> newAssignment;
+
+                if (tier < assigment.size()) {
+                    newAssignment = new ArrayList<>(assigment.size() - 1);
+
+                    int i = 0;
+
+                    for (ClusterNode assignmentNode: assigment) {
+                        if (i != tier)
+                            newAssignment.add(assignmentNode);
+
+                        i++;
+                    }
+                }
+                else
+                    newAssignment = assigment;
+
+                return affinityBackupFilter.apply(node, newAssignment);
+            }
             else if (backupFilter != null) {
                 if (tier == 0) {
                     List<ClusterNode> assigment = assignments.get(part);

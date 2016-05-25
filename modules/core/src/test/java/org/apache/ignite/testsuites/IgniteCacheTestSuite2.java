@@ -18,10 +18,8 @@
 package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
-import org.apache.ignite.cache.affinity.fair.FairAffinityFunctionAffinityBackupFilterSelfTest;
 import org.apache.ignite.cache.affinity.fair.FairAffinityFunctionBackupFilterSelfTest;
 import org.apache.ignite.cache.affinity.fair.FairAffinityFunctionExcludeNeighborsSelfTest;
-import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionAffinityBackupFilterSelfTest;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionBackupFilterSelfTest;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunctionExcludeNeighborsSelfTest;
 import org.apache.ignite.internal.processors.cache.CacheConfigurationLeakTest;
@@ -213,8 +211,6 @@ public class IgniteCacheTestSuite2 extends TestSuite {
         suite.addTest(new TestSuite(GridCacheDhtPreloadUnloadSelfTest.class));
         suite.addTest(new TestSuite(RendezvousAffinityFunctionBackupFilterSelfTest.class));
         suite.addTest(new TestSuite(FairAffinityFunctionBackupFilterSelfTest.class));
-        suite.addTest(new TestSuite(RendezvousAffinityFunctionAffinityBackupFilterSelfTest.class));
-        suite.addTest(new TestSuite(FairAffinityFunctionAffinityBackupFilterSelfTest.class));
         suite.addTest(new TestSuite(GridCachePartitionedPreloadLifecycleSelfTest.class));
         suite.addTest(new TestSuite(CacheLoadingConcurrentGridStartSelfTest.class));
         suite.addTest(new TestSuite(GridCacheDhtPreloadDelayedSelfTest.class));
