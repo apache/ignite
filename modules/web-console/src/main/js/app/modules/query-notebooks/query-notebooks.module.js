@@ -18,7 +18,7 @@
 import angular from 'angular';
 
 angular
-    .module('ignite-console.QueryNotebooks', [
+    .module('ignite-console.query-notebooks', [
 
     ])
     .provider('QueryNotebooks', function() {
