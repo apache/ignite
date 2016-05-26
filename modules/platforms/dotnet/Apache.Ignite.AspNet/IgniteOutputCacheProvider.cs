@@ -24,11 +24,13 @@ namespace Apache.Ignite.AspNet
     using System.Collections.Specialized;
     using System.Configuration;
     using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using System.IO;
     using System.Web;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Expiry;
+    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// ASP.NET output cache provider that uses Ignite cache as a storage.
@@ -126,11 +128,19 @@ namespace Apache.Ignite.AspNet
             var cacheName = config[CacheName];
             var cfgSection = config[IgniteConfigurationSectionName];
 
-            var grid = cfgSection != null
-                ? StartFromApplicationConfiguration(cfgSection)
-                : Ignition.GetIgnite(gridName);
+            try
+            {
+                var grid = cfgSection != null
+                    ? StartFromApplicationConfiguration(cfgSection)
+                    : Ignition.GetIgnite(gridName);
 
-            _cache = grid.GetOrCreateCache<string, object>(cacheName);
+                _cache = grid.GetOrCreateCache<string, object>(cacheName);
+            }
+            catch (Exception ex)
+            {
+                throw new IgniteException(string.Format(CultureInfo.InvariantCulture,
+                    "Failed to initialize {0}: {1}", GetType(), ex), ex);
+            }
         }
 
         /// <summary>
@@ -141,8 +151,8 @@ namespace Apache.Ignite.AspNet
             var section = ConfigurationManager.GetSection(sectionName) as IgniteConfigurationSection;
 
             if (section == null)
-                throw new ConfigurationErrorsException(string.Format("Could not find {0} with name '{1}'",
-                    typeof(IgniteConfigurationSection).Name, sectionName));
+                throw new ConfigurationErrorsException(string.Format(CultureInfo.InvariantCulture, 
+                    "Could not find {0} with name '{1}'", typeof(IgniteConfigurationSection).Name, sectionName));
 
             var config = section.IgniteConfiguration;
 
