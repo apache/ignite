@@ -62,17 +62,18 @@ public class CacheLocalOffHeapAndSwapMetricsSelfTest extends GridCommonAbstractT
     }
 
     /**
+     * @param memoryMode Cache memory mode.
      * @param offHeapSize Max off-heap size.
      * @param swapEnabled Swap enabled.
      */
-    private void createCache(int offHeapSize, boolean swapEnabled) {
+    private void createCache(CacheMemoryMode memoryMode, int offHeapSize, boolean swapEnabled) {
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setStatisticsEnabled(true);
 
         ccfg.setCacheMode(CacheMode.LOCAL);
         ccfg.setAtomicityMode(CacheAtomicityMode.ATOMIC);
-        ccfg.setMemoryMode(CacheMemoryMode.ONHEAP_TIERED);
+        ccfg.setMemoryMode(memoryMode);
 
         ccfg.setOffHeapMaxMemory(offHeapSize);
         ccfg.setSwapEnabled(swapEnabled);
@@ -106,7 +107,7 @@ public class CacheLocalOffHeapAndSwapMetricsSelfTest extends GridCommonAbstractT
      * @throws Exception if failed.
      */
     public void testOffHeapMetrics() throws Exception {
-        createCache(0, false);
+        createCache(CacheMemoryMode.ONHEAP_TIERED, 0, false);
 
         for (int i = 0; i < KEYS_CNT; i++)
             cache.put(i, i);
@@ -187,7 +188,7 @@ public class CacheLocalOffHeapAndSwapMetricsSelfTest extends GridCommonAbstractT
      * @throws Exception if failed.
      */
     public void testSwapMetrics() throws Exception {
-        createCache(-1, true);
+        createCache(CacheMemoryMode.ONHEAP_TIERED, -1, true);
 
         for (int i = 0; i < KEYS_CNT; i++)
             cache.put(i, i);
@@ -256,7 +257,7 @@ public class CacheLocalOffHeapAndSwapMetricsSelfTest extends GridCommonAbstractT
      * @throws Exception if failed.
      */
     public void testOffHeapAndSwapMetrics() throws Exception {
-        createCache(OFFHEAP_MAX_SIZE, true);
+        createCache(CacheMemoryMode.ONHEAP_TIERED, OFFHEAP_MAX_SIZE, true);
 
         for (int i = 0; i < KEYS_CNT; i++)
             cache.put(i, i);
@@ -371,6 +372,211 @@ public class CacheLocalOffHeapAndSwapMetricsSelfTest extends GridCommonAbstractT
         assertEquals(100 * KEYS_CNT * 2.0 / (KEYS_CNT * 4.0 - MAX_SIZE - OFFHEAP_MAX_CNT),
             cache.localMetrics().getSwapMissPercentage(), 0.1);
         assertEquals(KEYS_CNT * 2 - MAX_SIZE - OFFHEAP_MAX_CNT, cache.localMetrics().getSwapRemovals());
+
+        assertEquals(0, cache.localMetrics().getSwapEntriesCount());
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testOffHeapMetricsInOffHeapTiered() throws Exception {
+        createCache(CacheMemoryMode.OFFHEAP_TIERED, 0, false);
+
+        for (int i = 0; i < KEYS_CNT; i++)
+            cache.put(i, i);
+
+        printStat();
+
+        assertEquals(cache.localMetrics().getCacheEvictions(), cache.localMetrics().getOffHeapPuts());
+        assertEquals(KEYS_CNT, cache.localMetrics().getOffHeapGets());
+        assertEquals(0, cache.localMetrics().getOffHeapHits());
+        assertEquals(0f, cache.localMetrics().getOffHeapHitPercentage());
+        assertEquals(KEYS_CNT, cache.localMetrics().getOffHeapMisses());
+        assertEquals(100f, cache.localMetrics().getOffHeapMissPercentage());
+        assertEquals(0, cache.localMetrics().getOffHeapRemovals());
+
+        assertEquals(0, cache.localMetrics().getOffHeapEvictions());
+        assertEquals(cache.localMetrics().getCacheEvictions(), cache.localMetrics().getOffHeapEntriesCount());
+        assertEquals(cache.localMetrics().getCacheEvictions(), cache.localMetrics().getOffHeapPrimaryEntriesCount());
+        assertEquals(0, cache.localMetrics().getOffHeapBackupEntriesCount());
+
+        for (int i = 0; i < KEYS_CNT; i++)
+            cache.get(i);
+
+        printStat();
+
+        assertEquals(cache.localMetrics().getCacheEvictions(), cache.localMetrics().getOffHeapGets());
+        assertEquals(KEYS_CNT * 2, cache.localMetrics().getOffHeapGets());
+        assertEquals(KEYS_CNT, cache.localMetrics().getOffHeapHits());
+        assertEquals(100 * KEYS_CNT / (KEYS_CNT * 2.0), cache.localMetrics().getOffHeapHitPercentage(), 0.1);
+        assertEquals(KEYS_CNT, cache.localMetrics().getOffHeapMisses());
+        assertEquals(100 * KEYS_CNT / (KEYS_CNT * 2.0), cache.localMetrics().getOffHeapMissPercentage(), 0.1);
+        assertEquals(0, cache.localMetrics().getOffHeapRemovals());
+
+        assertEquals(0, cache.localMetrics().getOffHeapEvictions());
+        assertEquals(KEYS_CNT, cache.localMetrics().getOffHeapEntriesCount());
+        assertEquals(KEYS_CNT, cache.localMetrics().getOffHeapPrimaryEntriesCount());
+        assertEquals(0, cache.localMetrics().getOffHeapBackupEntriesCount());
+
+        for (int i = KEYS_CNT; i < KEYS_CNT * 2; i++)
+            cache.get(i);
+
+        printStat();
+
+        assertEquals(cache.localMetrics().getCacheEvictions(), cache.localMetrics().getOffHeapGets());
+        assertEquals(KEYS_CNT * 3, cache.localMetrics().getOffHeapGets());
+        assertEquals(KEYS_CNT, cache.localMetrics().getOffHeapHits());
+        assertEquals(100 / 3.0, cache.localMetrics().getOffHeapHitPercentage(), 0.1);
+        assertEquals(KEYS_CNT * 2, cache.localMetrics().getOffHeapMisses());
+        assertEquals(100 - (100 / 3.0), cache.localMetrics().getOffHeapMissPercentage(), 0.1);
+        assertEquals(0, cache.localMetrics().getOffHeapRemovals());
+
+        assertEquals(0, cache.localMetrics().getOffHeapEvictions());
+        assertEquals(KEYS_CNT, cache.localMetrics().getOffHeapEntriesCount());
+        assertEquals(KEYS_CNT, cache.localMetrics().getOffHeapPrimaryEntriesCount());
+        assertEquals(0, cache.localMetrics().getOffHeapBackupEntriesCount());
+
+        for (int i = 0; i < KEYS_CNT; i++)
+            cache.remove(i);
+
+        printStat();
+
+        assertEquals(cache.localMetrics().getCacheEvictions(), cache.localMetrics().getOffHeapGets());
+        assertEquals(KEYS_CNT * 4, cache.localMetrics().getOffHeapGets());
+        assertEquals(KEYS_CNT * 2, cache.localMetrics().getOffHeapHits());
+        assertEquals(100 * (KEYS_CNT * 2.0) / (KEYS_CNT * 4.0),
+            cache.localMetrics().getOffHeapHitPercentage(), 0.1);
+        assertEquals(KEYS_CNT * 2, cache.localMetrics().getOffHeapMisses());
+        assertEquals(100 * KEYS_CNT * 2.0 / (KEYS_CNT * 4.0),
+            cache.localMetrics().getOffHeapMissPercentage(), 0.1);
+        assertEquals(KEYS_CNT, cache.localMetrics().getOffHeapRemovals());
+
+        assertEquals(0, cache.localMetrics().getOffHeapEvictions());
+        assertEquals(0, cache.localMetrics().getOffHeapEntriesCount());
+        assertEquals(0, cache.localMetrics().getOffHeapPrimaryEntriesCount());
+        assertEquals(0, cache.localMetrics().getOffHeapBackupEntriesCount());
+    }
+
+    /**
+     * @throws Exception if failed.
+     */
+    public void testOffHeapAndSwapMetricsInOffHeapTiered() throws Exception {
+        createCache(CacheMemoryMode.OFFHEAP_TIERED, OFFHEAP_MAX_SIZE, true);
+
+        for (int i = 0; i < KEYS_CNT; i++)
+            cache.put(i, i);
+
+        printStat();
+
+        assertEquals(cache.localMetrics().getCacheEvictions(), cache.localMetrics().getOffHeapGets());
+        assertEquals(KEYS_CNT, cache.localMetrics().getOffHeapGets());
+        assertEquals(0, cache.localMetrics().getOffHeapHits());
+        assertEquals(0f, cache.localMetrics().getOffHeapHitPercentage());
+        assertEquals(KEYS_CNT, cache.localMetrics().getOffHeapMisses());
+        assertEquals(100f, cache.localMetrics().getOffHeapMissPercentage());
+        assertEquals(0, cache.localMetrics().getOffHeapRemovals());
+
+        assertEquals(KEYS_CNT - OFFHEAP_MAX_CNT, cache.localMetrics().getOffHeapEvictions());
+        assertEquals(OFFHEAP_MAX_CNT, cache.localMetrics().getOffHeapEntriesCount());
+        assertEquals(OFFHEAP_MAX_CNT, cache.localMetrics().getOffHeapPrimaryEntriesCount());
+        assertEquals(0, cache.localMetrics().getOffHeapBackupEntriesCount());
+
+        assertEquals(cache.localMetrics().getOffHeapEvictions(), cache.localMetrics().getSwapPuts());
+        assertEquals(KEYS_CNT, cache.localMetrics().getSwapGets());
+        assertEquals(0, cache.localMetrics().getSwapHits());
+        assertEquals(0f, cache.localMetrics().getSwapHitPercentage());
+        assertEquals(KEYS_CNT, cache.localMetrics().getSwapMisses());
+        assertEquals(100f, cache.localMetrics().getSwapMissPercentage());
+        assertEquals(0, cache.localMetrics().getSwapRemovals());
+
+        assertEquals(cache.localMetrics().getOffHeapEvictions(), cache.localMetrics().getSwapEntriesCount());
+
+        for (int i = 0; i < KEYS_CNT; i++)
+            cache.get(i);
+
+        printStat();
+
+        assertEquals(cache.localMetrics().getCacheEvictions(), cache.localMetrics().getOffHeapPuts());
+        assertEquals(KEYS_CNT * 2, cache.localMetrics().getOffHeapGets());
+        assertEquals(0, cache.localMetrics().getOffHeapHits());
+        assertEquals(0.0, cache.localMetrics().getOffHeapHitPercentage(), 0.1);
+        assertEquals(KEYS_CNT * 2, cache.localMetrics().getOffHeapMisses());
+        assertEquals(100.0, cache.localMetrics().getOffHeapMissPercentage(), 0.1);
+        assertEquals(0, cache.localMetrics().getOffHeapRemovals());
+
+        assertEquals(cache.localMetrics().getCacheEvictions() - OFFHEAP_MAX_CNT, cache.localMetrics().getOffHeapEvictions());
+        assertEquals(OFFHEAP_MAX_CNT, cache.localMetrics().getOffHeapEntriesCount());
+        assertEquals(OFFHEAP_MAX_CNT, cache.localMetrics().getOffHeapPrimaryEntriesCount());
+        assertEquals(0, cache.localMetrics().getOffHeapBackupEntriesCount());
+
+        assertEquals(cache.localMetrics().getOffHeapEvictions(), cache.localMetrics().getSwapPuts());
+        assertEquals(KEYS_CNT * 2, cache.localMetrics().getSwapGets());
+        assertEquals(KEYS_CNT, cache.localMetrics().getSwapHits());
+        assertEquals(100 * KEYS_CNT / (KEYS_CNT * 2.0), cache.localMetrics().getSwapHitPercentage(), 0.1);
+        assertEquals(KEYS_CNT, cache.localMetrics().getSwapMisses());
+        assertEquals(100 * KEYS_CNT / (KEYS_CNT * 2.0), cache.localMetrics().getSwapMissPercentage(), 0.1);
+        assertEquals(KEYS_CNT, cache.localMetrics().getSwapRemovals());
+
+        assertEquals(KEYS_CNT - OFFHEAP_MAX_CNT, cache.localMetrics().getSwapEntriesCount());
+
+        for (int i = KEYS_CNT; i < KEYS_CNT * 2; i++)
+            cache.get(i);
+
+        printStat();
+
+        assertEquals(cache.localMetrics().getCacheEvictions(), cache.localMetrics().getOffHeapGets());
+        assertEquals(KEYS_CNT * 3, cache.localMetrics().getOffHeapGets());
+        assertEquals(0, cache.localMetrics().getOffHeapHits());
+        assertEquals(0.0, cache.localMetrics().getOffHeapHitPercentage(), 0.1);
+        assertEquals(KEYS_CNT * 3, cache.localMetrics().getOffHeapMisses());
+        assertEquals(100.0, cache.localMetrics().getOffHeapMissPercentage(), 0.1);
+        assertEquals(0, cache.localMetrics().getOffHeapRemovals());
+
+        assertEquals(cache.localMetrics().getCacheEvictions() - OFFHEAP_MAX_CNT - KEYS_CNT,
+            cache.localMetrics().getOffHeapEvictions());
+        assertEquals(OFFHEAP_MAX_CNT, cache.localMetrics().getOffHeapEntriesCount());
+        assertEquals(OFFHEAP_MAX_CNT, cache.localMetrics().getOffHeapPrimaryEntriesCount());
+        assertEquals(0, cache.localMetrics().getOffHeapBackupEntriesCount());
+
+        assertEquals(cache.localMetrics().getOffHeapEvictions(), cache.localMetrics().getSwapPuts());
+        assertEquals(KEYS_CNT * 3, cache.localMetrics().getSwapGets());
+        assertEquals(KEYS_CNT, cache.localMetrics().getSwapHits());
+        assertEquals(100 / 3.0, cache.localMetrics().getSwapHitPercentage(), 0.1);
+        assertEquals(KEYS_CNT * 2, cache.localMetrics().getSwapMisses());
+        assertEquals(100 - (100 / 3.0), cache.localMetrics().getSwapMissPercentage(), 0.1);
+        assertEquals(KEYS_CNT, cache.localMetrics().getSwapRemovals());
+
+        assertEquals(KEYS_CNT - OFFHEAP_MAX_CNT, cache.localMetrics().getSwapEntriesCount());
+
+        for (int i = 0; i < KEYS_CNT; i++)
+            cache.remove(i);
+
+        printStat();
+
+        assertEquals(cache.localMetrics().getCacheEvictions(), cache.localMetrics().getOffHeapGets());
+        assertEquals(KEYS_CNT * 4, cache.localMetrics().getOffHeapGets());
+        assertEquals(OFFHEAP_MAX_CNT, cache.localMetrics().getOffHeapHits());
+        assertEquals(100 * OFFHEAP_MAX_CNT / (KEYS_CNT * 4.0),
+            cache.localMetrics().getOffHeapHitPercentage(), 0.1);
+        assertEquals(KEYS_CNT * 4 - OFFHEAP_MAX_CNT, cache.localMetrics().getOffHeapMisses());
+        assertEquals(100 * (KEYS_CNT * 4 - OFFHEAP_MAX_CNT) / (KEYS_CNT * 4.0),
+            cache.localMetrics().getOffHeapMissPercentage(), 0.1);
+        assertEquals(OFFHEAP_MAX_CNT, cache.localMetrics().getOffHeapRemovals());
+
+        assertEquals(cache.localMetrics().getCacheEvictions() - OFFHEAP_MAX_CNT - 2 * KEYS_CNT, cache.localMetrics().getOffHeapEvictions());
+        assertEquals(0, cache.localMetrics().getOffHeapEntriesCount());
+        assertEquals(0, cache.localMetrics().getOffHeapPrimaryEntriesCount());
+        assertEquals(0, cache.localMetrics().getOffHeapBackupEntriesCount());
+
+        assertEquals(cache.localMetrics().getOffHeapEvictions(), cache.localMetrics().getSwapPuts());
+        assertEquals(KEYS_CNT * 4 - OFFHEAP_MAX_CNT, cache.localMetrics().getSwapGets());
+        assertEquals(KEYS_CNT * 2 - OFFHEAP_MAX_CNT, cache.localMetrics().getSwapHits());
+        assertEquals(100 * (KEYS_CNT * 2.0 - OFFHEAP_MAX_CNT) / (KEYS_CNT * 4.0 - OFFHEAP_MAX_CNT),
+            cache.localMetrics().getSwapHitPercentage(), 0.1);
+        assertEquals(KEYS_CNT * 2, cache.localMetrics().getSwapMisses());
+        assertEquals(100 * KEYS_CNT * 2.0 / (KEYS_CNT * 4.0 - OFFHEAP_MAX_CNT),
+            cache.localMetrics().getSwapMissPercentage(), 0.1);
+        assertEquals(KEYS_CNT * 2 - OFFHEAP_MAX_CNT, cache.localMetrics().getSwapRemovals());
 
         assertEquals(0, cache.localMetrics().getSwapEntriesCount());
     }
