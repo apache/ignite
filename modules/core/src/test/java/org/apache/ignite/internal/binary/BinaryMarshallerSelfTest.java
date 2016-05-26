@@ -840,6 +840,21 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testVoid() throws Exception {
+        Class clazz = Void.class;
+
+        assertEquals(clazz, marshalUnmarshal(clazz));
+
+        clazz = Void.TYPE;
+
+        assertEquals(clazz, marshalUnmarshal(clazz));
+    }
+
+
+
+    /**
      *
      */
     private static class EnclosingObj implements Serializable {
