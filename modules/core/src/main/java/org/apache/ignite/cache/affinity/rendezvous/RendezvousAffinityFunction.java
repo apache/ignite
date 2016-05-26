@@ -281,7 +281,7 @@ public class RendezvousAffinityFunction implements AffinityFunction, Externaliza
      * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      *
      * @param backupFilter Optional backup filter.
-     * @Deprecated Use {@code affinityBackupFilter} instead.
+     * @deprecated Use {@code affinityBackupFilter} instead.
      */
     @Deprecated
     public void setBackupFilter(@Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {

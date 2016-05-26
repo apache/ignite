@@ -223,7 +223,7 @@ public class FairAffinityFunction implements AffinityFunction {
      * Note that {@code backupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      *
      * @param backupFilter Optional backup filter.
-     * Use {@code affinityBackupFilter} instead.
+     * @deprecated Use {@code affinityBackupFilter} instead.
      */
     @Deprecated
     public void setBackupFilter(@Nullable IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter) {
