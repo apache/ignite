@@ -81,11 +81,7 @@ consoleModule.controller('clustersController', [
         };
 
         $scope.tableSave = function(field, index, stopEdit) {
-            if ($table.tableEditing({model: 'table-index-fields'}, $table.tableEditedRowIndex())) {
-                if ($scope.tableIndexItemSaveVisible(field, index))
-                    return $scope.tableIndexItemSave(field, field.indexIdx, index, stopEdit);
-            }
-            else if (field.type === 'attributes' && $table.tablePairSaveVisible(field, index))
+            if ($table.tablePairSaveVisible(field, index))
                 return $table.tablePairSave($scope.tablePairValid, $scope.backupItem, field, index, stopEdit);
 
             return true;
@@ -119,7 +115,7 @@ consoleModule.controller('clustersController', [
 
         $scope.tableStartEdit = function(item, field, index) {
             if ($scope.tableReset(true))
-                $table.tableStartEdit(item, field, index);
+                $table.tableStartEdit(item, field, index, $scope.tableSave);
         };
 
         $scope.tableEditing = $table.tableEditing;
@@ -129,7 +125,6 @@ consoleModule.controller('clustersController', [
                 $table.tableRemove(item, field, index);
         };
 
-        $scope.tablePairStartEdit = $table.tablePairStartEdit;
         $scope.tablePairSave = $table.tablePairSave;
         $scope.tablePairSaveVisible = $table.tablePairSaveVisible;
 

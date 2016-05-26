@@ -25,7 +25,7 @@ const $generatorJava = {};
  * @param type Value type.
  * @returns {*} String with value that will be valid for java.
  */
-$generatorJava.toJavaCode = function (val, type) {
+$generatorJava.toJavaCode = function(val, type) {
     if (val === null)
         return 'null';
 
@@ -44,13 +44,13 @@ $generatorJava.toJavaCode = function (val, type) {
     if (type)
         return type + '.' + val;
 
-    if (typeof(val) === 'string')
+    if (typeof (val) === 'string')
         return '"' + val.replace('"', '\\"') + '"';
 
-    if (typeof(val) === 'number' || typeof(val) === 'boolean')
+    if (typeof (val) === 'number' || typeof (val) === 'boolean')
         return '' + val;
 
-    return 'Unknown type: ' + typeof(val) + ' (' + val + ')';
+    return 'Unknown type: ' + typeof (val) + ' (' + val + ')';
 };
 
 /**
@@ -58,20 +58,20 @@ $generatorJava.toJavaCode = function (val, type) {
  * @param setterName Optional concrete setter name.
  * @returns Property setter with name by java conventions.
  */
-$generatorJava.setterName = function (propName, setterName) {
+$generatorJava.setterName = function(propName, setterName) {
     return setterName ? setterName : $generatorCommon.toJavaName('set', propName);
 };
 
 // Add constructor argument
-$generatorJava.constructorArg = function (obj, propName, dflt, notFirst, opt) {
-    var v = (obj ? obj[propName] : null) || dflt;
+$generatorJava.constructorArg = function(obj, propName, dflt, notFirst, opt) {
+    const v = (obj ? obj[propName] : null) || dflt;
 
     if ($generatorCommon.isDefinedAndNotEmpty(v))
         return (notFirst ? ', ' : '') + $generatorJava.toJavaCode(v);
     else if (!opt)
         return notFirst ? ', null' : 'null';
-    else
-        return '';
+
+    return '';
 };
 
 /**
@@ -85,20 +85,20 @@ $generatorJava.constructorArg = function (obj, propName, dflt, notFirst, opt) {
  * @param varFullGenericType2 Optional full class name of second generic.
  * @param subClass If 'true' then variable will be declared as anonymous subclass.
  */
-$generatorJava.declareVariable = function (res, varName, varFullType, varFullActualType, varFullGenericType1, varFullGenericType2, subClass) {
+$generatorJava.declareVariable = function(res, varName, varFullType, varFullActualType, varFullGenericType1, varFullGenericType2, subClass) {
     res.emptyLineIfNeeded();
 
-    var varType = res.importClass(varFullType);
+    const varType = res.importClass(varFullType);
 
-    var varNew = !res.vars[varName];
+    const varNew = !res.vars[varName];
 
     if (varNew)
         res.vars[varName] = true;
 
     if (varFullActualType && varFullGenericType1) {
-        var varActualType = res.importClass(varFullActualType);
-        var varGenericType1 = res.importClass(varFullGenericType1);
-        var varGenericType2 = null;
+        const varActualType = res.importClass(varFullActualType);
+        const varGenericType1 = res.importClass(varFullGenericType1);
+        let varGenericType2 = null;
 
         if (varFullGenericType2)
             varGenericType2 = res.importClass(varFullGenericType2);
@@ -122,8 +122,8 @@ $generatorJava.declareVariable = function (res, varName, varFullType, varFullAct
  * @param varName Variable name.
  * @param varFullType Variable full class name to be added to imports.
  */
-$generatorJava.declareVariableLocal = function (res, varName, varFullType) {
-    var varType = res.importClass(varFullType);
+$generatorJava.declareVariableLocal = function(res, varName, varFullType) {
+    const varType = res.importClass(varFullType);
 
     res.line(varType + ' ' + varName + ' = new ' + varType + '();');
 
@@ -139,10 +139,10 @@ $generatorJava.declareVariableLocal = function (res, varName, varFullType) {
  * @param varExpr Custom variable creation expression.
  * @param modifier Additional variable modifier.
  */
-$generatorJava.declareVariableCustom = function (res, varName, varFullType, varExpr, modifier) {
-    var varType = res.importClass(varFullType);
+$generatorJava.declareVariableCustom = function(res, varName, varFullType, varExpr, modifier) {
+    const varType = res.importClass(varFullType);
 
-    var varNew = !res.vars[varName];
+    const varNew = !res.vars[varName];
 
     if (varNew)
         res.vars[varName] = true;
@@ -160,10 +160,10 @@ $generatorJava.declareVariableCustom = function (res, varName, varFullType, varE
  * @param varFullType Variable full class name to be added to imports.
  * @param length Array length.
  */
-$generatorJava.declareVariableArray = function (res, varName, varFullType, length) {
-    var varType = res.importClass(varFullType);
+$generatorJava.declareVariableArray = function(res, varName, varFullType, length) {
+    const varType = res.importClass(varFullType);
 
-    var varNew = !res.vars[varName];
+    const varNew = !res.vars[varName];
 
     if (varNew)
         res.vars[varName] = true;
@@ -178,7 +178,7 @@ $generatorJava.declareVariableArray = function (res, varName, varFullType, lengt
  *
  * @param res
  */
-$generatorJava.resetVariables = function (res) {
+$generatorJava.resetVariables = function(res) {
     res.vars = {};
 };
 
@@ -193,12 +193,12 @@ $generatorJava.resetVariables = function (res) {
  * @param setterName Optional special setter name.
  * @param dflt Optional default value.
  */
-$generatorJava.property = function (res, varName, obj, propName, dataType, setterName, dflt) {
+$generatorJava.property = function(res, varName, obj, propName, dataType, setterName, dflt) {
     if (!_.isNil(obj)) {
-        var val = obj[propName];
+        const val = obj[propName];
 
         if ($generatorCommon.isDefinedAndNotEmpty(val)) {
-            var missDflt = _.isNil(dflt);
+            const missDflt = _.isNil(dflt);
 
             // Add to result if no default provided or value not equals to default.
             if (missDflt || (!missDflt && val !== dflt)) {
@@ -224,11 +224,11 @@ $generatorJava.property = function (res, varName, obj, propName, dataType, sette
  * @param setterName Optional special setter name.
  * @param dflt Optional default value.
  */
-$generatorJava.enumProperty = function (res, varName, obj, propName, dataType, setterName, dflt) {
-    var val = obj[propName];
+$generatorJava.enumProperty = function(res, varName, obj, propName, dataType, setterName, dflt) {
+    const val = obj[propName];
 
     if ($generatorCommon.isDefinedAndNotEmpty(val)) {
-        var missDflt = _.isNil(dflt);
+        const missDflt = _.isNil(dflt);
 
         // Add to result if no default provided or value not equals to default.
         if (missDflt || (!missDflt && val !== dflt)) {
@@ -243,8 +243,8 @@ $generatorJava.enumProperty = function (res, varName, obj, propName, dataType, s
 };
 
 // Add property for class name.
-$generatorJava.classNameProperty = function (res, varName, obj, propName) {
-    var val = obj[propName];
+$generatorJava.classNameProperty = function(res, varName, obj, propName) {
+    const val = obj[propName];
 
     if (!_.isNil(val)) {
         res.line(varName + '.' + $generatorJava.setterName(propName) +
@@ -262,8 +262,8 @@ $generatorJava.classNameProperty = function (res, varName, obj, propName) {
  * @param dataType Optional data type.
  * @param setterName Optional setter name.
  */
-$generatorJava.listProperty = function (res, varName, obj, propName, dataType, setterName) {
-    var val = obj[propName];
+$generatorJava.listProperty = function(res, varName, obj, propName, dataType, setterName) {
+    const val = obj[propName];
 
     if (val && val.length > 0) {
         res.emptyLineIfNeeded();
@@ -272,7 +272,7 @@ $generatorJava.listProperty = function (res, varName, obj, propName, dataType, s
 
         res.line(varName + '.' + $generatorJava.setterName(propName, setterName) +
             '(Arrays.asList(' +
-                _.map(val, function (v) {
+                _.map(val, function(v) {
                     return $generatorJava.toJavaCode(v, dataType);
                 }).join(', ') +
             '));');
@@ -290,14 +290,14 @@ $generatorJava.listProperty = function (res, varName, obj, propName, dataType, s
  * @param propName Property name to take from source object.
  * @param setterName Optional setter name.
  */
-$generatorJava.arrayProperty = function (res, varName, obj, propName, setterName) {
-    var val = obj[propName];
+$generatorJava.arrayProperty = function(res, varName, obj, propName, setterName) {
+    const val = obj[propName];
 
     if (val && val.length > 0) {
         res.emptyLineIfNeeded();
 
         res.line(varName + '.' + $generatorJava.setterName(propName, setterName) + '({ ' +
-            _.map(val, function (v) {
+            _.map(val, function(v) {
                 return 'new ' + res.importClass(v) + '()';
             }).join(', ') +
         ' });');
@@ -316,8 +316,8 @@ $generatorJava.arrayProperty = function (res, varName, obj, propName, setterName
  * @param dataType Optional data type.
  * @param setterName Optional setter name.
  */
-$generatorJava.multiparamProperty = function (res, varName, obj, propName, dataType, setterName) {
-    var val = obj[propName];
+$generatorJava.multiparamProperty = function(res, varName, obj, propName, dataType, setterName) {
+    const val = obj[propName];
 
     if (val && val.length > 0) {
         res.emptyLineIfNeeded();
@@ -344,7 +344,7 @@ $generatorJava.multiparamProperty = function (res, varName, obj, propName, dataT
  * @param props
  * @param createBeanAlthoughNoProps If 'true' then create empty bean.
  */
-$generatorJava.beanProperty = function (res, varName, bean, beanPropName, beanVarName, beanClass, props, createBeanAlthoughNoProps) {
+$generatorJava.beanProperty = function(res, varName, bean, beanPropName, beanVarName, beanClass, props, createBeanAlthoughNoProps) {
     if (bean && $generatorCommon.hasProperty(bean, props)) {
         res.emptyLineIfNeeded();
 
@@ -379,13 +379,13 @@ $generatorJava.beanProperty = function (res, varName, bean, beanPropName, beanVa
                             break;
 
                         case 'propertiesAsList':
-                            var val = bean[propName];
+                            const val = bean[propName];
 
                             if (val && val.length > 0) {
                                 $generatorJava.declareVariable(res, descr.propVarName, 'java.util.Properties');
 
                                 _.forEach(val, function(nameAndValue) {
-                                    var eqIndex = nameAndValue.indexOf('=');
+                                    const eqIndex = nameAndValue.indexOf('=');
 
                                     if (eqIndex >= 0) {
                                         res.line(descr.propVarName + '.setProperty(' +
@@ -410,9 +410,8 @@ $generatorJava.beanProperty = function (res, varName, bean, beanPropName, beanVa
                             $generatorJava.property(res, beanVarName, bean, propName, null, descr.setterName, descr.dflt);
                     }
                 }
-                else {
+                else
                     $generatorJava.property(res, beanVarName, bean, propName);
-                }
             }
         });
 
@@ -438,11 +437,11 @@ $generatorJava.beanProperty = function (res, varName, bean, beanPropName, beanVa
  * @param evtPlc Data to add.
  * @param propName Name in source data.
  */
-$generatorJava.evictionPolicy = function (res, varName, evtPlc, propName) {
+$generatorJava.evictionPolicy = function(res, varName, evtPlc, propName) {
     if (evtPlc && evtPlc.kind) {
-        var evictionPolicyDesc = $generatorCommon.EVICTION_POLICIES[evtPlc.kind];
+        const evictionPolicyDesc = $generatorCommon.EVICTION_POLICIES[evtPlc.kind];
 
-        var obj = evtPlc[evtPlc.kind.toUpperCase()];
+        const obj = evtPlc[evtPlc.kind.toUpperCase()];
 
         $generatorJava.beanProperty(res, varName, obj, propName, propName,
             evictionPolicyDesc.className, evictionPolicyDesc.fields, true);
@@ -450,7 +449,7 @@ $generatorJava.evictionPolicy = function (res, varName, evtPlc, propName) {
 };
 
 // Generate cluster general group.
-$generatorJava.clusterGeneral = function (cluster, clientNearCfg, res) {
+$generatorJava.clusterGeneral = function(cluster, clientNearCfg, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -469,7 +468,7 @@ $generatorJava.clusterGeneral = function (cluster, clientNearCfg, res) {
     }
 
     if (cluster.discovery) {
-        var d = cluster.discovery;
+        const d = cluster.discovery;
 
         $generatorJava.declareVariable(res, 'discovery', 'org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi');
 
@@ -540,7 +539,7 @@ $generatorJava.clusterGeneral = function (cluster, clientNearCfg, res) {
                 break;
 
             case 'ZooKeeper':
-                var finderVar = 'ipFinder';
+                const finderVar = 'ipFinder';
 
                 $generatorJava.declareVariable(res, 'ipFinder', 'org.apache.ignite.spi.discovery.tcp.ipfinder.zk.TcpDiscoveryZookeeperIpFinder');
 
@@ -551,8 +550,8 @@ $generatorJava.clusterGeneral = function (cluster, clientNearCfg, res) {
                     $generatorJava.property(res, finderVar, d.ZooKeeper, 'zkConnectionString');
 
                     if (d.ZooKeeper.retryPolicy && d.ZooKeeper.retryPolicy.kind) {
-                        var kind = d.ZooKeeper.retryPolicy.kind;
-                        var retryPolicy = d.ZooKeeper.retryPolicy[kind];
+                        const kind = d.ZooKeeper.retryPolicy.kind;
+                        const retryPolicy = d.ZooKeeper.retryPolicy[kind];
 
                         switch (kind) {
                             case 'ExponentialBackoff':
@@ -602,6 +601,8 @@ $generatorJava.clusterGeneral = function (cluster, clientNearCfg, res) {
                                     res.line(finderVar + '.setRetryPolicy(new ' + res.importClass(retryPolicy.className) + '());');
 
                                 break;
+
+                            default:
                         }
                     }
 
@@ -633,7 +634,7 @@ $generatorJava.clusterGeneral = function (cluster, clientNearCfg, res) {
 };
 
 // Generate atomics group.
-$generatorJava.clusterAtomics = function (atomics, res) {
+$generatorJava.clusterAtomics = function(atomics, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -644,9 +645,9 @@ $generatorJava.clusterAtomics = function (atomics, res) {
 
         $generatorJava.enumProperty(res, 'atomicCfg', atomics, 'cacheMode', 'org.apache.ignite.cache.CacheMode', null, 'PARTITIONED');
 
-        var cacheMode = atomics.cacheMode ? atomics.cacheMode : 'PARTITIONED';
+        const cacheMode = atomics.cacheMode ? atomics.cacheMode : 'PARTITIONED';
 
-        var hasData = cacheMode !== 'PARTITIONED';
+        let hasData = cacheMode !== 'PARTITIONED';
 
         hasData = $generatorJava.property(res, 'atomicCfg', atomics, 'atomicSequenceReserveSize', null, null, 1000) || hasData;
 
@@ -667,12 +668,12 @@ $generatorJava.clusterAtomics = function (atomics, res) {
 };
 
 // Generate binary group.
-$generatorJava.clusterBinary = function (binary, res) {
+$generatorJava.clusterBinary = function(binary, res) {
     if (!res)
         res = $generatorCommon.builder();
 
     if ($generatorCommon.binaryIsDefined(binary)) {
-        var varName = 'binary';
+        const varName = 'binary';
 
         $generatorJava.declareVariable(res, varName, 'org.apache.ignite.configuration.BinaryConfiguration');
 
@@ -688,15 +689,13 @@ $generatorJava.clusterBinary = function (binary, res) {
         res.needEmptyLine = $generatorCommon.isDefinedAndNotEmpty(binary.idMapper) || $generatorCommon.isDefinedAndNotEmpty(binary.serializer);
 
         if ($generatorCommon.isDefinedAndNotEmpty(binary.typeConfigurations)) {
-            var arrVar = 'types';
+            const arrVar = 'types';
 
             $generatorJava.declareVariable(res, arrVar, 'java.util.Collection', 'java.util.ArrayList', 'org.apache.ignite.binary.BinaryTypeConfiguration');
 
-            _.forEach(binary.typeConfigurations, function (type) {
-                if ($generatorCommon.isDefinedAndNotEmpty(type.typeName)) {
-                    // TODO IGNITE-2269 Replace using of separated methods for binary type configurations to extended constructors.
-                    res.line(arrVar + '.add(' + $generatorJava.binaryTypeFunctionName(type.typeName) + '());');
-                }
+            _.forEach(binary.typeConfigurations, function(type) {
+                if ($generatorCommon.isDefinedAndNotEmpty(type.typeName))
+                    res.line(arrVar + '.add(' + $generatorJava.binaryTypeFunctionName(type.typeName) + '());'); // TODO IGNITE-2269 Replace using of separated methods for binary type configurations to extended constructors.
             });
 
             res.needEmptyLine = true;
@@ -706,7 +705,7 @@ $generatorJava.clusterBinary = function (binary, res) {
             res.needEmptyLine = true;
         }
 
-        $generatorJava.property(res, varName, binary, 'compactFooter', undefined, undefined, true);
+        $generatorJava.property(res, varName, binary, 'compactFooter', null, null, true);
 
         res.needEmptyLine = true;
 
@@ -720,18 +719,18 @@ $generatorJava.clusterBinary = function (binary, res) {
 
 // TODO IGNITE-2269 Remove specified methods after implamentation of extended constructors.
 // Construct binary type configuration factory method name.
-$generatorJava.binaryTypeFunctionName = function (typeName) {
-    var dotIdx = typeName.lastIndexOf('.');
+$generatorJava.binaryTypeFunctionName = function(typeName) {
+    const dotIdx = typeName.lastIndexOf('.');
 
-    var shortName = dotIdx > 0 ? typeName.substr(dotIdx + 1) : typeName;
+    const shortName = dotIdx > 0 ? typeName.substr(dotIdx + 1) : typeName;
 
     return $generatorCommon.toJavaName('binaryType', shortName);
 };
 
 // TODO IGNITE-2269 Remove specified methods after implamentation of extended constructors.
 // Generate factory method for specified BinaryTypeConfiguration.
-$generatorJava.binaryTypeConfiguration = function (type, res) {
-    var typeName = type.typeName;
+$generatorJava.binaryTypeConfiguration = function(type, res) {
+    const typeName = type.typeName;
 
     res.line('/**');
     res.line(' * Create binary type configuration for ' + typeName + '.');
@@ -742,7 +741,7 @@ $generatorJava.binaryTypeConfiguration = function (type, res) {
 
     $generatorJava.resetVariables(res);
 
-    var typeVar = 'typeCfg';
+    const typeVar = 'typeCfg';
 
     $generatorJava.declareVariable(res, typeVar, 'org.apache.ignite.binary.BinaryTypeConfiguration');
 
@@ -769,12 +768,12 @@ $generatorJava.binaryTypeConfiguration = function (type, res) {
 
 // TODO IGNITE-2269 Remove specified methods after implamentation of extended constructors.
 // Generates binary type configuration factory methods.
-$generatorJava.binaryTypeConfigurations = function (binary, res) {
+$generatorJava.binaryTypeConfigurations = function(binary, res) {
     if (!res)
         res = $generatorCommon.builder();
 
     if (!_.isNil(binary)) {
-        _.forEach(binary.typeConfigurations, function (type) {
+        _.forEach(binary.typeConfigurations, function(type) {
             $generatorJava.binaryTypeConfiguration(type, res);
         });
     }
@@ -783,12 +782,12 @@ $generatorJava.binaryTypeConfigurations = function (binary, res) {
 };
 
 // Generate collision group.
-$generatorJava.clusterCollision = function (collision, res) {
+$generatorJava.clusterCollision = function(collision, res) {
     if (!res)
         res = $generatorCommon.builder();
 
     if (collision && collision.kind !== 'Noop') {
-        let spi = collision[collision.kind];
+        const spi = collision[collision.kind];
 
         if (collision.kind !== 'Custom' || (spi && $generatorCommon.isDefinedAndNotEmpty(spi.class))) {
             const varName = 'collisionSpi';
@@ -803,9 +802,10 @@ $generatorJava.clusterCollision = function (collision, res) {
                     $generatorJava.property(res, varName, spi, 'maximumStealingAttempts', null, null, 5);
                     $generatorJava.property(res, varName, spi, 'stealingEnabled', null, null, true);
 
-                    if ($generatorCommon.isDefinedAndNotEmpty(spi.externalCollisionListener))
+                    if ($generatorCommon.isDefinedAndNotEmpty(spi.externalCollisionListener)) {
                         res.line(varName + '.' + $generatorJava.setterName('externalCollisionListener') +
                             '(new ' + res.importClass(spi.externalCollisionListener) + '());');
+                    }
 
                     if ($generatorCommon.isDefinedAndNotEmpty(spi.stealingAttributes)) {
                         const stealingAttrsVar = 'stealingAttrs';
@@ -814,7 +814,7 @@ $generatorJava.clusterCollision = function (collision, res) {
 
                         $generatorJava.declareVariable(res, stealingAttrsVar, 'java.util.Map', 'java.util.HashMap', 'String', 'java.io.Serializable');
 
-                        _.forEach(spi.stealingAttributes, function (attr) {
+                        _.forEach(spi.stealingAttributes, function(attr) {
                             res.line(stealingAttrsVar + '.put("' + attr.name + '", "' + attr.value + '");');
                         });
 
@@ -850,6 +850,8 @@ $generatorJava.clusterCollision = function (collision, res) {
                     $generatorJava.declareVariable(res, varName, spi.class);
 
                     break;
+
+                default:
             }
 
             res.needEmptyLine = true;
@@ -864,11 +866,11 @@ $generatorJava.clusterCollision = function (collision, res) {
 };
 
 // Generate communication group.
-$generatorJava.clusterCommunication = function (cluster, res) {
+$generatorJava.clusterCommunication = function(cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    var cfg = $generatorCommon.COMMUNICATION_CONFIGURATION;
+    const cfg = $generatorCommon.COMMUNICATION_CONFIGURATION;
 
     $generatorJava.beanProperty(res, 'cfg', cluster.communication, 'communicationSpi', 'commSpi', cfg.className, cfg.fields);
 
@@ -887,12 +889,12 @@ $generatorJava.clusterCommunication = function (cluster, res) {
 };
 
 // Generate REST access group.
-$generatorJava.clusterConnector = function (connector, res) {
+$generatorJava.clusterConnector = function(connector, res) {
     if (!res)
         res = $generatorCommon.builder();
 
     if (!_.isNil(connector) && connector.enabled) {
-        var cfg = _.cloneDeep($generatorCommon.CONNECTOR_CONFIGURATION);
+        const cfg = _.cloneDeep($generatorCommon.CONNECTOR_CONFIGURATION);
 
         if (connector.sslEnabled) {
             cfg.fields.sslClientAuth = {dflt: false};
@@ -909,7 +911,7 @@ $generatorJava.clusterConnector = function (connector, res) {
 };
 
 // Generate deployment group.
-$generatorJava.clusterDeployment = function (cluster, res) {
+$generatorJava.clusterDeployment = function(cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -917,7 +919,7 @@ $generatorJava.clusterDeployment = function (cluster, res) {
 
     res.softEmptyLine();
 
-    var p2pEnabled = cluster.peerClassLoadingEnabled;
+    const p2pEnabled = cluster.peerClassLoadingEnabled;
 
     if (!_.isNil(p2pEnabled)) {
         $generatorJava.property(res, 'cfg', cluster, 'peerClassLoadingEnabled', null, null, false);
@@ -935,7 +937,7 @@ $generatorJava.clusterDeployment = function (cluster, res) {
 };
 
 // Generate discovery group.
-$generatorJava.clusterDiscovery = function (disco, res) {
+$generatorJava.clusterDiscovery = function(disco, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -994,31 +996,30 @@ $generatorJava.clusterDiscovery = function (disco, res) {
 };
 
 // Generate events group.
-$generatorJava.clusterEvents = function (cluster, res) {
+$generatorJava.clusterEvents = function(cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
     if (cluster.includeEventTypes && cluster.includeEventTypes.length > 0) {
         res.emptyLineIfNeeded();
 
-        var evtGrps = angular.element(document.getElementById('app')).injector().get('igniteEventGroups');
+        const evtGrps = angular.element(document.getElementById('app')).injector().get('igniteEventGroups');
 
-        var evtGrpDscr = _.find(evtGrps, {value: cluster.includeEventTypes[0]});
+        if (cluster.includeEventTypes.length === 1) {
+            const evtGrp = _.find(evtGrps, {value: cluster.includeEventTypes[0]});
+            const evts = res.importStatic(evtGrp.class + '.' + evtGrp.value);
 
-        var evt = res.importStatic(evtGrpDscr.class + '.' + evtGrpDscr.value);
-
-        if (cluster.includeEventTypes.length === 1)
-            res.line('cfg.setIncludeEventTypes(' + evt + ');');
+            res.line('cfg.setIncludeEventTypes(' + evts + ');');
+        }
         else {
             _.forEach(cluster.includeEventTypes, function(value, ix) {
-                var evtGrpDscr = _.find(evtGrps, {value: value});
-
-                var evt = res.importStatic(evtGrpDscr.class + '.' + evtGrpDscr.value);
+                const evtGrp = _.find(evtGrps, {value});
+                const evts = res.importStatic(evtGrp.class + '.' + evtGrp.value);
 
                 if (ix === 0)
-                    res.line('int[] events = new int[' + evt + '.length');
+                    res.line('int[] events = new int[' + evts + '.length');
                 else
-                    res.line('    + ' + evt + '.length');
+                    res.line('    + ' + evts + '.length');
             });
 
             res.line('];');
@@ -1030,14 +1031,13 @@ $generatorJava.clusterEvents = function (cluster, res) {
             _.forEach(cluster.includeEventTypes, function(value, idx) {
                 res.needEmptyLine = true;
 
-                var evtGrpDscr = _.find(evtGrps, {value: value});
+                const evtGrp = _.find(evtGrps, {value});
+                const evts = res.importStatic(evtGrp.class + '.' + value);
 
-                evt = res.importStatic(evtGrpDscr.class + '.' + value);
-
-                res.line('System.arraycopy(' + evt + ', 0, events, k, ' + evt + '.length);');
+                res.line('System.arraycopy(' + evts + ', 0, events, k, ' + evts + '.length);');
 
                 if (idx < cluster.includeEventTypes.length - 1)
-                    res.line('k += ' + evt + '.length;');
+                    res.line('k += ' + evts + '.length;');
             });
 
             res.needEmptyLine = true;
@@ -1054,22 +1054,22 @@ $generatorJava.clusterEvents = function (cluster, res) {
 };
 
 // Generate failover group.
-$generatorJava.clusterFailover = function (cluster, res) {
+$generatorJava.clusterFailover = function(cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    if ($generatorCommon.isDefinedAndNotEmpty(cluster.failoverSpi) && _.findIndex(cluster.failoverSpi, function (spi) {
-            return $generatorCommon.isDefinedAndNotEmpty(spi.kind) && (spi.kind !== 'Custom' || $generatorCommon.isDefinedAndNotEmpty(_.get(spi, spi.kind + '.class')));
-        }) >= 0) {
-        let arrayVarName = 'failoverSpiList';
+    if ($generatorCommon.isDefinedAndNotEmpty(cluster.failoverSpi) && _.findIndex(cluster.failoverSpi, function(spi) {
+        return $generatorCommon.isDefinedAndNotEmpty(spi.kind) && (spi.kind !== 'Custom' || $generatorCommon.isDefinedAndNotEmpty(_.get(spi, spi.kind + '.class')));
+    }) >= 0) {
+        const arrayVarName = 'failoverSpiList';
 
         $generatorJava.declareVariable(res, arrayVarName, 'java.util.List', 'java.util.ArrayList', 'org.apache.ignite.spi.failover.FailoverSpi');
 
-        _.forEach(cluster.failoverSpi, function (spi) {
+        _.forEach(cluster.failoverSpi, function(spi) {
             if (spi.kind && (spi.kind !== 'Custom' || $generatorCommon.isDefinedAndNotEmpty(_.get(spi, spi.kind + '.class')))) {
-                let varName = 'failoverSpi';
+                const varName = 'failoverSpi';
 
-                let maxAttempts = _.get(spi, spi.kind + '.maximumFailoverAttempts');
+                const maxAttempts = _.get(spi, spi.kind + '.maximumFailoverAttempts');
 
                 if ((spi.kind === 'JobStealing' || spi.kind === 'Always') && $generatorCommon.isDefinedAndNotEmpty(maxAttempts) && maxAttempts !== 5) {
                     const spiCls = res.importClass($generatorCommon.failoverSpiClass(spi));
@@ -1099,7 +1099,7 @@ $generatorJava.clusterFailover = function (cluster, res) {
 };
 
 // Generate marshaller group.
-$generatorJava.clusterLogger = function (logger, res) {
+$generatorJava.clusterLogger = function(logger, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -1157,6 +1157,8 @@ $generatorJava.clusterLogger = function (logger, res) {
                 $generatorJava.declareVariable(res, varName, log.class);
 
                 break;
+
+            default:
         }
 
         res.needEmptyLine = true;
@@ -1170,14 +1172,14 @@ $generatorJava.clusterLogger = function (logger, res) {
 };
 
 // Generate marshaller group.
-$generatorJava.clusterMarshaller = function (cluster, res) {
+$generatorJava.clusterMarshaller = function(cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    var marshaller = cluster.marshaller;
+    const marshaller = cluster.marshaller;
 
     if (marshaller && marshaller.kind) {
-        var marshallerDesc = $generatorCommon.MARSHALLERS[marshaller.kind];
+        const marshallerDesc = $generatorCommon.MARSHALLERS[marshaller.kind];
 
         $generatorJava.beanProperty(res, 'cfg', marshaller[marshaller.kind], 'marshaller', 'marshaller',
             marshallerDesc.className, marshallerDesc.fields, true);
@@ -1195,7 +1197,7 @@ $generatorJava.clusterMarshaller = function (cluster, res) {
 };
 
 // Generate metrics group.
-$generatorJava.clusterMetrics = function (cluster, res) {
+$generatorJava.clusterMetrics = function(cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -1210,7 +1212,7 @@ $generatorJava.clusterMetrics = function (cluster, res) {
 };
 
 // Generate swap group.
-$generatorJava.clusterSwap = function (cluster, res) {
+$generatorJava.clusterSwap = function(cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -1225,7 +1227,7 @@ $generatorJava.clusterSwap = function (cluster, res) {
 };
 
 // Generate time group.
-$generatorJava.clusterTime = function (cluster, res) {
+$generatorJava.clusterTime = function(cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -1240,7 +1242,7 @@ $generatorJava.clusterTime = function (cluster, res) {
 };
 
 // Generate thread pools group.
-$generatorJava.clusterPools = function (cluster, res) {
+$generatorJava.clusterPools = function(cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -1256,7 +1258,7 @@ $generatorJava.clusterPools = function (cluster, res) {
 };
 
 // Generate transactions group.
-$generatorJava.clusterTransactions = function (transactionConfiguration, res) {
+$generatorJava.clusterTransactions = function(transactionConfiguration, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -1268,14 +1270,14 @@ $generatorJava.clusterTransactions = function (transactionConfiguration, res) {
 };
 
 // Generate user attributes group.
-$generatorJava.clusterUserAttributes = function (cluster, res) {
+$generatorJava.clusterUserAttributes = function(cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
     if ($generatorCommon.isDefinedAndNotEmpty(cluster.attributes)) {
         $generatorJava.declareVariable(res, 'attributes', 'java.util.Map', 'java.util.HashMap', 'java.lang.String', 'java.lang.String');
 
-        _.forEach(cluster.attributes, function (attr) {
+        _.forEach(cluster.attributes, function(attr) {
             res.line('attributes.put("' + attr.name + '", "' + attr.value + '");');
         });
 
@@ -1293,7 +1295,7 @@ $generatorJava.clusterUserAttributes = function (cluster, res) {
 
 
 // Generate cache general group.
-$generatorJava.cacheGeneral = function (cache, varName, res) {
+$generatorJava.cacheGeneral = function(cache, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -1320,7 +1322,7 @@ $generatorJava.cacheGeneral = function (cache, varName, res) {
 };
 
 // Generate cache memory group.
-$generatorJava.cacheMemory = function (cache, varName, res) {
+$generatorJava.cacheMemory = function(cache, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -1343,7 +1345,7 @@ $generatorJava.cacheMemory = function (cache, varName, res) {
 };
 
 // Generate cache query & indexing group.
-$generatorJava.cacheQuery = function (cache, varName, res) {
+$generatorJava.cacheQuery = function(cache, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -1374,15 +1376,15 @@ $generatorJava.cacheQuery = function (cache, varName, res) {
  * @param storeFactory Factory to generate data source for.
  * @param res Resulting output with generated code.
  */
-$generatorJava.cacheStoreDataSource = function (storeFactory, res) {
-    var dialect = storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : null) : storeFactory.dialect;
+$generatorJava.cacheStoreDataSource = function(storeFactory, res) {
+    const dialect = storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : null) : storeFactory.dialect; // eslint-disable-line no-nested-ternary
 
     if (dialect) {
-        var varName = 'dataSource';
+        const varName = 'dataSource';
 
-        var dataSourceBean = storeFactory.dataSourceBean;
+        const dataSourceBean = storeFactory.dataSourceBean;
 
-        var varType = res.importClass($generatorCommon.dataSourceClassName(dialect));
+        const varType = res.importClass($generatorCommon.dataSourceClassName(dialect));
 
         res.line('public static final ' + varType + ' INSTANCE_' + dataSourceBean + ' = create' + dataSourceBean + '();');
 
@@ -1443,21 +1445,21 @@ $generatorJava.cacheStoreDataSource = function (storeFactory, res) {
     return null;
 };
 
-$generatorJava.clusterDataSources = function (caches, res) {
+$generatorJava.clusterDataSources = function(caches, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    var datasources = [];
+    const datasources = [];
 
-    var storeFound = false;
+    let storeFound = false;
 
-    _.forEach(caches, function (cache) {
-        var factoryKind = cache.cacheStoreFactory.kind;
+    _.forEach(caches, function(cache) {
+        const factoryKind = cache.cacheStoreFactory.kind;
 
-        var storeFactory = cache.cacheStoreFactory[factoryKind];
+        const storeFactory = cache.cacheStoreFactory[factoryKind];
 
         if (storeFactory) {
-            var beanClassName = $generatorJava.dataSourceClassName(res, storeFactory);
+            const beanClassName = $generatorJava.dataSourceClassName(res, storeFactory);
 
             if (beanClassName && !_.includes(datasources, beanClassName)) {
                 datasources.push(beanClassName);
@@ -1476,9 +1478,8 @@ $generatorJava.clusterDataSources = function (caches, res) {
         }
     });
 
-    if (storeFound) {
+    if (storeFound)
         res.endBlock('}');
-    }
 
     return res;
 };
@@ -1492,7 +1493,7 @@ $generatorJava.clusterDataSources = function (caches, res) {
  * @param res Resulting output with generated code.
  * @returns {*} Java code for cache store configuration.
  */
-$generatorJava.cacheStore = function (cache, domains, cacheVarName, res) {
+$generatorJava.cacheStore = function(cache, domains, cacheVarName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -1500,14 +1501,14 @@ $generatorJava.cacheStore = function (cache, domains, cacheVarName, res) {
         cacheVarName = $generatorJava.nextVariableName('cache', cache);
 
     if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind) {
-        var factoryKind = cache.cacheStoreFactory.kind;
+        const factoryKind = cache.cacheStoreFactory.kind;
 
-        var storeFactory = cache.cacheStoreFactory[factoryKind];
+        const storeFactory = cache.cacheStoreFactory[factoryKind];
 
         if (storeFactory) {
-            var storeFactoryDesc = $generatorCommon.STORE_FACTORIES[factoryKind];
+            const storeFactoryDesc = $generatorCommon.STORE_FACTORIES[factoryKind];
 
-            var varName = 'storeFactory' + storeFactoryDesc.suffix;
+            const varName = 'storeFactory' + storeFactoryDesc.suffix;
 
             if (factoryKind === 'CacheJdbcPojoStoreFactory') {
                 // Generate POJO store factory.
@@ -1532,7 +1533,7 @@ $generatorJava.cacheStore = function (cache, domains, cacheVarName, res) {
 
                 res.needEmptyLine = true;
 
-                var domainConfigs = _.filter(domains, function (domain) {
+                const domainConfigs = _.filter(domains, function(domain) {
                     return $generatorCommon.domainQueryMetadata(domain) === 'Configuration' &&
                         $generatorCommon.isDefinedAndNotEmpty(domain.databaseTable);
                 });
@@ -1542,7 +1543,7 @@ $generatorJava.cacheStore = function (cache, domains, cacheVarName, res) {
 
                     res.needEmptyLine = true;
 
-                    _.forEach(domainConfigs, function (domain) {
+                    _.forEach(domainConfigs, function(domain) {
                         if ($generatorCommon.isDefinedAndNotEmpty(domain.databaseTable))
                             res.line('jdbcTypes.add(jdbcType' + $generatorJava.extractType(domain.valueType) + '(' + cacheVarName + '.getName()));');
                     });
@@ -1597,8 +1598,7 @@ $generatorJava.cacheStore = function (cache, domains, cacheVarName, res) {
                 res.line(cacheVarName + '.setCacheStoreFactory(' + varName + ');');
             }
             else
-                $generatorJava.beanProperty(res, cacheVarName, storeFactory, 'cacheStoreFactory', varName,
-                    storeFactoryDesc.className, storeFactoryDesc.fields, true);
+                $generatorJava.beanProperty(res, cacheVarName, storeFactory, 'cacheStoreFactory', varName, storeFactoryDesc.className, storeFactoryDesc.fields, true);
 
             res.needEmptyLine = true;
         }
@@ -1627,7 +1627,7 @@ $generatorJava.cacheStore = function (cache, domains, cacheVarName, res) {
 };
 
 // Generate cache concurrency group.
-$generatorJava.cacheConcurrency = function (cache, varName, res) {
+$generatorJava.cacheConcurrency = function(cache, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -1637,7 +1637,7 @@ $generatorJava.cacheConcurrency = function (cache, varName, res) {
     $generatorJava.property(res, varName, cache, 'maxConcurrentAsyncOperations', null, null, 500);
     $generatorJava.property(res, varName, cache, 'defaultLockTimeout', null, null, 0);
     $generatorJava.enumProperty(res, varName, cache, 'atomicWriteOrderMode', 'org.apache.ignite.cache.CacheAtomicWriteOrderMode');
-    $generatorJava.enumProperty(res, varName, cache, 'writeSynchronizationMode', 'org.apache.ignite.cache.CacheWriteSynchronizationMode', null, null, "PRIMARY_SYNC");
+    $generatorJava.enumProperty(res, varName, cache, 'writeSynchronizationMode', 'org.apache.ignite.cache.CacheWriteSynchronizationMode', null, null, 'PRIMARY_SYNC');
 
     res.needEmptyLine = true;
 
@@ -1645,7 +1645,7 @@ $generatorJava.cacheConcurrency = function (cache, varName, res) {
 };
 
 // Generate cache rebalance group.
-$generatorJava.cacheRebalance = function (cache, varName, res) {
+$generatorJava.cacheRebalance = function(cache, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -1675,7 +1675,7 @@ $generatorJava.cacheRebalance = function (cache, varName, res) {
 };
 
 // Generate cache server near cache group.
-$generatorJava.cacheServerNearCache = function (cache, varName, res) {
+$generatorJava.cacheServerNearCache = function(cache, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -1712,7 +1712,7 @@ $generatorJava.cacheServerNearCache = function (cache, varName, res) {
 };
 
 // Generate cache statistics group.
-$generatorJava.cacheStatistics = function (cache, varName, res) {
+$generatorJava.cacheStatistics = function(cache, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -1728,13 +1728,13 @@ $generatorJava.cacheStatistics = function (cache, varName, res) {
 };
 
 // Generate domain model query fields.
-$generatorJava.domainModelQueryFields = function (res, domain) {
-    var fields = domain.fields;
+$generatorJava.domainModelQueryFields = function(res, domain) {
+    const fields = domain.fields;
 
     if (fields && fields.length > 0) {
         $generatorJava.declareVariable(res, 'fields', 'java.util.LinkedHashMap', 'java.util.LinkedHashMap', 'java.lang.String', 'java.lang.String');
 
-        _.forEach(fields, function (field) {
+        _.forEach(fields, function(field) {
             res.line('fields.put("' + field.name + '", "' + $generatorCommon.JavaTypes.fullClassName(field.className) + '");');
         });
 
@@ -1747,13 +1747,13 @@ $generatorJava.domainModelQueryFields = function (res, domain) {
 };
 
 // Generate domain model query aliases.
-$generatorJava.domainModelQueryAliases = function (res, domain) {
-    var aliases = domain.aliases;
+$generatorJava.domainModelQueryAliases = function(res, domain) {
+    const aliases = domain.aliases;
 
     if (aliases && aliases.length > 0) {
         $generatorJava.declareVariable(res, 'aliases', 'java.util.Map', 'java.util.HashMap', 'java.lang.String', 'java.lang.String');
 
-        _.forEach(aliases, function (alias) {
+        _.forEach(aliases, function(alias) {
             res.line('aliases.put("' + alias.field + '", "' + alias.alias + '");');
         });
 
@@ -1766,20 +1766,20 @@ $generatorJava.domainModelQueryAliases = function (res, domain) {
 };
 
 // Generate domain model indexes.
-$generatorJava.domainModelQueryIndexes = function (res, domain) {
-    var indexes = domain.indexes;
+$generatorJava.domainModelQueryIndexes = function(res, domain) {
+    const indexes = domain.indexes;
 
     if (indexes && indexes.length > 0) {
         res.needEmptyLine = true;
 
         $generatorJava.declareVariable(res, 'indexes', 'java.util.List', 'java.util.ArrayList', 'org.apache.ignite.cache.QueryIndex');
 
-        _.forEach(indexes, function (index) {
-            var fields = index.fields;
+        _.forEach(indexes, function(index) {
+            const fields = index.fields;
 
             // One row generation for 1 field index.
             if (fields && fields.length === 1) {
-                var field = index.fields[0];
+                const field = index.fields[0];
 
                 res.line('indexes.add(new ' + res.importClass('org.apache.ignite.cache.QueryIndex') +
                     '("' + field.name + '", ' +
@@ -1821,8 +1821,8 @@ $generatorJava.domainModelQueryIndexes = function (res, domain) {
 };
 
 // Generate domain model db fields.
-$generatorJava.domainModelDatabaseFields = function (res, domain, fieldProperty) {
-    var dbFields = domain[fieldProperty];
+$generatorJava.domainModelDatabaseFields = function(res, domain, fieldProperty) {
+    const dbFields = domain[fieldProperty];
 
     if (dbFields && dbFields.length > 0) {
         res.needEmptyLine = true;
@@ -1831,14 +1831,14 @@ $generatorJava.domainModelDatabaseFields = function (res, domain, fieldProperty)
 
         res.startBlock('jdbcType.' + $generatorCommon.toJavaName('set', fieldProperty) + '(');
 
-        var lastIx = dbFields.length - 1;
+        const lastIx = dbFields.length - 1;
 
         res.importClass('org.apache.ignite.cache.store.jdbc.JdbcTypeField');
 
-        _.forEach(dbFields, function (field, ix) {
+        _.forEach(dbFields, function(field, ix) {
             res.line('new JdbcTypeField(' +
                 'Types.' + field.databaseFieldType + ', ' + '"' + field.databaseFieldName + '", ' +
-                res.importClass(field.javaFieldType) + '.class, ' + '"' + field.javaFieldName + '"'+ ')' + (ix < lastIx ? ',' : ''));
+                res.importClass(field.javaFieldType) + '.class, ' + '"' + field.javaFieldName + '"' + ')' + (ix < lastIx ? ',' : ''));
         });
 
         res.endBlock(');');
@@ -1848,14 +1848,14 @@ $generatorJava.domainModelDatabaseFields = function (res, domain, fieldProperty)
 };
 
 // Generate domain model general group.
-$generatorJava.domainModelGeneral = function (domain, res) {
+$generatorJava.domainModelGeneral = function(domain, res) {
     if (!res)
         res = $generatorCommon.builder();
 
     switch ($generatorCommon.domainQueryMetadata(domain)) {
         case 'Annotations':
             if ($generatorCommon.isDefinedAndNotEmpty(domain.keyType) || $generatorCommon.isDefinedAndNotEmpty(domain.valueType)) {
-                var types = [];
+                const types = [];
 
                 if ($generatorCommon.isDefinedAndNotEmpty(domain.keyType))
                     types.push($generatorJava.toJavaCode(res.importClass(domain.keyType), 'class'));
@@ -1890,6 +1890,8 @@ $generatorJava.domainModelGeneral = function (domain, res) {
             }
 
             break;
+
+        default:
     }
 
     res.needEmptyLine = true;
@@ -1898,7 +1900,7 @@ $generatorJava.domainModelGeneral = function (domain, res) {
 };
 
 // Generate domain model for query group.
-$generatorJava.domainModelQuery = function (domain, res) {
+$generatorJava.domainModelQuery = function(domain, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -1914,7 +1916,7 @@ $generatorJava.domainModelQuery = function (domain, res) {
 };
 
 // Generate domain model for store group.
-$generatorJava.domainStore = function (domain, withTypes, res) {
+$generatorJava.domainStore = function(domain, withTypes, res) {
     if (!res)
         res = $generatorCommon.builder();
 
@@ -1935,11 +1937,11 @@ $generatorJava.domainStore = function (domain, withTypes, res) {
 };
 
 // Generate domain model configs.
-$generatorJava.cacheDomains = function (domains, varName, res) {
+$generatorJava.cacheDomains = function(domains, varName, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    var domainConfigs = _.filter(domains, function (domain) {
+    const domainConfigs = _.filter(domains, function(domain) {
         return $generatorCommon.domainQueryMetadata(domain) === 'Configuration' &&
             $generatorCommon.isDefinedAndNotEmpty(domain.fields);
     });
@@ -1948,7 +1950,7 @@ $generatorJava.cacheDomains = function (domains, varName, res) {
     if ($generatorCommon.isDefinedAndNotEmpty(domainConfigs)) {
         $generatorJava.declareVariable(res, 'queryEntities', 'java.util.Collection', 'java.util.ArrayList', 'org.apache.ignite.cache.QueryEntity');
 
-        _.forEach(domainConfigs, function (domain) {
+        _.forEach(domainConfigs, function(domain) {
             if ($generatorCommon.isDefinedAndNotEmpty(domain.fields))
                 res.line('queryEntities.add(queryEntity' + $generatorJava.extractType(domain.valueType) + '());');
         });
@@ -1980,20 +1982,20 @@ $generatorJava.cache = function(cache, varName, res) {
 };
 
 // Generation of cache domain model in separate methods.
-$generatorJava.clusterDomains = function (caches, res) {
-    var domains = [];
+$generatorJava.clusterDomains = function(caches, res) {
+    const domains = [];
 
-    var typeVarName = 'jdbcType';
-    var metaVarName = 'qryMeta';
+    const typeVarName = 'jdbcType';
+    const metaVarName = 'qryMeta';
 
-    _.forEach(caches, function (cache) {
-        _.forEach(cache.domains, function (domain) {
-            if (_.isNil(_.find(domains, function (m) {
-                    return m === domain.valueType;
-                }))) {
+    _.forEach(caches, function(cache) {
+        _.forEach(cache.domains, function(domain) {
+            if (_.isNil(_.find(domains, function(m) {
+                return m === domain.valueType;
+            }))) {
                 $generatorJava.resetVariables(res);
 
-                var type = $generatorJava.extractType(domain.valueType);
+                const type = $generatorJava.extractType(domain.valueType);
 
                 if ($generatorCommon.isDefinedAndNotEmpty(domain.databaseTable)) {
                     res.line('/**');
@@ -2057,18 +2059,15 @@ $generatorJava.clusterDomains = function (caches, res) {
  * @param obj Object to process.
  * @param names Known names to generate next unique name.
  */
-$generatorJava.nextVariableName = function (prefix, obj, names) {
-    var nextName = $generatorCommon.toJavaName(prefix, obj.name);
+$generatorJava.nextVariableName = function(prefix, obj, names) {
+    let nextName = $generatorCommon.toJavaName(prefix, obj.name);
 
-    var checkNextName = function (name) {
-        return name === nextName + (ix === 0 ? '' : '_' + ix);
-    };
+    let ix = 0;
 
-    var ix = 0;
+    const checkNextName = (name) => name === nextName + (ix === 0 ? '' : '_' + ix);
 
-    while (_.find(names, checkNextName)) {
-        ix ++;
-    }
+    while (_.find(names, (name) => checkNextName(name)))
+        ix++;
 
     if (ix > 0)
         nextName = nextName + '_' + ix;
@@ -2077,15 +2076,15 @@ $generatorJava.nextVariableName = function (prefix, obj, names) {
 };
 
 // Generate cluster caches.
-$generatorJava.clusterCaches = function (caches, igfss, isSrvCfg, res) {
-    function clusterCache(res, cache, names) {
+$generatorJava.clusterCaches = function(caches, igfss, isSrvCfg, res) {
+    function clusterCache(cache, names) {
         res.emptyLineIfNeeded();
 
-        var cacheName = $generatorJava.nextVariableName('cache', cache, names);
+        const cacheName = $generatorJava.nextVariableName('cache', cache, names);
 
         $generatorJava.resetVariables(res);
 
-        var hasDatasource = $generatorCommon.cacheHasDatasource(cache);
+        const hasDatasource = $generatorCommon.cacheHasDatasource(cache);
 
         res.line('/**');
         res.line(' * Create configuration for cache "' + cache.name + '".');
@@ -2113,13 +2112,13 @@ $generatorJava.clusterCaches = function (caches, igfss, isSrvCfg, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    var names = [];
+    const names = [];
 
     if ($generatorCommon.isDefinedAndNotEmpty(caches)) {
         res.emptyLineIfNeeded();
 
-        _.forEach(caches, function (cache) {
-            clusterCache(res, cache, names);
+        _.forEach(caches, function(cache) {
+            clusterCache(cache, names);
         });
 
         res.needEmptyLine = true;
@@ -2128,9 +2127,9 @@ $generatorJava.clusterCaches = function (caches, igfss, isSrvCfg, res) {
     if (isSrvCfg && $generatorCommon.isDefinedAndNotEmpty(igfss)) {
         res.emptyLineIfNeeded();
 
-        _.forEach(igfss, function (igfs) {
-            clusterCache(res, $generatorCommon.igfsDataCache(igfs), names);
-            clusterCache(res, $generatorCommon.igfsMetaCache(igfs), names);
+        _.forEach(igfss, function(igfs) {
+            clusterCache($generatorCommon.igfsDataCache(igfs), names);
+            clusterCache($generatorCommon.igfsMetaCache(igfs), names);
         });
 
         res.needEmptyLine = true;
@@ -2140,7 +2139,7 @@ $generatorJava.clusterCaches = function (caches, igfss, isSrvCfg, res) {
 };
 
 // Generate cluster caches.
-$generatorJava.clusterCacheUse = function (caches, igfss, res) {
+$generatorJava.clusterCacheUse = function(caches, igfss, res) {
     function clusterCacheInvoke(cache, names) {
         names.push($generatorJava.nextVariableName('cache', cache, names));
     }
@@ -2148,20 +2147,20 @@ $generatorJava.clusterCacheUse = function (caches, igfss, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    var cacheNames = [];
+    const cacheNames = [];
 
-    _.forEach(caches, function (cache) {
+    _.forEach(caches, function(cache) {
         clusterCacheInvoke(cache, cacheNames);
     });
 
-    var igfsNames = [];
+    const igfsNames = [];
 
-    _.forEach(igfss, function (igfs) {
+    _.forEach(igfss, function(igfs) {
         clusterCacheInvoke($generatorCommon.igfsDataCache(igfs), igfsNames);
         clusterCacheInvoke($generatorCommon.igfsMetaCache(igfs), igfsNames);
     });
 
-    var allCacheNames = cacheNames.concat(igfsNames);
+    const allCacheNames = cacheNames.concat(igfsNames);
 
     if (allCacheNames.length) {
         res.line('cfg.setCacheConfiguration(' + allCacheNames.join('(), ') + '());');
@@ -2173,7 +2172,7 @@ $generatorJava.clusterCacheUse = function (caches, igfss, res) {
 };
 
 // Get class name from fully specified class path.
-$generatorJava.extractType = function (fullType) {
+$generatorJava.extractType = function(fullType) {
     return fullType.substring(fullType.lastIndexOf('.') + 1);
 };
 
@@ -2187,11 +2186,11 @@ $generatorJava.extractType = function (fullType) {
  * @param includeKeyFields If 'true' then include key fields into value POJO.
  * @param res Resulting output with generated code.
  */
-$generatorJava.javaClassCode = function (domain, key, pkg, useConstructor, includeKeyFields, res) {
+$generatorJava.javaClassCode = function(domain, key, pkg, useConstructor, includeKeyFields, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    var type = $generatorJava.extractType(key ? domain.keyType : domain.valueType);
+    const type = $generatorJava.extractType(key ? domain.keyType : domain.valueType);
 
     // Class comment.
     res.line('/**');
@@ -2206,19 +2205,18 @@ $generatorJava.javaClassCode = function (domain, key, pkg, useConstructor, inclu
     res.line('private static final long serialVersionUID = 0L;');
     res.needEmptyLine = true;
 
-    var allFields = (key || includeKeyFields) ? domain.keyFields.slice() : [];
+    const allFields = (key || includeKeyFields) ? domain.keyFields.slice() : [];
 
-    if (!key)
-        _.forEach(domain.valueFields, function (valFld) {
-            if (_.findIndex(allFields, function(fld) {
-                return fld.javaFieldName === valFld.javaFieldName;
-            }) < 0)
+    if (!key) {
+        _.forEach(domain.valueFields, (valFld) => {
+            if (_.findIndex(allFields, (fld) => fld.javaFieldName === valFld.javaFieldName) < 0)
                 allFields.push(valFld);
         });
+    }
 
     // Generate allFields declaration.
-    _.forEach(allFields, function (field) {
-        var fldName = field.javaFieldName;
+    _.forEach(allFields, function(field) {
+        const fldName = field.javaFieldName;
 
         res.line('/** Value for ' + fldName + '. */');
 
@@ -2251,9 +2249,7 @@ $generatorJava.javaClassCode = function (domain, key, pkg, useConstructor, inclu
 
         res.startBlock();
 
-        _.forEach(allFields, function (field) {
-            res.line('this.' + field.javaFieldName +' = ' + field.javaFieldName + ';');
-        });
+        _.forEach(allFields, (field) => res.line('this.' + field.javaFieldName + ' = ' + field.javaFieldName + ';'));
 
         res.endBlock('}');
 
@@ -2261,10 +2257,10 @@ $generatorJava.javaClassCode = function (domain, key, pkg, useConstructor, inclu
     }
 
     // Generate getters and setters methods.
-    _.forEach(allFields, function (field) {
-        var fldName = field.javaFieldName;
+    _.forEach(allFields, function(field) {
+        const fldName = field.javaFieldName;
 
-        var fldType = res.importClass(field.javaFieldType);
+        const fldType = res.importClass(field.javaFieldType);
 
         res.line('/**');
         res.line(' * Gets ' + fldName + '.');
@@ -2305,16 +2301,16 @@ $generatorJava.javaClassCode = function (domain, key, pkg, useConstructor, inclu
 
     res.line(type + ' that = (' + type + ')o;');
 
-    _.forEach(allFields, function (field) {
+    _.forEach(allFields, function(field) {
         res.needEmptyLine = true;
 
-        var javaName = field.javaFieldName;
-        var javaType = field.javaFieldType;
+        const javaName = field.javaFieldName;
+        const javaType = field.javaFieldType;
 
         if ($generatorCommon.JavaTypes.isJavaPrimitive(javaType)) {
-            if ('float' === javaType)
+            if (javaType === 'float')
                 res.startBlock('if (Float.compare(' + javaName + ', that.' + javaName + ') != 0)');
-            else if ('double' === javaType)
+            else if (javaType === 'double')
                 res.startBlock('if (Double.compare(' + javaName + ', that.' + javaName + ') != 0)');
             else
                 res.startBlock('if (' + javaName + ' != that.' + javaName + ')');
@@ -2337,34 +2333,35 @@ $generatorJava.javaClassCode = function (domain, key, pkg, useConstructor, inclu
     res.line('/** {@inheritDoc} */');
     res.startBlock('@Override public int hashCode() {');
 
-    var first = true;
-    var tempVar = false;
+    let first = true;
+    let tempVar = false;
 
-    _.forEach(allFields, function (field) {
-        var javaName = field.javaFieldName;
-        var javaType = field.javaFieldType;
+    _.forEach(allFields, function(field) {
+        const javaName = field.javaFieldName;
+        const javaType = field.javaFieldType;
 
         if (!first)
             res.needEmptyLine = true;
 
         if ($generatorCommon.JavaTypes.isJavaPrimitive(javaType)) {
-            if ('boolean' === javaType)
+            if (javaType === 'boolean')
                 res.line(first ? 'int res = ' + javaName + ' ? 1 : 0;' : 'res = 31 * res + (' + javaName + ' ? 1 : 0);');
-            else if ('byte' === javaType || 'short' === javaType)
+            else if (javaType === 'byte' || javaType === 'short')
                 res.line(first ? 'int res = (int)' + javaName + ';' : 'res = 31 * res + (int)' + javaName + ';');
-            else if ('int' === javaType)
+            else if (javaType === 'int')
                 res.line(first ? 'int res = ' + javaName + ';' : 'res = 31 * res + ' + javaName + ';');
-            else if ('long' === javaType)
+            else if (javaType === 'long') {
                 res.line(first
                     ? 'int res = (int)(' + javaName + ' ^ (' + javaName + ' >>> 32));'
                     : 'res = 31 * res + (int)(' + javaName + ' ^ (' + javaName + ' >>> 32));');
-            else if ('float' === javaType)
+            }
+            else if (javaType === 'float') {
                 res.line(first
                     ? 'int res = ' + javaName + ' != +0.0f ? Float.floatToIntBits(' + javaName + ') : 0;'
                     : 'res = 31 * res + (' + javaName + ' != +0.0f ? Float.floatToIntBits(' + javaName + ') : 0);');
-            else if ('double' === javaType) {
-                res.line((tempVar ? 'ig_hash_temp' : 'long ig_hash_temp') +
-                        ' = Double.doubleToLongBits(' + javaName + ');');
+            }
+            else if (javaType === 'double') {
+                res.line((tempVar ? 'ig_hash_temp' : 'long ig_hash_temp') + ' = Double.doubleToLongBits(' + javaName + ');');
 
                 res.needEmptyLine = true;
 
@@ -2372,12 +2369,14 @@ $generatorJava.javaClassCode = function (domain, key, pkg, useConstructor, inclu
                         ? 'int res = (int)(ig_hash_temp ^ (ig_hash_temp >>> 32));'
                         : 'res = 31 * res + (int)(ig_hash_temp ^ (ig_hash_temp >>> 32));');
 
-                    tempVar = true;
+                tempVar = true;
             }
         }
-        else
-            res.line(first ? 'int res = ' + javaName + ' != null ? ' + javaName + '.hashCode() : 0;'
+        else {
+            res.line(first
+                ? 'int res = ' + javaName + ' != null ? ' + javaName + '.hashCode() : 0;'
                 : 'res = 31 * res + (' + javaName + ' != null ? ' + javaName + '.hashCode() : 0);');
+        }
 
         first = false;
     });
@@ -2393,7 +2392,7 @@ $generatorJava.javaClassCode = function (domain, key, pkg, useConstructor, inclu
 
     res.startBlock('return \"' + type + ' [" + ');
 
-    _.forEach(allFields, function (field, idx) {
+    _.forEach(allFields, function(field, idx) {
         res.line('\"' + field.javaFieldName + '=\" + ' + field.javaFieldName + (idx < allFields.length - 1 ? ' + ", " + ' : ' +'));
     });
 
@@ -2412,8 +2411,8 @@ $generatorJava.javaClassCode = function (domain, key, pkg, useConstructor, inclu
  * @param useConstructor If 'true' then generate constructors.
  * @param includeKeyFields If 'true' then include key fields into value POJO.
  */
-$generatorJava.pojos = function (caches, useConstructor, includeKeyFields) {
-    var pojos = [];
+$generatorJava.pojos = function(caches, useConstructor, includeKeyFields) {
+    const pojos = [];
 
     _.forEach(caches, function(cache) {
         _.forEach(cache.domains, function(domain) {
@@ -2421,7 +2420,7 @@ $generatorJava.pojos = function (caches, useConstructor, includeKeyFields) {
             if (!_.find(pojos, {valueType: domain.valueType}) &&
                 // Skip domain models without value fields.
                 $generatorCommon.isDefinedAndNotEmpty(domain.valueFields)) {
-                var pojo = {};
+                const pojo = {};
 
                 // Key class generation only if key is not build in java class.
                 if (!_.isNil(domain.keyFields) && domain.keyFields.length > 0) {
@@ -2447,11 +2446,11 @@ $generatorJava.pojos = function (caches, useConstructor, includeKeyFields) {
  * @returns Field java type name.
  */
 $generatorJava.javaTypeName = function(type) {
-    var ix = $generatorJava.javaBuiltInClasses.indexOf(type);
+    const ix = $generatorJava.javaBuiltInClasses.indexOf(type);
 
-    var resType = ix >= 0 ? $generatorJava.javaBuiltInFullNameClasses[ix] : type;
+    const resType = ix >= 0 ? $generatorJava.javaBuiltInFullNameClasses[ix] : type;
 
-    return resType.indexOf("java.lang.") >= 0 ? resType.substring(10) : resType;
+    return resType.indexOf('java.lang.') >= 0 ? resType.substring(10) : resType;
 };
 
 /**
@@ -2473,7 +2472,7 @@ $generatorJava.clusterSsl = function(cluster, res) {
         cluster.sslContextFactory.trustStorePassword = $generatorCommon.isDefinedAndNotEmpty(cluster.sslContextFactory.trustStoreFilePath) ?
             'props.getProperty("ssl.trust.storage.password").toCharArray()' : null;
 
-        var propsDesc = $generatorCommon.isDefinedAndNotEmpty(cluster.sslContextFactory.trustManagers) ?
+        const propsDesc = $generatorCommon.isDefinedAndNotEmpty(cluster.sslContextFactory.trustManagers) ?
             $generatorCommon.SSL_CONFIGURATION_TRUST_MANAGER_FACTORY.fields :
             $generatorCommon.SSL_CONFIGURATION_TRUST_FILE_FACTORY.fields;
 
@@ -2501,8 +2500,8 @@ $generatorJava.igfss = function(igfss, varName, res) {
     if ($generatorCommon.isDefinedAndNotEmpty(igfss)) {
         res.emptyLineIfNeeded();
 
-        var arrayName = 'fileSystems';
-        var igfsInst = 'igfs';
+        const arrayName = 'fileSystems';
+        const igfsInst = 'igfs';
 
         res.line(res.importClass('org.apache.ignite.configuration.FileSystemConfiguration') + '[] ' + arrayName + ' = new FileSystemConfiguration[' + igfss.length + '];');
 
@@ -2545,7 +2544,7 @@ $generatorJava.igfsIPC = function(igfs, varName, res) {
         varName = $generatorJava.nextVariableName('igfs', igfs);
 
     if (igfs.ipcEndpointEnabled) {
-        var desc = $generatorCommon.IGFS_IPC_CONFIGURATION;
+        const desc = $generatorCommon.IGFS_IPC_CONFIGURATION;
 
         $generatorJava.beanProperty(res, varName, igfs.ipcEndpointConfiguration, 'ipcEndpointConfiguration', 'ipcEndpointCfg',
             desc.className, desc.fields, true);
@@ -2619,10 +2618,10 @@ $generatorJava.igfsSecondFS = function(igfs, varName, res) {
         varName = $generatorJava.nextVariableName('igfs', igfs);
 
     if (igfs.secondaryFileSystemEnabled) {
-        var secondFs = igfs.secondaryFileSystem || {};
+        const secondFs = igfs.secondaryFileSystem || {};
 
-        var nameDefined = $generatorCommon.isDefinedAndNotEmpty(secondFs.userName);
-        var cfgDefined = $generatorCommon.isDefinedAndNotEmpty(secondFs.cfgPath);
+        const nameDefined = $generatorCommon.isDefinedAndNotEmpty(secondFs.userName);
+        const cfgDefined = $generatorCommon.isDefinedAndNotEmpty(secondFs.cfgPath);
 
         res.line(varName + '.setSecondaryFileSystem(new ' +
             res.importClass('org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem') + '(' +
@@ -2659,7 +2658,7 @@ $generatorJava.igfsGeneral = function(igfs, varName, res) {
         $generatorJava.property(res, varName, igfs, 'name');
         $generatorJava.property(res, varName, igfs, 'dataCacheName');
         $generatorJava.property(res, varName, igfs, 'metaCacheName');
-        $generatorJava.enumProperty(res, varName, igfs, 'defaultMode', 'org.apache.ignite.igfs.IgfsMode', null, "DUAL_ASYNC");
+        $generatorJava.enumProperty(res, varName, igfs, 'defaultMode', 'org.apache.ignite.igfs.IgfsMode', null, 'DUAL_ASYNC');
 
         res.needEmptyLine = true;
     }
@@ -2700,8 +2699,8 @@ $generatorJava.igfsMisc = function(igfs, varName, res) {
 
         $generatorJava.declareVariable(res, 'pathModes', 'java.util.Map', 'java.util.HashMap', 'String', 'org.apache.ignite.igfs.IgfsMode');
 
-        _.forEach(igfs.pathModes, function (pair) {
-            res.line('pathModes.put("' + pair.path + '", IgfsMode.' + pair.mode +');');
+        _.forEach(igfs.pathModes, function(pair) {
+            res.line('pathModes.put("' + pair.path + '", IgfsMode.' + pair.mode + ');');
         });
 
         res.needEmptyLine = true;
@@ -2714,7 +2713,7 @@ $generatorJava.igfsMisc = function(igfs, varName, res) {
     return res;
 };
 
-$generatorJava.clusterConfiguration = function (cluster, clientNearCfg, res) {
+$generatorJava.clusterConfiguration = function(cluster, clientNearCfg, res) {
     $generatorJava.clusterGeneral(cluster, clientNearCfg, res);
 
     $generatorJava.clusterAtomics(cluster.atomicConfiguration, res);
@@ -2747,7 +2746,7 @@ $generatorJava.clusterConfiguration = function (cluster, clientNearCfg, res) {
 
     $generatorJava.clusterTransactions(cluster.transactionConfiguration, res);
 
-    var isSrvCfg = _.isNil(clientNearCfg);
+    const isSrvCfg = _.isNil(clientNearCfg);
 
     if (isSrvCfg)
         $generatorJava.clusterCacheUse(cluster.caches, cluster.igfss, res);
@@ -2763,7 +2762,7 @@ $generatorJava.clusterConfiguration = function (cluster, clientNearCfg, res) {
 };
 
 // Generate loading of secret properties file.
-$generatorJava.tryLoadSecretProperties = function (cluster, res) {
+$generatorJava.tryLoadSecretProperties = function(cluster, res) {
     if ($generatorCommon.secretPropertiesNeeded(cluster)) {
         res.importClass('org.apache.ignite.configuration.IgniteConfiguration');
 
@@ -2790,13 +2789,13 @@ $generatorJava.tryLoadSecretProperties = function (cluster, res) {
  * @param javaClass Class name for generate factory class otherwise generate code snippet.
  * @param clientNearCfg Optional near cache configuration for client node.
  */
-$generatorJava.cluster = function (cluster, pkg, javaClass, clientNearCfg) {
-    var res = $generatorCommon.builder();
+$generatorJava.cluster = function(cluster, pkg, javaClass, clientNearCfg) {
+    const res = $generatorCommon.builder();
 
-    var isSrvCfg = _.isNil(clientNearCfg);
+    const isSrvCfg = _.isNil(clientNearCfg);
 
     if (cluster) {
-        var resCfg = $generatorJava.clusterConfiguration(cluster, clientNearCfg, $generatorCommon.builder());
+        const resCfg = $generatorJava.clusterConfiguration(cluster, clientNearCfg, $generatorCommon.builder());
 
         res.mergeProps(resCfg);
 
@@ -2865,7 +2864,7 @@ $generatorJava.cluster = function (cluster, pkg, javaClass, clientNearCfg) {
 
         res.endBlock('}');
 
-        return 'package ' + pkg + ';\n\n' + res.generateImports() + '\n\n' + res.generateStaticImports()  + '\n\n' + res.asString();
+        return 'package ' + pkg + ';\n\n' + res.generateImports() + '\n\n' + res.generateStaticImports() + '\n\n' + res.asString();
     }
 
     return res.asString();
@@ -2877,15 +2876,15 @@ $generatorJava.cluster = function (cluster, pkg, javaClass, clientNearCfg) {
  * @param storeFactory Store factory for data source class name generation.
  * @returns {*} Data source class name.
  */
-$generatorJava.dataSourceClassName = function (res, storeFactory) {
-    var dialect = storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : null) : storeFactory.dialect;
+$generatorJava.dataSourceClassName = function(res, storeFactory) {
+    const dialect = storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : null) : storeFactory.dialect;  // eslint-disable-line no-nested-ternary
 
     if (dialect) {
-        var dataSourceBean = storeFactory.dataSourceBean;
+        const dataSourceBean = storeFactory.dataSourceBean;
 
-        var dsClsName = $generatorCommon.dataSourceClassName(dialect);
+        const dsClsName = $generatorCommon.dataSourceClassName(dialect);
 
-        var varType = res.importClass(dsClsName);
+        const varType = res.importClass(dsClsName);
 
         return $generatorCommon.toJavaName(varType, dataSourceBean);
     }
@@ -2905,14 +2904,12 @@ const PREDEFINED_QUERIES = [
         clearQuery: 'DELETE FROM CARS.PARKING',
         insertCntConsts: [{name: 'DEMO_MAX_PARKING_CNT', val: 5, comment: 'How many parkings to generate.'}],
         insertPattern: ['INSERT INTO CARS.PARKING(ID, NAME, CAPACITY) VALUES(?, ?, ?)'],
-        fillInsertParameters: function (res) {
+        fillInsertParameters(res) {
             res.line('stmt.setInt(1, id);');
             res.line('stmt.setString(2, "Parking #" + (id + 1));');
             res.line('stmt.setInt(3, 10 + rnd.nextInt(20));');
         },
-        selectQuery: [
-            "SELECT * FROM PARKING WHERE CAPACITY >= 20"
-        ]
+        selectQuery: ['SELECT * FROM PARKING WHERE CAPACITY >= 20']
     },
     {
         schema: 'CARS',
@@ -2928,14 +2925,12 @@ const PREDEFINED_QUERIES = [
             {name: 'DEMO_MAX_PARKING_CNT', val: 5, comment: 'How many parkings to generate.'}
         ],
         insertPattern: ['INSERT INTO CARS.CAR(ID, PARKING_ID, NAME) VALUES(?, ?, ?)'],
-        fillInsertParameters: function (res) {
+        fillInsertParameters(res) {
             res.line('stmt.setInt(1, id);');
             res.line('stmt.setInt(2, rnd.nextInt(DEMO_MAX_PARKING_CNT));');
             res.line('stmt.setString(3, "Car #" + (id + 1));');
         },
-        selectQuery: [
-            "SELECT * FROM CAR WHERE PARKINGID = 2"
-        ]
+        selectQuery: ['SELECT * FROM CAR WHERE PARKINGID = 2']
     },
     {
         type: 'COUNTRY',
@@ -2946,14 +2941,12 @@ const PREDEFINED_QUERIES = [
         clearQuery: 'DELETE FROM COUNTRY',
         insertCntConsts: [{name: 'DEMO_MAX_COUNTRY_CNT', val: 5, comment: 'How many countries to generate.'}],
         insertPattern: ['INSERT INTO COUNTRY(ID, NAME, POPULATION) VALUES(?, ?, ?)'],
-        fillInsertParameters: function (res) {
+        fillInsertParameters(res) {
             res.line('stmt.setInt(1, id);');
             res.line('stmt.setString(2, "Country #" + (id + 1));');
             res.line('stmt.setInt(3, 10000000 + rnd.nextInt(100000000));');
         },
-        selectQuery: [
-            "SELECT * FROM COUNTRY WHERE POPULATION BETWEEN 15000000 AND 25000000"
-        ]
+        selectQuery: ['SELECT * FROM COUNTRY WHERE POPULATION BETWEEN 15000000 AND 25000000']
     },
     {
         type: 'DEPARTMENT',
@@ -2968,14 +2961,12 @@ const PREDEFINED_QUERIES = [
             {name: 'DEMO_MAX_COUNTRY_CNT', val: 5, comment: 'How many countries to generate.'}
         ],
         insertPattern: ['INSERT INTO DEPARTMENT(ID, COUNTRY_ID, NAME) VALUES(?, ?, ?)'],
-        fillInsertParameters: function (res) {
+        fillInsertParameters(res) {
             res.line('stmt.setInt(1, id);');
             res.line('stmt.setInt(2, rnd.nextInt(DEMO_MAX_COUNTRY_CNT));');
             res.line('stmt.setString(3, "Department #" + (id + 1));');
         },
-        selectQuery: [
-            "SELECT * FROM DEPARTMENT"
-        ]
+        selectQuery: ['SELECT * FROM DEPARTMENT']
     },
     {
         type: 'EMPLOYEE',
@@ -2996,28 +2987,28 @@ const PREDEFINED_QUERIES = [
             {name: 'DEMO_MAX_EMPLOYEE_CNT', val: 10, comment: 'How many employees to generate.'},
             {name: 'DEMO_MAX_DEPARTMENT_CNT', val: 5, comment: 'How many departments to generate.'}
         ],
-        specialGeneration: function (res, conVar) {
-            //$generatorJava.declareVariableCustom(res, 'stmt', 'java.sql.PreparedStatement', conVar +
+        specialGeneration(res, conVar) {
+            // $generatorJava.declareVariableCustom(res, 'stmt', 'java.sql.PreparedStatement', conVar +
             //    '.prepareStatement("INSERT INTO EMPLOYEE(ID, DEPARTMENT_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, JOB, SALARY) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)")');
             //
-            //res.startBlock('for (int id = 0; id < DEMO_MAX_DEPARTMENT_CNT; id ++) {');
-            //res.line('stmt.setInt(1, id);');
-            //res.line('stmt.setInt(2, id);');
-            //res.line('stmt.setString(3, "First name manager #" + (id + 1));');
-            //res.line('stmt.setString(4, "Last name manager#" + (id + 1));');
-            //res.line('stmt.setString(5, "Email manager#" + (id + 1));');
-            //res.line('stmt.setString(6, "Phone number manager#" + (id + 1));');
-            //res.line('stmt.setString(7, "2014-01-01");');
-            //res.line('stmt.setString(8, "Job manager #" + (id + 1));');
-            //res.line('stmt.setDouble(9, 1000.0 + rnd.nextInt(500));');
+            // res.startBlock('for (int id = 0; id < DEMO_MAX_DEPARTMENT_CNT; id ++) {');
+            // res.line('stmt.setInt(1, id);');
+            // res.line('stmt.setInt(2, id);');
+            // res.line('stmt.setString(3, "First name manager #" + (id + 1));');
+            // res.line('stmt.setString(4, "Last name manager#" + (id + 1));');
+            // res.line('stmt.setString(5, "Email manager#" + (id + 1));');
+            // res.line('stmt.setString(6, "Phone number manager#" + (id + 1));');
+            // res.line('stmt.setString(7, "2014-01-01");');
+            // res.line('stmt.setString(8, "Job manager #" + (id + 1));');
+            // res.line('stmt.setDouble(9, 1000.0 + rnd.nextInt(500));');
             //
-            //res.needEmptyLine = true;
+            // res.needEmptyLine = true;
             //
-            //res.line('stmt.executeUpdate();');
+            // res.line('stmt.executeUpdate();');
             //
-            //res.endBlock('}');
+            // res.endBlock('}');
             //
-            //res.needEmptyLine = true;
+            // res.needEmptyLine = true;
 
             $generatorJava.declareVariableCustom(res, 'stmt', 'java.sql.PreparedStatement', conVar +
                 '.prepareStatement("INSERT INTO EMPLOYEE(ID, DEPARTMENT_ID, MANAGER_ID, FIRST_NAME, LAST_NAME, EMAIL, PHONE_NUMBER, HIRE_DATE, JOB, SALARY) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")');
@@ -3047,23 +3038,22 @@ const PREDEFINED_QUERIES = [
 
             res.needEmptyLine = true;
         },
-        selectQuery: [
-            "SELECT * FROM EMPLOYEE WHERE SALARY > 700"
-        ]
+        selectQuery: ['SELECT * FROM EMPLOYEE WHERE SALARY > 700']
     }
 ];
 
 // Generate creation and execution of prepared statement.
 function _prepareStatement(res, conVar, query, select) {
     if (query) {
-        var lines = query.split('\n');
+        const lines = query.split('\n');
 
-        _.forEach(lines, function (line, ix) {
-            if (ix == 0)
-                if (lines.length == 1)
+        _.forEach(lines, function(line, ix) {
+            if (ix === 0) {
+                if (lines.length === 1)
                     res.line(conVar + '.prepareStatement("' + line + '").execute' + (select ? 'Query' : 'Update') + '();');
                 else
                     res.startBlock(conVar + '.prepareStatement("' + line + '" +');
+            }
             else
                 res.line('"' + line + '"' + (ix === lines.length - 1 ? ').execute' + (select ? 'Query' : 'Update') + '();' : ' +'));
         });
@@ -3079,14 +3069,15 @@ function _prepareStatement(res, conVar, query, select) {
 // Generate creation and execution of cache query.
 function _multilineQuery(res, query, prefix, postfix) {
     if (query) {
-        var lines = query.split('\n');
+        const lines = query.split('\n');
 
-        _.forEach(lines, function (line, ix) {
-            if (ix == 0)
-                if (lines.length == 1)
+        _.forEach(lines, function(line, ix) {
+            if (ix === 0) {
+                if (lines.length === 1)
                     res.line(prefix + '"' + line + '"' + postfix);
                 else
                     res.startBlock(prefix + '"' + line + '" +');
+            }
             else
                 res.line('"' + line + '"' + (ix === lines.length - 1 ? postfix : ' +'));
         });
@@ -3109,7 +3100,7 @@ $generatorJava.isDemoConfigured = function(cluster, demo) {
             (desc) => domain.valueType.toUpperCase().endsWith(desc.type))));
 };
 
-$generatorJava.generateDemo = function (cluster, res, factoryCls) {
+$generatorJava.generateDemo = function(cluster, res, factoryCls) {
     const cachesWithDataSource = _.filter(cluster.caches, (cache) => {
         if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind) {
             const storeFactory = cache.cacheStoreFactory[cache.cacheStoreFactory.kind];
@@ -3122,22 +3113,22 @@ $generatorJava.generateDemo = function (cluster, res, factoryCls) {
     });
 
     // Prepare array of cache and his demo domain model list. Every domain is contained only in first cache.
-    var demoTypes = _.filter(_.map(cachesWithDataSource, (cache, idx) => {
+    const demoTypes = _.filter(_.map(cachesWithDataSource, (cache, idx) => {
         return {
-            cache: cache,
+            cache,
             domains: _.filter(cache.domains, (domain) =>
                 $generatorCommon.isDefinedAndNotEmpty(domain.valueFields) &&
                     !_.find(cachesWithDataSource, (checkCache, checkIx) => checkIx < idx && _.find(checkCache.domains, domain))
             )
-        }
+        };
     }), (cache) => $generatorCommon.isDefinedAndNotEmpty(cache.domains));
 
     if ($generatorCommon.isDefinedAndNotEmpty(demoTypes)) {
-        var typeByDs = {};
+        const typeByDs = {};
 
         // Group domain modes by data source
-        _.forEach(demoTypes, function (type) {
-            var ds = type.cache.cacheStoreFactory[type.cache.cacheStoreFactory.kind].dataSourceBean;
+        _.forEach(demoTypes, function(type) {
+            const ds = type.cache.cacheStoreFactory[type.cache.cacheStoreFactory.kind].dataSourceBean;
 
             if (!typeByDs[ds])
                 typeByDs[ds] = [type];
@@ -3145,16 +3136,14 @@ $generatorJava.generateDemo = function (cluster, res, factoryCls) {
                 typeByDs[ds].push(type);
         });
 
-        var rndDefined = false;
+        let rndDefined = false;
 
-        var generatedConsts = [];
+        const generatedConsts = [];
 
-        _.forEach(typeByDs, function (types) {
-            _.forEach(types, function (type) {
-                _.forEach(type.domains, function (domain) {
-                    var desc = _.find(PREDEFINED_QUERIES, function (desc) {
-                        return domain.valueType.toUpperCase().endsWith(desc.type);
-                    });
+        _.forEach(typeByDs, function(types) {
+            _.forEach(types, function(type) {
+                _.forEach(type.domains, function(domain) {
+                    const desc = _.find(PREDEFINED_QUERIES, (d) => domain.valueType.toUpperCase().endsWith(d.type));
 
                     if (desc) {
                         if (!rndDefined && desc.rndRequired) {
@@ -3164,7 +3153,7 @@ $generatorJava.generateDemo = function (cluster, res, factoryCls) {
                             rndDefined = true;
                         }
 
-                        _.forEach(desc.insertCntConsts, function (cnt) {
+                        _.forEach(desc.insertCntConsts, function(cnt) {
                             if (!_.includes(generatedConsts, cnt.name)) {
                                 res.line('/** ' + cnt.comment + ' */');
                                 res.line('private static final int ' + cnt.name + ' = ' + cnt.val + ';');
@@ -3184,16 +3173,14 @@ $generatorJava.generateDemo = function (cluster, res, factoryCls) {
         res.line('/** Fill data for Demo. */');
         res.startBlock('private static void prepareDemoData() throws ' + res.importClass('java.sql.SQLException') + ' {');
 
-        _.forEach(typeByDs, function (types, ds) {
-            var conVar = ds + 'Con';
+        _.forEach(typeByDs, function(types, ds) {
+            const conVar = ds + 'Con';
 
             res.startBlock('try (' + res.importClass('java.sql.Connection') + ' ' + conVar + ' = ' + res.importClass(factoryCls) + '.DataSources.INSTANCE_' + ds + '.getConnection()) {');
 
-            _.forEach(types, function (type) {
-                _.forEach(type.domains, function (domain) {
-                    var desc = _.find(PREDEFINED_QUERIES, function (desc) {
-                        return domain.valueType.toUpperCase().endsWith(desc.type);
-                    });
+            _.forEach(types, function(type) {
+                _.forEach(type.domains, function(domain) {
+                    const desc = _.find(PREDEFINED_QUERIES, (d) => domain.valueType.toUpperCase().endsWith(d.type));
 
                     if (desc) {
                         res.line('// Generate ' + desc.type + '.');
@@ -3253,27 +3240,25 @@ $generatorJava.generateDemo = function (cluster, res, factoryCls) {
         res.line('/** Run demo. */');
         res.startBlock('private static void runDemo(Ignite ignite) throws SQLException {');
 
-        var getType = function (fullType) {
+        const getType = function(fullType) {
             return fullType.substr(fullType.lastIndexOf('.') + 1);
         };
 
-        var cacheLoaded = [];
-        var rowVariableDeclared = false;
+        const cacheLoaded = [];
+        let rowVariableDeclared = false;
 
-        _.forEach(typeByDs, function (types, ds) {
-            var conVar = ds + 'Con';
+        _.forEach(typeByDs, function(types, ds) {
+            const conVar = ds + 'Con';
 
             res.startBlock('try (Connection ' + conVar + ' = ' + factoryCls + '.DataSources.INSTANCE_' + ds + '.getConnection()) {');
 
-            _.forEach(types, function (type) {
-                _.forEach(type.domains, function (domain) {
-                    var desc = _.find(PREDEFINED_QUERIES, function (desc) {
-                        return domain.valueType.toUpperCase().endsWith(desc.type);
-                    });
+            _.forEach(types, function(type) {
+                _.forEach(type.domains, function(domain) {
+                    const desc = _.find(PREDEFINED_QUERIES, (d) => domain.valueType.toUpperCase().endsWith(d.type));
 
                     if (desc) {
-                        _.forEach(desc.selectQuery, function (query) {
-                            var cacheName = type.cache.name;
+                        _.forEach(desc.selectQuery, function(query) {
+                            const cacheName = type.cache.name;
 
                             if (!_.includes(cacheLoaded, cacheName)) {
                                 res.line('ignite.cache("' + cacheName + '").loadCache(null);');
@@ -3284,11 +3269,13 @@ $generatorJava.generateDemo = function (cluster, res, factoryCls) {
                             _multilineQuery(res, query, (rowVariableDeclared ? 'rows' : 'List<Cache.Entry<Object, Object>> rows') +
                                 ' = ignite.cache("' + cacheName + '").query(new ' + res.importClass('org.apache.ignite.cache.query.SqlQuery') +
                                 '<>("' + getType(domain.valueType) + '", ', ')).getAll();');
+
                             res.line('printResult(rows);');
+
                             rowVariableDeclared = true;
 
                             res.needEmptyLine = true;
-                        })
+                        });
                     }
                 });
             });
@@ -3316,10 +3303,10 @@ $generatorJava.generateDemo = function (cluster, res, factoryCls) {
  * @param factoryCls Optional fully qualified class name of configuration factory.
  * @param clientNearCfg Optional near cache configuration for client node.
  */
-$generatorJava.nodeStartup = function (cluster, pkg, cls, cfg, factoryCls, clientNearCfg) {
-    var demo = cls === 'DemoStartup';
+$generatorJava.nodeStartup = function(cluster, pkg, cls, cfg, factoryCls, clientNearCfg) {
+    const demo = cls === 'DemoStartup';
 
-    var res = $generatorCommon.builder();
+    const res = $generatorCommon.builder();
 
     res.line('/**');
     res.line(' * ' + $generatorCommon.mainComment());
@@ -3336,8 +3323,7 @@ $generatorJava.nodeStartup = function (cluster, pkg, cls, cfg, factoryCls, clien
     res.line(' */');
     res.startBlock('public class ' + cls + ' {');
 
-    if (demo)
-        var demoTypes = $generatorJava.generateDemo(cluster, res, factoryCls);
+    const demoTypes = demo ? $generatorJava.generateDemo(cluster, res, factoryCls) : null;
 
     res.line('/**');
     res.line(' * Start up node with specified configuration.');
@@ -3363,9 +3349,10 @@ $generatorJava.nodeStartup = function (cluster, pkg, cls, cfg, factoryCls, clien
     if (factoryCls)
         res.importClass(factoryCls);
 
-    if (clientNearCfg || $generatorCommon.isDefinedAndNotEmpty(demoTypes))
+    if (clientNearCfg || $generatorCommon.isDefinedAndNotEmpty(demoTypes)) {
         res.line(res.importClass('org.apache.ignite.Ignite') + ' ignite = ' +
             res.importClass('org.apache.ignite.Ignition') + '.start(' + cfg + ');');
+    }
     else
         res.line(res.importClass('org.apache.ignite.Ignition') + '.start(' + cfg + ');');
 
@@ -3375,9 +3362,9 @@ $generatorJava.nodeStartup = function (cluster, pkg, cls, cfg, factoryCls, clien
         if ($generatorCommon.isDefinedAndNotEmpty(cluster.caches)) {
             res.line('// Demo of near cache creation on client node.');
 
-            var names = [];
+            const names = [];
 
-            _.forEach(cluster.caches, function (cache) {
+            _.forEach(cluster.caches, function(cache) {
                 $generatorJava.nextVariableName('cache', cache, names);
 
                 res.line('ignite.getOrCreateCache(' + res.importClass(factoryCls) + '.' +

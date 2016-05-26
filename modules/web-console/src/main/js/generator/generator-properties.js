@@ -32,6 +32,7 @@ $generatorProperties.jdbcUrlTemplate = function(dialect) {
             return 'jdbc:postgresql://[host]:[port]/[database]';
         case 'H2':
             return 'jdbc:h2:tcp://[host]/[database]';
+        default:
     }
 
     return 'jdbc:your_database';
@@ -44,17 +45,17 @@ $generatorProperties.jdbcUrlTemplate = function(dialect) {
  * @param res Resulting output with generated properties.
  * @returns {string} Generated content.
  */
-$generatorProperties.dataSourcesProperties = function (cluster, res) {
-    var datasources = [];
+$generatorProperties.dataSourcesProperties = function(cluster, res) {
+    const datasources = [];
 
     if (cluster.caches && cluster.caches.length > 0) {
-        _.forEach(cluster.caches, function (cache) {
+        _.forEach(cluster.caches, function(cache) {
             if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind) {
-                var storeFactory = cache.cacheStoreFactory[cache.cacheStoreFactory.kind];
+                const storeFactory = cache.cacheStoreFactory[cache.cacheStoreFactory.kind];
 
-                var dialect = storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : undefined): storeFactory.dialect;
+                const dialect = storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : null) : storeFactory.dialect; // eslint-disable-line no-nested-ternary
 
-                var connectViaUrl = cache.cacheStoreFactory.kind === 'CacheJdbcBlobStoreFactory' && storeFactory.connectVia === 'URL';
+                const connectViaUrl = cache.cacheStoreFactory.kind === 'CacheJdbcBlobStoreFactory' && storeFactory.connectVia === 'URL';
 
                 if (!res && (dialect || connectViaUrl)) {
                     res = $generatorCommon.builder();
@@ -63,13 +64,13 @@ $generatorProperties.dataSourcesProperties = function (cluster, res) {
                 }
 
                 if (dialect) {
-                    var beanId = storeFactory.dataSourceBean;
+                    const beanId = storeFactory.dataSourceBean;
 
-                    var dsClsName = $generatorCommon.dataSourceClassName(dialect);
+                    const dsClsName = $generatorCommon.dataSourceClassName(dialect);
 
-                    var varType = res.importClass(dsClsName);
+                    const varType = res.importClass(dsClsName);
 
-                    var beanClassName = $generatorCommon.toJavaName(varType, storeFactory.dataSourceBean);
+                    const beanClassName = $generatorCommon.toJavaName(varType, storeFactory.dataSourceBean);
 
                     if (!_.includes(datasources, beanClassName)) {
                         datasources.push(beanClassName);
@@ -111,7 +112,7 @@ $generatorProperties.dataSourcesProperties = function (cluster, res) {
  * @param res Optional configuration presentation builder object.
  * @returns Configuration presentation builder object
  */
-$generatorProperties.sslProperties = function (cluster, res) {
+$generatorProperties.sslProperties = function(cluster, res) {
     if (cluster.sslEnabled && cluster.sslContextFactory) {
         if (!res) {
             res = $generatorCommon.builder();
@@ -138,7 +139,7 @@ $generatorProperties.sslProperties = function (cluster, res) {
  * @param res Optional configuration presentation builder object.
  * @returns Configuration presentation builder object
  */
-$generatorProperties.generateProperties = function (cluster, res) {
+$generatorProperties.generateProperties = function(cluster, res) {
     res = $generatorProperties.dataSourcesProperties(cluster, res);
 
     res = $generatorProperties.sslProperties(cluster, res);

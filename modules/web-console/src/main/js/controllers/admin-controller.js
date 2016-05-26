@@ -33,7 +33,7 @@ consoleModule.controller('adminController', [
                         user.countryCode = Countries.getByName(user.country).code;
                         user.label = user.userName + ' ' + user.email + ' ' +
                             (user.company || '') + ' ' + (user.country || '');
-                    })
+                    });
                 })
                 .catch((err) => $common.showError(err));
         };
@@ -43,10 +43,10 @@ consoleModule.controller('adminController', [
         $scope.becomeUser = function(user) {
             $http.get('/api/v1/admin/become', { params: {viewedUserId: user._id}})
                 .then(User.read)
-                .then((user) => {
-                    $rootScope.$broadcast('user', user);
+                .then((becomeUser) => {
+                    $rootScope.$broadcast('user', becomeUser);
 
-                    $state.go('base.configuration.clusters')
+                    $state.go('base.configuration.clusters');
                 })
                 .catch((errMsg) => $common.showError($common.errorMessage(errMsg)));
         };
@@ -64,7 +64,7 @@ consoleModule.controller('adminController', [
                             $common.showInfo('User has been removed: "' + user.userName + '"');
                         })
                         .error((errMsg, status) => {
-                            if (status == 503)
+                            if (status === 503)
                                 $common.showInfo(errMsg);
                             else
                                 $common.showError('Failed to remove user: "' + $common.errorMessage(errMsg) + '"');

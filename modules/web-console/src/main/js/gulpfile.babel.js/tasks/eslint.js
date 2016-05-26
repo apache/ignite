@@ -22,6 +22,8 @@ import sequence from 'gulp-sequence';
 
 const paths = [
     './app/**/*.js',
+    './controllers/**/*.js',
+    './generator/**/*.js',
     './ignite_modules_temp/**/*.js',
     './gulpfile.babel.js/**/*.js',
     './gulpfile.babel.js/*.js'

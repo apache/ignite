@@ -127,7 +127,7 @@ consoleModule.controller('domainsController', [
 
         $scope.tableStartEdit = function(item, field, index) {
             if ($scope.tableReset(true))
-                $table.tableStartEdit(item, field, index);
+                $table.tableStartEdit(item, field, index, $scope.tableSave);
         };
 
         $scope.tableEditing = $table.tableEditing;
@@ -137,7 +137,6 @@ consoleModule.controller('domainsController', [
                 $table.tableRemove(item, field, index);
         };
 
-        $scope.tablePairStartEdit = $table.tablePairStartEdit;
         $scope.tablePairSave = $table.tablePairSave;
         $scope.tablePairSaveVisible = $table.tablePairSaveVisible;
 

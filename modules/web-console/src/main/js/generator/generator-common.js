@@ -19,23 +19,22 @@
 const $generatorCommon = {};
 
 // Add leading zero.
-$generatorCommon.addLeadingZero = function (numberStr, minSize) {
+$generatorCommon.addLeadingZero = function(numberStr, minSize) {
     if (typeof (numberStr) !== 'string')
         numberStr = '' + numberStr;
 
-    while (numberStr.length < minSize) {
+    while (numberStr.length < minSize)
         numberStr = '0' + numberStr;
-    }
 
     return numberStr;
 };
 
 // Format date to string.
-$generatorCommon.formatDate = function (date) {
-    var dd = $generatorCommon.addLeadingZero(date.getDate(), 2);
-    var mm = $generatorCommon.addLeadingZero(date.getMonth() + 1, 2);
+$generatorCommon.formatDate = function(date) {
+    const dd = $generatorCommon.addLeadingZero(date.getDate(), 2);
+    const mm = $generatorCommon.addLeadingZero(date.getMonth() + 1, 2);
 
-    var yyyy = date.getFullYear();
+    const yyyy = date.getFullYear();
 
     return mm + '/' + dd + '/' + yyyy + ' ' + $generatorCommon.addLeadingZero(date.getHours(), 2) + ':' + $generatorCommon.addLeadingZero(date.getMinutes(), 2);
 };
@@ -46,11 +45,11 @@ $generatorCommon.mainComment = function mainComment() {
 };
 
 // Create result holder with service functions and properties for XML and java code generation.
-$generatorCommon.builder = function (deep) {
+$generatorCommon.builder = function(deep) {
     if (_.isNil($generatorCommon.JavaTypes))
         $generatorCommon.JavaTypes = angular.element(document.getElementById('app')).injector().get('JavaTypes');
 
-    var res = [];
+    const res = [];
 
     res.deep = deep || 0;
     res.needEmptyLine = false;
@@ -66,7 +65,7 @@ $generatorCommon.builder = function (deep) {
     res.safeDatasources = [];
     res.safePoint = -1;
 
-    res.mergeProps = function (fromRes) {
+    res.mergeProps = function(fromRes) {
         if ($generatorCommon.isDefinedAndNotEmpty(fromRes)) {
             res.datasources = fromRes.datasources;
 
@@ -76,18 +75,18 @@ $generatorCommon.builder = function (deep) {
         }
     };
 
-    res.mergeLines = function (fromRes) {
+    res.mergeLines = function(fromRes) {
         if ($generatorCommon.isDefinedAndNotEmpty(fromRes)) {
             if (res.needEmptyLine)
                 res.push('');
 
-            _.forEach(fromRes, function (line) {
+            _.forEach(fromRes, function(line) {
                 res.append(line);
             });
         }
     };
 
-    res.startSafeBlock = function () {
+    res.startSafeBlock = function() {
         res.safeDeep = this.deep;
         this.safeNeedEmptyLine = this.needEmptyLine;
         this.safeImports = _.cloneDeep(this.imports);
@@ -96,7 +95,7 @@ $generatorCommon.builder = function (deep) {
         this.safePoint = this.length;
     };
 
-    res.rollbackSafeBlock = function () {
+    res.rollbackSafeBlock = function() {
         if (this.safePoint >= 0) {
             this.splice(this.safePoint, this.length - this.safePoint);
 
@@ -110,16 +109,16 @@ $generatorCommon.builder = function (deep) {
     };
 
     res.asString = function() {
-      return this.join('\n');
+        return this.join('\n');
     };
 
-    res.append = function (s) {
+    res.append = function(s) {
         this.push((this.lineStart ? _.repeat('    ', this.deep) : '') + s);
 
         return this;
     };
 
-    res.line = function (s) {
+    res.line = function(s) {
         if (s) {
             if (res.needEmptyLine)
                 res.push('');
@@ -134,7 +133,7 @@ $generatorCommon.builder = function (deep) {
         return res;
     };
 
-    res.startBlock = function (s) {
+    res.startBlock = function(s) {
         if (s) {
             if (this.needEmptyLine)
                 this.push('');
@@ -151,7 +150,7 @@ $generatorCommon.builder = function (deep) {
         return this;
     };
 
-    res.endBlock = function (s) {
+    res.endBlock = function(s) {
         this.deep--;
 
         if (s)
@@ -162,11 +161,11 @@ $generatorCommon.builder = function (deep) {
         return this;
     };
 
-    res.softEmptyLine = function () {
+    res.softEmptyLine = function() {
         this.needEmptyLine = this.length > 0;
     };
 
-    res.emptyLineIfNeeded = function () {
+    res.emptyLineIfNeeded = function() {
         if (this.needEmptyLine) {
             this.push('');
             this.lineStart = true;
@@ -181,15 +180,15 @@ $generatorCommon.builder = function (deep) {
      * @param clsName Full class name.
      * @returns {String} Short class name or full class name in case of names conflict.
      */
-    res.importClass = function (clsName) {
+    res.importClass = function(clsName) {
         if ($generatorCommon.JavaTypes.isJavaPrimitive(clsName))
             return clsName;
 
-        var fullClassName = $generatorCommon.JavaTypes.fullClassName(clsName);
+        const fullClassName = $generatorCommon.JavaTypes.fullClassName(clsName);
 
-        var dotIdx = fullClassName.lastIndexOf('.');
+        const dotIdx = fullClassName.lastIndexOf('.');
 
-        var shortName = dotIdx > 0 ? fullClassName.substr(dotIdx + 1) : fullClassName;
+        const shortName = dotIdx > 0 ? fullClassName.substr(dotIdx + 1) : fullClassName;
 
         if (this.imports[shortName]) {
             if (this.imports[shortName] !== fullClassName)
@@ -207,10 +206,10 @@ $generatorCommon.builder = function (deep) {
      * @param member Static member.
      * @returns {String} Short class name or full class name in case of names conflict.
      */
-    res.importStatic = function (member) {
-        var dotIdx = member.lastIndexOf('.');
+    res.importStatic = function(member) {
+        const dotIdx = member.lastIndexOf('.');
 
-        var shortName = dotIdx > 0 ? member.substr(dotIdx + 1) : member;
+        const shortName = dotIdx > 0 ? member.substr(dotIdx + 1) : member;
 
         if (this.staticImports[shortName]) {
             if (this.staticImports[shortName] !== member)
@@ -225,33 +224,33 @@ $generatorCommon.builder = function (deep) {
     /**
      * @returns String with "java imports" section.
      */
-    res.generateImports = function () {
-        var res = [];
+    res.generateImports = function() {
+        const genImports = [];
 
-        for (var clsName in this.imports) {
+        for (const clsName in this.imports) {
             if (this.imports.hasOwnProperty(clsName) && this.imports[clsName].lastIndexOf('java.lang.', 0) !== 0)
-                res.push('import ' + this.imports[clsName] + ';');
+                genImports.push('import ' + this.imports[clsName] + ';');
         }
 
-        res.sort();
+        genImports.sort();
 
-        return res.join('\n');
+        return genImports.join('\n');
     };
 
     /**
      * @returns String with "java imports" section.
      */
-    res.generateStaticImports = function () {
-        var res = [];
+    res.generateStaticImports = function() {
+        const statImports = [];
 
-        for (var clsName in this.staticImports) {
+        for (const clsName in this.staticImports) {
             if (this.staticImports.hasOwnProperty(clsName) && this.staticImports[clsName].lastIndexOf('java.lang.', 0) !== 0)
-                res.push('import static ' + this.staticImports[clsName] + ';');
+                statImports.push('import static ' + this.staticImports[clsName] + ';');
         }
 
-        res.sort();
+        statImports.sort();
 
-        return res.join('\n');
+        return statImports.join('\n');
     };
 
     return res;
@@ -298,7 +297,7 @@ $generatorCommon.JDBC_DIALECTS = {
 
 // Return JDBC dialect full class name for specified database.
 $generatorCommon.jdbcDialectClassName = function(db) {
-    var dialectClsName = $generatorCommon.JDBC_DIALECTS[db];
+    const dialectClsName = $generatorCommon.JDBC_DIALECTS[db];
 
     return dialectClsName ? dialectClsName : 'Unknown database: ' + db;
 };
@@ -338,7 +337,7 @@ $generatorCommon.DATA_SOURCES = {
 
 // Return data source full class name for specified database.
 $generatorCommon.dataSourceClassName = function(db) {
-    var dsClsName = $generatorCommon.DATA_SOURCES[db];
+    const dsClsName = $generatorCommon.DATA_SOURCES[db];
 
     return dsClsName ? dsClsName : 'Unknown database: ' + db;
 };
@@ -490,22 +489,22 @@ $generatorCommon.IGFS_IPC_CONFIGURATION = {
 };
 
 // Check that cache has datasource.
-$generatorCommon.cacheHasDatasource = function (cache) {
+$generatorCommon.cacheHasDatasource = function(cache) {
     if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind) {
-        var storeFactory = cache.cacheStoreFactory[cache.cacheStoreFactory.kind];
+        const storeFactory = cache.cacheStoreFactory[cache.cacheStoreFactory.kind];
 
-        return !!(storeFactory && (storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : false) : storeFactory.dialect));
+        return !!(storeFactory && (storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : false) : storeFactory.dialect)); // eslint-disable-line no-nested-ternary
     }
 
     return false;
 };
 
-$generatorCommon.secretPropertiesNeeded = function (cluster) {
+$generatorCommon.secretPropertiesNeeded = function(cluster) {
     return !_.isNil(_.find(cluster.caches, $generatorCommon.cacheHasDatasource)) || cluster.sslEnabled;
 };
 
 // Check that binary is configured.
-$generatorCommon.binaryIsDefined = function (binary) {
+$generatorCommon.binaryIsDefined = function(binary) {
     return binary && ($generatorCommon.isDefinedAndNotEmpty(binary.idMapper) || $generatorCommon.isDefinedAndNotEmpty(binary.nameMapper) ||
         $generatorCommon.isDefinedAndNotEmpty(binary.serializer) || $generatorCommon.isDefinedAndNotEmpty(binary.typeConfigurations) ||
         (!_.isNil(binary.compactFooter) && !binary.compactFooter));
@@ -521,7 +520,7 @@ $generatorCommon.domainQueryMetadata = function(domain) {
  * @param {Array<String>} props Array of properties names.
  * @returns {boolean} 'true' if
  */
-$generatorCommon.hasAtLeastOneProperty = function (obj, props) {
+$generatorCommon.hasAtLeastOneProperty = function(obj, props) {
     return obj && props && _.findIndex(props, (prop) => !_.isNil(obj[prop])) >= 0;
 };
 
@@ -532,8 +531,8 @@ $generatorCommon.hasAtLeastOneProperty = function (obj, props) {
  * @param name to convert.
  * @returns {string} Valid java name.
  */
-$generatorCommon.toJavaName = function (prefix, name) {
-    var javaName = name ? name.replace(/[^A-Za-z_0-9]+/g, '_') : 'dflt';
+$generatorCommon.toJavaName = function(prefix, name) {
+    const javaName = name ? name.replace(/[^A-Za-z_0-9]+/g, '_') : 'dflt';
 
     return prefix + javaName.charAt(0).toLocaleUpperCase() + javaName.slice(1);
 };
@@ -542,8 +541,8 @@ $generatorCommon.toJavaName = function (prefix, name) {
  * @param v Value to check.
  * @returns {boolean} 'true' if value defined and not empty string.
  */
-$generatorCommon.isDefinedAndNotEmpty = function (v) {
-    var defined = !_.isNil(v);
+$generatorCommon.isDefinedAndNotEmpty = function(v) {
+    let defined = !_.isNil(v);
 
     if (defined && (_.isString(v) || _.isArray(v)))
         defined = v.length > 0;
@@ -556,8 +555,8 @@ $generatorCommon.isDefinedAndNotEmpty = function (v) {
  * @param {Array<String>} props Properties names.
  * @returns {boolean} 'true' if object contains at least one from specified properties.
  */
-$generatorCommon.hasProperty = function (obj, props) {
-    for (var propName in props) {
+$generatorCommon.hasProperty = function(obj, props) {
+    for (const propName in props) {
         if (props.hasOwnProperty(propName)) {
             if (obj[propName])
                 return true;
@@ -573,16 +572,17 @@ $generatorCommon.hasProperty = function (obj, props) {
  * @param spi Failover SPI configuration.
  * @returns {*} Class for selected implementation of Failover SPI.
  */
-$generatorCommon.failoverSpiClass = function (spi) {
+$generatorCommon.failoverSpiClass = function(spi) {
     switch (spi.kind) {
         case 'JobStealing': return 'org.apache.ignite.spi.failover.jobstealing.JobStealingFailoverSpi';
         case 'Never': return 'org.apache.ignite.spi.failover.never.NeverFailoverSpi';
         case 'Always': return 'org.apache.ignite.spi.failover.always.AlwaysFailoverSpi';
         case 'Custom': return _.get(spi, 'Custom.class');
+        default: return 'Unknown';
     }
 };
 
-$generatorCommon.loggerConfigured = function (logger) {
+$generatorCommon.loggerConfigured = function(logger) {
     if (logger && logger.kind) {
         const log = logger[logger.kind];
 
@@ -605,6 +605,8 @@ $generatorCommon.loggerConfigured = function (logger) {
                 return true;
 
             case 'Custom': return log && $generatorCommon.isDefinedAndNotEmpty(log.class);
+
+            default:
         }
 
         return false;
