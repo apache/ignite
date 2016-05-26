@@ -113,6 +113,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
     }
 
     /** {@inheritDoc} */
+    @SuppressWarnings("unchecked")
     @Override public boolean onNodeLeft(UUID nodeId) {
         for (IgniteInternalFuture<?> fut : futures())
             if (isMini(fut)) {
@@ -334,8 +335,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
      * @param nearMap Near map.
      * @return {@code True} in case there is at least one synchronous {@code MiniFuture} to wait for.
      */
-    private boolean finish(Map<UUID, GridDistributedTxMapping> dhtMap,
-        Map<UUID, GridDistributedTxMapping> nearMap) {
+    private boolean finish(Map<UUID, GridDistributedTxMapping> dhtMap, Map<UUID, GridDistributedTxMapping> nearMap) {
         if (tx.onePhaseCommit())
             return false;
 

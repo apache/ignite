@@ -43,6 +43,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
@@ -323,7 +324,14 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
             }
         }, loc ? 2 : txCnt, "tx-thread");
 
-        fut.get();
+        try {
+            fut.get();
+        }
+        catch (IgniteCheckedException e) {
+            U.error(null, "Unexpected exception", e);
+
+            fail();
+        }
 
         U.sleep(1000);
 
@@ -331,13 +339,17 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
         assertNotNull(deadlockE);
 
+        boolean fail = false;
+
         // Check transactions, futures and entry locks state.
         for (int i = 0; i < NODES_CNT * 2; i++) {
             Ignite ignite = ignite(i);
 
             int cacheId = ((IgniteCacheProxy)ignite.cache(CACHE_NAME)).context().cacheId();
 
-            IgniteTxManager txMgr = ((IgniteKernal)ignite).context().cache().context().tm();
+            GridCacheSharedContext<Object, Object> cctx = ((IgniteKernal)ignite).context().cache().context();
+
+            IgniteTxManager txMgr = cctx.tm();
 
             Collection<IgniteInternalTx> activeTxs = txMgr.activeTransactions();
 
@@ -345,8 +357,14 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
                 Collection<IgniteTxEntry> entries = tx.allEntries();
 
                 for (IgniteTxEntry entry : entries) {
-                    if (entry.cacheId() == cacheId)
-                        fail("Transaction still exists: " + tx);
+                    if (entry.cacheId() == cacheId) {
+                        fail = true;
+
+                        U.error(log, "Transaction still exists: " + "\n" + tx.xidVersion() +
+                            "\n" + tx.nearXidVersion() + "\n nodeId=" + cctx.localNodeId() + "\n tx=" + tx);
+
+                        break;
+                    }
                 }
             }
 
@@ -370,6 +388,9 @@ public class TxPessimisticDeadlockDetectionTest extends GridCommonAbstractTest {
                     assertNull("Entry still has locks " + entry, entry.mvccAllLocal());
             }
         }
+
+        if (fail)
+            fail();
 
         // Check deadlock report
         String msg = deadlockE.getMessage();

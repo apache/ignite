@@ -33,6 +33,7 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
@@ -46,12 +47,12 @@ import org.apache.ignite.internal.managers.communication.GridIoMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
+import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareRequest;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteClosure;
@@ -64,6 +65,7 @@ import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionDeadlockException;
+import org.apache.ignite.transactions.TransactionTimeoutException;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
@@ -222,7 +224,7 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
             doTestDeadlock(4, false, false, false, transformer);
             doTestDeadlock(4, false, false, true, transformer);
         }
-        catch (Exception e) {
+        catch (Throwable e) {
             U.error(log, "Unexpected exception: ", e);
 
             fail();
@@ -273,6 +275,8 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
                 int txTimeout = 500 + txCnt * 100;
 
                 try (Transaction tx = ignite.transactions().txStart(OPTIMISTIC, REPEATABLE_READ, txTimeout, 0)) {
+                    IgniteInternalTx tx0 = ((TransactionProxyImpl)tx).tx();
+
                     involvedTxs.add(((TransactionProxyImpl)tx).tx());
 
                     Integer key = keys.get(0);
@@ -327,7 +331,7 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
                     U.error(log, "Expected exception: ", e);
 
                     // At least one stack trace should contain TransactionDeadlockException.
-                    if (hasCause(e, IgniteTxTimeoutCheckedException.class) &&
+                    if (hasCause(e, TransactionTimeoutException.class) &&
                         hasCause(e, TransactionDeadlockException.class)
                         ) {
                         if (deadlockErr.compareAndSet(null, cause(e, TransactionDeadlockException.class)))
@@ -338,7 +342,14 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
             }
         }, loc ? 2 : txCnt, "tx-thread");
 
-        fut.get();
+        try {
+            fut.get();
+        }
+        catch (IgniteCheckedException e) {
+            U.error(null, "Unexpected exception", e);
+
+            fail();
+        }
 
         U.sleep(1000);
 
@@ -346,13 +357,17 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
 
         assertNotNull(deadlockE);
 
+        boolean fail = false;
+
         // Check transactions, futures and entry locks state.
         for (int i = 0; i < NODES_CNT * 2; i++) {
             Ignite ignite = ignite(i);
 
             int cacheId = ((IgniteCacheProxy)ignite.cache(CACHE_NAME)).context().cacheId();
 
-            IgniteTxManager txMgr = ((IgniteKernal)ignite).context().cache().context().tm();
+            GridCacheSharedContext<Object, Object> cctx = ((IgniteKernal)ignite).context().cache().context();
+
+            IgniteTxManager txMgr = cctx.tm();
 
             Collection<IgniteInternalTx> activeTxs = txMgr.activeTransactions();
 
@@ -360,8 +375,14 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
                 Collection<IgniteTxEntry> entries = tx.allEntries();
 
                 for (IgniteTxEntry entry : entries) {
-                    if (entry.cacheId() == cacheId)
-                        fail("Transaction still exists: " + tx);
+                    if (entry.cacheId() == cacheId) {
+                        fail = true;
+
+                        U.error(log, "Transaction still exists: " + "\n" + tx.xidVersion() +
+                            "\n" + tx.nearXidVersion() + "\n nodeId=" + cctx.localNodeId() + "\n tx=" + tx);
+
+                        break;
+                    }
                 }
             }
 
@@ -385,6 +406,9 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
                     assertNull("Entry still has locks " + entry, entry.mvccAllLocal());
             }
         }
+
+        if (fail)
+            fail();
 
         // Check deadlock report
         String msg = deadlockE.getMessage();
@@ -539,9 +563,9 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
                     GridCacheVersion txId = req.version();
 
                     if (TX_IDS.contains(txId)) {
-                        while (TX_IDS.size() != TX_CNT) {
+                        while (TX_IDS.size() < TX_CNT) {
                             try {
-                                U.sleep(10);
+                                U.sleep(50);
                             }
                             catch (IgniteInterruptedCheckedException e) {
                                 e.printStackTrace();

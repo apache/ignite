@@ -3507,10 +3507,6 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
             throw new IgniteCheckedException("Cache transaction marked as rollback-only: " + this);
         }
-
-        if (remainingTime() == -1 && setRollbackOnly())
-            throw new IgniteTxTimeoutCheckedException("Cache transaction timed out " +
-                "(was rolled back automatically): " + this);
     }
 
     /** {@inheritDoc} */

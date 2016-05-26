@@ -2007,7 +2007,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                     if (fut != null)
                         requestedKeys = fut.requestedKeys();
-                } else {
+                }
+                else {
                     GridNearOptimisticTxPrepareFuture fut =
                         (GridNearOptimisticTxPrepareFuture)mvccFuture(tx, GridNearOptimisticTxPrepareFuture.class);
 

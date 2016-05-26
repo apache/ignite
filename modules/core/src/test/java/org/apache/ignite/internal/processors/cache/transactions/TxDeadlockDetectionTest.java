@@ -45,6 +45,7 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 import org.jsr166.ThreadLocalRandom8;
@@ -62,6 +63,9 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
 
     /** Cache. */
     private static final String CACHE = "cache";
+
+    /** Transaction concurrency. */
+    protected TransactionConcurrency transactionConcurrency = PESSIMISTIC;
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -151,7 +155,7 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
 
                         IgniteCache<Integer, Integer> cache = ignite.cache(CACHE);
 
-                        try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, 500, 0)) {
+                        try (Transaction tx = ignite.transactions().txStart(transactionConcurrency, REPEATABLE_READ, 500, 0)) {
                             ThreadLocalRandom8 rnd = ThreadLocalRandom8.current();
 
                             for (int i = 0; i < 50; i++) {
@@ -208,7 +212,7 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
 
                 IgniteCache<Integer, Integer> cache = ignite.cache(CACHE);
 
-                try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, timeout, 0)) {
+                try (Transaction tx = ignite.transactions().txStart(transactionConcurrency, REPEATABLE_READ, timeout, 0)) {
                     int key = 42;
 
                     if (log.isDebugEnabled())
@@ -217,7 +221,7 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
 
                     cache.put(key, 0);
 
-                    barrier.await(timeout + 100, TimeUnit.MILLISECONDS);
+                    barrier.await(timeout + 1000, TimeUnit.MILLISECONDS);
 
                     tx.commit();
                 }
@@ -267,7 +271,7 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
 
                     IgniteCache<Integer, Integer> cache = ignite.cache(CACHE);
 
-                    try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, timeout, 0)) {
+                    try (Transaction tx = ignite.transactions().txStart(transactionConcurrency, REPEATABLE_READ, timeout, 0)) {
                         int key1 = threadNum;
 
                         log.info(">>> Performs put [node=" + ((IgniteKernal)ignite).localNode() +
@@ -281,7 +285,7 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
                             log.info(">>> Performs sleep. [node=" + ((IgniteKernal)ignite).localNode() +
                                 ", tx=" + tx + ']');
 
-                            U.sleep(timeout * 2);
+                            U.sleep(timeout * 3);
                         }
                         else {
                             int key2 = threadNum + 1;
@@ -355,7 +359,7 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
                     IgniteCache<Object, Integer> cache = ignite.cache(CACHE);
 
                     try (Transaction tx =
-                             ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, num == 0 ? 500 : 1500, 0)
+                             ignite.transactions().txStart(transactionConcurrency, REPEATABLE_READ, num == 0 ? 500 : 1500, 0)
                     ) {
                         int key1 = primaryKey(ignite((num + 1) % txCnt).cache(CACHE));
 
