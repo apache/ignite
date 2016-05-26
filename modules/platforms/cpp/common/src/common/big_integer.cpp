@@ -24,8 +24,8 @@ using namespace ignite::common::bits;
 namespace ignite
 {
     BigInteger::BigInteger() :
-        sign(0),
-        mag(0)
+        sign(1),
+        mag()
     {
         // No-op.
     }
@@ -112,6 +112,13 @@ namespace ignite
         }
     }
 
+    BigInteger::BigInteger(MagArray &mag, int8_t sign) :
+        sign(sign),
+        mag()
+    {
+        this->mag.Swap(mag);
+    }
+
     BigInteger& BigInteger::operator=(const BigInteger & other)
     {
         sign = other.sign;
@@ -190,6 +197,60 @@ namespace ignite
             default:
                 break;
         }
+    }
+
+    void BigInteger::Pow(int32_t exp)
+    {
+        uint32_t bitsLen = GetBitLength();
+
+        if (!bitsLen || exp < 0)
+            return;
+
+        if (sign == -1 && exp % 2 == 0)
+            sign = 1;
+
+        if (bitsLen == 1)
+            return;
+
+        BigInteger multiplicant(*this);
+
+        int32_t mutExp = exp;
+        while (mutExp)
+        {
+            if (mutExp & 1)
+                Multiply(multiplicant, *this);
+
+            mutExp >>= 1;
+
+            if (mutExp)
+                multiplicant.Multiply(multiplicant, multiplicant);
+        }
+    }
+
+    void BigInteger::Multiply(const BigInteger& other, BigInteger& res) const
+    {
+        MagArray resMag(mag.GetSize() + other.mag.GetSize());
+
+        resMag.Resize(mag.GetSize() + other.mag.GetSize());
+
+        for (int32_t i = 0; i < other.mag.GetSize(); ++i)
+        {
+            uint32_t carry = 0;
+
+            for (int32_t j = 0; j < mag.GetSize(); ++j)
+            {
+                uint64_t product = static_cast<uint64_t>(mag[j]) * other.mag[i] + 
+                    + resMag[i + j] + carry;
+
+                resMag[i + j] = static_cast<uint32_t>(product);
+                carry = static_cast<uint32_t>(product >> 32);
+            }
+
+            resMag[i + mag.GetSize()] = carry;
+        }
+
+        res.mag.Swap(resMag);
+        res.sign = sign * other.sign;
     }
 }
 

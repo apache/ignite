@@ -81,6 +81,13 @@ namespace ignite
         int32_t GetScale() const;
 
         /**
+         * Set scale.
+         *
+         * @param scale Scale to set.
+         */
+        void SetScale(int32_t scale);
+
+        /**
          * Get unscaled value.
          *
          * @return Unscaled value.

@@ -78,6 +78,31 @@ namespace ignite
         return scale;
     }
 
+    void Decimal::SetScale(int32_t newScale)
+    {
+        if (scale == newScale)
+            return;
+
+        int32_t diff = newScale - scale;
+
+        BigInteger adjustment(10);
+
+        if (diff > 0)
+        {
+            adjustment.Pow(diff);
+
+            //magnitude.Divide(adjustment);
+        }
+        else
+        {
+            adjustment.Pow(-diff);
+
+            magnitude.Multiply(adjustment, magnitude);
+        }
+
+        scale = newScale;
+    }
+
     const BigInteger& Decimal::GetUnscaledValue() const
     {
         return magnitude;

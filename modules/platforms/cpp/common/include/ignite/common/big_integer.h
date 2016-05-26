@@ -62,6 +62,15 @@ namespace ignite
         BigInteger(const int8_t* val, int32_t len, int32_t sign);
 
         /**
+         * Constructs big integer with the specified magnitude.
+         * @warning Magnitude is moved. This mean mag left empty after the call.
+         *
+         * @param mag Magnitude. Moved.
+         * @param sign Sign. Can be 1 or -1.
+         */
+        BigInteger(MagArray& mag, int8_t sign);
+
+        /**
          * Assigment operator.
          *
          * @param other Other value.
@@ -105,6 +114,21 @@ namespace ignite
          * @param buffer Buffer to fill.
          */
         void MagnitudeToBytes(common::FixedSizeArray<int8_t>& buffer) const;
+
+        /**
+         * Mutates this BigInteger so its value becomes exp power of this.
+         *
+         * @param exp Exponent.
+         */
+        void Pow(int32_t exp);
+
+        /**
+         * Muitiply this to another big integer.
+         *
+         * @param other Another instance. Can be *this.
+         * @param res Result placed there. Can be *this.
+         */
+        void Multiply(const BigInteger& other, BigInteger& res) const;
 
     private:
         /**
