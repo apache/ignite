@@ -110,23 +110,23 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
             cache.put(new TestKey(1), new TestValue(10));
 
             BinaryObject obj = (BinaryObject)cache.get(new TestKey(1));
-            assertEquals(10, obj.field("val"));
+            assertEquals(10, (int)obj.field("val"));
 
             asyncCache.get(new TestKey(1));
             obj = (BinaryObject)asyncCache.future().get();
-            assertEquals(10, obj.field("val"));
+            assertEquals(10, (int)obj.field("val"));
 
             Cache.Entry<BinaryObject, BinaryObject> e = (Cache.Entry)cache.getEntry(new TestKey(1));
-            assertEquals(1, e.getKey().field("key"));
-            assertEquals(10, e.getValue().field("val"));
+            assertEquals(1, (int)e.getKey().field("key"));
+            assertEquals(10, (int)e.getValue().field("val"));
 
             asyncCache.getEntry(new TestKey(1));
             e = (Cache.Entry)asyncCache.future().get();
-            assertEquals(1, e.getKey().field("key"));
-            assertEquals(10, e.getValue().field("val"));
+            assertEquals(1, (int)e.getKey().field("key"));
+            assertEquals(10, (int)e.getValue().field("val"));
 
             obj = (BinaryObject)cache.getAndRemove(new TestKey(1));
-            assertEquals(10, obj.field("val"));
+            assertEquals(10, (int)obj.field("val"));
 
             cache.put(new TestKey(1), new TestValue(10));
 
@@ -239,8 +239,8 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
 
             onGet++;
 
-            assertEquals(1, key.field("key"));
-            assertEquals(10, val.field("val"));
+            assertEquals(1, (int)key.field("key"));
+            assertEquals(10, (int)val.field("val"));
 
             return val;
         }
@@ -252,10 +252,10 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
             onBeforePut++;
 
             if (entry.getValue() != null)
-                assertEquals(10, entry.getValue().field("val"));
+                assertEquals(10, (int)entry.getValue().field("val"));
 
-            assertEquals(1, entry.getKey().field("key"));
-            assertEquals(10, newVal.field("val"));
+            assertEquals(1, (int)entry.getKey().field("key"));
+            assertEquals(10, (int)newVal.field("val"));
 
             return newVal;
         }
@@ -266,14 +266,14 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
 
             onAfterPut++;
 
-            assertEquals(1, entry.getKey().field("key"));
-            assertEquals(10, entry.getValue().field("val"));
+            assertEquals(1, (int)entry.getKey().field("key"));
+            assertEquals(10, (int)entry.getValue().field("val"));
         }
 
         /** {@inheritDoc} */
         @Nullable @Override public IgniteBiTuple<Boolean, BinaryObject> onBeforeRemove(Cache.Entry<BinaryObject, BinaryObject> entry) {
-            assertEquals(1, entry.getKey().field("key"));
-            assertEquals(10, entry.getValue().field("val"));
+            assertEquals(1, (int)entry.getKey().field("key"));
+            assertEquals(10, (int)entry.getValue().field("val"));
 
             onBeforeRmv++;
 
@@ -286,8 +286,8 @@ public class CacheKeepBinaryWithInterceptorTest extends GridCommonAbstractTest {
 
             onAfterRmv++;
 
-            assertEquals(1, entry.getKey().field("key"));
-            assertEquals(10, entry.getValue().field("val"));
+            assertEquals(1, (int)entry.getKey().field("key"));
+            assertEquals(10, (int)entry.getValue().field("val"));
         }
     }
 
