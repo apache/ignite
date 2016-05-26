@@ -74,7 +74,7 @@ public abstract class BPlusTree<L, T extends L> {
     private final int cacheId;
 
     /** */
-    private final PageMemory pageMem;
+    protected final PageMemory pageMem;
 
     /** */
     private final ReuseList reuseList;
@@ -2688,12 +2688,21 @@ public abstract class BPlusTree<L, T extends L> {
         if (pageId == 0 && reuseList != null)
             pageId = reuseList.take(this, bag);
 
-        if (pageId == 0) // TODO make pageMem.allocatePage return long
-            pageId = pageMem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_IDX).pageId();
+        if (pageId == 0)
+            pageId = allocatePage0();
 
         assert pageId != 0;
 
         return pageId;
+    }
+
+    /**
+     * @return Page ID of newly allocated page.
+     * @throws IgniteCheckedException
+     */
+    protected long allocatePage0() throws IgniteCheckedException {
+        // TODO make pageMem.allocatePage return long
+        return pageMem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_IDX).pageId();
     }
 
     /**

@@ -201,6 +201,11 @@ public class MetadataStorage implements MetaStore {
         }
 
         /** {@inheritDoc} */
+        @Override protected long allocatePage0() throws IgniteCheckedException {
+            return pageMem.allocatePage(0, 0, PageIdAllocator.FLAG_META).pageId();
+        }
+
+        /** {@inheritDoc} */
         @Override protected int compare(final BPlusIO<IndexItem> io, final ByteBuffer buf, final int idx,
             final IndexItem row) throws IgniteCheckedException {
 
