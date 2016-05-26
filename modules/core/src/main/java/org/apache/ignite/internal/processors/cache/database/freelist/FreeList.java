@@ -26,6 +26,7 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
@@ -152,10 +153,10 @@ public class FreeList {
                 // Index name will be the same across restarts.
                 String idxName = partId + "$$" + cctx.cacheId() + "_free";
 
-                IgniteBiTuple<FullPageId,Boolean> t = cctx.shared().database().meta()
-                    .getOrAllocateForIndex(cctx.cacheId(), idxName);
+                final RootPage rootPage = cctx.shared().database().meta()
+                    .getOrAllocateForTree(cctx.cacheId(), idxName, false);
 
-                fut.onDone(new FreeTree(reuseList, cctx.cacheId(), partId, pageMem, t.get1(), t.get2()));
+                fut.onDone(new FreeTree(reuseList, cctx.cacheId(), partId, pageMem, rootPage.pageId(), rootPage.isAllocated()));
             }
         }
 

@@ -31,6 +31,7 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.processors.cache.database.RowStore;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
@@ -88,7 +89,7 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
         if (cctx.affinityNode()) {
             IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
 
-            IgniteBiTuple<FullPageId, Boolean> page = dbMgr.meta().getOrAllocateForIndex(cctx.cacheId(), cctx.namexx());
+            final RootPage rootPage = dbMgr.meta().getOrAllocateForTree(cctx.cacheId(), cctx.namexx(), false);
 
             int cpus = Runtime.getRuntime().availableProcessors();
 
@@ -101,8 +102,8 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
                 rowStore,
                 cctx,
                 dbMgr.pageMemory(),
-                page.get1(),
-                page.get2());
+                rootPage.pageId(),
+                rootPage.isAllocated());
         }
     }
 
@@ -610,7 +611,7 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
 
         GridCursor<? extends CacheDataRow> cur2 = indexingEnabled ? cctx.queries().pkIndex().find(null, null) : null;
 
-        return cur2 != null ? new CompoundCursor(cur1, cur2) : cur1;
+        return cur2 != null ? new CompoundCursor(cur1, cur2) : (GridCursor<CacheDataRow>) cur1;
     }
 
     /**
