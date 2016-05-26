@@ -20,7 +20,7 @@ import consoleModule from 'controllers/common-module';
 
 consoleModule.controller('profileController', [
     '$rootScope', '$scope', '$http', '$common', '$focus', '$confirm', 'IgniteCountries',
-    function ($root, $scope, $http, $common, $focus, $confirm, Countries) {
+    function($root, $scope, $http, $common, $focus, $confirm, Countries) {
         $scope.user = angular.copy($root.user);
 
         $scope.countries = Countries.getAll();

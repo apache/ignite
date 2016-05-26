@@ -20,7 +20,7 @@ import consoleModule from 'controllers/common-module';
 
 consoleModule.controller('domainsController', [
     '$rootScope', '$scope', '$http', '$state', '$filter', '$timeout', '$modal', '$common', '$focus', '$confirm', '$confirmBatch', '$clone', '$loading', '$cleanup', '$unsavedChangesGuard', 'IgniteAgentMonitor', '$table',
-    function ($root, $scope, $http, $state, $filter, $timeout, $modal, $common, $focus, $confirm, $confirmBatch, $clone, $loading, $cleanup, $unsavedChangesGuard, IgniteAgentMonitor, $table) {
+    function($root, $scope, $http, $state, $filter, $timeout, $modal, $common, $focus, $confirm, $confirmBatch, $clone, $loading, $cleanup, $unsavedChangesGuard, IgniteAgentMonitor, $table) {
         $unsavedChangesGuard.install($scope);
 
         var emptyDomain = {empty: true};
@@ -57,7 +57,7 @@ consoleModule.controller('domainsController', [
         $scope.ui.generatedCachesClusters = [];
 
         function _mapCaches(caches) {
-            return _.map(caches, function (cache) {
+            return _.map(caches, function(cache) {
                 return {
                     label: cache.name,
                     value: cache._id,
@@ -66,7 +66,7 @@ consoleModule.controller('domainsController', [
             });
         }
 
-        $scope.contentVisible = function () {
+        $scope.contentVisible = function() {
             var item = $scope.backupItem;
 
             return !item.empty && (!item._id || _.find($scope.displayedRows, {_id: item._id}));
@@ -78,7 +78,7 @@ consoleModule.controller('domainsController', [
         $scope.widthIsSufficient = $common.widthIsSufficient;
         $scope.saveBtnTipText = $common.saveBtnTipText;
 
-        $scope.tableSave = function (field, index, stopEdit) {
+        $scope.tableSave = function(field, index, stopEdit) {
             if ($table.tableEditing({model: 'table-index-fields'}, $table.tableEditedRowIndex())) {
                 if ($scope.tableIndexItemSaveVisible(field, index))
                     return $scope.tableIndexItemSave(field, field.indexIdx, index, stopEdit);
@@ -109,7 +109,7 @@ consoleModule.controller('domainsController', [
             return true;
         };
 
-        $scope.tableReset = function (save) {
+        $scope.tableReset = function(save) {
             var field = $table.tableField();
 
             if (!save || !$common.isDefined(field) || $scope.tableSave(field, $table.tableEditedRowIndex(), true)) {
@@ -121,21 +121,21 @@ consoleModule.controller('domainsController', [
             return false;
         };
 
-        $scope.tableNewItem = function (field) {
+        $scope.tableNewItem = function(field) {
             if ($scope.tableReset(true))
                 $table.tableNewItem(field);
         };
 
         $scope.tableNewItemActive = $table.tableNewItemActive;
 
-        $scope.tableStartEdit = function (item, field, index) {
+        $scope.tableStartEdit = function(item, field, index) {
             if ($scope.tableReset(true))
                 $table.tableStartEdit(item, field, index);
         };
 
         $scope.tableEditing = $table.tableEditing;
 
-        $scope.tableRemove = function (item, field, index) {
+        $scope.tableRemove = function(item, field, index) {
             if ($scope.tableReset(true))
                 $table.tableRemove(item, field, index);
         };
@@ -226,7 +226,7 @@ consoleModule.controller('domainsController', [
             try {
                 var restoredPresets = JSON.parse(localStorage.dbPresets);
 
-                _.forEach(restoredPresets, function (restoredPreset) {
+                _.forEach(restoredPresets, function(restoredPreset) {
                     var preset = _.find(_dbPresets, {jdbcDriverClass: restoredPreset.jdbcDriverClass});
 
                     if (preset) {
@@ -258,7 +258,7 @@ consoleModule.controller('domainsController', [
             }
         }
 
-        $scope.$watch('ui.selectedJdbcDriverJar', function (val) {
+        $scope.$watch('ui.selectedJdbcDriverJar', function(val) {
             if (val && !$scope.importDomain.demo) {
                 var foundPreset = _findPreset(val);
 
@@ -275,7 +275,7 @@ consoleModule.controller('domainsController', [
         $scope.ui.showValid = true;
 
         function _findPreset(selectedJdbcJar) {
-            var result = _.find(_dbPresets, function (preset) {
+            var result = _.find(_dbPresets, function(preset) {
                 return preset.jdbcDriverClass === selectedJdbcJar.jdbcDriverClass;
             });
 
@@ -303,7 +303,7 @@ consoleModule.controller('domainsController', [
 
         $scope.domains = [];
 
-        $scope.isJavaBuiltInClass = function () {
+        $scope.isJavaBuiltInClass = function() {
             var item = $scope.backupItem;
 
             if (item && item.keyType)
@@ -312,29 +312,29 @@ consoleModule.controller('domainsController', [
             return false;
         };
 
-        $scope.selectAllSchemas = function () {
+        $scope.selectAllSchemas = function() {
             var allSelected = $scope.importDomain.allSchemasSelected;
 
-            _.forEach($scope.importDomain.displayedSchemas, function (schema) {
+            _.forEach($scope.importDomain.displayedSchemas, function(schema) {
                 schema.use = allSelected;
             });
         };
 
-        $scope.selectSchema = function () {
+        $scope.selectSchema = function() {
             if ($common.isDefined($scope.importDomain) && $common.isDefined($scope.importDomain.displayedSchemas))
                 $scope.importDomain.allSchemasSelected = $scope.importDomain.displayedSchemas.length > 0 &&
                     _.every($scope.importDomain.displayedSchemas, 'use', true);
         };
 
-        $scope.selectAllTables = function () {
+        $scope.selectAllTables = function() {
             var allSelected = $scope.importDomain.allTablesSelected;
 
-            _.forEach($scope.importDomain.displayedTables, function (table) {
+            _.forEach($scope.importDomain.displayedTables, function(table) {
                 table.use = allSelected;
             });
         };
 
-        $scope.selectTable = function () {
+        $scope.selectTable = function() {
             if ($common.isDefined($scope.importDomain) && $common.isDefined($scope.importDomain.displayedTables))
                 $scope.importDomain.allTablesSelected = $scope.importDomain.displayedTables.length > 0 &&
                     _.every($scope.importDomain.displayedTables, 'use', true);
@@ -349,7 +349,7 @@ consoleModule.controller('domainsController', [
 
         var hideImportDomain = importDomainModal.hide;
 
-        importDomainModal.hide = function () {
+        importDomainModal.hide = function() {
             IgniteAgentMonitor.stopWatch();
 
             hideImportDomain();
@@ -358,10 +358,10 @@ consoleModule.controller('domainsController', [
         /**
          * Show import domain models modal.
          */
-        $scope.showImportDomainModal = function () {
+        $scope.showImportDomainModal = function() {
             $table.tableReset();
 
-            $common.confirmUnsavedChanges($scope.ui.inputForm.$dirty, function () {
+            $common.confirmUnsavedChanges($scope.ui.inputForm.$dirty, function() {
                 if ($scope.ui.inputForm.$dirty)
                     $scope.backupItem = $scope.selectedItem ? angular.copy($scope.selectedItem) : prepareNewItem();
 
@@ -408,7 +408,7 @@ consoleModule.controller('domainsController', [
                                 if (drivers && drivers.length > 0) {
                                     drivers = _.sortBy(drivers, 'jdbcDriverJar');
 
-                                    _.forEach(drivers, function (drv) {
+                                    _.forEach(drivers, function(drv) {
                                         $scope.jdbcDriverJars.push({
                                             label: drv.jdbcDriverJar,
                                             value: {
@@ -420,8 +420,8 @@ consoleModule.controller('domainsController', [
 
                                     $scope.ui.selectedJdbcDriverJar = $scope.jdbcDriverJars[0].value;
 
-                                    $common.confirmUnsavedChanges($scope.ui.inputForm.$dirty, function () {
-                                        importDomainModal.$promise.then(function () {
+                                    $common.confirmUnsavedChanges($scope.ui.inputForm.$dirty, function() {
+                                        importDomainModal.$promise.then(function() {
                                             $scope.importDomain.action = 'connect';
                                             $scope.importDomain.tables = [];
 
@@ -434,7 +434,7 @@ consoleModule.controller('domainsController', [
                                     $scope.importDomain.button = 'Cancel';
                                 }
                             })
-                            .finally(function () {
+                            .finally(function() {
                                 $scope.importDomain.info = INFO_CONNECT_TO_DB;
 
                                 $loading.finish('importDomainFromDb');
@@ -462,7 +462,7 @@ consoleModule.controller('domainsController', [
                     return IgniteAgentMonitor.schemas(preset)
                 })
                 .then(function(schemas) {
-                    $scope.importDomain.schemas = _.map(schemas, function (schema) {
+                    $scope.importDomain.schemas = _.map(schemas, function(schema) {
                         return {use: true, name: schema};
                     });
 
@@ -476,7 +476,7 @@ consoleModule.controller('domainsController', [
                 .catch(function(errMsg) {
                     $common.showError(errMsg);
                 })
-                .finally(function () {
+                .finally(function() {
                     $loading.finish('importDomainFromDb');
                 });
         }
@@ -529,26 +529,26 @@ consoleModule.controller('domainsController', [
 
                     preset.schemas = [];
 
-                    _.forEach($scope.importDomain.schemas, function (schema) {
+                    _.forEach($scope.importDomain.schemas, function(schema) {
                         if (schema.use)
                             preset.schemas.push(schema.name);
                     });
 
                     return IgniteAgentMonitor.tables(preset);
                 })
-                .then(function (tables) {
+                .then(function(tables) {
                     _importCachesOrTemplates = [DFLT_PARTITIONED_CACHE, DFLT_REPLICATED_CACHE].concat($scope.caches);
 
                     _fillCommonCachesOrTemplates($scope.importCommon)($scope.importCommon.action);
 
-                    _.forEach(tables, function (tbl, idx) {
+                    _.forEach(tables, function(tbl, idx) {
                         tbl.id = idx;
                         tbl.action = IMPORT_DM_NEW_CACHE;
                         tbl.generatedCacheName = toJavaClassName(tbl.tbl) + 'Cache';
                         tbl.cacheOrTemplate = DFLT_PARTITIONED_CACHE.value;
                         tbl.label = tbl.schema + '.' + tbl.tbl;
                         tbl.edit = false;
-                        tbl.use = $common.isDefined(_.find(tbl.cols, function (col) {
+                        tbl.use = $common.isDefined(_.find(tbl.cols, function(col) {
                             return col.key;
                         }));
                     });
@@ -560,13 +560,13 @@ consoleModule.controller('domainsController', [
                 .catch(function(errMsg) {
                     $common.showError(errMsg);
                 })
-                .finally(function () {
+                .finally(function() {
                     $loading.finish('importDomainFromDb');
                 });
         }
 
-        $scope.applyDefaults = function () {
-            _.forEach($scope.importDomain.displayedTables, function (table) {
+        $scope.applyDefaults = function() {
+            _.forEach($scope.importDomain.displayedTables, function(table) {
                 table.edit = false;
                 table.action = $scope.importCommon.action;
                 table.cacheOrTemplate = $scope.importCommon.cacheOrTemplate;
@@ -575,7 +575,7 @@ consoleModule.controller('domainsController', [
 
         $scope._curDbTable = null;
 
-        $scope.startEditDbTableCache = function (tbl) {
+        $scope.startEditDbTableCache = function(tbl) {
             if ($scope._curDbTable) {
                 $scope._curDbTable.edit = false;
 
@@ -642,7 +642,7 @@ consoleModule.controller('domainsController', [
                 $loading.start('importDomainFromDb');
 
                 $http.post('/api/v1/configuration/domains/save/batch', batch)
-                    .success(function (savedBatch) {
+                    .success(function(savedBatch) {
                         var lastItem;
                         var newItems = [];
 
@@ -650,8 +650,8 @@ consoleModule.controller('domainsController', [
                             $scope.caches.push(cache);
                         });
 
-                        _.forEach(savedBatch.savedDomains, function (savedItem) {
-                            var idx = _.findIndex($scope.domains, function (domain) {
+                        _.forEach(savedBatch.savedDomains, function(savedItem) {
+                            var idx = _.findIndex($scope.domains, function(domain) {
                                 return domain._id === savedItem._id;
                             });
 
@@ -663,7 +663,7 @@ consoleModule.controller('domainsController', [
                             lastItem = savedItem;
                         });
 
-                        _.forEach(newItems, function (item) {
+                        _.forEach(newItems, function(item) {
                             $scope.domains.push(item);
                         });
 
@@ -678,10 +678,10 @@ consoleModule.controller('domainsController', [
 
                         $scope.ui.showValid = true;
                     })
-                    .error(function (errMsg) {
+                    .error(function(errMsg) {
                         $common.showError(errMsg);
                     })
-                    .finally(function () {
+                    .finally(function() {
                         $loading.finish('importDomainFromDb');
 
                         importDomainModal.hide();
@@ -721,7 +721,7 @@ consoleModule.controller('domainsController', [
                 };
             }
 
-            _.forEach($scope.importDomain.tables, function (table) {
+            _.forEach($scope.importDomain.tables, function(table) {
                 if (table.use) {
                     var qryFields = [];
                     var indexes = [];
@@ -741,7 +741,7 @@ consoleModule.controller('domainsController', [
 
                     var _containKey = false;
 
-                    _.forEach(table.cols, function (col) {
+                    _.forEach(table.cols, function(col) {
                         var colName = col.name;
                         var jdbcType = $common.findJdbcType(col.type);
                         var nullable = col.nullable;
@@ -766,11 +766,11 @@ consoleModule.controller('domainsController', [
                     containKey &= _containKey;
 
                     if (table.idxs) {
-                        _.forEach(table.idxs, function (idx) {
+                        _.forEach(table.idxs, function(idx) {
                             var fields = Object.keys(idx.fields);
 
                             indexes.push({
-                                name: idx.name, indexType: 'SORTED', fields: _.map(fields, function (fieldName) {
+                                name: idx.name, indexType: 'SORTED', fields: _.map(fields, function(fieldName) {
                                     return {
                                         name: toJavaName(fieldName),
                                         direction: idx.fields[fieldName]
@@ -780,7 +780,7 @@ consoleModule.controller('domainsController', [
                         });
                     }
 
-                    var domainFound = _.find($scope.domains, function (domain) {
+                    var domainFound = _.find($scope.domains, function(domain) {
                         return domain.valueType === valType;
                     });
 
@@ -821,12 +821,12 @@ consoleModule.controller('domainsController', [
                         newDomain.keyType = keyField.jdbcType.javaType;
 
                         // Exclude key column from query fields and indexes.
-                        newDomain.fields = _.filter(newDomain.fields, function (field) {
+                        newDomain.fields = _.filter(newDomain.fields, function(field) {
                             return field.name != keyField.javaFieldName;
                         });
 
-                        _.forEach(newDomain.indexes, function (index) {
-                            index.fields = _.filter(index.fields, function (field) {
+                        _.forEach(newDomain.indexes, function(index) {
+                            index.fields = _.filter(index.fields, function(field) {
                                 return field.name !== keyField.javaFieldName;
                             })
                         });
@@ -900,19 +900,19 @@ consoleModule.controller('domainsController', [
                     '</span>';
             }
 
-            var itemsToConfirm = _.filter(batch, function (item) {
+            var itemsToConfirm = _.filter(batch, function(item) {
                 return item.confirm;
             });
 
             function checkOverwrite() {
                 if (itemsToConfirm.length > 0)
                     $confirmBatch.confirm(overwriteMessage, itemsToConfirm)
-                        .then(function () {
-                            _saveBatch(_.filter(batch, function (item) {
+                        .then(function() {
+                            _saveBatch(_.filter(batch, function(item) {
                                 return !item.skip;
                             }));
                         })
-                        .catch(function () {
+                        .catch(function() {
                             $common.showError('Importing of domain models interrupted by user.');
                         });
                 else
@@ -924,12 +924,12 @@ consoleModule.controller('domainsController', [
             else
                 $confirm.confirm('Some tables have no primary key.<br/>' +
                         'You will need to configure key type and key fields for such tables after import complete.')
-                    .then(function () {
+                    .then(function() {
                         checkOverwrite();
                     });
         }
 
-        $scope.importDomainNext = function () {
+        $scope.importDomainNext = function() {
             if (!$scope.importDomainNextAvailable())
                 return;
 
@@ -947,7 +947,7 @@ consoleModule.controller('domainsController', [
                 _saveDomainModel();
         };
 
-        $scope.nextTooltipText = function () {
+        $scope.nextTooltipText = function() {
             var importDomainNextAvailable = $scope.importDomainNextAvailable();
 
             var act = $scope.importDomain.action;
@@ -970,7 +970,7 @@ consoleModule.controller('domainsController', [
             return 'Click to continue';
         };
 
-        $scope.prevTooltipText = function () {
+        $scope.prevTooltipText = function() {
             var act = $scope.importDomain.action;
 
             if (act === 'schemas')
@@ -983,7 +983,7 @@ consoleModule.controller('domainsController', [
                 return 'Click to return on tables selection step';
         };
 
-        $scope.importDomainNextAvailable = function () {
+        $scope.importDomainNextAvailable = function() {
             var res = true;
 
             switch ($scope.importDomain.action) {
@@ -1001,7 +1001,7 @@ consoleModule.controller('domainsController', [
             return res;
         };
 
-        $scope.importDomainPrev = function () {
+        $scope.importDomainPrev = function() {
             $scope.importDomain.button = 'Next';
 
             if ($scope.importDomain.action === 'options') {
@@ -1018,7 +1018,7 @@ consoleModule.controller('domainsController', [
             }
         };
 
-        $scope.domainModelTitle = function () {
+        $scope.domainModelTitle = function() {
             return $scope.ui.showValid ? 'Domain model types:' : 'Domain model types without key fields:';
         };
 
@@ -1036,7 +1036,7 @@ consoleModule.controller('domainsController', [
         $scope.importCommon = {};
 
         function _fillCommonCachesOrTemplates(item) {
-            return function (action) {
+            return function(action) {
                 if (item.cachesOrTemplates)
                     item.cachesOrTemplates.length = 0;
                 else
@@ -1051,7 +1051,7 @@ consoleModule.controller('domainsController', [
                     if (item.cachesOrTemplates.length > 0)
                         item.cachesOrTemplates.push(null);
 
-                    _.forEach($scope.caches, function (cache) {
+                    _.forEach($scope.caches, function(cache) {
                         item.cachesOrTemplates.push(cache);
                     });
                 }
@@ -1067,9 +1067,9 @@ consoleModule.controller('domainsController', [
         var _importCachesOrTemplates = [];
 
         $http.post('/api/v1/configuration/domains/list')
-            .success(function (data) {
+            .success(function(data) {
                 $scope.spaces = data.spaces;
-                $scope.clusters = _.map(data.clusters, function (cluster) {
+                $scope.clusters = _.map(data.clusters, function(cluster) {
                     return {
                         value: cluster._id,
                         label: cluster.name
@@ -1078,7 +1078,7 @@ consoleModule.controller('domainsController', [
                 $scope.caches = _mapCaches(data.caches);
                 $scope.domains = data.domains;
 
-                _.forEach($scope.clusters, function (cluster) {
+                _.forEach($scope.clusters, function(cluster) {
                     $scope.ui.generatedCachesClusters.push(cluster.value);
                 });
 
@@ -1099,7 +1099,7 @@ consoleModule.controller('domainsController', [
                     var lastSelectedDomain = angular.fromJson(sessionStorage.lastSelectedDomain);
 
                     if (lastSelectedDomain) {
-                        var idx = _.findIndex($scope.domains, function (domain) {
+                        var idx = _.findIndex($scope.domains, function(domain) {
                             return domain._id === lastSelectedDomain;
                         });
 
@@ -1121,7 +1121,7 @@ consoleModule.controller('domainsController', [
                     }
                 });
 
-                $scope.$watch('backupItem', function (val) {
+                $scope.$watch('backupItem', function(val) {
                     var form = $scope.ui.inputForm;
 
                     if (form.$pristine || (form.$valid && __original_value === JSON.stringify($cleanup(val))))
@@ -1130,10 +1130,10 @@ consoleModule.controller('domainsController', [
                         form.$setDirty();
                 }, true);
             })
-            .catch(function (errMsg) {
+            .catch(function(errMsg) {
                 $common.showError(errMsg);
             })
-            .finally(function () {
+            .finally(function() {
                 $scope.ui.ready = true;
                 $scope.ui.inputForm.$setPristine();
                 $loading.finish('loadingDomainModelsScreen');
@@ -1148,7 +1148,7 @@ consoleModule.controller('domainsController', [
             });
         };
 
-        $scope.selectItem = function (item, backup) {
+        $scope.selectItem = function(item, backup) {
             function selectItem() {
                 clearFormDefaults($scope.ui.inputForm);
 
@@ -1200,9 +1200,9 @@ consoleModule.controller('domainsController', [
         }
 
         // Add new domain model.
-        $scope.createItem = function (cacheId) {
+        $scope.createItem = function(cacheId) {
             if ($scope.tableReset(true)) {
-                $timeout(function () {
+                $timeout(function() {
                     $common.ensureActivePanel($scope.ui, 'query');
                     $common.ensureActivePanel($scope.ui, 'general', 'keyType');
                 });
@@ -1229,7 +1229,7 @@ consoleModule.controller('domainsController', [
                 if (errNameShort.endsWith('TextInput'))
                     errNameShort = errNameShort.substring(0, errNameShort.length - 9);
 
-                var extractErrorMessage = function (errName) {
+                var extractErrorMessage = function(errName) {
                     try {
                         return errors[firstErrorKey][0].$errorMessages[errName][firstErrorKey];
                     }
@@ -1267,7 +1267,7 @@ consoleModule.controller('domainsController', [
                 var indexes = item.indexes;
 
                 if (indexes && indexes.length > 0) {
-                    if (_.find(indexes, function (index, i) {
+                    if (_.find(indexes, function(index, i) {
                             if (_.isEmpty(index.fields))
                                 return !showPopoverMessage($scope.ui, 'query', 'indexes' + i, 'Index fields are not specified');
                         }))
@@ -1311,12 +1311,12 @@ consoleModule.controller('domainsController', [
                 item.kind = 'store';
 
             $http.post('/api/v1/configuration/domains/save', item)
-                .success(function (res) {
+                .success(function(res) {
                     $scope.ui.inputForm.$setPristine();
 
                     var savedMeta = res.savedDomains[0];
 
-                    var idx = _.findIndex($scope.domains, function (domain) {
+                    var idx = _.findIndex($scope.domains, function(domain) {
                         return domain._id === savedMeta._id;
                     });
 
@@ -1331,19 +1331,19 @@ consoleModule.controller('domainsController', [
 
                     _checkShowValidPresentation();
                 })
-                .error(function (errMsg) {
+                .error(function(errMsg) {
                     $common.showError(errMsg);
                 });
         }
 
         // Save domain model.
-        $scope.saveItem = function () {
+        $scope.saveItem = function() {
             if ($scope.tableReset(true)) {
                 var item = $scope.backupItem;
 
                 item.cacheStoreChanges = [];
 
-                _.forEach(item.caches, function (cacheId) {
+                _.forEach(item.caches, function(cacheId) {
                     var cache = _.find($scope.caches, {value: cacheId}).cache;
 
                     var change = $common.autoCacheStoreConfiguration(cache, [item]);
@@ -1358,7 +1358,7 @@ consoleModule.controller('domainsController', [
         };
 
         function _domainNames() {
-            return _.map($scope.domains, function (domain) {
+            return _.map($scope.domains, function(domain) {
                 return domain.valueType;
             });
         }
@@ -1368,9 +1368,9 @@ consoleModule.controller('domainsController', [
         }
 
         // Save domain model with new name.
-        $scope.cloneItem = function () {
+        $scope.cloneItem = function() {
             if ($scope.tableReset(true) && validate($scope.backupItem)) {
-                $clone.confirm($scope.backupItem.valueType, _domainNames(), _newNameIsValidJavaClass).then(function (newName) {
+                $clone.confirm($scope.backupItem.valueType, _domainNames(), _newNameIsValidJavaClass).then(function(newName) {
                     var item = angular.copy($scope.backupItem);
 
                     delete item._id;
@@ -1382,22 +1382,22 @@ consoleModule.controller('domainsController', [
         };
 
         // Remove domain model from db.
-        $scope.removeItem = function () {
+        $scope.removeItem = function() {
             $table.tableReset();
 
             var selectedItem = $scope.selectedItem;
 
             $confirm.confirm('Are you sure you want to remove domain model: "' + selectedItem.valueType + '"?')
-                .then(function () {
+                .then(function() {
                     var _id = selectedItem._id;
 
                     $http.post('/api/v1/configuration/domains/remove', {_id: _id})
-                        .success(function () {
+                        .success(function() {
                             $common.showInfo('Domain model has been removed: ' + selectedItem.valueType);
 
                             var domains = $scope.domains;
 
-                            var idx = _.findIndex(domains, function (domain) {
+                            var idx = _.findIndex(domains, function(domain) {
                                 return domain._id === _id;
                             });
 
@@ -1412,7 +1412,7 @@ consoleModule.controller('domainsController', [
 
                             _checkShowValidPresentation();
                         })
-                        .error(function (errMsg) {
+                        .error(function(errMsg) {
                             $common.showError(errMsg);
                         });
                 });
@@ -1427,13 +1427,13 @@ consoleModule.controller('domainsController', [
         }
 
         // Remove all domain models from db.
-        $scope.removeAllItems = function () {
+        $scope.removeAllItems = function() {
             $table.tableReset();
 
             $confirm.confirm('Are you sure you want to remove all domain models?')
-                .then(function () {
+                .then(function() {
                     $http.post('/api/v1/configuration/domains/remove/all')
-                        .success(function () {
+                        .success(function() {
                             $common.showInfo('All domain models have been removed');
 
                             $scope.domains = [];
@@ -1441,13 +1441,13 @@ consoleModule.controller('domainsController', [
                             $scope.backupItem = emptyDomain;
                             $scope.ui.showValid = true;
                         })
-                        .error(function (errMsg) {
+                        .error(function(errMsg) {
                             $common.showError(errMsg);
                         });
                 });
         };
 
-        $scope.toggleValid = function () {
+        $scope.toggleValid = function() {
             $scope.ui.showValid = !$scope.ui.showValid;
 
             var validFilter = $filter('domainsValidation');
@@ -1455,7 +1455,7 @@ consoleModule.controller('domainsController', [
             var idx = -1;
 
             if ($common.isDefined($scope.selectedItem)) {
-                idx = _.findIndex(validFilter($scope.domains, $scope.ui.showValid, true), function (domain) {
+                idx = _.findIndex(validFilter($scope.domains, $scope.ui.showValid, true), function(domain) {
                     return domain._id === $scope.selectedItem._id;
                 });
             }
@@ -1477,7 +1477,7 @@ consoleModule.controller('domainsController', [
             aliases: {id: 'Alias', idPrefix: 'Value', searchCol: 'alias', valueCol: 'value', dupObjName: 'alias'}
         };
 
-        $scope.tablePairValid = function (item, field, index) {
+        $scope.tablePairValid = function(item, field, index) {
             var pairField = pairFields[field.model];
 
             var pairValue = $table.tablePairValue(field, index);
@@ -1486,7 +1486,7 @@ consoleModule.controller('domainsController', [
                 var model = item[field.model];
 
                 if ($common.isDefined(model)) {
-                    var idx = _.findIndex(model, function (pair) {
+                    var idx = _.findIndex(model, function(pair) {
                         return pair[pairField.searchCol] === pairValue[pairField.valueCol];
                     });
 
@@ -1516,7 +1516,7 @@ consoleModule.controller('domainsController', [
             };
         }
 
-        $scope.tableDbFieldSaveVisible = function (field, index) {
+        $scope.tableDbFieldSaveVisible = function(field, index) {
             var dbFieldValue = tableDbFieldValue(field, index);
 
             return $common.isDefined(dbFieldValue.databaseFieldType) &&
@@ -1530,7 +1530,7 @@ consoleModule.controller('domainsController', [
             valueFields: {msg: 'Value field', id: 'ValueField'}
         };
 
-        $scope.tableDbFieldSave = function (field, index, stopEdit) {
+        $scope.tableDbFieldSave = function(field, index, stopEdit) {
             var dbFieldTable = dbFieldTables[field.model];
 
             if (dbFieldTable) {
@@ -1544,7 +1544,7 @@ consoleModule.controller('domainsController', [
                     return false;
 
                 if ($common.isDefined(model)) {
-                    var idx = _.findIndex(model, function (dbMeta) {
+                    var idx = _.findIndex(model, function(dbMeta) {
                         return dbMeta.databaseFieldName === dbFieldValue.databaseFieldName;
                     });
 
@@ -1552,7 +1552,7 @@ consoleModule.controller('domainsController', [
                     if (idx >= 0 && index !== idx)
                         return showPopoverMessage($scope.ui, 'store', $table.tableFieldId(index, 'DatabaseFieldName' + dbFieldTable.id), 'Field with such database name already exists!');
 
-                    idx = _.findIndex(model, function (dbMeta) {
+                    idx = _.findIndex(model, function(dbMeta) {
                         return dbMeta.javaFieldName === dbFieldValue.javaFieldName;
                     });
 
@@ -1601,11 +1601,11 @@ consoleModule.controller('domainsController', [
             return index < 0 ? field.newIndexType : field.curIndexType;
         }
 
-        $scope.tableIndexSaveVisible = function (field, index) {
+        $scope.tableIndexSaveVisible = function(field, index) {
             return !$common.isEmptyString(tableIndexName(field, index)) && $common.isDefined(tableIndexType(field, index));
         };
 
-        $scope.tableIndexSave = function (field, curIdx, stopEdit) {
+        $scope.tableIndexSave = function(field, curIdx, stopEdit) {
             var indexName = tableIndexName(field, curIdx);
             var indexType = tableIndexType(field, curIdx);
 
@@ -1614,7 +1614,7 @@ consoleModule.controller('domainsController', [
             var indexes = item.indexes;
 
             if ($common.isDefined(indexes)) {
-                var idx = _.findIndex(indexes, function (index) {
+                var idx = _.findIndex(indexes, function(index) {
                     return index.name === indexName;
                 });
 
@@ -1654,7 +1654,7 @@ consoleModule.controller('domainsController', [
             return true;
         };
 
-        $scope.tableIndexNewItem = function (field, indexIdx) {
+        $scope.tableIndexNewItem = function(field, indexIdx) {
             if ($scope.tableReset(true)) {
                 var index = $scope.backupItem.indexes[indexIdx];
 
@@ -1667,7 +1667,7 @@ consoleModule.controller('domainsController', [
             }
         };
 
-        $scope.tableIndexNewItemActive = function (field, itemIndex) {
+        $scope.tableIndexNewItemActive = function(field, itemIndex) {
             var indexes = $scope.backupItem.indexes;
 
             if (indexes) {
@@ -1680,7 +1680,7 @@ consoleModule.controller('domainsController', [
             return false;
         };
 
-        $scope.tableIndexItemEditing = function (field, itemIndex, curIdx) {
+        $scope.tableIndexItemEditing = function(field, itemIndex, curIdx) {
             var indexes = $scope.backupItem.indexes;
 
             if (indexes) {
@@ -1703,7 +1703,7 @@ consoleModule.controller('domainsController', [
             };
         }
 
-        $scope.tableIndexItemStartEdit = function (field, indexIdx, curIdx) {
+        $scope.tableIndexItemStartEdit = function(field, indexIdx, curIdx) {
             if ($scope.tableReset(true)) {
                 var index = $scope.backupItem.indexes[indexIdx];
 
@@ -1719,11 +1719,11 @@ consoleModule.controller('domainsController', [
             }
         };
 
-        $scope.tableIndexItemSaveVisible = function (field, index) {
+        $scope.tableIndexItemSaveVisible = function(field, index) {
             return !$common.isEmptyString(tableIndexItemValue(field, index).name);
         };
 
-        $scope.tableIndexItemSave = function (field, indexIdx, curIdx, stopEdit) {
+        $scope.tableIndexItemSave = function(field, indexIdx, curIdx, stopEdit) {
             var indexItemValue = tableIndexItemValue(field, curIdx);
 
             var index = $scope.backupItem.indexes[indexIdx];
@@ -1731,7 +1731,7 @@ consoleModule.controller('domainsController', [
             var fields = index.fields;
 
             if ($common.isDefined(fields)) {
-                var idx = _.findIndex(fields, function (field) {
+                var idx = _.findIndex(fields, function(field) {
                     return field.name === indexItemValue.name;
                 });
 
@@ -1767,17 +1767,17 @@ consoleModule.controller('domainsController', [
             return true;
         };
 
-        $scope.tableRemoveIndexItem = function (index, curIdx) {
+        $scope.tableRemoveIndexItem = function(index, curIdx) {
             $table.tableReset();
 
             index.fields.splice(curIdx, 1);
         };
 
-        $scope.resetAll = function () {
+        $scope.resetAll = function() {
             $table.tableReset();
 
             $confirm.confirm('Are you sure you want to undo all changes for current domain model?')
-                .then(function () {
+                .then(function() {
                     $scope.backupItem = $scope.selectedItem ? angular.copy($scope.selectedItem) : prepareNewItem();
                     $scope.ui.inputForm.$setPristine();
                 });

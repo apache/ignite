@@ -20,7 +20,7 @@ import consoleModule from 'controllers/common-module';
 
 consoleModule.controller('clustersController', [
     '$rootScope', '$scope', '$http', '$state', '$timeout', '$common', '$confirm', '$clone', '$loading', '$cleanup', '$unsavedChangesGuard', 'igniteEventGroups', 'DemoInfo', '$table',
-    function ($root, $scope, $http, $state, $timeout, $common, $confirm, $clone, $loading, $cleanup, $unsavedChangesGuard, igniteEventGroups, DemoInfo, $table) {
+    function($root, $scope, $http, $state, $timeout, $common, $confirm, $clone, $loading, $cleanup, $unsavedChangesGuard, igniteEventGroups, DemoInfo, $table) {
         $unsavedChangesGuard.install($scope);
 
         var emptyCluster = {empty: true};
@@ -53,7 +53,7 @@ consoleModule.controller('clustersController', [
             aliases: {id: 'Alias', idPrefix: 'Value', searchCol: 'alias', valueCol: 'value', dupObjName: 'alias'}
         };
 
-        $scope.tablePairValid = function (item, field, index) {
+        $scope.tablePairValid = function(item, field, index) {
             var pairField = pairFields[field.model];
 
             var pairValue = $table.tablePairValue(field, index);
@@ -62,7 +62,7 @@ consoleModule.controller('clustersController', [
                 var model = item[field.model];
 
                 if ($common.isDefined(model)) {
-                    var idx = _.findIndex(model, function (pair) {
+                    var idx = _.findIndex(model, function(pair) {
                         return pair[pairField.searchCol] === pairValue[pairField.valueCol];
                     });
 
@@ -78,7 +78,7 @@ consoleModule.controller('clustersController', [
             return true;
         };
 
-        $scope.tableSave = function (field, index, stopEdit) {
+        $scope.tableSave = function(field, index, stopEdit) {
             if ($table.tableEditing({model: 'table-index-fields'}, $table.tableEditedRowIndex())) {
                 if ($scope.tableIndexItemSaveVisible(field, index))
                     return $scope.tableIndexItemSave(field, field.indexIdx, index, stopEdit);
@@ -96,7 +96,7 @@ consoleModule.controller('clustersController', [
             return true;
         };
 
-        $scope.tableReset = function (save) {
+        $scope.tableReset = function(save) {
             var field = $table.tableField();
 
             if (!save || !$common.isDefined(field) || $scope.tableSave(field, $table.tableEditedRowIndex(), true)) {
@@ -108,7 +108,7 @@ consoleModule.controller('clustersController', [
             return false;
         };
 
-        $scope.tableNewItem = function (field) {
+        $scope.tableNewItem = function(field) {
             if ($scope.tableReset(true)) {
                 if (field.type === 'failoverSpi') {
                     if ($common.isDefined($scope.backupItem.failoverSpi))
@@ -123,14 +123,14 @@ consoleModule.controller('clustersController', [
 
         $scope.tableNewItemActive = $table.tableNewItemActive;
 
-        $scope.tableStartEdit = function (item, field, index) {
+        $scope.tableStartEdit = function(item, field, index) {
             if ($scope.tableReset(true))
                 $table.tableStartEdit(item, field, index);
         };
 
         $scope.tableEditing = $table.tableEditing;
 
-        $scope.tableRemove = function (item, field, index) {
+        $scope.tableRemove = function(item, field, index) {
             if ($scope.tableReset(true))
                 $table.tableRemove(item, field, index);
         };
@@ -139,7 +139,7 @@ consoleModule.controller('clustersController', [
         $scope.tablePairSave = $table.tablePairSave;
         $scope.tablePairSaveVisible = $table.tablePairSaveVisible;
 
-        $scope.removeFailoverConfiguration = function (idx) {
+        $scope.removeFailoverConfiguration = function(idx) {
             $scope.backupItem.failoverSpi.splice(idx, 1);
         };
 
@@ -156,13 +156,13 @@ consoleModule.controller('clustersController', [
 
         var showPopoverMessage = $common.showPopoverMessage;
 
-        $scope.contentVisible = function () {
+        $scope.contentVisible = function() {
             var item = $scope.backupItem;
 
             return !item.empty && (!item._id || _.find($scope.displayedRows, {_id: item._id}));
         };
 
-        $scope.toggleExpanded = function () {
+        $scope.toggleExpanded = function() {
             $scope.ui.expanded = !$scope.ui.expanded;
 
             $common.hidePopover();
@@ -198,7 +198,7 @@ consoleModule.controller('clustersController', [
         }
 
         function clusterCaches(item) {
-            return _.reduce($scope.caches, function (memo, cache) {
+            return _.reduce($scope.caches, function(memo, cache) {
                 if (item && _.includes(item.caches, cache.value)) {
                     memo.push(cache.cache);
                 }
@@ -211,16 +211,16 @@ consoleModule.controller('clustersController', [
 
         // When landing on the page, get clusters and show them.
         $http.post('/api/v1/configuration/clusters/list')
-            .success(function (data) {
+            .success(function(data) {
                 $scope.spaces = data.spaces;
 
-                _.forEach(data.clusters, function (cluster) {
+                _.forEach(data.clusters, function(cluster) {
                     cluster.label = _clusterLbl(cluster);
                 });
 
                 $scope.clusters = data.clusters;
 
-                _.forEach($scope.clusters, function (cluster) {
+                _.forEach($scope.clusters, function(cluster) {
                     if (!cluster.collision)
                         cluster.collision = {
                             kind: 'Noop',
@@ -239,11 +239,11 @@ consoleModule.controller('clustersController', [
                         cluster.logger = { Log4j: { mode: 'Default' } };
                 });
 
-                $scope.caches = _.map(data.caches, function (cache) {
+                $scope.caches = _.map(data.caches, function(cache) {
                     return {value: cache._id, label: cache.name, cache: cache};
                 });
 
-                $scope.igfss = _.map(data.igfss, function (igfs) {
+                $scope.igfss = _.map(data.igfss, function(igfs) {
                     return {value: igfs._id, label: igfs.name, igfs: igfs};
                 });
 
@@ -253,7 +253,7 @@ consoleModule.controller('clustersController', [
                     var lastSelectedCluster = angular.fromJson(sessionStorage.lastSelectedCluster);
 
                     if (lastSelectedCluster) {
-                        var idx = _.findIndex($scope.clusters, function (cluster) {
+                        var idx = _.findIndex($scope.clusters, function(cluster) {
                             return cluster._id === lastSelectedCluster;
                         });
 
@@ -275,7 +275,7 @@ consoleModule.controller('clustersController', [
                     }
                 });
 
-                $scope.$watch('backupItem', function (val) {
+                $scope.$watch('backupItem', function(val) {
                     var form = $scope.ui.inputForm;
 
                     if (form.$pristine || (form.$valid && __original_value === JSON.stringify($cleanup(val))))
@@ -290,16 +290,16 @@ consoleModule.controller('clustersController', [
                     DemoInfo.show();
                 }
             })
-            .catch(function (errMsg) {
+            .catch(function(errMsg) {
                 $common.showError(errMsg);
             })
-            .finally(function () {
+            .finally(function() {
                 $scope.ui.ready = true;
                 $scope.ui.inputForm.$setPristine();
                 $loading.finish('loadingClustersScreen');
             });
 
-        $scope.selectItem = function (item, backup) {
+        $scope.selectItem = function(item, backup) {
             function selectItem() {
                 $scope.selectedItem = item;
 
@@ -372,15 +372,15 @@ consoleModule.controller('clustersController', [
 
         // Add new cluster.
         $scope.createItem = function(id) {
-            $timeout(function () {
+            $timeout(function() {
                 $common.ensureActivePanel($scope.ui, "general", 'clusterName');
             });
 
             $scope.selectItem(undefined, prepareNewItem(id));
         };
 
-        $scope.indexOfCache = function (cacheId) {
-            return _.findIndex($scope.caches, function (cache) {
+        $scope.indexOfCache = function(cacheId) {
+            return _.findIndex($scope.caches, function(cache) {
                 return cache.value === cacheId;
             });
         };
@@ -408,7 +408,7 @@ consoleModule.controller('clustersController', [
                 if (errNameShort.endsWith('TextInput'))
                     errNameShort = errNameShort.substring(0, errNameShort.length - 9);
 
-                var extractErrorMessage = function (errName) {
+                var extractErrorMessage = function(errName) {
                     try {
                         return errors[firstErrorKey][0].$errorMessages[errName][firstErrorKey];
                     }
@@ -427,9 +427,9 @@ consoleModule.controller('clustersController', [
                 return showPopoverMessage($scope.ui, firstError.$name, errNameFull, msg);
             }
 
-            var caches = _.filter(_.map($scope.caches, function (scopeCache) {
+            var caches = _.filter(_.map($scope.caches, function(scopeCache) {
                 return scopeCache.cache;
-            }), function (cache) {
+            }), function(cache) {
                 return _.includes($scope.backupItem.caches, cache._id);
             });
 
@@ -447,7 +447,7 @@ consoleModule.controller('clustersController', [
 
             if ($common.isDefined(b)) {
                 if (!_.isEmpty(b.typeConfigurations)) {
-                    var sameName = function (t, ix) {
+                    var sameName = function(t, ix) {
                         return ix < typeIx && t.typeName === type.typeName;
                     };
 
@@ -570,7 +570,7 @@ consoleModule.controller('clustersController', [
         // Save cluster in database.
         function save(item) {
             $http.post('/api/v1/configuration/clusters/save', item)
-                .success(function (_id) {
+                .success(function(_id) {
                     item.label = _clusterLbl(item);
 
                     $scope.ui.inputForm.$setPristine();
@@ -592,7 +592,7 @@ consoleModule.controller('clustersController', [
         }
 
         // Save cluster.
-        $scope.saveItem = function () {
+        $scope.saveItem = function() {
             var item = $scope.backupItem;
 
             var swapSpi = $common.autoClusterSwapSpiConfiguration(item, clusterCaches(item));
@@ -605,15 +605,15 @@ consoleModule.controller('clustersController', [
         };
 
         function _clusterNames() {
-            return _.map($scope.clusters, function (cluster) {
+            return _.map($scope.clusters, function(cluster) {
                 return cluster.name;
             });
         }
 
         // Clone cluster with new name.
-        $scope.cloneItem = function () {
+        $scope.cloneItem = function() {
             if (validate($scope.backupItem)) {
-                $clone.confirm($scope.backupItem.name, _clusterNames()).then(function (newName) {
+                $clone.confirm($scope.backupItem.name, _clusterNames()).then(function(newName) {
                     var item = angular.copy($scope.backupItem);
 
                     delete item._id;
@@ -625,20 +625,20 @@ consoleModule.controller('clustersController', [
         };
 
         // Remove cluster from db.
-        $scope.removeItem = function () {
+        $scope.removeItem = function() {
             var selectedItem = $scope.selectedItem;
 
             $confirm.confirm('Are you sure you want to remove cluster: "' + selectedItem.name + '"?')
-                .then(function () {
+                .then(function() {
                     var _id = selectedItem._id;
 
                     $http.post('/api/v1/configuration/clusters/remove', {_id: _id})
-                        .success(function () {
+                        .success(function() {
                             $common.showInfo('Cluster has been removed: ' + selectedItem.name);
 
                             var clusters = $scope.clusters;
 
-                            var idx = _.findIndex(clusters, function (cluster) {
+                            var idx = _.findIndex(clusters, function(cluster) {
                                 return cluster._id === _id;
                             });
 
@@ -651,25 +651,25 @@ consoleModule.controller('clustersController', [
                                     $scope.backupItem = emptyCluster;
                             }
                         })
-                        .error(function (errMsg) {
+                        .error(function(errMsg) {
                             $common.showError(errMsg);
                         });
                 });
         };
 
         // Remove all clusters from db.
-        $scope.removeAllItems = function () {
+        $scope.removeAllItems = function() {
             $confirm.confirm('Are you sure you want to remove all clusters?')
-                .then(function () {
+                .then(function() {
                     $http.post('/api/v1/configuration/clusters/remove/all')
-                        .success(function () {
+                        .success(function() {
                             $common.showInfo('All clusters have been removed');
 
                             $scope.clusters = [];
                             $scope.backupItem = emptyCluster;
                             $scope.ui.inputForm.$setPristine();
                         })
-                        .error(function (errMsg) {
+                        .error(function(errMsg) {
                             $common.showError(errMsg);
                         });
                 });

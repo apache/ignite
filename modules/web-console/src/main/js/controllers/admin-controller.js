@@ -40,7 +40,7 @@ consoleModule.controller('adminController', [
 
         _reloadUsers();
 
-        $scope.becomeUser = function (user) {
+        $scope.becomeUser = function(user) {
             $http.get('/api/v1/admin/become', { params: {viewedUserId: user._id}})
                 .then(User.read)
                 .then((user) => {

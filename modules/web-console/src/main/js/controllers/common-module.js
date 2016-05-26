@@ -37,16 +37,16 @@ consoleModule.run(['$rootScope', '$http', '$state', '$common', 'Auth', 'User', '
     ($root, $http, $state, $common, Auth, User, gettingStarted) => {
     $root.gettingStarted = gettingStarted;
 
-    $root.revertIdentity = function () {
+    $root.revertIdentity = function() {
         $http
             .get('/api/v1/admin/revert/identity')
             .then(User.read)
-            .then(function (user) {
+            .then(function(user) {
                 $root.$broadcast('user', user);
 
                 $state.go('settings.admin');
             })
-            .catch(function (errMsg) {
+            .catch(function(errMsg) {
                 $common.showError($common.errorMessage(errMsg));
             });
     };
@@ -638,9 +638,9 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
 
                 popover = newPopover;
 
-                $timeout(function () { newPopover.$promise.then(newPopover.show); }, 400);
+                $timeout(function() { newPopover.$promise.then(newPopover.show); }, 400);
 
-                $timeout(function () { newPopover.hide(); }, showTime || 5000);
+                $timeout(function() { newPopover.hide(); }, showTime || 5000);
             }
         };
 
@@ -788,13 +788,13 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
 
         return {
             getModel: getModel,
-            mkOptions: function (options) {
-                return _.map(options, function (option) {
+            mkOptions: function(options) {
+                return _.map(options, function(option) {
                     return {value: option, label: isDefined(option) ? option : 'Not set'};
                 });
             },
             isDefined: isDefined,
-            hasProperty: function (obj, props) {
+            hasProperty: function(obj, props) {
                 for (var propName in props) {
                     if (props.hasOwnProperty(propName)) {
                         if (obj[propName])
@@ -806,12 +806,12 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
             },
             isEmptyString: isEmptyString,
             errorMessage: errorMessage,
-            hideAlert: function () {
+            hideAlert: function() {
                 if (msgModal)
                     msgModal.hide();
             },
             showError: showError,
-            showInfo: function (msg) {
+            showInfo: function(msg) {
                 if (msgModal)
                     msgModal.hide();
 
@@ -824,8 +824,8 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
                 msgModal.$scope.icon = 'fa-check-circle-o';
             },
             SUPPORTED_JDBC_TYPES: SUPPORTED_JDBC_TYPES,
-            findJdbcType: function (jdbcType) {
-                var res =  _.find(ALL_JDBC_TYPES, function (item) {
+            findJdbcType: function(jdbcType) {
+                var res =  _.find(ALL_JDBC_TYPES, function(item) {
                     return item.dbType === jdbcType;
                 });
 
@@ -835,7 +835,7 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
             javaBuiltInTypes: javaBuiltInTypes,
             isJavaBuiltInClass: isJavaBuiltInClass,
             isValidJavaIdentifier: isValidJavaIdentifier,
-            isValidJavaClass: function (msg, ident, allowBuiltInClass, elemId, packageOnly, panels, panelId) {
+            isValidJavaClass: function(msg, ident, allowBuiltInClass, elemId, packageOnly, panels, panelId) {
                 if (isEmptyString(ident))
                     return showPopoverMessage(panels, panelId, elemId, msg + ' could not be empty!');
 
@@ -858,7 +858,7 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
 
                 return true;
             },
-            domainForQueryConfigured: function (domain) {
+            domainForQueryConfigured: function(domain) {
                 var isEmpty = !isDefined(domain) || (_.isEmpty(domain.fields) &&
                     _.isEmpty(domain.aliases) &&
                     _.isEmpty(domain.indexes));
@@ -876,7 +876,7 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
              * @param divider String to visualy divide items.
              * @returns {*} Array of compacted class names.
              */
-            compactJavaName: function (id, index, maxLength, names, divider) {
+            compactJavaName: function(id, index, maxLength, names, divider) {
                 divider = ' ' + divider + ' ';
 
                 var prefix = index + ') ';
@@ -912,7 +912,7 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
              * @param label Text to compact.
              * @returns Compacted label text.
              */
-            compactTableLabel: function (id, index, maxLength, label) {
+            compactTableLabel: function(id, index, maxLength, label) {
                 label = index + ') ' + label;
 
                 try {
@@ -941,11 +941,11 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
                     return true;
                 }
             },
-            ensureActivePanel: function (panels, id, focusId) {
+            ensureActivePanel: function(panels, id, focusId) {
                 ensureActivePanel(panels, id, focusId);
             },
             showPopoverMessage: showPopoverMessage,
-            hidePopover: function () {
+            hidePopover: function() {
                 if (popover)
                     popover.hide();
             },
@@ -957,13 +957,13 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
                 else
                     selectFunc();
             },
-            saveBtnTipText: function (dirty, objectName) {
+            saveBtnTipText: function(dirty, objectName) {
                 if (dirty)
                     return 'Save ' + objectName;
 
                 return 'Nothing to save';
             },
-            download: function (type, name, data) {
+            download: function(type, name, data) {
                 var file = document.createElement('a');
 
                 file.setAttribute('href', 'data:' + type +';charset=utf-8,' + data);
@@ -978,7 +978,7 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
 
                 document.body.removeChild(file);
             },
-            formUI: function () {
+            formUI: function() {
                 return {
                     ready: false,
                     expanded: false,
@@ -1008,17 +1008,17 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
                 return attr.substr(attr.indexOf('=') + 1);
             },
             cacheStoreJdbcDialects: cacheStoreJdbcDialects,
-            cacheStoreJdbcDialectsLabel: function (dialect) {
-                var found = _.find(cacheStoreJdbcDialects, function (dialectVal) {
+            cacheStoreJdbcDialectsLabel: function(dialect) {
+                var found = _.find(cacheStoreJdbcDialects, function(dialectVal) {
                     return dialectVal.value === dialect;
                 });
 
                 return found ? found.label : undefined;
             },
-            checkCachesDataSources: function (caches, checkCacheExt) {
+            checkCachesDataSources: function(caches, checkCacheExt) {
                 var res = DS_CHECK_SUCCESS;
 
-                _.find(caches, function (curCache, curIx) {
+                _.find(caches, function(curCache, curIx) {
                     if (isDefined(checkCacheExt)) {
                         if (!isDefined(checkCacheExt._id) || checkCacheExt.id != curCache._id) {
                             res = compareDataSources(checkCacheExt, curCache);
@@ -1029,7 +1029,7 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
                         return false;
                     }
                     else {
-                        return _.find(caches, function (checkCache, checkIx) {
+                        return _.find(caches, function(checkCache, checkIx) {
                             if (checkIx < curIx) {
                                 res = compareDataSources(checkCache, curCache);
 
@@ -1043,7 +1043,7 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
 
                 return res;
             },
-            autoCacheStoreConfiguration: function (cache, domains) {
+            autoCacheStoreConfiguration: function(cache, domains) {
                 var cacheStoreFactory = isDefined(cache.cacheStoreFactory) &&
                     isDefined(cache.cacheStoreFactory.kind);
 
@@ -1063,10 +1063,10 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
                     };
                 }
             },
-            autoClusterSwapSpiConfiguration: function (cluster, caches) {
+            autoClusterSwapSpiConfiguration: function(cluster, caches) {
                 var swapConfigured = cluster.swapSpaceSpi && cluster.swapSpaceSpi.kind;
 
-                if (!swapConfigured && _.find(caches, function (cache) {
+                if (!swapConfigured && _.find(caches, function(cache) {
                     return cache.swapEnabled;
                 }))
                     return {swapSpaceSpi: {kind: 'FileSwapSpaceSpi'}};
@@ -1090,7 +1090,7 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
 // Confirm change location.
 consoleModule.service('$unsavedChangesGuard', ['$rootScope', ($root) => {
     return {
-        install: function ($scope) {
+        install: function($scope) {
             $scope.$on("$destroy", function() {
                 window.onbeforeunload = null;
             });
@@ -1138,11 +1138,11 @@ consoleModule.service('$confirmBatch', ['$modal', '$rootScope', '$q', ($modal, $
             _done();
     }
 
-    scope.cancel = function () {
+    scope.cancel = function() {
             _done(true);
     };
 
-    scope.skip = function (applyToAll) {
+    scope.skip = function(applyToAll) {
         if (applyToAll) {
             for (var i = scope.curIx; i < scope.items.length; i++)
                 scope.items[i].skip = true;
@@ -1153,7 +1153,7 @@ consoleModule.service('$confirmBatch', ['$modal', '$rootScope', '$q', ($modal, $
                 _nextElement(true);
     };
 
-    scope.overwrite = function (applyToAll) {
+    scope.overwrite = function(applyToAll) {
         if (applyToAll)
                 _done();
             else
@@ -1167,7 +1167,7 @@ consoleModule.service('$confirmBatch', ['$modal', '$rootScope', '$q', ($modal, $
          * @param confirmMessageFn Function to generate a confirm message.
      * @param itemsToConfirm Array of element to process by confirm.
      */
-        confirm: function (confirmMessageFn, itemsToConfirm) {
+        confirm: function(confirmMessageFn, itemsToConfirm) {
             scope.deferred = $q.defer();
 
             scope.contentGenerator = confirmMessageFn;
@@ -1191,7 +1191,7 @@ consoleModule.service('$clone', ['$modal', '$rootScope', '$q', ($modal, $root, $
     var _names = [];
     var _validator;
 
-    scope.ok = function (newName) {
+    scope.ok = function(newName) {
         if (!_validator || _validator(newName)) {
             deferred.resolve(_nextAvailableName(newName));
 
@@ -1215,7 +1215,7 @@ consoleModule.service('$clone', ['$modal', '$rootScope', '$q', ($modal, $root, $
         return tmpName;
     }
 
-    cloneModal.confirm = function (oldName, names, validator) {
+    cloneModal.confirm = function(oldName, names, validator) {
         _names = names;
 
         scope.newName = _nextAvailableName(oldName);
@@ -1233,7 +1233,7 @@ consoleModule.service('$clone', ['$modal', '$rootScope', '$q', ($modal, $root, $
 }]);
 
 // Tables support service.
-consoleModule.service('$table', ['$common', '$focus', function ($common, $focus) {
+consoleModule.service('$table', ['$common', '$focus', function($common, $focus) {
     function _model(item, field) {
         return $common.getModel(item, field);
     }
@@ -1347,26 +1347,26 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
         tableReset: _tableReset,
         tableSaveAndReset: _tableSaveAndReset,
         tableNewItem: _tableNewItem,
-        tableNewItemActive: function (tbl) {
+        tableNewItemActive: function(tbl) {
             return table.name === tbl.model && table.editIndex < 0;
         },
-        tableEditing: function (tbl, index) {
+        tableEditing: function(tbl, index) {
             return table.name === tbl.model && table.editIndex === index;
         },
-        tableEditedRowIndex: function () {
+        tableEditedRowIndex: function() {
             return table.editIndex;
         },
-        tableField: function () {
+        tableField: function() {
             return table.field;
         },
         tableStartEdit: _tableStartEdit,
-        tableRemove: function (item, field, index) {
+        tableRemove: function(item, field, index) {
             _tableReset();
 
             _model(item, field)[field.model].splice(index, 1);
         },
         tablePairValue: _tablePairValue,
-        tablePairSave: function (pairValid, item, field, index, stopEdit) {
+        tablePairSave: function(pairValid, item, field, index, stopEdit) {
             var valid = pairValid(item, field, index);
 
             if (valid) {
@@ -1405,23 +1405,23 @@ consoleModule.service('$table', ['$common', '$focus', function ($common, $focus)
 
             return valid;
         },
-        tablePairSaveVisible: function (field, index) {
+        tablePairSaveVisible: function(field, index) {
             var pairValue = _tablePairValue(field, index);
 
             return !$common.isEmptyString(pairValue.key) && !$common.isEmptyString(pairValue.value);
         },
-        tableFocusInvalidField: function (index, id) {
+        tableFocusInvalidField: function(index, id) {
             _tableFocus(id, index);
 
             return false;
         },
-        tableFieldId: function (index, id) {
+        tableFieldId: function(index, id) {
             return (index < 0 ? 'new' : 'cur') + id + (index >= 0 ? index : '');
         }
     };
 }]);
 
-consoleModule.service('ngCopy', ['$window', '$common', function ($window, $common) {
+consoleModule.service('ngCopy', ['$window', '$common', function($window, $common) {
     var body = angular.element($window.document.body);
 
     var textArea = angular.element('<textarea/>');
@@ -1431,7 +1431,7 @@ consoleModule.service('ngCopy', ['$window', '$common', function ($window, $commo
         opacity: '0'
     });
 
-    return function (toCopy) {
+    return function(toCopy) {
         textArea.val(toCopy);
 
         body.append(textArea);
@@ -1449,11 +1449,11 @@ consoleModule.service('ngCopy', ['$window', '$common', function ($window, $commo
 
         textArea.remove();
     };
-}]).directive('ngClickCopy', ['ngCopy', function (ngCopy) {
+}]).directive('ngClickCopy', ['ngCopy', function(ngCopy) {
     return {
         restrict: 'A',
-        link: function (scope, element, attrs) {
-            element.bind('click', function () {
+        link: function(scope, element, attrs) {
+            element.bind('click', function() {
                 ngCopy(attrs.ngClickCopy);
             });
 
@@ -1470,7 +1470,7 @@ consoleModule.filter('tablesSearch', function() {
 
             var matchString = query.$.toLowerCase();
 
-            angular.forEach(array, function (row) {
+            angular.forEach(array, function(row) {
                 var label = (row.schema + '.' + row.tbl).toLowerCase();
 
                 if (label.indexOf(matchString) >= 0)
@@ -1484,14 +1484,14 @@ consoleModule.filter('tablesSearch', function() {
 });
 
 // Filter domain models with key fields configuration.
-consoleModule.filter('domainsValidation', ['$common', function ($common) {
+consoleModule.filter('domainsValidation', ['$common', function($common) {
     return function(domains, valid, invalid) {
         if (valid && invalid)
             return domains;
 
         var out = [];
 
-        _.forEach(domains, function (domain) {
+        _.forEach(domains, function(domain) {
             var _valid = !$common.domainForStoreConfigured(domain) || $common.isJavaBuiltInClass(domain.keyType) || !_.isEmpty(domain.keyFields);
 
             if (valid && _valid || invalid && !_valid)
@@ -1514,11 +1514,11 @@ consoleModule.directive('match', ['$parse', ($parse) => {
 
 // Directive to bind ENTER key press with some user action.
 consoleModule.directive('onEnter', ['$timeout', ($timeout) => {
-    return function (scope, elem, attrs) {
-        elem.on('keydown keypress', function (event) {
+    return function(scope, elem, attrs) {
+        elem.on('keydown keypress', function(event) {
             if (event.which === 13) {
-                scope.$apply(function () {
-                    $timeout(function () {
+                scope.$apply(function() {
+                    $timeout(function() {
                         scope.$eval(attrs.onEnter)
                     });
                 });
@@ -1528,7 +1528,7 @@ consoleModule.directive('onEnter', ['$timeout', ($timeout) => {
         });
 
         // Removes bound events in the element itself when the scope is destroyed.
-        scope.$on('$destroy', function () {
+        scope.$on('$destroy', function() {
             elem.off('keydown keypress');
         });
     };
@@ -1536,10 +1536,10 @@ consoleModule.directive('onEnter', ['$timeout', ($timeout) => {
 
 // Directive to bind ESC key press with some user action.
 consoleModule.directive('onEscape', () => {
-    return function (scope, elem, attrs) {
-        elem.on('keydown keypress', function (event) {
+    return function(scope, elem, attrs) {
+        elem.on('keydown keypress', function(event) {
             if (event.which === 27) {
-                scope.$apply(function () {
+                scope.$apply(function() {
                     scope.$eval(attrs.onEscape);
                 });
 
@@ -1548,7 +1548,7 @@ consoleModule.directive('onEscape', () => {
         });
 
         // Removes bound events in the element itself when the scope is destroyed
-        scope.$on('$destroy', function () {
+        scope.$on('$destroy', function() {
             elem.off('keydown keypress');
         });
     };
@@ -1558,8 +1558,8 @@ consoleModule.directive('onEscape', () => {
 consoleModule.directive('retainSelection', ['$timeout', ($timeout) => {
     var promise;
 
-    return function (scope, elem) {
-        elem.on('keydown', function (evt) {
+    return function(scope, elem) {
+        elem.on('keydown', function(evt) {
             var key = evt.which;
             var ctrlDown = evt.ctrlKey || evt.metaKey;
             var input = this;
@@ -1568,7 +1568,7 @@ consoleModule.directive('retainSelection', ['$timeout', ($timeout) => {
             if (promise)
                 $timeout.cancel(promise);
 
-            promise = $timeout(function () {
+            promise = $timeout(function() {
                 var setCursor = false;
 
                 // Handle Backspace[8].
@@ -1599,7 +1599,7 @@ consoleModule.directive('retainSelection', ['$timeout', ($timeout) => {
         });
 
         // Removes bound events in the element itself when the scope is destroyed
-        scope.$on('$destroy', function () {
+        scope.$on('$destroy', function() {
             elem.off('keydown');
         });
     };
@@ -1607,11 +1607,11 @@ consoleModule.directive('retainSelection', ['$timeout', ($timeout) => {
 
 // Factory function to focus element.
 consoleModule.factory('$focus', ['$timeout', ($timeout) => {
-    return function (id) {
+    return function(id) {
         // Timeout makes sure that is invoked after any other event has been triggered.
         // E.g. click events that need to run before the focus or inputs elements that are
         // in a disabled state but are enabled when those events are triggered.
-        $timeout(function () {
+        $timeout(function() {
             var elem = $('#' + id);
 
             if (elem.length > 0)
@@ -1634,8 +1634,8 @@ consoleModule.directive('autoFocus', ['$timeout', ($timeout) => {
 
 // Directive to focus next element on ENTER key.
 consoleModule.directive('enterFocusNext', ['$focus', ($focus) => {
-    return function (scope, elem, attrs) {
-        elem.on('keydown keypress', function (event) {
+    return function(scope, elem, attrs) {
+        elem.on('keydown keypress', function(event) {
             if (event.which === 13) {
                 event.preventDefault();
 
@@ -1647,13 +1647,13 @@ consoleModule.directive('enterFocusNext', ['$focus', ($focus) => {
 
 // Directive to mark elements to focus.
 consoleModule.directive('onClickFocus', ['$focus', ($focus) => {
-    return function (scope, elem, attr) {
-        elem.on('click', function () {
+    return function(scope, elem, attr) {
+        elem.on('click', function() {
             $focus(attr.onClickFocus);
         });
 
         // Removes bound events in the element itself when the scope is destroyed
-        scope.$on('$destroy', function () {
+        scope.$on('$destroy', function() {
             elem.off('click');
         });
     };
@@ -1664,7 +1664,7 @@ consoleModule.controller('resetPassword', [
     ($scope, $modal, $http, $common, $focus, Auth, $state) => {
         if ($state.params.token)
             $http.post('/api/v1/password/validate/token', {token: $state.params.token})
-                .success(function (res) {
+                .success(function(res) {
                     $scope.email = res.email;
                     $scope.token = res.token;
                     $scope.error = res.error;
@@ -1674,14 +1674,14 @@ consoleModule.controller('resetPassword', [
                 });
 
         // Try to reset user password for provided token.
-        $scope.resetPassword = function (reset_info) {
+        $scope.resetPassword = function(reset_info) {
             $http.post('/api/v1/password/reset', reset_info)
-                .success(function () {
+                .success(function() {
                     $common.showInfo('Password successfully changed');
 
                     $state.go('base.configuration.clusters');
                 })
-                .error(function (data, state) {
+                .error(function(data, state) {
                     $common.showError(data);
 
                     if (state === 503)
@@ -1716,7 +1716,7 @@ consoleModule.controller('notebooks', ['$rootScope', '$scope', '$modal', '$state
             {divider: true}
         ];
 
-        _.forEach($root.notebooks, function (notebook) {
+        _.forEach($root.notebooks, function(notebook) {
             $scope.notebookDropdown.push({
                 text: notebook.name,
                 sref: 'base.sql.notebook({noteId:"' + notebook._id + '"})'
@@ -1727,12 +1727,12 @@ consoleModule.controller('notebooks', ['$rootScope', '$scope', '$modal', '$state
     $root.reloadNotebooks = function() {
         // When landing on the page, get clusters and show them.
         $http.post('/api/v1/notebooks/list')
-            .success(function (data) {
+            .success(function(data) {
                 $root.notebooks = data;
 
                 $root.rebuildDropdown();
             })
-            .error(function (errMsg) {
+            .error(function(errMsg) {
                 $common.showError(errMsg);
             });
     };
@@ -1743,14 +1743,14 @@ consoleModule.controller('notebooks', ['$rootScope', '$scope', '$modal', '$state
 
     $root.createNewNotebook = function(name) {
         $http.post('/api/v1/notebooks/new', {name: name})
-            .success(function (noteId) {
+            .success(function(noteId) {
                 _notebookNewModal.hide();
 
                 $root.reloadNotebooks();
 
                 $state.go('base.sql.notebook', {noteId: noteId});
             })
-            .error(function (message) {
+            .error(function(message) {
                 $common.showError(message);
             });
     };

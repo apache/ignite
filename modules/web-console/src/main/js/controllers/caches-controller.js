@@ -20,7 +20,7 @@ import consoleModule from 'controllers/common-module';
 
 consoleModule.controller('cachesController', [
     '$scope', '$http', '$state', '$filter', '$timeout', '$common', '$confirm', '$clone', '$loading', '$cleanup', '$unsavedChangesGuard',
-    function ($scope, $http, $state, $filter, $timeout, $common, $confirm, $clone, $loading, $cleanup, $unsavedChangesGuard) {
+    function($scope, $http, $state, $filter, $timeout, $common, $confirm, $clone, $loading, $cleanup, $unsavedChangesGuard) {
         $unsavedChangesGuard.install($scope);
 
         var emptyCache = {empty: true};
@@ -46,13 +46,13 @@ consoleModule.controller('cachesController', [
 
         var showPopoverMessage = $common.showPopoverMessage;
 
-        $scope.contentVisible = function () {
+        $scope.contentVisible = function() {
             var item = $scope.backupItem;
 
             return !item.empty && (!item._id || _.find($scope.displayedRows, {_id: item._id}));
         };
 
-        $scope.toggleExpanded = function () {
+        $scope.toggleExpanded = function() {
             $scope.ui.expanded = !$scope.ui.expanded;
 
             $common.hidePopover();
@@ -71,7 +71,7 @@ consoleModule.controller('cachesController', [
         }
 
         function cacheDomains(item) {
-            return _.reduce($scope.domains, function (memo, domain) {
+            return _.reduce($scope.domains, function(memo, domain) {
                 if (item && _.includes(item.domains, domain.value)) {
                     memo.push(domain.meta);
                 }
@@ -84,18 +84,18 @@ consoleModule.controller('cachesController', [
 
         // When landing on the page, get caches and show them.
         $http.post('/api/v1/configuration/caches/list')
-            .success(function (data) {
+            .success(function(data) {
                 var validFilter = $filter('domainsValidation');
 
                 $scope.spaces = data.spaces;
 
-                _.forEach(data.caches, function (cache) {
+                _.forEach(data.caches, function(cache) {
                     cache.label = _cacheLbl(cache);
                 });
 
                 $scope.caches = data.caches;
 
-                $scope.clusters = _.map(data.clusters, function (cluster) {
+                $scope.clusters = _.map(data.clusters, function(cluster) {
                     return {
                         value: cluster._id,
                         label: cluster.name,
@@ -103,7 +103,7 @@ consoleModule.controller('cachesController', [
                     };
                 });
 
-                $scope.domains = _.sortBy(_.map(validFilter(data.domains, true, false), function (domain) {
+                $scope.domains = _.sortBy(_.map(validFilter(data.domains, true, false), function(domain) {
                     return {
                         value: domain._id,
                         label: domain.valueType,
@@ -118,7 +118,7 @@ consoleModule.controller('cachesController', [
                     var lastSelectedCache = angular.fromJson(sessionStorage.lastSelectedCache);
 
                     if (lastSelectedCache) {
-                        var idx = _.findIndex($scope.caches, function (cache) {
+                        var idx = _.findIndex($scope.caches, function(cache) {
                             return cache._id === lastSelectedCache;
                         });
 
@@ -140,7 +140,7 @@ consoleModule.controller('cachesController', [
                     }
                 });
 
-                $scope.$watch('backupItem', function (val) {
+                $scope.$watch('backupItem', function(val) {
                     var form = $scope.ui.inputForm;
 
                     if (form.$pristine || (form.$valid && __original_value === JSON.stringify($cleanup(val))))
@@ -149,16 +149,16 @@ consoleModule.controller('cachesController', [
                         form.$setDirty();
                 }, true);
             })
-            .catch(function (errMsg) {
+            .catch(function(errMsg) {
                 $common.showError(errMsg);
             })
-            .finally(function () {
+            .finally(function() {
                 $scope.ui.ready = true;
                 $scope.ui.inputForm.$setPristine();
                 $loading.finish('loadingCachesScreen');
             });
 
-        $scope.selectItem = function (item, backup) {
+        $scope.selectItem = function(item, backup) {
             function selectItem() {
                 $scope.selectedItem = item;
 
@@ -198,15 +198,15 @@ consoleModule.controller('cachesController', [
                 readFromBackup: true,
                 copyOnRead: true,
                 clusters: id && _.find($scope.clusters, {value: id})
-                    ? [id] : _.map($scope.clusters, function (cluster) { return cluster.value; }),
+                    ? [id] : _.map($scope.clusters, function(cluster) { return cluster.value; }),
                 domains: id && _.find($scope.domains, { value: id }) ? [id] : [],
                 cacheStoreFactory: {CacheJdbcBlobStoreFactory: {connectVia: 'DataSource'}}
             };
         }
 
         // Add new cache.
-        $scope.createItem = function (id) {
-            $timeout(function () {
+        $scope.createItem = function(id) {
+            $timeout(function() {
                 $common.ensureActivePanel($scope.ui, 'general', 'cacheName');
             });
 
@@ -214,15 +214,15 @@ consoleModule.controller('cachesController', [
         };
 
         function checkDataSources() {
-            var clusters = _.filter($scope.clusters, function (cluster) {
+            var clusters = _.filter($scope.clusters, function(cluster) {
                 return _.includes($scope.backupItem.clusters, cluster.value);
             });
 
             var checkRes = { checked: true };
 
-            var failCluster = _.find(clusters, function (cluster) {
-                var caches = _.filter($scope.caches, function (cache) {
-                    return cache._id !== $scope.backupItem._id && _.find(cluster.caches, function (clusterCache) {
+            var failCluster = _.find(clusters, function(cluster) {
+                var caches = _.filter($scope.caches, function(cache) {
+                    return cache._id !== $scope.backupItem._id && _.find(cluster.caches, function(clusterCache) {
                         return clusterCache === cache._id;
                     });
                 });
@@ -271,7 +271,7 @@ consoleModule.controller('cachesController', [
                 if (errNameShort.endsWith('TextInput'))
                     errNameShort = errNameShort.substring(0, errNameShort.length - 9);
 
-                var extractErrorMessage = function (errName) {
+                var extractErrorMessage = function(errName) {
                     try {
                         return errors[firstErrorKey][0].$errorMessages[errName][firstErrorKey];
                     }
@@ -375,12 +375,12 @@ consoleModule.controller('cachesController', [
         // Save cache in database.
         function save(item) {
             $http.post('/api/v1/configuration/caches/save', item)
-                .success(function (_id) {
+                .success(function(_id) {
                     item.label = _cacheLbl(item);
 
                     $scope.ui.inputForm.$setPristine();
 
-                    var idx = _.findIndex($scope.caches, function (cache) {
+                    var idx = _.findIndex($scope.caches, function(cache) {
                         return cache._id === _id;
                     });
 
@@ -395,13 +395,13 @@ consoleModule.controller('cachesController', [
 
                     $common.showInfo('Cache "' + item.name + '" saved.');
                 })
-                .error(function (errMsg) {
+                .error(function(errMsg) {
                     $common.showError(errMsg);
                 });
         }
 
         // Save cache.
-        $scope.saveItem = function () {
+        $scope.saveItem = function() {
             var item = $scope.backupItem;
 
             angular.extend(item, $common.autoCacheStoreConfiguration(item, cacheDomains(item)));
@@ -411,15 +411,15 @@ consoleModule.controller('cachesController', [
         };
 
         function _cacheNames() {
-            return _.map($scope.caches, function (cache) {
+            return _.map($scope.caches, function(cache) {
                 return cache.name;
             });
         }
 
         // Clone cache with new name.
-        $scope.cloneItem = function () {
+        $scope.cloneItem = function() {
             if (validate($scope.backupItem)) {
-                $clone.confirm($scope.backupItem.name, _cacheNames()).then(function (newName) {
+                $clone.confirm($scope.backupItem.name, _cacheNames()).then(function(newName) {
                     var item = angular.copy($scope.backupItem);
 
                     delete item._id;
@@ -432,20 +432,20 @@ consoleModule.controller('cachesController', [
         };
 
         // Remove cache from db.
-        $scope.removeItem = function () {
+        $scope.removeItem = function() {
             var selectedItem = $scope.selectedItem;
 
             $confirm.confirm('Are you sure you want to remove cache: "' + selectedItem.name + '"?')
-                .then(function () {
+                .then(function() {
                     var _id = selectedItem._id;
 
                     $http.post('/api/v1/configuration/caches/remove', {_id: _id})
-                        .success(function () {
+                        .success(function() {
                             $common.showInfo('Cache has been removed: ' + selectedItem.name);
 
                             var caches = $scope.caches;
 
-                            var idx = _.findIndex(caches, function (cache) {
+                            var idx = _.findIndex(caches, function(cache) {
                                 return cache._id === _id;
                             });
 
@@ -458,33 +458,33 @@ consoleModule.controller('cachesController', [
                                     $scope.backupItem = emptyCache;
                             }
                         })
-                        .error(function (errMsg) {
+                        .error(function(errMsg) {
                             $common.showError(errMsg);
                         });
                 });
         };
 
         // Remove all caches from db.
-        $scope.removeAllItems = function () {
+        $scope.removeAllItems = function() {
             $confirm.confirm('Are you sure you want to remove all caches?')
-                .then(function () {
+                .then(function() {
                     $http.post('/api/v1/configuration/caches/remove/all')
-                        .success(function () {
+                        .success(function() {
                             $common.showInfo('All caches have been removed');
 
                             $scope.caches = [];
                             $scope.backupItem = emptyCache;
                             $scope.ui.inputForm.$setPristine();
                         })
-                        .error(function (errMsg) {
+                        .error(function(errMsg) {
                             $common.showError(errMsg);
                         });
                 });
         };
 
-        $scope.resetAll = function () {
+        $scope.resetAll = function() {
             $confirm.confirm('Are you sure you want to undo all changes for current cache?')
-                .then(function () {
+                .then(function() {
                     $scope.backupItem = $scope.selectedItem ? angular.copy($scope.selectedItem) : prepareNewItem();
                     $scope.ui.inputForm.$setPristine();
                 });

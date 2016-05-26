@@ -20,7 +20,7 @@ import consoleModule from 'controllers/common-module';
 
 consoleModule.controller('sqlController', [
     '$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$modal', '$popover', '$loading', '$common', '$confirm', 'IgniteAgentMonitor', 'IgniteChartColors', 'QueryNotebooks', 'uiGridExporterConstants',
-    function ($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $modal, $popover, $loading, $common, $confirm, agentMonitor, IgniteChartColors, QueryNotebooks, uiGridExporterConstants) {
+    function($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $modal, $popover, $loading, $common, $confirm, agentMonitor, IgniteChartColors, QueryNotebooks, uiGridExporterConstants) {
         let stopTopology = null;
 
         const _stopTopologyRefresh = () => {
@@ -92,13 +92,13 @@ consoleModule.controller('sqlController', [
             return {"color": "white", "background-color": IgniteChartColors[index]};
         };
 
-        $scope.chartRemoveKeyColumn = function (paragraph, index) {
+        $scope.chartRemoveKeyColumn = function(paragraph, index) {
             paragraph.chartKeyCols.splice(index, 1);
 
             _chartApplySettings(paragraph, true);
         };
 
-        $scope.chartRemoveValColumn = function (paragraph, index) {
+        $scope.chartRemoveValColumn = function(paragraph, index) {
             paragraph.chartValCols.splice(index, 1);
 
             _chartApplySettings(paragraph, true);
@@ -135,8 +135,8 @@ consoleModule.controller('sqlController', [
 
         $scope.scrollParagraphs = [];
 
-        $scope.rebuildScrollParagraphs = function () {
-            $scope.scrollParagraphs = $scope.notebook.paragraphs.map(function (paragraph) {
+        $scope.rebuildScrollParagraphs = function() {
+            $scope.scrollParagraphs = $scope.notebook.paragraphs.map(function(paragraph) {
                 return {
                     "text": paragraph.name,
                     "click": 'scrollToParagraph("' + paragraph.id + '")'
@@ -144,14 +144,14 @@ consoleModule.controller('sqlController', [
             });
         };
 
-        $scope.scrollToParagraph = function (paragraphId) {
+        $scope.scrollToParagraph = function(paragraphId) {
             var idx = _.findIndex($scope.notebook.paragraphs, {id: paragraphId});
 
             if (idx >= 0) {
                 if (!_.includes($scope.notebook.expandedParagraphs, idx))
                     $scope.notebook.expandedParagraphs.push(idx);
 
-                setTimeout(function () {
+                setTimeout(function() {
                     $scope.notebook.paragraphs[idx].ace.focus();
                 });
             }
@@ -168,34 +168,34 @@ consoleModule.controller('sqlController', [
         var paragraphId = 0;
 
         function enhanceParagraph(paragraph) {
-            paragraph.nonEmpty = function () {
+            paragraph.nonEmpty = function() {
                 return this.rows && this.rows.length > 0;
             };
 
-            paragraph.chart = function () {
+            paragraph.chart = function() {
                 return this.result != 'table' && this.result != 'none';
             };
 
             paragraph.queryExecuted = () =>
                 paragraph.queryArgs && paragraph.queryArgs.query && !paragraph.queryArgs.query.startsWith('EXPLAIN ');
 
-            paragraph.table = function () {
+            paragraph.table = function() {
                 return this.result == 'table';
             };
 
-            paragraph.chartColumnsConfigured = function () {
+            paragraph.chartColumnsConfigured = function() {
                 return !_.isEmpty(this.chartKeyCols) && !_.isEmpty(this.chartValCols);
             };
 
-            paragraph.chartTimeLineEnabled = function () {
+            paragraph.chartTimeLineEnabled = function() {
                 return !_.isEmpty(this.chartKeyCols) && angular.equals(this.chartKeyCols[0], TIME_LINE);
             };
 
-            paragraph.timeLineSupported = function () {
+            paragraph.timeLineSupported = function() {
                 return this.result != 'pie';
             };
 
-            paragraph.refreshExecuting = function () {
+            paragraph.refreshExecuting = function() {
                 return paragraph.rate && paragraph.rate.stopTime
             };
 
@@ -217,8 +217,8 @@ consoleModule.controller('sqlController', [
             Object.defineProperty(paragraph, 'chartHistory', {value: []});
         }
 
-        $scope.aceInit = function (paragraph) {
-            return function (editor) {
+        $scope.aceInit = function(paragraph) {
+            return function(editor) {
                 editor.setAutoScrollEditorIntoView(true);
                 editor.$blockScrolling = Infinity;
 
@@ -237,9 +237,9 @@ consoleModule.controller('sqlController', [
             }
         };
 
-        var _setActiveCache = function () {
+        var _setActiveCache = function() {
             if ($scope.caches.length > 0)
-                _.forEach($scope.notebook.paragraphs, function (paragraph) {
+                _.forEach($scope.notebook.paragraphs, function(paragraph) {
                     if (!_.find($scope.caches, {name: paragraph.cacheName}))
                         paragraph.cacheName = $scope.caches[0].name;
                 });
@@ -282,7 +282,7 @@ consoleModule.controller('sqlController', [
                 });
         };
 
-        var loadNotebook = function (notebook) {
+        var loadNotebook = function(notebook) {
             $scope.notebook = notebook;
 
             $scope.notebook_name = notebook.name;
@@ -293,7 +293,7 @@ consoleModule.controller('sqlController', [
             if (!$scope.notebook.paragraphs)
                 $scope.notebook.paragraphs = [];
 
-            _.forEach(notebook.paragraphs, function (paragraph) {
+            _.forEach(notebook.paragraphs, function(paragraph) {
                 paragraph.id = 'paragraph-' + paragraphId++;
 
                 enhanceParagraph(paragraph);
@@ -325,7 +325,7 @@ consoleModule.controller('sqlController', [
                 $loading.finish('sqlLoading');
             });
 
-        $scope.renameNotebook = function (name) {
+        $scope.renameNotebook = function(name) {
             if (!name)
                 return;
 
@@ -334,7 +334,7 @@ consoleModule.controller('sqlController', [
 
                 QueryNotebooks.save($scope.notebook)
                     .then(function() {
-                        var idx = _.findIndex($root.notebooks, function (item) {
+                        var idx = _.findIndex($root.notebooks, function(item) {
                             return item._id == $scope.notebook._id;
                         });
 
@@ -352,12 +352,12 @@ consoleModule.controller('sqlController', [
                 $scope.notebook.edit = false
         };
 
-        $scope.removeNotebook = function () {
+        $scope.removeNotebook = function() {
             $confirm.confirm('Are you sure you want to remove: "' + $scope.notebook.name + '"?')
-                .then(function () {
+                .then(function() {
                     return QueryNotebooks.remove($scope.notebook);
                 })
-                .then(function (notebook) {
+                .then(function(notebook) {
                     if (notebook)
                         $state.go('base.sql.notebook', {noteId: notebook._id});
                     else
@@ -366,7 +366,7 @@ consoleModule.controller('sqlController', [
                 .catch(_handleException);
         };
 
-        $scope.renameParagraph = function (paragraph, newName) {
+        $scope.renameParagraph = function(paragraph, newName) {
             if (!newName)
                 return;
 
@@ -376,14 +376,14 @@ consoleModule.controller('sqlController', [
                 $scope.rebuildScrollParagraphs();
 
                 QueryNotebooks.save($scope.notebook)
-                    .then(function () { paragraph.edit = false; })
+                    .then(function() { paragraph.edit = false; })
                     .catch(_handleException);
             }
             else
                 paragraph.edit = false
         };
 
-        $scope.addParagraph = function () {
+        $scope.addParagraph = function() {
             var sz = $scope.notebook.paragraphs.length;
 
             var paragraph = {
@@ -415,12 +415,12 @@ consoleModule.controller('sqlController', [
 
             $anchorScroll();
 
-            setTimeout(function () {
+            setTimeout(function() {
                 paragraph.ace.focus();
             });
         };
 
-        $scope.setResult = function (paragraph, new_result) {
+        $scope.setResult = function(paragraph, new_result) {
             if (paragraph.result === new_result)
                 return;
 
@@ -438,14 +438,14 @@ consoleModule.controller('sqlController', [
 
         $scope.removeParagraph = function(paragraph) {
             $confirm.confirm('Are you sure you want to remove: "' + paragraph.name + '"?')
-                .then(function () {
+                .then(function() {
                     $scope.stopRefresh(paragraph);
 
-                    var paragraph_idx = _.findIndex($scope.notebook.paragraphs, function (item) {
+                    var paragraph_idx = _.findIndex($scope.notebook.paragraphs, function(item) {
                         return paragraph == item;
                     });
 
-                    var panel_idx = _.findIndex($scope.expandedParagraphs, function (item) {
+                    var panel_idx = _.findIndex($scope.expandedParagraphs, function(item) {
                         return paragraph_idx == item;
                     });
 
@@ -462,11 +462,11 @@ consoleModule.controller('sqlController', [
         };
 
         $scope.paragraphExpanded = function(paragraph) {
-            var paragraph_idx = _.findIndex($scope.notebook.paragraphs, function (item) {
+            var paragraph_idx = _.findIndex($scope.notebook.paragraphs, function(item) {
                 return paragraph == item;
             });
 
-            var panel_idx = _.findIndex($scope.notebook.expandedParagraphs, function (item) {
+            var panel_idx = _.findIndex($scope.notebook.expandedParagraphs, function(item) {
                 return paragraph_idx == item;
             });
 
@@ -494,22 +494,22 @@ consoleModule.controller('sqlController', [
             return _.includes(_intClasses, cls);
         }
 
-        var _rebuildColumns = function (paragraph) {
+        var _rebuildColumns = function(paragraph) {
             var columnDefs = [];
 
-            _.forEach(_.groupBy(paragraph.meta, 'fieldName'), function (colsByName, fieldName) {
+            _.forEach(_.groupBy(paragraph.meta, 'fieldName'), function(colsByName, fieldName) {
                 var colsByTypes = _.groupBy(colsByName, 'typeName');
 
                 var needType = _.keys(colsByTypes).length > 1;
 
                 _.forEach(colsByTypes, function(colsByType, typeName) {
-                    _.forEach(colsByType, function (col, ix) {
+                    _.forEach(colsByType, function(col, ix) {
                         col.fieldName = (needType && !$common.isEmptyString(typeName) ? typeName + '.' : '') + fieldName + (ix > 0 ? ix : '');
                     })
                 });
             });
 
-            _.forEach(paragraph.meta, function (col, idx) {
+            _.forEach(paragraph.meta, function(col, idx) {
                 if (paragraph.columnFilter(col)) {
                     if (_notObjectType(col.fieldTypeName))
                         paragraph.chartColumns.push({value: idx, type: col.fieldTypeName, label: col.fieldName, aggFx: $scope.aggregateFxs[0]});
@@ -537,7 +537,7 @@ consoleModule.controller('sqlController', [
             paragraph.chartValCols = _retainColumns(paragraph.chartColumns, paragraph.chartValCols, _numberType, false, paragraph.chartKeyCols);
         };
 
-        $scope.toggleSystemColumns = function (paragraph) {
+        $scope.toggleSystemColumns = function(paragraph) {
             if (paragraph.disabledSystemColumns)
                 return;
 
@@ -553,12 +553,12 @@ consoleModule.controller('sqlController', [
         function _retainColumns(allCols, curCols, acceptableType, xAxis, unwantedCols) {
             var retainedCols = [];
 
-            var availableCols = xAxis ? allCols : _.filter(allCols, function (col) {
+            var availableCols = xAxis ? allCols : _.filter(allCols, function(col) {
                 return col.value >= 0;
             });
 
             if (availableCols.length > 0) {
-                curCols.forEach(function (curCol) {
+                curCols.forEach(function(curCol) {
                     var col = _.find(availableCols, {label: curCol.label});
 
                     if (col && acceptableType(col.type)) {
@@ -573,12 +573,12 @@ consoleModule.controller('sqlController', [
                     var col;
 
                     if (unwantedCols)
-                        col = _.find(availableCols, function (col) {
+                        col = _.find(availableCols, function(col) {
                             return !_.find(unwantedCols, {label: col.label}) && acceptableType(col.type);
                         });
 
                     if (!col)
-                        col = _.find(availableCols, function (col) {
+                        col = _.find(availableCols, function(col) {
                             return acceptableType(col.type);
                         });
 
@@ -595,7 +595,7 @@ consoleModule.controller('sqlController', [
          * @param {{fieldsMetadata: Array, items: Array, queryId: int, last: Boolean}} res Query results.
          * @private
          */
-        var _processQueryResult = function (paragraph, res) {
+        var _processQueryResult = function(paragraph, res) {
             var prevKeyCols = paragraph.chartKeyCols;
             var prevValCols = paragraph.chartValCols;
 
@@ -637,10 +637,10 @@ consoleModule.controller('sqlController', [
             if (paragraph.queryArgs.query && paragraph.queryArgs.query.startsWith('EXPLAIN') && res.items) {
                 paragraph.rows = [];
 
-                res.items.forEach(function (row, i) {
+                res.items.forEach(function(row, i) {
                     var line = res.items.length - 1 == i ? row[0] : row[0] + '\n';
 
-                    line.replace(/\"/g, '').split('\n').forEach(function (line) {
+                    line.replace(/\"/g, '').split('\n').forEach(function(line) {
                         paragraph.rows.push([line]);
                     });
                 });
@@ -660,7 +660,7 @@ consoleModule.controller('sqlController', [
 
                 chartHistory.length = 0;
 
-                _.forEach(paragraph.charts, function (chart) {
+                _.forEach(paragraph.charts, function(chart) {
                     chart.data.length = 0;
                 })
             }
@@ -712,7 +712,7 @@ consoleModule.controller('sqlController', [
 
         const _showLoading = (paragraph, enable) => paragraph.loading = enable;
 
-        $scope.execute = function (paragraph) {
+        $scope.execute = function(paragraph) {
             QueryNotebooks.save($scope.notebook)
                 .catch(_handleException);
 
@@ -721,7 +721,7 @@ consoleModule.controller('sqlController', [
             _showLoading(paragraph, true);
 
             _closeOldQuery(paragraph)
-                .then(function () {
+                .then(function() {
                     const args = paragraph.queryArgs = {
                         cacheName: paragraph.cacheName,
                         pageSize: paragraph.pageSize,
@@ -730,7 +730,7 @@ consoleModule.controller('sqlController', [
 
                     return agentMonitor.query(args.cacheName, args.pageSize, args.query);
                 })
-                .then(function (res) {
+                .then(function(res) {
                     _processQueryResult(paragraph, res);
 
                     _tryStartRefresh(paragraph);
@@ -742,7 +742,7 @@ consoleModule.controller('sqlController', [
 
                     $scope.stopRefresh(paragraph);
                 })
-                .finally(function () {
+                .finally(function() {
                     paragraph.ace.focus();
                 });
         };
@@ -751,7 +751,7 @@ consoleModule.controller('sqlController', [
             return $common.isDefined(paragraph.queryArgs);
         };
 
-        $scope.explain = function (paragraph) {
+        $scope.explain = function(paragraph) {
             QueryNotebooks.save($scope.notebook)
                 .catch(_handleException);
 
@@ -760,7 +760,7 @@ consoleModule.controller('sqlController', [
             _showLoading(paragraph, true);
 
             _closeOldQuery(paragraph)
-                .then(function () {
+                .then(function() {
                     const args = paragraph.queryArgs = {
                         cacheName: paragraph.cacheName,
                         pageSize: paragraph.pageSize,
@@ -775,12 +775,12 @@ consoleModule.controller('sqlController', [
 
                     _showLoading(paragraph, false);
                 })
-                .finally(function () {
+                .finally(function() {
                     paragraph.ace.focus();
                 });
         };
 
-        $scope.scan = function (paragraph) {
+        $scope.scan = function(paragraph) {
             QueryNotebooks.save($scope.notebook)
                 .catch(_handleException);
 
@@ -803,7 +803,7 @@ consoleModule.controller('sqlController', [
 
                     _showLoading(paragraph, false);
                 })
-                .finally(function () {
+                .finally(function() {
                     paragraph.ace.focus();
                 });
         };
@@ -814,7 +814,7 @@ consoleModule.controller('sqlController', [
             paragraph.queryArgs.pageSize = paragraph.pageSize;
 
             agentMonitor.next(paragraph.queryId, paragraph.pageSize)
-                .then(function (res) {
+                .then(function(res) {
                     paragraph.page++;
 
                     paragraph.total += paragraph.rows.length;
@@ -840,7 +840,7 @@ consoleModule.controller('sqlController', [
 
                     _showLoading(paragraph, false);
                 })
-                .finally(function () {
+                .finally(function() {
                     paragraph.ace.focus();
                 });
         };
@@ -912,7 +912,7 @@ consoleModule.controller('sqlController', [
             paragraph.gridOptions.api.exporter.pdfExport(uiGridExporterConstants.ALL, uiGridExporterConstants.VISIBLE);
         };
 
-        $scope.exportCsvAll = function (paragraph) {
+        $scope.exportCsvAll = function(paragraph) {
             const args = paragraph.queryArgs;
 
             agentMonitor.queryGetAll(args.cacheName, args.query)
@@ -922,17 +922,17 @@ consoleModule.controller('sqlController', [
 
         $scope.exportPdfAll = function(paragraph) {
             //$http.post('/api/v1/agent/query/getAll', {query: paragraph.query, cacheName: paragraph.cacheName})
-            //    .success(function (item) {
+            //    .success(function(item) {
             //        _export(paragraph.name + '-all.csv', item.meta, item.rows);
             //    })
-            //    .error(function (errMsg) {
+            //    .error(function(errMsg) {
             //        $common.showError(errMsg);
             //    });
         };
 
-        $scope.rateAsString = function (paragraph) {
+        $scope.rateAsString = function(paragraph) {
             if (paragraph.rate && paragraph.rate.installed) {
-                var idx = _.findIndex($scope.timeUnit, function (unit) {
+                var idx = _.findIndex($scope.timeUnit, function(unit) {
                     return unit.value == paragraph.rate.unit;
                 });
 
@@ -945,7 +945,7 @@ consoleModule.controller('sqlController', [
             return '';
         };
 
-        var _cancelRefresh = function (paragraph) {
+        var _cancelRefresh = function(paragraph) {
             if (paragraph.rate && paragraph.rate.stopTime) {
                 delete paragraph.queryArgs;
 
@@ -957,7 +957,7 @@ consoleModule.controller('sqlController', [
             }
         };
 
-        var _tryStopRefresh = function (paragraph) {
+        var _tryStopRefresh = function(paragraph) {
             if (paragraph.rate && paragraph.rate.stopTime) {
                 $interval.cancel(paragraph.rate.stopTime);
 
@@ -965,7 +965,7 @@ consoleModule.controller('sqlController', [
             }
         };
 
-        var _tryStartRefresh = function (paragraph) {
+        var _tryStartRefresh = function(paragraph) {
             _tryStopRefresh(paragraph);
 
             if (paragraph.rate && paragraph.rate.installed && paragraph.queryArgs) {
@@ -979,7 +979,7 @@ consoleModule.controller('sqlController', [
             }
         };
 
-        $scope.startRefresh = function (paragraph, value, unit) {
+        $scope.startRefresh = function(paragraph, value, unit) {
             paragraph.rate.value = value;
             paragraph.rate.unit = unit;
             paragraph.rate.installed = true;
@@ -988,7 +988,7 @@ consoleModule.controller('sqlController', [
                 _tryStartRefresh(paragraph);
         };
 
-        $scope.stopRefresh = function (paragraph) {
+        $scope.stopRefresh = function(paragraph) {
             paragraph.rate.installed = false;
 
             _tryStopRefresh(paragraph);
@@ -1011,7 +1011,7 @@ consoleModule.controller('sqlController', [
         function _min(rows, idx, dflt) {
             var min = _chartNumber(rows[0], idx, dflt);
 
-            _.forEach(rows, function (row) {
+            _.forEach(rows, function(row) {
                 var v = _chartNumber(row, idx, dflt);
 
                 if (v < min)
@@ -1024,7 +1024,7 @@ consoleModule.controller('sqlController', [
         function _max(rows, idx, dflt) {
             var max = _chartNumber(rows[0], idx, dflt);
 
-            _.forEach(rows, function (row) {
+            _.forEach(rows, function(row) {
                 var v = _chartNumber(row, idx, dflt);
 
                 if (v > max)
@@ -1037,7 +1037,7 @@ consoleModule.controller('sqlController', [
         function _sum(rows, idx) {
             var sum = 0;
 
-            _.forEach(rows, function (row) {
+            _.forEach(rows, function(row) {
                 sum += _chartNumber(row, idx, 0);
             });
 
@@ -1077,7 +1077,7 @@ consoleModule.controller('sqlController', [
             var datum = [];
 
             if (paragraph.chartColumnsConfigured()) {
-                paragraph.chartValCols.forEach(function (valCol) {
+                paragraph.chartValCols.forEach(function(valCol) {
                     var index = 0;
                     var values = [];
                     var colIdx = valCol.value;
@@ -1108,7 +1108,7 @@ consoleModule.controller('sqlController', [
                                 values.shift();
                         }
                         else {
-                            _.forEach(paragraph.chartHistory, function (history) {
+                            _.forEach(paragraph.chartHistory, function(history) {
                                 if (history.tm >= leftBound)
                                     values.push({
                                         x: history.tm,
@@ -1122,7 +1122,7 @@ consoleModule.controller('sqlController', [
                     else {
                         index = paragraph.total;
 
-                        values = _.map(paragraph.rows, function (row) {
+                        values = _.map(paragraph.rows, function(row) {
                             var xCol = paragraph.chartKeyCols[0].value;
 
                             var v = {
@@ -1148,10 +1148,10 @@ consoleModule.controller('sqlController', [
             var datum = [];
 
             if (paragraph.chartColumnsConfigured() && !paragraph.chartTimeLineEnabled()) {
-                paragraph.chartValCols.forEach(function (valCol) {
+                paragraph.chartValCols.forEach(function(valCol) {
                     var index = paragraph.total;
 
-                    var values = _.map(paragraph.rows, function (row) {
+                    var values = _.map(paragraph.rows, function(row) {
                         var xCol = paragraph.chartKeyCols[0].value;
 
                         var v = {
@@ -1171,11 +1171,11 @@ consoleModule.controller('sqlController', [
             return datum;
         }
 
-        $scope.paragraphTimeSpanVisible = function (paragraph) {
+        $scope.paragraphTimeSpanVisible = function(paragraph) {
             return paragraph.timeLineSupported() && paragraph.chartTimeLineEnabled();
         };
 
-        $scope.paragraphTimeLineSpan = function (paragraph) {
+        $scope.paragraphTimeLineSpan = function(paragraph) {
           if (paragraph && paragraph.timeLineSpan)
             return paragraph.timeLineSpan.toString();
 
@@ -1228,7 +1228,7 @@ consoleModule.controller('sqlController', [
             }
         }
 
-        $scope.applyChartSettings = function (paragraph) {
+        $scope.applyChartSettings = function(paragraph) {
             _chartApplySettings(paragraph, true);
         };
 
@@ -1241,7 +1241,7 @@ consoleModule.controller('sqlController', [
 
             var tml = paragraph.chartTimeLineEnabled();
 
-            return _.isEmpty(cols) ? 'Y' : _.map(cols, function (col) {
+            return _.isEmpty(cols) ? 'Y' : _.map(cols, function(col) {
                 var lbl = col.label;
 
                 if (tml)
@@ -1264,7 +1264,7 @@ consoleModule.controller('sqlController', [
         }
 
         var _xAxisWithLabelFormat = function(paragraph) {
-            return function (d) {
+            return function(d) {
                 var values = paragraph.charts[0].data[0].values;
 
                 var fmt = _intType(paragraph.chartKeyCols[0].type) ? 'd' : ',.2f';
@@ -1287,21 +1287,21 @@ consoleModule.controller('sqlController', [
         };
 
         function _updateCharts(paragraph) {
-            $timeout(function () {
-                _.forEach(paragraph.charts, function (chart) {
+            $timeout(function() {
+                _.forEach(paragraph.charts, function(chart) {
                     chart.api.update();
                 });
             }, 100);
         }
 
         function _updateChartsWithData(paragraph, newDatum) {
-            $timeout(function () {
+            $timeout(function() {
                 if (!paragraph.chartTimeLineEnabled()) {
                     var chartDatum = paragraph.charts[0].data;
 
                     chartDatum.length = 0;
 
-                    _.forEach(newDatum, function (series) {
+                    _.forEach(newDatum, function(series) {
                         chartDatum.push(series);
                     })
                 }
@@ -1311,21 +1311,21 @@ consoleModule.controller('sqlController', [
         }
 
         function _updatePieChartsWithData(paragraph, newDatum) {
-            $timeout(function () {
-                _.forEach(paragraph.charts, function (chart) {
+            $timeout(function() {
+                _.forEach(paragraph.charts, function(chart) {
                     var chartDatum = chart.data;
 
                     chartDatum.length = 0;
 
-                    _.forEach(newDatum, function (series) {
+                    _.forEach(newDatum, function(series) {
                         if (chart.options.title.text == series.key)
-                            _.forEach(series.values, function (v) {
+                            _.forEach(series.values, function(v) {
                                 chartDatum.push(v);
                             });
                     });
                 });
 
-                _.forEach(paragraph.charts, function (chart) {
+                _.forEach(paragraph.charts, function(chart) {
                     chart.api.update();
                 });
             });
@@ -1382,7 +1382,7 @@ consoleModule.controller('sqlController', [
             if (datum.length == 0)
                 datum = [{values: []}];
 
-            paragraph.charts = _.map(datum, function (data) {
+            paragraph.charts = _.map(datum, function(data) {
                 return {
                     options: {
                         chart: {
@@ -1499,11 +1499,11 @@ consoleModule.controller('sqlController', [
                 _updateChartsWithData(paragraph, datum);
         }
 
-        $scope.actionAvailable = function (paragraph, needQuery) {
+        $scope.actionAvailable = function(paragraph, needQuery) {
             return $scope.caches.length > 0 && (!needQuery || paragraph.query) && !paragraph.loading;
         };
 
-        $scope.actionTooltip = function (paragraph, action, needQuery) {
+        $scope.actionTooltip = function(paragraph, action, needQuery) {
             if ($scope.actionAvailable(paragraph, needQuery))
                 return;
 
@@ -1513,19 +1513,19 @@ consoleModule.controller('sqlController', [
             return 'To ' + action + ' query select cache' + (needQuery ? ' and input query' : '');
         };
 
-        $scope.clickableMetadata = function (node) {
+        $scope.clickableMetadata = function(node) {
             return node.type.slice(0, 5) != 'index';
         };
 
-        $scope.dblclickMetadata = function (paragraph, node) {
+        $scope.dblclickMetadata = function(paragraph, node) {
             paragraph.ace.insert(node.name);
 
-            setTimeout(function () {
+            setTimeout(function() {
                 paragraph.ace.focus();
             }, 1);
         };
 
-        $scope.importMetadata = function () {
+        $scope.importMetadata = function() {
             $loading.start('loadingCacheMetadata');
 
             $scope.metadata = [];
@@ -1549,12 +1549,12 @@ consoleModule.controller('sqlController', [
                     }), 'name');
                 })
                 .catch((err) => _handleException(err))
-                .finally(function () {
+                .finally(function() {
                     $loading.finish('loadingCacheMetadata');
                 });
         };
 
-        $scope.showResultQuery = function (paragraph) {
+        $scope.showResultQuery = function(paragraph) {
             if ($common.isDefined(paragraph)) {
                 const scope = $scope.$new();
 
