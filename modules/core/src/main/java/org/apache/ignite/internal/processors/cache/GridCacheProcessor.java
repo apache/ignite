@@ -69,7 +69,6 @@ import org.apache.ignite.internal.IgniteComponentType;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.IgniteTransactionsEx;
-import org.apache.ignite.internal.MarshallerContextImpl;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
@@ -98,7 +97,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTransactio
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionManager;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
-import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.F0;
@@ -806,14 +804,6 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             cacheStartedLatch.countDown();
         }
 
-        // TODO:
-
-        ctx.marshallerContext().onMarshallerCacheStarted(ctx);
-
-        if (ctx.platform() != null && ctx.platform().platformMarshallerContext() != null)
-            ctx.platform().platformMarshallerContext().onMarshallerCacheStarted(ctx);
-        // END TODO
-
         // Must call onKernalStart on shared managers after creation of fetched caches.
         for (GridCacheSharedManager<?, ?> mgr : sharedCtx.managers())
             mgr.onKernalStart(false);
@@ -822,6 +812,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             onKernalStart(cache);
 
         ctx.marshallerContext().onMarshallerCacheStarted(ctx);
+
+        if (ctx.platform() != null && ctx.platform().platformMarshallerContext() != null)
+            ctx.platform().platformMarshallerContext().onMarshallerCacheStarted(ctx);
 
         if (!ctx.config().isDaemon())
             ctx.cacheObjects().onUtilityCacheStarted();
