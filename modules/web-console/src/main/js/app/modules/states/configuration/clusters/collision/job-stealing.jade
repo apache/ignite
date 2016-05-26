@@ -39,7 +39,7 @@ div
     .details-row
         +java-class('External listener:', model + '.externalCollisionListener', 'jsExternalCollisionListener', 'true', 'false',
             'Listener to be set for notification of external collision events')
-    .details-row(ng-init='stealingAttributesTbl={type: "attributes", model: "collision.JobStealing.stealingAttributes", focusId: "Attribute", ui: "table-pair", keyName: "name", valueName: "value"}')
+    .details-row
         ignite-form-group(ng-model='#{stealingAttributes}' ng-form='#{form}')
             ignite-form-field-label
                 | Stealing attributes

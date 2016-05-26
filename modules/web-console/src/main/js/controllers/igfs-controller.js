@@ -23,11 +23,11 @@ consoleModule.controller('igfsController', [
     function($scope, $http, $state, $filter, $timeout, $common, $confirm, $clone, $loading, $cleanup, $unsavedChangesGuard, $table) {
         $unsavedChangesGuard.install($scope);
 
-        var emptyIgfs = {empty: true};
+        const emptyIgfs = {empty: true};
 
-        var __original_value;
+        let __original_value;
 
-        var blank = {
+        const blank = {
             ipcEndpointConfiguration: {},
             secondaryFileSystem: {}
         };
@@ -43,29 +43,25 @@ consoleModule.controller('igfsController', [
         $scope.widthIsSufficient = $common.widthIsSufficient;
         $scope.saveBtnTipText = $common.saveBtnTipText;
 
+        const showPopoverMessage = $common.showPopoverMessage;
+
         // TODO LEGACY start
         $scope.tableSave = function(field, index, stopEdit) {
-            switch (field.type) {
-                case 'pathModes':
-                    if ($table.tablePairSaveVisible(field, index))
-                        return $table.tablePairSave($scope.tablePairValid, $scope.backupItem, field, index, stopEdit);
-
-                    break;
-            }
+            if (field.type === 'pathModes' && $table.tablePairSaveVisible(field, index))
+                return $table.tablePairSave($scope.tablePairValid, $scope.backupItem, field, index, stopEdit);
 
             return true;
         };
 
-        $scope.tableReset = function(save) {
-            var field = $table.tableField();
+        $scope.tableReset = (trySave) => {
+            const field = $table.tableField();
 
-            if (!save || !$common.isDefined(field) || $scope.tableSave(field, $table.tableEditedRowIndex(), true)) {
-                $table.tableReset();
+            if (trySave && $common.isDefined(field) && !$scope.tableSave(field, $table.tableEditedRowIndex(), true))
+                return false;
 
-                return true;
-            }
+            $table.tableReset();
 
-            return false;
+            return true;
         };
 
         $scope.tableNewItem = function(field) {
@@ -81,7 +77,6 @@ consoleModule.controller('igfsController', [
         };
 
         $scope.tableEditing = $table.tableEditing;
-
         $scope.tablePairSave = $table.tablePairSave;
         $scope.tablePairSaveVisible = $table.tablePairSaveVisible;
 
@@ -91,12 +86,12 @@ consoleModule.controller('igfsController', [
         };
 
         $scope.tablePairValid = function(item, field, index) {
-            var pairValue = $table.tablePairValue(field, index);
+            const pairValue = $table.tablePairValue(field, index);
 
-            var model = item[field.model];
+            const model = item[field.model];
 
             if ($common.isDefined(model)) {
-                var idx = _.findIndex(model, function(pair) {
+                const idx = _.findIndex(model, function(pair) {
                     return pair.path === pairValue.key;
                 });
 
@@ -108,13 +103,21 @@ consoleModule.controller('igfsController', [
             return true;
         };
 
+        $scope.tblPathModes = {
+            type: 'pathModes',
+            model: 'pathModes',
+            focusId: 'PathMode',
+            ui: 'table-pair',
+            keyName: 'path',
+            valueName: 'mode',
+            save: $scope.tableSave
+        };
+
         $scope.igfsModes = $common.mkOptions(['PRIMARY', 'PROXY', 'DUAL_SYNC', 'DUAL_ASYNC']);
         // TODO LEGACY start - end
 
-        var showPopoverMessage = $common.showPopoverMessage;
-
         $scope.contentVisible = function() {
-            var item = $scope.backupItem;
+            const item = $scope.backupItem;
 
             return !item.empty && (!item._id || _.find($scope.displayedRows, {_id: item._id}));
         };
@@ -144,14 +147,14 @@ consoleModule.controller('igfsController', [
 
                 // For backward compatibility set colocateMetadata and relaxedConsistency default values.
                 _.forEach($scope.igfss, function(igfs) {
-                   if (_.isUndefined(igfs.colocateMetadata))
-                       igfs.colocateMetadata = true;
+                    if (_.isUndefined(igfs.colocateMetadata))
+                        igfs.colocateMetadata = true;
 
-                   if (_.isUndefined(igfs.relaxedConsistency))
-                       igfs.relaxedConsistency = true;
+                    if (_.isUndefined(igfs.relaxedConsistency))
+                        igfs.relaxedConsistency = true;
                 });
 
-                $scope.clusters = _.map(data.clusters  || [], function(cluster) {
+                $scope.clusters = _.map(data.clusters || [], function(cluster) {
                     return {
                         value: cluster._id,
                         label: cluster.name
@@ -161,10 +164,10 @@ consoleModule.controller('igfsController', [
                 if ($state.params.id)
                     $scope.createItem($state.params.id);
                 else {
-                    var lastSelectedIgfs = angular.fromJson(sessionStorage.lastSelectedIgfs);
+                    const lastSelectedIgfs = angular.fromJson(sessionStorage.lastSelectedIgfs);
 
                     if (lastSelectedIgfs) {
-                        var idx = _.findIndex($scope.igfss, function(igfs) {
+                        const idx = _.findIndex($scope.igfss, function(igfs) {
                             return igfs._id === lastSelectedIgfs;
                         });
 
@@ -181,13 +184,12 @@ consoleModule.controller('igfsController', [
                 }
 
                 $scope.$watch('ui.inputForm.$valid', function(valid) {
-                    if (valid && __original_value === JSON.stringify($cleanup($scope.backupItem))) {
+                    if (valid && __original_value === JSON.stringify($cleanup($scope.backupItem)))
                         $scope.ui.inputForm.$dirty = false;
-                    }
                 });
 
                 $scope.$watch('backupItem', function(val) {
-                    var form = $scope.ui.inputForm;
+                    const form = $scope.ui.inputForm;
 
                     if (form.$pristine || (form.$valid && __original_value === JSON.stringify($cleanup(val))))
                         form.$setPristine();
@@ -245,8 +247,8 @@ consoleModule.controller('igfsController', [
                 fragmentizerEnabled: true,
                 colocateMetadata: true,
                 relaxedConsistency: true,
-                clusters: id && _.find($scope.clusters, {value: id}) ? [id] :
-                    (!_.isEmpty($scope.clusters) ? [$scope.clusters[0].value] : [])
+                clusters: id && _.find($scope.clusters, {value: id}) ? [id] : // eslint-disable-line no-nested-ternary
+                    (_.isEmpty($scope.clusters) ? [] : [$scope.clusters[0].value])
             };
         }
 
@@ -257,7 +259,7 @@ consoleModule.controller('igfsController', [
                     $common.ensureActivePanel($scope.ui, 'general', 'igfsName');
                 });
 
-                $scope.selectItem(undefined, prepareNewItem(id));
+                $scope.selectItem(null, prepareNewItem(id));
             }
         };
 
@@ -268,37 +270,37 @@ consoleModule.controller('igfsController', [
             if ($common.isEmptyString(item.name))
                 return showPopoverMessage($scope.ui, 'general', 'igfsName', 'IGFS name should not be empty!');
 
-            var form = $scope.ui.inputForm;
-            var errors = form.$error;
-            var errKeys = Object.keys(errors);
+            const form = $scope.ui.inputForm;
+            const errors = form.$error;
+            const errKeys = Object.keys(errors);
 
             if (errKeys && errKeys.length > 0) {
-                var firstErrorKey = errKeys[0];
+                const firstErrorKey = errKeys[0];
 
-                var firstError = errors[firstErrorKey][0];
-                var actualError = firstError.$error[firstErrorKey][0];
+                const firstError = errors[firstErrorKey][0];
+                const actualError = firstError.$error[firstErrorKey][0];
 
-                var errNameFull = actualError.$name;
-                var errNameShort = errNameFull;
+                const errNameFull = actualError.$name;
+                let errNameShort = errNameFull;
 
                 if (errNameShort.endsWith('TextInput'))
                     errNameShort = errNameShort.substring(0, errNameShort.length - 9);
 
-                var extractErrorMessage = function(errName) {
+                const extractErrorMessage = function(errName) {
                     try {
                         return errors[firstErrorKey][0].$errorMessages[errName][firstErrorKey];
                     }
-                    catch(ignored) {
+                    catch (ignored) {
                         try {
-                            msg = form[firstError.$name].$errorMessages[errName][firstErrorKey];
+                            return form[firstError.$name].$errorMessages[errName][firstErrorKey];
                         }
-                        catch(ignited) {
+                        catch (ignited) {
                             return false;
                         }
                     }
                 };
 
-                var msg = extractErrorMessage(errNameFull) || extractErrorMessage(errNameShort) || 'Invalid value!';
+                const msg = extractErrorMessage(errNameFull) || extractErrorMessage(errNameShort) || 'Invalid value!';
 
                 return showPopoverMessage($scope.ui, firstError.$name, errNameFull, msg);
             }
@@ -307,7 +309,7 @@ consoleModule.controller('igfsController', [
                 return showPopoverMessage($scope.ui, 'secondaryFileSystem', 'secondaryFileSystem-title', 'Secondary file system should be configured for "PROXY" IGFS mode!');
 
             if (item.pathModes) {
-                for (var pathIx = 0; pathIx < item.pathModes.length; pathIx++) {
+                for (let pathIx = 0; pathIx < item.pathModes.length; pathIx++) {
                     if (!item.secondaryFileSystemEnabled && item.pathModes[pathIx].mode === 'PROXY')
                         return showPopoverMessage($scope.ui, 'secondaryFileSystem', 'secondaryFileSystem-title', 'Secondary file system should be configured for "PROXY" path mode!');
                 }
@@ -322,7 +324,7 @@ consoleModule.controller('igfsController', [
                 .success(function(_id) {
                     $scope.ui.inputForm.$setPristine();
 
-                    var idx = _.findIndex($scope.igfss, function(igfs) {
+                    const idx = _.findIndex($scope.igfss, function(igfs) {
                         return igfs._id === _id;
                     });
 
@@ -345,7 +347,7 @@ consoleModule.controller('igfsController', [
         // Save IGFS.
         $scope.saveItem = function() {
             if ($scope.tableReset(true)) { // TODO LEGACY
-                var item = $scope.backupItem;
+                const item = $scope.backupItem;
 
                 if (validate(item))
                     save(item);
@@ -362,7 +364,7 @@ consoleModule.controller('igfsController', [
         $scope.cloneItem = function() {
             if ($scope.tableReset(true) && validate($scope.backupItem)) { // TODO LEGACY
                 $clone.confirm($scope.backupItem.name, _igfsNames()).then(function(newName) {
-                    var item = angular.copy($scope.backupItem);
+                    const item = angular.copy($scope.backupItem);
 
                     delete item._id;
 
@@ -377,19 +379,19 @@ consoleModule.controller('igfsController', [
         $scope.removeItem = function() {
             $table.tableReset(); // TODO LEGACY
 
-            var selectedItem = $scope.selectedItem;
+            const selectedItem = $scope.selectedItem;
 
             $confirm.confirm('Are you sure you want to remove IGFS: "' + selectedItem.name + '"?')
                 .then(function() {
-                    var _id = selectedItem._id;
+                    const _id = selectedItem._id;
 
-                    $http.post('/api/v1/configuration/igfs/remove', {_id: _id})
+                    $http.post('/api/v1/configuration/igfs/remove', {_id})
                         .success(function() {
                             $common.showInfo('IGFS has been removed: ' + selectedItem.name);
 
-                            var igfss = $scope.igfss;
+                            const igfss = $scope.igfss;
 
-                            var idx = _.findIndex(igfss, function(igfs) {
+                            const idx = _.findIndex(igfss, function(igfs) {
                                 return igfs._id === _id;
                             });
 

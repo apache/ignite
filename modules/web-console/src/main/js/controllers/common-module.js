@@ -1383,7 +1383,7 @@ consoleModule.service('$table', ['$common', '$focus', function($common, $focus) 
                     if (container)
                         container.push(pairModel);
                     else
-                        container = [pairModel];
+                        _.set(item, field.model, [pairModel]);
 
                     if (!stopEdit)
                         _tableNewItem(field);

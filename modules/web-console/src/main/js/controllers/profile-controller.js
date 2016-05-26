@@ -27,7 +27,7 @@ consoleModule.controller('profileController', [
 
         $scope.generateToken = () => {
             $confirm.confirm('Are you sure you want to change security token?')
-                .then(() => $scope.user.token = $common.randomString(20))
+                .then(() => $scope.user.token = $common.randomString(20));
         };
 
         const _cleanup = () => {

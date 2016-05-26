@@ -139,6 +139,26 @@ consoleModule.controller('clustersController', [
         $scope.tablePairSave = $table.tablePairSave;
         $scope.tablePairSaveVisible = $table.tablePairSaveVisible;
 
+        $scope.attributesTbl = {
+            type: 'attributes',
+            model: 'attributes',
+            focusId: 'Attribute',
+            ui: 'table-pair',
+            keyName: 'name',
+            valueName: 'value',
+            save: $scope.tableSave
+        };
+
+        $scope.stealingAttributesTbl = {
+            type: 'attributes',
+            model: 'collision.JobStealing.stealingAttributes',
+            focusId: 'Attribute',
+            ui: 'table-pair',
+            keyName: 'name',
+            valueName: 'value',
+            save: $scope.tableSave
+        };
+
         $scope.removeFailoverConfiguration = function(idx) {
             $scope.backupItem.failoverSpi.splice(idx, 1);
         };

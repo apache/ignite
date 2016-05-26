@@ -31,7 +31,7 @@ form.panel.panel-default(name=form novalidate)
     .panel-collapse(role='tabpanel' bs-collapse-target id=form)
         .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
             .col-sm-6
-                .settings-row(ng-init='attributesTbl={type: "attributes", model: "attributes", focusId: "Attribute", ui: "table-pair", keyName: "name", valueName: "value"}')
+                .settings-row
                     ignite-form-group(ng-model='#{userAttributes}' ng-form='#{form}')
                         ignite-form-field-label
                             | User attributes

@@ -144,6 +144,26 @@ consoleModule.controller('domainsController', [
         $scope.tablePairSave = $table.tablePairSave;
         $scope.tablePairSaveVisible = $table.tablePairSaveVisible;
 
+        $scope.queryFieldsTbl = {
+            type: 'fields',
+            model: 'fields',
+            focusId: 'QryField',
+            ui: 'table-pair',
+            keyName: 'name',
+            valueName: 'className',
+            save: $scope.tableSave
+        };
+
+        $scope.aliasesTbl = {
+            type: 'aliases',
+            model: 'aliases',
+            focusId: 'Alias',
+            ui: 'table-pair',
+            keyName: 'field',
+            valueName: 'alias',
+            save: $scope.tableSave
+        };
+
         $scope.queryMetadataVariants = $common.mkOptions(['Annotations', 'Configuration']);
 
         var INFO_CONNECT_TO_DB = 'Configure connection to database';
