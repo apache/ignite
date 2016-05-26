@@ -47,6 +47,16 @@ namespace ignite
              *     binary representation of the specified 32-bit int value.
              */
             IGNITE_IMPORT_EXPORT int32_t NumberOfLeadingZerosI32(int32_t i);
+
+            /**
+             * Get number of leading zero bits in the two's complement binary
+             * representation of the specified 32-bit int value.
+             *
+             * @param i The value whose bits are to be counted.
+             * @return The number of leading zero bits in the two's complement
+             *     binary representation of the specified 32-bit int value.
+             */
+            IGNITE_IMPORT_EXPORT int32_t NumberOfLeadingZerosU32(uint32_t i);
             
             /**
              * Get number of leading zero bits in the two's complement binary
@@ -69,13 +79,22 @@ namespace ignite
             IGNITE_IMPORT_EXPORT  int32_t BitCountI32(int32_t i);
 
             /**
-             * Get bit length for the specified 32-bit int value.
+             * Get bit length for the specified signed 32-bit int value.
              *
              * @param i The value to get bit length for.
              * @return The number of significant bits in the two's complement binary
              *     representation of the specified 32-bit int value.
              */
             IGNITE_IMPORT_EXPORT int32_t BitLengthI32(int32_t i);
+
+            /**
+             * Get bit length for the specified unsigned 32-bit int value.
+             *
+             * @param i The value to get bit length for.
+             * @return The number of significant bits in the two's complement binary
+             *     representation of the specified 32-bit int value.
+             */
+            IGNITE_IMPORT_EXPORT int32_t BitLengthU32(uint32_t i);
 
             /**
              * Calcutale capasity for required size.

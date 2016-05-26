@@ -20,16 +20,16 @@
 
 #include <stdint.h>
 
+#include <ignite/common/big_integer.h>
+
 namespace ignite
 {
-    
     /**
      * Big decimal number implementation.
      * @todo Move to binary or common library.
      */
     class Decimal
     {
-        friend void swap(Decimal& first, Decimal& second);
     public:
         /**
          * Default constructor.
@@ -39,11 +39,14 @@ namespace ignite
         /**
          * Constructor.
          *
-         * @param scale Scale.
-         * @param mag Magnitude. Value is copied.
+         * @param mag Bytes of the magnitude. Byte order is big-endian. Should
+         *     be positive, sign is passed using separate argument.
          * @param len Magnitude length in bytes.
+         * @param scale Scale.
+         * @param sign Sign of the decimal. Should be -1 for negative numbers
+         * and 1 otherwise.
          */
-        Decimal(int32_t scale, const int8_t* mag, int32_t len);
+        Decimal(const int8_t* mag, int32_t len, int32_t scale, int32_t sign);
 
         /**
          * Copy constructor.
@@ -78,60 +81,26 @@ namespace ignite
         int32_t GetScale() const;
 
         /**
-         * Get sign.
+         * Get unscaled value.
          *
-         * @return Sign: -1 if negative and 1 if positive.
+         * @return Unscaled value.
          */
-        int32_t GetSign() const;
+        const BigInteger& GetUnscaledValue() const;
 
         /**
-         * Check if the value is negative.
-         * 
-         * @return True if negative and false otherwise.
-         */
-        bool IsNegative() const;
-
-        /**
-         * Get magnitude length in bytes.
+         * Swap function for the Decimal type.
          *
-         * @return Magnitude length in bytes.
+         * @param other Other instance.
          */
-        int32_t GetLength() const;
-
-        /**
-         * Get number of significant bits of the magnitude.
-         *
-         * @return Number of significant bits of the magnitude.
-         */
-        int32_t BitLength() const;
-
-        /**
-         * Get magnitude pointer.
-         *
-         * @return Magnitude pointer.
-         */
-        const int8_t* GetMagnitude() const;
+        void Swap(Decimal& second);
 
     private:
         /** Scale. */
         int32_t scale;
 
-        /** Magnitude lenght. */
-        int32_t len;
-
         /** Magnitude. */
-        int8_t* magnitude;
+        BigInteger magnitude;
     };
-
-    /**
-     * Swap function for the Decimal type.
-     *
-     * @param first First instance.
-     * @param second Second instance.
-     */
-    void swap(Decimal& first, Decimal& second);
 }
-
-
 
 #endif //_IGNITE_ODBC_DECIMAL

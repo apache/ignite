@@ -29,8 +29,8 @@ namespace ignite
      */
     class BigInteger
     {
-        friend class BigDecimal;
-        friend class MutableBigInteger;
+        friend class Decimal;
+        typedef common::DynamicSizeArray<uint32_t> MagArray;
 
     public:
         /**
@@ -46,14 +46,65 @@ namespace ignite
         BigInteger(int64_t val);
 
         /**
+         * Copy constructor.
+         *
+         * @param other Other value.
+         */
+        BigInteger(const BigInteger& other);
+
+        /**
          * Constructs big integer from the byte array.
          *
          * @param val Bytes of the integer. Byte order is big-endian.
          * @param len Array length.
-         * @param sign Signum. Can be -1 (negative), 1 (positive) or 0 (zero).
-         * @throw IgniteError if the value is too big.
+         * @param sign Signum. Can be -1 (negative) or 1 (positive or zero).
          */
-        BigInteger(int8_t* val, int32_t len, int32_t sign);
+        BigInteger(const int8_t* val, int32_t len, int32_t sign);
+
+        /**
+         * Assigment operator.
+         *
+         * @param other Other value.
+         * @return *this.
+         */
+        BigInteger& operator=(const BigInteger& other);
+
+        /**
+         * Get number sign. Returns -1 if negative and 1 otherwise.
+         *
+         * @return Sign of the number.
+         */
+        int8_t GetSign() const;
+
+        /**
+         * Swap function for the BigInteger type.
+         *
+         * @param other Other instance.
+         */
+        void Swap(BigInteger& other);
+
+        /**
+         * Get magnitude array.
+         *
+         * @return magnitude array.
+         */
+        const MagArray& GetMagnitude() const;
+
+        /**
+         * Get this number length in bits.
+         *
+         * @return Number length in bits.
+         */
+        uint32_t GetBitLength() const;
+
+        /**
+         * Fills specified buffer with data of this BigInteger converted to
+         * bytes in big-endian byte order. Sign is not considered when this
+         * operation is performed.
+         *
+         * @param buffer Buffer to fill.
+         */
+        void MagnitudeToBytes(common::FixedSizeArray<int8_t>& buffer) const;
 
     private:
         /**
@@ -65,7 +116,7 @@ namespace ignite
         /**
          * The magnitude of this BigInteger. Byte order is little-endian.
          */
-        common::DynamicSizeArray<uint32_t> mag;
+        MagArray mag;
     };
 }
 

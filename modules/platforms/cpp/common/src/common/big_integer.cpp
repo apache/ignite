@@ -23,8 +23,6 @@ using namespace ignite::common::bits;
 
 namespace ignite
 {
-    typedef common::DynamicSizeArray<int32_t> MagArray;
-
     BigInteger::BigInteger() :
         sign(0),
         mag(0)
@@ -55,7 +53,14 @@ namespace ignite
         mag[0] = static_cast<uint32_t>(val);
     }
 
-    BigInteger::BigInteger(int8_t* val, int32_t len, int32_t sign) :
+    BigInteger::BigInteger(const BigInteger& other) :
+        sign(other.sign),
+        mag(other.mag)
+    {
+        // No-op.
+    }
+
+    BigInteger::BigInteger(const int8_t* val, int32_t len, int32_t sign) :
         sign(sign),
         mag()
     {
@@ -101,6 +106,86 @@ namespace ignite
 
             case 1:
                 mag[intLength - 1] |= val[b] & 0xFF;
+
+            default:
+                break;
+        }
+    }
+
+    BigInteger& BigInteger::operator=(const BigInteger & other)
+    {
+        sign = other.sign;
+        mag = other.mag;
+
+        return *this;
+    }
+
+    int8_t BigInteger::GetSign() const
+    {
+        return sign;
+    }
+
+    void BigInteger::Swap(BigInteger& other)
+    {
+        using std::swap;
+
+        swap(sign, other.sign);
+        mag.Swap(other.mag);
+    }
+
+    const BigInteger::MagArray& BigInteger::GetMagnitude() const
+    {
+        return mag;
+    }
+
+    uint32_t BigInteger::GetBitLength() const
+    {
+        if (mag.IsEmpty())
+            return 0;
+
+        int32_t res = BitLengthU32(mag[mag.GetSize() - 1]);
+
+        if (mag.GetSize() > 1)
+            res += (mag.GetSize() - 1) * 32;
+
+        return res;
+    }
+
+    void BigInteger::MagnitudeToBytes(common::FixedSizeArray<int8_t>& buffer) const
+    {
+        int32_t bytesNum = static_cast<int32_t>((GetBitLength() + 7) / 8);
+
+        buffer.Reset(bytesNum);
+
+        int32_t i;
+        for (i = 0; i < mag.GetSize() - 1; ++i)
+        {
+            int32_t j = bytesNum - 1 - 4 * i;
+
+            buffer[j] = static_cast<int8_t>(mag[i]);
+            buffer[j - 1] = static_cast<int8_t>(mag[i] >> 8);
+            buffer[j - 2] = static_cast<int8_t>(mag[i] >> 16);
+            buffer[j - 3] = static_cast<int8_t>(mag[i] >> 24);
+        }
+
+        int32_t bytesRemaining = bytesNum - 4 * i;
+
+        assert(bytesRemaining >= 0 && bytesRemaining <= 4);
+
+        i = 0;
+        switch (bytesRemaining)
+        {
+            case 4:
+                buffer[i++] |= static_cast<int8_t>(mag[mag.GetSize() - 1] >> 24);
+
+            case 3:
+                buffer[i++] |= static_cast<int8_t>(mag[mag.GetSize() - 1] >> 16);
+
+            case 2:
+                buffer[i++] |= static_cast<int8_t>(mag[mag.GetSize() - 1] >> 8);
+
+            case 1:
+                buffer[i++] |= static_cast<int8_t>(mag[mag.GetSize() - 1]);
 
             default:
                 break;

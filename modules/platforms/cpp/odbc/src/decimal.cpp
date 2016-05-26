@@ -25,111 +25,70 @@
 namespace ignite
 {
     Decimal::Decimal() : 
-        scale(0), len(0), magnitude(0)
+        scale(0),
+        magnitude(0)
     {
         // No-op.
     }
 
-    Decimal::Decimal(int32_t scale, const int8_t* mag, int32_t len) :
-        scale(scale), len(len), magnitude(0)
+    Decimal::Decimal(const int8_t* mag, int32_t len, int32_t scale, int32_t sign) :
+        scale(scale & 0x7FFFFFFF),
+        magnitude(mag, len, sign)
     {
-        magnitude = new int8_t[len];
-
-        memcpy(magnitude, mag, len);
+        // No-op.
     }
 
     Decimal::Decimal(const Decimal& other) :
-        scale(other.scale), len(other.len), magnitude(0)
+        scale(other.scale),
+        magnitude(other.magnitude)
     {
-        magnitude = new int8_t[len];
-
-        memcpy(magnitude, other.magnitude, len);
+        // No-op.
     }
 
     Decimal::~Decimal()
     {
-        if (magnitude)
-            delete[] magnitude;
+        // No-op.
     }
 
     Decimal& Decimal::operator=(const Decimal& other)
     {
-        Decimal tmp(other);
-
-        swap(tmp, *this);
+        scale = other.scale;
+        magnitude = other.magnitude;
 
         return *this;
     }
 
     Decimal::operator double() const
     {
-        double res = 0;
+        //double res = 0;
 
-        for (int32_t i = 0; i < len; ++i)
-            res = (res * 256) + static_cast<uint8_t>(magnitude[i]);
+        //for (int32_t i = 0; i < len; ++i)
+        //    res = (res * 256) + static_cast<uint8_t>(magnitude[i]);
 
-        for (int32_t i = 0; i < GetScale(); ++i)
-            res /= 10.0;
+        //for (int32_t i = 0; i < GetScale(); ++i)
+        //    res /= 10.0;
 
-        return res * GetSign();
+        //return res * GetSign();
+
+        return 0.0;
     }
 
     int32_t Decimal::GetScale() const
     {
-        return scale & 0x7FFFFFFF;
+        return scale;
     }
 
-    int32_t Decimal::GetSign() const
-    {
-        return IsNegative() ? -1 : 1;
-    }
-
-    bool Decimal::IsNegative() const
-    {
-        return (scale & 0x80000000) != 0;
-    }
-
-    int32_t Decimal::GetLength() const
-    {
-        return len;
-    }
-
-    int32_t Decimal::BitLength() const
-    {
-        using namespace common;
-
-        if (len == 0)
-            return 0;
-
-        int32_t bitsLen = (len - 1) * 8 +
-            BitLengthForOctet(magnitude[len - 1]);
-
-        if (IsNegative()) {
-
-            // Check if magnitude is a power of two
-            bool pow2 = PowerOfTwo(magnitude[len - 1]);
-            for (int i = 0; i < len - 1 && pow2; ++i)
-                pow2 = (magnitude[i] == 0);
-
-            if (pow2)
-                --bitsLen;
-        }
-
-        return bitsLen;
-    }
-
-    const int8_t* Decimal::GetMagnitude() const
+    const BigInteger& Decimal::GetUnscaledValue() const
     {
         return magnitude;
     }
 
-    void swap(Decimal& first, Decimal& second)
+    void Decimal::Swap(Decimal& second)
     {
         using std::swap;
 
-        std::swap(first.scale, second.scale);
-        std::swap(first.len, second.len);
-        std::swap(first.magnitude, second.magnitude);
+        swap(scale, second.scale);
+        magnitude.Swap(second.magnitude);
     }
 }
 

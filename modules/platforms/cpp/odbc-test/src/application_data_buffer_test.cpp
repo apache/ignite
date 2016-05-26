@@ -280,14 +280,14 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToDouble)
 
     int8_t mag1[] = { 1, 0 };
 
-    decimal = Decimal(0, mag1, sizeof(mag1));
+    decimal = Decimal(mag1, sizeof(mag1), 0, 1);
 
     appBuf.PutDecimal(decimal);
     BOOST_CHECK_CLOSE_FRACTION(numBuf, 256.0, FLOAT_PRECISION);
 
     int8_t mag2[] = { 2, 23 };
 
-    decimal = Decimal(1 | 0x80000000, mag2, sizeof(mag2));
+    decimal = Decimal(mag2, sizeof(mag2), 1, -1);
 
     appBuf.PutDecimal(decimal);
     BOOST_CHECK_CLOSE_FRACTION(numBuf, -53.5, FLOAT_PRECISION);
@@ -307,14 +307,14 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToLong)
 
     int8_t mag1[] = { 1, 0 };
 
-    decimal = Decimal(0, mag1, sizeof(mag1));
+    decimal = Decimal(mag1, sizeof(mag1), 0, 1);
 
     appBuf.PutDecimal(decimal);
     BOOST_CHECK(numBuf == 256);
 
     int8_t mag2[] = { 2, 23 };
 
-    decimal = Decimal(1 | 0x80000000, mag2, sizeof(mag2));
+    decimal = Decimal(mag2, sizeof(mag2), 1, -1);
 
     appBuf.PutDecimal(decimal);
     BOOST_CHECK(numBuf == -53);
@@ -334,14 +334,14 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToString)
 
     int8_t mag1[] = { 1, 0 };
 
-    decimal = Decimal(0, mag1, sizeof(mag1));
+    decimal = Decimal(mag1, sizeof(mag1), 0, 1);
 
     appBuf.PutDecimal(decimal);
     BOOST_CHECK(std::string(strBuf, reslen) == "256");
 
     int8_t mag2[] = { 2, 23 };
 
-    decimal = Decimal(1 | 0x80000000, mag2, sizeof(mag2));
+    decimal = Decimal(mag2, sizeof(mag2), 1, -1);
 
     appBuf.PutDecimal(decimal);
     BOOST_CHECK(std::string(strBuf, reslen) == "-53.5");
@@ -367,7 +367,7 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToNumeric)
     // Trying to store 123.45 => 12345 => 0x3039 => [0x30, 0x39].
     uint8_t mag1[] = { 0x30, 0x39 };
 
-    decimal = Decimal(2, reinterpret_cast<int8_t*>(mag1), sizeof(mag1));
+    decimal = Decimal(reinterpret_cast<int8_t*>(mag1), sizeof(mag1), 2, 1);
 
     appBuf.PutDecimal(decimal);
     BOOST_CHECK_EQUAL(1, buf.sign);         // Positive
@@ -383,7 +383,7 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToNumeric)
     // Trying to store 12345.678 => 12345678 => 0xBC614E => [0xBC, 0x61, 0x4E].
     uint8_t mag2[] = { 0xBC, 0x61, 0x4E };
 
-    decimal = Decimal(3 | 0x80000000, reinterpret_cast<int8_t*>(mag2), sizeof(mag2));
+    decimal = Decimal(reinterpret_cast<int8_t*>(mag2), sizeof(mag2), 3, -1);
 
     appBuf.PutDecimal(decimal);
     BOOST_CHECK_EQUAL(2, buf.sign);         // Negative

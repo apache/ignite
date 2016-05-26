@@ -67,34 +67,37 @@ namespace ignite
 
             int32_t NumberOfLeadingZerosI32(int32_t i)
             {
+                return NumberOfLeadingZerosU32(static_cast<uint32_t>(i));
+            }
+
+            int32_t NumberOfLeadingZerosU32(uint32_t i)
+            {
                 if (i == 0)
                     return 32;
 
                 int32_t n = 1;
 
-                uint32_t ui = static_cast<uint32_t>(i);
-
-                if (ui >> 16 == 0) {
+                if (i >> 16 == 0) {
                     n += 16;
-                    ui <<= 16;
+                    i <<= 16;
                 }
 
-                if (ui >> 24 == 0) {
+                if (i >> 24 == 0) {
                     n += 8;
-                    ui <<= 8;
+                    i <<= 8;
                 }
 
-                if (ui >> 28 == 0) {
+                if (i >> 28 == 0) {
                     n += 4;
-                    ui <<= 4;
+                    i <<= 4;
                 }
 
-                if (ui >> 30 == 0) {
+                if (i >> 30 == 0) {
                     n += 2;
-                    ui <<= 2;
+                    i <<= 2;
                 }
 
-                return n - static_cast<int32_t>(ui >> 31);
+                return n - static_cast<int32_t>(i >> 31);
             }
 
             int32_t NumberOfLeadingZerosI64(int64_t i)
@@ -152,6 +155,11 @@ namespace ignite
             int32_t BitLengthI32(int32_t i)
             {
                 return 32 - NumberOfLeadingZerosI32(i);
+            }
+
+            int32_t BitLengthU32(uint32_t i)
+            {
+                return 32 - NumberOfLeadingZerosU32(i);
             }
 
             int32_t GetCapasityForSize(int32_t size)
