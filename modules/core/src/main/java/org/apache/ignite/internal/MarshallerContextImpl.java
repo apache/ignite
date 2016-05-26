@@ -36,6 +36,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheTryPutFailedException;
 import org.apache.ignite.internal.util.GridStripedLock;
 import org.apache.ignite.internal.util.typedef.F;
@@ -103,19 +104,20 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     public void onMarshallerCacheStarted(GridKernalContext ctx) throws IgniteCheckedException {
         assert ctx != null;
 
+        cache = ctx.cache().internalCache(cacheName);
+        GridCacheContext<Integer, String> cacheCtx = cache.context();
+
         if (!ctx.isDaemon()) {
-            ctx.cache().marshallerCache().context().continuousQueries().executeInternalQuery(
+            cacheCtx.continuousQueries().executeInternalQuery(
                 new ContinuousQueryListener(ctx.log(MarshallerContextImpl.class), workDir, fileExt),
                 null,
-                ctx.cache().marshallerCache().context().affinityNode(),
+                cacheCtx.affinityNode(),
                 true,
                 false
             );
         }
 
         log = ctx.log(MarshallerContextImpl.class);
-
-        cache = ctx.cache().internalCache(cacheName);
 
         latch.countDown();
     }
