@@ -253,6 +253,7 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
             {dbName: 'SQLXML', dbType: 2009, javaType: 'Object'}
         ];
 
+        /*eslint-disable */
         var JAVA_KEYWORDS = [
             'abstract',     'assert',        'boolean',      'break',           'byte',
             'case',         'catch',         'char',         'class',           'const',
@@ -266,6 +267,7 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
             'throw',        'throws',        'transient',    'true',            'try',
             'void',         'volatile',      'while'
         ];
+        /*eslint-enable */
 
         var VALID_JAVA_IDENTIFIER = new RegExp('^[a-zA-Z_$][a-zA-Z\\d_$]*$');
 
