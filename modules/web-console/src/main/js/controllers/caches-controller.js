@@ -23,11 +23,11 @@ consoleModule.controller('cachesController', [
     function($scope, $http, $state, $filter, $timeout, $common, $confirm, $clone, $loading, $cleanup, $unsavedChangesGuard) {
         $unsavedChangesGuard.install($scope);
 
-        var emptyCache = {empty: true};
+        const emptyCache = {empty: true};
 
-        var __original_value;
+        let __original_value;
 
-        var blank = {
+        const blank = {
             evictionPolicy: {},
             cacheStoreFactory: {},
             nearConfiguration: {}
@@ -44,10 +44,10 @@ consoleModule.controller('cachesController', [
         $scope.saveBtnTipText = $common.saveBtnTipText;
         $scope.widthIsSufficient = $common.widthIsSufficient;
 
-        var showPopoverMessage = $common.showPopoverMessage;
+        const showPopoverMessage = $common.showPopoverMessage;
 
         $scope.contentVisible = function() {
-            var item = $scope.backupItem;
+            const item = $scope.backupItem;
 
             return !item.empty && (!item._id || _.find($scope.displayedRows, {_id: item._id}));
         };
@@ -72,9 +72,8 @@ consoleModule.controller('cachesController', [
 
         function cacheDomains(item) {
             return _.reduce($scope.domains, function(memo, domain) {
-                if (item && _.includes(item.domains, domain.value)) {
+                if (item && _.includes(item.domains, domain.value))
                     memo.push(domain.meta);
-                }
 
                 return memo;
             }, []);
@@ -85,7 +84,7 @@ consoleModule.controller('cachesController', [
         // When landing on the page, get caches and show them.
         $http.post('/api/v1/configuration/caches/list')
             .success(function(data) {
-                var validFilter = $filter('domainsValidation');
+                const validFilter = $filter('domainsValidation');
 
                 $scope.spaces = data.spaces;
 
@@ -115,10 +114,10 @@ consoleModule.controller('cachesController', [
                 if ($state.params.id)
                     $scope.createItem($state.params.id);
                 else {
-                    var lastSelectedCache = angular.fromJson(sessionStorage.lastSelectedCache);
+                    const lastSelectedCache = angular.fromJson(sessionStorage.lastSelectedCache);
 
                     if (lastSelectedCache) {
-                        var idx = _.findIndex($scope.caches, function(cache) {
+                        const idx = _.findIndex($scope.caches, function(cache) {
                             return cache._id === lastSelectedCache;
                         });
 
@@ -135,13 +134,12 @@ consoleModule.controller('cachesController', [
                 }
 
                 $scope.$watch('ui.inputForm.$valid', function(valid) {
-                    if (valid && __original_value === JSON.stringify($cleanup($scope.backupItem))) {
+                    if (valid && __original_value === JSON.stringify($cleanup($scope.backupItem)))
                         $scope.ui.inputForm.$dirty = false;
-                    }
                 });
 
                 $scope.$watch('backupItem', function(val) {
-                    var form = $scope.ui.inputForm;
+                    const form = $scope.ui.inputForm;
 
                     if (form.$pristine || (form.$valid && __original_value === JSON.stringify($cleanup(val))))
                         form.$setPristine();
@@ -210,18 +208,18 @@ consoleModule.controller('cachesController', [
                 $common.ensureActivePanel($scope.ui, 'general', 'cacheName');
             });
 
-            $scope.selectItem(undefined, prepareNewItem(id));
+            $scope.selectItem(null, prepareNewItem(id));
         };
 
         function checkDataSources() {
-            var clusters = _.filter($scope.clusters, function(cluster) {
+            const clusters = _.filter($scope.clusters, function(cluster) {
                 return _.includes($scope.backupItem.clusters, cluster.value);
             });
 
-            var checkRes = { checked: true };
+            let checkRes = {checked: true};
 
-            var failCluster = _.find(clusters, function(cluster) {
-                var caches = _.filter($scope.caches, function(cache) {
+            const failCluster = _.find(clusters, function(cluster) {
+                const caches = _.filter($scope.caches, function(cache) {
                     return cache._id !== $scope.backupItem._id && _.find(cluster.caches, function(clusterCache) {
                         return clusterCache === cache._id;
                     });
@@ -255,65 +253,58 @@ consoleModule.controller('cachesController', [
             if (item.memoryMode === 'ONHEAP_TIERED' && item.offHeapMaxMemory > 0 && !$common.isDefined(item.evictionPolicy.kind))
                 return showPopoverMessage($scope.ui, 'memory', 'evictionPolicyKind', 'Eviction policy should not be configured!');
 
-            var form = $scope.ui.inputForm;
-            var errors = form.$error;
-            var errKeys = Object.keys(errors);
+            const form = $scope.ui.inputForm;
+            const errors = form.$error;
+            const errKeys = Object.keys(errors);
 
             if (errKeys && errKeys.length > 0) {
-                var firstErrorKey = errKeys[0];
+                const firstErrorKey = errKeys[0];
 
-                var firstError = errors[firstErrorKey][0];
-                var actualError = firstError.$error[firstErrorKey][0];
+                const firstError = errors[firstErrorKey][0];
+                const actualError = firstError.$error[firstErrorKey][0];
 
-                var errNameFull = actualError.$name;
-                var errNameShort = errNameFull;
+                const errNameFull = actualError.$name;
+                const errNameShort = errNameFull.endsWith('TextInput') ? errNameFull.substring(0, errNameFull.length - 9) : errNameFull;
 
-                if (errNameShort.endsWith('TextInput'))
-                    errNameShort = errNameShort.substring(0, errNameShort.length - 9);
-
-                var extractErrorMessage = function(errName) {
+                const extractErrorMessage = function(errName) {
                     try {
                         return errors[firstErrorKey][0].$errorMessages[errName][firstErrorKey];
                     }
-                    catch(ignored) {
+                    catch (ignored) {
                         try {
-                            msg = form[firstError.$name].$errorMessages[errName][firstErrorKey];
+                            return form[firstError.$name].$errorMessages[errName][firstErrorKey];
                         }
-                        catch(ignited) {
+                        catch (ignited) {
                             return false;
                         }
                     }
                 };
 
-                var msg = extractErrorMessage(errNameFull) || extractErrorMessage(errNameShort) || 'Invalid value!';
+                const msg = extractErrorMessage(errNameFull) || extractErrorMessage(errNameShort) || 'Invalid value!';
 
                 return showPopoverMessage($scope.ui, firstError.$name, errNameFull, msg);
             }
 
             if (item.memoryMode === 'OFFHEAP_VALUES' && !_.isEmpty(item.domains))
-                return showPopoverMessage($scope.ui, 'memory', 'memoryMode',
-                    'Query indexing could not be enabled while values are stored off-heap!');
+                return showPopoverMessage($scope.ui, 'memory', 'memoryMode', 'Query indexing could not be enabled while values are stored off-heap!');
 
             if (item.memoryMode === 'OFFHEAP_TIERED' && !$common.isDefined(item.offHeapMaxMemory))
-                return showPopoverMessage($scope.ui, 'memory', 'offHeapMaxMemory',
-                    'Off-heap max memory should be specified!');
+                return showPopoverMessage($scope.ui, 'memory', 'offHeapMaxMemory', 'Off-heap max memory should be specified!');
 
-            var cacheStoreFactorySelected = item.cacheStoreFactory && item.cacheStoreFactory.kind;
+            const cacheStoreFactorySelected = item.cacheStoreFactory && item.cacheStoreFactory.kind;
 
             if (cacheStoreFactorySelected) {
-                var storeFactory = item.cacheStoreFactory[item.cacheStoreFactory.kind];
+                const storeFactory = item.cacheStoreFactory[item.cacheStoreFactory.kind];
 
                 if (item.cacheStoreFactory.kind === 'CacheJdbcPojoStoreFactory') {
                     if ($common.isEmptyString(storeFactory.dataSourceBean))
-                        return showPopoverMessage($scope.ui, 'store', 'dataSourceBean',
-                            'Data source bean name should not be empty!');
+                        return showPopoverMessage($scope.ui, 'store', 'dataSourceBean', 'Data source bean name should not be empty!');
 
                     if (!$common.isValidJavaIdentifier('Data source bean', storeFactory.dataSourceBean, 'dataSourceBean', $scope.ui, 'store'))
                         return false;
 
                     if (!storeFactory.dialect)
-                        return showPopoverMessage($scope.ui, 'store', 'pojoDialect',
-                            'Dialect should not be empty!');
+                        return showPopoverMessage($scope.ui, 'store', 'pojoDialect', 'Dialect should not be empty!');
 
                     if (!checkDataSources())
                         return false;
@@ -322,24 +313,20 @@ consoleModule.controller('cachesController', [
                 if (item.cacheStoreFactory.kind === 'CacheJdbcBlobStoreFactory') {
                     if (storeFactory.connectVia === 'URL') {
                         if ($common.isEmptyString(storeFactory.connectionUrl))
-                            return showPopoverMessage($scope.ui, 'store', 'connectionUrl',
-                                'Connection URL should not be empty!');
+                            return showPopoverMessage($scope.ui, 'store', 'connectionUrl', 'Connection URL should not be empty!');
 
                         if ($common.isEmptyString(storeFactory.user))
-                            return showPopoverMessage($scope.ui, 'store', 'user',
-                                'User should not be empty!');
+                            return showPopoverMessage($scope.ui, 'store', 'user', 'User should not be empty!');
                     }
                     else {
                         if ($common.isEmptyString(storeFactory.dataSourceBean))
-                            return showPopoverMessage($scope.ui, 'store', 'dataSourceBean',
-                                'Data source bean name should not be empty!');
+                            return showPopoverMessage($scope.ui, 'store', 'dataSourceBean', 'Data source bean name should not be empty!');
 
                         if (!$common.isValidJavaIdentifier('Data source bean', storeFactory.dataSourceBean, 'dataSourceBean', $scope.ui, 'store'))
                             return false;
 
                         if (!storeFactory.dialect)
-                            return showPopoverMessage($scope.ui, 'store', 'blobDialect',
-                                'Database should not be empty!');
+                            return showPopoverMessage($scope.ui, 'store', 'blobDialect', 'Database should not be empty!');
 
                         if (!checkDataSources())
                             return false;
@@ -348,26 +335,21 @@ consoleModule.controller('cachesController', [
             }
 
             if ((item.readThrough || item.writeThrough) && !cacheStoreFactorySelected)
-                return showPopoverMessage($scope.ui, 'store', 'cacheStoreFactory',
-                    (item.readThrough ? 'Read' : 'Write') + ' through are enabled but store is not configured!');
+                return showPopoverMessage($scope.ui, 'store', 'cacheStoreFactory', (item.readThrough ? 'Read' : 'Write') + ' through are enabled but store is not configured!');
 
             if (item.writeBehindEnabled && !cacheStoreFactorySelected)
-                return showPopoverMessage($scope.ui, 'store', 'cacheStoreFactory',
-                    'Write behind enabled but store is not configured!');
+                return showPopoverMessage($scope.ui, 'store', 'cacheStoreFactory', 'Write behind enabled but store is not configured!');
 
             if (cacheStoreFactorySelected) {
                 if (!item.readThrough && !item.writeThrough)
-                    return showPopoverMessage($scope.ui, 'store', 'readThroughTooltip',
-                        'Store is configured but read/write through are not enabled!');
+                    return showPopoverMessage($scope.ui, 'store', 'readThroughTooltip', 'Store is configured but read/write through are not enabled!');
             }
 
             if (item.writeBehindFlushSize === 0 && item.writeBehindFlushFrequency === 0)
-                return showPopoverMessage($scope.ui, 'store', 'writeBehindFlushSize',
-                    'Both "Flush frequency" and "Flush size" are not allowed as 0!');
+                return showPopoverMessage($scope.ui, 'store', 'writeBehindFlushSize', 'Both "Flush frequency" and "Flush size" are not allowed as 0!');
 
             if (item.cacheMode !== 'LOCAL' && item.rebalanceMode !== 'NONE' && item.rebalanceBatchSize === 0)
-                return showPopoverMessage($scope.ui, 'rebalance', 'rebalanceBatchSize',
-                    'Batch size should be more than 0 if rebalance mode is "SYNC" or "ASYNC" !', 10000);
+                return showPopoverMessage($scope.ui, 'rebalance', 'rebalanceBatchSize', 'Batch size should be more than 0 if rebalance mode is "SYNC" or "ASYNC" !', 10000);
 
             return true;
         }
@@ -380,7 +362,7 @@ consoleModule.controller('cachesController', [
 
                     $scope.ui.inputForm.$setPristine();
 
-                    var idx = _.findIndex($scope.caches, function(cache) {
+                    const idx = _.findIndex($scope.caches, function(cache) {
                         return cache._id === _id;
                     });
 
@@ -402,7 +384,7 @@ consoleModule.controller('cachesController', [
 
         // Save cache.
         $scope.saveItem = function() {
-            var item = $scope.backupItem;
+            const item = $scope.backupItem;
 
             angular.extend(item, $common.autoCacheStoreConfiguration(item, cacheDomains(item)));
 
@@ -420,7 +402,7 @@ consoleModule.controller('cachesController', [
         $scope.cloneItem = function() {
             if (validate($scope.backupItem)) {
                 $clone.confirm($scope.backupItem.name, _cacheNames()).then(function(newName) {
-                    var item = angular.copy($scope.backupItem);
+                    const item = angular.copy($scope.backupItem);
 
                     delete item._id;
 
@@ -433,19 +415,19 @@ consoleModule.controller('cachesController', [
 
         // Remove cache from db.
         $scope.removeItem = function() {
-            var selectedItem = $scope.selectedItem;
+            const selectedItem = $scope.selectedItem;
 
             $confirm.confirm('Are you sure you want to remove cache: "' + selectedItem.name + '"?')
                 .then(function() {
-                    var _id = selectedItem._id;
+                    const _id = selectedItem._id;
 
-                    $http.post('/api/v1/configuration/caches/remove', {_id: _id})
+                    $http.post('/api/v1/configuration/caches/remove', {_id})
                         .success(function() {
                             $common.showInfo('Cache has been removed: ' + selectedItem.name);
 
-                            var caches = $scope.caches;
+                            const caches = $scope.caches;
 
-                            var idx = _.findIndex(caches, function(cache) {
+                            const idx = _.findIndex(caches, function(cache) {
                                 return cache._id === _id;
                             });
 

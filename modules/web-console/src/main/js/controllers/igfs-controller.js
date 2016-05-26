@@ -281,10 +281,7 @@ consoleModule.controller('igfsController', [
                 const actualError = firstError.$error[firstErrorKey][0];
 
                 const errNameFull = actualError.$name;
-                let errNameShort = errNameFull;
-
-                if (errNameShort.endsWith('TextInput'))
-                    errNameShort = errNameShort.substring(0, errNameShort.length - 9);
+                const errNameShort = errNameFull.endsWith('TextInput') ? errNameFull.substring(0, errNameFull.length - 9) : errNameFull;
 
                 const extractErrorMessage = function(errName) {
                     try {
