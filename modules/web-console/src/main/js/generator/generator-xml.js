@@ -570,75 +570,75 @@ $generatorXml.clusterCollision = function (collision, res) {
         res = $generatorCommon.builder();
 
     if (collision && collision.kind !== 'Noop') {
-        res.startBlock('<property name="collisionSpi">');
-
         let spi = collision[collision.kind];
 
-        switch (collision.kind) {
-            case 'JobStealing':
-                res.startBlock('<bean class="org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi">');
-                $generatorXml.property(res, spi, 'activeJobsThreshold', null, 95);
-                $generatorXml.property(res, spi, 'waitJobsThreshold', null, 0);
-                $generatorXml.property(res, spi, 'messageExpireTime', null, 1000);
-                $generatorXml.property(res, spi, 'maximumStealingAttempts', null, 5);
-                $generatorXml.property(res, spi, 'stealingEnabled', null, true);
+        if (collision.kind !== 'Custom' || (spi && $generatorCommon.isDefinedAndNotEmpty(spi.class))) {
+            res.startBlock('<property name="collisionSpi">');
 
-                if ($generatorCommon.isDefinedAndNotEmpty(spi.externalCollisionListener)) {
-                    res.needEmptyLine = true;
+            switch (collision.kind) {
+                case 'JobStealing':
+                    res.startBlock('<bean class="org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi">');
+                    $generatorXml.property(res, spi, 'activeJobsThreshold', null, 95);
+                    $generatorXml.property(res, spi, 'waitJobsThreshold', null, 0);
+                    $generatorXml.property(res, spi, 'messageExpireTime', null, 1000);
+                    $generatorXml.property(res, spi, 'maximumStealingAttempts', null, 5);
+                    $generatorXml.property(res, spi, 'stealingEnabled', null, true);
 
-                    res.startBlock('<property name="externalCollisionListener">');
-                    res.line('<bean class="' + spi.externalCollisionListener + ' "/>');
-                    res.endBlock('</property>');
-                }
+                    if ($generatorCommon.isDefinedAndNotEmpty(spi.externalCollisionListener)) {
+                        res.needEmptyLine = true;
 
-                if ($generatorCommon.isDefinedAndNotEmpty(spi.stealingAttributes)) {
-                    res.needEmptyLine = true;
+                        res.startBlock('<property name="externalCollisionListener">');
+                        res.line('<bean class="' + spi.externalCollisionListener + ' "/>');
+                        res.endBlock('</property>');
+                    }
 
-                    res.startBlock('<property name="stealingAttributes">');
-                    res.startBlock('<map>');
+                    if ($generatorCommon.isDefinedAndNotEmpty(spi.stealingAttributes)) {
+                        res.needEmptyLine = true;
 
-                    _.forEach(spi.stealingAttributes, function (attr) {
-                        $generatorXml.element(res, 'entry', 'key', attr.name, 'value', attr.value);
-                    });
+                        res.startBlock('<property name="stealingAttributes">');
+                        res.startBlock('<map>');
 
-                    res.endBlock('</map>');
-                    res.endBlock('</property>');
-                }
+                        _.forEach(spi.stealingAttributes, function (attr) {
+                            $generatorXml.element(res, 'entry', 'key', attr.name, 'value', attr.value);
+                        });
 
-                res.endBlock('</bean>');
+                        res.endBlock('</map>');
+                        res.endBlock('</property>');
+                    }
 
-                break;
+                    res.endBlock('</bean>');
 
-            case 'FifoQueue':
-                res.startBlock('<bean class="org.apache.ignite.spi.collision.fifoqueue.FifoQueueCollisionSpi">');
-                $generatorXml.property(res, spi, 'parallelJobsNumber');
-                $generatorXml.property(res, spi, 'waitingJobsNumber');
-                res.endBlock('</bean>');
+                    break;
 
-                break;
+                case 'FifoQueue':
+                    res.startBlock('<bean class="org.apache.ignite.spi.collision.fifoqueue.FifoQueueCollisionSpi">');
+                    $generatorXml.property(res, spi, 'parallelJobsNumber');
+                    $generatorXml.property(res, spi, 'waitingJobsNumber');
+                    res.endBlock('</bean>');
 
-            case 'PriorityQueue':
-                res.startBlock('<bean class="org.apache.ignite.spi.collision.priorityqueue.PriorityQueueCollisionSpi">');
-                $generatorXml.property(res, spi, 'parallelJobsNumber');
-                $generatorXml.property(res, spi, 'waitingJobsNumber');
-                $generatorXml.property(res, spi, 'priorityAttributeKey', null, 'grid.task.priority');
-                $generatorXml.property(res, spi, 'jobPriorityAttributeKey', null, 'grid.job.priority');
-                $generatorXml.property(res, spi, 'defaultPriority', null, 0);
-                $generatorXml.property(res, spi, 'starvationIncrement', null, 1);
-                $generatorXml.property(res, spi, 'starvationPreventionEnabled', null, true);
-                res.endBlock('</bean>');
+                    break;
 
-                break;
+                case 'PriorityQueue':
+                    res.startBlock('<bean class="org.apache.ignite.spi.collision.priorityqueue.PriorityQueueCollisionSpi">');
+                    $generatorXml.property(res, spi, 'parallelJobsNumber');
+                    $generatorXml.property(res, spi, 'waitingJobsNumber');
+                    $generatorXml.property(res, spi, 'priorityAttributeKey', null, 'grid.task.priority');
+                    $generatorXml.property(res, spi, 'jobPriorityAttributeKey', null, 'grid.job.priority');
+                    $generatorXml.property(res, spi, 'defaultPriority', null, 0);
+                    $generatorXml.property(res, spi, 'starvationIncrement', null, 1);
+                    $generatorXml.property(res, spi, 'starvationPreventionEnabled', null, true);
+                    res.endBlock('</bean>');
 
-            case 'Custom': {
-                if ($generatorCommon.isDefinedAndNotEmpty(spi.class))
+                    break;
+
+                case 'Custom':
                     res.line('<bean class="' + spi.class + '"/>');
 
-                break;
+                    break;
             }
-        }
 
-        res.endBlock('</property>')
+            res.endBlock('</property>')
+        }
     }
 
     return res;

@@ -32,7 +32,7 @@ form.panel.panel-default(name=form novalidate)
         .panel-body(ng-if='ui.isPanelLoaded("#{form}")')
             .col-sm-6
                 .settings-row(ng-init='failoverSpiTbl={type: "failoverSpi", model: "failoverSpi", focusId: "kind", ui: "failover-table"}')
-                    ignite-form-group(ng-model='#{failoverSpi}')
+                    ignite-form-group(ng-model='#{failoverSpi}' ng-form=form)
                         ignite-form-field-label
                             | Failover SPI configurations
                         ignite-form-group-tooltip
@@ -70,13 +70,13 @@ form.panel.panel-default(name=form novalidate)
                                         data-placeholder='Choose Failover SPI'
                                     )
                             .settings-row(ng-show='failover.kind === "JobStealing"')
-                                +number('Maximum failover attempts:', 'failover.JobStealing.maximumFailoverAttempts', 'jsMaximumFailoverAttempts', 'true', '5', '0',
+                                +number('Maximum failover attempts:', 'failover.JobStealing.maximumFailoverAttempts', 'jsMaximumFailoverAttempts{{$index}}', 'true', '5', '0',
                                     'Maximum number of attempts to execute a failed job on another node')
                             .settings-row(ng-show='failover.kind === "Always"')
-                                +number('Maximum failover attempts:', 'failover.Always.maximumFailoverAttempts', 'alwaysMaximumFailoverAttempts', 'true', '5', '0',
+                                +number('Maximum failover attempts:', 'failover.Always.maximumFailoverAttempts', 'alwaysMaximumFailoverAttempts{{$index}}', 'true', '5', '0',
                                     'Maximum number of attempts to execute a failed job on another node')
                             .settings-row(ng-show=failoverCustom)
-                                +java-class('SPI implementation', 'failover.Custom.class', 'failoverSpiClass', 'true', failoverCustom,
+                                +java-class('SPI implementation', 'failover.Custom.class', 'failoverSpiClass{{$index}}', 'true', failoverCustom,
                                     'Custom FailoverSpi implementation class name.')
             .col-sm-6
                 +preview-xml-java(model, 'clusterFailover')

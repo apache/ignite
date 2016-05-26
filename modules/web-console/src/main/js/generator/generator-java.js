@@ -194,17 +194,19 @@ $generatorJava.resetVariables = function (res) {
  * @param dflt Optional default value.
  */
 $generatorJava.property = function (res, varName, obj, propName, dataType, setterName, dflt) {
-    var val = obj[propName];
+    if (!_.isNil(obj)) {
+        var val = obj[propName];
 
-    if ($generatorCommon.isDefinedAndNotEmpty(val)) {
-        var missDflt = _.isNil(dflt);
+        if ($generatorCommon.isDefinedAndNotEmpty(val)) {
+            var missDflt = _.isNil(dflt);
 
-        // Add to result if no default provided or value not equals to default.
-        if (missDflt || (!missDflt && val !== dflt)) {
-            res.line(varName + '.' + $generatorJava.setterName(propName, setterName) +
-                '(' + $generatorJava.toJavaCode(val, dataType) + ');');
+            // Add to result if no default provided or value not equals to default.
+            if (missDflt || (!missDflt && val !== dflt)) {
+                res.line(varName + '.' + $generatorJava.setterName(propName, setterName) +
+                    '(' + $generatorJava.toJavaCode(val, dataType) + ');');
 
-            return true;
+                return true;
+            }
         }
     }
 
@@ -788,73 +790,74 @@ $generatorJava.clusterCollision = function (collision, res) {
     if (collision && collision.kind !== 'Noop') {
         let spi = collision[collision.kind];
 
-        const varName = 'collisionSpi';
+        if (collision.kind !== 'Custom' || (spi && $generatorCommon.isDefinedAndNotEmpty(spi.class))) {
+            const varName = 'collisionSpi';
 
-        switch (collision.kind) {
-            case 'JobStealing':
-                $generatorJava.declareVariable(res, varName, 'org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi');
+            switch (collision.kind) {
+                case 'JobStealing':
+                    $generatorJava.declareVariable(res, varName, 'org.apache.ignite.spi.collision.jobstealing.JobStealingCollisionSpi');
 
-                $generatorJava.property(res, varName, spi, 'activeJobsThreshold', null, null, 95);
-                $generatorJava.property(res, varName, spi, 'waitJobsThreshold', null, null, 0);
-                $generatorJava.property(res, varName, spi, 'messageExpireTime', null, null, 1000);
-                $generatorJava.property(res, varName, spi, 'maximumStealingAttempts', null, null, 5);
-                $generatorJava.property(res, varName, spi, 'stealingEnabled', null, null, true);
+                    $generatorJava.property(res, varName, spi, 'activeJobsThreshold', null, null, 95);
+                    $generatorJava.property(res, varName, spi, 'waitJobsThreshold', null, null, 0);
+                    $generatorJava.property(res, varName, spi, 'messageExpireTime', null, null, 1000);
+                    $generatorJava.property(res, varName, spi, 'maximumStealingAttempts', null, null, 5);
+                    $generatorJava.property(res, varName, spi, 'stealingEnabled', null, null, true);
 
-                if ($generatorCommon.isDefinedAndNotEmpty(spi.externalCollisionListener))
-                    res.line(varName + '.' + $generatorJava.setterName('externalCollisionListener') +
-                        '(new ' + res.importClass(spi.externalCollisionListener) + '());');
+                    if ($generatorCommon.isDefinedAndNotEmpty(spi.externalCollisionListener))
+                        res.line(varName + '.' + $generatorJava.setterName('externalCollisionListener') +
+                            '(new ' + res.importClass(spi.externalCollisionListener) + '());');
 
-                if ($generatorCommon.isDefinedAndNotEmpty(spi.stealingAttributes)) {
-                    const stealingAttrsVar = 'stealingAttrs';
+                    if ($generatorCommon.isDefinedAndNotEmpty(spi.stealingAttributes)) {
+                        const stealingAttrsVar = 'stealingAttrs';
 
-                    res.needEmptyLine = true;
+                        res.needEmptyLine = true;
 
-                    $generatorJava.declareVariable(res, stealingAttrsVar, 'java.util.Map', 'java.util.HashMap', 'String', 'java.io.Serializable');
+                        $generatorJava.declareVariable(res, stealingAttrsVar, 'java.util.Map', 'java.util.HashMap', 'String', 'java.io.Serializable');
 
-                    _.forEach(spi.stealingAttributes, function (attr) {
-                        res.line(stealingAttrsVar + '.put("' + attr.name + '", "' + attr.value + '");');
-                    });
+                        _.forEach(spi.stealingAttributes, function (attr) {
+                            res.line(stealingAttrsVar + '.put("' + attr.name + '", "' + attr.value + '");');
+                        });
 
-                    res.needEmptyLine = true;
+                        res.needEmptyLine = true;
 
-                    res.line(varName + '.setStealingAttributes(' + stealingAttrsVar + ');');
-                }
+                        res.line(varName + '.setStealingAttributes(' + stealingAttrsVar + ');');
+                    }
 
-                break;
+                    break;
 
-            case 'FifoQueue':
-                $generatorJava.declareVariable(res, varName, 'org.apache.ignite.spi.collision.fifoqueue.FifoQueueCollisionSpi');
+                case 'FifoQueue':
+                    $generatorJava.declareVariable(res, varName, 'org.apache.ignite.spi.collision.fifoqueue.FifoQueueCollisionSpi');
 
-                $generatorJava.property(res, varName, spi, 'parallelJobsNumber');
-                $generatorJava.property(res, varName, spi, 'waitingJobsNumber');
+                    $generatorJava.property(res, varName, spi, 'parallelJobsNumber');
+                    $generatorJava.property(res, varName, spi, 'waitingJobsNumber');
 
-                break;
+                    break;
 
-            case 'PriorityQueue':
-                $generatorJava.declareVariable(res, varName, 'org.apache.ignite.spi.collision.priorityqueue.PriorityQueueCollisionSpi');
+                case 'PriorityQueue':
+                    $generatorJava.declareVariable(res, varName, 'org.apache.ignite.spi.collision.priorityqueue.PriorityQueueCollisionSpi');
 
-                $generatorJava.property(res, varName, spi, 'parallelJobsNumber');
-                $generatorJava.property(res, varName, spi, 'waitingJobsNumber');
-                $generatorJava.property(res, varName, spi, 'priorityAttributeKey', null, null, 'grid.task.priority');
-                $generatorJava.property(res, varName, spi, 'jobPriorityAttributeKey', null, null, 'grid.job.priority');
-                $generatorJava.property(res, varName, spi, 'defaultPriority', null, null, 0);
-                $generatorJava.property(res, varName, spi, 'starvationIncrement', null, null, 1);
-                $generatorJava.property(res, varName, spi, 'starvationPreventionEnabled', null, null, true);
+                    $generatorJava.property(res, varName, spi, 'parallelJobsNumber');
+                    $generatorJava.property(res, varName, spi, 'waitingJobsNumber');
+                    $generatorJava.property(res, varName, spi, 'priorityAttributeKey', null, null, 'grid.task.priority');
+                    $generatorJava.property(res, varName, spi, 'jobPriorityAttributeKey', null, null, 'grid.job.priority');
+                    $generatorJava.property(res, varName, spi, 'defaultPriority', null, null, 0);
+                    $generatorJava.property(res, varName, spi, 'starvationIncrement', null, null, 1);
+                    $generatorJava.property(res, varName, spi, 'starvationPreventionEnabled', null, null, true);
 
-                break;
+                    break;
 
-            case 'Custom':
-                if ($generatorCommon.isDefinedAndNotEmpty(spi.class))
+                case 'Custom':
                     $generatorJava.declareVariable(res, varName, spi.class);
 
-                break;
+                    break;
+            }
+
+            res.needEmptyLine = true;
+
+            res.line('cfg.setCollisionSpi(' + varName + ');');
+
+            res.needEmptyLine = true;
         }
-
-        res.needEmptyLine = true;
-
-        res.line('cfg.setCollisionSpi(' + varName + ');');
-
-        res.needEmptyLine = true;
     }
 
     return res;
