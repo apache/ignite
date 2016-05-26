@@ -152,7 +152,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private volatile GridCacheQueryMetricsAdapter metrics = new GridCacheQueryMetricsAdapter();
 
     /** */
-    private final ConcurrentMap<UUID, Map<Long, GridFutureAdapter<QueryResult<K, V>>>> qryIters =
+    private final ConcurrentMap<UUID, CanceledKeyMap<Long, GridFutureAdapter<QueryResult<K, V>>>> qryIters =
         new ConcurrentHashMap8<>();
 
     /** */
@@ -1836,7 +1836,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         assert sndId != null;
 
-        Map<Long, GridFutureAdapter<QueryResult<K, V>>> futs = qryIters.get(sndId);
+        CanceledKeyMap<Long, GridFutureAdapter<QueryResult<K, V>>> futs = qryIters.get(sndId);
 
         if (futs == null) {
             futs = new CanceledKeyMap<Long, GridFutureAdapter<QueryResult<K, V>>>(16, 0.75f, true) {
@@ -1856,7 +1856,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
             };
 
-            Map<Long, GridFutureAdapter<QueryResult<K, V>>> old = qryIters.putIfAbsent(sndId, futs);
+            CanceledKeyMap<Long, GridFutureAdapter<QueryResult<K, V>>> old = qryIters.putIfAbsent(sndId, futs);
 
             if (old != null)
                 futs = old;
@@ -1867,18 +1867,27 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         GridFutureAdapter<QueryResult<K, V>> fut;
 
         boolean exec = false;
+        boolean canceled = false;
 
         synchronized (futs) {
             fut = futs.get(qryInfo.requestId());
 
-            if (fut == null) {
+            if(futs.isCanceled(qryInfo.requestId()))
+                canceled = true;
+
+            if (fut == null && !canceled) {
                 futs.put(qryInfo.requestId(), fut = new GridFutureAdapter<>());
 
                 exec = true;
             }
         }
-
-        if (exec) {
+        if(canceled) {
+            QueryResult<K, V> res = new QueryResult<>(qryInfo.query().type(),
+                recipient(qryInfo.senderId(), qryInfo.requestId()));
+            res.onDone(new GridEmptyCloseableIterator<IgniteBiTuple<K, V>>());
+            return res;
+        }
+        else if (exec) {
             try {
                 fut.onDone(executeQuery(qryInfo.query(), qryInfo.arguments(), false,
                     qryInfo.query().subjectId(), taskName, recipient(qryInfo.senderId(), qryInfo.requestId())));
@@ -3544,6 +3553,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /** {@inheritDoc} */
         @Override public V put(K key, V val) {
             return !canceled.contains(key) ? super.put(key, val) : val;
+        }
+
+        /**
+         * @return true if the key is canceled
+         */
+        boolean isCanceled(K key) {
+            return canceled.contains(key);
         }
     }
 }
