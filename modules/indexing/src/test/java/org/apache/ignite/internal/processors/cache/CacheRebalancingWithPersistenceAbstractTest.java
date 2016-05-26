@@ -18,6 +18,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.ignite.IgniteCache;
@@ -33,9 +34,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
-public class CacheRebalancingWithPersistenceSelfTest extends GridCommonAbstractTest {
-
-    private boolean useDb = true;
+public abstract class CacheRebalancingWithPersistenceAbstractTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
@@ -47,11 +46,10 @@ public class CacheRebalancingWithPersistenceSelfTest extends GridCommonAbstractT
 
         dbCfg.setConcurrencyLevel(Runtime.getRuntime().availableProcessors() * 4);
         dbCfg.setPageSize(1024);
-        dbCfg.setPageCacheSize(100 * 1024 * 1024);
-        dbCfg.setFileCacheAllocationPath("db");
+        dbCfg.setPageCacheSize(10 * 1024 * 1024);
+        dbCfg.setFileCacheAllocationPath("test-db");
 
-        if (useDb)
-            cfg.setDatabaseConfiguration(dbCfg);
+        cfg.setDatabaseConfiguration(dbCfg);
 
         return cfg;
     }
@@ -60,30 +58,23 @@ public class CacheRebalancingWithPersistenceSelfTest extends GridCommonAbstractT
      * @param cacheName Cache name.
      * @return Cache configuration.
      */
-    protected CacheConfiguration cacheConfiguration(String cacheName) {
-        CacheConfiguration ccfg = new CacheConfiguration(cacheName);
-
-        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-        ccfg.setCacheMode(CacheMode.PARTITIONED);
-        ccfg.setBackups(1);
-        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-
-        return ccfg;
-    }
+    protected abstract CacheConfiguration cacheConfiguration(String cacheName);
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         G.stopAll(true);
+
+        U.delete(new File(U.getIgniteHome(), "test-db"));
     }
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         G.stopAll(true);
+
+        U.delete(new File(U.getIgniteHome(), "test-db"));
     }
 
     public void testRebalancingOnRestart() throws Exception {
-        useDb = true;
-
         IgniteEx ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
         IgniteEx ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
         IgniteEx ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
@@ -92,12 +83,6 @@ public class CacheRebalancingWithPersistenceSelfTest extends GridCommonAbstractT
         awaitPartitionMapExchange();
 
         IgniteCache cache1 = ignite1.cache(null);
-
-        Set<Integer> parts = new HashSet<>();
-
-        for (int p = 0; p < ignite1.affinity(null).partitions(); p++) {
-            parts.add(p);
-        }
 
         for (int i = 0; i < 10000; i++) {
             cache1.put(i, i);
@@ -110,7 +95,7 @@ public class CacheRebalancingWithPersistenceSelfTest extends GridCommonAbstractT
 
         assert !cache1.lostPartitions().isEmpty();
 
-        cache1.recoverPartitions(parts).get();
+        cache1.recoverPartitions(cache1.lostPartitions()).get();
 
         assert cache1.lostPartitions().isEmpty();
 
@@ -131,8 +116,6 @@ public class CacheRebalancingWithPersistenceSelfTest extends GridCommonAbstractT
     }
 
     public void testNoRebalancingOnRestartDeactivated() throws Exception {
-        useDb = true;
-
         IgniteEx ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
         IgniteEx ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
         IgniteEx ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
@@ -174,8 +157,6 @@ public class CacheRebalancingWithPersistenceSelfTest extends GridCommonAbstractT
     }
 
     public void testContentsCorrectnessAfterRestart() throws Exception {
-        useDb = true;
-
         IgniteEx ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
         IgniteEx ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
         IgniteEx ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
@@ -202,6 +183,46 @@ public class CacheRebalancingWithPersistenceSelfTest extends GridCommonAbstractT
         awaitPartitionMapExchange();
 
         cache1 = ignite1.cache(null);
+        IgniteCache cache2 = ignite2.cache(null);
+        IgniteCache cache3 = ignite3.cache(null);
+        IgniteCache cache4 = ignite4.cache(null);
+
+        for (int i = 0; i < 10000; i++) {
+            assert cache1.get(i).equals(i);
+            assert cache2.get(i).equals(i);
+            assert cache3.get(i).equals(i);
+            assert cache4.get(i).equals(i);
+        }
+    }
+
+    public void testPartitionLossAndRecover() throws Exception {
+        IgniteEx ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
+        IgniteEx ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
+        IgniteEx ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
+        IgniteEx ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
+
+        awaitPartitionMapExchange();
+
+        IgniteCache cache1 = ignite1.cache(null);
+
+        for (int i = 0; i < 10000; i++) {
+            cache1.put(i, i);
+        }
+
+        ignite3.close();
+        ignite4.close();
+
+        awaitPartitionMapExchange();
+
+        assert !cache1.lostPartitions().isEmpty();
+
+        ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
+        ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
+
+        awaitPartitionMapExchange();
+
+        cache1.recoverPartitions(cache1.lostPartitions());
+
         IgniteCache cache2 = ignite2.cache(null);
         IgniteCache cache3 = ignite3.cache(null);
         IgniteCache cache4 = ignite4.cache(null);
