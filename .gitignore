@@ -58,3 +58,4 @@ ipch/
 [Rr]elease*/
 packages
 *.classname
+*.nupkg
