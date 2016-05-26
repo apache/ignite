@@ -117,6 +117,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorGetClass")]
         public static extern sbyte* ProcessorGetClass(void* ctx, void* obj, int id, int* resLen);
 
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProcessorGetCacheNames")]
+        public static extern void ProcessorGetCacheNames(void* ctx, void* obj, long memPtr);
+
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteTargetInStreamOutLong")]
         public static extern long TargetInStreamOutLong(void* ctx, void* target, int opType, long memPtr);
 

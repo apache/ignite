@@ -78,6 +78,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     protected GridCacheSharedContext<?, ?> cctx;
 
     /** Future ID. */
+    @GridToStringInclude
     protected IgniteUuid futId;
 
     /** Transaction. */
@@ -131,6 +132,13 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     /** {@inheritDoc} */
     @Override public boolean trackable() {
         return trackable;
+    }
+
+    /**
+     * @return Transaction.
+     */
+    public IgniteInternalTx tx() {
+        return tx;
     }
 
     /**

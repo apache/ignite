@@ -236,6 +236,13 @@ public interface PlatformProcessor extends GridProcessor {
     public void getIgniteConfiguration(long memPtr);
 
     /**
+     * Gets the cache names.
+     *
+     * @param memPtr Stream to write data to.
+     */
+    public void getCacheNames(long memPtr);
+
+    /**
      * Starts a near cache on local node if cache was previously started.
      *
      * @param cacheName Cache name.

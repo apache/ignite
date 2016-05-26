@@ -102,29 +102,25 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
      * @param ctx Kernal context.
      * @throws IgniteCheckedException In case of error.
      */
-    public void onMarshallerCacheStarted(final GridKernalContext ctx) throws IgniteCheckedException {
-        GridCacheContext<Object, Object> cacheCtx = ctx.cache().internalCache(cacheName).context();
+    public void onMarshallerCacheStarted(GridKernalContext ctx) throws IgniteCheckedException {
+        assert ctx != null;
 
-        if (!ctx.config().isDaemon())
-            cacheCtx.continuousQueries().executeInternalQuery(
-                new ContinuousQueryListener(ctx.log(MarshallerContextImpl.class), workDir, fileExt),
+        if (!ctx.isDaemon()) {
+            ctx.cache().marshallerCache().context().continuousQueries().executeInternalQuery(
+                new ContinuousQueryListener(ctx.log(MarshallerContextImpl.class), workDir),
                 null,
-                cacheCtx.affinityNode(),
+                ctx.cache().marshallerCache().context().affinityNode(),
                 true,
                 false
             );
+        }
 
-        cacheCtx.preloader().initialRebalanceFuture().listen(new CIX1<IgniteInternalFuture<?>>() {
-            @Override public void applyx(IgniteInternalFuture<?> f) {
-                log = ctx.log(MarshallerContextImpl.class);
+        log = ctx.log(MarshallerContextImpl.class);
 
-                cache = ctx.cache().internalCache(cacheName);
+        cache = ctx.cache().marshallerCache();
 
-                latch.countDown();
-            }
-        });
+        latch.countDown();
     }
-
 
     /**
      * Release marshaller context.

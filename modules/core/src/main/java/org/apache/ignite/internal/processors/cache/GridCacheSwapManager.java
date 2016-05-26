@@ -1224,17 +1224,16 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
     /**
      * @param key Key to remove.
+     * @param part Partition.
      * @throws IgniteCheckedException If failed.
      */
-    public void remove(final KeyCacheObject key) throws IgniteCheckedException {
+    public void remove(final KeyCacheObject key, int part) throws IgniteCheckedException {
         if (!offheapEnabled && !swapEnabled)
             return;
 
         checkIteratorQueue();
 
         final GridCacheQueryManager qryMgr = cctx.queries();
-
-        int part = cctx.affinity().partition(key);
 
         // First try offheap.
         if (offheapEnabled) {
@@ -1282,6 +1281,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * @param expireTime Swap entry expiration time.
      * @param keyClsLdrId Class loader ID for entry key.
      * @param valClsLdrId Class loader ID for entry value.
+     * @param wasUnswapped {@code True} if currently value is removed from swap.
      * @throws IgniteCheckedException If failed.
      */
     void write(KeyCacheObject key,
@@ -1291,7 +1291,8 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         long ttl,
         long expireTime,
         @Nullable IgniteUuid keyClsLdrId,
-        @Nullable IgniteUuid valClsLdrId)
+        @Nullable IgniteUuid valClsLdrId,
+        boolean wasUnswapped)
         throws IgniteCheckedException {
         if (!offheapEnabled && !swapEnabled)
             return;
@@ -1323,7 +1324,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
         GridCacheQueryManager qryMgr = cctx.queries();
 
-        if (qryMgr.enabled())
+        if (wasUnswapped && qryMgr.enabled())
             qryMgr.onSwap(key);
     }
 
@@ -1848,7 +1849,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * @return Off-heap iterator.
      */
     public <T> GridCloseableIterator<T> rawOffHeapIterator(final CX2<T2<Long, Integer>, T2<Long, Integer>, T> c,
-        Integer part,
+        @Nullable Integer part,
         boolean primary,
         boolean backup)
     {
@@ -1859,8 +1860,12 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
 
         checkIteratorQueue();
 
-        if (primary && backup)
-            return offheap.iterator(spaceName, c);
+        if (primary && backup) {
+            if (part == null)
+                return offheap.iterator(spaceName, c);
+            else
+                return offheap.iterator(spaceName, c, part);
+        }
 
         AffinityTopologyVersion ver = cctx.affinity().affinityTopologyVersion();
 
@@ -1894,7 +1899,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         if (!offheapEnabled || (!primary && !backup))
             return new GridEmptyCloseableIterator<>();
 
-        if (primary && backup)
+        if (primary && backup && part == null)
             return new GridCloseableIteratorAdapter<Map.Entry<byte[], byte[]>>() {
                 private GridCloseableIterator<IgniteBiTuple<byte[], byte[]>> it = offheap.iterator(spaceName);
 
@@ -2116,6 +2121,9 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
                             IgniteUuid valLdrId = swapEntry.valueClassLoaderId();
 
                             if (ldrId.equals(swapEntry.keyClassLoaderId())) {
+                                if (log.isTraceEnabled())
+                                    log.trace("onUndeploy remove key [ldrId=" + ldrId + ']');
+
                                 iter.removeX();
 
                                 undeployCnt++;
@@ -2132,6 +2140,9 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
                                     if (val != null)
                                         valLdrId = cctx.deploy().getClassLoaderId(val.getClass().getClassLoader());
                                 }
+
+                                if (log.isTraceEnabled())
+                                    log.trace("onUndeploy remove value [ldrId=" + ldrId + ']');
 
                                 if (ldrId.equals(valLdrId)) {
                                     iter.removeX();

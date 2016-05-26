@@ -167,7 +167,7 @@ public interface GridDhtPartitionTopology {
      * @param topVer Topology version.
      * @return Collection of all nodes responsible for this partition with primary node being first.
      */
-    public Collection<ClusterNode> nodes(int p, AffinityTopologyVersion topVer);
+    public List<ClusterNode> nodes(int p, AffinityTopologyVersion topVer);
 
     /**
      * @param p Partition ID.

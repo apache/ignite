@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-#pragma warning disable 618   // SpringConfigUrl
 namespace Apache.Ignite.Core.Impl
 {
     using System;
@@ -348,7 +347,13 @@ namespace Apache.Ignite.Core.Impl
             UU.IgnitionStop(_proc.Context, Name, cancel);
 
             _cbs.Cleanup();
+        }
 
+        /// <summary>
+        /// Called after node has stopped.
+        /// </summary>
+        internal void AfterNodeStop()
+        {
             foreach (var bean in _lifecycleBeans)
                 bean.OnLifecycleEvent(LifecycleEventType.AfterNodeStop);
         }
@@ -620,6 +625,24 @@ namespace Apache.Ignite.Core.Impl
         public ICache<TK, TV> GetOrCreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration)
         {
             return GetOrCreateNearCache0<TK, TV>(name, configuration, UU.ProcessorGetOrCreateNearCache);
+        }
+
+        /** <inheritdoc /> */
+        public ICollection<string> GetCacheNames()
+        {
+            using (var stream = IgniteManager.Memory.Allocate(1024).GetStream())
+            {
+                UU.ProcessorGetCacheNames(_proc, stream.MemoryPointer);
+                stream.SynchronizeInput();
+
+                var reader = _marsh.StartUnmarshal(stream);
+                var res = new string[stream.ReadInt()];
+
+                for (int i = 0; i < res.Length; i++)
+                    res[i] = reader.ReadString();
+
+                return res;
+            }
         }
 
         /// <summary>

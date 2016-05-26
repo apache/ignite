@@ -382,6 +382,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return res;
         }
 
+        internal static void ProcessorGetCacheNames(IUnmanagedTarget target, long memPtr)
+        {
+            JNI.ProcessorGetCacheNames(target.Context, target.Target, memPtr);
+        }
+
         #endregion
 
         #region NATIVE METHODS: TARGET

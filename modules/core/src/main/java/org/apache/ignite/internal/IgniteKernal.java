@@ -64,6 +64,7 @@ import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteMessaging;
 import org.apache.ignite.IgniteQueue;
+import org.apache.ignite.IgniteLock;
 import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteServices;
@@ -83,6 +84,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.binary.BinaryEnumCache;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.cluster.ClusterGroupAdapter;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.managers.GridManager;
@@ -178,6 +180,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALL
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_STARVATION_CHECK_INTERVAL;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SUCCESS_FILE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.getBoolean;
 import static org.apache.ignite.IgniteSystemProperties.snapshot;
 import static org.apache.ignite.internal.GridKernalState.DISCONNECTED;
@@ -206,6 +209,7 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_COMPACT_FOOTER;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_DFLT_SUID;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_NODE_CONSISTENT_ID;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PEER_CLASSLOADING;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PHY_RAM;
@@ -1300,6 +1304,10 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             add(ATTR_MARSHALLER_COMPACT_FOOTER, cfg.getBinaryConfiguration() == null ?
                 BinaryConfiguration.DFLT_COMPACT_FOOTER :
                 cfg.getBinaryConfiguration().isCompactFooter());
+
+            add(ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2,
+                getBoolean(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2,
+                    BinaryUtils.USE_STR_SERIALIZATION_VER_2));
         }
 
         add(ATTR_USER_NAME, System.getProperty("user.name"));
@@ -1899,11 +1907,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 Thread.currentThread().interrupt();
 
             try {
-                GridCacheProcessor cache = ctx.cache();
-
-                if (cache != null)
-                    cache.blockGateways();
-
                 assert gw.getState() == STARTED || gw.getState() == STARTING || gw.getState() == DISCONNECTED;
 
                 // No more kernal calls from this point on.
@@ -1917,6 +1920,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             finally {
                 gw.writeUnlock();
             }
+
+            // Stopping cache operations.
+            GridCacheProcessor cache = ctx.cache();
+
+            if (cache != null)
+                cache.blockGateways();
 
             // Unregister MBeans.
             if (!(
@@ -3026,6 +3035,26 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         try {
             return ctx.dataStructures().semaphore(name, cnt, failoverSafe, create);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Nullable @Override public IgniteLock reentrantLock(
+        String name,
+        boolean failoverSafe,
+        boolean fair,
+        boolean create
+    ) {
+        guard();
+
+        try {
+            return ctx.dataStructures().reentrantLock(name, failoverSafe, fair, create);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

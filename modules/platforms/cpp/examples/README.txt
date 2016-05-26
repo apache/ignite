@@ -15,21 +15,18 @@ Running examples on Linux
 Prerequisites:
  * GCC, g++, autotools, automake, and libtool must be installed.
 
-To build examples execute the following commands one by one from $IGNITE_HOME/platforms/cpp/examples directory:
- * libtoolize
- * aclocal
- * autoheader
- * automake --add-missing
- * autoreconf
+To build examples execute the following commands one by one from examples root directory:
+ * libtoolize && aclocal && autoheader && automake --add-missing && autoreconf
  * ./configure
  * make
 
-As a result several executables will appear in example's directory.
+As a result executables will appear in every example's directory.
 
 Before running examples ensure that:
  * LD_LIBRARY_PATH environment variable is set and pointing to a directory with "libjvm.so" library. Typically this
    library is located in $JAVA_HOME/jre/lib/amd64/server directory.
-
+ * For odbc-example additionaly ODBC Driver Manager must be present and installed on your platform and
+   Apache Ignite ODBC driver must be built and installed according to instructions for your platform.
 
 Running examples on Windows
 ----------------------------------

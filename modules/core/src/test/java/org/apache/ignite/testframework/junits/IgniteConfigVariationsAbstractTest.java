@@ -27,8 +27,13 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import org.apache.commons.io.FileUtils;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.testframework.configvariations.VariationsTestsConfig;
@@ -54,7 +59,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     protected VariationsTestsConfig testsCfg;
 
     /** */
-    protected volatile DataMode dataMode;
+    protected volatile DataMode dataMode = DataMode.PLANE_OBJECT;
 
     /**
      * @param testsCfg Tests configuration.
@@ -140,6 +145,8 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
 
     /** {@inheritDoc} */
     @Override protected String testClassDescription() {
+        assert testsCfg != null: "Tests should be run using test suite.";
+
         return super.testClassDescription() + '-' + testsCfg.description() + '-' + testsCfg.gridCount() + "-node(s)";
     }
 
@@ -149,7 +156,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         IgniteConfiguration resCfg = testsCfg.configurationFactory().getConfiguration(gridName, cfg);
@@ -194,15 +201,41 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     }
 
     /**
-     * Runs in all data modes.
+     * @return Tested grid in client mode or not.
      */
-    protected void runInAllDataModes(TestRunnable call) throws Exception {
-        for (int i = 0; i < DataMode.values().length; i++) {
-            dataMode = DataMode.values()[i];
+    protected boolean isClientMode() {
+        return grid(testedNodeIdx).configuration().isClientMode();
+    }
 
-            if ((getConfiguration().getMarshaller() instanceof JdkMarshaller)
-                && (dataMode == DataMode.PLANE_OBJECT)) {
-                info("Skip test for JdkMarshaller & PLANE_OBJECT data mode");
+    /**
+     * @return Count of server nodes at topology.
+     */
+    protected int serversGridCount() {
+        int cnt = 0;
+
+        for (int i = 0; i < gridCount(); i++) {
+            if (!grid(i).configuration().isClientMode())
+                cnt++;
+        }
+
+        return cnt;
+    }
+
+    /**
+     * Runs in all data modes.
+     *
+     * @throws Exception If failed.
+     */
+    protected void runInAllDataModes(TestRunnable call, DataMode... dataModes) throws Exception {
+        if (F.isEmpty(dataModes))
+            dataModes = DataMode.values();
+
+        for (int i = 0; i < dataModes.length; i++) {
+            dataMode = dataModes[i];
+
+            if (!isCompatible()) {
+                info("Skipping test in data mode: " + dataMode);
+
                 continue;
             }
 
@@ -214,6 +247,11 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
             try {
                 call.run();
             }
+            catch (Throwable e) {
+                e.printStackTrace();
+
+                throw e;
+            }
             finally {
                 if (i + 1 != DataMode.values().length)
                     afterTest();
@@ -224,6 +262,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     /**
      * @param keyId Key Id.
      * @return Key.
+     * @see #valueOf(Object)
      */
     public Object key(int keyId) {
         return key(keyId, dataMode);
@@ -232,6 +271,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     /**
      * @param valId Key Id.
      * @return Value.
+     * @see #valueOf(Object)
      */
     public Object value(int valId) {
         return value(valId, dataMode);
@@ -243,13 +283,20 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
      * @return Key.
      */
     public static Object key(int keyId, DataMode mode) {
+        if (mode == null)
+            mode = DataMode.SERIALIZABLE;
+
         switch (mode) {
             case SERIALIZABLE:
                 return new SerializableObject(keyId);
+            case CUSTOM_SERIALIZABLE:
+                return new CustomSerializableObject(keyId);
             case EXTERNALIZABLE:
                 return new ExternalizableObject(keyId);
             case PLANE_OBJECT:
-                return new TestObject(keyId);
+                return new PlaneObject(keyId);
+            case BINARILIZABLE:
+                return new BinarylizableObject(keyId);
             default:
                 throw new IllegalArgumentException("mode: " + mode);
         }
@@ -260,10 +307,12 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
      * @return Value.
      */
     public static int valueOf(Object obj) {
+        assertNotNull(obj);
+
         if (obj instanceof TestObject)
             return ((TestObject)obj).value();
         else
-            throw new IllegalStateException();
+            throw new IllegalArgumentException("Unknown tested object type: " + obj);
     }
 
     /**
@@ -272,13 +321,20 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
      * @return Value.
      */
     public static Object value(int idx, DataMode mode) {
+        if (mode == null)
+            mode = DataMode.SERIALIZABLE;
+
         switch (mode) {
             case SERIALIZABLE:
                 return new SerializableObject(idx);
+            case CUSTOM_SERIALIZABLE:
+                return new CustomSerializableObject(idx);
             case EXTERNALIZABLE:
                 return new ExternalizableObject(idx);
             case PLANE_OBJECT:
-                return new TestObject(idx);
+                return new PlaneObject(idx);
+            case BINARILIZABLE:
+                return new BinarylizableObject(idx);
             default:
                 throw new IllegalArgumentException("mode: " + mode);
         }
@@ -287,7 +343,17 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     /**
      *
      */
-    public static class TestObject {
+    public static interface TestObject {
+        /**
+         * @return Value.
+         */
+        public int value();
+    }
+
+    /**
+     *
+     */
+    public static class PlaneObject implements TestObject {
         /** */
         protected int val;
 
@@ -300,14 +366,14 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         /**
          * Default constructor must be accessible for deserialize subclasses by JDK serialization API.
          */
-        TestObject() {
+        PlaneObject() {
             // No-op.
         }
 
         /**
          * @param val Value.
          */
-        TestObject(int val) {
+        PlaneObject(int val) {
             this.val = val;
             strVal = "val" + val;
 
@@ -315,10 +381,8 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
             enumVal = values[Math.abs(val) % values.length];
         }
 
-        /**
-         * @return Value.
-         */
-        public int value() {
+        /** {@inheritDoc} */
+        @Override public int value() {
             return val;
         }
 
@@ -327,10 +391,10 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
             if (this == o)
                 return true;
 
-            if (!(o instanceof TestObject))
+            if (!(o instanceof PlaneObject))
                 return false;
 
-            TestObject val = (TestObject)o;
+            PlaneObject val = (PlaneObject)o;
 
             return getClass().equals(o.getClass()) && this.val == val.val && enumVal == val.enumVal
                 && strVal.equals(val.strVal);
@@ -354,16 +418,94 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     /**
      *
      */
-    protected static class SerializableObject extends TestObject implements Serializable {
+    protected static class SerializableObject implements Serializable, TestObject {
+        /** */
+        private static final long serialVersionUID = 0;
+
+        /** */
+        protected int val;
+
+        /** */
+        protected String strVal;
+
+        /** */
+        protected TestEnum enumVal;
+
+        /**
+         * Default constructor.
+         */
+        public SerializableObject() {
+            // No-op.
+        }
+
         /**
          * @param val Value.
          */
         public SerializableObject(int val) {
+            this.val = val;
+            strVal = "val" + val;
+
+            TestEnum[] values = TestEnum.values();
+            enumVal = values[Math.abs(val) % values.length];
+        }
+
+        /** {@inheritDoc} */
+        @Override public int value() {
+            return val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean equals(Object o) {
+            if (this == o)
+                return true;
+
+            if (!(o instanceof SerializableObject))
+                return false;
+
+            SerializableObject val = (SerializableObject)o;
+
+            return getClass().equals(o.getClass()) && this.val == val.val && enumVal == val.enumVal
+                && strVal.equals(val.strVal);
+        }
+
+        /** {@inheritDoc} */
+        @Override public int hashCode() {
+            return val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return getClass().getSimpleName() + "[" +
+                "val=" + val +
+                ", strVal='" + strVal + '\'' +
+                ", enumVal=" + enumVal +
+                ']';
+        }
+    }
+
+    /**
+     *
+     */
+    protected static class CustomSerializableObject extends PlaneObject implements Serializable {
+        /** */
+        private static final long serialVersionUID = 0;
+
+        /**
+         * Default constructor.
+         */
+        public CustomSerializableObject() {
+            // No-op.
+        }
+
+        /**
+         * @param val Value.
+         */
+        public CustomSerializableObject(int val) {
             super(val);
         }
 
         /**
-         * Custom serialization of superclass because {@link TestObject} is non-serializable.
+         * Custom serialization of superclass because {@link PlaneObject} is non-serializable.
          *
          * @param out output stream.
          * @throws IOException if de-serialization failed.
@@ -375,7 +517,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
         }
 
         /**
-         * Custom deserialization of superclass because {@link TestObject} is non-serializable.
+         * Custom deserialization of superclass because {@link PlaneObject} is non-serializable.
          *
          * @param in input stream
          * @throws IOException if de-serialization failed.
@@ -391,7 +533,10 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     /**
      *
      */
-    private static class ExternalizableObject extends TestObject implements Externalizable {
+    private static class ExternalizableObject extends PlaneObject implements Externalizable {
+        /** */
+        private static final long serialVersionUID = 0;
+
         /**
          * Default constructor.
          */
@@ -422,17 +567,56 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     }
 
     /**
+     *
+     */
+    public static class BinarylizableObject extends PlaneObject implements Binarylizable {
+        /**
+         * Default constructor.
+         */
+        public BinarylizableObject() {
+            super(-1);
+        }
+
+        /**
+         * @param val Value.
+         */
+        public BinarylizableObject(int val) {
+            super(val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+            writer.writeInt("val", val);
+            writer.writeString("strVal", strVal);
+            writer.writeEnum("enumVal", enumVal);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+            val = reader.readInt("val");
+            strVal = reader.readString("strVal");
+            enumVal = reader.readEnum("enumVal");
+        }
+    }
+
+    /**
      * Data mode.
      */
     public enum DataMode {
         /** Serializable objects. */
         SERIALIZABLE,
 
+        /** Serializable objects with custom serialization. */
+        CUSTOM_SERIALIZABLE,
+
         /** Externalizable objects. */
         EXTERNALIZABLE,
 
         /** Objects without Serializable and Externalizable. */
-        PLANE_OBJECT
+        PLANE_OBJECT,
+
+        /** Binarylizable objects. Compatible only with binary marshaller */
+        BINARILIZABLE
     }
 
     /**
@@ -452,10 +636,25 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     /**
      *
      */
-    public static interface TestRunnable {
+    public interface TestRunnable {
         /**
          * @throws Exception If failed.
          */
-        public void run() throws Exception;
+        void run() throws Exception;
+    }
+
+    /**
+     * Check test compatibility with current data mode
+     *
+     * @return {@code True} if compatible.
+     * @throws Exception If failed.
+     */
+    protected boolean isCompatible() throws Exception {
+        switch (dataMode) {
+            case BINARILIZABLE:
+            case PLANE_OBJECT:
+                return !(getConfiguration().getMarshaller() instanceof JdkMarshaller);
+        }
+        return false;
     }
 }
