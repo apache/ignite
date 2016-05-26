@@ -18,12 +18,14 @@
 // ReSharper disable UnusedAutoPropertyAccessor.Local
 namespace Apache.Ignite.Core.Tests.Binary
 {
+    using System;
     using System.Collections.Generic;
     using System.IO;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Impl.Binary;
     using NUnit.Framework;
 
@@ -183,6 +185,10 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             Assert.AreEqual("s", bar0.Str);
             Assert.AreEqual(5, bar0.Int);
+
+            // Test compute
+            var res = ignite1.GetCompute().Broadcast(new CompFn<DateTime>(() => DateTime.Now));
+            Assert.AreEqual(ignite1.GetCluster().GetNodes().Count, res.Count);
         }
 
         private interface ITest
@@ -269,6 +275,21 @@ namespace Apache.Ignite.Core.Tests.Binary
             public override void Delete(object key)
             {
                 Dict.Remove(key);
+            }
+        }
+
+        private class CompFn<T> : IComputeFunc<T>
+        {
+            private readonly Func<T> _func;
+
+            public CompFn(Func<T> func)
+            {
+                _func = func;
+            }
+
+            public T Invoke()
+            {
+                return _func();
             }
         }
     }
