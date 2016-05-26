@@ -342,7 +342,7 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
                 .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
                 .addParam('p1', nids)
                 .addParam('p2', 'org.apache.ignite.internal.visor.cache.VisorCacheStartTask')
-                .addParam('p3', 'org.apache.ignite.internal.visor.cache.VisorCacheStartTask.VisorCacheStartArg')
+                .addParam('p3', 'org.apache.ignite.internal.visor.cache.VisorCacheStartTask$VisorCacheStartArg')
                 .addParam('p4', near)
                 .addParam('p5', cacheName)
                 .addParam('p6', cfg);
