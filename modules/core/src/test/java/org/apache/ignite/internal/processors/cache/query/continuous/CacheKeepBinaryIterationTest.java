@@ -29,9 +29,11 @@ import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -98,8 +100,10 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
             ONHEAP_TIERED
         );
 
-        doTestScanQuery(ccfg, true);
-        doTestScanQuery(ccfg, false);
+        doTestScanQuery(ccfg, true, true);
+        doTestScanQuery(ccfg, true, false);
+        doTestScanQuery(ccfg, false, true);
+        doTestScanQuery(ccfg, false, false);
     }
 
     /**
@@ -112,8 +116,10 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
             OFFHEAP_TIERED
         );
 
-        doTestScanQuery(ccfg, true);
-        doTestScanQuery(ccfg, false);
+        doTestScanQuery(ccfg, true, true);
+        doTestScanQuery(ccfg, true, false);
+        doTestScanQuery(ccfg, false, true);
+        doTestScanQuery(ccfg, false, false);
     }
 
     /**
@@ -126,8 +132,10 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
             ONHEAP_TIERED
         );
 
-        doTestScanQuery(ccfg, true);
-        doTestScanQuery(ccfg, false);
+        doTestScanQuery(ccfg, true, true);
+        doTestScanQuery(ccfg, true, false);
+        doTestScanQuery(ccfg, false, true);
+        doTestScanQuery(ccfg, false, false);
     }
 
     /**
@@ -140,8 +148,10 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
             OFFHEAP_TIERED
         );
 
-        doTestScanQuery(ccfg, true);
-        doTestScanQuery(ccfg, false);
+        doTestScanQuery(ccfg, true, true);
+        doTestScanQuery(ccfg, true, false);
+        doTestScanQuery(ccfg, false, true);
+        doTestScanQuery(ccfg, false, false);
     }
 
     /**
@@ -154,8 +164,10 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
             ONHEAP_TIERED
         );
 
-        doTestLocalEntries(ccfg, true);
-        doTestLocalEntries(ccfg, false);
+        doTestLocalEntries(ccfg, true, true);
+        doTestLocalEntries(ccfg, true, false);
+        doTestLocalEntries(ccfg, false, true);
+        doTestLocalEntries(ccfg, false, false);
     }
 
     /**
@@ -168,8 +180,10 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
             OFFHEAP_TIERED
         );
 
-        doTestLocalEntries(ccfg, true);
-        doTestLocalEntries(ccfg, false);
+        doTestLocalEntries(ccfg, true, true);
+        doTestLocalEntries(ccfg, true, false);
+        doTestLocalEntries(ccfg, false, true);
+        doTestLocalEntries(ccfg, false, false);
     }
 
     /**
@@ -182,8 +196,10 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
             ONHEAP_TIERED
         );
 
-        doTestLocalEntries(ccfg, true);
-        doTestLocalEntries(ccfg, false);
+        doTestLocalEntries(ccfg, true, true);
+        doTestLocalEntries(ccfg, true, false);
+        doTestLocalEntries(ccfg, false, true);
+        doTestLocalEntries(ccfg, false, false);
     }
 
     /**
@@ -196,19 +212,27 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
             OFFHEAP_TIERED
         );
 
-        doTestLocalEntries(ccfg, true);
-        doTestLocalEntries(ccfg, false);
+        doTestLocalEntries(ccfg, true, true);
+        doTestLocalEntries(ccfg, true, false);
+        doTestLocalEntries(ccfg, false, true);
+        doTestLocalEntries(ccfg, false, false);
     }
 
     /**
      * @param ccfg Cache configuration.
      */
-    private void doTestScanQuery(CacheConfiguration<Object, Object> ccfg, boolean keepBinary) {
+    private void doTestScanQuery(CacheConfiguration<Object, Object> ccfg, boolean keepBinary,
+        boolean primitives) throws IgniteInterruptedCheckedException {
         IgniteCache<Object, Object> cache = grid(0).createCache(ccfg);
+
+        assertTrue(cache.size() == 0);
 
         try {
             for (int i = 0; i < KEYS; i++)
-                cache.put(new QueryTestKey(i), new QueryTestValue(i));
+                if (primitives)
+                    cache.put(i, i);
+                else
+                    cache.put(new QueryTestKey(i), new QueryTestValue(i));
 
             for (int i = 0; i < getServerNodeCount(); i++) {
                 IgniteCache<Object, Object> cache0 = grid(i).cache(ccfg.getName());
@@ -228,9 +252,9 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
                         Object val = e.getValue();
 
                         assertTrue("Got unexpected object: " + key.getClass() + ", keepBinary: " + keepBinary,
-                            keepBinary == key instanceof BinaryObject);
+                            keepBinary == key instanceof BinaryObject || primitives);
                         assertTrue("Got unexpected object: " + val.getClass() + ", keepBinary: " + keepBinary,
-                            keepBinary == val instanceof BinaryObject);
+                            keepBinary == val instanceof BinaryObject || primitives);
 
                         log().info("Key: " + key + ", val: " + val);
 
@@ -242,6 +266,10 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
             }
         }
         finally {
+            cache.removeAll();
+
+            U.sleep(1000); //Fixes evictionPolicy issues at cache destroy.
+
             grid(0).destroyCache(ccfg.getName());
         }
     }
@@ -249,12 +277,18 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
     /**
      * @param ccfg Cache configuration.
      */
-    private void doTestLocalEntries(CacheConfiguration<Object, Object> ccfg, boolean keepBinary) {
+    private void doTestLocalEntries(CacheConfiguration<Object, Object> ccfg, boolean keepBinary,
+        boolean primitives) throws IgniteInterruptedCheckedException {
         IgniteCache<Object, Object> cache = grid(0).createCache(ccfg);
+
+        assertTrue(cache.size() == 0);
 
         try {
             for (int i = 0; i < KEYS; i++)
-                cache.put(new QueryTestKey(i), new QueryTestValue(i));
+                if (primitives)
+                    cache.put(i, i);
+                else
+                    cache.put(new QueryTestKey(i), new QueryTestValue(i));
 
             for (int i = 0; i < getServerNodeCount(); i++) {
                 IgniteCache<Object, Object> cache0 = grid(i).cache(ccfg.getName());
@@ -262,26 +296,41 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
                 if (keepBinary)
                     cache0 = cache0.withKeepBinary();
 
-                int size = 0;
+                for (CachePeekMode mode : CachePeekMode.values()) {
+                    int size = 0;
 
-                for (Cache.Entry<Object, Object> e : cache0.localEntries(CachePeekMode.PRIMARY)) {
-                    Object key = e.getKey();
-                    Object val = e.getValue();
+                    for (Cache.Entry<Object, Object> e : cache0.localEntries(mode)) {
+                        Object key = e.getKey();
+                        Object val = e.getValue();
 
-                    assertTrue("Got unexpected object: " + key.getClass() + ", keepBinary: " + keepBinary,
-                        keepBinary == key instanceof BinaryObject);
-                    assertTrue("Got unexpected object: " + key.getClass() + ", keepBinary: " + keepBinary,
-                        keepBinary == val instanceof BinaryObject);
+                        assertTrue("Got unexpected object: " + key.getClass() + ", keepBinary: " + keepBinary,
+                            keepBinary == key instanceof BinaryObject || primitives);
+                        assertTrue("Got unexpected object: " + key.getClass() + ", keepBinary: " + keepBinary,
+                            keepBinary == val instanceof BinaryObject || primitives);
 
-                    log().info("Key: " + key + ", val: " + val);
+                        log().info("Key: " + key + ", val: " + val);
 
-                    ++size;
+                        ++size;
+                    }
+
+                    if (mode == CachePeekMode.ALL ||
+                        mode == CachePeekMode.PRIMARY ||
+                        mode == CachePeekMode.BACKUP ||
+                        (mode == CachePeekMode.NEAR && i == 0 &&
+                            ccfg.getMemoryMode() == CacheMemoryMode.ONHEAP_TIERED &&
+                            ccfg.getNearConfiguration() != null) ||
+                        (mode == CachePeekMode.ONHEAP && ccfg.getMemoryMode() == CacheMemoryMode.ONHEAP_TIERED) ||
+                        (mode == CachePeekMode.OFFHEAP && ccfg.getMemoryMode() == CacheMemoryMode.OFFHEAP_TIERED) ||
+                        (mode == CachePeekMode.SWAP && ccfg.isSwapEnabled()))
+                        assertTrue("Zero result at mode: " + mode, size > 0);
                 }
-
-                assertTrue(size > 0);
             }
         }
         finally {
+            cache.removeAll();
+
+            U.sleep(1000); //Fixes evictionPolicy issues at cache destroy.
+
             grid(0).destroyCache(ccfg.getName());
         }
     }
