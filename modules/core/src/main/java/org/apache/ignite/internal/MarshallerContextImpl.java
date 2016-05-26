@@ -115,7 +115,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
 
         log = ctx.log(MarshallerContextImpl.class);
 
-        cache = ctx.cache().marshallerCache();
+        cache = ctx.cache().internalCache(cacheName);
 
         latch.countDown();
     }
