@@ -105,9 +105,10 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         assert ctx != null;
 
         cache = ctx.cache().internalCache(cacheName);
-        GridCacheContext<Integer, String> cacheCtx = cache.context();
 
         if (!ctx.isDaemon()) {
+            GridCacheContext<Integer, String> cacheCtx = cache.context();
+
             cacheCtx.continuousQueries().executeInternalQuery(
                 new ContinuousQueryListener(ctx.log(MarshallerContextImpl.class), workDir, fileExt),
                 null,
