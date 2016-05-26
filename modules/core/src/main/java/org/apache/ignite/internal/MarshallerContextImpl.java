@@ -107,7 +107,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
 
         if (!ctx.isDaemon()) {
             ctx.cache().marshallerCache().context().continuousQueries().executeInternalQuery(
-                new ContinuousQueryListener(ctx.log(MarshallerContextImpl.class), workDir),
+                new ContinuousQueryListener(ctx.log(MarshallerContextImpl.class), workDir, fileExt),
                 null,
                 ctx.cache().marshallerCache().context().affinityNode(),
                 true,
