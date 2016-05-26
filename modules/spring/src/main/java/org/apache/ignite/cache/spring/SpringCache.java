@@ -74,7 +74,6 @@ class SpringCache implements Cache {
     /** {@inheritDoc} */
     @Override public ValueWrapper putIfAbsent(Object key, Object val) {
         boolean res = cache.putIfAbsent(key, val);
-
         return res ? new SimpleValueWrapper(val) : null;
     }
 
