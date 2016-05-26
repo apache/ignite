@@ -53,7 +53,7 @@ public class MetadataStorage implements MetaStore {
     private static final int TREE_CACHE_ID = Integer.MAX_VALUE;
 
     /** Page memory. */
-    private PageMemory pageMem;
+    private final PageMemory pageMem;
 
     /** Increments on each root page allocation. */
     private final AtomicLong rootId = new AtomicLong(0);
@@ -168,8 +168,6 @@ public class MetadataStorage implements MetaStore {
                 return new RootPage(fullId, true, 0);
             }
             finally {
-                meta.incrementVersion();
-
                 meta.releaseWrite(written);
             }
         }
@@ -191,7 +189,7 @@ public class MetadataStorage implements MetaStore {
          * @param leafIos Leaf IOs.
          * @throws IgniteCheckedException
          */
-        public MetaTree(final int cacheId, final PageMemory pageMem, final FullPageId metaPageId,
+        private MetaTree(final int cacheId, final PageMemory pageMem, final FullPageId metaPageId,
             final ReuseList reuseList,
             final IOVersions<? extends BPlusInnerIO<IndexItem>> innerIos,
             final IOVersions<? extends BPlusLeafIO<IndexItem>> leafIos, final boolean initNew)
@@ -205,7 +203,6 @@ public class MetadataStorage implements MetaStore {
         /** {@inheritDoc} */
         @Override protected int compare(final BPlusIO<IndexItem> io, final ByteBuffer buf, final int idx,
             final IndexItem row) throws IgniteCheckedException {
-            int shift = 0;
 
             // Compare cache IDs
             final int off = ((IndexIO) io).getOffset(idx);
@@ -216,6 +213,8 @@ public class MetadataStorage implements MetaStore {
 
             if (cacheIdCmp != 0)
                 return cacheIdCmp;
+
+            int shift = 0;
 
             shift += INT_LEN;
 
@@ -246,22 +245,22 @@ public class MetadataStorage implements MetaStore {
      */
     private static class IndexItem {
         /** */
-        byte[] idxName;
+        private byte[] idxName;
 
         /** */
-        int cacheId;
+        private int cacheId;
 
         /** */
-        long pageId;
+        private long pageId;
 
         /** */
-        long rootId;
+        private long rootId;
 
         /**
          * @param idxName Index name.
          * @param pageId Page ID.
          */
-        public IndexItem(final byte[] idxName, final long pageId, final int cacheId, final long rootId) {
+        private IndexItem(final byte[] idxName, final long pageId, final int cacheId, final long rootId) {
             this.idxName = idxName;
             this.pageId = pageId;
             this.cacheId = cacheId;
@@ -275,14 +274,14 @@ public class MetadataStorage implements MetaStore {
      * @param buf Buffer.
      * @param off Offset in buf.
      * @param row Row to store.
-     * @throws IgniteCheckedException
      */
     private static void storeRow(final ByteBuffer buf, final int off,
-        final IndexItem row) throws IgniteCheckedException {
-        int shift = 0;
+        final IndexItem row) {
 
         // Cache ID.
         buf.putInt(off, row.cacheId);
+
+        int shift = 0;
 
         shift += INT_LEN;
 
@@ -315,15 +314,15 @@ public class MetadataStorage implements MetaStore {
      * @param dstOff Destination buf offset.
      * @param src Source buffer.
      * @param srcOff Src buf offset.
-     * @throws IgniteCheckedException
      */
     private static void storeRow(final ByteBuffer dst, final int dstOff,
         final ByteBuffer src,
-        final int srcOff) throws IgniteCheckedException {
-        int shift = 0;
+        final int srcOff) {
 
         // Cache ID.
         dst.putInt(dstOff, src.getInt(srcOff));
+
+        int shift = 0;
 
         shift += INT_LEN;
 
@@ -355,9 +354,8 @@ public class MetadataStorage implements MetaStore {
      * @param buf Buffer to read.
      * @param off Offset in buf.
      * @return Read row.
-     * @throws IgniteCheckedException
      */
-    private static IndexItem readRow(final ByteBuffer buf, final int off) throws IgniteCheckedException {
+    private static IndexItem readRow(final ByteBuffer buf, final int off) {
         int shift = 0;
 
         // Cache ID.
@@ -412,7 +410,7 @@ public class MetadataStorage implements MetaStore {
         /**
          * @param ver Version.
          */
-        public IndexInnerIO(final int ver) {
+        private IndexInnerIO(final int ver) {
             // 4 byte cache ID, UTF-16 symbols and 1 byte for length, 8 bytes pageId, 8 bytes root ID
             super(T_INDEX_INNER, ver, false, 4 + MAX_IDX_NAME_LEN * 2 + 1 + 8 + 8);
         }
@@ -454,7 +452,7 @@ public class MetadataStorage implements MetaStore {
         /**
          * @param ver Version.
          */
-        public IndexLeafIO(final int ver) {
+        private IndexLeafIO(final int ver) {
             // 4 byte cache ID, UTF-16 symbols and 1 byte for length, 8 bytes pageId, 8 bytes root ID
             super(T_INDEX_LEAF, ver, 4 + MAX_IDX_NAME_LEN * 2 + 1 + 8 + 8);
         }
