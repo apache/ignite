@@ -296,10 +296,23 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                         .catch((err) => cb(_errorToJson(err)));
                 });
 
-                // Stop specified cache on specified node and return result to browser.
-                socket.on('node:cache:stop', (nids, cacheName, cb) => {
+                // Start specified cache and return result to browser.
+                socket.on('node:cache:start', (nids, near, cacheName, cfg, cb) => {
                     agentMgr.findAgent(user._id)
-                        .then((agent) => agent.cacheStop(demo, nids, cacheName))
+                        .then((agent) => agent.cacheStart(demo, nids, near, cacheName, cfg))
+                        .then((data) => {
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
+                // Stop specified cache on specified node and return result to browser.
+                socket.on('node:cache:stop', (nid, cacheName, cb) => {
+                    agentMgr.findAgent(user._id)
+                        .then((agent) => agent.cacheStop(demo, nid, cacheName))
                         .then((data) => {
                             if (data.finished)
                                 return cb(null, data.result);
@@ -327,6 +340,19 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                 socket.on('node:gc', (nids, cb) => {
                     agentMgr.findAgent(user._id)
                         .then((agent) => agent.gc(demo, nids))
+                        .then((data) => {
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
+                // GC node and return result to browser.
+                socket.on('node:thread:dump', (nid, cb) => {
+                    agentMgr.findAgent(user._id)
+                        .then((agent) => agent.threadDump(demo, nid))
                         .then((data) => {
                             if (data.finished)
                                 return cb(null, data.result);

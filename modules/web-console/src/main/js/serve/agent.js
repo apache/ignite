@@ -331,6 +331,27 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
 
         /**
          * @param {Boolean} demo Is need run command on demo node.
+         * @param {Array.<String>} nids Node ids.
+         * @param {Boolean} near true if near cache should be started.
+         * @param {String} cacheName Name for near cache.
+         * @param {String} cfg Cache XML configuration.
+         * @returns {Promise}
+         */
+        cacheStart(demo, nids, near, cacheName, cfg) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', nids)
+                .addParam('p2', 'org.apache.ignite.internal.visor.cache.VisorCacheStartTask')
+                .addParam('p3', 'org.apache.ignite.internal.visor.cache.VisorCacheStartTask.VisorCacheStartArg')
+                .addParam('p4', near)
+                .addParam('p5', cacheName)
+                .addParam('p6', cfg);
+
+            return this.executeRest(cmd);
+        }
+
+        /**
+         * @param {Boolean} demo Is need run command on demo node.
          * @param {String} nid Node id.
          * @param {String} cacheName Cache name.
          * @returns {Promise}
@@ -409,6 +430,21 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
                 .addParam('p2', 'org.apache.ignite.internal.visor.node.VisorNodePingTask')
                 .addParam('p3', 'java.util.UUID')
                 .addParam('p4', nid);
+
+            return this.executeRest(cmd);
+        }
+
+        /**
+         * @param {Boolean} demo Is need run command on demo node.
+         * @param {String} nid Id of the node to get thread dump.
+         * @returns {Promise}
+         */
+        threadDump(demo, nid) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', nid)
+                .addParam('p2', 'org.apache.ignite.internal.visor.debug.VisorThreadDumpTask')
+                .addParam('p3', 'java.lang.Void');
 
             return this.executeRest(cmd);
         }
