@@ -23,11 +23,11 @@ consoleModule.controller('clustersController', [
     function($root, $scope, $http, $state, $timeout, $common, $confirm, $clone, $loading, $cleanup, $unsavedChangesGuard, igniteEventGroups, DemoInfo, $table) {
         $unsavedChangesGuard.install($scope);
 
-        var emptyCluster = {empty: true};
+        const emptyCluster = {empty: true};
 
-        var __original_value;
+        let __original_value;
 
-        var blank = {
+        const blank = {
             atomicConfiguration: {},
             binaryConfiguration: {},
             communication: {},
@@ -40,7 +40,7 @@ consoleModule.controller('clustersController', [
             collision: {}
         };
 
-        var pairFields = {
+        const pairFields = {
             fields: {
                 msg: 'Query field class',
                 id: 'QryField',
@@ -53,16 +53,18 @@ consoleModule.controller('clustersController', [
             aliases: {id: 'Alias', idPrefix: 'Value', searchCol: 'alias', valueCol: 'value', dupObjName: 'alias'}
         };
 
-        $scope.tablePairValid = function(item, field, index) {
-            var pairField = pairFields[field.model];
+        const showPopoverMessage = $common.showPopoverMessage;
 
-            var pairValue = $table.tablePairValue(field, index);
+        $scope.tablePairValid = function(item, field, index) {
+            const pairField = pairFields[field.model];
+
+            const pairValue = $table.tablePairValue(field, index);
 
             if (pairField) {
-                var model = item[field.model];
+                const model = item[field.model];
 
                 if ($common.isDefined(model)) {
-                    var idx = _.findIndex(model, function(pair) {
+                    const idx = _.findIndex(model, function(pair) {
                         return pair[pairField.searchCol] === pairValue[pairField.valueCol];
                     });
 
@@ -83,29 +85,21 @@ consoleModule.controller('clustersController', [
                 if ($scope.tableIndexItemSaveVisible(field, index))
                     return $scope.tableIndexItemSave(field, field.indexIdx, index, stopEdit);
             }
-            else {
-                switch (field.type) {
-                    case 'attributes':
-                        if ($table.tablePairSaveVisible(field, index))
-                            return $table.tablePairSave($scope.tablePairValid, $scope.backupItem, field, index, stopEdit);
-
-                        break;
-                }
-            }
+            else if (field.type === 'attributes' && $table.tablePairSaveVisible(field, index))
+                return $table.tablePairSave($scope.tablePairValid, $scope.backupItem, field, index, stopEdit);
 
             return true;
         };
 
-        $scope.tableReset = function(save) {
-            var field = $table.tableField();
+        $scope.tableReset = (trySave) => {
+            const field = $table.tableField();
 
-            if (!save || !$common.isDefined(field) || $scope.tableSave(field, $table.tableEditedRowIndex(), true)) {
-                $table.tableReset();
+            if (trySave && $common.isDefined(field) && !$scope.tableSave(field, $table.tableEditedRowIndex(), true))
+                return false;
 
-                return true;
-            }
+            $table.tableReset();
 
-            return false;
+            return true;
         };
 
         $scope.tableNewItem = function(field) {
@@ -174,10 +168,8 @@ consoleModule.controller('clustersController', [
         $scope.saveBtnTipText = $common.saveBtnTipText;
         $scope.widthIsSufficient = $common.widthIsSufficient;
 
-        var showPopoverMessage = $common.showPopoverMessage;
-
         $scope.contentVisible = function() {
-            var item = $scope.backupItem;
+            const item = $scope.backupItem;
 
             return !item.empty && (!item._id || _.find($scope.displayedRows, {_id: item._id}));
         };
@@ -201,14 +193,14 @@ consoleModule.controller('clustersController', [
 
         $scope.swapSpaceSpis = [
             {value: 'FileSwapSpaceSpi', label: 'File-based swap'},
-            {value: undefined, label: 'Not set'}
+            {value: null, label: 'Not set'}
         ];
 
         $scope.eventGroups = igniteEventGroups;
 
         $scope.clusters = [];
 
-        function _clusterLbl (cluster) {
+        function _clusterLbl(cluster) {
             return cluster.name + ', ' + _.find($scope.discoveries, {value: cluster.discovery.kind}).label;
         }
 
@@ -219,9 +211,8 @@ consoleModule.controller('clustersController', [
 
         function clusterCaches(item) {
             return _.reduce($scope.caches, function(memo, cache) {
-                if (item && _.includes(item.caches, cache.value)) {
+                if (item && _.includes(item.caches, cache.value))
                     memo.push(cache.cache);
-                }
 
                 return memo;
             }, []);
@@ -242,38 +233,30 @@ consoleModule.controller('clustersController', [
 
                 _.forEach($scope.clusters, function(cluster) {
                     if (!cluster.collision)
-                        cluster.collision = {
-                            kind: 'Noop',
-                            JobStealing: {
-                                stealingEnabled: true
-                            },
-                            PriorityQueue: {
-                                starvationPreventionEnabled: true
-                            }
-                        };
+                        cluster.collision = {kind: 'Noop', JobStealing: {stealingEnabled: true}, PriorityQueue: {starvationPreventionEnabled: true}};
 
                     if (!cluster.failoverSpi)
                         cluster.failoverSpi = [];
 
                     if (!cluster.logger)
-                        cluster.logger = { Log4j: { mode: 'Default' } };
+                        cluster.logger = {Log4j: { mode: 'Default'}};
                 });
 
                 $scope.caches = _.map(data.caches, function(cache) {
-                    return {value: cache._id, label: cache.name, cache: cache};
+                    return {value: cache._id, label: cache.name, cache};
                 });
 
                 $scope.igfss = _.map(data.igfss, function(igfs) {
-                    return {value: igfs._id, label: igfs.name, igfs: igfs};
+                    return {value: igfs._id, label: igfs.name, igfs};
                 });
 
                 if ($state.params.id)
                     $scope.createItem($state.params.id);
                 else {
-                    var lastSelectedCluster = angular.fromJson(sessionStorage.lastSelectedCluster);
+                    const lastSelectedCluster = angular.fromJson(sessionStorage.lastSelectedCluster);
 
                     if (lastSelectedCluster) {
-                        var idx = _.findIndex($scope.clusters, function(cluster) {
+                        const idx = _.findIndex($scope.clusters, function(cluster) {
                             return cluster._id === lastSelectedCluster;
                         });
 
@@ -290,13 +273,12 @@ consoleModule.controller('clustersController', [
                 }
 
                 $scope.$watch('ui.inputForm.$valid', function(valid) {
-                    if (valid && __original_value === JSON.stringify($cleanup($scope.backupItem))) {
+                    if (valid && __original_value === JSON.stringify($cleanup($scope.backupItem)))
                         $scope.ui.inputForm.$dirty = false;
-                    }
                 });
 
                 $scope.$watch('backupItem', function(val) {
-                    var form = $scope.ui.inputForm;
+                    const form = $scope.ui.inputForm;
 
                     if (form.$pristine || (form.$valid && __original_value === JSON.stringify($cleanup(val))))
                         form.$setPristine();
@@ -338,7 +320,7 @@ consoleModule.controller('clustersController', [
                 else if (item)
                     $scope.backupItem = angular.copy(item);
                 else
-                    $scope.backupItem = emptyCluster ;
+                    $scope.backupItem = emptyCluster;
 
                 $scope.backupItem = angular.merge({}, blank, $scope.backupItem);
 
@@ -352,51 +334,27 @@ consoleModule.controller('clustersController', [
         };
 
         function prepareNewItem(id) {
-            var newItem = {
-                discovery: {
-                    kind: 'Multicast',
-                    Vm: {addresses: ['127.0.0.1:47500..47510']},
-                    Multicast: {addresses: ['127.0.0.1:47500..47510']}
-                },
-                binaryConfiguration: {
-                    typeConfigurations: [],
-                    compactFooter: true
-                },
-                communication: {
-                    tcpNoDelay: true
-                },
-                connector: {
-                    noDelay: true
-                },
-                collision: {
-                    kind: 'Noop',
-                    JobStealing: {
-                        stealingEnabled: true
-                    },
-                    PriorityQueue: {
-                        starvationPreventionEnabled: true
-                    }
-                },
+            return angular.merge({}, blank, {
+                space: $scope.spaces[0]._id,
+                discovery: {kind: 'Multicast', Vm: {addresses: ['127.0.0.1:47500..47510']}, Multicast: {addresses: ['127.0.0.1:47500..47510']}},
+                binaryConfiguration: {typeConfigurations: [], compactFooter: true},
+                communication: {tcpNoDelay: true},
+                connector: {noDelay: true},
+                collision: {kind: 'Noop', JobStealing: {stealingEnabled: true}, PriorityQueue: {starvationPreventionEnabled: true}},
                 failoverSpi: [],
-                logger: { Log4j: { mode: 'Default' } }
-            };
-
-            newItem = angular.merge({}, blank, newItem);
-
-            newItem.caches = id && _.find($scope.caches, {value: id}) ? [id] : [];
-            newItem.igfss = id && _.find($scope.igfss, {value: id}) ? [id] : [];
-            newItem.space = $scope.spaces[0]._id;
-
-            return newItem;
+                logger: {Log4j: { mode: 'Default'}},
+                caches: id && _.find($scope.caches, {value: id}) ? [id] : [],
+                igfss: id && _.find($scope.igfss, {value: id}) ? [id] : []
+            });
         }
 
         // Add new cluster.
         $scope.createItem = function(id) {
             $timeout(function() {
-                $common.ensureActivePanel($scope.ui, "general", 'clusterName');
+                $common.ensureActivePanel($scope.ui, 'general', 'clusterName');
             });
 
-            $scope.selectItem(undefined, prepareNewItem(id));
+            $scope.selectItem(null, prepareNewItem(id));
         };
 
         $scope.indexOfCache = function(cacheId) {
@@ -412,48 +370,48 @@ consoleModule.controller('clustersController', [
             if ($common.isEmptyString(item.name))
                 return showPopoverMessage($scope.ui, 'general', 'clusterName', 'Cluster name should not be empty!');
 
-            var form = $scope.ui.inputForm;
-            var errors = form.$error;
-            var errKeys = Object.keys(errors);
+            const form = $scope.ui.inputForm;
+            const errors = form.$error;
+            const errKeys = Object.keys(errors);
 
             if (errKeys && errKeys.length > 0) {
-                var firstErrorKey = errKeys[0];
+                const firstErrorKey = errKeys[0];
 
-                var firstError = errors[firstErrorKey][0];
-                var actualError = firstError.$error[firstErrorKey][0];
+                const firstError = errors[firstErrorKey][0];
+                const actualError = firstError.$error[firstErrorKey][0];
 
-                var errNameFull = actualError.$name;
-                var errNameShort = errNameFull;
+                const errNameFull = actualError.$name;
+                let errNameShort = errNameFull;
 
                 if (errNameShort.endsWith('TextInput'))
                     errNameShort = errNameShort.substring(0, errNameShort.length - 9);
 
-                var extractErrorMessage = function(errName) {
+                const extractErrorMessage = function(errName) {
                     try {
                         return errors[firstErrorKey][0].$errorMessages[errName][firstErrorKey];
                     }
-                    catch(ignored) {
+                    catch (ignored) {
                         try {
-                            msg = form[firstError.$name].$errorMessages[errName][firstErrorKey];
+                            return form[firstError.$name].$errorMessages[errName][firstErrorKey];
                         }
-                        catch(ignited) {
+                        catch (ignited) {
                             return false;
                         }
                     }
                 };
 
-                var msg = extractErrorMessage(errNameFull) || extractErrorMessage(errNameShort) || 'Invalid value!';
+                const msg = extractErrorMessage(errNameFull) || extractErrorMessage(errNameShort) || 'Invalid value!';
 
                 return showPopoverMessage($scope.ui, firstError.$name, errNameFull, msg);
             }
 
-            var caches = _.filter(_.map($scope.caches, function(scopeCache) {
+            const caches = _.filter(_.map($scope.caches, function(scopeCache) {
                 return scopeCache.cache;
             }), function(cache) {
                 return _.includes($scope.backupItem.caches, cache._id);
             });
 
-            var checkRes = $common.checkCachesDataSources(caches);
+            const checkRes = $common.checkCachesDataSources(caches);
 
             if (!checkRes.checked) {
                 return showPopoverMessage($scope.ui, 'general', 'caches',
@@ -463,54 +421,48 @@ consoleModule.controller('clustersController', [
                     $common.cacheStoreJdbcDialectsLabel(checkRes.secondDB) + '" in "' + checkRes.secondCache.name + '"', 10000);
             }
 
-            var b = item.binaryConfiguration;
+            const b = item.binaryConfiguration;
 
             if ($common.isDefined(b)) {
                 if (!_.isEmpty(b.typeConfigurations)) {
-                    var sameName = function(t, ix) {
-                        return ix < typeIx && t.typeName === type.typeName;
-                    };
-
-                    for (var typeIx = 0; typeIx < b.typeConfigurations.length; typeIx++) {
-                        var type = b.typeConfigurations[typeIx];
+                    for (let typeIx = 0; typeIx < b.typeConfigurations.length; typeIx++) {
+                        const type = b.typeConfigurations[typeIx];
 
                         if ($common.isEmptyString(type.typeName))
                             return showPopoverMessage($scope.ui, 'binary', 'typeName' + typeIx, 'Type name should be specified!');
 
-                        if (_.find(b.typeConfigurations, sameName))
+                        if (_.find(b.typeConfigurations, (t, ix) => ix < typeIx && t.typeName === type.typeName))
                             return showPopoverMessage($scope.ui, 'binary', 'typeName' + typeIx, 'Type with such name is already specified!');
                     }
                 }
             }
 
-            var c = item.communication;
+            const c = item.communication;
 
             if ($common.isDefined(c)) {
                 if ($common.isDefined(c.unacknowledgedMessagesBufferSize)) {
-                    if ($common.isDefined(c.messageQueueLimit))
-                        if (c.unacknowledgedMessagesBufferSize < 5 * c.messageQueueLimit)
-                            return showPopoverMessage($scope.ui, 'communication', 'unacknowledgedMessagesBufferSize', 'Maximum number of stored unacknowledged messages should be at least 5 * message queue limit!');
+                    if ($common.isDefined(c.messageQueueLimit) && c.unacknowledgedMessagesBufferSize < 5 * c.messageQueueLimit)
+                        return showPopoverMessage($scope.ui, 'communication', 'unacknowledgedMessagesBufferSize', 'Maximum number of stored unacknowledged messages should be at least 5 * message queue limit!');
 
-                    if ($common.isDefined(c.ackSendThreshold))
-                        if (c.unacknowledgedMessagesBufferSize < 5 * c.ackSendThreshold)
-                            return showPopoverMessage($scope.ui, 'communication', 'unacknowledgedMessagesBufferSize', 'Maximum number of stored unacknowledged messages should be at least 5 * ack send threshold!');
+                    if ($common.isDefined(c.ackSendThreshold) && c.unacknowledgedMessagesBufferSize < 5 * c.ackSendThreshold)
+                        return showPopoverMessage($scope.ui, 'communication', 'unacknowledgedMessagesBufferSize', 'Maximum number of stored unacknowledged messages should be at least 5 * ack send threshold!');
                 }
 
                 if (c.sharedMemoryPort === 0)
                     return showPopoverMessage($scope.ui, 'communication', 'sharedMemoryPort', 'Shared memory port should be more than "0" or equals to "-1"!');
             }
 
-            var r = item.connector;
+            const r = item.connector;
 
             if ($common.isDefined(r)) {
                 if (r.sslEnabled && $common.isEmptyString(r.sslFactory))
                     return showPopoverMessage($scope.ui, 'connector', 'connectorSslFactory', 'SSL factory should not be empty!');
             }
 
-            var d = item.discovery;
+            const d = item.discovery;
 
             if (d) {
-                if ((d.maxAckTimeout != undefined ? d.maxAckTimeout : 600000) < (d.ackTimeout || 5000))
+                if ((_.isNil(d.maxAckTimeout) ? 600000 : d.maxAckTimeout) < (d.ackTimeout || 5000))
                     return showPopoverMessage($scope.ui, 'discovery', 'ackTimeout', 'Acknowledgement timeout should be less than max acknowledgement timeout!');
 
                 if (d.kind === 'Vm' && d.Vm && d.Vm.addresses.length === 0)
@@ -542,19 +494,19 @@ consoleModule.controller('clustersController', [
                 }
             }
 
-            var swapKind = item.swapSpaceSpi && item.swapSpaceSpi.kind;
+            const swapKind = item.swapSpaceSpi && item.swapSpaceSpi.kind;
 
             if (swapKind && item.swapSpaceSpi[swapKind]) {
-                var swap = item.swapSpaceSpi[swapKind];
+                const swap = item.swapSpaceSpi[swapKind];
 
-                var sparsity = swap.maximumSparsity;
+                const sparsity = swap.maximumSparsity;
 
                 if ($common.isDefined(sparsity) && (sparsity < 0 || sparsity >= 1))
                     return showPopoverMessage($scope.ui, 'swap', 'maximumSparsity', 'Maximum sparsity should be more or equal 0 and less than 1!');
 
-                var readStripesNumber = swap.readStripesNumber;
+                const readStripesNumber = swap.readStripesNumber;
 
-                if (readStripesNumber && !(readStripesNumber == -1 || (readStripesNumber & (readStripesNumber - 1)) == 0))
+                if (readStripesNumber && !(readStripesNumber === -1 || (readStripesNumber & (readStripesNumber - 1)) === 0))
                     return showPopoverMessage($scope.ui, 'swap', 'readStripesNumber', 'Read stripe size must be positive and power of two!');
             }
 
@@ -567,22 +519,22 @@ consoleModule.controller('clustersController', [
             }
 
             if (!swapKind && item.caches) {
-                for (var i = 0; i < item.caches.length; i++) {
-                    var idx = $scope.indexOfCache(item.caches[i]);
+                for (let i = 0; i < item.caches.length; i++) {
+                    const idx = $scope.indexOfCache(item.caches[i]);
 
                     if (idx >= 0) {
-                        var cache = $scope.caches[idx];
+                        const cache = $scope.caches[idx];
 
-                        if (cache.cache.swapEnabled)
+                        if (cache.cache.swapEnabled) {
                             return showPopoverMessage($scope.ui, 'swap', 'swapSpaceSpi',
                                 'Swap space SPI is not configured, but cache "' + cache.label + '" configured to use swap!');
+                        }
                     }
                 }
             }
 
             if (item.rebalanceThreadPoolSize && item.systemThreadPoolSize && item.systemThreadPoolSize <= item.rebalanceThreadPoolSize)
-                return showPopoverMessage($scope.ui, 'pools', 'rebalanceThreadPoolSize',
-                    'Rebalance thread pool size exceed or equals System thread pool size!');
+                return showPopoverMessage($scope.ui, 'pools', 'rebalanceThreadPoolSize', 'Rebalance thread pool size exceed or equals System thread pool size!');
 
             return true;
         }
@@ -595,7 +547,7 @@ consoleModule.controller('clustersController', [
 
                     $scope.ui.inputForm.$setPristine();
 
-                    var idx = _.findIndex($scope.clusters, (cluster) => cluster._id === _id);
+                    const idx = _.findIndex($scope.clusters, (cluster) => cluster._id === _id);
 
                     if (idx >= 0)
                         angular.merge($scope.clusters[idx], item);
@@ -613,9 +565,9 @@ consoleModule.controller('clustersController', [
 
         // Save cluster.
         $scope.saveItem = function() {
-            var item = $scope.backupItem;
+            const item = $scope.backupItem;
 
-            var swapSpi = $common.autoClusterSwapSpiConfiguration(item, clusterCaches(item));
+            const swapSpi = $common.autoClusterSwapSpiConfiguration(item, clusterCaches(item));
 
             if (swapSpi)
                 angular.extend(item, swapSpi);
@@ -634,7 +586,7 @@ consoleModule.controller('clustersController', [
         $scope.cloneItem = function() {
             if (validate($scope.backupItem)) {
                 $clone.confirm($scope.backupItem.name, _clusterNames()).then(function(newName) {
-                    var item = angular.copy($scope.backupItem);
+                    const item = angular.copy($scope.backupItem);
 
                     delete item._id;
                     item.name = newName;
@@ -646,19 +598,19 @@ consoleModule.controller('clustersController', [
 
         // Remove cluster from db.
         $scope.removeItem = function() {
-            var selectedItem = $scope.selectedItem;
+            const selectedItem = $scope.selectedItem;
 
             $confirm.confirm('Are you sure you want to remove cluster: "' + selectedItem.name + '"?')
                 .then(function() {
-                    var _id = selectedItem._id;
+                    const _id = selectedItem._id;
 
-                    $http.post('/api/v1/configuration/clusters/remove', {_id: _id})
+                    $http.post('/api/v1/configuration/clusters/remove', {_id})
                         .success(function() {
                             $common.showInfo('Cluster has been removed: ' + selectedItem.name);
 
-                            var clusters = $scope.clusters;
+                            const clusters = $scope.clusters;
 
-                            var idx = _.findIndex(clusters, function(cluster) {
+                            const idx = _.findIndex(clusters, function(cluster) {
                                 return cluster._id === _id;
                             });
 
