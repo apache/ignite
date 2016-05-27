@@ -48,7 +48,7 @@ $generatorJava.toJavaCode = function(val, type) {
         return '"' + val.replace('"', '\\"') + '"';
 
     if (typeof (val) === 'number' || typeof (val) === 'boolean')
-        return '' + val;
+        return String(val);
 
     return 'Unknown type: ' + typeof (val) + ' (' + val + ')';
 };
@@ -1377,7 +1377,7 @@ $generatorJava.cacheQuery = function(cache, varName, res) {
  * @param res Resulting output with generated code.
  */
 $generatorJava.cacheStoreDataSource = function(storeFactory, res) {
-    const dialect = storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : null) : storeFactory.dialect; // eslint-disable-line no-nested-ternary
+    const dialect = storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : null) : storeFactory.dialect;
 
     if (dialect) {
         const varName = 'dataSource';
@@ -2877,7 +2877,7 @@ $generatorJava.cluster = function(cluster, pkg, javaClass, clientNearCfg) {
  * @returns {*} Data source class name.
  */
 $generatorJava.dataSourceClassName = function(res, storeFactory) {
-    const dialect = storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : null) : storeFactory.dialect;  // eslint-disable-line no-nested-ternary
+    const dialect = storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : null) : storeFactory.dialect;
 
     if (dialect) {
         const dataSourceBean = storeFactory.dataSourceBean;

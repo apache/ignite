@@ -21,7 +21,7 @@ const $generatorCommon = {};
 // Add leading zero.
 $generatorCommon.addLeadingZero = function(numberStr, minSize) {
     if (typeof (numberStr) !== 'string')
-        numberStr = '' + numberStr;
+        numberStr = String(numberStr);
 
     while (numberStr.length < minSize)
         numberStr = '0' + numberStr;

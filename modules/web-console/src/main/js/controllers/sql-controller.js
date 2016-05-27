@@ -1,4 +1,4 @@
-``/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -1044,7 +1044,7 @@ consoleModule.controller('sqlController', [
                     columnDefs.push({
                         displayName: col.fieldName,
                         headerTooltip: _fullColName(col),
-                        field: paragraph.queryArgs.query ? '' + idx : col.fieldName,
+                        field: paragraph.queryArgs.query ? String(idx) : col.fieldName,
                         minWidth: 50
                     });
                 }

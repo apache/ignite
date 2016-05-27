@@ -758,7 +758,7 @@ consoleModule.controller('domainsController', [
                     databaseFieldName: name,
                     databaseFieldType: jdbcType.dbName,
                     javaFieldName: toJavaName(name),
-                    javaFieldType: nullable ? jdbcType.javaType : // eslint-disable-line no-nested-ternary
+                    javaFieldType: nullable ? jdbcType.javaType :
                         ($scope.ui.usePrimitives && jdbcType.primitiveType ? jdbcType.primitiveType : jdbcType.javaType)
                 };
             }

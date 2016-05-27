@@ -247,7 +247,7 @@ consoleModule.controller('igfsController', [
                 fragmentizerEnabled: true,
                 colocateMetadata: true,
                 relaxedConsistency: true,
-                clusters: id && _.find($scope.clusters, {value: id}) ? [id] : // eslint-disable-line no-nested-ternary
+                clusters: id && _.find($scope.clusters, {value: id}) ? [id] :
                     (_.isEmpty($scope.clusters) ? [] : [$scope.clusters[0].value])
             };
         }

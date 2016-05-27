@@ -53,7 +53,7 @@ $generatorProperties.dataSourcesProperties = function(cluster, res) {
             if (cache.cacheStoreFactory && cache.cacheStoreFactory.kind) {
                 const storeFactory = cache.cacheStoreFactory[cache.cacheStoreFactory.kind];
 
-                const dialect = storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : null) : storeFactory.dialect; // eslint-disable-line no-nested-ternary
+                const dialect = storeFactory.connectVia ? (storeFactory.connectVia === 'DataSource' ? storeFactory.dialect : null) : storeFactory.dialect;
 
                 const connectViaUrl = cache.cacheStoreFactory.kind === 'CacheJdbcBlobStoreFactory' && storeFactory.connectVia === 'URL';
 
