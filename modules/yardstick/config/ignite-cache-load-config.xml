@@ -39,6 +39,7 @@
                 <ref bean="tx-offheap-values" />
                 <ref bean="atomic-index" />
                 <ref bean="query" />
+                <ref bean="orgCache" />
                 <!--<ref bean="query-offheap" />-->
                 <ref bean="compute" />
             </list>

@@ -39,7 +39,6 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
-import org.h2.jdbcx.JdbcConnectionPool;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.ATOMIC;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -60,6 +59,9 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
 
     /** Person count. */
     protected static final int PERSON_CNT = 100000;
+
+    /** Test cache name. */
+    protected static final String CACHE_NAME = "test-cache";
 
     /** Flag indicating that tests should use transactional cache. */
     protected static boolean transactional;
@@ -147,11 +149,12 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
         JdbcType[] storeTypes = new JdbcType[2];
 
         storeTypes[0] = new JdbcType();
+        storeTypes[0].setCacheName(CACHE_NAME);
         storeTypes[0].setDatabaseSchema("PUBLIC");
         storeTypes[0].setDatabaseTable("ORGANIZATION");
 
         if (builtinKeys) {
-            storeTypes[0].setKeyType("java.lang.Integer");
+            storeTypes[0].setKeyType("java.lang.Long");
             storeTypes[0].setKeyFields(new JdbcTypeField(Types.INTEGER, "ID", Integer.class, "id"));
         }
         else {
@@ -166,11 +169,12 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
             new JdbcTypeField(Types.VARCHAR, "CITY", String.class, "city"));
 
         storeTypes[1] = new JdbcType();
+        storeTypes[1].setCacheName(CACHE_NAME);
         storeTypes[1].setDatabaseSchema("PUBLIC");
         storeTypes[1].setDatabaseTable("PERSON");
 
         if (builtinKeys) {
-            storeTypes[1].setKeyType("java.lang.Long");
+            storeTypes[1].setKeyType("java.lang.Integer");
             storeTypes[1].setKeyFields(new JdbcTypeField(Types.INTEGER, "ID", Long.class, "id"));
         }
         else {
@@ -195,6 +199,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
     protected CacheConfiguration cacheConfiguration() throws Exception {
         CacheConfiguration cc = defaultCacheConfiguration();
 
+        cc.setName(CACHE_NAME);
         cc.setCacheMode(PARTITIONED);
         cc.setAtomicityMode(transactional ? TRANSACTIONAL : ATOMIC);
         cc.setWriteBehindEnabled(false);
@@ -202,7 +207,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
         CacheJdbcPojoStoreFactory<Object, Object> storeFactory = new CacheJdbcPojoStoreFactory<>();
         storeFactory.setDialect(new H2Dialect());
         storeFactory.setTypes(storeTypes());
-        storeFactory.setDataSource(JdbcConnectionPool.create(DFLT_CONN_URL, "sa", "")); // H2 DataSource
+        storeFactory.setDataSourceFactory(new H2DataSourceFactory()); // H2 DataSource factory.
 
         cc.setCacheStoreFactory(storeFactory);
         cc.setReadThrough(true);
@@ -282,7 +287,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
      * Check that data was loaded correctly.
      */
     protected void checkCacheContent() {
-        IgniteCache<Object, Object> c1 = grid().cache(null);
+        IgniteCache<Object, Object> c1 = grid().cache(CACHE_NAME);
 
         c1.loadCache(null);
 
@@ -331,7 +336,7 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     private void checkPut() throws Exception {
-        IgniteCache<PersonKey, Person> c1 = grid().cache(null);
+        IgniteCache<Object, Person> c1 = grid().cache(CACHE_NAME);
 
         Connection conn = getConnection();
         try {
@@ -345,12 +350,14 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
 
             U.closeQuiet(rs);
 
-            // Test put-insert.
-            PersonKey key = new PersonKey(-1);
-
             Date testDate = Date.valueOf("2001-05-05");
 
-            c1.put(key, new Person(-1, -2, testDate, "Person-to-test-put-insert", 999));
+            Person val = new Person(-1, -2, testDate, "Person-to-test-put-insert", 999);
+
+            Object key = builtinKeys ? Integer.valueOf(-1) : new PersonKey(-1);
+
+            // Test put-insert.
+            c1.put(key, val);
 
             rs = stmt.executeQuery();
 
@@ -391,8 +398,26 @@ public abstract class CacheJdbcPojoStoreAbstractSelfTest extends GridCommonAbstr
     /**
      * @throws Exception If failed.
      */
+    public void testPutBuiltIn() throws Exception {
+        startTestGrid(true, false, false, false);
+
+        checkPut();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testPut() throws Exception {
         startTestGrid(false, false, false, false);
+
+        checkPut();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testPutTxBuiltIn() throws Exception {
+        startTestGrid(true, false, false, true);
 
         checkPut();
     }

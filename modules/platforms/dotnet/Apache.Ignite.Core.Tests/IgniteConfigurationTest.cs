@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-#pragma warning disable 618  // deprecated SpringConfigUrl
 namespace Apache.Ignite.Core.Tests
 {
     using System;
@@ -25,6 +24,7 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.DataStructures.Configuration;
     using Apache.Ignite.Core.Discovery.Tcp;
     using Apache.Ignite.Core.Discovery.Tcp.Multicast;
@@ -67,6 +67,7 @@ namespace Apache.Ignite.Core.Tests
             CheckDefaultValueAttributes(new TcpDiscoverySpi());
             CheckDefaultValueAttributes(new CacheConfiguration());
             CheckDefaultValueAttributes(new TcpDiscoveryMulticastIpFinder());
+            CheckDefaultValueAttributes(new TcpCommunicationSpi());
         }
 
         /// <summary>
@@ -89,6 +90,16 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(disco.MaxAckTimeout, resDisco.MaxAckTimeout);
                 Assert.AreEqual(disco.SocketTimeout, resDisco.SocketTimeout);
                 Assert.AreEqual(disco.JoinTimeout, resDisco.JoinTimeout);
+
+                Assert.AreEqual(disco.LocalAddress, resDisco.LocalAddress);
+                Assert.AreEqual(disco.LocalPort, resDisco.LocalPort);
+                Assert.AreEqual(disco.LocalPortRange, resDisco.LocalPortRange);
+                Assert.AreEqual(disco.MaxMissedClientHeartbeats, resDisco.MaxMissedClientHeartbeats);
+                Assert.AreEqual(disco.MaxMissedHeartbeats, resDisco.MaxMissedHeartbeats);
+                Assert.AreEqual(disco.ReconnectCount, resDisco.ReconnectCount);
+                Assert.AreEqual(disco.StatisticsPrintFrequency, resDisco.StatisticsPrintFrequency);
+                Assert.AreEqual(disco.ThreadPriority, resDisco.ThreadPriority);
+                Assert.AreEqual(disco.TopologyHistorySize, resDisco.TopologyHistorySize);
 
                 var ip = (TcpDiscoveryStaticIpFinder) disco.IpFinder;
                 var resIp = (TcpDiscoveryStaticIpFinder) resDisco.IpFinder;
@@ -127,6 +138,26 @@ namespace Apache.Ignite.Core.Tests
                 Assert.AreEqual(tx.DefaultTransactionIsolation, resTx.DefaultTransactionIsolation);
                 Assert.AreEqual(tx.PessimisticTransactionLogLinger, resTx.PessimisticTransactionLogLinger);
                 Assert.AreEqual(tx.PessimisticTransactionLogSize, resTx.PessimisticTransactionLogSize);
+
+                var com = (TcpCommunicationSpi) cfg.CommunicationSpi;
+                var resCom = (TcpCommunicationSpi) resCfg.CommunicationSpi;
+                Assert.AreEqual(com.AckSendThreshold, resCom.AckSendThreshold);
+                Assert.AreEqual(com.ConnectTimeout, resCom.ConnectTimeout);
+                Assert.AreEqual(com.DirectBuffer, resCom.DirectBuffer);
+                Assert.AreEqual(com.DirectSendBuffer, resCom.DirectSendBuffer);
+                Assert.AreEqual(com.IdleConnectionTimeout, resCom.IdleConnectionTimeout);
+                Assert.AreEqual(com.LocalAddress, resCom.LocalAddress);
+                Assert.AreEqual(com.LocalPort, resCom.LocalPort);
+                Assert.AreEqual(com.LocalPortRange, resCom.LocalPortRange);
+                Assert.AreEqual(com.MaxConnectTimeout, resCom.MaxConnectTimeout);
+                Assert.AreEqual(com.MessageQueueLimit, resCom.MessageQueueLimit);
+                Assert.AreEqual(com.ReconnectCount, resCom.ReconnectCount);
+                Assert.AreEqual(com.SelectorsCount, resCom.SelectorsCount);
+                Assert.AreEqual(com.SlowClientQueueLimit, resCom.SlowClientQueueLimit);
+                Assert.AreEqual(com.SocketReceiveBufferSize, resCom.SocketReceiveBufferSize);
+                Assert.AreEqual(com.SocketSendBufferSize, resCom.SocketSendBufferSize);
+                Assert.AreEqual(com.TcpNoDelay, resCom.TcpNoDelay);
+                Assert.AreEqual(com.UnacknowledgedMessagesBufferSize, resCom.UnacknowledgedMessagesBufferSize);
             }
         }
 
@@ -136,16 +167,25 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestSpringXml()
         {
-            // When Spring XML is used, all properties are ignored.
-            var cfg = GetCustomConfig();
-
-            cfg.SpringConfigUrl = "config\\marshaller-default.xml";
+            // When Spring XML is used, .NET overrides Spring.
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                SpringConfigUrl = @"config\spring-test.xml",
+                NetworkSendRetryDelay = TimeSpan.FromSeconds(45),
+                MetricsHistorySize = 57
+            };
 
             using (var ignite = Ignition.Start(cfg))
             {
                 var resCfg = ignite.GetConfiguration();
 
-                CheckDefaultProperties(resCfg);
+                Assert.AreEqual(45, resCfg.NetworkSendRetryDelay.TotalSeconds);  // .NET overrides XML
+                Assert.AreEqual(2999, resCfg.NetworkTimeout.TotalMilliseconds);  // Not set in .NET -> comes from XML
+                Assert.AreEqual(57, resCfg.MetricsHistorySize);  // Only set in .NET
+
+                var disco = resCfg.DiscoverySpi as TcpDiscoverySpi;
+                Assert.IsNotNull(disco);
+                Assert.AreEqual(TimeSpan.FromMilliseconds(300), disco.SocketTimeout);
             }
         }
 
@@ -323,7 +363,7 @@ namespace Apache.Ignite.Core.Tests
         {
             var props = obj.GetType().GetProperties();
 
-            foreach (var prop in props)
+            foreach (var prop in props.Where(p => p.Name != "SelectorsCount"))
             {
                 var attr = prop.GetCustomAttributes(true).OfType<DefaultValueAttribute>().FirstOrDefault();
                 var propValue = prop.GetValue(obj, null);
@@ -342,6 +382,7 @@ namespace Apache.Ignite.Core.Tests
         /// </summary>
         private static IgniteConfiguration GetCustomConfig()
         {
+            // CacheConfiguration is not tested here - see CacheConfigurationTest
             return new IgniteConfiguration
             {
                 DiscoverySpi = new TcpDiscoverySpi
@@ -353,8 +394,21 @@ namespace Apache.Ignite.Core.Tests
                     JoinTimeout = TimeSpan.FromSeconds(5),
                     IpFinder = new TcpDiscoveryStaticIpFinder
                     {
-                        Endpoints = new[] { "127.0.0.1:47500", "127.0.0.1:47501" }
-                    }
+                        Endpoints = new[] { "127.0.0.1:49900", "127.0.0.1:49901" }
+                    },
+                    ClientReconnectDisabled = true,
+                    ForceServerMode = true,
+                    HeartbeatFrequency = TimeSpan.FromSeconds(3),
+                    IpFinderCleanFrequency = TimeSpan.FromMinutes(7),
+                    LocalAddress = "127.0.0.1",
+                    LocalPort = 49900,
+                    LocalPortRange = 13,
+                    MaxMissedClientHeartbeats = 9,
+                    MaxMissedHeartbeats = 7,
+                    ReconnectCount = 11,
+                    StatisticsPrintFrequency = TimeSpan.FromSeconds(20),
+                    ThreadPriority = 6,
+                    TopologyHistorySize = 1234567
                 },
                 GridName = "gridName1",
                 IncludedEventTypes = EventType.SwapspaceAll,
@@ -385,6 +439,26 @@ namespace Apache.Ignite.Core.Tests
                     DefaultTransactionIsolation = TransactionIsolation.Serializable,
                     PessimisticTransactionLogLinger = TimeSpan.FromHours(1),
                     PessimisticTransactionLogSize = 240
+                },
+                CommunicationSpi = new TcpCommunicationSpi
+                {
+                    LocalPort = 47501,
+                    MaxConnectTimeout = TimeSpan.FromSeconds(34),
+                    MessageQueueLimit = 15,
+                    ConnectTimeout = TimeSpan.FromSeconds(17),
+                    IdleConnectionTimeout = TimeSpan.FromSeconds(19),
+                    SelectorsCount = 8,
+                    ReconnectCount = 33,
+                    SocketReceiveBufferSize = 512,
+                    AckSendThreshold = 99,
+                    DirectBuffer = false,
+                    DirectSendBuffer = true,
+                    LocalPortRange = 45,
+                    LocalAddress = "127.0.0.1",
+                    TcpNoDelay = false,
+                    SlowClientQueueLimit = 98,
+                    SocketSendBufferSize = 2045,
+                    UnacknowledgedMessagesBufferSize = 3450
                 }
             };
         }

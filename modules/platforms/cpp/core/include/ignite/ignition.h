@@ -23,9 +23,10 @@
 #ifndef _IGNITE_IGNITION
 #define _IGNITE_IGNITION
 
+#include <ignite/ignite_error.h>
+
 #include "ignite/ignite.h"
 #include "ignite/ignite_configuration.h"
-#include "ignite/ignite_error.h"
 
 namespace ignite
 {
@@ -156,4 +157,4 @@ namespace ignite
     };    
 }
 
-#endif
+#endif //_IGNITE_IGNITION

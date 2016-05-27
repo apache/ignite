@@ -164,13 +164,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
 
         IndexingQueryFilter f = filters.get();
 
-        if (f != null) {
-            String spaceName = ((GridH2Table)getTable()).spaceName();
-
-            p = f.forSpace(spaceName);
-        }
-
-        return new FilteringIterator(iter, U.currentTimeMillis(), p);
+        return new FilteringIterator(iter, U.currentTimeMillis(), f);
     }
 
     /** {@inheritDoc} */
@@ -218,16 +212,28 @@ public abstract class GridH2IndexBase extends BaseIndex {
         /** */
         private final long time;
 
+        /** Is value required for filtering predicate? */
+        private final boolean isValRequired;
+
         /**
          * @param iter Iterator.
          * @param time Time for expired rows filtering.
          */
         protected FilteringIterator(Iterator<GridH2Row> iter, long time,
-            IgniteBiPredicate<Object, Object> fltr) {
+            IndexingQueryFilter qryFilter) {
             super(iter);
 
             this.time = time;
-            this.fltr = fltr;
+
+            if (qryFilter != null) {
+                this.fltr = qryFilter.forSpace(((GridH2Table)getTable()).spaceName());
+
+                this.isValRequired = qryFilter.isValueRequired();
+            } else {
+                this.fltr = null;
+
+                this.isValRequired = false;
+            }
         }
 
         /**
@@ -245,10 +251,10 @@ public abstract class GridH2IndexBase extends BaseIndex {
                 return true;
 
             Object key = row.getValue(keyCol).getObject();
-            Object val = row.getValue(valCol).getObject();
+            Object val = isValRequired ? row.getValue(valCol).getObject() : null;
 
             assert key != null;
-            assert val != null;
+            assert !isValRequired || val != null;
 
             return fltr.apply(key, val);
         }

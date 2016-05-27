@@ -253,7 +253,7 @@ public class IgfsDataManager extends IgfsManager {
             .internalCache(igfsCtx.configuration().getDataCacheName()).configuration().getAffinityMapper();
 
         grpSize = mapper instanceof IgfsGroupDataBlocksKeyMapper ?
-            ((IgfsGroupDataBlocksKeyMapper)mapper).groupSize() : 1;
+            ((IgfsGroupDataBlocksKeyMapper)mapper).getGroupSize() : 1;
 
         grpBlockSize = igfsCtx.configuration().getBlockSize() * grpSize;
 
