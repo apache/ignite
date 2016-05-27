@@ -1294,7 +1294,7 @@ consoleModule.service('$table', ['$common', '$focus', function($common, $focus) 
         tableRemove(item, field, index) {
             _tableReset();
 
-            _model(item, field)[field.model].splice(index, 1);
+            _.get(_model(item, field), field.model).splice(index, 1);
         },
         tablePairValue: _tablePairValue,
         tablePairSave(pairValid, item, field, index, stopEdit) {

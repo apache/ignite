@@ -41,16 +41,8 @@ consoleModule.controller('clustersController', [
         };
 
         const pairFields = {
-            fields: {
-                msg: 'Query field class',
-                id: 'QryField',
-                idPrefix: 'Key',
-                searchCol: 'name',
-                valueCol: 'key',
-                classValidation: true,
-                dupObjName: 'name'
-            },
-            aliases: {id: 'Alias', idPrefix: 'Value', searchCol: 'alias', valueCol: 'value', dupObjName: 'alias'}
+            attributes: {id: 'Attribute', idPrefix: 'Key', searchCol: 'name', valueCol: 'key', dupObjName: 'name', group: 'collision'},
+            'collision.JobStealing.stealingAttributes': {id: 'CAttribute', idPrefix: 'Key', searchCol: 'name', valueCol: 'key', dupObjName: 'name', group: 'attributes'}
         };
 
         const showPopoverMessage = $common.showPopoverMessage;
@@ -61,18 +53,17 @@ consoleModule.controller('clustersController', [
             const pairValue = $table.tablePairValue(field, index);
 
             if (pairField) {
-                const model = item[field.model];
+                const model = _.get(item, field.model);
 
                 if ($common.isDefined(model)) {
-                    const idx = _.findIndex(model, (pair) => pair[pairField.searchCol] === pairValue[pairField.valueCol]);
+                    const idx = _.findIndex(model, (pair) => {
+                        return pair[pairField.searchCol] === pairValue[pairField.valueCol];
+                    });
 
                     // Found duplicate by key.
                     if (idx >= 0 && idx !== index)
-                        return showPopoverMessage($scope.ui, 'query', $table.tableFieldId(index, pairField.idPrefix + pairField.id), 'Field with such ' + pairField.dupObjName + ' already exists!');
+                        return showPopoverMessage($scope.ui, pairField.group, $table.tableFieldId(index, pairField.idPrefix + pairField.id), 'Field with such ' + pairField.dupObjName + ' already exists!');
                 }
-
-                if (pairField.classValidation && !$common.isValidJavaClass(pairField.msg, pairValue.value, true, $table.tableFieldId(index, 'Value' + pairField.id), false, $scope.ui, 'query'))
-                    return $table.tableFocusInvalidField(index, 'Value' + pairField.id);
             }
 
             return true;
@@ -139,7 +130,7 @@ consoleModule.controller('clustersController', [
         $scope.stealingAttributesTbl = {
             type: 'attributes',
             model: 'collision.JobStealing.stealingAttributes',
-            focusId: 'Attribute',
+            focusId: 'CAttribute',
             ui: 'table-pair',
             keyName: 'name',
             valueName: 'value',

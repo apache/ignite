@@ -1141,15 +1141,14 @@ $generatorJava.clusterLogger = function(logger, res) {
                 break;
 
             case 'Log4j':
-                if (log.mode === 'Default' && !$generatorCommon.isDefinedAndNotEmpty(log.level))
+                if (log.mode === 'Default')
                     $generatorJava.declareVariable(res, varName, 'org.apache.ignite.logger.log4j.Log4JLogger');
-                else {
+                else
                     $generatorJava.declareVariableCustom(res, varName, 'org.apache.ignite.logger.log4j.Log4JLogger',
                         'new Log4JLogger("' + log.path + '")');
 
-                    if ($generatorCommon.isDefinedAndNotEmpty(log.level))
-                        res.line(varName + '.setLevel(' + res.importClass('org.apache.log4j.Level') + '.' + log.level + ');');
-                }
+                if ($generatorCommon.isDefinedAndNotEmpty(log.level))
+                    res.line(varName + '.setLevel(' + res.importClass('org.apache.log4j.Level') + '.' + log.level + ');');
 
                 break;
 

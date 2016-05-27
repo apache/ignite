@@ -875,7 +875,10 @@ $generatorXml.clusterLogger = function(logger, res) {
                     res.line('<bean class="org.apache.ignite.logger.log4j.Log4JLogger"/>');
                 else {
                     res.startBlock('<bean class="org.apache.ignite.logger.log4j.Log4JLogger">');
-                    res.line('<constructor-arg value="' + $generatorXml.escape(log.path) + '"/>');
+
+                    if (log.mode === 'Path')
+                        res.line('<constructor-arg value="' + $generatorXml.escape(log.path) + '"/>');
+
                     $generatorXml.property(res, log, 'level');
                     res.endBlock('</bean>');
                 }
