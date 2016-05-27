@@ -79,6 +79,20 @@ namespace ignite
         BigInteger& operator=(const BigInteger& other);
 
         /**
+         * Assign specified value to this BigInteger.
+         *
+         * @param val Value to assign.
+         */
+        void Assign(const BigInteger& val);
+
+        /**
+         * Assign specified value to this BigInteger.
+         *
+         * @param val Value to assign.
+         */
+        void Assign(int64_t val);
+
+        /**
          * Get number sign. Returns -1 if negative and 1 otherwise.
          *
          * @return Sign of the number.
@@ -129,6 +143,24 @@ namespace ignite
          * @param res Result placed there. Can be *this.
          */
         void Multiply(const BigInteger& other, BigInteger& res) const;
+
+        /**
+         * Divide this to another big integer.
+         *
+         * @param divisor Divisor.
+         * @param res Result placed there. Can be *this.
+         */
+        void Divide(const BigInteger& divisor, BigInteger& res) const;
+
+        /**
+         * Compare this instance to another.
+         *
+         * @param other Another instance.
+         * @param ignoreSign If set to true than only magnitudes are compared.
+         * @return Comparasion result - 0 if equal, 1 if this is greater, -1 if
+         *     this is less.
+         */
+        int32_t Compare(const BigInteger& other, bool ignoreSign = false) const;
 
     private:
         /**

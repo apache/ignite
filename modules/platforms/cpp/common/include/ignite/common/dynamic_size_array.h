@@ -335,6 +335,54 @@ namespace ignite
                 size = newSize;
             }
 
+            /**
+             * Get last element.
+             *
+             * @return Last element reference.
+             */
+            const ValueType& Back() const
+            {
+                assert(size > 0);
+
+                return data[size - 1];
+            }
+
+            /**
+             * Get last element.
+             *
+             * @return Last element reference.
+             */
+            ValueType& Back()
+            {
+                assert(size > 0);
+
+                return data[size - 1];
+            }
+
+            /**
+             * Get first element.
+             *
+             * @return First element reference.
+             */
+            const ValueType& Front() const
+            {
+                assert(size > 0);
+
+                return data[0];
+            }
+
+            /**
+             * Get first element.
+             *
+             * @return First element reference.
+             */
+            ValueType& Front()
+            {
+                assert(size > 0);
+
+                return data[0];
+            }
+
         private:
             /** Allocator */
             AllocatorType alloc;

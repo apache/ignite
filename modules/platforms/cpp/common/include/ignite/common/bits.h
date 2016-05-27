@@ -144,20 +144,40 @@ namespace ignite
 
             /**
              * Makes single 32-bit integer number out of two 32-bit numbers,
-             * shifted by specified number of bits.
+             * shifted by specified number of bits. First number x is shifted
+             * to the left.
              *     x          y
              * [........][........]
-             *    [........]^
-             *       res    n
+             *   ^[........]
+             *   n   res
              *
              * @param x First part.
              * @param y Second part.
-             * @param n Number of bits to shift from the begginning of the y.
+             * @param n Number of bits to shift.
+             * @return New 32-bit integer.
+             */
+            inline uint32_t MakeU32(uint32_t x, uint32_t y, int32_t n)
+            {
+                return (x << n) | (y >> (32 - n));
+            }
+
+            /**
+             * Makes single 32-bit integer number out of two 32-bit numbers,
+             * shifted by specified number of bits. First number x is shifted
+             * to the left.
+             *     x          y
+             * [........][........]
+             *   ^[........]
+             *   n   res
+             *
+             * @param x First part.
+             * @param y Second part.
+             * @param n Number of bits to shift.
              * @return New 32-bit integer.
              */
             inline int32_t MakeI32(uint32_t x, uint32_t y, int32_t n)
             {
-                return static_cast<int32_t>((x << (32 - n)) | (y >> n));
+                return static_cast<int32_t>(MakeU32(x, y, n));
             }
         }
     }

@@ -30,27 +30,11 @@ namespace ignite
         // No-op.
     }
 
-    BigInteger::BigInteger(int64_t val)
+    BigInteger::BigInteger(int64_t val) :
+        sign(1),
+        mag()
     {
-        if (val < 0)
-        {
-            val = -val;
-            sign = -1;
-        }
-        else
-            sign = 1;
-
-        uint32_t highWord = static_cast<uint32_t>(val >> 32);
-
-        if (highWord == 0)
-            mag.Resize(1);
-        else
-        {
-            mag.Resize(2);
-            mag[1] = highWord;
-        }
-
-        mag[0] = static_cast<uint32_t>(val);
+        Assign(val);
     }
 
     BigInteger::BigInteger(const BigInteger& other) :
@@ -119,12 +103,47 @@ namespace ignite
         this->mag.Swap(mag);
     }
 
-    BigInteger& BigInteger::operator=(const BigInteger & other)
+    BigInteger& BigInteger::operator=(const BigInteger& other)
     {
-        sign = other.sign;
-        mag = other.mag;
+        Assign(other);
 
         return *this;
+    }
+
+    void BigInteger::Assign(const BigInteger& val)
+    {
+        sign = val.sign;
+        mag = val.mag;
+    }
+
+    void BigInteger::Assign(int64_t val)
+    {
+        if (val < 0)
+        {
+            val = -val;
+            sign = -1;
+        }
+        else
+            sign = 1;
+
+        if (val == 0)
+        {
+            mag.Clear();
+
+            return;
+        }
+
+        uint32_t highWord = static_cast<uint32_t>(val >> 32);
+
+        if (highWord == 0)
+            mag.Resize(1);
+        else
+        {
+            mag.Resize(2);
+            mag[1] = highWord;
+        }
+
+        mag[0] = static_cast<uint32_t>(val);
     }
 
     int8_t BigInteger::GetSign() const
@@ -251,6 +270,193 @@ namespace ignite
 
         res.mag.Swap(resMag);
         res.sign = sign * other.sign;
+    }
+
+    /**
+     * Shift magnitude left by the specified number of bits.
+     *
+     * @param in Input magnitude.
+     * @param len Magnitude length.
+     * @param out Output magnitude. Should be not shorter than the input
+     *     magnitude.
+     * @param n Number of bits to shift to.
+     */
+    void ShiftLeft(const uint32_t* in, int32_t len, uint32_t* out, unsigned n)
+    {
+        assert(n <= 32);
+
+        for (int32_t i = len - 1; i > 0; --i)
+            out[i] = (in[i] << n) | (in[i - 1] >> 32 - n);
+
+        out[0] = in[0] << n;
+    }
+
+    /**
+     * Part of the division algorithm. Computes q - (a * x).
+     *
+     * @param q Minuend.
+     * @param a Multipliplier of the subtrahend.
+     * @param alen Length of the a.
+     * @param x Multipliplicand of the subtrahend.
+     * @return Carry.
+     */
+    uint32_t MultiplyAndSubstruct(uint32_t* q, const uint32_t* a, int32_t alen, uint32_t x)
+    {
+        uint64_t carry = 0;
+
+        for (int32_t i = 0; i < alen; ++i)
+        {
+            uint64_t product = a[i] * static_cast<uint64_t>(x);
+            int64_t difference = q[i] - carry - product;
+
+            q[i] = static_cast<uint32_t>(difference);
+
+            // This will add one if difference is negative.
+            carry = (product >> 32) - (difference >> 32);
+        }
+
+        return static_cast<uint64_t>(carry);
+    }
+
+    void BigInteger::Divide(const BigInteger& divisor, BigInteger& res) const
+    {
+        // Can't divide by zero.
+        if (divisor.mag.IsEmpty())
+            throw IgniteError(IgniteError::IGNITE_ERR_ILLEGAL_ARGUMENT, "Division by zero.");
+
+        int32_t compRes = Compare(divisor, true);
+
+        int8_t resSign = sign * divisor.sign;
+
+        // The same magnitude. Result is [-]1.
+        if (compRes == 0)
+        {
+            res.Assign(resSign);
+
+            return;
+        }
+
+        // Divisor is greater than this. Result is 0.
+        if (compRes == -1)
+        {
+            res.Assign(0);
+
+            return;
+        }
+
+        // Trivial case.
+        if (mag.GetSize() <= 2)
+        {
+            uint64_t u = mag[0];
+            uint64_t v = divisor.mag[0];
+
+            if (mag.GetSize() == 2)
+                u |= mag[1] << 32;
+
+            if (divisor.mag.GetSize() == 2)
+                v |= divisor.mag[1] << 32;
+
+            res.Assign(resSign * static_cast<int64_t>(u / v));
+
+            return;
+        }
+
+        // Using Knuth division algorithm D for common case.
+
+        // Short aliases.
+        const MagArray& u = mag;
+        const MagArray& v = divisor.mag;
+        MagArray& q = res.mag;
+        int32_t ulen = u.GetSize();
+        int32_t vlen = v.GetSize();
+
+        // First we need to normilize divisor.
+        MagArray nv;
+        nv.Resize(v.GetSize());
+
+        int32_t shift = NumberOfLeadingZerosU32(v.Back());
+        ShiftLeft(v.GetData(), vlen, nv.GetData(), shift);
+
+        // Divisor is normilized. Now we need to normilize divident.
+        MagArray nu;
+
+        // First find out what is the size of it.
+        if (NumberOfLeadingZerosU32(u.Back()) >= shift)
+        {
+            // Everything is the same as with divisor. Just add leading zero.
+            nu.Resize(ulen + 1);
+
+            ShiftLeft(u.GetData(), ulen, nu.GetData(), shift);
+
+            assert((u.Back() >> (32 - shift)) == 0);
+        }
+        else
+        {
+            // We need one more byte here. Also adding leading zero.
+            nu.Resize(ulen + 2);
+
+            ShiftLeft(u.GetData(), ulen, nu.GetData(), shift);
+
+            nu[ulen] = u[ulen - 1] >> (32 - shift);
+
+            assert(nu[ulen] != 0);
+        }
+
+        assert(nu.Back() == 0);
+
+        // Main loop
+        for (int32_t i = ulen - vlen; i >= 0; --i)
+        {
+            uint64_t base = MakeU64(nu[i + vlen], nu[i + vlen - 1]);
+
+            uint64_t qhat = base / nv[vlen - 1]; // Estimated quotient. 
+            uint64_t rhat = base % nv[vlen - 1]; // A remainder.
+
+            // Adjusting result if needed.
+            while (qhat >= UINT32_MAX || qhat * nv[vlen - 2] > UINT32_MAX * rhat + nu[i + vlen - 2])
+            {
+                qhat = qhat - 1;
+                rhat = rhat + nv[vlen - 1];
+
+                if (rhat >= UINT32_MAX)
+                    break;
+            }
+
+            // Multiply and subtract.
+            uint32_t carry = MultiplyAndSubstruct(nu.GetData() + i, nv.GetData(), vlen, qhat);
+
+            nu[i + vlen] -= carry;
+
+        }
+    }
+
+    int32_t BigInteger::Compare(const BigInteger& other, bool ignoreSign) const
+    {
+        // What we should return if magnitude is greater.
+        int32_t mgt = 1;
+
+        if (!ignoreSign)
+        {
+            if (sign != other.sign)
+                return sign > other.sign ? 1 : -1;
+            else
+                mgt = sign;
+        }
+
+        if (mag.GetSize() != other.mag.GetSize())
+            return mag.GetSize() > other.mag.GetSize() ? mgt : -mgt;
+
+        for (int32_t i = mag.GetSize() - 1; i >= 0; ++i)
+        {
+            if (mag[i] == other.mag[i])
+                continue;
+            else if (mag[i] > other.mag[i])
+                return mgt;
+            else
+                return -mgt;
+        }
+
+        return 0;
     }
 }
 
