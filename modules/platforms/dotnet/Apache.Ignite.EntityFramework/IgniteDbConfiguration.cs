@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.EntityFramework
 {
+    using System.Configuration;
     using System.Data.Entity;
     using System.Data.Entity.Core.Common;
     using Apache.Ignite.Core;
@@ -32,16 +33,22 @@ namespace Apache.Ignite.EntityFramework
     /// <para />
     /// Ignite instance will be started automatically, if it is not started yet.
     /// <para /> 
-    /// <see cref="IgniteConfigurationSection"/> with name "igniteConfiguration" will be picked up 
+    /// <see cref="IgniteConfigurationSection"/> with name <see cref="ConfigurationSectionName"/> will be picked up 
     /// when starting Ignite, if present.
     /// </summary>
     public class IgniteDbConfiguration : DbConfiguration
     {
+        /// <summary>
+        /// The configuration section name to be used when starting Ignite.
+        /// </summary>
+        public const string ConfigurationSectionName = "igniteConfiguration";
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="IgniteDbConfiguration"/> class.
+        /// </summary>
         public IgniteDbConfiguration()
         {
-            // TODO: Read default config?
-            var ignite = Ignition.TryGetIgnite() ?? Ignition.Start();
-            var cache = ignite.GetOrCreateCache<string, object>((string) null);
+            var cache = GetOrStartIgnite().GetOrCreateCache<string, object>((string) null);
 
             var efCache = new IgniteEntityFrameworkCache(cache);
             var transactionHandler = new CacheTransactionHandler(efCache);
@@ -54,6 +61,22 @@ namespace Apache.Ignite.EntityFramework
                 (sender, args) => args.ReplaceService<DbProviderServices>(
                     (s, _) => new CachingProviderServices(s, transactionHandler,
                         cachingPolicy));
+        }
+
+        /// <summary>
+        /// Gets the Ignite instance.
+        /// </summary>
+        private static IIgnite GetOrStartIgnite()
+        {
+            var ignite = Ignition.TryGetIgnite();
+
+            if (ignite != null)
+                return ignite;
+
+            // Not yet started: check config and start
+            var section = ConfigurationManager.GetSection(ConfigurationSectionName) as IgniteConfigurationSection;
+
+            return Ignition.Start(section != null ? section.IgniteConfiguration : null);
         }
     }
 }
