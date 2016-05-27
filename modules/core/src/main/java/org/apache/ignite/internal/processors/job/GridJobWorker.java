@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.job;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -43,6 +44,9 @@ import org.apache.ignite.internal.GridJobSessionImpl;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
 import org.apache.ignite.internal.util.typedef.F;
@@ -154,6 +158,12 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
     /** Hold/unhold listener to notify job processor. */
     private final GridJobHoldListener holdLsnr;
 
+    /** Reserved parts. */
+    private final List<GridReservable> reservedParts;
+
+    /** Request topology version. */
+    AffinityTopologyVersion reqTopVer;
+
     /**
      * @param ctx Kernal context.
      * @param dep Grid deployment.
@@ -166,6 +176,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
      * @param internal Whether or not task was marked with {@link GridInternal}
      * @param evtLsnr Job event listener.
      * @param holdLsnr Hold listener.
+     * @param reservedParts reserved partitions (must be released at the job finish).
+     * @param reqTopVer affinity topology version of the job request.
      */
     GridJobWorker(
         GridKernalContext ctx,
@@ -178,7 +190,9 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         ClusterNode taskNode,
         boolean internal,
         GridJobEventListener evtLsnr,
-        GridJobHoldListener holdLsnr) {
+        GridJobHoldListener holdLsnr,
+        List<GridReservable> reservedParts,
+        AffinityTopologyVersion reqTopVer) {
         super(ctx.gridName(), "grid-job-worker", ctx.log(GridJobWorker.class));
 
         assert ctx != null;
@@ -199,6 +213,7 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         this.taskNode = taskNode;
         this.internal = internal;
         this.holdLsnr = holdLsnr;
+        this.reservedParts = reservedParts;
 
         if (job != null)
             this.job = job;
@@ -211,6 +226,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
 
         jobTopic = TOPIC_JOB.topic(ses.getJobId(), locNodeId);
         taskTopic = TOPIC_TASK.topic(ses.getJobId(), locNodeId);
+
+        this.reqTopVer = reqTopVer;
     }
 
     /**
@@ -495,6 +512,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         try {
             ctx.job().currentTaskSession(ses);
 
+            GridQueryProcessor.setAffinityTopologyVersion(reqTopVer);
+
             // If job has timed out, then
             // avoid computation altogether.
             if (isTimedOut())
@@ -561,6 +580,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                 finishJob(res, ex, sndRes);
 
             ctx.job().currentTaskSession(null);
+
+            GridQueryProcessor.setAffinityTopologyVersion(null);
         }
     }
 
@@ -688,6 +709,11 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
         @Nullable IgniteException ex,
         boolean sndReply)
     {
+        if(reservedParts != null) {
+            for (GridReservable r : reservedParts)
+                r.release();
+        }
+
         // Avoid finishing a job more than once from different threads.
         if (!finishing.compareAndSet(false, true))
             return;
@@ -750,7 +776,8 @@ public class GridJobWorker extends GridWorker implements GridTimeoutObject {
                                 loc ? res : null,
                                 loc ? null : marsh.marshal(attrs),
                                 loc ? attrs : null,
-                                isCancelled());
+                                isCancelled(),
+                                null);
 
                             long timeout = ses.getEndTime() - U.currentTimeMillis();
 

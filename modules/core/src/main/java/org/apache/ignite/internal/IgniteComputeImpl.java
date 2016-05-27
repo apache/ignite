@@ -24,6 +24,7 @@ import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -43,6 +44,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
@@ -109,7 +111,27 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            saveOrGet(ctx.closure().affinityRun(cacheName, affKey, job, prj.nodes()));
+            saveOrGet(ctx.closure().affinityRun(cacheName, affKey, job, prj.nodes(),
+                null));
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void affinityRun(@Nullable String cacheName, Object affKey, IgniteRunnable job,
+        @NotNull Collection<String> extraCaches) {
+        A.notNull(affKey, "affKey");
+        A.notNull(job, "job");
+
+        guard();
+
+        try {
+            saveOrGet(ctx.closure().affinityRun(cacheName, affKey, job, prj.nodes(), extraCaches));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -127,7 +149,27 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
         guard();
 
         try {
-            return saveOrGet(ctx.closure().affinityCall(cacheName, affKey, job, prj.nodes()));
+            return saveOrGet(ctx.closure().affinityCall(cacheName, affKey, job, prj.nodes(),
+                null));
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public <R> R affinityCall(@Nullable String cacheName, Object affKey, IgniteCallable<R> job,
+        @NotNull Collection<String> extraCaches) {
+        A.notNull(affKey, "affKey");
+        A.notNull(job, "job");
+
+        guard();
+
+        try {
+            return saveOrGet(ctx.closure().affinityCall(cacheName, affKey, job, prj.nodes(), extraCaches));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

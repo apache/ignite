@@ -139,6 +139,37 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      * @param cacheName Name of the cache to use for affinity co-location.
      * @param affKey Affinity key.
      * @param job Job which will be co-located on the node with given affinity key.
+     * @param extraCaches additional caches to reserve the partition similar to
+     * partition of the affKey for job execution.
+     * @throws IgniteException If job failed.
+     */
+    @IgniteAsyncSupported
+    public void affinityRun(@Nullable String cacheName, Object affKey, IgniteRunnable job,
+        Collection<String> extraCaches) throws IgniteException;
+
+    /**
+     * Executes given job on the node where data for provided affinity key is located
+     * (a.k.a. affinity co-location).
+     *
+     * @param cacheName Name of the cache to use for affinity co-location.
+     * @param affKey Affinity key.
+     * @param job Job which will be co-located on the node with given affinity key.
+     * @param extraCaches additional caches to reserve the partition similar to
+     * partition of the affKey for job execution.
+     * @return Job result.
+     * @throws IgniteException If job failed.
+     */
+    @IgniteAsyncSupported
+    public <R> R affinityCall(@Nullable String cacheName, Object affKey, IgniteCallable<R> job,
+        Collection<String> extraCaches) throws IgniteException;
+
+    /**
+     * Executes given job on the node where data for provided affinity key is located
+     * (a.k.a. affinity co-location).
+     *
+     * @param cacheName Name of the cache to use for affinity co-location.
+     * @param affKey Affinity key.
+     * @param job Job which will be co-located on the node with given affinity key.
      * @return Job result.
      * @throws IgniteException If job failed.
      */

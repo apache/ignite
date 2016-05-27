@@ -367,7 +367,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             if (stopping)
                 throw new IllegalStateException("Failed to execute task due to grid shutdown: " + taskCls);
 
-            return startTask(null, taskCls, null, IgniteUuid.fromUuid(ctx.localNodeId()), arg, false);
+            return startTask(null, taskCls, null, IgniteUuid.fromUuid(ctx.localNodeId()), arg, false, null, -1);
         }
         finally {
             lock.readUnlock();
@@ -382,25 +382,29 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param <R> Task return value type.
      */
     public <T, R> ComputeTaskInternalFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg) {
-        return execute(task, arg, false);
+        return execute(task, arg, false, null, -1);
     }
 
     /**
      * @param task Actual task.
      * @param arg Optional task argument.
      * @param sys If {@code true}, then system pool will be used.
+     * @param caches caches to partition reserve.
+     * @param part partition to reserve.
      * @return Task future.
      * @param <T> Task argument type.
      * @param <R> Task return value type.
+     * @param <R> Task return value type.
      */
-    public <T, R> ComputeTaskInternalFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg, boolean sys) {
+    public <T, R> ComputeTaskInternalFuture<R> execute(ComputeTask<T, R> task, @Nullable T arg, boolean sys,
+        @Nullable Collection<String> caches, int part) {
         lock.readLock();
 
         try {
             if (stopping)
                 throw new IllegalStateException("Failed to execute task due to grid shutdown: " + task);
 
-            return startTask(null, null, task, IgniteUuid.fromUuid(ctx.localNodeId()), arg, sys);
+            return startTask(null, null, task, IgniteUuid.fromUuid(ctx.localNodeId()), arg, sys, caches, part);
         }
         finally {
             lock.readUnlock();
@@ -444,7 +448,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
             if (stopping)
                 throw new IllegalStateException("Failed to execute task due to grid shutdown: " + taskName);
 
-            return startTask(taskName, null, null, IgniteUuid.fromUuid(ctx.localNodeId()), arg, false);
+            return startTask(taskName, null, null, IgniteUuid.fromUuid(ctx.localNodeId()), arg, false, null, -1);
         }
         finally {
             lock.readUnlock();
@@ -458,6 +462,8 @@ public class GridTaskProcessor extends GridProcessorAdapter {
      * @param sesId Task session ID.
      * @param arg Optional task argument.
      * @param sys If {@code true}, then system pool will be used.
+     * @param caches caches to lock  partition for task execution.
+     * @param part partitions to lock for task execution.
      * @return Task future.
      */
     @SuppressWarnings("unchecked")
@@ -467,7 +473,9 @@ public class GridTaskProcessor extends GridProcessorAdapter {
         @Nullable ComputeTask<T, R> task,
         IgniteUuid sesId,
         @Nullable T arg,
-        boolean sys) {
+        boolean sys,
+        @Nullable Collection<String> caches,
+        int part) {
         assert sesId != null;
 
         String taskClsName;
@@ -650,7 +658,9 @@ public class GridTaskProcessor extends GridProcessorAdapter {
                     dep,
                     new TaskEventListener(),
                     map,
-                    subjId);
+                    subjId,
+                    caches,
+                    part);
 
                 GridTaskWorker<?, ?> taskWorker0 = tasks.putIfAbsent(sesId, taskWorker);
 

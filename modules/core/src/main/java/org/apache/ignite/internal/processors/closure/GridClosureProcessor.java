@@ -23,8 +23,10 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.concurrent.RejectedExecutionException;
@@ -191,7 +193,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T1(mode, jobs), null, sys);
+            return ctx.task().execute(new T1(mode, jobs), null, sys, null, -1);
         }
         finally {
             busyLock.readUnlock();
@@ -232,7 +234,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T2(mode, job), null, sys);
+            return ctx.task().execute(new T2(mode, job), null, sys, null, -1);
         }
         finally {
             busyLock.readUnlock();
@@ -417,7 +419,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T6<>(mode, jobs), null, sys);
+            return ctx.task().execute(new T6<>(mode, jobs), null, sys, null, -1);
         }
         finally {
             busyLock.readUnlock();
@@ -445,7 +447,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Job future.
      */
     public <R> ComputeTaskInternalFuture<R> affinityCall(@Nullable String cacheName, Object affKey, Callable<R> job,
-        @Nullable Collection<ClusterNode> nodes) {
+        @Nullable Collection<ClusterNode> nodes, @Nullable Collection<String> extraCaches) {
         busyLock.readLock();
 
         try {
@@ -462,7 +464,14 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T5(node, job, affKey0, cacheName), null, false);
+            Set<String> caches = new HashSet<>();
+            caches.add(cacheName);
+            if (extraCaches != null)
+                caches.addAll(extraCaches);
+
+            int part = ctx.cache().cache(cacheName).affinity().partition(affKey);
+
+            return ctx.task().execute(new T5(node, job, affKey0, cacheName), null, false, caches, part);
         }
         catch (IgniteCheckedException e) {
             return ComputeTaskInternalFuture.finishedFuture(ctx, T5.class, e);
@@ -480,7 +489,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
      * @return Job future.
      */
     public ComputeTaskInternalFuture<?> affinityRun(@Nullable String cacheName, Object affKey, Runnable job,
-        @Nullable Collection<ClusterNode> nodes) {
+        @Nullable Collection<ClusterNode> nodes, @Nullable Collection<String> extraCaches) {
         busyLock.readLock();
 
         try {
@@ -497,7 +506,14 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T4(node, job, affKey0, cacheName), null, false);
+            Set<String> caches = new HashSet<>();
+            caches.add(cacheName);
+            if (extraCaches != null)
+                caches.addAll(extraCaches);
+
+            int part = ctx.cache().cache(cacheName).affinity().partition(affKey);
+
+            return ctx.task().execute(new T4(node, job, affKey0, cacheName), null, false, caches, part);
         }
         catch (IgniteCheckedException e) {
             return ComputeTaskInternalFuture.finishedFuture(ctx, T4.class, e);
@@ -531,7 +547,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T7<>(mode, job), null, sys);
+            return ctx.task().execute(new T7<>(mode, job), null, sys, null, -1);
         }
         finally {
             busyLock.readUnlock();
@@ -563,7 +579,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T6<>(mode, jobs), null, sys);
+            return ctx.task().execute(new T6<>(mode, jobs), null, sys, null, -1);
         }
         finally {
             busyLock.readUnlock();
@@ -594,7 +610,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T7<>(mode, job), null, sys);
+            return ctx.task().execute(new T7<>(mode, job), null, sys, null, -1);
         }
         finally {
             busyLock.readUnlock();
@@ -617,7 +633,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T8(job, arg), null, false);
+            return ctx.task().execute(new T8(job, arg), null, false, null, -1);
         }
         finally {
             busyLock.readUnlock();
@@ -640,7 +656,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T11<>(job), arg, false);
+            return ctx.task().execute(new T11<>(job), arg, false, null, -1);
         }
         finally {
             busyLock.readUnlock();
@@ -664,7 +680,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
             ctx.task().setThreadContext(TC_NO_FAILOVER, true);
 
-            return ctx.task().execute(new T11<>(job), arg, false);
+            return ctx.task().execute(new T11<>(job), arg, false, null, -1);
         }
         finally {
             busyLock.readUnlock();
@@ -689,7 +705,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T9<>(job, args), null, false);
+            return ctx.task().execute(new T9<>(job, args), null, false, null, -1);
         }
         finally {
             busyLock.readUnlock();
@@ -713,7 +729,7 @@ public class GridClosureProcessor extends GridProcessorAdapter {
 
             ctx.task().setThreadContext(TC_SUBGRID, nodes);
 
-            return ctx.task().execute(new T10<>(job, args, rdc), null, false);
+            return ctx.task().execute(new T10<>(job, args, rdc), null, false, null, -1);
         }
         finally {
             busyLock.readUnlock();
