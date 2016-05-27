@@ -436,7 +436,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheObject unswap(boolean needVal) {
+    @Nullable @Override public CacheObject unswap(boolean needVal, boolean checkExpire) {
         return null;
     }
 

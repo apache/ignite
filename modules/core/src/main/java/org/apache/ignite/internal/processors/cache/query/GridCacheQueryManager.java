@@ -38,7 +38,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
-import javax.cache.Cache;
 import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
@@ -905,7 +904,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 it = cctx.offheap().iterator(backups, topVer);
             }
 
-            return new PeekValueExpiryAwareIterator(it, plc, topVer, keyValFilter, qry.keepBinary()) {
+            return new PeekValueExpiryAwareIterator(it, plc, topVer, keyValFilter, qry.keepBinary(), locNode) {
                 @Override protected void onClose() {
                     super.onClose();
 

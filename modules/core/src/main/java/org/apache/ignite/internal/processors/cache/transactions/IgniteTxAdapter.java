@@ -1276,8 +1276,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
         if ((local() || first.isLocal()) && (near() || isWriteToStoreFromDht)) {
             try {
                 if (writeEntries != null) {
-                    Map<Object, IgniteBiTuple<Object, GridCacheVersion>> putMap = null;
-                    List<Object> rmvCol = null;
+                    Map<KeyCacheObject, IgniteBiTuple<? extends CacheObject, GridCacheVersion>> putMap = null;
+                    List<KeyCacheObject> rmvCol = null;
                     CacheStoreManager writeStore = null;
 
                     boolean skipNonPrimary = near() && isWriteToStoreFromDht;
@@ -1342,7 +1342,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                                     new CacheLazyEntry(
                                         cacheCtx,
                                         key,
-                                        e.cached().rawGetOrUnmarshal(true),
+                                        e.cached().rawGet(),
                                         e.keepBinary()),
                                     cacheCtx.cacheObjectContext().unwrapBinaryIfNeeded(val, e.keepBinary(), false));
 
@@ -1359,7 +1359,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                                 if (putMap == null)
                                     putMap = new LinkedHashMap<>(writeMap().size(), 1.0f);
 
-                                putMap.put(key, F.<Object, GridCacheVersion>t(val, ver));
+                                putMap.put(key, F.t(val, ver));
                             }
                         }
                         else if (op == DELETE) {
@@ -1388,7 +1388,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
 
                             if (intercept) {
                                 IgniteBiTuple<Boolean, Object> t = cacheCtx.config().getInterceptor().onBeforeRemove(
-                                    new CacheLazyEntry(cacheCtx, key, e.cached().rawGetOrUnmarshal(true), e.keepBinary()));
+                                    new CacheLazyEntry(cacheCtx, key, e.cached().rawGet(), e.keepBinary()));
 
                                 if (cacheCtx.cancelRemove(t))
                                     continue;

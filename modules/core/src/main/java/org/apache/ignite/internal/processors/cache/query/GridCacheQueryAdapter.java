@@ -637,12 +637,6 @@ public class GridCacheQueryAdapter<T> implements CacheQuery<T> {
 
             nodes = fallbacks(cctx.discovery().topologyVersionEx());
 
-            if (nodes.isEmpty()) {
-                onDone(new ClusterGroupEmptyCheckedException("Failed to find partition nodes."));
-
-                return;
-            }
-
             init();
         }
 

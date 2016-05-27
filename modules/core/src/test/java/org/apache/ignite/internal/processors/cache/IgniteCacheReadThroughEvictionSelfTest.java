@@ -237,9 +237,6 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
 
                     if (!cache.isEmpty())
                         return false;
-
-                    if (cache.context().offheap().entriesCount(null) > 0)
-                        return false;
                 }
 
                 return true;
