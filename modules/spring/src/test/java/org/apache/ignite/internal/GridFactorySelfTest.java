@@ -114,8 +114,8 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String localInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(localInstanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
@@ -167,7 +167,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
      */
     public void testStartGridWithConfigUrlString() throws Exception {
         GridEmbeddedHttpServer srv = null;
-        String gridName = "grid_with_url_config";
+        String localInstanceName = "grid_with_url_config";
 
         try {
             srv = GridEmbeddedHttpServer.startHttpServer().withFileDownloadingHandler(null,
@@ -175,13 +175,13 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
             Ignite ignite = G.start(srv.getBaseUrl());
 
-            assert gridName.equals(ignite.name()) : "Unexpected grid name: " + ignite.name();
+            assert localInstanceName.equals(ignite.name()) : "Unexpected grid name: " + ignite.name();
         }
         finally {
             if (srv != null)
                 srv.stop(1);
 
-            G.stop(gridName, false);
+            G.stop(localInstanceName, false);
         }
     }
 
@@ -190,7 +190,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
      */
     public void testStartGridWithConfigUrl() throws Exception {
         GridEmbeddedHttpServer srv = null;
-        String gridName = "grid_with_url_config";
+        String localInstanceName = "grid_with_url_config";
 
         try {
             srv = GridEmbeddedHttpServer.startHttpServer().withFileDownloadingHandler(null,
@@ -198,13 +198,13 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
             Ignite ignite = G.start(new URL(srv.getBaseUrl()));
 
-            assert gridName.equals(ignite.name()) : "Unexpected grid name: " + ignite.name();
+            assert localInstanceName.equals(ignite.name()) : "Unexpected grid name: " + ignite.name();
         }
         finally {
             if (srv != null)
                 srv.stop(1);
 
-            G.stop(gridName, false);
+            G.stop(localInstanceName, false);
         }
     }
 
@@ -293,71 +293,71 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testLifecycleBeansNullGridName() throws Exception {
+    public void testLifecycleBeansNullLocalInstanceName() throws Exception {
         checkLifecycleBeans(null);
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testLifecycleBeansNotNullGridName() throws Exception {
+    public void testLifecycleBeansNotNullLocalInstanceName() throws Exception {
         checkLifecycleBeans("testGrid");
     }
 
     /**
-     * @param gridName Grid name.
+     * @param localInstanceName Grid name.
      * @throws Exception If test failed.
      */
-    private void checkLifecycleBeans(@Nullable String gridName) throws Exception {
+    private void checkLifecycleBeans(@Nullable String localInstanceName) throws Exception {
         TestLifecycleBean bean1 = new TestLifecycleBean();
         TestLifecycleBean bean2 = new TestLifecycleBean();
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setLifecycleBeans(bean1, bean2);
-        cfg.setGridName(gridName);
+        cfg.setInstanceName(localInstanceName);
 
         cfg.setConnectorConfiguration(null);
 
         try (Ignite g = IgniteSpring.start(cfg, new GenericApplicationContext())) {
-            bean1.checkState(gridName, true);
-            bean2.checkState(gridName, true);
+            bean1.checkState(localInstanceName, true);
+            bean2.checkState(localInstanceName, true);
         }
 
-        bean1.checkState(gridName, false);
-        bean2.checkState(gridName, false);
+        bean1.checkState(localInstanceName, false);
+        bean2.checkState(localInstanceName, false);
 
-        checkLifecycleBean(bean1, gridName);
-        checkLifecycleBean(bean2, gridName);
+        checkLifecycleBean(bean1, localInstanceName);
+        checkLifecycleBean(bean2, localInstanceName);
     }
 
     /**
      * @param bean Bean to check.
-     * @param gridName Grid name to check for.
+     * @param localInstanceName Grid name to check for.
      */
-    private void checkLifecycleBean(TestLifecycleBean bean, String gridName) {
+    private void checkLifecycleBean(TestLifecycleBean bean, String localInstanceName) {
         bean.checkErrors();
 
         List<LifecycleEventType> evts = bean.getLifecycleEvents();
 
-        List<String> gridNames = bean.getGridNames();
+        List<String> localInstanceNames = bean.getLocalInstanceNames();
 
         assert evts.get(0) == LifecycleEventType.BEFORE_NODE_START : "Invalid lifecycle event: " + evts.get(0);
         assert evts.get(1) == LifecycleEventType.AFTER_NODE_START : "Invalid lifecycle event: " + evts.get(1);
         assert evts.get(2) == LifecycleEventType.BEFORE_NODE_STOP : "Invalid lifecycle event: " + evts.get(2);
         assert evts.get(3) == LifecycleEventType.AFTER_NODE_STOP : "Invalid lifecycle event: " + evts.get(3);
 
-        checkGridNameEquals(gridNames.get(0), gridName);
-        checkGridNameEquals(gridNames.get(1), gridName);
-        checkGridNameEquals(gridNames.get(2), gridName);
-        checkGridNameEquals(gridNames.get(3), gridName);
+        checkLocalInstanceNameEquals(localInstanceNames.get(0), localInstanceName);
+        checkLocalInstanceNameEquals(localInstanceNames.get(1), localInstanceName);
+        checkLocalInstanceNameEquals(localInstanceNames.get(2), localInstanceName);
+        checkLocalInstanceNameEquals(localInstanceNames.get(3), localInstanceName);
     }
 
     /**
      * @param n1 First name.
      * @param n2 Second name.
      */
-    private void checkGridNameEquals(String n1, String n2) {
+    private void checkLocalInstanceNameEquals(String n1, String n2) {
         if (n1 == null) {
             assert n2 == null;
 
@@ -470,7 +470,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
                         try {
                             IgniteConfiguration cfg = new IgniteConfiguration();
 
-                            cfg.setGridName("TEST_NAME");
+                            cfg.setInstanceName("TEST_NAME");
                             cfg.setConnectorConfiguration(null);
 
                             G.start(cfg);
@@ -512,17 +512,17 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param gridName Grid name ({@code null} for default grid).
+     * @param localInstanceName Grid name ({@code null} for default grid).
      * @throws Exception If failed.
      */
-    private void checkConcurrentStartStop(@Nullable final String gridName) throws Exception {
+    private void checkConcurrentStartStop(@Nullable final String localInstanceName) throws Exception {
         final AtomicInteger startedCnt = new AtomicInteger();
         final AtomicInteger stoppedCnt = new AtomicInteger();
 
         IgnitionListener lsnr = new IgnitionListener() {
             @SuppressWarnings("StringEquality")
             @Override public void onStateChange(@Nullable String name, IgniteState state) {
-                assert name == gridName;
+                assert name == localInstanceName;
 
                 info("On state change fired: " + state);
 
@@ -546,7 +546,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
                     @Nullable @Override public Object call() throws Exception {
                         for (int i = 0; i < iterCnt; i++) {
                             try {
-                                IgniteConfiguration cfg = getConfiguration(gridName);
+                                IgniteConfiguration cfg = getConfiguration(localInstanceName);
 
                                 G.start(cfg);
                             }
@@ -561,7 +561,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
                                     throw e; // Unexpected exception.
                             }
                             finally {
-                                stopGrid(gridName);
+                                stopGrid(localInstanceName);
                             }
                         }
 
@@ -599,7 +599,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
                     cfg.setConnectorConfiguration(null);
 
                     cfg.setDiscoverySpi(new TcpDiscoverySpi() {
-                        @Override public void spiStart(String gridName) throws IgniteSpiException {
+                        @Override public void spiStart(String localInstanceName) throws IgniteSpiException {
                             throw new IgniteSpiException("This SPI will never start.");
                         }
                     });
@@ -628,38 +628,38 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
         G.start(cfg1);
 
-        assert G.state(cfg1.getGridName()) == STARTED;
-        assert G.state(getTestGridName() + '1') == STOPPED;
+        assert G.state(cfg1.getInstanceName()) == STARTED;
+        assert G.state(getTestLocalInstanceName() + '1') == STOPPED;
 
-        G.stop(cfg1.getGridName(), false);
+        G.stop(cfg1.getInstanceName(), false);
 
-        assert G.state(cfg1.getGridName()) == STOPPED;
-        assert G.state(getTestGridName() + '1') == STOPPED;
+        assert G.state(cfg1.getInstanceName()) == STOPPED;
+        assert G.state(getTestLocalInstanceName() + '1') == STOPPED;
 
-        cfg2.setGridName(getTestGridName() + '1');
-
-        G.start(cfg2);
-
-        assert G.state(cfg1.getGridName()) == STOPPED;
-        assert G.state(getTestGridName() + '1') == STARTED;
-
-        G.stop(getTestGridName() + '1', false);
-
-        assert G.state(cfg1.getGridName()) == STOPPED;
-        assert G.state(getTestGridName() + '1') == STOPPED;
-
-        cfg2.setGridName(getTestGridName() + '1');
+        cfg2.setInstanceName(getTestLocalInstanceName() + '1');
 
         G.start(cfg2);
 
-        assert G.state(getTestGridName() + '1') == STARTED;
-        assert G.state(getTestGridName()) == STOPPED;
+        assert G.state(cfg1.getInstanceName()) == STOPPED;
+        assert G.state(getTestLocalInstanceName() + '1') == STARTED;
 
-        G.stop(getTestGridName() + '1', false);
-        G.stop(getTestGridName(), false);
+        G.stop(getTestLocalInstanceName() + '1', false);
 
-        assert G.state(getTestGridName() + '1') == STOPPED;
-        assert G.state(getTestGridName()) == STOPPED;
+        assert G.state(cfg1.getInstanceName()) == STOPPED;
+        assert G.state(getTestLocalInstanceName() + '1') == STOPPED;
+
+        cfg2.setInstanceName(getTestLocalInstanceName() + '1');
+
+        G.start(cfg2);
+
+        assert G.state(getTestLocalInstanceName() + '1') == STARTED;
+        assert G.state(getTestLocalInstanceName()) == STOPPED;
+
+        G.stop(getTestLocalInstanceName() + '1', false);
+        G.stop(getTestLocalInstanceName(), false);
+
+        assert G.state(getTestLocalInstanceName() + '1') == STOPPED;
+        assert G.state(getTestLocalInstanceName()) == STOPPED;
     }
 
     /**
@@ -674,27 +674,27 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         cfg2.setCollisionSpi(new TestMultipleInstancesCollisionSpi());
         cfg3.setCollisionSpi(new TestMultipleInstancesCollisionSpi());
 
-        cfg2.setGridName(getTestGridName() + '1');
+        cfg2.setInstanceName(getTestLocalInstanceName() + '1');
 
         G.start(cfg2);
 
         G.start(cfg1);
 
-        cfg3.setGridName(getTestGridName() + '2');
+        cfg3.setInstanceName(getTestLocalInstanceName() + '2');
 
         G.start(cfg3);
 
-        assert G.state(cfg1.getGridName()) == STARTED;
-        assert G.state(getTestGridName() + '1') == STARTED;
-        assert G.state(getTestGridName() + '2') == STARTED;
+        assert G.state(cfg1.getInstanceName()) == STARTED;
+        assert G.state(getTestLocalInstanceName() + '1') == STARTED;
+        assert G.state(getTestLocalInstanceName() + '2') == STARTED;
 
-        G.stop(getTestGridName() + '2', false);
-        G.stop(cfg1.getGridName(), false);
-        G.stop(getTestGridName() + '1', false);
+        G.stop(getTestLocalInstanceName() + '2', false);
+        G.stop(cfg1.getInstanceName(), false);
+        G.stop(getTestLocalInstanceName() + '1', false);
 
-        assert G.state(cfg1.getGridName()) == STOPPED;
-        assert G.state(getTestGridName() + '1') == STOPPED;
-        assert G.state(getTestGridName() + '2') == STOPPED;
+        assert G.state(cfg1.getInstanceName()) == STOPPED;
+        assert G.state(getTestLocalInstanceName() + '1') == STOPPED;
+        assert G.state(getTestLocalInstanceName() + '2') == STOPPED;
     }
 
     /**
@@ -741,7 +741,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void spiStart(String gridName) throws IgniteSpiException {
+        @Override public void spiStart(String localInstanceName) throws IgniteSpiException {
             // Start SPI start stopwatch.
             startStopwatch();
 
@@ -779,7 +779,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void spiStart(String gridName) throws IgniteSpiException {
+        @Override public void spiStart(String localInstanceName) throws IgniteSpiException {
             // Start SPI start stopwatch.
             startStopwatch();
 
@@ -820,8 +820,8 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         /** Lifecycle events. */
         private final List<LifecycleEventType> evts = new ArrayList<>();
 
-        /** Grid names. */
-        private final List<String> gridNames = new ArrayList<>();
+        /** Local instance names. */
+        private final List<String> localInstanceNames = new ArrayList<>();
 
         /** */
         private final AtomicReference<Throwable> err = new AtomicReference<>();
@@ -830,7 +830,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         @Override public void onLifecycleEvent(LifecycleEventType evt) {
             evts.add(evt);
 
-            gridNames.add(ignite.name());
+            localInstanceNames.add(ignite.name());
 
             try {
                 checkState(ignite.name(),
@@ -846,18 +846,18 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         /**
          * Checks state of the bean.
          *
-         * @param gridName Grid name.
+         * @param localInstanceName Grid name.
          * @param exec Try to execute something on the grid.
          */
-        void checkState(String gridName, boolean exec) {
+        void checkState(String localInstanceName, boolean exec) {
             assert log != null;
             assert appCtx != null;
 
-            assert F.eq(gridName, ignite.name());
+            assert F.eq(localInstanceName, ignite.name());
 
             if (exec)
                 // Execute any grid method.
-                G.ignite(gridName).events().localQuery(F.<Event>alwaysTrue());
+                G.ignite(localInstanceName).events().localQuery(F.<Event>alwaysTrue());
         }
 
         /**
@@ -870,12 +870,12 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
         }
 
         /**
-         * Gets ordered list of grid names.
+         * Gets oedered list of local instance names.
          *
-         * @return Ordered list of grid names.
+         * @return Ordered list of local instance names.
          */
-        List<String> getGridNames() {
-            return gridNames;
+        List<String> getLocalInstanceNames() {
+            return localInstanceNames;
         }
 
         /**

@@ -213,7 +213,11 @@ public class IgniteConfiguration {
     public static final Long DFLT_FAILURE_DETECTION_TIMEOUT = new Long(10_000);
 
     /** Optional grid name. */
+    @Deprecated
     private String gridName;
+
+    /** Optional instance name. */
+    private String instanceName;
 
     /** User attributes. */
     private Map<String, ?> userAttrs;
@@ -503,6 +507,7 @@ public class IgniteConfiguration {
         failureDetectionTimeout = cfg.getFailureDetectionTimeout();
         gridName = cfg.getGridName();
         hadoopCfg = cfg.getHadoopConfiguration();
+        instanceName = cfg.getInstanceName();
         igfsCfg = cfg.getFileSystemConfiguration();
         igfsPoolSize = cfg.getIgfsThreadPoolSize();
         igniteHome = cfg.getIgniteHome();
@@ -562,9 +567,22 @@ public class IgniteConfiguration {
      * @return Optional grid name. Can be {@code null}, which is default grid name, if
      *      non-default grid name was not provided.
      */
+    @Deprecated
     public String getGridName() {
         return gridName;
     }
+
+    /**
+     * Gets optional local instance name. Returns {@code null} if non-default local instance
+     * name was not provided.
+     *
+     * @return Optional local instance name. Can be {@code null}, which is default local
+     * instance name, if non-default local instance name was not provided.
+     */
+    public String getInstanceName() {
+        return instanceName;
+    }
+
 
     /**
      * Whether or not this node should be a daemon node.
@@ -613,10 +631,17 @@ public class IgniteConfiguration {
      *      grid name.
      * @return {@code this} for chaining.
      */
+    @Deprecated
     public IgniteConfiguration setGridName(String gridName) {
         this.gridName = gridName;
 
         return this;
+    }
+
+    public IgniteConfiguration setInstanceName(String instanceName) {
+        this.instanceName = instanceName;
+
+        return  this;
     }
 
     /**

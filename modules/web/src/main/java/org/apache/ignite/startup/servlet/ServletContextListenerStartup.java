@@ -154,7 +154,7 @@ public class ServletContextListenerStartup implements ServletContextListener {
 
                 synchronized (ServletContextListenerStartup.class) {
                     try {
-                        ignite = G.ignite(cfg.getGridName());
+                        ignite = G.ignite(cfg.getInstanceName());
                     }
                     catch (IgniteIllegalStateException ignored) {
                         ignite = IgnitionEx.start(new IgniteConfiguration(cfg), rsrcCtx);

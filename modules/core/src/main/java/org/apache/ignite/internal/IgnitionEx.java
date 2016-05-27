@@ -599,24 +599,24 @@ public class IgnitionEx {
      * the Grid configuration bean is ignored.
      *
      * @param springCfgPath Spring XML configuration file path or URL.
-     * @param gridName Grid name that will override default.
+     * @param localInstanceName Grid name that will override default.
      * @return Started grid. If Spring configuration contains multiple grid instances,
      *      then the 1st found instance is returned.
      * @throws IgniteCheckedException If grid could not be started or configuration
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static Ignite start(@Nullable String springCfgPath, @Nullable String gridName) throws IgniteCheckedException {
+    public static Ignite start(@Nullable String springCfgPath, @Nullable String localInstanceName) throws IgniteCheckedException {
         if (springCfgPath == null) {
             IgniteConfiguration cfg = new IgniteConfiguration();
 
-            if (cfg.getGridName() == null && !F.isEmpty(gridName))
-                cfg.setGridName(gridName);
+            if (cfg.getInstanceName() == null && !F.isEmpty(localInstanceName))
+                cfg.setInstanceName(localInstanceName);
 
             return start(cfg);
         }
         else
-            return start(springCfgPath, gridName, null, null);
+            return start(springCfgPath, localInstanceName, null, null);
     }
 
     /**
@@ -730,7 +730,7 @@ public class IgnitionEx {
      * the Grid configuration bean is ignored.
      *
      * @param springCfgPath Spring XML configuration file path or URL. This cannot be {@code null}.
-     * @param gridName Grid name that will override default.
+     * @param localInstanceName Grid name that will override default.
      * @param springCtx Optional Spring application context, possibly {@code null}.
      * @param ldr Optional class loader that will be used by default.
      *      Spring bean definitions for bean injection are taken from this context.
@@ -742,11 +742,11 @@ public class IgnitionEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static Ignite start(String springCfgPath, @Nullable String gridName,
+    public static Ignite start(String springCfgPath, @Nullable String localInstanceName,
         @Nullable GridSpringResourceContext springCtx, @Nullable ClassLoader ldr) throws IgniteCheckedException {
         URL url = U.resolveSpringUrl(springCfgPath);
 
-        return start(url, gridName, springCtx, ldr);
+        return start(url, localInstanceName, springCtx, ldr);
     }
 
     /**
@@ -800,7 +800,7 @@ public class IgnitionEx {
      * the Grid configuration bean is ignored.
      *
      * @param springCfgUrl Spring XML configuration file URL. This cannot be {@code null}.
-     * @param gridName Grid name that will override default.
+     * @param localInstanceName Grid name that will override default.
      * @param springCtx Optional Spring application context, possibly {@code null}.
      * @param ldr Optional class loader that will be used by default.
      *      Spring bean definitions for bean injection are taken from this context.
@@ -812,7 +812,7 @@ public class IgnitionEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static Ignite start(URL springCfgUrl, @Nullable String gridName,
+    public static Ignite start(URL springCfgUrl, @Nullable String localInstanceName,
         @Nullable GridSpringResourceContext springCtx, @Nullable ClassLoader ldr) throws IgniteCheckedException {
         A.notNull(springCfgUrl, "springCfgUrl");
 
@@ -847,7 +847,7 @@ public class IgnitionEx {
                 U.removeJavaNoOpLogger(savedHnds);
         }
 
-        return startConfigurations(cfgMap, springCfgUrl, gridName, springCtx, ldr);
+        return startConfigurations(cfgMap, springCfgUrl, localInstanceName, springCtx, ldr);
     }
 
     /**
@@ -880,7 +880,7 @@ public class IgnitionEx {
      * the Grid configuration bean is ignored.
      *
      * @param springCfgStream Input stream containing Spring XML configuration. This cannot be {@code null}.
-     * @param gridName Grid name that will override default.
+     * @param localInstanceName Grid name that will override default.
      * @param springCtx Optional Spring application context, possibly {@code null}.
      * @param ldr Optional class loader that will be used by default.
      *      Spring bean definitions for bean injection are taken from this context.
@@ -892,7 +892,7 @@ public class IgnitionEx {
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static Ignite start(InputStream springCfgStream, @Nullable String gridName,
+    public static Ignite start(InputStream springCfgStream, @Nullable String localInstanceName,
         @Nullable GridSpringResourceContext springCtx, @Nullable ClassLoader ldr) throws IgniteCheckedException {
         A.notNull(springCfgStream, "springCfgUrl");
 
@@ -927,7 +927,7 @@ public class IgnitionEx {
                 U.removeJavaNoOpLogger(savedHnds);
         }
 
-        return startConfigurations(cfgMap, null, gridName, springCtx, ldr);
+        return startConfigurations(cfgMap, null, localInstanceName, springCtx, ldr);
     }
 
     /**
@@ -935,7 +935,7 @@ public class IgnitionEx {
      *
      * @param cfgMap Configuration map.
      * @param springCfgUrl Spring XML configuration file URL.
-     * @param gridName Grid name that will override default.
+     * @param localInstanceName Grid name that will override default.
      * @param springCtx Optional Spring application context.
      * @param ldr Optional class loader that will be used by default.
      * @return Started grid.
@@ -944,7 +944,7 @@ public class IgnitionEx {
     private static Ignite startConfigurations(
         IgniteBiTuple<Collection<IgniteConfiguration>, ? extends GridSpringResourceContext> cfgMap,
         URL springCfgUrl,
-        @Nullable String gridName,
+        @Nullable String localInstanceName,
         @Nullable GridSpringResourceContext springCtx,
         @Nullable ClassLoader ldr)
         throws IgniteCheckedException {
@@ -954,8 +954,8 @@ public class IgnitionEx {
             for (IgniteConfiguration cfg : cfgMap.get1()) {
                 assert cfg != null;
 
-                if (cfg.getGridName() == null && !F.isEmpty(gridName))
-                    cfg.setGridName(gridName);
+                if (cfg.getInstanceName() == null && !F.isEmpty(localInstanceName))
+                    cfg.setInstanceName(localInstanceName);
 
                 if (ldr != null && cfg.getClassLoader() == null)
                     cfg.setClassLoader(ldr);
@@ -1000,7 +1000,7 @@ public class IgnitionEx {
     private static IgniteNamedInstance start0(GridStartContext startCtx, boolean failIfStarted ) throws IgniteCheckedException {
         assert startCtx != null;
 
-        String name = startCtx.config().getGridName();
+        String name = startCtx.config().getInstanceName();
 
         if (name != null && name.isEmpty())
             throw new IgniteCheckedException("Non default grid instances cannot have empty string name.");
@@ -1286,7 +1286,7 @@ public class IgnitionEx {
      */
     public static IgniteKernal localIgnite() throws IllegalArgumentException {
         if (Thread.currentThread() instanceof IgniteThread)
-            return gridx(((IgniteThread)Thread.currentThread()).getGridName());
+            return gridx(((IgniteThread)Thread.currentThread()).getLocalInstanceName());
         else
             throw new IllegalArgumentException("This method should be accessed under " + IgniteThread.class.getName());
     }
@@ -1340,17 +1340,17 @@ public class IgnitionEx {
     }
 
     /**
-     * @param gridName Grid instance name.
+     * @param localInstanceName Grid instance name.
      * @param state Factory state.
      */
-    private static void notifyStateChange(@Nullable String gridName, IgniteState state) {
-        if (gridName != null)
-            gridStates.put(gridName, state);
+    private static void notifyStateChange(@Nullable String localInstanceName, IgniteState state) {
+        if (localInstanceName != null)
+            gridStates.put(localInstanceName, state);
         else
             dfltGridState = state;
 
         for (IgnitionListener lsnr : lsnrs)
-            lsnr.onStateChange(gridName, state);
+            lsnr.onStateChange(localInstanceName, state);
     }
 
     /**
@@ -1633,7 +1633,7 @@ public class IgnitionEx {
 
             execSvc = new IgniteThreadPoolExecutor(
                 "pub",
-                cfg.getGridName(),
+                cfg.getInstanceName(),
                 cfg.getPublicThreadPoolSize(),
                 cfg.getPublicThreadPoolSize(),
                 DFLT_PUBLIC_KEEP_ALIVE_TIME,
@@ -1647,7 +1647,7 @@ public class IgnitionEx {
             // maximum threads has no effect.
             sysExecSvc = new IgniteThreadPoolExecutor(
                 "sys",
-                cfg.getGridName(),
+                cfg.getInstanceName(),
                 cfg.getSystemThreadPoolSize(),
                 cfg.getSystemThreadPoolSize(),
                 DFLT_SYSTEM_KEEP_ALIVE_TIME,
@@ -1662,7 +1662,7 @@ public class IgnitionEx {
             // not be needed.
             mgmtExecSvc = new IgniteThreadPoolExecutor(
                 "mgmt",
-                cfg.getGridName(),
+                cfg.getInstanceName(),
                 cfg.getManagementThreadPoolSize(),
                 cfg.getManagementThreadPoolSize(),
                 0,
@@ -1674,7 +1674,7 @@ public class IgnitionEx {
             // not be needed.
             p2pExecSvc = new IgniteThreadPoolExecutor(
                 "p2p",
-                cfg.getGridName(),
+                cfg.getInstanceName(),
                 cfg.getPeerClassLoadingThreadPoolSize(),
                 cfg.getPeerClassLoadingThreadPoolSize(),
                 0,
@@ -1683,7 +1683,7 @@ public class IgnitionEx {
             // Note that we do not pre-start threads here as igfs pool may not be needed.
             igfsExecSvc = new IgniteThreadPoolExecutor(
                 "igfs",
-                cfg.getGridName(),
+                cfg.getInstanceName(),
                 cfg.getIgfsThreadPoolSize(),
                 cfg.getIgfsThreadPoolSize(),
                 0,
@@ -1695,13 +1695,13 @@ public class IgnitionEx {
             // Note that we do not pre-start threads here as this pool may not be needed.
             callbackExecSvc = new IgniteStripedThreadPoolExecutor(
                 cfg.getAsyncCallbackPoolSize(),
-                cfg.getGridName(),
+                cfg.getInstanceName(),
                 "callback");
 
             if (myCfg.getConnectorConfiguration() != null) {
                 restExecSvc = new IgniteThreadPoolExecutor(
                     "rest",
-                    myCfg.getGridName(),
+                    myCfg.getInstanceName(),
                     myCfg.getConnectorConfiguration().getThreadPoolSize(),
                     myCfg.getConnectorConfiguration().getThreadPoolSize(),
                     ConnectorConfiguration.DFLT_KEEP_ALIVE_TIME,
@@ -1711,7 +1711,7 @@ public class IgnitionEx {
 
             utilityCacheExecSvc = new IgniteThreadPoolExecutor(
                 "utility",
-                cfg.getGridName(),
+                cfg.getInstanceName(),
                 myCfg.getUtilityCacheThreadPoolSize(),
                 myCfg.getUtilityCacheThreadPoolSize(),
                 myCfg.getUtilityCacheKeepAliveTime(),
@@ -1719,7 +1719,7 @@ public class IgnitionEx {
 
             marshCacheExecSvc = new IgniteThreadPoolExecutor(
                 "marshaller-cache",
-                cfg.getGridName(),
+                cfg.getInstanceName(),
                 myCfg.getMarshallerCacheThreadPoolSize(),
                 myCfg.getMarshallerCacheThreadPoolSize(),
                 myCfg.getMarshallerCacheKeepAliveTime(),
@@ -1822,7 +1822,7 @@ public class IgnitionEx {
             // Ensure invariant.
             // It's a bit dirty - but this is a result of late refactoring
             // and I don't want to reshuffle a lot of code.
-            assert F.eq(name, cfg.getGridName());
+            assert F.eq(name, cfg.getInstanceName());
 
             UUID nodeId = cfg.getNodeId() != null ? cfg.getNodeId() : UUID.randomUUID();
 
@@ -2444,7 +2444,7 @@ public class IgnitionEx {
          */
         private static class GridMBeanServerData {
             /** Set of grid names for selected MBeanServer. */
-            private Collection<String> gridNames = new HashSet<>();
+            private Collection<String> localInstanceNames = new HashSet<>();
 
             /** */
             private ObjectName mbean;
@@ -2466,30 +2466,30 @@ public class IgnitionEx {
             /**
              * Add grid name.
              *
-             * @param gridName Grid name.
+             * @param localInstanceName Grid name.
              */
-            public void addGrid(String gridName) {
-                gridNames.add(gridName);
+            public void addGrid(String localInstanceName) {
+                localInstanceNames.add(localInstanceName);
             }
 
             /**
              * Remove grid name.
              *
-             * @param gridName Grid name.
+             * @param localInstanceName Grid name.
              */
-            public void removeGrid(String gridName) {
-                gridNames.remove(gridName);
+            public void removeGrid(String localInstanceName) {
+                localInstanceNames.remove(localInstanceName);
             }
 
             /**
              * Returns {@code true} if data contains the specified
              * grid name.
              *
-             * @param gridName Grid name.
+             * @param localInstanceName Grid name.
              * @return {@code true} if data contains the specified grid name.
              */
-            public boolean containsGrid(String gridName) {
-                return gridNames.contains(gridName);
+            public boolean containsGrid(String localInstanceName) {
+                return localInstanceNames.contains(localInstanceName);
             }
 
             /**

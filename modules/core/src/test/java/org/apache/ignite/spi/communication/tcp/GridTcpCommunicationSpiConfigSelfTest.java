@@ -18,8 +18,6 @@
 package org.apache.ignite.spi.communication.tcp;
 
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.spi.GridSpiAbstractConfigTest;
 import org.apache.ignite.testframework.junits.spi.GridSpiTest;
 
@@ -61,7 +59,7 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
             spi.setLocalPortRange(0);
             cfg.setCommunicationSpi(spi);
 
-            startGrid(cfg.getGridName(), cfg);
+            startGrid(cfg.getInstanceName(), cfg);
         }
         finally {
             stopAllGrids();

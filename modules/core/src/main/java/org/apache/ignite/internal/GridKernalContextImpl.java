@@ -562,8 +562,14 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     }
 
     /** {@inheritDoc} */
+    @Deprecated
     @Override public String gridName() {
         return cfg.getGridName();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String localInstanceName() {
+        return cfg.getInstanceName();
     }
 
     /** {@inheritDoc} */
@@ -819,7 +825,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>> ");
-        X.println(">>> Grid memory stats [grid=" + gridName() + ']');
+        X.println(">>> Grid memory stats [grid=" + localInstanceName() + ']');
 
         for (GridComponent comp : comps)
             comp.printMemoryStats();

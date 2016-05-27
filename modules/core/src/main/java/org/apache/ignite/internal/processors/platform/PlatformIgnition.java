@@ -45,13 +45,13 @@ public class PlatformIgnition {
      * Start Ignite node in platform mode.
      *
      * @param springCfgPath Spring configuration path.
-     * @param gridName Grid name.
+     * @param localInstanceName Grid name.
      * @param factoryId Factory ID.
      * @param envPtr Environment pointer.
      * @param dataPtr Optional pointer to additional data required for startup.
      * @return Ignite instance.
      */
-    public static synchronized PlatformProcessor start(@Nullable String springCfgPath, @Nullable String gridName,
+    public static synchronized PlatformProcessor start(@Nullable String springCfgPath, @Nullable String localInstanceName,
         int factoryId, long envPtr, long dataPtr) {
         if (envPtr <= 0)
             throw new IgniteException("Environment pointer must be positive.");
@@ -63,16 +63,16 @@ public class PlatformIgnition {
         try {
             IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> cfg = configuration(springCfgPath);
 
-            if (gridName != null)
-                cfg.get1().setGridName(gridName);
+            if (localInstanceName != null)
+                cfg.get1().setInstanceName(localInstanceName);
             else
-                gridName = cfg.get1().getGridName();
+                localInstanceName = cfg.get1().getInstanceName();
 
             PlatformBootstrap bootstrap = bootstrap(factoryId);
 
             PlatformProcessor proc = bootstrap.start(cfg.get1(), cfg.get2(), envPtr, dataPtr);
 
-            PlatformProcessor old = instances.put(gridName, proc);
+            PlatformProcessor old = instances.put(localInstanceName, proc);
 
             assert old == null;
 
@@ -86,21 +86,21 @@ public class PlatformIgnition {
     /**
      * Get instance by environment pointer.
      *
-     * @param gridName Grid name.
+     * @param localInstanceName Local instance name.
      * @return Instance or {@code null} if it doesn't exist (never started or stopped).
      */
-    @Nullable public static synchronized PlatformProcessor instance(@Nullable String gridName) {
-        return instances.get(gridName);
+    @Nullable public static synchronized PlatformProcessor instance(@Nullable String localInstanceName) {
+        return instances.get(localInstanceName);
     }
 
     /**
      * Get environment pointer of the given instance.
      *
-     * @param gridName Grid name.
+     * @param localInstanceName Local instance name.
      * @return Environment pointer or {@code 0} in case grid with such name doesn't exist.
      */
-    public static synchronized long environmentPointer(@Nullable String gridName) {
-        PlatformProcessor proc = instance(gridName);
+    public static synchronized long environmentPointer(@Nullable String localInstanceName) {
+        PlatformProcessor proc = instance(localInstanceName);
 
         return proc != null ? proc.environmentPointer() : 0;
     }
@@ -108,13 +108,13 @@ public class PlatformIgnition {
     /**
      * Stop single instance.
      *
-     * @param gridName Grid name,
+     * @param localInstanceName Local instance name,
      * @param cancel Cancel flag.
      * @return {@code True} if instance was found and stopped.
      */
-    public static synchronized boolean stop(@Nullable String gridName, boolean cancel) {
-        if (Ignition.stop(gridName, cancel)) {
-            PlatformProcessor old = instances.remove(gridName);
+    public static synchronized boolean stop(@Nullable String localInstanceName, boolean cancel) {
+        if (Ignition.stop(localInstanceName, cancel)) {
+            PlatformProcessor old = instances.remove(localInstanceName);
 
             assert old != null;
 

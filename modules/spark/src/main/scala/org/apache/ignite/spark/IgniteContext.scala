@@ -176,7 +176,7 @@ class IgniteContext[K, V](
     private def doClose() = {
         val igniteCfg = cfgClo()
 
-        Ignition.stop(igniteCfg.getGridName, false)
+        Ignition.stop(igniteCfg.getInstanceName, false)
     }
 }
 

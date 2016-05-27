@@ -106,7 +106,7 @@ public class ClientStopNodeTask extends ComputeTaskSplitAdapter<String, Integer>
         @Override public Object execute() {
             log.info(">>> Stop node [nodeId=" + ignite.cluster().localNode().id() + ", name='" + ignite.name() + "']");
 
-            String prefix = ClientStartNodeTask.getConfig(gridType).getGridName() + " (";
+            String prefix = ClientStartNodeTask.getConfig(gridType).getInstanceName() + " (";
 
             if (!ignite.name().startsWith(prefix)) {
                 int stoppedCnt = 0;

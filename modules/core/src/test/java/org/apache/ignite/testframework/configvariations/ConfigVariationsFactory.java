@@ -88,7 +88,7 @@ public class ConfigVariationsFactory implements ConfigFactory {
      * @param srcCfg Source config.
      */
     private static void copyDefaultsFromSource(IgniteConfiguration cfg, IgniteConfiguration srcCfg) {
-        cfg.setGridName(srcCfg.getGridName());
+        cfg.setInstanceName(srcCfg.getInstanceName());
         cfg.setGridLogger(srcCfg.getGridLogger());
         cfg.setNodeId(srcCfg.getNodeId());
         cfg.setIgniteHome(srcCfg.getIgniteHome());

@@ -1240,7 +1240,17 @@ public abstract class GridAbstractTest extends TestCase {
     /**
      * @return Generated unique test grid name.
      */
+    @Deprecated
     public String getTestGridName() {
+        String[] parts = getClass().getName().split("\\.");
+
+        return parts[parts.length - 2] + '.' + parts[parts.length - 1];
+    }
+
+    /**
+     * @return Generated unique test local instance name.
+     */
+    public String getTestLocalInstanceName() {
         String[] parts = getClass().getName().split("\\.");
 
         return parts[parts.length - 2] + '.' + parts[parts.length - 1];
