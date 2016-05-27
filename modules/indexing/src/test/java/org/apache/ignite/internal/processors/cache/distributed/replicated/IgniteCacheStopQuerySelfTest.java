@@ -93,9 +93,10 @@ public class IgniteCacheStopQuerySelfTest extends IgniteCacheAbstractQuerySelfTe
             QueryCursor<Cache.Entry<Integer, String>> qry =
                 cache1.query(new SqlQuery<Integer, String>(String.class, "true"));
 
+            // Initiate remote query by requesting the iterator.
             Iterator<Cache.Entry<Integer, String>> iterator = qry.iterator();
 
-            Cache.Entry<Integer, String> next = iterator.next();
+            qry.close();
         }
     }
 }
