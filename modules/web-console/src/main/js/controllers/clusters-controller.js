@@ -62,7 +62,7 @@ consoleModule.controller('clustersController', [
 
                     // Found duplicate by key.
                     if (idx >= 0 && idx !== index)
-                        return showPopoverMessage($scope.ui, pairField.group, $table.tableFieldId(index, pairField.idPrefix + pairField.id), 'Field with such ' + pairField.dupObjName + ' already exists!');
+                        return showPopoverMessage($scope.ui, pairField.group, $table.tableFieldId(index, pairField.idPrefix + pairField.id), 'Attribute with such ' + pairField.dupObjName + ' already exists!');
                 }
             }
 
