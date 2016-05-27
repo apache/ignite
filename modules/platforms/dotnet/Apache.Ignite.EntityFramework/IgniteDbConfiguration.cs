@@ -20,10 +20,8 @@ namespace Apache.Ignite.EntityFramework
     using System.Configuration;
     using System.Data.Entity;
     using System.Data.Entity.Core.Common;
-    using System.Diagnostics;
     using System.Globalization;
     using Apache.Ignite.Core;
-    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
     using EFCache;
@@ -36,6 +34,7 @@ namespace Apache.Ignite.EntityFramework
     {
         // This class can be used directly
         // This class can be inherited
+        // TODO: Can it be used in XML config?
 
         /// <summary>
         /// The configuration section name to be used when starting Ignite.
@@ -58,14 +57,15 @@ namespace Apache.Ignite.EntityFramework
         /// <see cref="IgniteConfigurationSection"/> with name <see cref="ConfigurationSectionName"/> will be picked up 
         /// when starting Ignite, if present.
         /// </summary>
-        public IgniteDbConfiguration() : this(ConfigurationSectionName, DefaultCacheName)
+        public IgniteDbConfiguration() : this(GetConfiguration(ConfigurationSectionName, false), DefaultCacheName)
         {
             // No-op.
         }
 
         public IgniteDbConfiguration(string configurationSectionName, string cacheName)
+             : this(GetConfiguration(configurationSectionName, true), cacheName)
         {
-            // TODO
+            // No-op.
         }
 
         /// <summary>
