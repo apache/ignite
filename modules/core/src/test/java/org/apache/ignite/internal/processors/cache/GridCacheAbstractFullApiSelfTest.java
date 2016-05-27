@@ -4414,6 +4414,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      */
     public void testIteratorLeakOnCancelCursor() throws Exception {
         IgniteCache<String, Integer> cache = jcache(0);
+
         final int SIZE = 10_000;
 
         Map<String, Integer> putMap = new HashMap<>();
@@ -4425,14 +4426,19 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             if (putMap.size() == 500) {
                 cache.putAll(putMap);
+
                 info("Puts finished: " + (i + 1));
+
                 putMap.clear();
             }
         }
+
         cache.putAll(putMap);
 
         QueryCursor<Cache.Entry<String, Integer>> cur = cache.query(new ScanQuery<String, Integer>());
-        cur.iterator();
+
+        cur.iterator().next();
+
         cur.close();
 
         waitForIteratorsCleared(cache, 10);
@@ -4564,7 +4570,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                     throw e;
                 }
 
-                log.info("Set iterators not cleared, will wait");
+                log.info("Iterators not cleared, will wait");
 
                 Thread.sleep(1000);
             }
@@ -5701,6 +5707,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     private static class PrintIteratorStateTask extends TestIgniteIdxCallable<Void> {
         @LoggerResource
         private IgniteLogger log;
+
         /**
          * @param idx Index.
          */
@@ -5712,8 +5719,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 GridCacheQueryManager.class, "qryIters");
 
             for (Map<Long, GridFutureAdapter<?>> map1 : map.values()) {
-                if(!map1.isEmpty()) {
+                if (!map1.isEmpty()) {
                     log.warning("Iterators leak detected at grid: " + idx);
+
                     for (Map.Entry<Long, GridFutureAdapter<?>> entry : map1.entrySet())
                         log.warning(entry.getKey() + "; " + entry.getValue());
                 }

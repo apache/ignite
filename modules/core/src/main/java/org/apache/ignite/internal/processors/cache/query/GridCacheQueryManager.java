@@ -17,6 +17,30 @@
 
 package org.apache.ignite.internal.processors.cache.query;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.sql.SQLException;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Queue;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentMap;
+import javax.cache.Cache;
+import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -91,31 +115,6 @@ import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.apache.ignite.spi.indexing.IndexingSpi;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
-
-import javax.cache.Cache;
-import javax.cache.expiry.ExpiryPolicy;
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.sql.SQLException;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Queue;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentMap;
 
 import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
@@ -1481,6 +1480,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     recipient(qryInfo.senderId(), qryInfo.requestId())) :
                     queryResult(qryInfo, taskName);
 
+                if (res == null)
+                    return;
+
                 iter = res.iterator(recipient(qryInfo.senderId(), qryInfo.requestId()));
                 type = res.type();
 
@@ -1829,7 +1831,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @return Iterator.
      * @throws IgniteCheckedException In case of error.
      */
-    private QueryResult<K, V> queryResult(final GridCacheQueryInfo qryInfo, String taskName) throws IgniteCheckedException {
+    @Nullable private QueryResult<K, V> queryResult(final GridCacheQueryInfo qryInfo, String taskName) throws IgniteCheckedException {
         assert qryInfo != null;
 
         final UUID sndId = qryInfo.senderId();
@@ -1839,7 +1841,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         CanceledKeyMap<Long, GridFutureAdapter<QueryResult<K, V>>> futs = qryIters.get(sndId);
 
         if (futs == null) {
-            futs = new CanceledKeyMap<Long, GridFutureAdapter<QueryResult<K, V>>>(16, 0.75f, true) {
+            futs = new CanceledKeyMap<Long, GridFutureAdapter<QueryResult<K, V>>>() {
                 @Override protected boolean removeEldestEntry(Map.Entry<Long, GridFutureAdapter<QueryResult<K, V>>> e) {
                     boolean rmv = size() > maxIterCnt;
 
@@ -1867,27 +1869,21 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         GridFutureAdapter<QueryResult<K, V>> fut;
 
         boolean exec = false;
-        boolean canceled = false;
 
         synchronized (futs) {
+            if (futs.isCanceled(qryInfo.requestId()))
+                return null;
+
             fut = futs.get(qryInfo.requestId());
 
-            if(futs.isCanceled(qryInfo.requestId()))
-                canceled = true;
-
-            if (fut == null && !canceled) {
+            if (fut == null) {
                 futs.put(qryInfo.requestId(), fut = new GridFutureAdapter<>());
 
                 exec = true;
             }
         }
-        if(canceled) {
-            QueryResult<K, V> res = new QueryResult<>(qryInfo.query().type(),
-                recipient(qryInfo.senderId(), qryInfo.requestId()));
-            res.onDone(new GridEmptyCloseableIterator<IgniteBiTuple<K, V>>());
-            return res;
-        }
-        else if (exec) {
+
+        if (exec) {
             try {
                 fut.onDone(executeQuery(qryInfo.query(), qryInfo.arguments(), false,
                     qryInfo.query().subjectId(), taskName, recipient(qryInfo.senderId(), qryInfo.requestId())));
@@ -3521,45 +3517,38 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private class CanceledKeyMap<K, V> extends LinkedHashMap<K, V> {
         /** */
         private static final long serialVersionUID = 0L;
+
         /** Count of canceled keys */
         private static final int CANCELED_COUNT = 128;
-        /** Canceled keys store to the set in case remove(key) is called before put(key, val). */
-        private final Set<K> canceled;
 
-        /**
-         */
-        CanceledKeyMap(int initCap,
-            float loadFactor,
-            boolean accessOrder) {
-            super(initCap, loadFactor, accessOrder);
-            canceled = Collections.newSetFromMap(
-                new LinkedHashMap<K, Boolean>(initCap, loadFactor, accessOrder) {
-                @Override protected boolean removeEldestEntry(Map.Entry<K, Boolean> eldest) {
-                    return size() > CANCELED_COUNT;
-                }
-            });
-        }
+        /** Canceled keys store to the set in case remove(key) is called before put(key, val). */
+        private Set<K> canceled;
 
         /** {@inheritDoc} */
         @Override public V remove(Object key) {
             if (containsKey(key))
                 return super.remove(key);
             else {
+                if (canceled == null) {
+                    canceled = Collections.newSetFromMap(
+                        new LinkedHashMap<K, Boolean>() {
+                            @Override protected boolean removeEldestEntry(Map.Entry<K, Boolean> eldest) {
+                                return size() > CANCELED_COUNT;
+                            }
+                        });
+                }
+
                 canceled.add((K)key);
+
                 return null;
             }
-        }
-
-        /** {@inheritDoc} */
-        @Override public V put(K key, V val) {
-            return !canceled.contains(key) ? super.put(key, val) : val;
         }
 
         /**
          * @return true if the key is canceled
          */
         boolean isCanceled(K key) {
-            return canceled.contains(key);
+            return canceled != null && canceled.contains(key);
         }
     }
 }
