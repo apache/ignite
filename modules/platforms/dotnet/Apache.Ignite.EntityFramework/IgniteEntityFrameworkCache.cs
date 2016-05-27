@@ -28,6 +28,7 @@ namespace Apache.Ignite.EntityFramework
     /// </summary>
     public class IgniteEntityFrameworkCache : ICache
     {
+        /** */
         private readonly ICache<string, object> _cache;
 
         public IgniteEntityFrameworkCache(ICache<string, object> cache)
@@ -39,6 +40,7 @@ namespace Apache.Ignite.EntityFramework
 
         public bool GetItem(string key, out object value)
         {
+            // TODO: Compound key or compound value? Looks like value should contain entity sets
             return _cache.TryGet(key, out value);
         }
 
