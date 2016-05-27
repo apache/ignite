@@ -239,6 +239,17 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
         }
     }
 
+    public void clear(int part) throws IgniteCheckedException {
+        GridIterator<CacheDataRow> iterator = iterator(part);
+
+        while (iterator.hasNext()) {
+            CacheDataRow row = iterator.next();
+
+            remove(row.key(), row.value(), row.version(), part);
+        }
+
+    }
+
     /**
      * @param ldr Class loader.
      * @return Number of undeployed entries.
@@ -988,7 +999,7 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public KeySearchRow getLookupRow(BPlusTree<KeySearchRow,?> tree, ByteBuffer buf, int idx)
+        @Override public KeySearchRow getLookupRow(BPlusTree<KeySearchRow, ?> tree, ByteBuffer buf, int idx)
             throws IgniteCheckedException {
             long link = getLink(buf, idx);
 
@@ -996,7 +1007,8 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public void store(ByteBuffer dst, int dstIdx, BPlusIO<KeySearchRow> srcIo, ByteBuffer src, int srcIdx) {
+        @Override public void store(ByteBuffer dst, int dstIdx, BPlusIO<KeySearchRow> srcIo, ByteBuffer src,
+            int srcIdx) {
             long link = ((RowLinkIO)srcIo).getLink(src, srcIdx);
 
             setLink(dst, dstIdx, link);
@@ -1004,7 +1016,7 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
 
         /** {@inheritDoc} */
         @Override public long getLink(ByteBuffer buf, int idx) {
-            assert idx < getCount(buf): idx;
+            assert idx < getCount(buf) : idx;
 
             return buf.getLong(offset(idx, SHIFT_LINK));
         }
@@ -1049,7 +1061,7 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
         }
 
         /** {@inheritDoc} */
-        @Override public KeySearchRow getLookupRow(BPlusTree<KeySearchRow,?> tree, ByteBuffer buf, int idx)
+        @Override public KeySearchRow getLookupRow(BPlusTree<KeySearchRow, ?> tree, ByteBuffer buf, int idx)
             throws IgniteCheckedException {
             long link = getLink(buf, idx);
 
@@ -1058,7 +1070,7 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
 
         /** {@inheritDoc} */
         @Override public long getLink(ByteBuffer buf, int idx) {
-            assert idx < getCount(buf): idx;
+            assert idx < getCount(buf) : idx;
 
             return buf.getLong(offset(idx));
         }
