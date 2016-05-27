@@ -159,26 +159,10 @@ namespace Apache.Ignite.AspNet
             if (string.IsNullOrWhiteSpace(config.JvmClasspath))
             {
                 // Classpath not set by user: populate from default directory
-                config = new IgniteConfiguration(config) {JvmClasspath = GetDefaultWebClasspath()};
+                config = new IgniteConfiguration(config) {JvmClasspath = IgniteWebUtils.GetDefaultWebClasspath()};
             }
 
             return Ignition.Start(config);
-        }
-
-        /// <summary>
-        /// Gets the classpath from default location in web deployment (application_root\bin\Libs).
-        /// Ignite can not detect classpath in a standard way because IIS uses temporary folders for dlls.
-        /// </summary>
-        private static string GetDefaultWebClasspath()
-        {
-            var ctx = HttpContext.Current;
-
-            if (ctx == null)
-                return null;
-
-            var dir = ctx.Server.MapPath(@"~\bin\libs");
-
-            return Directory.Exists(dir) ? string.Join(";", Directory.GetFiles(dir)) : null;
         }
 
         /// <summary>
