@@ -21,22 +21,16 @@ namespace Apache.Ignite.EntityFramework
     using System.Data.Entity;
     using System.Data.Entity.Core.Common;
     using System.Diagnostics;
+    using System.Globalization;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
     using EFCache;
 
     /// <summary>
     /// <see cref="DbConfiguration"/> implementation that uses Ignite as a second-level cache 
     /// for Entity Framework queries.
-    /// <para />
-    /// This implementation uses default Ignite instance (with null <see cref="IgniteConfiguration.GridName"/>) 
-    /// and a cache with <see cref="DefaultCacheName"/> name.
-    /// <para />
-    /// Ignite instance will be started automatically, if it is not started yet.
-    /// <para /> 
-    /// <see cref="IgniteConfigurationSection"/> with name <see cref="ConfigurationSectionName"/> will be picked up 
-    /// when starting Ignite, if present.
     /// </summary>
     public class IgniteDbConfiguration : DbConfiguration
     {
@@ -53,9 +47,25 @@ namespace Apache.Ignite.EntityFramework
         /// </summary>
         public const string DefaultCacheName = "entityFrameworkQueryCache";
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="IgniteDbConfiguration"/> class.
+        /// <para />
+        /// This constructor uses default Ignite instance (with null <see cref="IgniteConfiguration.GridName"/>) 
+        /// and a cache with <see cref="DefaultCacheName"/> name.
+        /// <para />
+        /// Ignite instance will be started automatically, if it is not started yet.
+        /// <para /> 
+        /// <see cref="IgniteConfigurationSection"/> with name <see cref="ConfigurationSectionName"/> will be picked up 
+        /// when starting Ignite, if present.
+        /// </summary>
+        public IgniteDbConfiguration() : this(ConfigurationSectionName, DefaultCacheName)
+        {
+            // No-op.
+        }
+
         public IgniteDbConfiguration(string configurationSectionName, string cacheName)
         {
-
+            // TODO
         }
 
         /// <summary>
@@ -101,6 +111,26 @@ namespace Apache.Ignite.EntityFramework
             IgniteArgumentCheck.NotNull(igniteConfiguration, "igniteConfiguration");
 
             return Ignition.TryGetIgnite(igniteConfiguration.GridName) ?? Ignition.Start(igniteConfiguration);
+        }
+
+        /// <summary>
+        /// Gets the configuration.
+        /// </summary>
+        private static IgniteConfiguration GetConfiguration(string sectionName, bool throwIfAbsent)
+        {
+            IgniteArgumentCheck.NotNull(sectionName, "sectionName");
+
+            var section = ConfigurationManager.GetSection(sectionName) as IgniteConfigurationSection;
+
+            if (section != null)
+                return section.IgniteConfiguration;
+
+            if (!throwIfAbsent)
+                return null;
+
+            throw new IgniteException(string.Format(CultureInfo.InvariantCulture,
+                "Failed to initialize {0}. Could not find {1} with name {2} in application configuration.",
+                typeof (IgniteDbConfiguration), typeof (IgniteConfigurationSection), sectionName));
         }
     }
 }
