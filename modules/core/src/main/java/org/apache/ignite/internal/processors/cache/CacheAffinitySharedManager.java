@@ -414,6 +414,18 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 else
                     initStartedCacheOnCoordinator(fut, cacheId);
             }
+            else if (req.modify()) {
+                GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+
+                if (cacheCtx != null && !cacheCtx.isLocal()) {
+                    GridAffinityAssignmentCache aff = cacheCtx.affinity().affinityCache();
+
+                    List<List<ClusterNode>> assignment = aff.calculate(fut.topologyVersion(),
+                        fut.discoveryEvent());
+
+                    aff.initialize(fut.topologyVersion(), assignment);
+                }
+            }
             else if (req.stop() || req.close()) {
                 cctx.cache().blockGateway(req);
 

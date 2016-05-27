@@ -21,6 +21,8 @@ package org.apache.ignite.internal.processors.cache;
 import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -28,9 +30,13 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DatabaseConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.events.CacheRebalancingEvent;
+import org.apache.ignite.events.Event;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
@@ -93,9 +99,8 @@ public abstract class CacheRebalancingWithPersistenceAbstractTest extends GridCo
 
         awaitPartitionMapExchange();
 
-        assert !cache1.lostPartitions().isEmpty();
-
-        cache1.recoverPartitions(cache1.lostPartitions()).get();
+        if (!cache1.lostPartitions().isEmpty())
+            cache1.recoverPartitions(cache1.lostPartitions()).get();
 
         assert cache1.lostPartitions().isEmpty();
 
@@ -112,7 +117,7 @@ public abstract class CacheRebalancingWithPersistenceAbstractTest extends GridCo
         IgniteCache cache4 = ignite4.cache(null);
 
         for (int i = 0; i < 10000; i++)
-            assert cache3.get(i).equals(i * 2) && cache4.get(i).equals(i * 2);
+            assert cache3.get(i).equals(i * 2) && cache4.get(i).equals(i * 2) : i;
     }
 
     public void testNoRebalancingOnRestartDeactivated() throws Exception {
@@ -136,14 +141,33 @@ public abstract class CacheRebalancingWithPersistenceAbstractTest extends GridCo
         ignite3.close();
         ignite4.close();
 
+        final AtomicInteger eventCount = new AtomicInteger();
+
         ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
+
+        cache1 = ignite1.cache(null);
+
+        cache1.active(false).get();
+
+        ignite1.events().remoteListen(new IgniteBiPredicate<UUID, CacheRebalancingEvent>() {
+            @Override public boolean apply(UUID uuid, CacheRebalancingEvent event) {
+                if (event.cacheName() == null)
+                    eventCount.incrementAndGet();
+
+                return true;
+            }
+        }, null, EventType.EVT_CACHE_REBALANCE_PART_LOADED);
+
         ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
         ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
         ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
 
+        cache1.active(true).get();
+
         awaitPartitionMapExchange();
 
-        cache1 = ignite1.cache(null);
+        assert eventCount.get() == 0;
+
         IgniteCache cache2 = ignite2.cache(null);
         IgniteCache cache3 = ignite3.cache(null);
         IgniteCache cache4 = ignite4.cache(null);
