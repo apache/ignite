@@ -1712,14 +1712,15 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if OFFHEAP_TIERED memory mode is enabled.
      */
     public boolean offheapTiered() {
-        return cacheCfg.getMemoryMode() == OFFHEAP_TIERED && isOffHeapEnabled();
+        return cacheCfg != null && cacheCfg.getMemoryMode() == OFFHEAP_TIERED && isOffHeapEnabled();
     }
 
     /**
      * @return {@code True} if should use entry with offheap value pointer.
      */
     public boolean useOffheapEntry() {
-        return cacheCfg.getMemoryMode() == OFFHEAP_TIERED || cacheCfg.getMemoryMode() == OFFHEAP_VALUES;
+        return cacheCfg != null &&
+            (cacheCfg.getMemoryMode() == OFFHEAP_TIERED || cacheCfg.getMemoryMode() == OFFHEAP_VALUES);
     }
 
     /**

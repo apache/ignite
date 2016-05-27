@@ -23,6 +23,7 @@ import org.apache.ignite.GridSuppressedExceptionSelfTest;
 import org.apache.ignite.internal.ClusterGroupHostsSelfTest;
 import org.apache.ignite.internal.ClusterGroupSelfTest;
 import org.apache.ignite.internal.GridFailFastNodeFailureDetectionSelfTest;
+import org.apache.ignite.internal.GridGetOrStartSelfTest;
 import org.apache.ignite.internal.GridLifecycleAwareSelfTest;
 import org.apache.ignite.internal.GridLifecycleBeanSelfTest;
 import org.apache.ignite.internal.GridProjectionForCachesSelfTest;
@@ -121,6 +122,7 @@ public class IgniteBasicTestSuite extends TestSuite {
 
         GridTestUtils.addTestIfNeeded(suite, DynamicProxySerializationMultiJvmSelfTest.class, ignoredTests);
 
+        GridTestUtils.addTestIfNeeded(suite, GridGetOrStartSelfTest.class, ignoredTests);
         return suite;
     }
 }
