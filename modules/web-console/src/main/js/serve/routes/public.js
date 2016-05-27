@@ -113,7 +113,7 @@ module.exports.factory = function(express, passport, nodemailer, settings, mail,
 
                     return account.save()
                         .then(() => {
-                            const resetLink = `http://'${req.headers.host}/password/reset?token=${account.resetPasswordToken}`;
+                            const resetLink = `http://${req.headers.host}/password/reset?token=${account.resetPasswordToken}`;
 
                             mail.send(account, `Thanks for signing up for ${settings.smtp.username}.`,
                                 `Hello ${account.firstName} ${account.lastName}!<br><br>` +
@@ -171,7 +171,7 @@ module.exports.factory = function(express, passport, nodemailer, settings, mail,
                     return user.save();
                 })
                 .then((user) => {
-                    const resetLink = `http://'${req.headers.host}/password/reset?token=${user.resetPasswordToken}`;
+                    const resetLink = `http://${req.headers.host}/password/reset?token=${user.resetPasswordToken}`;
 
                     mail.send(user, 'Password Reset',
                         `Hello ${user.firstName} ${user.lastName}!<br><br>` +
