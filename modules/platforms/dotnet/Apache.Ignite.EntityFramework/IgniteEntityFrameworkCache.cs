@@ -19,6 +19,8 @@ namespace Apache.Ignite.EntityFramework
 {
     using System;
     using System.Collections.Generic;
+    using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Impl.Common;
     using EFCache;
 
     /// <summary>
@@ -26,13 +28,22 @@ namespace Apache.Ignite.EntityFramework
     /// </summary>
     public class IgniteEntityFrameworkCache : ICache
     {
-        public bool GetItem(string key, out object value)
+        private readonly ICache<string, object> _cache;
+
+        public IgniteEntityFrameworkCache(ICache<string, object> cache)
         {
-            throw new NotImplementedException();
+            IgniteArgumentCheck.NotNull(cache, "cache");
+
+            _cache = cache;
         }
 
-        public void PutItem(string key, object value, IEnumerable<string> dependentEntitySets, TimeSpan slidingExpiration,
-            DateTimeOffset absoluteExpiration)
+        public bool GetItem(string key, out object value)
+        {
+            return _cache.TryGet(key, out value);
+        }
+
+        public void PutItem(string key, object value, IEnumerable<string> dependentEntitySets, 
+            TimeSpan slidingExpiration, DateTimeOffset absoluteExpiration)
         {
             throw new NotImplementedException();
         }
