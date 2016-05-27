@@ -560,7 +560,7 @@ $generatorXml.clusterCollision = function(collision, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    if (collision && collision.kind !== 'Noop') {
+    if (collision && collision.kind && collision.kind !== 'Noop') {
         const spi = collision[collision.kind];
 
         if (collision.kind !== 'Custom' || (spi && $generatorCommon.isDefinedAndNotEmpty(spi.class))) {
