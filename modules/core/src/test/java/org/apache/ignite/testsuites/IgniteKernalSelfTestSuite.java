@@ -59,6 +59,12 @@ import org.apache.ignite.internal.processors.service.GridServiceProxyClientRecon
 import org.apache.ignite.internal.processors.service.GridServiceProxyNodeStopSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceReassignmentSelfTest;
 import org.apache.ignite.internal.processors.service.GridServiceSerializationSelfTest;
+import org.apache.ignite.internal.processors.service.IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest;
+import org.apache.ignite.internal.processors.service.IgniteServiceDeployment2ClassLoadersJdkMarshallerTest;
+import org.apache.ignite.internal.processors.service.IgniteServiceDeployment2ClassLoadersOptimizedMarshallerTest;
+import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentClassLoadingDefaultMarshallerTest;
+import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentClassLoadingJdkMarshallerTest;
+import org.apache.ignite.internal.processors.service.IgniteServiceDeploymentClassLoadingOptimizedMarshallerTest;
 import org.apache.ignite.internal.processors.service.ServicePredicateAccessCacheTest;
 import org.apache.ignite.internal.util.GridStartupWithSpecifiedWorkDirectorySelfTest;
 import org.apache.ignite.internal.util.GridStartupWithUndefinedIgniteHomeSelfTest;
@@ -133,6 +139,13 @@ public class IgniteKernalSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridServiceSerializationSelfTest.class);
         suite.addTestSuite(GridServiceProxyNodeStopSelfTest.class);
         suite.addTestSuite(GridServiceProxyClientReconnectSelfTest.class);
+
+        suite.addTestSuite(IgniteServiceDeploymentClassLoadingDefaultMarshallerTest.class);
+        suite.addTestSuite(IgniteServiceDeploymentClassLoadingOptimizedMarshallerTest.class);
+        suite.addTestSuite(IgniteServiceDeploymentClassLoadingJdkMarshallerTest.class);
+        suite.addTestSuite(IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest.class);
+        suite.addTestSuite(IgniteServiceDeployment2ClassLoadersOptimizedMarshallerTest.class);
+        suite.addTestSuite(IgniteServiceDeployment2ClassLoadersJdkMarshallerTest.class);
 
         return suite;
     }
