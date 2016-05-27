@@ -47,6 +47,7 @@ public class HadoopWordCount1Reduce extends MapReduceBase implements Reducer<Tex
         output.collect(key, new IntWritable(sum));
     }
 
+    /** {@inheritDoc} */
     @Override public void configure(JobConf job) {
         super.configure(job);
 

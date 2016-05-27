@@ -577,10 +577,18 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
                 if (log.isDebugEnabled())
                     log.debug("Entry has been marked obsolete: " + this);
 
+                if (log.isTraceEnabled()) {
+                    log.trace("clearInternal [key=" + key +
+                        ", entry=" + System.identityHashCode(this) +
+                        ", prev=" + prev +
+                        ", ptr=" + offHeapPointer() +
+                        ']');
+                }
+
                 clearIndex(prev);
 
                 // Give to GC.
-                update(null, 0L, 0L, ver);
+                update(null, 0L, 0L, ver, true);
 
                 if (swap) {
                     releaseSwap();
@@ -590,7 +598,7 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
                 }
 
                 if (cctx.store().isLocal())
-                    cctx.store().remove(null, keyValue(false));
+                    cctx.store().remove(null, key);
 
                 rmv = true;
 

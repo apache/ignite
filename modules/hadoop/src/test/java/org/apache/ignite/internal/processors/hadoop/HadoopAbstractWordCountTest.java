@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.hadoop;
 
 import com.google.common.base.Joiner;
 import java.io.BufferedReader;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -26,6 +27,11 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.SequenceFile;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 
@@ -118,21 +124,49 @@ public abstract class HadoopAbstractWordCountTest extends HadoopAbstractSelfTest
     }
 
     /**
+     * Read w/o decoding (default).
+     *
+     * @param fileName The file.
+     * @return The file contents, human-readable.
+     * @throws Exception On error.
+     */
+    protected String readAndSortFile(String fileName) throws Exception {
+        return readAndSortFile(fileName, null);
+    }
+
+    /**
      * Reads whole text file into String.
      *
      * @param fileName Name of the file to read.
      * @return Content of the file as String value.
      * @throws Exception If could not read the file.
      */
-    protected String readAndSortFile(String fileName) throws Exception {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(igfs.open(new IgfsPath(fileName))));
+    protected String readAndSortFile(String fileName, Configuration conf) throws Exception {
+        final List<String> list = new ArrayList<>();
 
-        List<String> list = new ArrayList<>();
+        final boolean snappyDecode = conf != null && conf.getBoolean(FileOutputFormat.COMPRESS, false);
 
-        String line;
+        if (snappyDecode) {
+            try (SequenceFile.Reader reader = new SequenceFile.Reader(conf,
+                    SequenceFile.Reader.file(new Path(fileName)))) {
+                Text key = new Text();
 
-        while ((line = reader.readLine()) != null)
-            list.add(line);
+                IntWritable val = new IntWritable();
+
+                while (reader.next(key, val))
+                    list.add(key + "\t" + val);
+            }
+        }
+        else {
+            try (InputStream is0 = igfs.open(new IgfsPath(fileName))) {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(is0));
+
+                String line;
+
+                while ((line = reader.readLine()) != null)
+                    list.add(line);
+            }
+        }
 
         Collections.sort(list);
 

@@ -50,6 +50,7 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
      * @param cctx Cache context.
      * @param keyObj Key cache object.
      * @param valObj Cache object value.
+     * @param keepBinary Keep binary flag.
      */
     public CacheLazyEntry(GridCacheContext cctx, KeyCacheObject keyObj, CacheObject valObj, boolean keepBinary) {
         this.cctx = cctx;
@@ -61,6 +62,7 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
     /**
      * @param keyObj Key cache object.
      * @param val Value.
+     * @param keepBinary Keep binary flag.
      * @param cctx Cache context.
      */
     public CacheLazyEntry(GridCacheContext cctx, KeyCacheObject keyObj, V val, boolean keepBinary) {
@@ -75,9 +77,10 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
      * @param keyObj Key cache object.
      * @param key Key value.
      * @param valObj Cache object
+     * @param keepBinary Keep binary flag.
      * @param val Cache value.
      */
-    public CacheLazyEntry(GridCacheContext<K, V> ctx,
+    public CacheLazyEntry(GridCacheContext ctx,
         KeyCacheObject keyObj,
         K key,
         CacheObject valObj,
@@ -111,9 +114,10 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
      * @param keepBinary Flag to keep binary if needed.
      * @return the value corresponding to this entry
      */
+    @SuppressWarnings("unchecked")
     public V getValue(boolean keepBinary) {
         if (val == null)
-            val = (V)cctx.unwrapBinaryIfNeeded(valObj, keepBinary, false);
+            val = (V)cctx.unwrapBinaryIfNeeded(valObj, keepBinary, true);
 
         return val;
     }
@@ -130,6 +134,13 @@ public class CacheLazyEntry<K, V> implements Cache.Entry<K, V> {
      */
     public K key() {
         return key;
+    }
+
+    /**
+     * @return Keep binary flag.
+     */
+    public boolean keepBinary() {
+        return keepBinary;
     }
 
     /** {@inheritDoc} */
