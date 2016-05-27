@@ -29,7 +29,7 @@ namespace Apache.Ignite.EntityFramework
     /// for Entity Framework queries.
     /// <para />
     /// This implementation uses default Ignite instance (with null <see cref="IgniteConfiguration.GridName"/>) 
-    /// and default cache (null <see cref="CacheConfiguration.Name"/>).
+    /// and a cache with <see cref="DefaultCacheName"/> name.
     /// <para />
     /// Ignite instance will be started automatically, if it is not started yet.
     /// <para /> 
@@ -44,11 +44,16 @@ namespace Apache.Ignite.EntityFramework
         public const string ConfigurationSectionName = "igniteConfiguration";
 
         /// <summary>
+        /// The default cache name to be used for cached EF data.
+        /// </summary>
+        public const string DefaultCacheName = "entityFrameworkQueryCache";
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="IgniteDbConfiguration"/> class.
         /// </summary>
         public IgniteDbConfiguration()
         {
-            var cache = GetOrStartIgnite().GetOrCreateCache<string, object>((string) null);
+            var cache = GetOrStartIgnite().GetOrCreateCache<string, object>(DefaultCacheName);
 
             var efCache = new IgniteEntityFrameworkCache(cache);
             var transactionHandler = new CacheTransactionHandler(efCache);
