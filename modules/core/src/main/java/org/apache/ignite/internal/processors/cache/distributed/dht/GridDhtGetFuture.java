@@ -182,9 +182,6 @@ public final class GridDhtGetFuture<K, V> extends GridCompoundIdentityFuture<Col
                 try {
                     fut.get();
                 }
-                catch (NodeStoppingException e) {
-                    return;
-                }
                 catch (IgniteCheckedException e) {
                     if (log.isDebugEnabled())
                         log.debug("Failed to request keys from preloader [keys=" + keys + ", err=" + e + ']');
