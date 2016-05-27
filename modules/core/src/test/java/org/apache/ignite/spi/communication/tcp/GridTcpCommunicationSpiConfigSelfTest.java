@@ -61,7 +61,7 @@ public class GridTcpCommunicationSpiConfigSelfTest extends GridSpiAbstractConfig
             spi.setLocalPortRange(0);
             cfg.setCommunicationSpi(spi);
 
-            startGrid(cfg.getGridName(), cfg);
+            startGrid(cfg.getLocalInstanceName(), cfg);
         }
         finally {
             stopAllGrids();

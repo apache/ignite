@@ -79,7 +79,7 @@ public class ClientStartNodeTask extends TaskSingleJobSplitAdapter<String, Integ
         IgniteConfiguration cfg = getConfig(type);
 
         // Generate unique for this VM grid name.
-        String gridName = cfg.getGridName() + " (" + UUID.randomUUID() + ")";
+        String gridName = cfg.getLocalInstanceName() + " (" + UUID.randomUUID() + ")";
 
         // Update grid name (required to be unique).
         cfg.setGridName(gridName);
