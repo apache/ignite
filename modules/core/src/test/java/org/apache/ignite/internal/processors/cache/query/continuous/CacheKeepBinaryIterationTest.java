@@ -251,12 +251,18 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
                         Object key = e.getKey();
                         Object val = e.getValue();
 
-                        assertTrue("Got unexpected object: " + key.getClass() + ", keepBinary: " + keepBinary,
-                            keepBinary == key instanceof BinaryObject || primitives);
-                        assertTrue("Got unexpected object: " + val.getClass() + ", keepBinary: " + keepBinary,
-                            keepBinary == val instanceof BinaryObject || primitives);
-
-                        log().info("Key: " + key + ", val: " + val);
+                        if (!primitives) {
+                            assertTrue("Got unexpected object: " + key.getClass() + ", keepBinary: " + keepBinary,
+                                keepBinary == key instanceof BinaryObject);
+                            assertTrue("Got unexpected object: " + val.getClass() + ", keepBinary: " + keepBinary,
+                                keepBinary == val instanceof BinaryObject);
+                        }
+                        else {
+                            assertTrue("Got unexpected object: " + key.getClass() + ", keepBinary: " + keepBinary,
+                                key instanceof Integer);
+                            assertTrue("Got unexpected object: " + val.getClass() + ", keepBinary: " + keepBinary,
+                                val instanceof Integer);
+                        }
 
                         ++size;
                     }
@@ -268,7 +274,8 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
         finally {
             cache.removeAll();
 
-            U.sleep(1000); //Fixes evictionPolicy issues at cache destroy.
+            if (ccfg.getEvictionPolicy() != null)
+                U.sleep(1000); // Fixes evictionPolicy issues at cache destroy.
 
             grid(0).destroyCache(ccfg.getName());
         }
@@ -277,7 +284,8 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
     /**
      * @param ccfg Cache configuration.
      */
-    private void doTestLocalEntries(CacheConfiguration<Object, Object> ccfg, boolean keepBinary,
+    private void doTestLocalEntries(CacheConfiguration<Object, Object> ccfg,
+        boolean keepBinary,
         boolean primitives) throws IgniteInterruptedCheckedException {
         IgniteCache<Object, Object> cache = grid(0).createCache(ccfg);
 
@@ -303,12 +311,18 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
                         Object key = e.getKey();
                         Object val = e.getValue();
 
-                        assertTrue("Got unexpected object: " + key.getClass() + ", keepBinary: " + keepBinary,
-                            keepBinary == key instanceof BinaryObject || primitives);
-                        assertTrue("Got unexpected object: " + key.getClass() + ", keepBinary: " + keepBinary,
-                            keepBinary == val instanceof BinaryObject || primitives);
-
-                        log().info("Key: " + key + ", val: " + val);
+                        if (!primitives) {
+                            assertTrue("Got unexpected object: " + key.getClass() + ", keepBinary: " + keepBinary,
+                                keepBinary == key instanceof BinaryObject);
+                            assertTrue("Got unexpected object: " + key.getClass() + ", keepBinary: " + keepBinary,
+                                keepBinary == val instanceof BinaryObject);
+                        }
+                        else {
+                            assertTrue("Got unexpected object: " + key.getClass() + ", keepBinary: " + keepBinary,
+                                key instanceof Integer);
+                            assertTrue("Got unexpected object: " + key.getClass() + ", keepBinary: " + keepBinary,
+                                val instanceof Integer);
+                        }
 
                         ++size;
                     }
@@ -329,7 +343,8 @@ public class CacheKeepBinaryIterationTest extends GridCommonAbstractTest {
         finally {
             cache.removeAll();
 
-            U.sleep(1000); //Fixes evictionPolicy issues at cache destroy.
+            if (ccfg.getEvictionPolicy() != null)
+                U.sleep(1000); // Fixes evictionPolicy issues at cache destroy.
 
             grid(0).destroyCache(ccfg.getName());
         }

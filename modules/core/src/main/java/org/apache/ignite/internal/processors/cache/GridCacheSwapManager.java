@@ -1604,14 +1604,15 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     }
 
     /**
+     * @param keepBinary Keep binary flag.
      * @return Lazy swap iterator.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> Iterator<Map.Entry<K, V>> lazySwapIterator() throws IgniteCheckedException {
+    public <K, V> Iterator<Map.Entry<K, V>> lazySwapIterator(boolean keepBinary) throws IgniteCheckedException {
         if (!swapEnabled)
             return new GridEmptyIterator<>();
 
-        return lazyIterator(cctx.gridSwap().rawIterator(spaceName), cctx.keepBinary());
+        return lazyIterator(cctx.gridSwap().rawIterator(spaceName), keepBinary);
     }
 
     /**
@@ -1630,7 +1631,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
             cctx.affinity().backupPartitions(cctx.localNodeId(), topVer);
 
         return new PartitionsAbstractIterator<KeyCacheObject>(parts) {
-            @Override protected Iterator<KeyCacheObject> partitionIterator(int part, boolean keepBinary)
+            @Override protected Iterator<KeyCacheObject> partitionIterator(int part)
                 throws IgniteCheckedException
             {
                 return keyIterator(offheap.iterator(spaceName, part));
@@ -1655,7 +1656,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
             cctx.affinity().backupPartitions(cctx.localNodeId(), topVer);
 
         return new PartitionsAbstractIterator<KeyCacheObject>(parts) {
-            @Override protected Iterator<KeyCacheObject> partitionIterator(int part, boolean keepBinary)
+            @Override protected Iterator<KeyCacheObject> partitionIterator(int part)
                 throws IgniteCheckedException
             {
                 return keyIterator(swapMgr.rawIterator(spaceName, part));
@@ -1664,13 +1665,14 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
     }
 
     /**
+     * @param keepBinary Keep binary flag.
      * @return Lazy off-heap iterator.
      */
-    public <K, V> Iterator<Map.Entry<K, V>> lazyOffHeapIterator() {
+    public <K, V> Iterator<Map.Entry<K, V>> lazyOffHeapIterator(boolean keepBinary) {
         if (!offheapEnabled)
             return new GridEmptyCloseableIterator<>();
 
-        return lazyIterator(offheap.iterator(spaceName), cctx.keepBinary());
+        return lazyIterator(offheap.iterator(spaceName), keepBinary);
     }
 
     /**
@@ -2041,11 +2043,14 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * @param primary If {@code true} includes primary entries.
      * @param backup If {@code true} includes backup entries.
      * @param topVer Topology version.
+     * @param keepBinary Keep binary flag.
      * @return Swap entries iterator.
      * @throws IgniteCheckedException If failed.
      */
-    public <K, V> Iterator<Cache.Entry<K, V>> swapIterator(boolean primary, boolean backup, AffinityTopologyVersion topVer)
-        throws IgniteCheckedException
+    public <K, V> Iterator<Cache.Entry<K, V>> swapIterator(boolean primary,
+        boolean backup,
+        AffinityTopologyVersion topVer,
+        boolean keepBinary) throws IgniteCheckedException
     {
         assert primary || backup;
 
@@ -2053,12 +2058,12 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
             return F.emptyIterator();
 
         if (primary && backup)
-            return cacheEntryIterator(this.<K, V>lazySwapIterator());
+            return cacheEntryIterator(this.<K, V>lazySwapIterator(keepBinary));
 
         Set<Integer> parts = primary ? cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer) :
             cctx.affinity().backupPartitions(cctx.localNodeId(), topVer);
 
-        return new PartitionsIterator<K, V>(parts) {
+        return new PartitionsIterator<K, V>(parts, keepBinary) {
             @Override protected GridCloseableIterator<? extends Map.Entry<byte[], byte[]>> nextPartition(int part)
                 throws IgniteCheckedException
             {
@@ -2071,12 +2076,14 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      * @param primary If {@code true} includes primary entries.
      * @param backup If {@code true} includes backup entries.
      * @param topVer Topology version.
+     * @param keepBinary Keep binary flag.
      * @return Offheap entries iterator.
      * @throws IgniteCheckedException If failed.
      */
     public <K, V> Iterator<Cache.Entry<K, V>> offheapIterator(boolean primary,
         boolean backup,
-        AffinityTopologyVersion topVer)
+        AffinityTopologyVersion topVer,
+        boolean keepBinary)
         throws IgniteCheckedException
     {
         assert primary || backup;
@@ -2085,12 +2092,12 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
             return F.emptyIterator();
 
         if (primary && backup)
-            return cacheEntryIterator(this.<K, V>lazyOffHeapIterator());
+            return cacheEntryIterator(this.<K, V>lazyOffHeapIterator(keepBinary));
 
         Set<Integer> parts = primary ? cctx.affinity().primaryPartitions(cctx.localNodeId(), topVer) :
             cctx.affinity().backupPartitions(cctx.localNodeId(), topVer);
 
-        return new PartitionsIterator<K, V>(parts) {
+        return new PartitionsIterator<K, V>(parts, keepBinary) {
             @Override protected GridCloseableIterator<? extends Map.Entry<byte[], byte[]>> nextPartition(int part) {
                 return offheap.iterator(spaceName, part);
             }
@@ -2312,15 +2319,23 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
      *
      */
     private abstract class PartitionsIterator<K, V> extends PartitionsAbstractIterator<Cache.Entry<K, V>> {
+        /** */
+        private final boolean keepBinary;
+
         /**
          * @param parts Partitions
+         * @param keepBinary Keep binary flag.
          */
-        public PartitionsIterator(Collection<Integer> parts) {
+        public PartitionsIterator(Collection<Integer> parts, boolean keepBinary) {
             super(parts);
+
+            this.keepBinary = keepBinary;
+
+            advance();
         }
 
         /** {@inheritDoc} */
-        @Override protected Iterator<Cache.Entry<K, V>> partitionIterator(int part, boolean keepBinary)
+        @Override protected Iterator<Cache.Entry<K, V>> partitionIterator(int part)
             throws IgniteCheckedException {
             return cacheEntryIterator(GridCacheSwapManager.this.<K, V>lazyIterator(nextPartition(part), keepBinary));
         }
@@ -2347,16 +2362,11 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         /** */
         private T next;
 
-        /** */
-        private final boolean keepBinary = cctx.keepBinary();
-
         /**
-         * @param parts Partitions
+         * @param parts Partitions.
          */
         public PartitionsAbstractIterator(Collection<Integer> parts) {
             this.partIt = parts.iterator();
-
-            advance();
         }
 
         /** {@inheritDoc} */
@@ -2384,7 +2394,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         /**
          * Switches to next element.
          */
-        private void advance() {
+        protected final void advance() {
             next = null;
 
             do {
@@ -2393,7 +2403,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
                         int part = partIt.next();
 
                         try {
-                            curIt = partitionIterator(part, keepBinary);
+                            curIt = partitionIterator(part);
                         }
                         catch (IgniteCheckedException e) {
                             throw new IgniteException(e);
@@ -2419,7 +2429,7 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
          * @return Iterator for given partition.
          * @throws IgniteCheckedException If failed.
          */
-        abstract protected Iterator<T> partitionIterator(int part, boolean keepBinary)
+        abstract protected Iterator<T> partitionIterator(int part)
             throws IgniteCheckedException;
     }
 
