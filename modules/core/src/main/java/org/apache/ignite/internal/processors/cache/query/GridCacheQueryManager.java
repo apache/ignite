@@ -151,7 +151,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private volatile GridCacheQueryMetricsAdapter metrics = new GridCacheQueryMetricsAdapter();
 
     /** */
-    private final ConcurrentMap<UUID, CanceledKeyMap<Long, GridFutureAdapter<QueryResult<K, V>>>> qryIters =
+    private final ConcurrentMap<UUID, CanceledRequestFutureMap> qryIters =
         new ConcurrentHashMap8<>();
 
     /** */
@@ -1838,10 +1838,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         assert sndId != null;
 
-        CanceledKeyMap<Long, GridFutureAdapter<QueryResult<K, V>>> futs = qryIters.get(sndId);
+        CanceledRequestFutureMap futs = qryIters.get(sndId);
 
         if (futs == null) {
-            futs = new CanceledKeyMap<Long, GridFutureAdapter<QueryResult<K, V>>>() {
+            futs = new CanceledRequestFutureMap() {
                 @Override protected boolean removeEldestEntry(Map.Entry<Long, GridFutureAdapter<QueryResult<K, V>>> e) {
                     boolean rmv = size() > maxIterCnt;
 
@@ -1858,7 +1858,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
             };
 
-            CanceledKeyMap<Long, GridFutureAdapter<QueryResult<K, V>>> old = qryIters.putIfAbsent(sndId, futs);
+            CanceledRequestFutureMap old = qryIters.putIfAbsent(sndId, futs);
 
             if (old != null)
                 futs = old;
@@ -1908,7 +1908,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         if (sndId == null)
             return;
 
-        Map<Long, GridFutureAdapter<QueryResult<K, V>>> futs = qryIters.get(sndId);
+        CanceledRequestFutureMap futs = qryIters.get(sndId);
 
         if (futs != null) {
             IgniteInternalFuture<QueryResult<K, V>> fut;
@@ -3512,33 +3512,36 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     * The map prevent put a (key, value) pair in case the specified key has been removed previously
+     * The map prevent put a future to the map in case the specified request has been removed previously
      */
-    private class CanceledKeyMap<K, V> extends LinkedHashMap<K, V> {
+    private class CanceledRequestFutureMap extends LinkedHashMap<Long, GridFutureAdapter<QueryResult<K, V>>> {
         /** */
         private static final long serialVersionUID = 0L;
 
         /** Count of canceled keys */
         private static final int CANCELED_COUNT = 128;
 
-        /** Canceled keys store to the set in case remove(key) is called before put(key, val). */
-        private Set<K> canceled;
+        /**
+         * The ID of the canceled request is stored to the set in case
+         * remove(reqId) is called before put(reqId, future).
+         */
+        private Set<Long> canceled;
 
         /** {@inheritDoc} */
-        @Override public V remove(Object key) {
+        @Override public GridFutureAdapter<QueryResult<K, V>> remove(Object key) {
             if (containsKey(key))
                 return super.remove(key);
             else {
                 if (canceled == null) {
                     canceled = Collections.newSetFromMap(
-                        new LinkedHashMap<K, Boolean>() {
-                            @Override protected boolean removeEldestEntry(Map.Entry<K, Boolean> eldest) {
+                        new LinkedHashMap<Long, Boolean>() {
+                            @Override protected boolean removeEldestEntry(Map.Entry<Long, Boolean> eldest) {
                                 return size() > CANCELED_COUNT;
                             }
                         });
                 }
 
-                canceled.add((K)key);
+                canceled.add((Long)key);
 
                 return null;
             }
@@ -3547,7 +3550,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         /**
          * @return true if the key is canceled
          */
-        boolean isCanceled(K key) {
+        boolean isCanceled(Long key) {
             return canceled != null && canceled.contains(key);
         }
     }
