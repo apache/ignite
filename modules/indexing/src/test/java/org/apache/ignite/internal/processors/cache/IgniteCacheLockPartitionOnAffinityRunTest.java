@@ -33,6 +33,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -51,16 +52,16 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
     private static final int RESTARTED_NODE_CNT = 2;
 
     /** Count of objects. */
-    private static final int ORGS_COUNT = 10;
+    private static final int ORGS_COUNT_PER_NODE = 2;
 
     /** Count of collocated objects. */
     private static final int PERS_AT_ORG_COUNT = 10_000;
 
     /** Test timeout. */
-    private static final long TEST_TIMEOUT = 3 * 60 * 1000;
-
+    private static final long TEST_TIMEOUT = 5 * 60 * 1000;
     /** Test end time. */
     final long endTime = System.currentTimeMillis() + TEST_TIMEOUT - 60_000;
+    private List<Integer> orgIds;
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
@@ -110,40 +111,39 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
         final AtomicBoolean stop = new AtomicBoolean();
 
         // Run restart threads: start re-balancing
-        for (int i = GRID_CNT - RESTARTED_NODE_CNT; i < GRID_CNT; ++i) {
-            final int restartGrid = i;
-            GridTestUtils.runAsync(new Callable<Void>() {
-                @Override public Void call() throws Exception {
-                    while (!stop.get() && System.currentTimeMillis() < endTime) {
-                        System.out.println("+++ STOP");
-                        stopGrid(restartGrid);
-                        Thread.sleep(100);
-                        System.out.println("+++ START");
-                        startGrid(restartGrid);
-                    }
-                    return null;
+        GridTestUtils.runAsync(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                int restartGrid = GRID_CNT - RESTARTED_NODE_CNT;
+                while (!stop.get() && System.currentTimeMillis() < endTime) {
+                    stopGrid(restartGrid);
+                    startGrid(restartGrid);
+                    Thread.sleep(1000);
+                    restartGrid++;
+                    if (restartGrid >= GRID_CNT)
+                        restartGrid = GRID_CNT - RESTARTED_NODE_CNT;
                 }
-            }, "restart-node-" + i);
-        }
+                return null;
+            }
+        }, "restart-node");
 
         while (System.currentTimeMillis() < endTime) {
-            for (int orgId = 0; orgId < ORGS_COUNT; ++orgId) {
-//            IgniteCache<Integer, Organization> orgCache = getPrimary(orgId).cache(Organization.class.getSimpleName());
+            for (int orgId : orgIds) {
                 try {
                     grid(0).compute().affinityRun(Organization.class.getSimpleName(), orgId, new IgniteRunnable() {
                         @IgniteInstanceResource
                         private Ignite ignite;
 
                         @Override public void run() {
-                            List res = ignite.cache(Organization.class.getSimpleName()).query(new SqlFieldsQuery(
-                                "SELECT p.id FROM Person as p, Organization as o WHERE p.orgId=o.id").setLocal(true))
+                            System.out.println("+++ RUN on: " + ignite.name());
+                            List res = ignite.cache(Person.class.getSimpleName()).query(new SqlFieldsQuery(
+                                "SELECT * FROM Person as p where p.orgId").setLocal(true))
                                 .getAll();
-
-                            System.out.println("+++ RES size: " + res.size());
+                            assertTrue(res.size() % PERS_AT_ORG_COUNT == 0);
                         }
                     });
-                } catch(IgniteException ex) {
-                    // Swallow ignite exceptions
+                }
+                catch (IgniteException | IllegalStateException ex) {
+                    // Swallow exceptions in case node is shutdown
                 }
             }
         }
@@ -154,26 +154,14 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
     /**
      *
      */
-    private Ignite getPrimary(Object key) {
-        while (true) {
-            try {
-                for (int i = 0; i < GRID_CNT; i++) {
-                    if (grid().affinity(
-                        Organization.class.getSimpleName()).isPrimary(grid(i).cluster().localNode(), key))
-                        return grid(i);
-                }
-            }
-            catch (Exception ex) {
-            }
-        }
-    }
-
-    /**
-     *
-     */
     private void fillCaches() throws InterruptedException {
         grid(0).createCache(Organization.class.getSimpleName());
         grid(0).createCache(Person.class.getSimpleName());
+
+        orgIds = new ArrayList<>(ORGS_COUNT_PER_NODE * RESTARTED_NODE_CNT);
+        for (int i = GRID_CNT - RESTARTED_NODE_CNT; i < GRID_CNT; ++i)
+            orgIds.addAll(primaryKeys(grid(i).cache(Organization.class.getSimpleName()), ORGS_COUNT_PER_NODE));
+
         try (
             IgniteDataStreamer<Integer, Organization> orgStreamer =
                 grid(0).dataStreamer(Organization.class.getSimpleName());
@@ -181,7 +169,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
                 grid(0).dataStreamer(Person.class.getSimpleName())) {
 
             int persId = 0;
-            for (int orgId = 0; orgId < ORGS_COUNT; ++orgId) {
+            for (int orgId : orgIds) {
                 Organization org = new Organization(orgId);
                 orgStreamer.addData(orgId, org);
 
@@ -199,7 +187,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
      */
     private static class Organization implements Serializable {
         /** */
-        @QuerySqlField
+        @QuerySqlField(index = true)
         private final int id;
 
         /**
@@ -230,7 +218,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
         @QuerySqlField
         private final int id;
 
-        @QuerySqlField
+        @QuerySqlField(index = true)
         private final int orgId;
 
         /**
