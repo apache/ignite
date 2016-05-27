@@ -20,8 +20,10 @@ namespace Apache.Ignite.EntityFramework
     using System.Configuration;
     using System.Data.Entity;
     using System.Data.Entity.Core.Common;
+    using System.Diagnostics;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache.Configuration;
+    using Apache.Ignite.Core.Impl.Common;
     using EFCache;
 
     /// <summary>
@@ -38,6 +40,9 @@ namespace Apache.Ignite.EntityFramework
     /// </summary>
     public class IgniteDbConfiguration : DbConfiguration
     {
+        // This class can be used directly
+        // This class can be inherited
+
         /// <summary>
         /// The configuration section name to be used when starting Ignite.
         /// </summary>
@@ -48,12 +53,32 @@ namespace Apache.Ignite.EntityFramework
         /// </summary>
         public const string DefaultCacheName = "entityFrameworkQueryCache";
 
+        public IgniteDbConfiguration(string configurationSectionName, string cacheName)
+        {
+
+        }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="IgniteDbConfiguration" /> class.
+        /// </summary>
+        /// <param name="igniteConfiguration">The ignite configuration to use for starting Ignite instance.</param>
+        /// <param name="cacheName">Name of the cache. Can be null. Cache will be created if it does not exist.</param>
+        public IgniteDbConfiguration(IgniteConfiguration igniteConfiguration, string cacheName)
+            : this(GetOrStartIgnite(igniteConfiguration), cacheName)
+        {
+            // No-op.
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="IgniteDbConfiguration"/> class.
         /// </summary>
-        public IgniteDbConfiguration()
+        /// <param name="ignite">The ignite instance to use.</param>
+        /// <param name="cacheName">Name of the cache. Can be null. Cache will be created if it does not exist.</param>
+        public IgniteDbConfiguration(IIgnite ignite, string cacheName)
         {
-            var cache = GetOrStartIgnite().GetOrCreateCache<string, object>(DefaultCacheName);
+            IgniteArgumentCheck.NotNull(ignite, "ignite");
+
+            var cache = ignite.GetOrCreateCache<string, object>(cacheName);
 
             var efCache = new IgniteEntityFrameworkCache(cache);
             var transactionHandler = new CacheTransactionHandler(efCache);
@@ -71,17 +96,11 @@ namespace Apache.Ignite.EntityFramework
         /// <summary>
         /// Gets the Ignite instance.
         /// </summary>
-        private static IIgnite GetOrStartIgnite()
+        private static IIgnite GetOrStartIgnite(IgniteConfiguration igniteConfiguration)
         {
-            var ignite = Ignition.TryGetIgnite();
+            IgniteArgumentCheck.NotNull(igniteConfiguration, "igniteConfiguration");
 
-            if (ignite != null)
-                return ignite;
-
-            // Not yet started: check config and start
-            var section = ConfigurationManager.GetSection(ConfigurationSectionName) as IgniteConfigurationSection;
-
-            return Ignition.Start(section != null ? section.IgniteConfiguration : null);
+            return Ignition.TryGetIgnite(igniteConfiguration.GridName) ?? Ignition.Start(igniteConfiguration);
         }
     }
 }
