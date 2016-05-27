@@ -118,6 +118,10 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     /** Update counter. */
     private final AtomicLong cntr = new AtomicLong();
 
+    /** Set if failed to move partition to RENTING state due to reservations, to be checked when
+     * reservation is released. */
+    private volatile boolean shouldBeRenting;
+
     /**
      * @param cctx Context.
      * @param id Partition ID.
@@ -415,6 +419,9 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             if (state.compareAndSet(s, s, reservations, --reservations)) {
                 tryEvict();
 
+                if (reservations == 0 && shouldBeRenting)
+                    rent(true);
+
                 break;
             }
         }
@@ -454,24 +461,23 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @return Future to signal that this node is no longer an owner or backup.
      */
     IgniteInternalFuture<?> rent(boolean updateSeq) {
-        while (true) {
-            int reservations = state.getStamp();
+        GridDhtPartitionState s = state.getReference();
 
-            GridDhtPartitionState s = state.getReference();
+        if (s == RENTING || s == EVICTED)
+            return rent;
 
-            if (s == RENTING || s == EVICTED)
-                return rent;
+        shouldBeRenting = true;
 
-            if (state.compareAndSet(s, RENTING, reservations, reservations)) {
-                if (log.isDebugEnabled())
-                    log.debug("Moved partition to RENTING state: " + this);
+        // Don't change the state of the partition in case one is reserved.
+        if (state.compareAndSet(s, RENTING, 0, 0)) {
+            shouldBeRenting = false;
 
-                // Evict asynchronously, as the 'rent' method may be called
-                // from within write locks on local partition.
-                tryEvictAsync(updateSeq);
+            if (log.isDebugEnabled())
+                log.debug("Moved partition to RENTING state: " + this);
 
-                break;
-            }
+            // Evict asynchronously, as the 'rent' method may be called
+            // from within write locks on local partition.
+            tryEvictAsync(updateSeq);
         }
 
         return rent;
