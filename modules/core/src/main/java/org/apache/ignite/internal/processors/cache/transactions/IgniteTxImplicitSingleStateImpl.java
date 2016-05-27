@@ -73,6 +73,19 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
+    @Override public void unwindEvicts(GridCacheSharedContext cctx) {
+        if (entry == null || entry.isEmpty())
+            return;
+
+        assert entry.size() == 1;
+
+        GridCacheContext ctx = cctx.cacheContext(entry.get(0).cacheId());
+
+        if (ctx != null)
+            CU.unwindEvicts(ctx);
+    }
+
+    /** {@inheritDoc} */
     @Override public void awaitLastFut(GridCacheSharedContext ctx) {
         if (cacheCtx == null)
             return;
