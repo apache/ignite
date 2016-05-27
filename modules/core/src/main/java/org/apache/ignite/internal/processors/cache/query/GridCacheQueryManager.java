@@ -151,7 +151,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     private volatile GridCacheQueryMetricsAdapter metrics = new GridCacheQueryMetricsAdapter();
 
     /** */
-    private final ConcurrentMap<UUID, CanceledRequestFutureMap> qryIters =
+    private final ConcurrentMap<UUID, RequestFutureMap> qryIters =
         new ConcurrentHashMap8<>();
 
     /** */
@@ -1838,10 +1838,10 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
 
         assert sndId != null;
 
-        CanceledRequestFutureMap futs = qryIters.get(sndId);
+        RequestFutureMap futs = qryIters.get(sndId);
 
         if (futs == null) {
-            futs = new CanceledRequestFutureMap() {
+            futs = new RequestFutureMap() {
                 @Override protected boolean removeEldestEntry(Map.Entry<Long, GridFutureAdapter<QueryResult<K, V>>> e) {
                     boolean rmv = size() > maxIterCnt;
 
@@ -1858,7 +1858,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 }
             };
 
-            CanceledRequestFutureMap old = qryIters.putIfAbsent(sndId, futs);
+            RequestFutureMap old = qryIters.putIfAbsent(sndId, futs);
 
             if (old != null)
                 futs = old;
@@ -1908,7 +1908,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
         if (sndId == null)
             return;
 
-        CanceledRequestFutureMap futs = qryIters.get(sndId);
+        RequestFutureMap futs = qryIters.get(sndId);
 
         if (futs != null) {
             IgniteInternalFuture<QueryResult<K, V>> fut;
@@ -3512,9 +3512,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
-     * The map prevent put a future to the map in case the specified request has been removed previously
+     * The map prevents put to the map in case the specified request has been removed previously.
      */
-    private class CanceledRequestFutureMap extends LinkedHashMap<Long, GridFutureAdapter<QueryResult<K, V>>> {
+    private class RequestFutureMap extends LinkedHashMap<Long, GridFutureAdapter<QueryResult<K, V>>> {
         /** */
         private static final long serialVersionUID = 0L;
 
