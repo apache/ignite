@@ -230,6 +230,22 @@ printInstanceInfo()
     fi
 }
 
+createTag()
+{
+    for i in 0 9;
+    do
+        ec2-create-tags $1 --tag $2=$3 --region $EC2_INSTANCE_REGION
+        if [ $? -eq 0 ]; then
+            return 0
+        fi
+
+        echo "[WARN] $i attempt to tag EC2 instance $1 with $2=$3 is failed, sleeping extra 5sec"
+        sleep 5s
+    done
+
+    terminate "All 10 attempts to tag EC2 instance $1 with $2=$3 are failed"
+}
+
 tagInstance()
 {
     export EC2_HOME=/opt/aws/apitools/ec2
@@ -255,27 +271,15 @@ tagInstance()
     fi
 
     if [ -n "$INSTANCE_NAME" ]; then
-        ec2-create-tags $INSTANCE_ID --tag Name=${INSTANCE_NAME} --region $EC2_INSTANCE_REGION
-        if [ $? -ne 0 ]; then
-            echo "[ERROR] Failed to tag EC2 instance with: Name=${INSTANCE_NAME}"
-            exit 1
-        fi
+        createTag "$INSTANCE_ID" "Name" "${INSTANCE_NAME}"
     fi
 
     if [ -n "$EC2_OWNER_TAG" ]; then
-        ec2-create-tags $INSTANCE_ID --tag owner=${EC2_OWNER_TAG} --region $EC2_INSTANCE_REGION
-        if [ $? -ne 0 ]; then
-            echo "[ERROR] Failed to tag EC2 instance with: owner=${EC2_OWNER_TAG}"
-            exit 1
-        fi
+        createTag "$INSTANCE_ID" "owner" "${EC2_OWNER_TAG}"
     fi
 
     if [ -n "$EC2_PROJECT_TAG" ]; then
-        ec2-create-tags $INSTANCE_ID --tag project=${EC2_PROJECT_TAG} --region $EC2_INSTANCE_REGION
-        if [ $? -ne 0 ]; then
-            echo "[ERROR] Failed to tag EC2 instance with: project=${EC2_PROJECT_TAG}"
-            exit 1
-        fi
+        createTag "$INSTANCE_ID" "project" "${EC2_PROJECT_TAG}"
     fi
 }
 
@@ -737,7 +741,7 @@ waitToJoinCluster()
 
 setupClusterSeeds()
 {
-    if [ "$1" != "cassandra" ] && [ "$1" != "ignite" ]; then
+    if [ "$1" != "cassandra" ] && [ "$1" != "ignite" ] && [ "$1" != "test" ]; then
         terminate "Incorrect cluster type specified '$1' to setup seeds"
     fi
 
@@ -803,7 +807,7 @@ waitFirstClusterNodeRegistered()
 {
     DISCOVERY_URL=$(getDiscoveryUrl)
 
-    echo "[INFO] Waiting for the first $NODE_TYPE node to register"
+    echo "[INFO] Waiting for the first $NODE_TYPE node to register in: $DISCOVERY_URL"
 
     startTime=$(date +%s)
 

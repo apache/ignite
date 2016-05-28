@@ -90,57 +90,26 @@ downloadPackage()
 {
     echo "[INFO] Downloading $3 package from $1 into $2"
 
-    if [[ "$1" == s3* ]]; then
-        aws s3 cp $1 $2
-
-        if [ $? -ne 0 ]; then
-            echo "[WARN] Failed to download $3 package from first attempt"
-            rm -Rf $2
-            sleep 10s
-
-            echo "[INFO] Trying second attempt to download $3 package"
+    for i in 0 9;
+    do
+        if [[ "$1" == s3* ]]; then
             aws s3 cp $1 $2
-
-            if [ $? -ne 0 ]; then
-                echo "[WARN] Failed to download $3 package from second attempt"
-                rm -Rf $2
-                sleep 10s
-
-                echo "[INFO] Trying third attempt to download $3 package"
-                aws s3 cp $1 $2
-
-                if [ $? -ne 0 ]; then
-                    terminate "All three attempts to download $3 package from $1 are failed"
-                fi
-            fi
-        fi
-    else
-        curl "$1" -o "$2"
-
-        if [ $? -ne 0 ] && [ $? -ne 6 ]; then
-            echo "[WARN] Failed to download $3 package from first attempt"
-            rm -Rf $2
-            sleep 10s
-
-            echo "[INFO] Trying second attempt to download $3 package"
+            code=$?
+        else
             curl "$1" -o "$2"
-
-            if [ $? -ne 0 ] && [ $? -ne 6 ]; then
-                echo "[WARN] Failed to download $3 package from second attempt"
-                rm -Rf $2
-                sleep 10s
-
-                echo "[INFO] Trying third attempt to download $3 package"
-                curl "$1" -o "$2"
-
-                if [ $? -ne 0 ] && [ $? -ne 6 ]; then
-                    terminate "All three attempts to download $3 package from $1 are failed"
-                fi
-            fi
+            code=$?
         fi
-    fi
 
-    echo "[INFO] $3 package successfully downloaded from $1 into $2"
+        if [ $code -eq 0 ]; then
+            echo "[INFO] $3 package successfully downloaded from $1 into $2"
+            return 0
+        fi
+
+        echo "[WARN] Failed to download $3 package from $i attempt, sleeping extra 5sec"
+        sleep 5s
+    done
+
+    terminate "All 10 attempts to download $3 package from $1 are failed"
 }
 
 setupJava()
@@ -261,16 +230,37 @@ setupTestsPackage()
     tagInstance
 }
 
+createGmondReceiverConfig()
+{
+    /usr/local/sbin/gmond --default_config > /opt/gmond-default.conf
+    if [ $? -ne 0 ]; then
+        terminate "Failed to create gmond default config in: /opt/gmond-default.txt"
+    fi
+
+    HOST_NAME=$(hostname -f | tr '[:upper:]' '[:lower:]')
+
+    cat /opt/gmond-default.conf | sed -r "s/mute = no/mute = yes/g" | \
+    sed -r "s/name = \"unspecified\"/name = \"$1\"/g" | \
+    sed -r "s/#bind_hostname/bind_hostname/g" | \
+    sed "0,/mcast_join = 239.2.11.71/s/mcast_join = 239.2.11.71/host = $HOST_NAME/g" | \
+    sed -r "s/mcast_join = 239.2.11.71//g" | sed -r "s/bind = 239.2.11.71//g" | \
+    sed -r "s/port = 8649/port = $2/g" | sed -r "s/retry_bind = true//g" > /opt/gmond-${1}.conf
+
+    chmod a+r /opt/gmond-${1}.conf
+
+    rm -f /opt/gmond-default.conf
+}
+
 setupGangliaPackages()
 {
-    echo "[INFO] Installing Ganglia required packages"
+    echo "[INFO] Installing Ganglia master required packages"
 
-    yum -y install apr-devel apr-util check-devel cairo-devel pango-devel pango \
+    yum -y install httpd apr-devel apr-util check-devel cairo-devel pango-devel pango \
     libxml2-devel glib2-devel dbus-devel freetype-devel freetype \
     libpng-devel libart_lgpl-devel fontconfig-devel gcc-c++ expat-devel \
     python-devel libXrender-devel perl-devel perl-CPAN gettext git sysstat \
     automake autoconf ltmain.sh pkg-config gperf libtool pcre-devel libconfuse-devel \
-    php-devel php-pear phpize
+    php-devel php-pear
 
     if [ $? -ne 0 ]; then
         terminate "Failed to install all Ganglia required packages"
@@ -293,7 +283,8 @@ setupGangliaPackages()
     fi
 
     export PKG_CONFIG_PATH=/usr/lib/pkgconfig/
-    cd /opt/rrdtool
+
+    pushd /opt/rrdtool
 
     ./configure --prefix=/usr/local/rrdtool
     if [ $? -ne 0 ]; then
@@ -311,24 +302,27 @@ setupGangliaPackages()
     fi
 
     ln -s /usr/local/rrdtool/bin/rrdtool /usr/bin/rrdtool
+    mkdir -p /var/lib/ganglia/rrds
 
-    chown -R nobody:nobody /usr/local/rrdtool /usr/bin/rrdtool
+    chown -R nobody:nobody /usr/local/rrdtool /var/lib/ganglia/rrds /usr/bin/rrdtool
 
     rm -Rf /opt/rrdtool
+
+    popd
 
     echo "[INFO] rrdtool successfully installed"
 
     echo "[INFO] Installig ganglia-core"
 
-    cd /opt
-
-    git clone $GANGLIA_CORE_DOWNLOAD_URL
+    git clone $GANGLIA_CORE_DOWNLOAD_URL /opt/monitor-core
 
     if [ $? -ne 0 ]; then
         terminate "Failed to clone ganglia-core from github: $GANGLIA_CORE_DOWNLOAD_URL"
     fi
 
-    cd /opt/monitor-core
+    pushd /opt/monitor-core
+
+    git checkout efe9b5e5712ea74c04e3b15a06eb21900e18db40
 
     ./bootstrap
 
@@ -354,17 +348,46 @@ setupGangliaPackages()
 
     rm -Rf /opt/monitor-core
 
+    popd
+
     echo "[INFO] ganglia-core successfully installed"
 
     echo "[INFO] Installing ganglia-web"
 
-    cd /opt
-
-    git clone $GANGLIA_WEB_DOWNLOAD_URL
+    git clone $GANGLIA_WEB_DOWNLOAD_URL /opt/web
 
     if [ $? -ne 0 ]; then
         terminate "Failed to clone ganglia-web from github: $GANGLIA_WEB_DOWNLOAD_URL"
     fi
+
+    cat /opt/web/Makefile | sed -r "s/GDESTDIR = \/usr\/share\/ganglia-webfrontend/GDESTDIR = \/opt\/ganglia-web/g" > /opt/web/Makefile1
+    cat /opt/web/Makefile1 | sed -r "s/GCONFDIR = \/etc\/ganglia-web/GCONFDIR = \/opt\/ganglia-web/g" > /opt/web/Makefile2
+    cat /opt/web/Makefile2 | sed -r "s/GWEB_STATEDIR = \/var\/lib\/ganglia-web/GWEB_STATEDIR = \/opt\/ganglia-web/g" > /opt/web/Makefile3
+    cat /opt/web/Makefile3 | sed -r "s/APACHE_USER = www-data/APACHE_USER = apache/g" > /opt/web/Makefile4
+
+    rm -f /opt/web/Makefile
+    cp /opt/web/Makefile4 /opt/web/Makefile
+    rm -f /opt/web/Makefile1 /opt/web/Makefile2 /opt/web/Makefile3 /opt/web/Makefile4
+
+    pushd /opt/web
+
+    git checkout f2b19c7cacfc8c51921be801b92f8ed0bd4901ae
+
+    make
+
+    if [ $? -ne 0 ]; then
+        terminate "Failed to make ganglia-web"
+    fi
+
+    make install
+
+    if [ $? -ne 0 ]; then
+        terminate "Failed to install ganglia-web"
+    fi
+
+    rm -Rf /opt/web
+
+    popd
 
     echo "" >> /etc/httpd/conf/httpd.conf
     echo "Alias /ganglia /opt/ganglia-web" >> /etc/httpd/conf/httpd.conf
@@ -375,27 +398,94 @@ setupGangliaPackages()
     echo "       Deny from none" >> /etc/httpd/conf/httpd.conf
     echo "</Directory>" >> /etc/httpd/conf/httpd.conf
 
+    echo "[INFO] ganglia-web successfully installed"
+
+    HOST_NAME=$(hostname -f | tr '[:upper:]' '[:lower:]')
+
+    echo "data_source \"cassandra\" ${HOST_NAME}:8641" > /opt/gmetad.conf
+    echo "data_source \"ignite\" ${HOST_NAME}:8642" >> /opt/gmetad.conf
+    echo "data_source \"test\" ${HOST_NAME}:8643" >> /opt/gmetad.conf
+    echo "setuid_username \"nobody\"" >> /opt/gmetad.conf
+    echo "case_sensitive_hostnames 0" >> /opt/gmetad.conf
+
+    chmod a+r /opt/gmetad.conf
+
+    createGmondReceiverConfig cassandra 8641
+    createGmondReceiverConfig ignite 8642
+    createGmondReceiverConfig test 8643
+}
+
+startGmondReceiver()
+{
+    configFile=/opt/gmond-${1}.conf
+    pidFile=/opt/gmond-${1}.pid
+
+    echo "[INFO] Starting gmond receiver daemon for $1 cluster using config file: $configFile"
+
+    rm -f $pidFile
+
+    /usr/local/sbin/gmond --conf=$configFile --pid-file=$pidFile
+
+    sleep 2s
+
+    if [ ! -f "$pidFile" ]; then
+        terminate "Failed to start gmond daemon for $1 cluster, pid file doesn't exist"
+    fi
+
+    pid=$(cat $pidFile)
+
+    echo "[INFO] gmond daemon for $1 cluster started, pid=$pid"
+
+    exists=$(ps $pid | grep gmond)
+
+    if [ -z "$exists" ]; then
+        terminate "gmond daemon for $1 cluster abnormally terminated"
+    fi
+}
+
+startGmetadCollector()
+{
+    echo "[INFO] Starting gmetad daemon"
+
+    rm -f /opt/gmetad.pid
+
+    /usr/local/sbin/gmetad --conf=/opt/gmetad.conf --pid-file=/opt/gmetad.pid
+
+    sleep 2s
+
+    if [ ! -f "/opt/gmetad.pid" ]; then
+        terminate "Failed to start gmetad daemon, pid file doesn't exist"
+    fi
+
+    pid=$(cat /opt/gmetad.pid)
+
+    echo "[INFO] gmetad daemon started, pid=$pid"
+
+    exists=$(ps $pid | grep gmetad)
+
+    if [ -z "$exists" ]; then
+        terminate "gmetad daemon abnormally terminated"
+    fi
+}
+
+startHttpdService()
+{
+    echo "[INFO] Starting httpd service"
+
     service httpd start
 
     if [ $? -ne 0 ]; then
         terminate "Failed to start httpd service"
     fi
 
-    sleep 30s
+    sleep 5s
 
     exists=$(service httpd status | grep running)
     if [ -z "$exists" ]; then
         terminate "httpd service process terminated"
     fi
 
-    if [ ! -d "/var/lib/ganglia-web/dwoo" ]; then
-        mkdir -p /var/lib/ganglia-web/dwoo
-        chmod -R a+rw /var/lib/ganglia-web
-    fi
-
-    chmod -R a+rw /var/lib/ganglia-web/dwoo
-
-    echo "[INFO] ganglia-web successfully installed"
+    echo "[INFO] httpd service successfully started"
 }
 
 ###################################################################################################################
@@ -403,21 +493,6 @@ setupGangliaPackages()
 echo "[INFO]-----------------------------------------------------------------"
 echo "[INFO] Bootstrapping Ganglia master server"
 echo "[INFO]-----------------------------------------------------------------"
-
-exists=$(chkconfig --list | grep httpd)
-if [ -z "$exists" ]; then
-    echo "[INFO] Installing httpd service"
-
-    yum -y install httpd
-
-    if [ $? -ne 0 ]; then
-        terminate "Failed to install httpd service"
-    fi
-fi
-
-if [ ! -f "/etc/httpd/conf/httpd.conf" ]; then
-    terminate "It's not possible to install Ganglia in this host cause it doens't have /etc/httpd/conf/httpd.conf"
-fi
 
 setupPreRequisites
 setupJava
@@ -427,37 +502,10 @@ setupGangliaPackages
 
 registerNode
 
-setupClusterSeeds "cassandra"
-CASSANDRA_SEEDS=$CLUSTER_SEEDS
-
-setupClusterSeeds "ignite"
-IGNITE_SEEDS=$CLUSTER_SEEDS
-
-setupClusterSeeds "test"
-TEST_SEEDS=$CLUSTER_SEEDS
-
-echo "data_source \"cassandra\" $CASSANDRA_SEEDS" > /opt/gmetad.conf
-echo "data_source \"ignite\" $IGNITE_SEEDS" >> /opt/gmetad.conf
-echo "data_source \"tests\" $TEST_SEEDS" >> /opt/gmetad.conf
-echo "setuid_username \"nobody\"" >> /opt/gmetad.conf
-echo "case_sensitive_hostnames 0" >> /opt/gmetad.conf
-
-echo "[INFO] Starting gmetad daemon"
-
-gmetad --conf=/opt/gmetad.conf
-
-if [ $? -ne 0 ]; then
-    terminate "Failed to start gmetad daemon"
-fi
-
-sleep 10s
-
-exists=$(ps -ef | grep gmetad)
-
-if [ -z "$exists" ]; then
-    terminate "gmetad daemon process terminated"
-fi
-
-echo "[INFO] gmetad daemon successfully started"
+startGmondReceiver cassandra
+startGmondReceiver ignite
+startGmondReceiver test
+startGmetadCollector
+startHttpdService
 
 terminate

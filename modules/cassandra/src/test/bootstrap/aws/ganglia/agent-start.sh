@@ -19,14 +19,7 @@
 
 . /opt/ignite-cassandra-tests/bootstrap/aws/common.sh "ganglia"
 
-echo "[INFO] Running Ganglia agent discovery daemon for '$1' cluster"
-
-gmondCmd="/usr/local/sbin/gmond"
-
-if [ ! -f "$gmondCmd" ]; then
-    echo "[ERROR] gmond daemon doesn't exist in $gmondCmd"
-    exit 1
-fi
+echo "[INFO] Running Ganglia agent discovery daemon for '$1' cluster using $2 port"
 
 waitFirstClusterNodeRegistered
 
@@ -45,12 +38,18 @@ echo "[INFO] Got Ganglia master node: $masterNode"
 
 echo "[INFO] Creating gmond config file"
 
-$gmondCmd --default_config > /opt/gmond-default.conf
-cat /opt/gmond-default.conf | sed -r "s/deaf = no/deaf = yes/g" | sed -r "s/name = \"unspecified\"/name = \"$1\"/g" | sed -r "s/#bind_hostname/bind_hostname/g" | sed "0,/mcast_join = 239.2.11.71/s/mcast_join = 239.2.11.71/host = $masterNode/g" | sed -r "s/mcast_join = 239.2.11.71//g" | sed -r "s/bind = 239.2.11.71//g" > /opt/gmond.conf
+/usr/local/sbin/gmond --default_config > /opt/gmond-default.conf
+
+cat /opt/gmond-default.conf | sed -r "s/deaf = no/deaf = yes/g" | \
+sed -r "s/name = \"unspecified\"/name = \"$1\"/g" | \
+sed -r "s/#bind_hostname/bind_hostname/g" | \
+sed "0,/mcast_join = 239.2.11.71/s/mcast_join = 239.2.11.71/host = $masterNode/g" | \
+sed -r "s/mcast_join = 239.2.11.71//g" | sed -r "s/bind = 239.2.11.71//g" | \
+sed -r "s/port = 8649/port = $2/g" | sed -r "s/retry_bind = true//g" > /opt/gmond.conf
 
 echo "[INFO] Running gmond daemon to report to gmetad on $masterNode"
 
-$gmondCmd --conf=/opt/gmond.conf -p /opt/gmond.pid
+/usr/local/sbin/gmond --conf=/opt/gmond.conf -p /opt/gmond.pid
 
 sleep 2s
 

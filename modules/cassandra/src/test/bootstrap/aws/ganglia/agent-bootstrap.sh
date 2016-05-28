@@ -52,6 +52,7 @@ bootstrapGangliaAgent()
     fi
 
     export PKG_CONFIG_PATH=/usr/lib/pkgconfig/
+
     pushd /opt/rrdtool
 
     ./configure --prefix=/usr/local/rrdtool
@@ -70,8 +71,9 @@ bootstrapGangliaAgent()
     fi
 
     ln -s /usr/local/rrdtool/bin/rrdtool /usr/bin/rrdtool
+    mkdir -p /var/lib/ganglia/rrds
 
-    chown -R nobody:nobody /usr/local/rrdtool /usr/bin/rrdtool
+    chown -R nobody:nobody /usr/local/rrdtool /var/lib/ganglia/rrds /usr/bin/rrdtool
 
     rm -Rf /opt/rrdtool
 
@@ -81,17 +83,15 @@ bootstrapGangliaAgent()
 
     echo "[INFO] Installig ganglia-core"
 
-    pushd /opt
-
-    git clone $GANGLIA_CORE_DOWNLOAD_URL
+    git clone $GANGLIA_CORE_DOWNLOAD_URL /opt/monitor-core
 
     if [ $? -ne 0 ]; then
         terminate "Failed to clone ganglia-core from github: $GANGLIA_CORE_DOWNLOAD_URL"
     fi
 
-    popd
-
     pushd /opt/monitor-core
+
+    git checkout efe9b5e5712ea74c04e3b15a06eb21900e18db40
 
     ./bootstrap
 
@@ -99,7 +99,7 @@ bootstrapGangliaAgent()
         terminate "Failed to prepare ganglia-core for compilation"
     fi
 
-    ./configure --with-librrd=/usr/local/rrdtool
+    ./configure --with-gmetad --with-librrd=/usr/local/rrdtool
 
     if [ $? -ne 0 ]; then
         terminate "Failed to configure ganglia-core"
@@ -115,9 +115,7 @@ bootstrapGangliaAgent()
         terminate "Failed to install ganglia-core"
     fi
 
-    #rm -Rf /opt/monitor-core
-
-    sleep 10s
+    rm -Rf /opt/monitor-core
 
     popd
 
@@ -125,7 +123,7 @@ bootstrapGangliaAgent()
 
     echo "[INFO] Running ganglia agent daemon to discover Ganglia master"
 
-    /opt/ignite-cassandra-tests/bootstrap/aws/ganglia/agent-start.sh $1 > /opt/ganglia-agent.log &
+    /opt/ignite-cassandra-tests/bootstrap/aws/ganglia/agent-start.sh $1 $2 > /opt/ganglia-agent.log &
 
     echo "[INFO] Ganglia daemon job id: $!"
 }

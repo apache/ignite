@@ -90,57 +90,26 @@ downloadPackage()
 {
     echo "[INFO] Downloading $3 package from $1 into $2"
 
-    if [[ "$1" == s3* ]]; then
-        aws s3 cp $1 $2
-
-        if [ $? -ne 0 ]; then
-            echo "[WARN] Failed to download $3 package from first attempt"
-            rm -Rf $2
-            sleep 10s
-
-            echo "[INFO] Trying second attempt to download $3 package"
+    for i in 0 9;
+    do
+        if [[ "$1" == s3* ]]; then
             aws s3 cp $1 $2
-
-            if [ $? -ne 0 ]; then
-                echo "[WARN] Failed to download $3 package from second attempt"
-                rm -Rf $2
-                sleep 10s
-
-                echo "[INFO] Trying third attempt to download $3 package"
-                aws s3 cp $1 $2
-
-                if [ $? -ne 0 ]; then
-                    terminate "All three attempts to download $3 package from $1 are failed"
-                fi
-            fi
-        fi
-    else
-        curl "$1" -o "$2"
-
-        if [ $? -ne 0 ] && [ $? -ne 6 ]; then
-            echo "[WARN] Failed to download $3 package from first attempt"
-            rm -Rf $2
-            sleep 10s
-
-            echo "[INFO] Trying second attempt to download $3 package"
+            code=$?
+        else
             curl "$1" -o "$2"
-
-            if [ $? -ne 0 ] && [ $? -ne 6 ]; then
-                echo "[WARN] Failed to download $3 package from second attempt"
-                rm -Rf $2
-                sleep 10s
-
-                echo "[INFO] Trying third attempt to download $3 package"
-                curl "$1" -o "$2"
-
-                if [ $? -ne 0 ] && [ $? -ne 6 ]; then
-                    terminate "All three attempts to download $3 package from $1 are failed"
-                fi
-            fi
+            code=$?
         fi
-    fi
 
-    echo "[INFO] $3 package successfully downloaded from $1 into $2"
+        if [ $code -eq 0 ]; then
+            echo "[INFO] $3 package successfully downloaded from $1 into $2"
+            return 0
+        fi
+
+        echo "[WARN] Failed to download $3 package from $i attempt, sleeping extra 5sec"
+        sleep 5s
+    done
+
+    terminate "All 10 attempts to download $3 package from $1 are failed"
 }
 
 setupJava()
@@ -260,7 +229,7 @@ setupTestsPackage()
     printInstanceInfo
     echo "----------------------------------------------------------------------------------------"
     tagInstance
-    bootstrapGangliaAgent "ignite"
+    bootstrapGangliaAgent "ignite" 8642
 }
 
 downloadIgnite()
