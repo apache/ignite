@@ -29,6 +29,9 @@ public class DatabaseConfiguration implements Serializable {
     /** Default page size. */
     public static final int DFLT_PAGE_SIZE = 8 * 1024;
 
+    /** */
+    public static final int DFLT_PAGE_CACHE_SIZE = 512 * 1024 * 1024;
+
     /** Page size. */
     private int pageSize = DFLT_PAGE_SIZE;
 
@@ -36,7 +39,7 @@ public class DatabaseConfiguration implements Serializable {
     private String fileCacheAllocationPath;
 
     /** Amount of memory allocated for the page cache. */
-    private long pageCacheSize;
+    private long pageCacheSize = DFLT_PAGE_CACHE_SIZE;
 
     /** Fragment size. */
     private long fragmentSize;

@@ -583,7 +583,7 @@ public class DataPageIO extends PageIO {
      * @return Item ID.
      * @throws IgniteCheckedException If failed.
      */
-    public byte addRow(
+    public int addRow(
         CacheObjectContext coctx,
         ByteBuffer buf,
         CacheObject key,
@@ -623,7 +623,9 @@ public class DataPageIO extends PageIO {
 
         assert getFreeSpace(buf) >= 0;
 
-        return (byte)itemId;
+        assert (itemId & ~0xFF) == 0;
+
+        return itemId;
     }
 
     /**

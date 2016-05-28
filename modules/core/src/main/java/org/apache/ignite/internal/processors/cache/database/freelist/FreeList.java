@@ -59,7 +59,7 @@ public class FreeList {
 
             int idx = io.addRow(cctx.cacheObjectContext(), buf, row.key(), row.value(), row.version(), entrySize);
 
-            assert idx >= 0;
+            assert idx >= 0 : idx;
 
             row.link(PageIdUtils.linkFromDwordOffset(pageId, idx));
 
