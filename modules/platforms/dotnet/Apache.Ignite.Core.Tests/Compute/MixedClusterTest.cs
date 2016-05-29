@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** */
         private const string StopTask = "org.apache.ignite.platform.PlatformStopIgniteTask";
 
-        [TestFixtureSetUp]
+        //[TestFixtureSetUp]
         public void FixtureSetUp()
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration()) {SpringConfigUrl = SpringConfig};
@@ -57,7 +57,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.IsTrue(_ignite.WaitTopology(2));
         }
 
-        [TestFixtureTearDown]
+        //[TestFixtureTearDown]
         public void FixtureTearDown()
         {
             _ignite.GetCompute().ExecuteJavaTask<object>(StopTask, _javaNodeName);
@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Tests the dot net task.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestDotNetTask()
         {
             var results = _ignite.GetCompute().Broadcast(new ComputeFunc());
@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Tests the dot net task.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestJavaTask()
         {
             // Java task can execute on both nodes.
@@ -91,7 +91,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Tests the scan query.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestScanQuery()
         {
             var cache = GetCache();
@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Tests the cache invoke.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestCacheInvoke()
         {
             var cache = GetCache();

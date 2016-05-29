@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Reflection;
     using Apache.Ignite.Core.Tests.Cache.Query;
     using Apache.Ignite.Core.Tests.Memory;
+    using Apache.Ignite.Core.Tests.Services;
     using NUnit.ConsoleRunner;
 
     public static class TestRunner
@@ -32,9 +33,9 @@ namespace Apache.Ignite.Core.Tests
             Debug.Listeners.Add(new TextWriterTraceListener(Console.Out));
             Debug.AutoFlush = true;
 
-            TestOne(typeof(CacheLinqTest), "TestExcept");
+            TestOne(typeof(ServicesTest), "TestCallJavaService");
 
-            //TestAll(typeof (CacheQueriesCodeConfigurationTest));
+            //TestAll(typeof (ServicesTest));
             //TestAllInAssembly();
         }
 

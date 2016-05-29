@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Test fixture tear-down routine.
         /// </summary>
-        [TestFixtureTearDown]
+        //[TestFixtureTearDown]
         public void TestFixtureTearDown()
         {
             Ignition.StopAll(true);
@@ -90,7 +90,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests the configuration set in code.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestCodeConfiguration()
         {
             StartGrid(new BinaryConfiguration
@@ -104,7 +104,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Tests the configuration set in xml.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestXmlConfiguration()
         {
             StartGrid(null);

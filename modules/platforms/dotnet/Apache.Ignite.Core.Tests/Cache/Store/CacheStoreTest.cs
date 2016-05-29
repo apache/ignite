@@ -134,7 +134,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         /// <summary>
         ///
         /// </summary>
-        [TestFixtureSetUp]
+        //[TestFixtureSetUp]
         public virtual void BeforeTests()
         {
             TestUtils.KillProcesses();
@@ -156,7 +156,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         /// <summary>
         ///
         /// </summary>
-        [TestFixtureTearDown]
+        //[TestFixtureTearDown]
         public void AfterTests()
         {
             Ignition.StopAll(true);
@@ -190,7 +190,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             Console.WriteLine("Test finished: " + TestContext.CurrentContext.Test.Name);
         }
 
-        [Test]
+        //[Test]
         public void TestLoadCache()
         {
             var cache = GetCache();
@@ -211,7 +211,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             Assert.Throws<CacheStoreException>(() => cache.LoadCache(new ExceptionalEntryFilter(), 100, 10));
         }
 
-        [Test]
+        //[Test]
         public void TestLocalLoadCache()
         {
             var cache = GetCache();
@@ -226,7 +226,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
                 Assert.AreEqual("val_" + i, cache.Get(i));
         }
 
-        [Test]
+        //[Test]
         public void TestLoadCacheMetadata()
         {
             CacheTestStore.LoadObjects = true;
@@ -246,7 +246,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             Assert.AreEqual("Value", meta.TypeName);
         }
 
-        [Test]
+        //[Test]
         public void TestLoadCacheAsync()
         {
             var cache = GetCache();
@@ -263,7 +263,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             }
         }
 
-        [Test]
+        //[Test]
         public void TestPutLoad()
         {
             var cache = GetCache();
@@ -283,7 +283,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             Assert.AreEqual(1, cache.GetSize());
         }
 
-        [Test]
+        //[Test]
         public void TestPutLoadBinarizable()
         {
             var cache = GetBinaryStoreCache<int, Value>();
@@ -307,7 +307,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             Assert.AreEqual(1, cache.GetSize());
         }
 
-        [Test]
+        //[Test]
         public void TestPutLoadObjects()
         {
             var cache = GetObjectStoreCache<int, Value>();
@@ -331,7 +331,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             Assert.AreEqual(1, cache.GetSize());
         }
 
-        [Test]
+        //[Test]
         public void TestPutLoadAll()
         {
             var putMap = new Dictionary<int, string>();
@@ -369,7 +369,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             Assert.AreEqual(10, cache.GetSize());
         }
 
-        [Test]
+        //[Test]
         public void TestRemove()
         {
             var cache = GetCache();
@@ -390,7 +390,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
                 Assert.AreEqual("val_" + i, map[i]);
         }
 
-        [Test]
+        //[Test]
         public void TestRemoveAll()
         {
             var cache = GetCache();
@@ -410,7 +410,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
                 Assert.AreEqual("val_" + i, map[i]);
         }
 
-        [Test]
+        //[Test]
         public void TestTx()
         {
             var cache = GetCache();
@@ -433,7 +433,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             Assert.AreEqual("val", map[1]);
         }
 
-        [Test]
+        //[Test]
         public void TestLoadCacheMultithreaded()
         {
             CacheTestStore.LoadMultithreaded = true;
@@ -450,7 +450,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
                 Assert.AreEqual("val_" + i, cache.Get(i));
         }
 
-        [Test]
+        //[Test]
         public void TestCustomStoreProperties()
         {
             var cache = GetCustomStoreCache();
@@ -460,7 +460,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             Assert.AreEqual("String value", CacheTestStore.stringProperty);
         }
 
-        [Test]
+        //[Test]
         public void TestDynamicStoreStart()
         {
             var cache = GetTemplateStoreCache();
@@ -474,7 +474,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
             _storeCount++;
         }
 
-        [Test]
+        //[Test]
         public void TestLoadAll([Values(true, false)] bool isAsync)
         {
             var cache = GetCache();

@@ -89,7 +89,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Set-up routine.
         /// </summary>
-        [TestFixtureSetUp]
+        //[TestFixtureSetUp]
         public void SetUp()
         {
             GC.Collect();
@@ -124,7 +124,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Tear-down routine.
         /// </summary>
-        [TestFixtureTearDown]
+        //[TestFixtureTearDown]
         public void TearDown()
         {
             Ignition.StopAll(true);
@@ -156,7 +156,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Test arguments validation.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestValidation()
         {
             Assert.Throws<ArgumentException>(() => { cache1.QueryContinuous(new ContinuousQuery<int, BinarizableEntry>(null)); });
@@ -165,7 +165,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Test multiple closes.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestMultipleClose()
         {
             int key1 = PrimaryKey(cache1);
@@ -193,7 +193,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Test regular callback operations.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestCallback()
         {
             CheckCallback(false);
@@ -257,7 +257,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Test Ignite injection into callback.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestCallbackInjection()
         {
             Listener<BinarizableEntry> cb = new Listener<BinarizableEntry>();
@@ -273,7 +273,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Test binarizable filter logic.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestFilterBinarizable()
         {
             CheckFilter(true, false);
@@ -282,7 +282,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Test serializable filter logic.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestFilterSerializable()
         {
             CheckFilter(false, false);
@@ -349,7 +349,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// Test binarizable filter error during invoke.
         /// </summary>
         [Ignore("IGNITE-521")]
-        [Test]
+        //[Test]
         public void TestFilterInvokeErrorBinarizable()
         {
             CheckFilterInvokeError(true);
@@ -359,7 +359,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// Test serializable filter error during invoke.
         /// </summary>
         [Ignore("IGNITE-521")]
-        [Test]
+        //[Test]
         public void TestFilterInvokeErrorSerializable()
         {
             CheckFilterInvokeError(false);
@@ -417,7 +417,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Test binarizable filter marshalling error.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestFilterMarshalErrorBinarizable()
         {
             CheckFilterMarshalError(true);
@@ -426,7 +426,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Test serializable filter marshalling error.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestFilterMarshalErrorSerializable()
         {
             CheckFilterMarshalError(false);
@@ -458,7 +458,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Test non-serializable filter error.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestFilterNonSerializable()
         {
             CheckFilterNonSerializable(false);
@@ -505,7 +505,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// Test binarizable filter unmarshalling error.
         /// </summary>
         [Ignore("IGNITE-521")]
-        [Test]
+        //[Test]
         public void TestFilterUnmarshalErrorBinarizable()
         {
             CheckFilterUnmarshalError(true);
@@ -515,7 +515,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// Test serializable filter unmarshalling error.
         /// </summary>
         [Ignore("IGNITE-521")]
-        [Test]
+        //[Test]
         public void TestFilterUnmarshalErrorSerializable()
         {
             CheckFilterUnmarshalError(false);
@@ -563,7 +563,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Test Ignite injection into filters.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestFilterInjection()
         {
             Listener<BinarizableEntry> cb = new Listener<BinarizableEntry>();
@@ -591,7 +591,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Test "keep-binary" scenario.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestKeepBinary()
         {
             var cache = cache1.WithKeepBinary<int, IBinaryObject>();
@@ -641,7 +641,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Test value types (special handling is required for nulls).
         /// </summary>
-        [Test]
+        //[Test]
         public void TestValueTypes()
         {
             var cache = grid1.GetCache<int, int>(cacheName);
@@ -692,7 +692,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Test whether buffer size works fine.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestBufferSize()
         {
             // Put two remote keys in advance.
@@ -738,7 +738,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Test whether timeout works fine.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestTimeout()
         {
             int key1 = PrimaryKey(cache1);
@@ -766,7 +766,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Test whether nested Ignite API call from callback works fine.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestNestedCallFromCallback()
         {
             var cache = cache1.WithKeepBinary<int, IBinaryObject>();
@@ -788,7 +788,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Tests the initial query.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestInitialQuery()
         {
             // Scan query, GetAll

@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// 
         /// </summary>
-        [Test]
+        //[Test]
         public void TestLoadFromGac()
         {
             Assert.False(IsLoaded("System.Data.Linq"));
@@ -79,7 +79,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// 
         /// </summary>
-        [Test]
+        //[Test]
         public void TestLoadFromCurrentDir()
         {
             Assert.False(IsLoaded("testDll"));
@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// 
         /// </summary>
-        [Test]
+        //[Test]
         public void TestLoadAllDllInDir()
         {
             var dirInfo = Directory.CreateDirectory(Path.GetTempPath() + "/testDlls");
@@ -133,7 +133,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// 
         /// </summary>
-        [Test]
+        //[Test]
         public void TestLoadFromCurrentDirByName()
         {
             Assert.False(IsLoaded("testDllByName"));
@@ -157,7 +157,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// 
         /// </summary>
-        [Test]
+        //[Test]
         public void TestLoadByAbsoluteUri()
         {
             var dllPath = Path.GetTempPath() + "/tempDll.dll";
@@ -182,7 +182,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// 
         /// </summary>
-        [Test]
+        //[Test]
         public void TestLoadUnexistingLibrary()
         {
             var cfg = new IgniteConfiguration

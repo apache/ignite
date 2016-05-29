@@ -65,7 +65,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Fixture set up.
         /// </summary>
-        [TestFixtureSetUp]
+        //[TestFixtureSetUp]
         public void FixtureSetUp()
         {
             // Main .NET nodes
@@ -103,7 +103,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Fixture tear down.
         /// </summary>
-        [TestFixtureTearDown]
+        //[TestFixtureTearDown]
         public void FixtureTearDown()
         {
             _ignite.GetCompute().ExecuteJavaTask<object>(StopTask, _javaNodeName);
@@ -113,7 +113,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Tests the filter.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestFilter()
         {
             var javaObj = new JavaObject(PlatformFilter)
@@ -168,7 +168,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Tests the factory class.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestFactory()
         {
             var javaObj = new JavaObject(PlatformFilterFactory,
@@ -180,7 +180,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Tests the invalid class name
         /// </summary>
-        [Test]
+        //[Test]
         public void TestInvalidClassName()
         {
             var javaObj = new JavaObject("blabla");
@@ -193,7 +193,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Tests the invalid class name
         /// </summary>
-        [Test]
+        //[Test]
         public void TestInvalidProperty()
         {
             var javaObject = new JavaObject(PlatformFilter)

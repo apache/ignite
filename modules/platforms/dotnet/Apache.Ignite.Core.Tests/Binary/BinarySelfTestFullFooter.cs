@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     /// <summary>
     /// Binary test with full footers.
     /// </summary>
-    [TestFixture]
+    //[TestFixture]
     public class BinarySelfTestFullFooter : BinarySelfTest
     {
         /** <inheritdoc /> */

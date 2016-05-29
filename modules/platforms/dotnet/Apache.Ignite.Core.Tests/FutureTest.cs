@@ -39,7 +39,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Test fixture set-up routine.
         /// </summary>
-        [TestFixtureSetUp]
+        //[TestFixtureSetUp]
         public void TestFixtureSetUp()
         {
             TestUtils.KillProcesses();
@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Tests
         /// <summary>
         /// Test fixture tear-down routine.
         /// </summary>
-        [TestFixtureTearDown]
+        //[TestFixtureTearDown]
         public void TestFixtureTearDown()
         {
             Ignition.StopAll(true);
@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Tests
         }
 
 
-        [Test]
+        //[Test]
         public void TestToTask()
         {
             _cache.PutAsync(1, 1).Wait();
@@ -94,7 +94,7 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsTrue(task2.IsCompleted);
         }
 
-        [Test]
+        //[Test]
         public void TestFutureTypes()
         {
             TestType(false);

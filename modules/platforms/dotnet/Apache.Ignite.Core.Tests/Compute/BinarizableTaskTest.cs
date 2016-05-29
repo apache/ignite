@@ -43,7 +43,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// <summary>
         /// Test for task result.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestBinarizableObjectInTask()
         {
             var taskArg = new BinarizableWrapper {Item = ToBinary(Grid1, new BinarizableTaskArgument(100))};

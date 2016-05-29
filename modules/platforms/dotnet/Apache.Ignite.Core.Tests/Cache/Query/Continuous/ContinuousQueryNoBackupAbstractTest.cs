@@ -36,7 +36,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Test regular callback operations for local query.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestCallbackLocal()
         {
             CheckCallback(true);
@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Test binary filter logic.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestFilterBinarizableLocal()
         {
             CheckFilter(true, true);
@@ -54,7 +54,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Test serializable filter logic.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestFilterSerializableLocal()
         {
             CheckFilter(false, true);
@@ -63,7 +63,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// <summary>
         /// Test non-serializable filter for local query.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestFilterNonSerializableLocal()
         {
             CheckFilterNonSerializable(true);

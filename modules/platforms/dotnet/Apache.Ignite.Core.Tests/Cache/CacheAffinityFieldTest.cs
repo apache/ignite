@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Fixture set up.
         /// </summary>
-        [TestFixtureSetUp]
+        //[TestFixtureSetUp]
         public void FixtureSetUp()
         {
             var grid1 = Ignition.Start(GetConfig());
@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Fixture tear down.
         /// </summary>
-        [TestFixtureTearDown]
+        //[TestFixtureTearDown]
         public void FixtureTearDown()
         {
             Ignition.StopAll(true);
@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Tests the metadata.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestMetadata()
         {
             // Put keys to update meta
@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Tests that keys are located properly in cache partitions.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestKeyLocation()
         {
             TestKeyLocation0((key, affKey) => new CacheKey {Key = key, AffinityKey = affKey});
@@ -97,7 +97,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Tests the <see cref="AffinityKey"/> class.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestAffinityKeyClass()
         {
             // Check location
@@ -111,7 +111,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// <summary>
         /// Tests <see cref="AffinityKey"/> class interoperability.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestInterop()
         {
             var affKey = _cache1.Ignite.GetCompute()

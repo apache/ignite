@@ -37,7 +37,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests the SQL query.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestQueryEntityConfiguration()
         {
             var cfg = new IgniteConfiguration
@@ -86,7 +86,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests the attribute configuration.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestAttributeConfiguration()
         {
             // ReSharper disable once ObjectCreationAsStatement
@@ -120,7 +120,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// <summary>
         /// Tests the attribute configuration query.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestAttributeConfigurationQuery()
         {
             var cfg = new IgniteConfiguration

@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// <summary>
         /// Tests the streamer on a node without cache.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestNoCacheNode()
         {
             const string cacheName = "cache";
@@ -66,7 +66,7 @@ namespace Apache.Ignite.Core.Tests.Dataload
         /// <summary>
         /// Streamer test with destroyed cache.
         /// </summary>
-        [Test]
+        //[Test]
         public void TestDestroyCache()
         {
             const string cacheName = "cache";
