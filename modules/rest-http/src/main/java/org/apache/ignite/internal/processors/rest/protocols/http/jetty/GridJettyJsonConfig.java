@@ -184,6 +184,27 @@ class GridJettyJsonConfig extends JsonConfig {
     };
 
     /**
+     * Helper class for replace null key in {@link Map}.
+     */
+    private static JsonValueProcessor NULL_MAP_PREPROCESSOR = new AbstractJsonValueProcessor() {
+        /** {@inheritDoc} */
+        @SuppressWarnings("unchecked")
+        protected Object processBean(Object bean, JsonConfig jsonCfg) {
+            if (bean == null)
+                return new JSONObject(true);
+
+            if (bean instanceof Map) {
+                Map m = (Map)bean;
+
+                if (m.containsKey(null))
+                    m.put("", m.remove(null));
+            }
+
+            return JSONObject.fromObject(bean, jsonCfg);
+        }
+    };
+
+    /**
      * Constructs default jetty json config.
      */
     GridJettyJsonConfig(IgniteLogger log) {
@@ -196,6 +217,7 @@ class GridJettyJsonConfig extends JsonConfig {
         registerJsonValueProcessor(IgniteUuid.class, IGNITE_UUID_PROCESSOR);
         registerJsonValueProcessor(Date.class, DATE_PROCESSOR);
         registerJsonValueProcessor(java.sql.Date.class, DATE_PROCESSOR);
+        registerJsonValueProcessor(HashMap.class, NULL_MAP_PREPROCESSOR);
 
         final LessNamingProcessor lessNamingProcessor = new LessNamingProcessor();
 
