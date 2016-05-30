@@ -67,6 +67,16 @@ namespace ignite
              *     binary representation of the specified 64-bit int value.
              */
             IGNITE_IMPORT_EXPORT int32_t NumberOfLeadingZerosI64(int64_t i);
+            
+            /**
+             * Get number of leading zero bits in the two's complement binary
+             * representation of the specified 64-bit int value.
+             *
+             * @param i The value whose bits are to be counted.
+             * @return The number of leading zero bits in the two's complement
+             *     binary representation of the specified 64-bit int value.
+             */
+            IGNITE_IMPORT_EXPORT int32_t NumberOfLeadingZerosU64(uint64_t i);
 
             /**
              * Get the number of one-bits in the two's complement binary
@@ -104,6 +114,14 @@ namespace ignite
              * @return Recomended capasity to allocate.
              */
             IGNITE_IMPORT_EXPORT int32_t GetCapasityForSize(int32_t size);
+
+            /**
+             * Get the number of decimal digits of the integer value.
+             *
+             * @param x The value.
+             * @return The number of decimal digits of the integer value.
+             */
+            IGNITE_IMPORT_EXPORT int32_t DigitLength(uint64_t x);
 
             /**
              * Get the signum function of the specified 64-bit integer value.

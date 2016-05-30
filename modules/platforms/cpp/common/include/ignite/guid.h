@@ -147,7 +147,7 @@ namespace ignite
      * @return Reference to the first param.
      */
     template<typename C>
-    std::basic_istream<C>& operator>>(std::basic_istream<C>& is, Guid& guid)
+    ::std::basic_istream<C>& operator>>(std::basic_istream<C>& is, Guid& guid)
     {
         uint64_t parts[5];
 

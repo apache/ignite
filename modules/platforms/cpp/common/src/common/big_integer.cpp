@@ -44,7 +44,7 @@ namespace ignite
         // No-op.
     }
 
-    BigInteger::BigInteger(const int8_t* val, int32_t len, int32_t sign) :
+    BigInteger::BigInteger(const int8_t* val, int32_t len, int32_t sign, bool bigEndian) :
         sign(sign),
         mag()
     {
@@ -53,46 +53,93 @@ namespace ignite
         assert(sign == 1 || sign == 0 || sign == -1);
         assert(val[0] > 0);
 
-        int32_t firstNonZero = 0;
-        while (firstNonZero < len && val[firstNonZero] == 0)
-            ++firstNonZero;
-
-        int32_t intLength = (len - firstNonZero + 3) / 4;
-
-        mag.Resize(intLength);
-
-        int32_t b = len - 1;
-
-        for (int32_t i = 0; i < intLength - 1; ++i)
+        if (bigEndian)
         {
-            mag[i] = (val[b] & 0xFF)
-                | ((val[b + 1] & 0xFF) << 8)
-                | ((val[b + 2] & 0xFF) << 16)
-                | ((val[b + 3] & 0xFF) << 24);
+            int32_t firstNonZero = 0;
+            while (firstNonZero < len && val[firstNonZero] == 0)
+                ++firstNonZero;
 
-            b -= 4;
+            int32_t intLength = (len - firstNonZero + 3) / 4;
+
+            mag.Resize(intLength);
+
+            int32_t b = len - 1;
+
+            for (int32_t i = 0; i < intLength - 1; ++i)
+            {
+                mag[i] = (val[b] & 0xFFUL)
+                    | ((val[b - 1] & 0xFFUL) << 8)
+                    | ((val[b - 2] & 0xFFUL) << 16)
+                    | ((val[b - 3] & 0xFFUL) << 24);
+
+                b -= 4;
+            }
+
+            int32_t bytesRemaining = b - firstNonZero + 1;
+
+            assert(bytesRemaining > 0 && bytesRemaining <= 4);
+
+            switch (bytesRemaining)
+            {
+                case 4:
+                    mag[intLength - 1] |= (val[b - 3] & 0xFF) << 24;
+
+                case 3:
+                    mag[intLength - 1] |= (val[b - 2] & 0xFF) << 16;
+
+                case 2:
+                    mag[intLength - 1] |= (val[b - 1] & 0xFF) << 8;
+
+                case 1:
+                    mag[intLength - 1] |= val[b] & 0xFF;
+
+                default:
+                    break;
+            }
         }
-
-        int32_t bytesRemaining = b - firstNonZero + 1;
-
-        assert(bytesRemaining > 0 && bytesRemaining <= 4);
-
-        switch (bytesRemaining)
+        else
         {
-            case 4:
-                mag[intLength - 1] |= (val[b - 3] & 0xFF) << 24;
+            int32_t firstNonZero = len - 1;
+            while (firstNonZero >= 0 && val[firstNonZero] == 0)
+                --firstNonZero;
 
-            case 3:
-                mag[intLength - 1] |= (val[b - 2] & 0xFF) << 16;
+            int32_t intLength = (firstNonZero + 4) / 4;
 
-            case 2:
-                mag[intLength - 1] |= (val[b - 1] & 0xFF) << 8;
+            mag.Resize(intLength);
 
-            case 1:
-                mag[intLength - 1] |= val[b] & 0xFF;
+            int32_t b = 0;
 
-            default:
-                break;
+            for (int32_t i = 0; i < intLength - 1; ++i)
+            {
+                mag[i] = (val[b] & 0xFFUL)
+                    | ((val[b + 1] & 0xFFUL) << 8)
+                    | ((val[b + 2] & 0xFFUL) << 16)
+                    | ((val[b + 3] & 0xFFUL) << 24);
+
+                b += 4;
+            }
+
+            int32_t bytesRemaining = firstNonZero - b + 1;
+
+            assert(bytesRemaining > 0 && bytesRemaining <= 4);
+
+            switch (bytesRemaining)
+            {
+                case 4:
+                    mag[intLength - 1] |= (val[b + 3] & 0xFF) << 24;
+
+                case 3:
+                    mag[intLength - 1] |= (val[b + 2] & 0xFF) << 16;
+
+                case 2:
+                    mag[intLength - 1] |= (val[b + 1] & 0xFF) << 8;
+
+                case 1:
+                    mag[intLength - 1] |= val[b] & 0xFF;
+
+                default:
+                    break;
+            }
         }
     }
 
@@ -175,6 +222,11 @@ namespace ignite
             res += (mag.GetSize() - 1) * 32;
 
         return res;
+    }
+
+    int32_t BigInteger::GetPrecision() const
+    {
+        return 0;
     }
 
     void BigInteger::MagnitudeToBytes(common::FixedSizeArray<int8_t>& buffer) const
@@ -498,6 +550,22 @@ namespace ignite
         }
 
         return 0;
+    }
+
+
+    int64_t BigInteger::ToInt64() const
+    {
+        return (static_cast<uint64_t>(GetMagInt(1)) << 32) | GetMagInt(0);
+    }
+
+    int32_t BigInteger::GetMagInt(int32_t n) const
+    {
+        assert(n >= 0);
+
+        if (n >= mag.GetSize())
+            return sign > 0 ? 0 : -1;
+
+        return sign * mag[n];
     }
 }
 

@@ -58,8 +58,10 @@ namespace ignite
          * @param val Bytes of the integer. Byte order is big-endian.
          * @param len Array length.
          * @param sign Signum. Can be -1 (negative) or 1 (positive or zero).
+         * @param bigEndian If true then magnitude is in big-endian. Otherwise
+         *     the byte order of the magnitude considered to be little-endian.
          */
-        BigInteger(const int8_t* val, int32_t len, int32_t sign);
+        BigInteger(const int8_t* val, int32_t len, int32_t sign, bool bigEndian = true);
 
         /**
          * Constructs big integer with the specified magnitude.
@@ -121,6 +123,14 @@ namespace ignite
         uint32_t GetBitLength() const;
 
         /**
+         * Get precision of the BigInteger.
+         *
+         * @return Number of the decimal digits in the decimal representation
+         *     of the value.
+         */
+        int32_t GetPrecision() const;
+
+        /**
          * Fills specified buffer with data of this BigInteger converted to
          * bytes in big-endian byte order. Sign is not considered when this
          * operation is performed.
@@ -147,7 +157,7 @@ namespace ignite
         /**
          * Divide this to another big integer.
          *
-         * @param divisor Divisor.
+         * @param divisor Divisor. Can be *this.
          * @param res Result placed there. Can be *this.
          */
         void Divide(const BigInteger& divisor, BigInteger& res) const;
@@ -162,7 +172,22 @@ namespace ignite
          */
         int32_t Compare(const BigInteger& other, bool ignoreSign = false) const;
 
+        /**
+         * Convert to int64_t.
+         *
+         * @return int64_t value.
+         */
+        int64_t ToInt64() const;
+
     private:
+        /**
+         * Get n-th integer of the magnitude.
+         *
+         * @param n Index.
+         * @return Value of the n-th int of the magnitude.
+         */
+        int32_t GetMagInt(int32_t n) const;
+
         /**
          * The sign of this BigInteger: -1 for negative, 0 for zero, or
          * 1 for positive.

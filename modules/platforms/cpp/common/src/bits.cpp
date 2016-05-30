@@ -20,6 +20,57 @@
 
 #include "ignite/common/bits.h"
 
+namespace
+{
+    const int32_t UINT64_MAX_PRECISION = 20;
+
+    const uint64_t TEN_POWERS_TABLE[UINT64_MAX_PRECISION] = {
+        1ULL,                     // 0  / 10^0
+        10ULL,                    // 1  / 10^1
+        100ULL,                   // 2  / 10^2
+        1000ULL,                  // 3  / 10^3
+        10000ULL,                 // 4  / 10^4
+        100000ULL,                // 5  / 10^5
+        1000000ULL,               // 6  / 10^6
+        10000000ULL,              // 7  / 10^7
+        100000000ULL,             // 8  / 10^8
+        1000000000ULL,            // 9  / 10^9
+        10000000000ULL,           // 10 / 10^10
+        100000000000ULL,          // 11 / 10^11
+        1000000000000ULL,         // 12 / 10^12
+        10000000000000ULL,        // 13 / 10^13
+        100000000000000ULL,       // 14 / 10^14
+        1000000000000000ULL,      // 15 / 10^15
+        10000000000000000ULL,     // 16 / 10^16
+        100000000000000000ULL,    // 17 / 10^17
+        1000000000000000000ULL,   // 18 / 10^18
+        10000000000000000000ULL   // 19 / 10^19
+    };
+
+    const uint64_t THRESHOLDS_TABLE[UINT64_MAX_PRECISION] = {
+        UINT64_MAX,                          // 0
+        UINT64_MAX / 10ULL,                  // 1
+        UINT64_MAX / 100ULL,                 // 2
+        UINT64_MAX / 1000ULL,                // 3
+        UINT64_MAX / 10000ULL,               // 4
+        UINT64_MAX / 100000ULL,              // 5
+        UINT64_MAX / 1000000ULL,             // 6
+        UINT64_MAX / 10000000ULL,            // 7
+        UINT64_MAX / 100000000ULL,           // 8
+        UINT64_MAX / 1000000000ULL,          // 9
+        UINT64_MAX / 10000000000ULL,         // 10
+        UINT64_MAX / 100000000000ULL,        // 11
+        UINT64_MAX / 1000000000000ULL,       // 12
+        UINT64_MAX / 10000000000000ULL,      // 13
+        UINT64_MAX / 100000000000000ULL,     // 14
+        UINT64_MAX / 1000000000000000ULL,    // 15
+        UINT64_MAX / 10000000000000000ULL,   // 16
+        UINT64_MAX / 100000000000000000ULL,  // 17
+        UINT64_MAX / 1000000000000000000ULL, // 18
+        UINT64_MAX / 1000000000000000000ULL  // 19
+    };
+};
+
 namespace ignite
 {
     namespace common
@@ -102,12 +153,17 @@ namespace ignite
 
             int32_t NumberOfLeadingZerosI64(int64_t i)
             {
+                return NumberOfLeadingZerosU64(static_cast<uint64_t>(i));
+            }
+
+            int32_t NumberOfLeadingZerosU64(uint64_t i)
+            {
                 if (i == 0)
                     return 64;
 
                 int32_t n = 1;
 
-                uint32_t x = static_cast<uint32_t>(static_cast<uint64_t>(i) >> 32);
+                uint32_t x = static_cast<uint32_t>(i >> 32);
 
                 if (x == 0) {
                     n += 32;
@@ -177,6 +233,21 @@ namespace ignite
                 int32_t res = 1 << bl;
 
                 return size > res ? res << 1 : res;
+            }
+
+            int32_t DigitLength(uint64_t x)
+            {
+                // See http://graphics.stanford.edu/~seander/bithacks.html
+                // for the details on the algorithm.
+
+                if (x < 10)
+                    return 1;
+
+                int32_t r = ((64 - NumberOfLeadingZerosU64(x) + 1) * 1233) >> 12;
+
+                assert(r <= UINT64_MAX_PRECISION);
+
+                return (r == UINT64_MAX_PRECISION || x < TEN_POWERS_TABLE[r]) ? r : r + 1;
             }
         }
     }

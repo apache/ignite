@@ -39,14 +39,16 @@ namespace ignite
         /**
          * Constructor.
          *
-         * @param mag Bytes of the magnitude. Byte order is big-endian. Should
-         *     be positive, sign is passed using separate argument.
+         * @param mag Bytes of the magnitude. Should be positive, sign is
+         *     passed using separate argument.
          * @param len Magnitude length in bytes.
          * @param scale Scale.
          * @param sign Sign of the decimal. Should be -1 for negative numbers
-         * and 1 otherwise.
+         *     and 1 otherwise.
+         * @param bigEndian If true then magnitude is in big-endian. Otherwise
+         *     the byte order of the magnitude considered to be little-endian.
          */
-        Decimal(const int8_t* mag, int32_t len, int32_t scale, int32_t sign);
+        Decimal(const int8_t* mag, int32_t len, int32_t scale, int32_t sign, bool bigEndian = true);
 
         /**
          * Copy constructor.
@@ -74,6 +76,25 @@ namespace ignite
         operator double() const;
 
         /**
+         * Convert to int64_t.
+         */
+        operator int64_t() const;
+
+        /**
+         * Convert to double.
+         *
+         * @return Double value.
+         */
+        double ToDouble() const;
+
+        /**
+         * Convert to int64_t.
+         *
+         * @return int64_t value.
+         */
+        int64_t ToInt64() const;
+
+        /**
          * Get scale.
          *
          * @return Scale.
@@ -84,8 +105,17 @@ namespace ignite
          * Set scale.
          *
          * @param scale Scale to set.
+         * @param res Result is placed here. Can be *this.
          */
-        void SetScale(int32_t scale);
+        void SetScale(int32_t scale, Decimal& res) const;
+
+        /**
+         * Get precision of the Decimal.
+         *
+         * @return Number of the decimal digits in the decimal representation
+         *     of the value.
+         */
+        int32_t GetPrecision() const;
 
         /**
          * Get unscaled value.
@@ -115,6 +145,21 @@ namespace ignite
         /** Magnitude. */
         BigInteger magnitude;
     };
+
+    /**
+     * Output operator.
+     *
+     * @param os Output stream.
+     * @param guid Guid to output.
+     * @return Reference to the first param.
+     */
+    template<typename C>
+    ::std::basic_ostream<C>& operator<<(std::basic_ostream<C>& os, const Decimal& val)
+    {
+        os << 0;
+
+        return os;
+    }
 }
 
 #endif //_IGNITE_ODBC_DECIMAL

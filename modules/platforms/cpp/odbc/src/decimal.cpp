@@ -31,9 +31,9 @@ namespace ignite
         // No-op.
     }
 
-    Decimal::Decimal(const int8_t* mag, int32_t len, int32_t scale, int32_t sign) :
+    Decimal::Decimal(const int8_t* mag, int32_t len, int32_t scale, int32_t sign, bool bigEndian) :
         scale(scale & 0x7FFFFFFF),
-        magnitude(mag, len, sign)
+        magnitude(mag, len, sign, bigEndian)
     {
         // No-op.
     }
@@ -60,6 +60,16 @@ namespace ignite
 
     Decimal::operator double() const
     {
+        return ToDouble();
+    }
+
+    Decimal::operator int64_t() const
+    {
+        return ToInt64();
+    }
+
+    double Decimal::ToDouble() const
+    {
         //double res = 0;
 
         //for (int32_t i = 0; i < len; ++i)
@@ -73,12 +83,24 @@ namespace ignite
         return 0.0;
     }
 
+    int64_t Decimal::ToInt64() const
+    {
+        if (scale == 0)
+            return magnitude.ToInt64();
+
+        Decimal zeroScaled;
+
+        SetScale(0, zeroScaled);
+
+        return zeroScaled.magnitude.ToInt64();
+    }
+
     int32_t Decimal::GetScale() const
     {
         return scale;
     }
 
-    void Decimal::SetScale(int32_t newScale)
+    void Decimal::SetScale(int32_t newScale, Decimal& res) const
     {
         if (scale == newScale)
             return;
@@ -91,16 +113,21 @@ namespace ignite
         {
             adjustment.Pow(diff);
 
-            magnitude.Divide(adjustment, magnitude);
+            magnitude.Divide(adjustment, res.magnitude);
         }
         else
         {
             adjustment.Pow(-diff);
 
-            magnitude.Multiply(adjustment, magnitude);
+            magnitude.Multiply(adjustment, res.magnitude);
         }
 
-        scale = newScale;
+        res.scale = newScale;
+    }
+
+    int32_t Decimal::GetPrecision() const
+    {
+        return magnitude.GetPrecision();
     }
 
     const BigInteger& Decimal::GetUnscaledValue() const
