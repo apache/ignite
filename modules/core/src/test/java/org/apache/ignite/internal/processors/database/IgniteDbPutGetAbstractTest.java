@@ -93,9 +93,7 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
             ccfg.setIndexedTypes(Integer.class, DbValue.class);
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-
         ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-
         ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
 
         CacheConfiguration ccfg2 = new CacheConfiguration("non-primitive");
@@ -104,9 +102,7 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
             ccfg2.setIndexedTypes(DbKey.class, DbValue.class);
 
         ccfg2.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
-
         ccfg2.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-
         ccfg2.setRebalanceMode(CacheRebalanceMode.SYNC);
 
         cfg.setCacheConfiguration(ccfg, ccfg2);
@@ -116,7 +112,6 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
         discoSpi.setIpFinder(IP_FINDER);
 
         cfg.setDiscoverySpi(discoSpi);
-
         cfg.setMarshaller(null);
 
         return cfg;
@@ -124,9 +119,9 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        long seed = System.currentTimeMillis();
+        long seed = 1464583813940L; // System.currentTimeMillis();
 
-        info("Seed: " + seed);
+        info("Seed: " + seed + "L");
 
         BPlusTree.rnd = new Random(seed);
 

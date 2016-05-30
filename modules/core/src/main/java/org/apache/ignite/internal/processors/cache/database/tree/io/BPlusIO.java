@@ -26,13 +26,13 @@ import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
  */
 public abstract class BPlusIO<L> extends PageIO {
     /** */
-    protected static final int CNT_OFF = COMMON_HEADER_END;
+    private static final int CNT_OFF = COMMON_HEADER_END;
 
     /** */
-    protected static final int FORWARD_OFF = CNT_OFF + 2;
+    private static final int FORWARD_OFF = CNT_OFF + 2;
 
     /** */
-    protected static final int REMOVE_ID_OFF = FORWARD_OFF + 8;
+    private static final int REMOVE_ID_OFF = FORWARD_OFF + 8;
 
     /** */
     protected static final int ITEMS_OFF = REMOVE_ID_OFF + 8;

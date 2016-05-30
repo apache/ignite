@@ -45,11 +45,11 @@ public final class ReuseList {
         ReuseTree[] trees0 = new ReuseTree[segments];
 
         for (int i = 0; i < segments; i++) {
-            String idxName = i + "##" + cacheId + "_reuse";
+            String idxName = BPlusTree.treeName("s" + i, cacheId, "Reuse");
 
             IgniteBiTuple<FullPageId,Boolean> t = metaStore.getOrAllocateForIndex(cacheId, idxName);
 
-            trees0[i] = new ReuseTree(this, cacheId, pageMem, t.get1(), t.get2());
+            trees0[i] = new ReuseTree(idxName, this, cacheId, pageMem, t.get1(), t.get2());
         }
 
         // Later assignment is done intentionally, see null check in method take.
