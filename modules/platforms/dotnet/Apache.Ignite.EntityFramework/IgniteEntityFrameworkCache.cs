@@ -19,7 +19,10 @@ namespace Apache.Ignite.EntityFramework
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Impl.Common;
     using EFCache;
 
@@ -28,36 +31,118 @@ namespace Apache.Ignite.EntityFramework
     /// </summary>
     public class IgniteEntityFrameworkCache : ICache
     {
-        /** */
-        private readonly ICache<string, object> _cache;
+        /** Value field name. */
+        private const string ValueField = "value";
+        
+        /** Entry sets field name. */
+        private const string EntrySetsField = "entrySets";
 
+        /** Binary type name. */
+        private const string CacheEntryTypeName = "IgniteEntityFrameworkCacheEntry";
+
+        /** Max number of cached expiry caches. */
+        private const int MaxExpiryCaches = 1000;
+
+        /** Cache. */
+        private readonly ICache<string, IBinaryObject> _cache;
+
+        /** Binary API. */
+        private readonly IBinary _binary;
+
+        /** Cached caches per expiry seconds. */
+        private volatile Dictionary<long, ICache<string, IBinaryObject>> _expiryCaches =
+            new Dictionary<long, ICache<string, IBinaryObject>>();
+
+        /** Sync object. */
+        private readonly object _syncRoot = new object();
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="IgniteEntityFrameworkCache"/> class.
+        /// </summary>
+        /// <param name="cache">The cache.</param>
         public IgniteEntityFrameworkCache(ICache<string, object> cache)
         {
             IgniteArgumentCheck.NotNull(cache, "cache");
 
-            _cache = cache;
+            _cache = cache.WithKeepBinary<string, IBinaryObject>();
+            _binary = _cache.Ignite.GetBinary();
         }
 
+        /** <inheritdoc /> */
         public bool GetItem(string key, out object value)
         {
-            // TODO: Compound key or compound value? Looks like value should contain entity sets
-            return _cache.TryGet(key, out value);
+            IBinaryObject binVal;
+            if (!_cache.TryGet(key, out binVal))
+            {
+                value = null;
+                return false;
+            }
+
+            value = binVal.GetField<object>(ValueField);
+            return true;
         }
 
+        /** <inheritdoc /> */
         public void PutItem(string key, object value, IEnumerable<string> dependentEntitySets, 
             TimeSpan slidingExpiration, DateTimeOffset absoluteExpiration)
         {
-            throw new NotImplementedException();
+            var binVal = _binary.GetBuilder(CacheEntryTypeName)
+                .SetField(ValueField, value)
+                .SetField(EntrySetsField, dependentEntitySets.ToArray())
+                .Build();
+
+            _cache[key] = binVal;
         }
 
+        /** <inheritdoc /> */
         public void InvalidateSets(IEnumerable<string> entitySets)
         {
             throw new NotImplementedException();
         }
 
+        /** <inheritdoc /> */
         public void InvalidateItem(string key)
         {
             throw new NotImplementedException();
+        }
+
+        /// <summary>
+        /// Gets the cache with expiry policy according to provided expiration date.
+        /// </summary>
+        /// <param name="utcExpiry">The UTC expiry.</param>
+        /// <returns>Cache with expiry policy.</returns>
+        private ICache<string, IBinaryObject> GetCacheWithExpiry(DateTime utcExpiry)
+        {
+            if (utcExpiry == DateTime.MaxValue)
+                return _cache;
+
+            // Round up to seconds
+            var expirySeconds = (long)(utcExpiry - DateTime.UtcNow).TotalSeconds;
+
+            if (expirySeconds < 1)
+                expirySeconds = 0;
+
+            ICache<string, IBinaryObject> expiryCache;
+
+            if (_expiryCaches.TryGetValue(expirySeconds, out expiryCache))
+                return expiryCache;
+
+            lock (_syncRoot)
+            {
+                if (_expiryCaches.TryGetValue(expirySeconds, out expiryCache))
+                    return expiryCache;
+
+                // Copy on write with size limit
+                _expiryCaches = _expiryCaches.Count > MaxExpiryCaches
+                    ? new Dictionary<long, ICache<string, IBinaryObject>>()
+                    : new Dictionary<long, ICache<string, IBinaryObject>>(_expiryCaches);
+
+                expiryCache = _cache.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromSeconds(expirySeconds), null, null));
+
+                _expiryCaches[expirySeconds] = expiryCache;
+
+                return expiryCache;
+            }
         }
     }
 }
