@@ -202,7 +202,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 return;
 
             if (waitInfo.waitCaches.isEmpty()) {
-                msg = affinityChangeMessage(waitInfo);
+                msg = affinityChangeMessage(topVer, waitInfo);
 
                 waitInfo = null;
             }
@@ -265,7 +265,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     waitInfo.waitCaches.remove(checkCacheId);
 
                     if (waitInfo.waitCaches.isEmpty()) {
-                        msg = affinityChangeMessage(waitInfo);
+                        msg = affinityChangeMessage(top.topologyVersion(), waitInfo);
 
                         waitInfo = null;
                     }
@@ -286,7 +286,8 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param waitInfo Cache rebalance information.
      * @return Message.
      */
-    @Nullable private CacheAffinityChangeMessage affinityChangeMessage(WaitRebalanceInfo waitInfo) {
+    @Nullable private CacheAffinityChangeMessage affinityChangeMessage(AffinityTopologyVersion topVer,
+        WaitRebalanceInfo waitInfo) {
         if (waitInfo.assignments.isEmpty()) // Possible if all awaited caches were destroyed.
             return null;
 
@@ -305,7 +306,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             assignmentsChange.put(cacheId, assignment0);
         }
 
-        return new CacheAffinityChangeMessage(waitInfo.topVer, assignmentsChange, waitInfo.deploymentIds);
+        return new CacheAffinityChangeMessage(topVer, assignmentsChange, waitInfo.deploymentIds);
     }
 
     /**
@@ -562,7 +563,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         throws IgniteCheckedException {
         assert affCalcVer != null || cctx.kernalContext().clientNode();
         assert msg.topologyVersion() != null && msg.exchangeId() == null : msg;
-        assert affCalcVer == null || affCalcVer.equals(msg.topologyVersion());
+//        assert affCalcVer == null || affCalcVer.equals(msg.topologyVersion());
 
         final AffinityTopologyVersion topVer = exchFut.topologyVersion();
 
@@ -606,14 +607,14 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
 
                         List<ClusterNode> nodes = toNodes(topVer, e.getValue());
 
-                        assert !nodes.equals(assignment.get(part)) : "Assignment did not change " +
-                            "[cache=" + aff.cacheName() +
-                            ", part=" + part +
-                            ", cur=" + F.nodeIds(assignment.get(part)) +
-                            ", new=" + F.nodeIds(nodes) +
-                            ", exchVer=" + exchFut.topologyVersion() +
-                            ", msgVer=" + msg.topologyVersion() +
-                            ']';
+//                        assert !nodes.equals(assignment.get(part)) : "Assignment did not change " +
+//                            "[cache=" + aff.cacheName() +
+//                            ", part=" + part +
+//                            ", cur=" + F.nodeIds(assignment.get(part)) +
+//                            ", new=" + F.nodeIds(nodes) +
+//                            ", exchVer=" + exchFut.topologyVersion() +
+//                            ", msgVer=" + msg.topologyVersion() +
+//                            ']';
 
                         assignment.set(part, nodes);
                     }
