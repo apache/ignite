@@ -164,9 +164,6 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Default off-heap storage size is {@code -1} which means that off-heap storage is disabled. */
     public static final long DFLT_OFFHEAP_MEMORY = -1;
 
-    /** Default value for 'swapEnabled' flag. */
-    public static final boolean DFLT_SWAP_ENABLED = false;
-
     /** Default value for 'maxConcurrentAsyncOps'. */
     public static final int DFLT_MAX_CONCURRENT_ASYNC_OPS = 500;
 
