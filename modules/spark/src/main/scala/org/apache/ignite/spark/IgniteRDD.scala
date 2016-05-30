@@ -95,6 +95,26 @@ class IgniteRDD[K, V] (
     }
 
     /**
+     * Tells whether this IgniteRDD is empty or not.
+     *
+     * @return Whether this IgniteRDD is empty or not.
+     */
+    override def isEmpty(): Boolean = {
+        count() == 0
+    }
+
+    /**
+     * Gets number of tuples in this IgniteRDD.
+     *
+     * @return Number of tuples in this IgniteRDD.
+     */
+    override def count(): Long = {
+        val cache = ensureCache()
+
+        cache.size()
+    }
+
+    /**
      * Runs an object SQL on corresponding Ignite cache.
      *
      * @param typeName Type name to run SQL against.
@@ -220,6 +240,7 @@ class IgniteRDD[K, V] (
         case "java.lang.Long" ⇒ LongType
         case "java.lang.Float" ⇒ FloatType
         case "java.lang.Double" ⇒ DoubleType
+        case "java.math.BigDecimal" ⇒ DecimalType.SYSTEM_DEFAULT
         case "java.lang.String" ⇒ StringType
         case "java.util.Date" ⇒ DateType
         case "java.sql.Timestamp" ⇒ TimestampType

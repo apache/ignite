@@ -15,22 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache;
+package org.apache.ignite.testsuites;
 
-import org.apache.ignite.transactions.TransactionConcurrency;
-import org.apache.ignite.transactions.TransactionIsolation;
+import junit.framework.TestSuite;
+import org.apache.ignite.spark.JavaEmbeddedIgniteRDDSelfTest;
+import org.apache.ignite.spark.JavaStandaloneIgniteRDDSelfTest;
 
 /**
- * Test getEntry and getEntries methods.
+ * Test suit for Ignite RDD
  */
-public class CacheGetEntryOptimisticReadCommittedSeltTest extends CacheGetEntryAbstractTest {
-    /** {@inheritDoc} */
-    @Override protected TransactionConcurrency concurrency() {
-        return TransactionConcurrency.OPTIMISTIC;
-    }
+public class IgniteRDDTestSuite extends TestSuite {
+    /**
+     * @return Java Ignite RDD test suit.
+     * @throws Exception If failed.
+     */
+    public static TestSuite suite() throws Exception {
+        TestSuite suite = new TestSuite("Java Ignite RDD tests (standalone and embedded modes");
 
-    /** {@inheritDoc} */
-    @Override protected TransactionIsolation isolation() {
-        return TransactionIsolation.READ_COMMITTED;
+        suite.addTest(new TestSuite(JavaEmbeddedIgniteRDDSelfTest.class));
+        suite.addTest(new TestSuite(JavaStandaloneIgniteRDDSelfTest.class));
+
+        return suite;
     }
 }

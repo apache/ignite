@@ -445,7 +445,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                             if (retVal) {
                                 if (err != null || procRes != null)
-                                    ret.addEntryProcessResult(txEntry.context(), key, null, procRes, err);
+                                    ret.addEntryProcessResult(txEntry.context(), key, null, procRes, err, keepBinary);
                                 else
                                     ret.invokeResult(true);
                             }
