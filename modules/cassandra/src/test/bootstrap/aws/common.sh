@@ -453,7 +453,6 @@ terminate()
 
     rm -f /opt/ignite-cassandra-tests/bootstrap/start_result /opt/ignite-cassandra-tests/bootstrap/join-lock /opt/ignite-cassandra-tests/bootstrap/first-node-lock
 
-    removeFirstNodeLock
     removeClusterJoinLock
 
     if [ "$NODE_TYPE" == "test" ]; then
@@ -465,6 +464,7 @@ terminate()
     fi
 
     if [ -n "$1" ]; then
+        removeFirstNodeLock
         unregisterNode
         exit 1
     fi
@@ -516,14 +516,14 @@ cleanupMetadata()
     SUCCESS_URL=$(getSucessUrl)
     FAILURE_URL=$(getFailureUrl)
 
-    echo "[INFO] Running cleanup"
+    echo "[INFO] Running metadata cleanup"
 
     aws s3 rm $JOIN_LOCK_URL
     aws s3 rm --recursive $DISCOVERY_URL
     aws s3 rm --recursive $SUCCESS_URL
     aws s3 rm --recursive $FAILURE_URL
 
-    echo "[INFO] Cleanup completed"
+    echo "[INFO] Metadata cleanup completed"
 }
 
 tryToGetFirstNodeLock()
