@@ -415,15 +415,17 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                     initStartedCacheOnCoordinator(fut, cacheId);
             }
             else if (req.modify()) {
-                GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
+                if (!crd || !lateAffAssign) {
+                    GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 
-                if (cacheCtx != null && !cacheCtx.isLocal()) {
-                    GridAffinityAssignmentCache aff = cacheCtx.affinity().affinityCache();
+                    if (cacheCtx != null && !cacheCtx.isLocal() && !req.clientStartOnly()) {
+                        GridAffinityAssignmentCache aff = cacheCtx.affinity().affinityCache();
 
-                    List<List<ClusterNode>> assignment = aff.calculate(fut.topologyVersion(),
-                        fut.discoveryEvent());
+                        List<List<ClusterNode>> assignment = aff.calculate(fut.topologyVersion(),
+                            fut.discoveryEvent());
 
-                    aff.initialize(fut.topologyVersion(), assignment);
+                        aff.initialize(fut.topologyVersion(), assignment);
+                    }
                 }
             }
             else if (req.stop() || req.close()) {
@@ -1261,8 +1263,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         GridAffinityAssignmentCache aff,
         WaitRebalanceInfo rebalanceInfo,
         boolean latePrimary)
-        throws IgniteCheckedException
-    {
+        throws IgniteCheckedException {
         assert lateAffAssign;
 
         AffinityTopologyVersion topVer = fut.topologyVersion();

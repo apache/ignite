@@ -19,21 +19,19 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.File;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.DatabaseConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheRebalancingEvent;
-import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -257,6 +255,50 @@ public abstract class CacheRebalancingWithPersistenceAbstractTest extends GridCo
             assert cache3.get(i).equals(i);
             assert cache4.get(i).equals(i);
         }
+    }
+
+    public void testEventualIdealAssignment() throws Exception {
+        IgniteEx ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
+        IgniteEx ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
+
+        awaitPartitionMapExchange();
+
+        IgniteCache cache1 = ignite1.cache(null);
+
+        for (int i = 0; i < 10000; i++) {
+            cache1.put(i, i);
+        }
+
+        cache1.active(false).get();
+
+        final IgniteEx ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
+        IgniteEx ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
+
+        cache1.active(true);
+
+        final int parts = ignite1.affinity(null).partitions();
+
+        final List<List<ClusterNode>> idealAssignment = ignite1.cachex().context().affinity().idealAssignment();
+
+        final GridDhtPartitionTopology topology = ignite1.cachex().context().topology();
+
+        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                for (int p = 0; p < parts; p++) {
+                    List<ClusterNode> owners = topology.owners(p);
+
+                    if (owners.size() != idealAssignment.get(p).size())
+                        return false;
+
+                    for (ClusterNode owner : owners) {
+                        if (!idealAssignment.get(p).contains(owner))
+                            return false;
+                    }
+                }
+
+                return true;
+            }
+        }, 30000);
     }
 
 }
