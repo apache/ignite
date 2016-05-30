@@ -50,8 +50,8 @@ namespace Apache.Ignite.EntityFramework
         private readonly IBinary _binary;
 
         /** Cached caches per expiry seconds. */
-        private volatile Dictionary<long, ICache<string, IBinaryObject>> _expiryCaches =
-            new Dictionary<long, ICache<string, IBinaryObject>>();
+        private volatile Dictionary<KeyValuePair<long, long>, ICache<string, IBinaryObject>> _expiryCaches =
+            new Dictionary<KeyValuePair<long, long>, ICache<string, IBinaryObject>>();
 
         /** Sync object. */
         private readonly object _syncRoot = new object();
@@ -91,7 +91,7 @@ namespace Apache.Ignite.EntityFramework
                 .SetField(EntrySetsField, dependentEntitySets.ToArray())
                 .Build();
 
-            _cache[key] = binVal;
+            GetCacheWithExpiry(slidingExpiration, absoluteExpiration).Put(key, binVal);
         }
 
         /** <inheritdoc /> */
@@ -109,37 +109,50 @@ namespace Apache.Ignite.EntityFramework
         /// <summary>
         /// Gets the cache with expiry policy according to provided expiration date.
         /// </summary>
-        /// <param name="utcExpiry">The UTC expiry.</param>
         /// <returns>Cache with expiry policy.</returns>
-        private ICache<string, IBinaryObject> GetCacheWithExpiry(DateTime utcExpiry)
+        private ICache<string, IBinaryObject> GetCacheWithExpiry(TimeSpan slidingExpiration, 
+            DateTimeOffset absoluteExpiration)
         {
-            if (utcExpiry == DateTime.MaxValue)
+            if (slidingExpiration == TimeSpan.MaxValue && absoluteExpiration == DateTimeOffset.MaxValue)
                 return _cache;
 
             // Round up to seconds
-            var expirySeconds = (long)(utcExpiry - DateTime.UtcNow).TotalSeconds;
+            var absoluteExpirySeconds = absoluteExpiration == DateTimeOffset.MaxValue
+                ? long.MaxValue
+                : (long) (absoluteExpiration - DateTime.UtcNow).TotalSeconds;
 
-            if (expirySeconds < 1)
-                expirySeconds = 0;
+            if (absoluteExpirySeconds < 1)
+                absoluteExpirySeconds = 0;
+
+            var slidingExpirySeconds = slidingExpiration == TimeSpan.MaxValue
+                ? long.MaxValue
+                : (long) slidingExpiration.TotalSeconds;
+
+            if (slidingExpirySeconds < 1)
+                slidingExpirySeconds = 0;
+
+            var key = new KeyValuePair<long, long>(absoluteExpirySeconds, slidingExpirySeconds);
 
             ICache<string, IBinaryObject> expiryCache;
 
-            if (_expiryCaches.TryGetValue(expirySeconds, out expiryCache))
+            if (_expiryCaches.TryGetValue(key, out expiryCache))
                 return expiryCache;
 
             lock (_syncRoot)
             {
-                if (_expiryCaches.TryGetValue(expirySeconds, out expiryCache))
+                if (_expiryCaches.TryGetValue(key, out expiryCache))
                     return expiryCache;
 
                 // Copy on write with size limit
                 _expiryCaches = _expiryCaches.Count > MaxExpiryCaches
-                    ? new Dictionary<long, ICache<string, IBinaryObject>>()
-                    : new Dictionary<long, ICache<string, IBinaryObject>>(_expiryCaches);
+                    ? new Dictionary<KeyValuePair<long, long>, ICache<string, IBinaryObject>>()
+                    : new Dictionary<KeyValuePair<long, long>, ICache<string, IBinaryObject>>(_expiryCaches);
 
-                expiryCache = _cache.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromSeconds(expirySeconds), null, null));
+                expiryCache =
+                    _cache.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromSeconds(absoluteExpirySeconds),
+                        TimeSpan.FromSeconds(slidingExpirySeconds), TimeSpan.FromSeconds(slidingExpirySeconds)));
 
-                _expiryCaches[expirySeconds] = expiryCache;
+                _expiryCaches[key] = expiryCache;
 
                 return expiryCache;
             }
