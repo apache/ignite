@@ -302,8 +302,9 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
         assert c.localSize() == 0 : "Cache is not empty.";
     }
 
+    // TODO: GG-11148 check if test makes sense.
     /** {@inheritDoc} */
-    @Override public void testUnswap() throws Exception {
+    @Override public void _testUnswap() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         List<String> keys = primaryKeysForCache(cache, 3);

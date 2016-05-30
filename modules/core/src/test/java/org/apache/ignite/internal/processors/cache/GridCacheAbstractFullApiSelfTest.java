@@ -3876,8 +3876,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
     /**
      * @throws Exception If failed.
+     *
+     * TODO: GG-11148 check if test makes sense.
      */
-    public void testUnswap() throws Exception {
+    public void _testUnswap() throws Exception {
         IgniteCache<String, Integer> cache = grid(0).cache(null);
 
         List<String> keys = primaryKeysForCache(jcache(), 3);
