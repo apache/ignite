@@ -304,7 +304,7 @@ class GridJettyJsonConfig extends JsonConfig {
                         retType == void.class ||
                         retType == cls ||
                         exclMtds.contains(mtd.getName()) ||
-                        (retType == VisorCache.class && mtd.getName().equals("history")))
+                        (retType == VisorCache.class && "history".equals(mtd.getName())))
                         continue;
 
                     mtd.setAccessible(true);
