@@ -19,6 +19,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     private final H2RowStore rowStore;
 
     /**
+     * @param name Tree name.
      * @param reuseList Reuse list.
      * @param cacheId Cache ID.
      * @param pageMem Page memory.
@@ -28,6 +29,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
      * @throws IgniteCheckedException If failed.
      */
     public H2Tree(
+        String name,
         ReuseList reuseList,
         int cacheId,
         PageMemory pageMem,
@@ -35,7 +37,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         FullPageId metaPageId,
         boolean initNew
     ) throws IgniteCheckedException {
-        super(cacheId, pageMem, metaPageId, reuseList, H2InnerIO.VERSIONS, H2LeafIO.VERSIONS);
+        super(name, cacheId, pageMem, metaPageId, reuseList, H2InnerIO.VERSIONS, H2LeafIO.VERSIONS);
 
         assert rowStore != null;
 

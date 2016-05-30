@@ -26,6 +26,7 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
@@ -53,7 +54,7 @@ public class FreeList {
 
     /** */
     private final PageHandler<CacheDataRow> writeRow = new PageHandler<CacheDataRow>() {
-        @Override public int run(long pageId, Page page, ByteBuffer buf, CacheDataRow row, int entrySize)
+        @Override public char run(long pageId, Page page, ByteBuffer buf, CacheDataRow row, int entrySize)
             throws IgniteCheckedException {
             DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
 
@@ -74,7 +75,7 @@ public class FreeList {
 
     /** */
     private final PageHandler<FreeTree> removeRow = new PageHandler<FreeTree>() {
-        @Override public int run(long pageId, Page page, ByteBuffer buf, FreeTree tree, int itemId) throws IgniteCheckedException {
+        @Override public char run(long pageId, Page page, ByteBuffer buf, FreeTree tree, int itemId) throws IgniteCheckedException {
             assert tree != null;
 
             DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
@@ -150,12 +151,12 @@ public class FreeList {
                 fut = trees.get(partId);
             else {
                 // Index name will be the same across restarts.
-                String idxName = partId + "$$" + cctx.cacheId() + "_free";
+                String idxName = BPlusTree.treeName("p" + partId, cctx.cacheId(), "Free");
 
                 IgniteBiTuple<FullPageId,Boolean> t = cctx.shared().database().meta()
                     .getOrAllocateForIndex(cctx.cacheId(), idxName);
 
-                fut.onDone(new FreeTree(reuseList, cctx.cacheId(), partId, pageMem, t.get1(), t.get2()));
+                fut.onDone(new FreeTree(idxName, reuseList, cctx.cacheId(), partId, pageMem, t.get1(), t.get2()));
             }
         }
 

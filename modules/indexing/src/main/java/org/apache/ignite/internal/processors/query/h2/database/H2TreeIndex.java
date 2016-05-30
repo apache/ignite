@@ -21,16 +21,16 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
-import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2IndexBase;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Table;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
 import org.h2.engine.Session;
 import org.h2.index.Cursor;
@@ -51,10 +51,6 @@ public class H2TreeIndex extends GridH2IndexBase {
 
     /**
      * @param cctx Cache context.
-     * @param pageMem Page memory.
-     * @param reuseList Reuse list.
-     * @param metaPageId Meta page ID.
-     * @param initNew Initialize new index.
      * @param keyCol Key column.
      * @param valCol Value column.
      * @param tbl Table.
@@ -65,10 +61,6 @@ public class H2TreeIndex extends GridH2IndexBase {
      */
     public H2TreeIndex(
         GridCacheContext<?,?> cctx,
-        PageMemory pageMem,
-        ReuseList reuseList,
-        FullPageId metaPageId,
-        boolean initNew,
         int keyCol,
         int valCol,
         GridH2Table tbl,
@@ -77,10 +69,6 @@ public class H2TreeIndex extends GridH2IndexBase {
         IndexColumn[] cols
     ) throws IgniteCheckedException {
         super(keyCol, valCol);
-
-        assert pageMem != null;
-
-        assert cctx.cacheId() == metaPageId.cacheId();
 
         if (!pk) {
             // For other indexes we add primary key at the end to avoid conflicts.
@@ -92,7 +80,14 @@ public class H2TreeIndex extends GridH2IndexBase {
         initBaseIndex(tbl, 0, name, cols,
             pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
 
-        tree = new H2Tree(reuseList, cctx.cacheId(), pageMem, tbl.rowStore(), metaPageId, initNew) {
+        name = BPlusTree.treeName(name, cctx.cacheId(), "H2Tree");
+
+        IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
+
+        IgniteBiTuple<FullPageId, Boolean> page = dbMgr.meta().getOrAllocateForIndex(cctx.cacheId(), name);
+
+        tree = new H2Tree(name, cctx.offheap().reuseList(), cctx.cacheId(),
+            dbMgr.pageMemory(), tbl.rowStore(), page.get1(), page.get2()) {
             @Override protected int compare(BPlusIO<SearchRow> io, ByteBuffer buf, int idx, SearchRow row)
                 throws IgniteCheckedException {
                 return compareRows(getRow(io, buf, idx), row);

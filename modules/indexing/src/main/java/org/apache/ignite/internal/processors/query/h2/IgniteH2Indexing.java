@@ -64,7 +64,6 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -76,7 +75,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -2181,20 +2179,11 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             int valCol,
             IndexColumn[] cols
         ) throws IgniteCheckedException {
-            IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
-
-            IgniteBiTuple<FullPageId, Boolean> page = dbMgr.meta().getOrAllocateForIndex(cctx.cacheId(), name);
-
             if (log.isInfoEnabled())
-                log.info("Creating cache index [cacheId=" + cctx.cacheId() + ", idxName=" + name +
-                    ", rootPageId=" + page.get1() + ", allocated=" + page.get2() + ']');
+                log.info("Creating cache index [cacheId=" + cctx.cacheId() + ", idxName=" + name + ']');
 
             H2TreeIndex idx = new H2TreeIndex(
                 cctx,
-                dbMgr.pageMemory(),
-                cctx.offheap().reuseList(),
-                page.get1(),
-                page.get2(),
                 keyCol,
                 valCol,
                 tbl,

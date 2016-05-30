@@ -36,7 +36,7 @@ public abstract class PageHandler<X> {
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
-    public abstract int run(long pageId, Page page, ByteBuffer buf, X arg, int intArg) throws IgniteCheckedException;
+    public abstract char run(long pageId, Page page, ByteBuffer buf, X arg, int intArg) throws IgniteCheckedException;
 
     /**
      * @param pageId Page ID.
@@ -58,7 +58,7 @@ public abstract class PageHandler<X> {
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
-    public static <X> int readPage(long pageId, Page page, PageHandler<X> h, X arg, int intArg)
+    public static <X> char readPage(long pageId, Page page, PageHandler<X> h, X arg, int intArg)
         throws IgniteCheckedException {
         assert page != null;
 
@@ -83,11 +83,11 @@ public abstract class PageHandler<X> {
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
-    public static <X> int writePage(long pageId, Page page, PageHandler<X> h, X arg, int intArg)
+    public static <X> char writePage(long pageId, Page page, PageHandler<X> h, X arg, int intArg)
         throws IgniteCheckedException {
         assert page != null;
 
-        int res;
+        char res;
 
         boolean ok = false;
 

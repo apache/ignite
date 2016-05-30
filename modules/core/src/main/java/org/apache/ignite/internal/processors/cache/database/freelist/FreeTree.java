@@ -37,6 +37,7 @@ public class FreeTree extends BPlusTree<FreeItem, FreeItem> {
     private final int partId;
 
     /**
+     * @param name Tree name.
      * @param reuseList Reuse list.
      * @param cacheId Cache ID.
      * @param pageMem Page memory.
@@ -44,9 +45,9 @@ public class FreeTree extends BPlusTree<FreeItem, FreeItem> {
      * @param initNew    Initialize new index.
      * @throws IgniteCheckedException If failed.
      */
-    public FreeTree(ReuseList reuseList, int cacheId, int partId, PageMemory pageMem, FullPageId metaPageId, boolean initNew)
+    public FreeTree(String name, ReuseList reuseList, int cacheId, int partId, PageMemory pageMem, FullPageId metaPageId, boolean initNew)
         throws IgniteCheckedException {
-        super(cacheId, pageMem, metaPageId, reuseList, FreeInnerIO.VERSIONS, FreeLeafIO.VERSIONS);
+        super(name, cacheId, pageMem, metaPageId, reuseList, FreeInnerIO.VERSIONS, FreeLeafIO.VERSIONS);
 
         this.partId = partId;
 

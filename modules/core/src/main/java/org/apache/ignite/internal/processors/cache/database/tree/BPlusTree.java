@@ -27,6 +27,7 @@ import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
@@ -45,6 +46,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandle
 import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridTreePrinter;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -69,6 +71,9 @@ public abstract class BPlusTree<L, T extends L> {
 
     /** */
     private static final byte DONE = 3;
+
+    /** */
+    private final String name;
 
     /** */
     private final int cacheId;
@@ -173,7 +178,7 @@ public abstract class BPlusTree<L, T extends L> {
 
     /** */
     private final PageHandler<Get> askNeighbor = new GetPageHandler<Get>() {
-        @Override public int run0(long pageId, Page page, ByteBuffer buf, BPlusIO<L> io, Get g, int isBack) {
+        @Override public char run0(long pageId, Page page, ByteBuffer buf, BPlusIO<L> io, Get g, int isBack) {
             assert !io.isLeaf(); // Inner page.
 
             if (isBack == TRUE) {
@@ -205,18 +210,21 @@ public abstract class BPlusTree<L, T extends L> {
 
     /** */
     private final PageHandler<Get> search = new GetPageHandler<Get>() {
-        @Override public int run0(long pageId, Page page, ByteBuffer buf, BPlusIO<L> io, Get g, int lvl)
+        @Override public char run0(long pageId, Page page, ByteBuffer buf, BPlusIO<L> io, Get g, int lvl)
             throws IgniteCheckedException {
             boolean needBackIfRouting = g.backId != 0;
 
             g.backId = 0; // Usually we'll go left down and don't need it.
 
             int cnt = io.getCount(buf);
-            int idx = findInsertionPoint(io, buf, cnt, g.row);
+            int idx = findInsertionPoint(io, buf, cnt, g.row,
+                g.getClass() == GetCursor.class ? -1 : 0); // For range lookup we search for a lower bound.
 
             boolean found = idx >= 0;
 
             if (found) { // Found exact match.
+                assert g.getClass() != GetCursor.class;
+
                 if (g.found(io, buf, idx, lvl))
                     return Get.FOUND;
 
@@ -274,12 +282,12 @@ public abstract class BPlusTree<L, T extends L> {
 
     /** */
     private final PageHandler<Put> replace = new GetPageHandler<Put>() {
-        @Override public int run0(long pageId, Page page, ByteBuffer buf, BPlusIO<L> io, Put p, int lvl)
+        @Override public char run0(long pageId, Page page, ByteBuffer buf, BPlusIO<L> io, Put p, int lvl)
             throws IgniteCheckedException {
             assert p.btmLvl == 0 : "split is impossible with replace";
 
             int cnt = io.getCount(buf);
-            int idx = findInsertionPoint(io, buf, cnt, p.row);
+            int idx = findInsertionPoint(io, buf, cnt, p.row, 0);
 
             if (idx < 0) // Not found, split or merge happened.
                 return Put.RETRY;
@@ -306,12 +314,12 @@ public abstract class BPlusTree<L, T extends L> {
 
     /** */
     private final PageHandler<Put> insert = new GetPageHandler<Put>() {
-        @Override public int run0(long pageId, Page page, ByteBuffer buf, BPlusIO<L> io, Put p, int lvl)
+        @Override public char run0(long pageId, Page page, ByteBuffer buf, BPlusIO<L> io, Put p, int lvl)
             throws IgniteCheckedException {
             assert p.btmLvl == lvl: "we must always insert at the bottom level: " + p.btmLvl + " " + lvl;
 
             int cnt = io.getCount(buf);
-            int idx = findInsertionPoint(io, buf, cnt, p.row);
+            int idx = findInsertionPoint(io, buf, cnt, p.row, 0);
 
             assert idx < 0: "Duplicate row in index.";
 
@@ -345,7 +353,7 @@ public abstract class BPlusTree<L, T extends L> {
 
     /** */
     private final PageHandler<Remove> removeFromLeaf = new GetPageHandler<Remove>() {
-        @Override public int run0(long leafId, Page leaf, ByteBuffer buf, BPlusIO<L> io, Remove r, int lvl)
+        @Override public char run0(long leafId, Page leaf, ByteBuffer buf, BPlusIO<L> io, Remove r, int lvl)
             throws IgniteCheckedException {
             assert lvl == 0: lvl;
             assert r.removed == null;
@@ -353,7 +361,7 @@ public abstract class BPlusTree<L, T extends L> {
             assert io.canGetRow();
 
             int cnt = io.getCount(buf);
-            int idx = findInsertionPoint(io, buf, cnt, r.row);
+            int idx = findInsertionPoint(io, buf, cnt, r.row, 0);
 
             if (idx < 0) {
                 if (!r.ceil) // We've found exact match on search but now it's gone.
@@ -400,14 +408,14 @@ public abstract class BPlusTree<L, T extends L> {
 
     /** */
     private final PageHandler<Remove> lockBackAndRemoveFromLeaf = new GetPageHandler<Remove>() {
-        @Override protected int run0(long backId, Page back, ByteBuffer buf, BPlusIO<L> io, Remove r, int lvl)
+        @Override protected char run0(long backId, Page back, ByteBuffer buf, BPlusIO<L> io, Remove r, int lvl)
             throws IgniteCheckedException {
             // Check that we have consistent view of the world.
             if (io.getForward(buf) != r.pageId)
                 return Remove.RETRY;
 
             // Correct locking order: from back to forward.
-            int res = r.doRemoveFromLeaf();
+            char res = r.doRemoveFromLeaf();
 
             // Keep locks on back and leaf pages for subsequent merges.
             if (res == Remove.FOUND && r.tail != null)
@@ -419,14 +427,14 @@ public abstract class BPlusTree<L, T extends L> {
 
     /** */
     private final PageHandler<Remove> lockBackAndTail = new GetPageHandler<Remove>() {
-        @Override public int run0(long backId, Page back, ByteBuffer buf, BPlusIO<L> io, Remove r, int lvl)
+        @Override public char run0(long backId, Page back, ByteBuffer buf, BPlusIO<L> io, Remove r, int lvl)
             throws IgniteCheckedException {
             // Check that we have consistent view of the world.
             if (io.getForward(buf) != r.pageId)
                 return Remove.RETRY;
 
             // Correct locking order: from back to forward.
-            int res = r.doLockTail(lvl);
+            char res = r.doLockTail(lvl);
 
             if (res == Remove.FOUND)
                 r.addTail(backId, back, buf, io, lvl, Tail.BACK, -1);
@@ -437,7 +445,7 @@ public abstract class BPlusTree<L, T extends L> {
 
     /** */
     private final PageHandler<Remove> lockTailForward = new GetPageHandler<Remove>() {
-        @Override protected int run0(long pageId, Page page, ByteBuffer buf, BPlusIO<L> io, Remove r, int lvl)
+        @Override protected char run0(long pageId, Page page, ByteBuffer buf, BPlusIO<L> io, Remove r, int lvl)
             throws IgniteCheckedException {
             r.addTail(pageId, page, buf, io, lvl, Tail.FORWARD, -1);
 
@@ -447,12 +455,12 @@ public abstract class BPlusTree<L, T extends L> {
 
     /** */
     private final PageHandler<Remove> lockTail = new GetPageHandler<Remove>() {
-        @Override public int run0(long pageId, Page page, ByteBuffer buf, BPlusIO<L> io, Remove r, int lvl)
+        @Override public char run0(long pageId, Page page, ByteBuffer buf, BPlusIO<L> io, Remove r, int lvl)
             throws IgniteCheckedException {
             assert lvl > 0: lvl; // We are not at the bottom.
 
             int cnt = io.getCount(buf);
-            int idx = findInsertionPoint(io, buf, cnt, r.row);
+            int idx = findInsertionPoint(io, buf, cnt, r.row, 0);
 
             boolean found = idx >= 0;
 
@@ -494,7 +502,7 @@ public abstract class BPlusTree<L, T extends L> {
 
     /** */
     private final PageHandler<Long> updateFirst = new PageHandler<Long>() {
-        @Override public int run(long metaId, Page meta, ByteBuffer buf, Long pageId, int lvl)
+        @Override public char run(long metaId, Page meta, ByteBuffer buf, Long pageId, int lvl)
             throws IgniteCheckedException {
             assert pageId != null;
 
@@ -516,7 +524,7 @@ public abstract class BPlusTree<L, T extends L> {
 
     /** */
     private final PageHandler<Long> newRoot = new PageHandler<Long>() {
-        @Override public int run(long metaId, Page meta, ByteBuffer buf, Long rootPageId, int lvl)
+        @Override public char run(long metaId, Page meta, ByteBuffer buf, Long rootPageId, int lvl)
             throws IgniteCheckedException {
             assert rootPageId != null;
 
@@ -532,6 +540,7 @@ public abstract class BPlusTree<L, T extends L> {
     };
 
     /**
+     * @param name Tree name.
      * @param cacheId Cache ID.
      * @param pageMem Page memory.
      * @param metaPageId Meta page ID.
@@ -540,9 +549,13 @@ public abstract class BPlusTree<L, T extends L> {
      * @param leafIos Leaf IO versions.
      * @throws IgniteCheckedException If failed.
      */
-    public BPlusTree(int cacheId, PageMemory pageMem, FullPageId metaPageId, ReuseList reuseList,
+    public BPlusTree(String name, int cacheId, PageMemory pageMem, FullPageId metaPageId, ReuseList reuseList,
         IOVersions<? extends BPlusInnerIO<L>> innerIos, IOVersions<? extends BPlusLeafIO<L>> leafIos)
         throws IgniteCheckedException {
+        assert name != null;
+
+        this.name = name;
+
         // TODO make configurable: 0 <= minFill <= maxFill <= 1
         minFill = 0f; // Testing worst case when merge happens only on empty page.
         maxFill = 0f; // Avoiding random effects on testing.
@@ -661,14 +674,25 @@ public abstract class BPlusTree<L, T extends L> {
      * @throws IgniteCheckedException If failed.
      */
     public final GridCursor<T> find(L lower, L upper) throws IgniteCheckedException {
-        if (lower == null)
-            return findLowerUnbounded(upper);
+        try {
+            if (lower == null)
+                return findLowerUnbounded(upper);
 
-        GetCursor g = new GetCursor(lower, upper);
+            GetCursor g = new GetCursor(lower, upper);
 
-        doFind(g);
+            doFind(g);
 
-        return g.cursor;
+            return g.cursor;
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteCheckedException("Runtime failure on bounds: [lower=" + lower + ", upper=" + upper + "]", e);
+        }
+        catch (RuntimeException e) {
+            throw new IgniteException("Runtime failure on bounds: [lower=" + lower + ", upper=" + upper + "]", e);
+        }
+        catch (AssertionError e) {
+            throw new AssertionError("Assertion error on bounds: [lower=" + lower + ", upper=" + upper + "]", e);
+        }
     }
 
     /**
@@ -677,11 +701,22 @@ public abstract class BPlusTree<L, T extends L> {
      */
     @SuppressWarnings("unchecked")
     public final T findOne(L row) throws IgniteCheckedException {
-        GetOne g = new GetOne(row);
+        try {
+            GetOne g = new GetOne(row);
 
-        doFind(g);
+            doFind(g);
 
-        return (T)g.row;
+            return (T)g.row;
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteCheckedException("Runtime failure on lookup row: " + row, e);
+        }
+        catch (RuntimeException e) {
+            throw new IgniteException("Runtime failure on lookup row: " + row, e);
+        }
+        catch (AssertionError e) {
+            throw new AssertionError("Assertion error on lookup row: " + row, e);
+        }
     }
 
     /**
@@ -717,7 +752,7 @@ public abstract class BPlusTree<L, T extends L> {
      * @return Result code.
      * @throws IgniteCheckedException If failed.
      */
-    private int findDown(final Get g, final long pageId, final long fwdId, final int lvl)
+    private char findDown(final Get g, final long pageId, final long fwdId, final int lvl)
         throws IgniteCheckedException {
         Page page = page(pageId);
 
@@ -727,7 +762,7 @@ public abstract class BPlusTree<L, T extends L> {
                 g.pageId = pageId;
                 g.fwdId = fwdId;
 
-                int res = readPage(pageId, page, search, g, lvl);
+                char res = readPage(pageId, page, search, g, lvl);
 
                 switch (res) {
                     case Get.GO_DOWN:
@@ -764,6 +799,16 @@ public abstract class BPlusTree<L, T extends L> {
             if (g.canRelease(pageId, page, lvl))
                 page.close();
         }
+    }
+
+    /**
+     * @param instance Instance name.
+     * @param cacheId Cache ID.
+     * @param type Tree type.
+     * @return Tree name.
+     */
+    public static String treeName(String instance, int cacheId, String type) {
+        return instance + "@" + cacheId + "##" + type;
     }
 
     /**
@@ -837,7 +882,7 @@ public abstract class BPlusTree<L, T extends L> {
         long leftmostChildId;
 
         try (Page page = page(pageId)) {
-            ByteBuffer buf = page.getForRead();
+            ByteBuffer buf = page.getForRead(); // No correctness guaranties.
 
             try {
                 BPlusIO<L> io = io(buf);
@@ -867,7 +912,7 @@ public abstract class BPlusTree<L, T extends L> {
      */
     private void validateDown(Page meta, long pageId, long fwdId, final int lvl) throws IgniteCheckedException {
         try (Page page = page(pageId)) {
-            ByteBuffer buf = page.getForRead();
+            ByteBuffer buf = page.getForRead(); // No correctness guaranties.
 
             try {
                 long realPageId = BPlusIO.getPageId(buf);
@@ -902,7 +947,7 @@ public abstract class BPlusTree<L, T extends L> {
                     if (fwdId != 0) {
                         // For the rightmost child ask neighbor.
                         try (Page fwd = page(fwdId)) {
-                            ByteBuffer fwdBuf = fwd.getForRead();
+                            ByteBuffer fwdBuf = fwd.getForRead(); // No correctness guaranties.
 
                             try {
                                 if (io(fwdBuf) != io)
@@ -1059,6 +1104,15 @@ public abstract class BPlusTree<L, T extends L> {
                 }
             }
         }
+        catch (IgniteCheckedException e) {
+            throw new IgniteCheckedException("Runtime failure on search row: " + row, e);
+        }
+        catch (RuntimeException e) {
+            throw new IgniteException("Runtime failure on search row: " + row, e);
+        }
+        catch (AssertionError e) {
+            throw new AssertionError("Assertion error on search row: " + row, e);
+        }
         finally {
             r.releaseTail();
             r.releaseMeta();
@@ -1076,7 +1130,7 @@ public abstract class BPlusTree<L, T extends L> {
      * @return Result code.
      * @throws IgniteCheckedException If failed.
      */
-    private int removeDown(final Remove r, final long pageId, final long backId, final long fwdId, final int lvl)
+    private char removeDown(final Remove r, final long pageId, final long backId, final long fwdId, final int lvl)
         throws IgniteCheckedException {
         assert lvl >= 0 : lvl;
 
@@ -1092,7 +1146,7 @@ public abstract class BPlusTree<L, T extends L> {
                 r.fwdId = fwdId;
                 r.backId = backId;
 
-                int res = readPage(pageId, page, search, r, lvl);
+                char res = readPage(pageId, page, search, r, lvl);
 
                 switch (res) {
                     case Remove.GO_DOWN_X:
@@ -1292,6 +1346,15 @@ public abstract class BPlusTree<L, T extends L> {
                 }
             }
         }
+        catch (IgniteCheckedException e) {
+            throw new IgniteCheckedException("Runtime failure on row: " + row, e);
+        }
+        catch (RuntimeException e) {
+            throw new IgniteException("Runtime failure on row: " + row, e);
+        }
+        catch (AssertionError e) {
+            throw new AssertionError("Assertion error on row: " + row, e);
+        }
         finally {
             p.releaseMeta();
         }
@@ -1356,7 +1419,7 @@ public abstract class BPlusTree<L, T extends L> {
      * @param back Get back or forward page.
      * @return Operation result.
      */
-    private int askNeighbor(long pageId, Get g, boolean back) throws IgniteCheckedException {
+    private char askNeighbor(long pageId, Get g, boolean back) throws IgniteCheckedException {
         try (Page page = page(pageId)) {
             return readPage(pageId, page, askNeighbor, g, back ? TRUE : FALSE);
         }
@@ -1370,7 +1433,7 @@ public abstract class BPlusTree<L, T extends L> {
      * @return Result code.
      * @throws IgniteCheckedException If failed.
      */
-    private int putDown(final Put p, final long pageId, final long fwdId, final int lvl)
+    private char putDown(final Put p, final long pageId, final long fwdId, final int lvl)
         throws IgniteCheckedException {
         assert lvl >= 0 : lvl;
 
@@ -1382,7 +1445,7 @@ public abstract class BPlusTree<L, T extends L> {
                 p.pageId = pageId;
                 p.fwdId = fwdId;
 
-                int res = readPage(pageId, page, search, p, lvl);
+                char res = readPage(pageId, page, search, p, lvl);
 
                 switch (res) {
                     case Put.GO_DOWN:
@@ -1444,27 +1507,32 @@ public abstract class BPlusTree<L, T extends L> {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(BPlusTree.class, this);
+    }
+
     /**
      * Get operation.
      */
     private abstract class Get {
         /** */
-        static final int GO_DOWN = 1;
+        static final char GO_DOWN = 'd';
 
         /** */
-        static final int GO_DOWN_X = 2;
+        static final char GO_DOWN_X = 'D';
 
         /** */
-        static final int FOUND = 5;
+        static final char FOUND = 'f';
 
         /** */
-        static final int NOT_FOUND = 6;
+        static final char NOT_FOUND = 'n';
 
         /** */
-        static final int RETRY = 8;
+        static final char RETRY = 'r';
 
         /** */
-        static final int RETRY_ROOT = 9;
+        static final char RETRY_ROOT = 'R';
 
         /** */
         long rmvId;
@@ -2091,7 +2159,7 @@ public abstract class BPlusTree<L, T extends L> {
          * @return Result code.
          * @throws IgniteCheckedException If failed.
          */
-        private int removeFromLeaf(long leafId, Page leaf, long backId, long fwdId) throws IgniteCheckedException {
+        private char removeFromLeaf(long leafId, Page leaf, long backId, long fwdId) throws IgniteCheckedException {
             // Init parameters.
             this.pageId = leafId;
             this.page = leaf;
@@ -2118,7 +2186,7 @@ public abstract class BPlusTree<L, T extends L> {
          * @return Result code.
          * @throws IgniteCheckedException If failed.
          */
-        private int doRemoveFromLeaf() throws IgniteCheckedException {
+        private char doRemoveFromLeaf() throws IgniteCheckedException {
             assert page != null;
 
             return writePage(pageId, page, removeFromLeaf, this, 0);
@@ -2129,7 +2197,7 @@ public abstract class BPlusTree<L, T extends L> {
          * @return Result code.
          * @throws IgniteCheckedException If failed.
          */
-        private int doLockTail(int lvl) throws IgniteCheckedException {
+        private char doLockTail(int lvl) throws IgniteCheckedException {
             assert page != null;
 
             return writePage(pageId, page, lockTail, this, lvl);
@@ -2144,7 +2212,7 @@ public abstract class BPlusTree<L, T extends L> {
          * @return Result code.
          * @throws IgniteCheckedException If failed.
          */
-        private int lockTail(long pageId, Page page, long backId, long fwdId, int lvl) throws IgniteCheckedException {
+        private char lockTail(long pageId, Page page, long backId, long fwdId, int lvl) throws IgniteCheckedException {
             assert tail != null;
 
             // Init parameters for the handlers.
@@ -2600,7 +2668,7 @@ public abstract class BPlusTree<L, T extends L> {
      * @param row Lookup row.
      * @return Insertion point as in {@link Arrays#binarySearch(Object[], Object, Comparator)}.
      */
-    private int findInsertionPoint(BPlusIO<L> io, ByteBuffer buf, int cnt, L row)
+    private int findInsertionPoint(BPlusIO<L> io, ByteBuffer buf, int cnt, L row, int shift)
         throws IgniteCheckedException {
         assert row != null;
 
@@ -2612,15 +2680,18 @@ public abstract class BPlusTree<L, T extends L> {
 
             int cmp = compare(io, buf, mid, row);
 
+            if (cmp == 0)
+                cmp = -shift; // We need to fix the case when search row matches multiple data rows.
+
             if (cmp < 0)
                 low = mid + 1;
             else if (cmp > 0)
                 high = mid - 1;
             else
-                return mid; // found
+                return mid; // Found.
         }
 
-        return -(low + 1);  // not found
+        return -(low + 1);  // Not found.
     }
 
     /**
@@ -2633,7 +2704,13 @@ public abstract class BPlusTree<L, T extends L> {
         int type = PageIO.getType(buf);
         int ver = PageIO.getVersion(buf);
 
-        return io(type, ver);
+        if (innerIos.getType() == type)
+            return innerIos.forVersion(ver);
+
+        if (leafIos.getType() == type)
+            return leafIos.forVersion(ver);
+
+        throw new IllegalStateException("Unknown page type: " + type + " pageId: " + PageIO.getPageId(buf));
     }
 
     /**
@@ -2674,21 +2751,6 @@ public abstract class BPlusTree<L, T extends L> {
         assert pageId != 0;
 
         return pageId;
-    }
-
-    /**
-     * @param type Page type.
-     * @param ver Page version.
-     * @return IO.
-     */
-    private BPlusIO<L> io(int type, int ver) {
-        if (innerIos.getType() == type)
-            return innerIos.forVersion(ver);
-
-        if (leafIos.getType() != type)
-            throw new IllegalStateException("Unknown page type: " + type);
-
-        return leafIos.forVersion(ver);
     }
 
     /**
@@ -2754,7 +2816,8 @@ public abstract class BPlusTree<L, T extends L> {
          * @param startIdx Start index.
          * @throws IgniteCheckedException If failed.
          */
-        private void bootstrap(ByteBuffer buf, BPlusIO<L> io,  int startIdx) throws IgniteCheckedException {
+        private void bootstrap(ByteBuffer buf, BPlusIO<L> io, int startIdx) throws IgniteCheckedException {
+            assert startIdx >= 0: startIdx;
             assert buf != null;
             assert io != null;
             assert rows == null;
@@ -2788,9 +2851,11 @@ public abstract class BPlusTree<L, T extends L> {
                 int cmp = compare(io, buf, cnt - 1, upperBound);
 
                 if (cmp > 0) {
-                    int idx = findInsertionPoint(io, buf, cnt, upperBound);
+                    int idx = findInsertionPoint(io, buf, cnt, upperBound, 1);
 
-                    cnt = idx < 0 ? -idx : idx + 1;
+                    assert idx < 0;
+
+                    cnt = -idx;
 
                     nextPageId = 0; // The End.
                 }
@@ -2813,7 +2878,7 @@ public abstract class BPlusTree<L, T extends L> {
 
             while (nextPageId != 0) {
                 try (Page next = page(nextPageId)) {
-                    ByteBuffer buf = next.getForRead();
+                    ByteBuffer buf = next.getForRead(); // Doing explicit page ID check.
 
                     try {
                         if (PageIO.getPageId(buf) != nextPageId)
@@ -2846,7 +2911,7 @@ public abstract class BPlusTree<L, T extends L> {
      */
     private abstract class GetPageHandler<G extends Get> extends PageHandler<G> {
         /** {@inheritDoc} */
-        @Override public final int run(long pageId, Page page, ByteBuffer buf, G g, int lvl)
+        @Override public final char run(long pageId, Page page, ByteBuffer buf, G g, int lvl)
             throws IgniteCheckedException {
             // The page was merged and removed.
             if (PageIO.getPageId(buf) != pageId)
@@ -2872,7 +2937,7 @@ public abstract class BPlusTree<L, T extends L> {
          * @return Result code.
          * @throws IgniteCheckedException If failed.
          */
-        protected abstract int run0(long pageId, Page page, ByteBuffer buf, BPlusIO<L> io, G g, int lvl)
+        protected abstract char run0(long pageId, Page page, ByteBuffer buf, BPlusIO<L> io, G g, int lvl)
             throws IgniteCheckedException;
 
         /** {@inheritDoc} */

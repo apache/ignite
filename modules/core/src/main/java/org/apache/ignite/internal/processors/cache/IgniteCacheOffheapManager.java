@@ -91,7 +91,9 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
         if (cctx.affinityNode()) {
             IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
 
-            IgniteBiTuple<FullPageId, Boolean> page = dbMgr.meta().getOrAllocateForIndex(cctx.cacheId(), cctx.namexx());
+            String idxName = BPlusTree.treeName(cctx.name(), cctx.cacheId(), "Cache");
+
+            IgniteBiTuple<FullPageId, Boolean> page = dbMgr.meta().getOrAllocateForIndex(cctx.cacheId(), idxName);
 
             int cpus = Runtime.getRuntime().availableProcessors();
 
@@ -100,7 +102,8 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
 
             rowStore = new CacheDataRowStore(cctx, freeList);
 
-            dataTree = new CacheDataTree(reuseList,
+            dataTree = new CacheDataTree(idxName,
+                reuseList,
                 rowStore,
                 cctx,
                 dbMgr.pageMemory(),
@@ -740,6 +743,7 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
         private final GridCacheContext cctx;
 
         /**
+         * @param name Tree name.
          * @param reuseList Reuse list.
          * @param rowStore Row store.
          * @param cctx Context.
@@ -749,13 +753,16 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
          * @throws IgniteCheckedException If failed.
          */
         public CacheDataTree(
+            String name,
             ReuseList reuseList,
             CacheDataRowStore rowStore,
             GridCacheContext cctx,
             PageMemory pageMem,
             FullPageId metaPageId,
-            boolean initNew) throws IgniteCheckedException {
-            super(cctx.cacheId(), pageMem, metaPageId, reuseList, DataInnerIO.VERSIONS, DataLeafIO.VERSIONS);
+            boolean initNew)
+            throws IgniteCheckedException
+        {
+            super(name, cctx.cacheId(), pageMem, metaPageId, reuseList, DataInnerIO.VERSIONS, DataLeafIO.VERSIONS);
 
             assert rowStore != null;
 
