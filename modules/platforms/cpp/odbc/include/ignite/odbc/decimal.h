@@ -101,6 +101,13 @@ namespace ignite
          */
         void Swap(Decimal& second);
 
+        /**
+         * Get length of the magnitude.
+         *
+         * @return Length of the magnitude.
+         */
+        int32_t GetMagnitudeLength() const;
+
     private:
         /** Scale. */
         int32_t scale;

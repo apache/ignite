@@ -91,7 +91,7 @@ namespace ignite
         {
             adjustment.Pow(diff);
 
-            //magnitude.Divide(adjustment);
+            magnitude.Divide(adjustment, magnitude);
         }
         else
         {
@@ -114,6 +114,11 @@ namespace ignite
 
         swap(scale, second.scale);
         magnitude.Swap(second.magnitude);
+    }
+
+    int32_t Decimal::GetMagnitudeLength() const
+    {
+        return magnitude.mag.GetSize();
     }
 }
 

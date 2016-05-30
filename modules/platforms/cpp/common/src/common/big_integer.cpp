@@ -286,7 +286,7 @@ namespace ignite
         assert(n <= 32);
 
         for (int32_t i = len - 1; i > 0; --i)
-            out[i] = (in[i] << n) | (in[i - 1] >> 32 - n);
+            out[i] = (in[i] << n) | (in[i - 1] >> (32 - n));
 
         out[0] = in[0] << n;
     }
@@ -311,11 +311,36 @@ namespace ignite
 
             q[i] = static_cast<uint32_t>(difference);
 
+            assert(difference >> 32 == 0 || difference >> 32 == -1);
+
             // This will add one if difference is negative.
             carry = (product >> 32) - (difference >> 32);
         }
 
-        return static_cast<uint64_t>(carry);
+        return static_cast<uint32_t>(carry);
+    }
+
+    /**
+     * Add two magnitude arrays and return carry.
+     *
+     * @param res First addend. Result is placed here. Length of this addend
+     *     should be equal or greater than len.
+     * @param addend Second addend.
+     * @param len Length of the second addend.
+     * @return Carry.
+     */
+    uint32_t Add(uint32_t* res, const uint32_t* addend, int32_t len)
+    {
+        uint64_t carry = 0;
+
+        for (int32_t i = 0; i < len; ++i)
+        {
+            uint64_t sum = static_cast<uint64_t>(res[i]) + addend[i] + carry;
+            res[i] = static_cast<uint32_t>(sum);
+            carry = sum >> 32;
+        }
+
+        return static_cast<uint32_t>(carry);
     }
 
     void BigInteger::Divide(const BigInteger& divisor, BigInteger& res) const
@@ -351,10 +376,10 @@ namespace ignite
             uint64_t v = divisor.mag[0];
 
             if (mag.GetSize() == 2)
-                u |= mag[1] << 32;
+                u |= static_cast<uint64_t>(mag[1]) << 32;
 
             if (divisor.mag.GetSize() == 2)
-                v |= divisor.mag[1] << 32;
+                v |= static_cast<uint64_t>(divisor.mag[1]) << 32;
 
             res.Assign(resSign * static_cast<int64_t>(u / v));
 
@@ -404,6 +429,9 @@ namespace ignite
 
         assert(nu.Back() == 0);
 
+        // Resizing resulting array.
+        q.Resize(ulen - vlen + 1);
+
         // Main loop
         for (int32_t i = ulen - vlen; i >= 0; --i)
         {
@@ -415,18 +443,31 @@ namespace ignite
             // Adjusting result if needed.
             while (qhat >= UINT32_MAX || qhat * nv[vlen - 2] > UINT32_MAX * rhat + nu[i + vlen - 2])
             {
-                qhat = qhat - 1;
-                rhat = rhat + nv[vlen - 1];
+                --qhat;
+                rhat += nv[vlen - 1];
 
                 if (rhat >= UINT32_MAX)
                     break;
             }
 
+            uint32_t qhat32 = static_cast<uint32_t>(qhat);
+
             // Multiply and subtract.
-            uint32_t carry = MultiplyAndSubstruct(nu.GetData() + i, nv.GetData(), vlen, qhat);
+            uint32_t carry = MultiplyAndSubstruct(nu.GetData() + i, nv.GetData(), vlen, qhat32);
 
-            nu[i + vlen] -= carry;
+            int64_t difference = nu[i + vlen] - carry;
 
+            nu[i + vlen] = static_cast<uint32_t>(difference);
+
+            if (difference < 0)
+            {
+                --qhat32;
+                carry = Add(nu.GetData() + i, nv.GetData(), vlen);
+
+                assert(carry == 0);
+            }
+
+            q[i] = qhat32;
         }
     }
 
