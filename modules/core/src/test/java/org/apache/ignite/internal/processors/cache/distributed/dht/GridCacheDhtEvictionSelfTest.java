@@ -248,9 +248,9 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
         // It should trigger dht eviction and eviction on backup node.
         grid(primary).cache(null).localEvict(Collections.<Object>singleton(key));
 
-        // Give 5 seconds for eviction event to occur on backup and primary node.
-        futBackup.get(3000);
-        futPrimary.get(3000);
+        // Give some time for eviction event to occur on backup and primary node.
+        futBackup.get(10_000);
+        futPrimary.get(10_000);
 
         assertEquals(0, nearPrimary.size());
 
@@ -281,9 +281,10 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
 
         Collection<Integer> keys = new ArrayList<>(keyCnt);
 
-        for (int key = 0; keys.size() < keyCnt; key++)
+        for (int key = 0; keys.size() < keyCnt; key++) {
             if (F.eqNodes(primaryIgnite.cluster().localNode(), F.first(keyNodes(key))))
                 keys.add(key++);
+        }
 
         info("Test keys: " + keys);
 
@@ -324,9 +325,9 @@ public class GridCacheDhtEvictionSelfTest extends GridCommonAbstractTest {
         for (Integer key : keys)
             primaryIgnite.cache(null).localEvict(Collections.<Object>singleton(key));
 
-        // Give 5 seconds for eviction events to occur on backup and primary node.
-        futBackup.get(3000);
-        futPrimary.get(3000);
+        // Give some time for eviction events to occur on backup and primary node.
+        futBackup.get(10_000);
+        futPrimary.get(10_000);
 
         info("nearBackupSize: " + nearBackup.size());
         info("dhtBackupSize: " + dhtBackup.size());

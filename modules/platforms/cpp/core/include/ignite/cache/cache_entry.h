@@ -20,8 +20,8 @@
  * Declares ignite::cache::CacheEntry class.
  */
 
-#ifndef _IGNITE_CACHE_ENTRY
-#define _IGNITE_CACHE_ENTRY
+#ifndef _IGNITE_CACHE_CACHE_ENTRY
+#define _IGNITE_CACHE_CACHE_ENTRY
 
 #include <ignite/common/common.h>
 
@@ -30,16 +30,22 @@ namespace ignite
     namespace cache
     {
         /**
-         * Cache entry.
+         * Cache entry class template.
+         *
+         * Both key and value types should be default-constructable,
+         * copy-constructable and assignable.
          */
         template<typename K, typename V>
-        class IGNITE_IMPORT_EXPORT CacheEntry
+        class CacheEntry
         {
         public:
             /**
              * Default constructor.
+             *
+             * Creates instance with both key and value default-constructed.
              */
-            CacheEntry() : key(K()), val(V())
+            CacheEntry() :
+                key(), val()
             {
                 // No-op.
             }
@@ -50,7 +56,8 @@ namespace ignite
              * @param key Key.
              * @param val Value.
              */
-            CacheEntry(const K& key, const V& val) : key(key), val(val)
+            CacheEntry(const K& key, const V& val) :
+                key(key), val(val)
             {
                 // No-op.
             }
@@ -77,14 +84,8 @@ namespace ignite
                 {
                     CacheEntry tmp(other);
 
-                    K& key0 = key;
-                    V& val0 = val;
-
-                    key = tmp.key;
-                    val = tmp.val;
-
-                    tmp.key = key0;
-                    tmp.val = val0;
+                    std::swap(key, tmp.key);
+                    std::swap(val, tmp.val);
                 }
 
                 return *this;
@@ -92,7 +93,7 @@ namespace ignite
 
             /**
              * Get key.
-             * 
+             *
              * @return Key.
              */
             K GetKey() const
@@ -112,12 +113,12 @@ namespace ignite
 
         private:
             /** Key. */
-            K key; 
+            K key;
 
             /** Value. */
-            V val; 
+            V val;
         };
     }
 }
 
-#endif
+#endif _IGNITE_CACHE_CACHE_ENTRY

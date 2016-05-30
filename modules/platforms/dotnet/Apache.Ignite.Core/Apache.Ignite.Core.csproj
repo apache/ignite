@@ -93,6 +93,8 @@
     <Compile Include="Cache\CachePartialUpdateException.cs" />
     <Compile Include="Cache\CachePeekMode.cs" />
     <Compile Include="Cache\Configuration\NearCacheConfiguration.cs" />
+    <Compile Include="Communication\ICommunicationSpi.cs" />
+    <Compile Include="Communication\Tcp\TcpCommunicationSpi.cs" />
     <Compile Include="DataStructures\Configuration\AtomicConfiguration.cs" />
     <Compile Include="Cache\Configuration\QueryAlias.cs" />
     <Compile Include="Cache\Configuration\QueryTextFieldAttribute.cs" />
@@ -150,6 +152,7 @@
     <Compile Include="Common\IgniteFutureCancelledException.cs" />
     <Compile Include="Common\IgniteGuid.cs" />
     <Compile Include="Common\Package-Info.cs" />
+    <Compile Include="Impl\Binary\BinaryWriterExtensions.cs" />
     <Compile Include="Impl\Common\Platform.cs" />
     <Compile Include="Impl\Cache\Event\JavaCacheEntryEventFilter.cs" />
     <Compile Include="Impl\Common\PlatformJavaObjectFactoryProxy.cs" />
@@ -450,38 +453,32 @@
     <Compile Include="Transactions\TransactionState.cs" />
     <Compile Include="Transactions\TransactionTimeoutException.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\cpp\common\project\vs\common.vcxproj">
-      <Project>{4f7e4917-4612-4b96-9838-025711ade391}</Project>
-      <Name>common</Name>
-    </ProjectReference>
-  </ItemGroup>
   <ItemGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
-    <EmbeddedResource Include="$(SolutionDir)\x64\Debug\ignite.common.dll">
-      <Link>resources\debug\x64\ignite.common.dll</Link>
+    <EmbeddedResource Include="$(SolutionDir)\x64\Debug\ignite.jni.dll">
+      <Link>resources\debug\x64\ignite.jni.dll</Link>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
-    <EmbeddedResource Include="$(SolutionDir)\x64\Release\ignite.common.dll">
-      <Link>resources\release\x64\ignite.common.dll</Link>
+    <EmbeddedResource Include="$(SolutionDir)\x64\Release\ignite.jni.dll">
+      <Link>resources\release\x64\ignite.jni.dll</Link>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
-    <EmbeddedResource Include="$(SolutionDir)\Win32\Debug\ignite.common.dll">
-      <Link>resources\debug\x86\ignite.common.dll</Link>
+    <EmbeddedResource Include="$(SolutionDir)\Win32\Debug\ignite.jni.dll">
+      <Link>resources\debug\x86\ignite.jni.dll</Link>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
-    <EmbeddedResource Include="$(SolutionDir)\Win32\Release\ignite.common.dll">
-      <Link>resources\release\x86\ignite.common.dll</Link>
+    <EmbeddedResource Include="$(SolutionDir)\Win32\Release\ignite.jni.dll">
+      <Link>resources\release\x86\ignite.jni.dll</Link>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup Condition="'$(Platform)' == 'AnyCPU'">
-    <EmbeddedResource Include="$(ProjectDir)..\..\cpp\common\project\vs\x64\$(Configuration)\ignite.common.dll">
-      <Link>resources\$(Configuration)\x64\ignite.common.dll</Link>
+    <EmbeddedResource Include="$(ProjectDir)..\..\cpp\jni\project\vs\x64\$(Configuration)\ignite.jni.dll">
+      <Link>resources\$(Configuration)\x64\ignite.jni.dll</Link>
     </EmbeddedResource>
-    <EmbeddedResource Include="$(ProjectDir)..\..\cpp\common\project\vs\Win32\$(Configuration)\ignite.common.dll" Condition="'$(Configuration)' == 'Release' Or Exists('$(ProjectDir)..\..\cpp\common\project\vs\Win32\$(Configuration)\ignite.common.dll')">
-      <Link>resources\$(Configuration)\x86\ignite.common.dll</Link>
+    <EmbeddedResource Include="$(ProjectDir)..\..\cpp\jni\project\vs\Win32\$(Configuration)\ignite.jni.dll" Condition="'$(Configuration)' == 'Release' Or Exists('$(ProjectDir)..\..\cpp\jni\project\vs\Win32\$(Configuration)\ignite.jni.dll')">
+      <Link>resources\$(Configuration)\x86\ignite.jni.dll</Link>
     </EmbeddedResource>
   </ItemGroup>
   <ItemGroup>
@@ -500,7 +497,12 @@
   <ItemGroup>
     <Folder Include="Impl\Common\JavaObjects\" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <ProjectReference Include="..\..\cpp\jni\project\vs\jni.vcxproj">
+      <Project>{4f7e4917-4612-4b96-9838-025711ade391}</Project>
+      <Name>jni</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup Condition="'$(Platform)' == 'AnyCPU'">
     <PreBuildEvent>cd "$(ProjectDir)"

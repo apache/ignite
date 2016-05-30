@@ -556,6 +556,8 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /**
      * Sets write synchronization mode.
+     * <p>
+     * Default synchronization mode is {@link CacheWriteSynchronizationMode#PRIMARY_SYNC}.
      *
      * @param writeSync Write synchronization mode.
      * @return {@code this} for chaining.

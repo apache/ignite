@@ -770,6 +770,7 @@
                                         <exclude>**/*.gar</exclude><!--bin-files-->
                                         <exclude>**/licenses/*.txt</exclude><!--files of licenses-->
                                         <exclude>**/*readme*.txt</exclude><!--readme files-->
+                                        <exclude>**/*.sql</exclude><!--sql files-->
                                         <exclude>**/*README*.txt</exclude><!--readme files-->
                                         <exclude>**/*README*.md</exclude><!--readme files-->
                                         <exclude>**/*.timestamp</exclude><!--tmp-files-->
@@ -838,10 +839,13 @@
                                         <exclude>**/META-INF/services/*.PlatformBootstrapFactory</exclude>
                                         <exclude>**/Makefile.am</exclude>
                                         <exclude>**/configure.ac</exclude>
+                                        <exclude>**/Makefile.amrel</exclude>
+                                        <exclude>**/configure.acrel</exclude>
                                         <exclude>**/*.pc.in</exclude>
                                         <exclude>**/*.sln</exclude>
                                         <exclude>**/*.snk</exclude>
                                         <exclude>**/*.slnrel</exclude>
+                                        <exclude>**/*.ini</exclude>
                                         <exclude>**/*.DotSettings</exclude>
                                         <exclude>**/*.FxCop</exclude>
                                         <exclude>**/*.ruleset</exclude>
@@ -868,6 +872,15 @@
                                         <exclude>**/*.dxg</exclude>
                                         <exclude>**/*.cmd</exclude>
                                         <exclude>**/*.ps1</exclude>
+                                        <exclude>**/*.json</exclude>
+                                        <!--web console-->
+                                        <exclude>**/src/main/js/*.babelrc</exclude>
+                                        <exclude>**/src/main/js/*.eslintrc</exclude>
+                                        <exclude>**/src/main/js/*.npmrc</exclude>
+                                        <exclude>**/src/main/js/build/**</exclude>
+                                        <exclude>**/src/main/js/node_modules/**</exclude>
+                                        <exclude>**/src/main/js/serve/config/settings.json.sample</exclude>
+                                        <exclude>**/src/main/js/serve/keys/test.*</exclude>
                                     </excludes>
                                 </configuration>
                             </execution>
@@ -963,9 +976,10 @@
         <profile>
             <id>release</id>
             <activation>
-                <activeByDefault>true</activeByDefault>
+                <property>
+                    <name>!skipDefault</name><!--activeByDefault-->
+                </property>
             </activation>
-
             <dependencies>
                 <dependency>
                     <groupId>org.apache.ignite</groupId>
