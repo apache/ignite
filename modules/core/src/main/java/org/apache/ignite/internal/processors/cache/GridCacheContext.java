@@ -1155,7 +1155,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridCacheEntryEx e,
         @Nullable IgnitePredicate<Cache.Entry<K1, V1>>[] p
     ) throws IgniteCheckedException {
-        return F.isEmpty(p) || isAll(e.<K1, V1>wrapLazyValue(), p);
+        return F.isEmpty(p) || isAll(e.<K1, V1>wrapLazyValue(keepBinary()), p);
     }
 
     /**

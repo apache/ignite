@@ -3819,7 +3819,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         else
             entry = map.randomEntry();
 
-        return entry == null || entry.obsolete() ? null : entry.<K, V>wrapLazyValue();
+        return entry == null || entry.obsolete() ? null : entry.<K, V>wrapLazyValue(ctx.keepBinary());
     }
 
     /** {@inheritDoc} */
@@ -6691,12 +6691,16 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         /** Current entry. */
         private GridCacheMapEntry current;
 
+        /** Keep binary flag. */
+        private final boolean keepBinary;
+
         /**
          * Constructor.
          * @param internalIterator Internal iterator.
          */
         private EntryIterator(Iterator<GridCacheMapEntry> internalIterator) {
             this.internalIterator = internalIterator;
+            this.keepBinary = ctx.keepBinary();
         }
 
         /** {@inheritDoc} */
@@ -6708,7 +6712,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         @Override public Cache.Entry<K, V> next() {
             current = internalIterator.next();
 
-            return current.wrapLazyValue();
+            return current.wrapLazyValue(keepBinary);
         }
 
         /** {@inheritDoc} */
@@ -6717,7 +6721,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 throw new IllegalStateException();
 
             try {
-                GridCacheAdapter.this.getAndRemove((K)current.wrapLazyValue().getKey());
+                GridCacheAdapter.this.getAndRemove((K)current.wrapLazyValue(keepBinary).getKey());
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException(e);

@@ -1355,7 +1355,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     if (next instanceof GridCacheMapEntry && (!((GridCacheMapEntry)next).visitable(CU.empty0())))
                         continue;
 
-                    entry = next.wrapLazyValue();
+                    entry = next.wrapLazyValue(ctx.keepBinary());
 
                     return;
                 }
