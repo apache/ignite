@@ -274,6 +274,15 @@ public class IgniteProcessProxy implements IgniteEx {
         return id;
     }
 
+    /**
+     * @throws Exception If failed to kill.
+     */
+    public void kill() throws Exception {
+        getProcess().kill();
+
+        gridProxies.remove(cfg.getGridName(), this);
+    }
+
     /** {@inheritDoc} */
     @Override public String name() {
         return cfg.getGridName();

@@ -71,6 +71,8 @@ import java.nio.channels.FileLock;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.AccessController;
 import java.security.KeyManagementException;
 import java.security.MessageDigest;
@@ -3503,9 +3505,22 @@ public abstract class IgniteUtils {
         else
             ggHome0 = ggHomeTup.get();
 
-        if (ggHome0 != null && !ggHome0.equals(path))
-            throw new IgniteException("Failed to set IGNITE_HOME after it has been already resolved " +
-                "[igniteHome=" + ggHome0 + ", newIgniteHome=" + path + ']');
+        if (ggHome0 != null && !ggHome0.equals(path)) {
+            try {
+                Path path0 = new File(ggHome0).toPath();
+
+                Path path1 = new File(path).toPath();
+
+                if (!Files.isSameFile(path0, path1))
+                    throw new IgniteException("Failed to set IGNITE_HOME after it has been already resolved " +
+                        "[igniteHome=" + path0 + ", newIgniteHome=" + path1 + ']');
+            }
+            catch (IOException ignore) {
+                // Throw an exception if failed to follow symlinks.
+                throw new IgniteException("Failed to set IGNITE_HOME after it has been already resolved " +
+                    "[igniteHome=" + ggHome0 + ", newIgniteHome=" + path + ']');
+            }
+        }
     }
 
     /**
@@ -8788,6 +8803,15 @@ public abstract class IgniteUtils {
      * @throws IgniteCheckedException If failed.
      */
     public static File resolveWorkDirectory(String path, boolean delIfExist) throws IgniteCheckedException {
+        if (path == null) {
+            String ggWork0 = igniteWork;
+
+            if (F.isEmpty(ggWork0))
+                throw new IgniteCheckedException("Failed to resolve path (work directory has not been set): " + path);
+
+            return new File(igniteWork);
+        }
+
         File dir = new File(path);
 
         if (!dir.isAbsolute()) {
@@ -8814,6 +8838,29 @@ public abstract class IgniteUtils {
             throw new IgniteCheckedException("Cannot write to directory: " + dir);
 
         return dir;
+    }
+
+    /**
+     * Checks if the given directory exists and attempts to create one if not.
+     *
+     * @param dir Directory to check.
+     * @param msg Directory name for the messages.
+     * @param log Optional logger to log a message that the directory has been resolved.
+     * @throws IgniteCheckedException If directory does not exist and failed to create it, or if a file with
+     *      the same name already exists.
+     */
+    public static void ensureDirectory(File dir, String msg, IgniteLogger log) throws IgniteCheckedException {
+        if (!dir.exists()) {
+            if (!dir.mkdirs())
+                throw new IgniteCheckedException("Failed to create " + msg + ": " +
+                    dir.getAbsolutePath());
+        }
+        else if (!dir.isDirectory())
+            throw new IgniteCheckedException("Failed to initialize " + msg +
+                " (a file with the same name already exists): " + dir.getAbsolutePath());
+
+        if (log != null && log.isInfoEnabled())
+            log.info("Resolved " + msg + ": " + dir.getAbsolutePath());
     }
 
     /**

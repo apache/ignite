@@ -26,6 +26,7 @@ import org.apache.ignite.internal.pagemem.PageIdUtils;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
+import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
@@ -153,10 +154,10 @@ public class FreeList {
                 // Index name will be the same across restarts.
                 String idxName = BPlusTree.treeName("p" + partId, cctx.cacheId(), "Free");
 
-                IgniteBiTuple<FullPageId,Boolean> t = cctx.shared().database().meta()
-                    .getOrAllocateForIndex(cctx.cacheId(), idxName);
+                final RootPage rootPage = cctx.shared().database().meta()
+                    .getOrAllocateForTree(cctx.cacheId(), idxName, false);
 
-                fut.onDone(new FreeTree(idxName, reuseList, cctx.cacheId(), partId, pageMem, t.get1(), t.get2()));
+                fut.onDone(new FreeTree(idxName, reuseList, cctx.cacheId(), partId, pageMem, rootPage.pageId(), rootPage.isAllocated()));
             }
         }
 
@@ -206,9 +207,14 @@ public class FreeList {
 
                 ByteBuffer buf = page.getForInitialWrite();
 
-                io.initNewPage(buf, page.id());
+                try {
+                    io.initNewPage(buf, page.id());
 
-                writeRow.run(page.id(), page, buf, row, entrySize);
+                    writeRow.run(page.id(), page, buf, row, entrySize);
+                }
+                finally {
+                    page.finishInitialWrite();
+                }
             }
             else
                 writePage(page.id(), page, writeRow, row, entrySize);

@@ -254,4 +254,6 @@ public interface GridDhtPartitionTopology {
      * @return {@code True} if rebalance process finished.
      */
     public boolean rebalanceFinished(AffinityTopologyVersion topVer);
+
+    public boolean ownIfUpToDate(GridDhtLocalPartition part);
 }

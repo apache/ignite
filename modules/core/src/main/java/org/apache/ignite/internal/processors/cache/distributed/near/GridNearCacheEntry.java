@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvcc;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
+import org.apache.ignite.internal.processors.cache.GridCacheOperation;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
@@ -433,6 +434,12 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
     /** {@inheritDoc} */
     @Override protected void removeValue(CacheObject val, GridCacheVersion ver) {
         // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void logUpdate(GridCacheOperation op, CacheObject val, GridCacheVersion ver, long updCntr)
+        throws IgniteCheckedException {
+        // No-op: queries are disabled for near cache.
     }
 
     /** {@inheritDoc} */

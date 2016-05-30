@@ -603,6 +603,9 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         /** */
         private Object val;
 
+        /** */
+        private int part;
+
         /**
          * @param val Value.
          */
@@ -618,6 +621,16 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         /** {@inheritDoc} */
         @Nullable @Override public <T> T value(CacheObjectContext ctx, boolean cpy) {
             return (T)val;
+        }
+
+        /** {@inheritDoc} */
+        @Override public int partition() {
+            return part;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void partition(int part) {
+            this.part = part;
         }
 
         /** {@inheritDoc} */
@@ -683,16 +696,6 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         /** {@inheritDoc} */
         @Override public boolean internal() {
             return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int partition() {
-            return -1;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void partition(int part) {
-            // No-op.
         }
     }
 }

@@ -39,6 +39,7 @@ import org.apache.ignite.internal.managers.deployment.GridDeploymentManager;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
+import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
 import org.apache.ignite.internal.processors.cache.jta.CacheJtaManagerAdapter;
@@ -91,6 +92,9 @@ public class GridCacheSharedContext<K, V> {
     /** Deployment manager. */
     private GridCacheDeploymentManager<K, V> depMgr;
 
+    /** Write ahead log manager. */
+    private IgniteWriteAheadLogManager walMgr;
+
     /** Database manager. */
     private IgniteCacheDatabaseSharedManager dbMgr;
 
@@ -132,8 +136,9 @@ public class GridCacheSharedContext<K, V> {
         IgniteTxManager txMgr,
         GridCacheVersionManager verMgr,
         GridCacheMvccManager mvccMgr,
-        IgniteCacheDatabaseSharedManager dbMgr,
         IgnitePageStoreManager pageStoreMgr,
+        IgniteWriteAheadLogManager walMgr,
+        IgniteCacheDatabaseSharedManager dbMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
         CacheAffinitySharedManager<K, V> affMgr,
@@ -143,7 +148,7 @@ public class GridCacheSharedContext<K, V> {
     ) {
         this.kernalCtx = kernalCtx;
 
-        setManagers(mgrs, txMgr, jtaMgr, verMgr, mvccMgr, dbMgr, pageStoreMgr, depMgr, exchMgr, affMgr, ioMgr);
+        setManagers(mgrs, txMgr, jtaMgr, verMgr, mvccMgr, pageStoreMgr, walMgr, dbMgr, depMgr, exchMgr, affMgr, ioMgr);
 
         this.storeSesLsnrs = storeSesLsnrs;
 
@@ -187,8 +192,9 @@ public class GridCacheSharedContext<K, V> {
             jtaMgr,
             verMgr,
             mvccMgr,
-            dbMgr,
             pageStoreMgr,
+            walMgr,
+            dbMgr,
             new GridCacheDeploymentManager<K, V>(),
             new GridCachePartitionExchangeManager<K, V>(),
             affMgr,
@@ -229,8 +235,9 @@ public class GridCacheSharedContext<K, V> {
         CacheJtaManagerAdapter jtaMgr,
         GridCacheVersionManager verMgr,
         GridCacheMvccManager mvccMgr,
-        IgniteCacheDatabaseSharedManager dbMgr,
         IgnitePageStoreManager pageStoreMgr,
+        IgniteWriteAheadLogManager walMgr,
+        IgniteCacheDatabaseSharedManager dbMgr,
         GridCacheDeploymentManager<K, V> depMgr,
         GridCachePartitionExchangeManager<K, V> exchMgr,
         CacheAffinitySharedManager affMgr,
@@ -238,8 +245,9 @@ public class GridCacheSharedContext<K, V> {
         this.mvccMgr = add(mgrs, mvccMgr);
         this.verMgr = add(mgrs, verMgr);
         this.txMgr = add(mgrs, txMgr);
-        this.dbMgr = add(mgrs, dbMgr);
         this.pageStoreMgr = add(mgrs, pageStoreMgr);
+        this.walMgr = add(mgrs, walMgr);
+        this.dbMgr = add(mgrs, dbMgr);
         this.jtaMgr = add(mgrs, jtaMgr);
         this.depMgr = add(mgrs, depMgr);
         this.exchMgr = add(mgrs, exchMgr);
@@ -445,6 +453,13 @@ public class GridCacheSharedContext<K, V> {
      */
     public IgnitePageStoreManager pageStore() {
         return pageStoreMgr;
+    }
+
+    /**
+     * @return Write ahead log manager.
+     */
+    public IgniteWriteAheadLogManager wal() {
+        return walMgr;
     }
 
     /**

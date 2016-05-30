@@ -28,6 +28,7 @@ import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.database.MetaStore;
+import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
@@ -97,9 +98,13 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         pageMem.start();
 
         reuseList = createReuseList(CACHE_ID, pageMem, 2, new MetaStore() {
-            @Override public IgniteBiTuple<FullPageId,Boolean> getOrAllocateForIndex(int cacheId, String idxName)
-                throws IgniteCheckedException {
-                return new T2<>(allocateMetaPage(), true);
+            @Override public RootPage getOrAllocateForTree(final int cacheId, final String idxName,
+                final boolean idx) throws IgniteCheckedException {
+                return new RootPage(allocateMetaPage(), true, 0);
+            }
+
+            @Override public long dropRootPage(final int cacheId, final String idxName) throws IgniteCheckedException {
+                throw new UnsupportedOperationException();
             }
         });
     }

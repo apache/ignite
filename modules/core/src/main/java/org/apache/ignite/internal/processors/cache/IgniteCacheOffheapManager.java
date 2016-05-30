@@ -31,6 +31,7 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.processors.cache.database.RowStore;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
@@ -43,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
+import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
@@ -53,6 +55,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.dwordsOffset;
 import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 
@@ -67,7 +70,7 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
     private CacheDataTree dataTree;
 
     /** */
-    private final boolean indexingEnabled;
+    private boolean indexingEnabled;
 
     /** */
     private FreeList freeList;
@@ -76,24 +79,19 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
     private ReuseList reuseList;
 
     /**
-     * @param indexingEnabled {@code True} if indexing is enabled for cache.
-     */
-    public IgniteCacheOffheapManager(boolean indexingEnabled) {
-        this.indexingEnabled = indexingEnabled;
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
+
+        indexingEnabled = INDEXING.inClassPath() && GridQueryProcessor.isEnabled(cctx.config());
 
         if (cctx.affinityNode()) {
             IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
 
             String idxName = BPlusTree.treeName(cctx.name(), cctx.cacheId(), "Cache");
 
-            IgniteBiTuple<FullPageId, Boolean> page = dbMgr.meta().getOrAllocateForIndex(cctx.cacheId(), idxName);
+            final RootPage rootPage = dbMgr.meta().getOrAllocateForTree(cctx.cacheId(), idxName, false);
 
             int cpus = Runtime.getRuntime().availableProcessors();
 
@@ -107,8 +105,8 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
                 rowStore,
                 cctx,
                 dbMgr.pageMemory(),
-                page.get1(),
-                page.get2());
+                rootPage.pageId(),
+                rootPage.isAllocated());
         }
     }
 
@@ -251,6 +249,26 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
      */
     public int onUndeploy(ClassLoader ldr) {
         // TODO: GG-11141.
+        return 0;
+    }
+
+    /**
+     * Partition counter update callback. May be overridden by plugin-provided subclasses.
+     *
+     * @param part Partition.
+     * @param cntr Partition counter.
+     */
+    public void onPartitionCounterUpdated(int part, long cntr) {
+        // No-op.
+    }
+
+    /**
+     * Partition counter provider. May be overridden by plugin-provided subclasses.
+     *
+     * @param part Partition ID.
+     * @return Last updated counter.
+     */
+    public long lastUpdatedPartitionCounter(int part) {
         return 0;
     }
 
@@ -596,7 +614,7 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
 
         GridCursor<? extends CacheDataRow> cur2 = indexingEnabled ? cctx.queries().pkIndex().find(null, null) : null;
 
-        return cur2 != null ? new CompoundCursor(cur1, cur2) : cur1;
+        return cur2 != null ? new CompoundCursor(cur1, cur2) : (GridCursor<CacheDataRow>) cur1;
     }
 
     /**
@@ -735,7 +753,7 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
     /**
      *
      */
-    static class CacheDataTree extends BPlusTree<KeySearchRow, DataRow> {
+    private static class CacheDataTree extends BPlusTree<KeySearchRow, DataRow> {
         /** */
         private final CacheDataRowStore rowStore;
 

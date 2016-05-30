@@ -41,6 +41,7 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -99,6 +100,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
@@ -250,6 +252,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     private ConcurrentMap<Class<?>, List<CustomEventListener<DiscoveryCustomMessage>>> customEvtLsnrs =
         new ConcurrentHashMap8<>();
 
+    /** Local node initialization event listeners. */
+    private final Collection<IgniteInClosure<ClusterNode>> localNodeInitLsnrs = new ArrayList<>();
+
     /** Map of dynamic cache filters. */
     private Map<String, CachePredicate> registeredCaches = new HashMap<>();
 
@@ -261,6 +266,9 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
     /** */
     private final CountDownLatch startLatch = new CountDownLatch(1);
+
+    /** */
+    private Object consistentId;
 
     /** @param ctx Context. */
     public GridDiscoveryManager(GridKernalContext ctx) {
@@ -458,6 +466,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         spi.setListener(new DiscoverySpiListener() {
             private long gridStartTime;
+
+            /** {@inheritDoc} */
+            @Override public void onLocalNodeInitialized(ClusterNode locNode) {
+                for (IgniteInClosure<ClusterNode> lsnr : localNodeInitLsnrs)
+                    lsnr.apply(locNode);
+            }
 
             @Override public void onDiscovery(
                 final int type,
@@ -746,6 +760,15 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
         }
 
         list.add((CustomEventListener<DiscoveryCustomMessage>)lsnr);
+    }
+
+    /**
+     * Adds a listener for local node initialized event.
+     *
+     * @param lsnr Listener to add.
+     */
+    public void addLocalNodeInitializedEventListener(IgniteInClosure<ClusterNode> lsnr) {
+        localNodeInitLsnrs.add(lsnr);
     }
 
     /**
@@ -1805,6 +1828,24 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
     /** @return Local node. */
     public ClusterNode localNode() {
         return locNode == null ? getSpi().getLocalNode() : locNode;
+    }
+
+    /**
+     * @return Consistent ID.
+     */
+    public Object consistentId() {
+        if (consistentId == null) {
+            try {
+                inject();
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to init consisten ID.", e);
+            }
+
+            consistentId = getSpi().consistentId();
+        }
+
+        return consistentId;
     }
 
     /** @return Topology version. */

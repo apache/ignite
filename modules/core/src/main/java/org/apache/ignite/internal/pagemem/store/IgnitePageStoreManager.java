@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.pagemem.store;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -32,10 +33,10 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager {
     /**
      * Callback called when a cache is starting.
      *
-     * @param cacheCtx Cache context of the cache being started.
+     * @param ccfg Cache configuration of the cache being started.
      * @throws IgniteCheckedException If failed to handle cache start callback.
      */
-    public void onBeforeCacheStart(GridCacheContext cacheCtx) throws IgniteCheckedException;
+    public void onBeforeCacheStart(CacheConfiguration ccfg) throws IgniteCheckedException;
 
     /**
      * Callback called when a cache is stopping. After this callback is invoked, no data associated with

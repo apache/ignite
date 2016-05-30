@@ -283,6 +283,14 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /** {@inheritDoc} */
+    @Override public int boundPort() throws IgniteSpiException {
+        if (tcpSrvr == null)
+            tcpSrvr = new TcpServer();
+
+        return tcpSrvr.port;
+    }
+
+    /** {@inheritDoc} */
     @Override public void spiStart(String gridName) throws IgniteSpiException {
         synchronized (mux) {
             spiState = DISCONNECTED;
@@ -305,7 +313,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         msgWorker = new RingMessageWorker();
         msgWorker.start();
 
-        tcpSrvr = new TcpServer();
+        if (tcpSrvr == null)
+            tcpSrvr = new TcpServer();
 
         spi.initLocalNode(tcpSrvr.port, true);
 

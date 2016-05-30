@@ -19,22 +19,47 @@ package org.apache.ignite.internal.processors.cache.database;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
+import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
+import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
+import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
+import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
+import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 
 /**
  * Metadata storage.
  */
 public class MetadataStorage implements MetaStore {
-    /** */
-    private PageMemory pageMem;
+    /** Max index name length (symbols num) */
+    public static final int MAX_IDX_NAME_LEN = 30;
+
+    /** Bytes in byte. */
+    private static final int BYTE_LEN = 1;
+
+    /** Bytes in int. */
+    private static final int INT_LEN = 4;
+
+    /** Bytes in long. */
+    private static final int LONG_LEN = 8;
+
+    /** Constant that's used for tree root page allocation. */
+    private static final int TREE_CACHE_ID = Integer.MAX_VALUE;
+
+    /** Page memory. */
+    private final PageMemory pageMem;
+
+    /** Increments on each root page allocation. */
+    private final AtomicLong rootId = new AtomicLong(0);
+
+    /** Index tree. */
+    private volatile MetaTree metaTree;
 
     /**
      * @param pageMem Page memory.
@@ -44,214 +69,60 @@ public class MetadataStorage implements MetaStore {
     }
 
     /** {@inheritDoc} */
-    @Override public synchronized IgniteBiTuple<FullPageId, Boolean> getOrAllocateForIndex(int cacheId, String idxName)
+    @Override public RootPage getOrAllocateForTree(final int cacheId, final String idxName, final boolean idx)
         throws IgniteCheckedException {
+        if (idxName.length() > MAX_IDX_NAME_LEN)
+            throw new IllegalArgumentException("Too long indexName [max allowed length=" + MAX_IDX_NAME_LEN +
+                ", current length=" + idxName.length() + "]");
+
+        final MetaTree tree = metaTree();
+
+        synchronized (this) {
+            byte[] idxNameBytes = idxName.getBytes(StandardCharsets.UTF_8);
+
+            final IndexItem row = tree.findOne(new IndexItem(idxNameBytes, 0, cacheId, 0));
+
+            if (row == null) {
+                final FullPageId idxRoot = pageMem.allocatePage(cacheId, 0, idx
+                    ? PageIdAllocator.FLAG_IDX : PageIdAllocator.FLAG_META);
+
+                final long rootId = this.rootId.getAndIncrement();
+
+                tree.put(new IndexItem(idxNameBytes, idxRoot.pageId(), cacheId, rootId));
+
+                return new RootPage(idxRoot, true, rootId);
+            } else {
+                final FullPageId pageId = new FullPageId(row.pageId, cacheId);
+
+                return new RootPage(pageId, false, rootId.get());
+            }
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public long dropRootPage(final int cacheId, final String idxName)
+        throws IgniteCheckedException {
+        final MetaTree tree = metaTree();
+
         byte[] idxNameBytes = idxName.getBytes(StandardCharsets.UTF_8);
 
-        FullPageId metaId = metaPage(cacheId);
+        final IndexItem row;
 
-        Page meta = pageMem.page(metaId);
-
-        try {
-            while (true) {
-                SearchState state = new SearchState();
-
-                FullPageId existingIdxRoot = tryFindIndexRoot(meta, idxNameBytes, cacheId, state);
-
-                if (existingIdxRoot != null)
-                    return F.t(existingIdxRoot, false);
-
-                FullPageId allocatedRoot = allocateAndWriteIndexRoot(meta, cacheId, idxNameBytes, state);
-
-                if (allocatedRoot != null)
-                    return F.t(allocatedRoot, true);
-                // else retry.
-            }
-        }
-        finally {
-            pageMem.releasePage(meta);
-        }
-    }
-
-    /**
-     * @param meta Cache metadata start page.
-     * @param idxNameBytes Index name to find.
-     * @return Non-zero root page iD if an index with the given name was found.
-     */
-    private FullPageId tryFindIndexRoot(Page meta, byte[] idxNameBytes, int cacheId, SearchState state) throws IgniteCheckedException {
-        ByteBuffer buf = meta.getForRead();
-
-        try {
-            // Save version
-            state.ver = meta.version();
-
-            long nextPageId = buf.getLong();
-
-            state.writePage = meta.id();
-
-            FullPageId rootPageId = scanForIndexRoot(buf, idxNameBytes, cacheId);
-
-            if (rootPageId != null)
-                return rootPageId;
-
-            while (nextPageId > 0) {
-                // Meta page.
-                Page nextPage = pageMem.page(new FullPageId(nextPageId, 0));
-
-                try {
-                    state.writePage = nextPageId;
-
-                    buf = nextPage.getForRead();
-
-                    try {
-                        nextPageId = buf.getLong();
-
-                        rootPageId = scanForIndexRoot(buf, idxNameBytes, cacheId);
-
-                        if (rootPageId != null)
-                            return rootPageId;
-                    }
-                    finally {
-                        nextPage.releaseRead();
-                    }
-                }
-                finally {
-                    pageMem.releasePage(nextPage);
-                }
-            }
-
-            state.position = buf.position();
-        }
-        finally {
-            meta.releaseRead();
+        synchronized (this) {
+            row = tree.remove(new IndexItem(idxNameBytes, 0, cacheId, 0));
         }
 
-        return null;
-    }
+        if (row != null)
+            pageMem.freePage(new FullPageId(row.pageId, cacheId));
 
-    /**
-     * @param meta Cache metadata page.
-     * @param cacheId Cache ID.
-     * @param idxNameBytes Index name bytes.
-     * @param state Search state.
-     * @return Root page ID for the index.
-     */
-    private FullPageId allocateAndWriteIndexRoot(
-        Page meta,
-        int cacheId,
-        byte[] idxNameBytes,
-        SearchState state
-    ) throws IgniteCheckedException {
-        ByteBuffer buf = meta.getForWrite();
-
-        try {
-            // The only case 0 can be returned.
-            if (meta.version() != state.ver)
-                return null;
-
-            // Otherwise it is safe to allocate and write data or link new page directly to the saved page.
-            long writePageId = state.writePage;
-
-            Page writePage;
-            ByteBuffer writeBuf;
-
-            if (writePageId == meta.id()) {
-                writePage = meta;
-                writeBuf = buf;
-            }
-            else {
-                writePage = pageMem.page(new FullPageId(writePageId, 0));
-
-                writeBuf = writePage.getForWrite();
-            }
-
-            try {
-                long nextPageId = writeBuf.getLong();
-
-                assert nextPageId == 0: "[nextPageId=" + U.hexLong(nextPageId) + ", writePageId=" + U.hexLong(writePageId) + ']';
-
-                // Position buffer to the last record.
-                writeBuf.position(state.position);
-
-                FullPageId idxRoot = pageMem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_META);
-
-                if (writeBuf.remaining() < idxNameBytes.length + 9) {
-                    // Link new meta page.
-                    FullPageId newMeta = pageMem.allocatePage(0, 0, PageIdAllocator.FLAG_META);
-
-                    writeBuf.putLong(0, newMeta.pageId());
-
-                    // Release old write-locked page.
-                    if (writePageId != meta.id()) {
-                        writePage.incrementVersion();
-
-                        writePage.releaseWrite(true);
-
-                        pageMem.releasePage(writePage);
-                    }
-
-                    writePage = pageMem.page(newMeta);
-                    writeBuf = writePage.getForWrite();
-                    writePageId = newMeta.pageId();
-                    // Next page, just need to make an offset.
-                    writeBuf.putLong(0);
-                }
-
-                writeBuf.put((byte)idxNameBytes.length);
-                writeBuf.put(idxNameBytes);
-                writeBuf.putLong(idxRoot.pageId());
-
-                return idxRoot;
-            }
-            finally {
-                if (writePageId != meta.id()) {
-                    writePage.incrementVersion();
-
-                    writePage.releaseWrite(true);
-
-                    pageMem.releasePage(writePage);
-                }
-            }
-        }
-        finally {
-            meta.releaseWrite(true);
-        }
-    }
-
-    /**
-     * @param buf Byte buffer to scan for the index.
-     * @param idxName Index name.
-     * @return Non-zero value if index with the given name was found.
-     */
-    private FullPageId scanForIndexRoot(ByteBuffer buf, byte[] idxName, int cacheId) {
-        // 10 = 1 byte per size + 1 byte minimal index name + 8 bytes page id.
-        while (buf.remaining() >= 10) {
-            int nameSize = buf.get() & 0xFF;
-
-            if (nameSize == 0) {
-                // Rewind.
-                buf.position(buf.position() - 1);
-
-                return null;
-            }
-
-            byte[] name = new byte[nameSize];
-            buf.get(name);
-
-            long pageId = buf.getLong();
-
-            if (Arrays.equals(name, idxName))
-                return new FullPageId(pageId, cacheId);
-        }
-
-        return null;
+        return row != null ? row.rootId : -1;
     }
 
     /**
      * @param cacheId Cache ID to get meta page for.
      * @return Meta page.
      */
-    private FullPageId metaPage(int cacheId) throws IgniteCheckedException {
+    private RootPage metaPageTree(int cacheId) throws IgniteCheckedException {
         Page meta = pageMem.metaPage();
 
         try {
@@ -271,7 +142,7 @@ public class MetadataStorage implements MetaStore {
 
                     if (readId != 0) {
                         if (readId == cacheId)
-                            return new FullPageId(pageId, 0);
+                            return new RootPage(new FullPageId(pageId, cacheId), false, 0);
 
                         cnt0--;
                     }
@@ -282,7 +153,7 @@ public class MetadataStorage implements MetaStore {
                 if (writePos != 0)
                     buf.position(writePos);
 
-                FullPageId fullId = pageMem.allocatePage(0, 0, PageIdAllocator.FLAG_META);
+                FullPageId fullId = pageMem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_META);
 
                 assert !fullId.equals(meta.fullId()) : "Duplicate page allocated " +
                     "[metaId=" + meta.fullId() + ", allocated=" + fullId + ']';
@@ -294,11 +165,9 @@ public class MetadataStorage implements MetaStore {
 
                 buf.putShort(0, (short)(cnt + 1));
 
-                return fullId;
+                return new RootPage(fullId, true, 0);
             }
             finally {
-                meta.incrementVersion();
-
                 meta.releaseWrite(written);
             }
         }
@@ -308,16 +177,334 @@ public class MetadataStorage implements MetaStore {
     }
 
     /**
-     * Search state.
+     *
      */
-    private static class SearchState {
+    private static class MetaTree extends BPlusTree<IndexItem, IndexItem> {
+        /**
+         * @param cacheId Cache ID.
+         * @param pageMem Page memory.
+         * @param metaPageId Meta page ID.
+         * @param reuseList Reuse list.
+         * @param innerIos Inner IOs.
+         * @param leafIos Leaf IOs.
+         * @throws IgniteCheckedException
+         */
+        private MetaTree(final int cacheId, final PageMemory pageMem, final FullPageId metaPageId,
+            final ReuseList reuseList,
+            final IOVersions<? extends BPlusInnerIO<IndexItem>> innerIos,
+            final IOVersions<? extends BPlusLeafIO<IndexItem>> leafIos, final boolean initNew)
+            throws IgniteCheckedException {
+            super(cacheId, pageMem, metaPageId, reuseList, innerIos, leafIos);
+
+            if (initNew)
+                initNew();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected long allocatePage0() throws IgniteCheckedException {
+            return pageMem.allocatePage(0, 0, PageIdAllocator.FLAG_META).pageId();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected int compare(final BPlusIO<IndexItem> io, final ByteBuffer buf, final int idx,
+            final IndexItem row) throws IgniteCheckedException {
+
+            // Compare cache IDs
+            final int off = ((IndexIO) io).getOffset(idx);
+
+            final int cacheId = buf.getInt(off);
+
+            final int cacheIdCmp = Integer.compare(cacheId, row.cacheId);
+
+            if (cacheIdCmp != 0)
+                return cacheIdCmp;
+
+            int shift = 0;
+
+            shift += INT_LEN;
+
+            // Compare index names.
+            final byte len = buf.get(off + shift);
+
+            shift += BYTE_LEN;
+
+            for (int i = 0; i < len && i < row.idxName.length; i++) {
+                final int cmp = Byte.compare(buf.get(off + i + shift), row.idxName[i]);
+
+                if (cmp != 0)
+                    return cmp;
+            }
+
+            return Integer.compare(len, row.idxName.length);
+        }
+
+        /** {@inheritDoc} */
+        @Override protected IndexItem getRow(final BPlusIO<IndexItem> io, final ByteBuffer buf,
+            final int idx) throws IgniteCheckedException {
+            return readRow(buf, ((IndexIO)io).getOffset(idx));
+        }
+    }
+
+    /**
+     *
+     */
+    private static class IndexItem {
         /** */
-        private int ver;
+        private byte[] idxName;
 
         /** */
-        private long writePage;
+        private int cacheId;
 
         /** */
-        private int position;
+        private long pageId;
+
+        /** */
+        private long rootId;
+
+        /**
+         * @param idxName Index name.
+         * @param pageId Page ID.
+         */
+        private IndexItem(final byte[] idxName, final long pageId, final int cacheId, final long rootId) {
+            this.idxName = idxName;
+            this.pageId = pageId;
+            this.cacheId = cacheId;
+            this.rootId = rootId;
+        }
+    }
+
+    /**
+     * Store row to buffer.
+     *
+     * @param buf Buffer.
+     * @param off Offset in buf.
+     * @param row Row to store.
+     */
+    private static void storeRow(final ByteBuffer buf, final int off,
+        final IndexItem row) {
+
+        // Cache ID.
+        buf.putInt(off, row.cacheId);
+
+        int shift = 0;
+
+        shift += INT_LEN;
+
+        // Index name length.
+        final int len = row.idxName.length;
+
+        buf.put(off + shift, (byte) len);
+
+        shift += BYTE_LEN;
+
+        // Index name.
+        for (int i = 0; i < len; i++)
+            buf.put(off + i + shift, row.idxName[i]);
+
+        shift += len;
+
+        // Page ID.
+        buf.putLong(off + shift, row.pageId);
+
+        shift += LONG_LEN;
+
+        // Root ID.
+        buf.putLong(off + shift, row.rootId);
+    }
+
+    /**
+     * Copy row data.
+     *
+     * @param dst Destination buffer.
+     * @param dstOff Destination buf offset.
+     * @param src Source buffer.
+     * @param srcOff Src buf offset.
+     */
+    private static void storeRow(final ByteBuffer dst, final int dstOff,
+        final ByteBuffer src,
+        final int srcOff) {
+
+        // Cache ID.
+        dst.putInt(dstOff, src.getInt(srcOff));
+
+        int shift = 0;
+
+        shift += INT_LEN;
+
+        // Index name length.
+        final byte len = src.get(srcOff + shift);
+
+        dst.put(dstOff + shift, len);
+
+        shift += BYTE_LEN;
+
+        // Index name.
+        for (int i = 0; i < len; i++)
+            dst.put(dstOff + i + shift, src.get(srcOff + i + shift));
+
+        shift += len;
+
+        // Page ID.
+        dst.putLong(dstOff + shift, src.getLong(srcOff + shift));
+
+        shift += LONG_LEN;
+
+        // Root ID.
+        dst.putLong(dstOff + shift, src.getLong(srcOff + shift));
+    }
+
+    /**
+     * Read row from buffer.
+     *
+     * @param buf Buffer to read.
+     * @param off Offset in buf.
+     * @return Read row.
+     */
+    private static IndexItem readRow(final ByteBuffer buf, final int off) {
+        int shift = 0;
+
+        // Cache ID.
+        final int cacheId = buf.getInt(off);
+
+        shift += INT_LEN;
+
+        // Index name length.
+        final byte len = buf.get(off + shift);
+
+        shift += BYTE_LEN;
+
+        // Index name.
+        final byte[] idxName = new byte[len];
+
+        for (int i = 0; i < len; i++)
+            idxName[i] = buf.get(off + i + shift);
+
+        shift += len;
+
+        // Page ID.
+        final long pageId = buf.getLong(off + shift);
+
+        shift += LONG_LEN;
+
+        // Root ID.
+        final long rootId = buf.getLong(off + shift);
+
+        return new IndexItem(idxName, pageId, cacheId, rootId);
+    }
+
+    /**
+     *
+     */
+    private interface IndexIO {
+        /**
+         * @param idx Index.
+         * @return Offset in buffer according to {@code idx}.
+         */
+        int getOffset(int idx);
+    }
+
+    /**
+     *
+     */
+    private static class IndexInnerIO extends BPlusInnerIO<IndexItem> implements IndexIO {
+        /** */
+        static final IOVersions<IndexInnerIO> VERSIONS = new IOVersions<>(
+            new IndexInnerIO(1)
+        );
+
+        /**
+         * @param ver Version.
+         */
+        private IndexInnerIO(final int ver) {
+            // 4 byte cache ID, UTF-16 symbols and 1 byte for length, 8 bytes pageId, 8 bytes root ID
+            super(T_INDEX_INNER, ver, false, 4 + MAX_IDX_NAME_LEN * 2 + 1 + 8 + 8);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void store(final ByteBuffer buf, final int idx,
+            final IndexItem row) throws IgniteCheckedException {
+            storeRow(buf, offset(idx), row);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void store(final ByteBuffer dst, final int dstIdx, final BPlusIO<IndexItem> srcIo,
+            final ByteBuffer src,
+            final int srcIdx) throws IgniteCheckedException {
+            storeRow(dst, offset(dstIdx), src, ((IndexIO)srcIo).getOffset(srcIdx));
+        }
+
+        /** {@inheritDoc} */
+        @Override public IndexItem getLookupRow(final BPlusTree<IndexItem, ?> tree, final ByteBuffer buf,
+            final int idx) throws IgniteCheckedException {
+            return readRow(buf, offset(idx));
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getOffset(final int idx) {
+            return offset(idx);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class IndexLeafIO extends BPlusLeafIO<IndexItem> implements IndexIO {
+        /** */
+        static final IOVersions<IndexLeafIO> VERSIONS = new IOVersions<>(
+            new IndexLeafIO(1)
+        );
+
+        /**
+         * @param ver Version.
+         */
+        private IndexLeafIO(final int ver) {
+            // 4 byte cache ID, UTF-16 symbols and 1 byte for length, 8 bytes pageId, 8 bytes root ID
+            super(T_INDEX_LEAF, ver, 4 + MAX_IDX_NAME_LEN * 2 + 1 + 8 + 8);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void store(final ByteBuffer buf, final int idx,
+            final IndexItem row) throws IgniteCheckedException {
+            storeRow(buf, offset(idx), row);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void store(final ByteBuffer dst, final int dstIdx, final BPlusIO<IndexItem> srcIo,
+            final ByteBuffer src,
+            final int srcIdx) throws IgniteCheckedException {
+            storeRow(dst, offset(dstIdx), src, ((IndexIO)srcIo).getOffset(srcIdx));
+        }
+
+        /** {@inheritDoc} */
+        @Override public IndexItem getLookupRow(final BPlusTree<IndexItem, ?> tree, final ByteBuffer buf,
+            final int idx) throws IgniteCheckedException {
+            return readRow(buf, offset(idx));
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getOffset(final int idx) {
+            return offset(idx);
+        }
+    }
+
+    /**
+     * Get or allocate tree for metadata.
+     *
+     * @return Tree instance.
+     * @throws IgniteCheckedException
+     */
+    private MetaTree metaTree() throws IgniteCheckedException {
+        if (metaTree == null) {
+            synchronized (this) {
+                if (metaTree == null) {
+                    final RootPage rootPage = metaPageTree(TREE_CACHE_ID);
+
+                    metaTree = new MetaTree(TREE_CACHE_ID, pageMem, rootPage.pageId(), null, IndexInnerIO.VERSIONS,
+                        IndexLeafIO.VERSIONS, rootPage.isAllocated());
+                }
+            }
+        }
+
+        return metaTree;
     }
 }

@@ -38,6 +38,9 @@ import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.pagemem.wal.StorageException;
+import org.apache.ignite.internal.pagemem.wal.WALPointer;
+import org.apache.ignite.internal.pagemem.wal.record.DataRecord;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
@@ -651,7 +654,15 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         if (!empty) {
             batchStoreCommit(writeMap().values());
 
+            cctx.database().checkpointReadLock();
+
             try {
+                if (cctx.wal() != null) {
+                    WALPointer ptr = cctx.wal().log(DataRecord.fromTransaction(this));
+
+                    cctx.wal().fsync(ptr);
+                }
+
                 cctx.tm().txContext(this);
 
                 AffinityTopologyVersion topVer = topologyVersion();
@@ -980,7 +991,13 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                     }
                 }
             }
+            catch (StorageException e) {
+                throw new IgniteCheckedException("Failed to log transaction record " +
+                    "(transaction will be rolled back): " + this, e);
+            }
             finally {
+                cctx.database().checkpointReadUnlock();
+
                 cctx.tm().resetContext();
             }
         }

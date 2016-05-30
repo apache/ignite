@@ -2010,8 +2010,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 old,
                                 req.keepBinary()),
                             ctx.unwrapBinaryIfNeeded(
-                                updated, 
-                                req.keepBinary(), 
+                                updated,
+                                req.keepBinary(),
                                 false));
 
                         if (val == null)
@@ -2658,6 +2658,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     @SuppressWarnings("ForLoopReplaceableByForEach")
     private List<GridDhtCacheEntry> lockEntries(List<KeyCacheObject> keys, AffinityTopologyVersion topVer)
         throws GridDhtInvalidPartitionException {
+        ctx.shared().database().checkpointReadLock();
+
         if (keys.size() == 1) {
             KeyCacheObject key = keys.get(0);
 
@@ -2772,6 +2774,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             if (entry != null)
                 entry.onUnlock();
         }
+
+        ctx.shared().database().checkpointReadUnlock();
 
         if (skip != null && skip.size() == locked.size())
             // Optimization.
@@ -2973,27 +2977,30 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         String taskName = ctx.kernalContext().task().resolveTaskName(req.taskNameHash());
 
-        for (int i = 0; i < req.size(); i++) {
-            KeyCacheObject key = req.key(i);
+        ctx.shared().database().checkpointReadLock();
 
-            try {
-                while (true) {
-                    GridDhtCacheEntry entry = null;
+        try {
+            for (int i = 0; i < req.size(); i++) {
+                KeyCacheObject key = req.key(i);
 
-                    try {
-                        entry = entryExx(key);
+                try {
+                    while (true) {
+                        GridDhtCacheEntry entry = null;
 
-                        CacheObject val = req.value(i);
-                        CacheObject prevVal = req.previousValue(i);
+                        try {
+                            entry = entryExx(key);
 
-                        EntryProcessor<Object, Object, Object> entryProcessor = req.entryProcessor(i);
-                        Long updateIdx = req.updateCounter(i);
+                            CacheObject val = req.value(i);
+                            CacheObject prevVal = req.previousValue(i);
 
-                        GridCacheOperation op = entryProcessor != null ? TRANSFORM :
-                            (val != null) ? UPDATE : DELETE;
+                            EntryProcessor<Object, Object, Object> entryProcessor = req.entryProcessor(i);
+                            Long updateIdx = req.updateCounter(i);
 
-                        long ttl = req.ttl(i);
-                        long expireTime = req.conflictExpireTime(i);
+                            GridCacheOperation op = entryProcessor != null ? TRANSFORM :
+                                (val != null) ? UPDATE : DELETE;
+
+                            long ttl = req.ttl(i);
+                            long expireTime = req.conflictExpireTime(i);
 
                         GridCacheUpdateAtomicResult updRes = entry.innerUpdate(
                             ver,
@@ -3026,31 +3033,35 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             updateIdx,
                             null);
 
-                        if (updRes.removeVersion() != null)
-                            ctx.onDeferredDelete(entry, updRes.removeVersion());
+                            if (updRes.removeVersion() != null)
+                                ctx.onDeferredDelete(entry, updRes.removeVersion());
 
-                        entry.onUnlock();
+                            entry.onUnlock();
 
-                        break; // While.
-                    }
-                    catch (GridCacheEntryRemovedException ignored) {
-                        if (log.isDebugEnabled())
-                            log.debug("Got removed entry while updating backup value (will retry): " + key);
+                            break; // While.
+                        }
+                        catch (GridCacheEntryRemovedException ignored) {
+                            if (log.isDebugEnabled())
+                                log.debug("Got removed entry while updating backup value (will retry): " + key);
 
-                        entry = null;
-                    }
-                    finally {
-                        if (entry != null)
-                            ctx.evicts().touch(entry, req.topologyVersion());
+                            entry = null;
+                        }
+                        finally {
+                            if (entry != null)
+                                ctx.evicts().touch(entry, req.topologyVersion());
+                        }
                     }
                 }
+                catch (GridDhtInvalidPartitionException ignored) {
+                    // Ignore.
+                }
+                catch (IgniteCheckedException e) {
+                    res.addFailedKey(key, new IgniteCheckedException("Failed to update key on backup node: " + key, e));
+                }
             }
-            catch (GridDhtInvalidPartitionException ignored) {
-                // Ignore.
-            }
-            catch (IgniteCheckedException e) {
-                res.addFailedKey(key, new IgniteCheckedException("Failed to update key on backup node: " + key, e));
-            }
+        }
+        finally {
+            ctx.shared().database().checkpointReadUnlock();
         }
 
         if (isNearEnabled(cacheCfg))
