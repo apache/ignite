@@ -1237,6 +1237,77 @@ namespace ignite
                 return BinaryUtils::CTmToTimestamp(tmTime, nanos);
             }
 
+            void ApplicationDataBuffer::GetDecimal(Decimal& val) const
+            {
+                using namespace type_traits;
+
+                switch (type)
+                {
+                    case IGNITE_ODBC_C_TYPE_CHAR:
+                    {
+                        std::string str = GetString(static_cast<size_t>(buflen));
+
+                        std::stringstream converter;
+
+                        converter << str;
+
+                        converter >> val;
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_SIGNED_TINYINT:
+                    case IGNITE_ODBC_C_TYPE_BIT:
+                    case IGNITE_ODBC_C_TYPE_SIGNED_SHORT:
+                    case IGNITE_ODBC_C_TYPE_SIGNED_LONG:
+                    case IGNITE_ODBC_C_TYPE_SIGNED_BIGINT:
+                    {
+                        val.Assign(GetNum<int64_t>());
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_TINYINT:
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_SHORT:
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_LONG:
+                    case IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT:
+                    {
+                        val.Assign(GetNum<uint64_t>());
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_FLOAT:
+                    case IGNITE_ODBC_C_TYPE_DOUBLE:
+                    {
+                        //TODO: Replace 0 with user-specified scale.
+                        val.Assign(GetNum<double>(), 0);
+
+                        break;
+                    }
+
+                    case IGNITE_ODBC_C_TYPE_NUMERIC:
+                    {
+                        const SQL_NUMERIC_STRUCT* numeric =
+                            reinterpret_cast<const SQL_NUMERIC_STRUCT*>(GetData());
+
+                        Decimal dec(reinterpret_cast<const int8_t*>(numeric->val), SQL_MAX_NUMERIC_LEN,
+                            numeric->scale, numeric->sign ? 1 : -1, false);
+
+                        val.Swap(dec);
+
+                        break;
+                    }
+
+                    default:
+                    {
+                        val.Assign(0LL);
+
+                        break;
+                    }
+                }
+            }
+
             template<typename T>
             T* ApplicationDataBuffer::ApplyOffset(T* ptr) const
             {

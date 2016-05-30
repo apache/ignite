@@ -95,6 +95,13 @@ namespace ignite
         void Assign(int64_t val);
 
         /**
+         * Assign specified value to this BigInteger.
+         *
+         * @param val Value to assign.
+         */
+        void Assign(uint64_t val);
+
+        /**
          * Get number sign. Returns -1 if negative and 1 otherwise.
          *
          * @return Sign of the number.

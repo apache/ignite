@@ -167,11 +167,17 @@ namespace ignite
     {
         if (val < 0)
         {
-            val = -val;
+            Assign(static_cast<uint64_t>(-val));
+
             sign = -1;
         }
         else
-            sign = 1;
+            Assign(static_cast<uint64_t>(val));
+    }
+
+    void BigInteger::Assign(uint64_t val)
+    {
+        sign = 1;
 
         if (val == 0)
         {
@@ -408,7 +414,7 @@ namespace ignite
         // The same magnitude. Result is [-]1.
         if (compRes == 0)
         {
-            res.Assign(resSign);
+            res.Assign(static_cast<int64_t>(resSign));
 
             return;
         }
@@ -416,7 +422,7 @@ namespace ignite
         // Divisor is greater than this. Result is 0.
         if (compRes == -1)
         {
-            res.Assign(0);
+            res.Assign(0LL);
 
             return;
         }

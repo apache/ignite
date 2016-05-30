@@ -251,6 +251,13 @@ namespace ignite
                 Timestamp GetTimestamp() const;
 
                 /**
+                 * Get value of type Decimal.
+                 *
+                 * @param val Result is placed here.
+                 */
+                void GetDecimal(Decimal& val) const;
+
+                /**
                  * Get raw data.
                  *
                  * @return Buffer data.

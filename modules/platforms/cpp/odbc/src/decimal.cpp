@@ -147,5 +147,24 @@ namespace ignite
     {
         return magnitude.mag.GetSize();
     }
+
+    void Decimal::Assign(int64_t val)
+    {
+        magnitude.Assign(val);
+
+        scale = 0;
+    }
+
+    void Decimal::Assign(uint64_t val)
+    {
+        magnitude.Assign(val);
+
+        scale = 0;
+    }
+
+    void Decimal::Assign(double val, int32_t scale)
+    {
+        // TODO.
+    }
 }
 

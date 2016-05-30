@@ -138,6 +138,27 @@ namespace ignite
          */
         int32_t GetMagnitudeLength() const;
 
+        /**
+         * Assign specified value to this Decimal.
+         *
+         * @param val Value to assign.
+         */
+        void Assign(int64_t val);
+
+        /**
+         * Assign specified value to this Decimal.
+         *
+         * @param val Value to assign.
+         */
+        void Assign(uint64_t val);
+
+        /**
+         * Assign specified value to this Decimal.
+         *
+         * @param val Value to assign.
+         */
+        void Assign(double val, int32_t scale);
+
     private:
         /** Scale. */
         int32_t scale;
@@ -150,15 +171,31 @@ namespace ignite
      * Output operator.
      *
      * @param os Output stream.
-     * @param guid Guid to output.
+     * @param val Value to output.
      * @return Reference to the first param.
      */
     template<typename C>
     ::std::basic_ostream<C>& operator<<(std::basic_ostream<C>& os, const Decimal& val)
     {
+        //TODO.
         os << 0;
 
         return os;
+    }
+
+    /**
+     * Input operator.
+     *
+     * @param is Input stream.
+     * @param val Value to input.
+     * @return Reference to the first param.
+     */
+    template<typename C>
+    ::std::basic_istream<C>& operator>>(std::basic_istream<C>& is, Decimal& val)
+    {
+        //TODO.
+
+        return is;
     }
 }
 
