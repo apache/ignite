@@ -51,7 +51,7 @@ More info: https://apacheignite-net.readme.io/
         <tags>EntityFramework Second-Level Apache Ignite In-Memory Distributed Computing SQL NoSQL Grid Map Reduce Cache</tags>
         <dependencies>
             <dependency id="Apache.Ignite" version="[$version$]" />
-            <dependency id="EntityFramework" version="[6.0.0,7.0.0)" />
+            <dependency id="EntityFramework" version="[6.1.0,7.0.0)" />
             <dependency id="EntityFramework.Cache" version="[1.0.0,2.0.0)" />
         </dependencies>    
     </metadata>
