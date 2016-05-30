@@ -32,10 +32,6 @@ namespace Apache.Ignite.EntityFramework
     /// </summary>
     public class IgniteDbConfiguration : DbConfiguration
     {
-        // This class can be used directly
-        // This class can be inherited
-        // TODO: Can it be used in XML config?
-
         /// <summary>
         /// The configuration section name to be used when starting Ignite.
         /// </summary>
