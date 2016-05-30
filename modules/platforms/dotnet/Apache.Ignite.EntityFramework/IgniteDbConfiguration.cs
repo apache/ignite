@@ -109,11 +109,9 @@ namespace Apache.Ignite.EntityFramework
         /// <summary>
         /// Gets the Ignite instance.
         /// </summary>
-        private static IIgnite GetOrStartIgnite(IgniteConfiguration igniteConfiguration)
+        private static IIgnite GetOrStartIgnite(IgniteConfiguration cfg)
         {
-            IgniteArgumentCheck.NotNull(igniteConfiguration, "igniteConfiguration");
-
-            return Ignition.TryGetIgnite(igniteConfiguration.GridName) ?? Ignition.Start(igniteConfiguration);
+            return Ignition.TryGetIgnite(cfg != null ? cfg.GridName : null) ?? Ignition.Start(cfg);
         }
 
         /// <summary>
