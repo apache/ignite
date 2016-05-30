@@ -190,7 +190,7 @@ triggerFirstTimeTestsExecution()
     echo "[INFO] Triggering first time tests execution"
 
     echo "TESTS_TYPE=$TESTS_TYPE" > /opt/ignite-cassandra-tests/tests-trigger
-    echo "--------------------------------------------------" >> /opt/ignite-cassandra-tests/tests-trigger
+    echo "#--------------------------------------------------" >> /opt/ignite-cassandra-tests/tests-trigger
     echo "" >> /opt/ignite-cassandra-tests/tests-trigger
     cat /opt/ignite-cassandra-tests/settings/tests.properties >> /opt/ignite-cassandra-tests/tests-trigger
 
