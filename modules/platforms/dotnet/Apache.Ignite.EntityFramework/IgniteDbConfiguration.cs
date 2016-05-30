@@ -57,13 +57,20 @@ namespace Apache.Ignite.EntityFramework
         /// <see cref="IgniteConfigurationSection"/> with name <see cref="ConfigurationSectionName"/> will be picked up 
         /// when starting Ignite, if present.
         /// </summary>
-        public IgniteDbConfiguration() : this(GetConfiguration(ConfigurationSectionName, false), DefaultCacheName)
+        public IgniteDbConfiguration() 
+            : this(GetConfiguration(ConfigurationSectionName, false), DefaultCacheName, null)
         {
             // No-op.
         }
 
-        public IgniteDbConfiguration(string configurationSectionName, string cacheName)
-             : this(GetConfiguration(configurationSectionName, true), cacheName)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="IgniteDbConfiguration"/> class.
+        /// </summary>
+        /// <param name="configurationSectionName">Name of the configuration section.</param>
+        /// <param name="cacheName">Name of the cache.</param>
+        /// <param name="cachingPolicy">The caching policy. Null for default <see cref="CachingPolicy"/>.</param>
+        public IgniteDbConfiguration(string configurationSectionName, string cacheName, CachingPolicy cachingPolicy)
+             : this(GetConfiguration(configurationSectionName, true), cacheName, cachingPolicy)
         {
             // No-op.
         }
@@ -73,18 +80,21 @@ namespace Apache.Ignite.EntityFramework
         /// </summary>
         /// <param name="igniteConfiguration">The ignite configuration to use for starting Ignite instance.</param>
         /// <param name="cacheName">Name of the cache. Can be null. Cache will be created if it does not exist.</param>
-        public IgniteDbConfiguration(IgniteConfiguration igniteConfiguration, string cacheName)
-            : this(GetOrStartIgnite(igniteConfiguration), cacheName)
+        /// <param name="cachingPolicy">The caching policy. Null for default <see cref="CachingPolicy"/>.</param>
+        public IgniteDbConfiguration(IgniteConfiguration igniteConfiguration, string cacheName, 
+            CachingPolicy cachingPolicy)
+            : this(GetOrStartIgnite(igniteConfiguration), cacheName, cachingPolicy)
         {
             // No-op.
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="IgniteDbConfiguration"/> class.
+        /// Initializes a new instance of the <see cref="IgniteDbConfiguration" /> class.
         /// </summary>
         /// <param name="ignite">The ignite instance to use.</param>
         /// <param name="cacheName">Name of the cache. Can be null. Cache will be created if it does not exist.</param>
-        public IgniteDbConfiguration(IIgnite ignite, string cacheName)
+        /// <param name="cachingPolicy">The caching policy. Null for default <see cref="CachingPolicy"/>.</param>
+        public IgniteDbConfiguration(IIgnite ignite, string cacheName, CachingPolicy cachingPolicy)
         {
             IgniteArgumentCheck.NotNull(ignite, "ignite");
 
@@ -95,12 +105,9 @@ namespace Apache.Ignite.EntityFramework
 
             AddInterceptor(transactionHandler);
 
-            var cachingPolicy = new CachingPolicy();
-
-            Loaded +=
-                (sender, args) => args.ReplaceService<DbProviderServices>(
-                    (s, _) => new CachingProviderServices(s, transactionHandler,
-                        cachingPolicy));
+            Loaded += (sender, args) => args.ReplaceService<DbProviderServices>(
+                (s, _) => new CachingProviderServices(s, transactionHandler,
+                    cachingPolicy ?? new CachingPolicy()));
         }
 
         /// <summary>
