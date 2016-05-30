@@ -34,8 +34,8 @@ namespace Apache.Ignite.EntityFramework
         /** Value field name. */
         private const string ValueField = "value";
         
-        /** Entry sets field name. */
-        private const string EntrySetsField = "entrySets";
+        /** Entity sets field name. */
+        private const string EntitySetsField = "entitySets";
 
         /** Binary type name. */
         private const string CacheEntryTypeName = "IgniteEntityFrameworkCacheEntry";
@@ -88,7 +88,7 @@ namespace Apache.Ignite.EntityFramework
         {
             var binVal = _binary.GetBuilder(CacheEntryTypeName)
                 .SetField(ValueField, value)
-                .SetField(EntrySetsField, dependentEntitySets.ToArray())
+                .SetField(EntitySetsField, dependentEntitySets.ToArray())
                 .Build();
 
             GetCacheWithExpiry(slidingExpiration, absoluteExpiration).Put(key, binVal);
@@ -97,8 +97,20 @@ namespace Apache.Ignite.EntityFramework
         /** <inheritdoc /> */
         public void InvalidateSets(IEnumerable<string> entitySets)
         {
-            // TODO: ScanQuery 
-            throw new NotImplementedException();
+            var invalidSets = new HashSet<string>(entitySets);
+
+            // TODO: IGNITE-2546
+            // TODO: ScanQuery, Compute, or even Java implementation?
+            foreach (var entry in _cache)
+            {
+                var cachedSets = entry.Value.GetField<string[]>(EntitySetsField);
+
+                foreach (var cachedSet in cachedSets)
+                {
+                    if (invalidSets.Contains(cachedSet))
+                        _cache.Remove(entry.Key);
+                }
+            }
         }
 
         /** <inheritdoc /> */
