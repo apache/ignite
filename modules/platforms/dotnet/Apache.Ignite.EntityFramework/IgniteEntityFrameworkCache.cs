@@ -103,7 +103,7 @@ namespace Apache.Ignite.EntityFramework
         /** <inheritdoc /> */
         public void InvalidateItem(string key)
         {
-            throw new NotImplementedException();
+            _cache.Remove(key);
         }
 
         /// <summary>
