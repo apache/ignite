@@ -97,6 +97,7 @@ namespace Apache.Ignite.EntityFramework
         /** <inheritdoc /> */
         public void InvalidateSets(IEnumerable<string> entitySets)
         {
+            // TODO: ScanQuery 
             throw new NotImplementedException();
         }
 
