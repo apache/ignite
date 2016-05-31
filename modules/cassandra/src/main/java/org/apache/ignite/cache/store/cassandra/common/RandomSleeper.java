@@ -27,21 +27,25 @@ import org.apache.ignite.IgniteLogger;
  *
  */
 public class RandomSleeper {
-    /** */
+    /** Min sleep time */
     private int min;
 
-    /** */
+    /** Max sleep time */
     private int max;
 
-    /** */
+    /** Sleep time increment */
     private int incr;
 
-    /** */
+    /** Logger */
     private IgniteLogger log;
 
-    /** */
+    /** Random instance */
     private Random random = new Random(System.currentTimeMillis());
+
+    /** Summary sleep duration */
     private int duration = 0;
+
+    /** Sleep count  */
     private int count = 0;
 
     /**
