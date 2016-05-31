@@ -56,7 +56,7 @@ public class CassandraSessionImpl implements CassandraSession {
     private static final int CQL_EXECUTION_ATTEMPT_MIN_TIMEOUT = 100;
 
     /** Max timeout between CQL query execution attempts. */
-    private static final int CQL_EXECUTION_ATTEMPT_MAX_TIMEOUT = 500;
+    private static final int CQL_EXECUTION_ATTEMPT_MAX_TIMEOUT = 200;
 
     /** Timeout increment for CQL query execution attempts. */
     private static final int CQL_ATTEMPTS_TIMEOUT_INCREMENT = 100;
