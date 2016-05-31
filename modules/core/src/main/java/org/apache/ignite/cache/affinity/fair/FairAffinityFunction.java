@@ -102,7 +102,7 @@ public class FairAffinityFunction implements AffinityFunction {
     /** Optional backup filter. First node is primary, second node is a node being tested. */
     private IgniteBiPredicate<ClusterNode, ClusterNode> backupFilter;
 
-    /** Optional affinity backups filter. The first node is a node being tested, the second is a list of nodes that are already assigned for a given partition. */
+    /** Optional affinity backups filter. The first node is a node being tested, the second is a list of nodes that are already assigned for a given partition (primary node is the first in the list). */
     private IgniteBiPredicate<ClusterNode, List<ClusterNode>> affinityBackupFilter;
 
     /**
@@ -233,7 +233,7 @@ public class FairAffinityFunction implements AffinityFunction {
     /**
      * Gets optional backup filter. If not {@code null}, backups will be selected
      * from all nodes that pass this filter. First node passed to this filter is a node being tested,
-     * and the second parameter is a list of nodes that are already assigned for a given partition.
+     * and the second parameter is a list of nodes that are already assigned for a given partition (primary node is the first in the list).
      * <p>
      * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      *
@@ -246,7 +246,7 @@ public class FairAffinityFunction implements AffinityFunction {
     /**
      * Sets optional backup filter. If provided, then backups will be selected from all
      * nodes that pass this filter. First node being passed to this filter is a node being tested,
-     * and the second parameter is a list of nodes that are already assigned for a given partition.
+     * and the second parameter is a list of nodes that are already assigned for a given partition (primary node is the first in the list).
      * <p>
      * Note that {@code affinityBackupFilter} is ignored if {@code excludeNeighbors} is set to {@code true}.
      *
@@ -909,7 +909,23 @@ public class FairAffinityFunction implements AffinityFunction {
 
                 List<ClusterNode> newAssignment;
 
-                if (tier < assigment.size()) {
+                if (tier == 0) {
+                    for (int t=1; t<assigment.size(); t++) {
+                        newAssignment = new ArrayList<>();
+
+                        newAssignment.add(node);
+
+                        newAssignment.addAll(assigment.subList(1, t));
+
+                        newAssignment.addAll(assigment.subList(t + 1, assigment.size()));
+
+                        if (!affinityBackupFilter.apply(assigment.get(t), newAssignment))
+                            return false;
+
+                    }
+                    return true;
+                }
+                else if (tier < assigment.size()) {
                     newAssignment = new ArrayList<>(assigment.size() - 1);
 
                     int i = 0;
