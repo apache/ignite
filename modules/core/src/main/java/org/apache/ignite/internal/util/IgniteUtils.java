@@ -8232,7 +8232,11 @@ public abstract class IgniteUtils {
         if (cls != null)
             return cls;
 
-        if (ldr == null)
+        if (ldr != null) {
+            if (ldr instanceof ClassCache)
+                return ((ClassCache)ldr).getFromCache(clsName);
+        }
+        else
             ldr = gridClassLoader;
 
         ConcurrentMap<String, Class> ldrMap = classCache.get(ldr);
