@@ -41,7 +41,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         /// Tests the IgniteDbConfiguration.
         /// </summary>
         [Test]
-        public void TestConfiguration()
+        public void TestConfigurationAndStartup()
         {
             Assert.IsNull(Ignition.TryGetIgnite());
 
