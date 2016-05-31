@@ -178,7 +178,7 @@ public abstract class CacheRebalancingWithPersistenceAbstractTest extends GridCo
         }
     }
 
-    public void testContentsCorrectnessAfterRestart() throws Exception {
+    public void testDataCorrectnessAfterRestart() throws Exception {
         IgniteEx ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
         IgniteEx ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
         IgniteEx ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
@@ -256,49 +256,4 @@ public abstract class CacheRebalancingWithPersistenceAbstractTest extends GridCo
             assert cache4.get(i).equals(i);
         }
     }
-
-    public void testEventualIdealAssignment() throws Exception {
-        IgniteEx ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
-        IgniteEx ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
-
-        awaitPartitionMapExchange();
-
-        IgniteCache cache1 = ignite1.cache(null);
-
-        for (int i = 0; i < 10000; i++) {
-            cache1.put(i, i);
-        }
-
-        cache1.active(false).get();
-
-        final IgniteEx ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
-        IgniteEx ignite4 = (IgniteEx)G.start(getConfiguration("test4"));
-
-        cache1.active(true);
-
-        final int parts = ignite1.affinity(null).partitions();
-
-        final List<List<ClusterNode>> idealAssignment = ignite1.cachex().context().affinity().idealAssignment();
-
-        final GridDhtPartitionTopology topology = ignite1.cachex().context().topology();
-
-        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                for (int p = 0; p < parts; p++) {
-                    List<ClusterNode> owners = topology.owners(p);
-
-                    if (owners.size() != idealAssignment.get(p).size())
-                        return false;
-
-                    for (ClusterNode owner : owners) {
-                        if (!idealAssignment.get(p).contains(owner))
-                            return false;
-                    }
-                }
-
-                return true;
-            }
-        }, 30000);
-    }
-
 }

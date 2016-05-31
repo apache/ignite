@@ -250,13 +250,13 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
         }
     }
 
-    public void clear(int part) throws IgniteCheckedException {
-        GridIterator<CacheDataRow> iterator = iterator(part);
+    public void clear(GridDhtLocalPartition part) throws IgniteCheckedException {
+        GridIterator<CacheDataRow> iterator = iterator(part.id());
 
         while (iterator.hasNext()) {
             CacheDataRow row = iterator.next();
 
-            remove(row.key(), row.value(), row.version(), part);
+            remove(row.key(), row.value(), row.version(), part.id(), part);
         }
 
     }

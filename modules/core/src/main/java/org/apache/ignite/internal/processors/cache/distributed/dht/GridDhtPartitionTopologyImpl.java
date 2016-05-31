@@ -1045,7 +1045,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                     if (cntr != null) {
                         if (cntr > part.updateCounter() && part.state().active()) {
                             try {
-                                cctx.offheap().clear(part.id());
+                                cctx.offheap().clear(part);
                             }
                             catch (Exception ex) {
                                 assert false : ex;
@@ -1288,14 +1288,14 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
             if (locPart != null) {
                 if (locPart.state() == OWNING && !owners.contains(cctx.localNodeId())) {
-                    locParts[p] = new GridDhtLocalPartition(cctx, p, entryFactory);
-
                     try {
-                        cctx.offheap().clear(p);
+                        cctx.offheap().clear(locPart);
                     }
                     catch (Exception ex) {
                         assert false : ex;
                     }
+
+                    locParts[p] = new GridDhtLocalPartition(cctx, p, entryFactory);
                 }
             }
 
