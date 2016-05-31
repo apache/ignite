@@ -151,26 +151,26 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         public void TestExpiration()
         {
             var cache = CreateEfCache();
+            object val;
 
             // Absolute expiration
             cache.PutItem("1", "val", new[] { "persons" }, TimeSpan.MaxValue, DateTimeOffset.Now.AddMilliseconds(300));
-            CheckExpiry(cache, "1", 300);
-            
+            Assert.IsTrue(cache.GetItem("1", out val));
+            Thread.Sleep(150);
+            Assert.IsTrue(cache.GetItem("1", out val));
+            Thread.Sleep(150);
+            Assert.IsFalse(cache.GetItem("1", out val));
+
             // Sliding expiration
             cache.PutItem("2", "val", new[] {"persons"}, TimeSpan.FromMilliseconds(300),
-                DateTimeOffset.MaxValue);
-            CheckExpiry(cache, "2", 300);
-        }
-
-        /// <summary>
-        /// Checks the expiry.
-        /// </summary>
-        private static void CheckExpiry(ICache cache, string key, int expiryMs)
-        {
-            object val;
-            Assert.IsTrue(cache.GetItem(key, out val));
-            Thread.Sleep(expiryMs);
-            Assert.IsFalse(cache.GetItem(key, out val));
+                DateTimeOffset.Now.AddMilliseconds(300));
+            Assert.IsTrue(cache.GetItem("2", out val));
+            Thread.Sleep(150);
+            Assert.IsTrue(cache.GetItem("2", out val));
+            Thread.Sleep(150);
+            Assert.IsTrue(cache.GetItem("2", out val));
+            Thread.Sleep(300);
+            Assert.IsFalse(cache.GetItem("2", out val));
         }
 
         /// <summary>
