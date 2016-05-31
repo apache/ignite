@@ -28,6 +28,7 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -54,9 +55,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  * Tests that transaction is invalidated in case of {@link IgniteTxHeuristicCheckedException}.
  */
 public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstractSelfTest {
-    /** Index SPI throwing exception. */
-    private static TestIndexingSpi idxSpi = new TestIndexingSpi();
-
     /** */
     private static final int PRIMARY = 0;
 
@@ -78,7 +76,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setIndexingSpi(idxSpi);
+        cfg.setIndexingSpi(new TestIndexingSpi());
 
         cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
 
@@ -108,7 +106,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        idxSpi.forceFail(false);
+        failIndexingSpi(false);
 
         Transaction tx = jcache().unwrap(Ignite.class).transactions().tx();
 
@@ -321,7 +319,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         IgniteCache<Integer, Integer> cache = grid(0).cache(null);
 
         if (putBefore) {
-            idxSpi.forceFail(false);
+            failIndexingSpi(false);
 
             info("Start transaction.");
 
@@ -344,7 +342,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
                 grid(i).cache(null).get(key);
         }
 
-        idxSpi.forceFail(true);
+        failIndexingSpi(true);
 
         try {
             info("Start transaction.");
@@ -380,7 +378,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      */
     @SuppressWarnings("unchecked")
     private void checkUnlocked(final Integer key) throws Exception {
-        idxSpi.forceFail(false);
+        failIndexingSpi(false);
 
         awaitPartitionMapExchange();
 
@@ -448,7 +446,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      */
     private void checkPut(boolean putBefore, final Integer key) throws Exception {
         if (putBefore) {
-            idxSpi.forceFail(false);
+            failIndexingSpi(false);
 
             info("Put key: " + key);
 
@@ -459,7 +457,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         for (int i = 0; i < gridCount(); i++)
             grid(i).cache(null).get(key);
 
-        idxSpi.forceFail(true);
+        failIndexingSpi(true);
 
         info("Going to put: " + key);
 
@@ -481,7 +479,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      */
     private void checkTransform(boolean putBefore, final Integer key) throws Exception {
         if (putBefore) {
-            idxSpi.forceFail(false);
+            failIndexingSpi(false);
 
             info("Put key: " + key);
 
@@ -492,7 +490,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         for (int i = 0; i < gridCount(); i++)
             grid(i).cache(null).get(key);
 
-        idxSpi.forceFail(true);
+        failIndexingSpi(true);
 
         info("Going to transform: " + key);
 
@@ -524,7 +522,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         assert keys.length > 1;
 
         if (putBefore) {
-            idxSpi.forceFail(false);
+            failIndexingSpi(false);
 
             Map<Integer, Integer> m = new HashMap<>();
 
@@ -542,7 +540,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
                 grid(i).cache(null).get(key);
         }
 
-        idxSpi.forceFail(true);
+        failIndexingSpi(true);
 
         final Map<Integer, Integer> m = new HashMap<>();
 
@@ -570,7 +568,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      */
     private void checkRemove(boolean putBefore, final Integer key) throws Exception {
         if (putBefore) {
-            idxSpi.forceFail(false);
+            failIndexingSpi(false);
 
             info("Put key: " + key);
 
@@ -581,7 +579,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         for (int i = 0; i < gridCount(); i++)
             grid(i).cache(null).get(key);
 
-        idxSpi.forceFail(true);
+        failIndexingSpi(true);
 
         info("Going to remove: " + key);
 
@@ -650,6 +648,19 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         }
 
         throw new IllegalStateException("Failed to find key.");
+    }
+
+    /**
+     * Controls indexing SPI behavior.
+     *
+     * @param fail fail the SPI or not.
+     */
+    private void failIndexingSpi(boolean fail) {
+        for (Ignite ignite : Ignition.allGrids()) {
+            TestIndexingSpi idxSpi = (TestIndexingSpi)ignite.configuration().getIndexingSpi();
+
+            idxSpi.forceFail(fail);
+        }
     }
 
     /**
