@@ -19,7 +19,6 @@ package org.apache.ignite.internal.managers;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.UUID;
