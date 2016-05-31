@@ -49,15 +49,15 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             CheckCacheAndStop("myGrid1", IgniteDbConfiguration.DefaultCacheName, new IgniteDbConfiguration());
 
             // Specific config section
-            CheckCacheAndStop("myGrid2", IgniteDbConfiguration.DefaultCacheName, 
+            CheckCacheAndStop("myGrid2", "cacheName2", 
                 new IgniteDbConfiguration("igniteConfiguration2", "cacheName2", null));
 
             // Specific config section, nonexistent cache
-            CheckCacheAndStop("myGrid2", IgniteDbConfiguration.DefaultCacheName, 
+            CheckCacheAndStop("myGrid2", "newCache", 
                 new IgniteDbConfiguration("igniteConfiguration2", "newCache", null));
 
             // In-code configuration
-            CheckCacheAndStop("myGrid3", IgniteDbConfiguration.DefaultCacheName,
+            CheckCacheAndStop("myGrid3", "myCache",
                 new IgniteDbConfiguration(new IgniteConfiguration
                 {
                     GridName = "myGrid3",
