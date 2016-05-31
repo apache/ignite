@@ -37,6 +37,9 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             Environment.SetEnvironmentVariable(Classpath.EnvIgniteNativeTestClasspath, "true");
         }
 
+        /// <summary>
+        /// Tests the IgniteDbConfiguration.
+        /// </summary>
         [Test]
         public void TestConfiguration()
         {
@@ -69,6 +72,8 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                 }, "myCache", null), CacheMode.Replicated);
 
             // Existing instance
+            var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
+            CheckCacheAndStop(null, "123", new IgniteDbConfiguration(ignite, "123", null));
         }
 
         // ReSharper disable once UnusedParameter.Local
