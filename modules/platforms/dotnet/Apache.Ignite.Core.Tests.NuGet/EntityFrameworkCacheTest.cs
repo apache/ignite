@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.NuGet
 {
+    using System;
     using Apache.Ignite.EntityFramework;
     using NUnit.Framework;
 
@@ -25,15 +26,41 @@ namespace Apache.Ignite.Core.Tests.NuGet
     /// </summary>
     public class EntityFrameworkCacheTest
     {
+        /// <summary>
+        /// Tests cache startup and basic operation.
+        /// </summary>
         [Test]
         public void TestStartupPutGet()
         {
             var cfg = new IgniteConfiguration
             {
-                DiscoverySpi = TestUtil.GetLocalDiscoverySpi()
+                DiscoverySpi = TestUtil.GetLocalDiscoverySpi(),
+                GridName = "myGrid"
             };
+            
             // ReSharper disable once ObjectCreationAsStatement
             new IgniteDbConfiguration(cfg, "efCache", null);
+
+            var ignite = Ignition.GetIgnite(cfg.GridName);
+            var cache = ignite.GetCache<string, object>("efCache");
+
+            var efCache = new IgniteEntityFrameworkCache(cache);
+
+            object val;
+            Assert.IsFalse(efCache.GetItem("1", out val));
+
+            efCache.PutItem("1", "val", new [] {"streets"}, TimeSpan.MaxValue, DateTimeOffset.MaxValue);
+            Assert.IsTrue(efCache.GetItem("1", out val));
+            Assert.AreEqual("val", val);
+        }
+
+        /// <summary>
+        /// Test teardown.
+        /// </summary>
+        [TearDown]
+        public void TearDown()
+        {
+            Ignition.StopAll(true);
         }
     }
 }
