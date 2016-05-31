@@ -236,6 +236,9 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
     @Override public void onUpdate(int cnt) {
         assert cnt >= 0;
 
+        if (initGuard.get())
+                U.awaitQuiet(initLatch);
+
         while (internalLatch != null && internalLatch.getCount() > cnt)
             internalLatch.countDown();
     }
@@ -249,20 +252,16 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
                 internalLatch = CU.outTx(
                     retryTopologySafe(new Callable<CountDownLatch>() {
                         @Override public CountDownLatch call() throws Exception {
-                            try (IgniteInternalTx tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ)) {
-                                GridCacheCountDownLatchValue val = latchView.get(key);
+                            GridCacheCountDownLatchValue val = latchView.get(key);
 
-                                if (val == null) {
-                                    if (log.isDebugEnabled())
-                                        log.debug("Failed to find count down latch with given name: " + name);
+                            if (val == null) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to find count down latch with given name: " + name);
 
-                                    return new CountDownLatch(0);
-                                }
-
-                                tx.commit();
-
-                                return new CountDownLatch(val.get());
+                                return new CountDownLatch(0);
                             }
+
+                            return new CountDownLatch(val.get());
                         }
                     }),
                     ctx
