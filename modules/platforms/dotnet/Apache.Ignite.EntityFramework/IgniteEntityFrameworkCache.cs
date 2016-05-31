@@ -130,18 +130,16 @@ namespace Apache.Ignite.EntityFramework
             if (slidingExpiration == TimeSpan.MaxValue && absoluteExpiration == DateTimeOffset.MaxValue)
                 return _cache;
 
-            // TODO: Test thoroughly. This does not work.
-
             // Round up to seconds
             var absoluteExpirySeconds = absoluteExpiration == DateTimeOffset.MaxValue
-                ? long.MaxValue
+                ? (long) TimeSpan.MaxValue.TotalSeconds
                 : (long) (absoluteExpiration - DateTime.UtcNow).TotalSeconds;
 
             if (absoluteExpirySeconds < 1)
                 absoluteExpirySeconds = 0;
 
             var slidingExpirySeconds = slidingExpiration == TimeSpan.MaxValue
-                ? long.MaxValue
+                ? (long) TimeSpan.MaxValue.TotalSeconds
                 : (long) slidingExpiration.TotalSeconds;
 
             if (slidingExpirySeconds < 1)
