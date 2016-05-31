@@ -146,7 +146,7 @@ public abstract class GridMergeIndex extends BaseIndex {
     /**
      * @param e Error.
      */
-    public void fail(final CacheException e) {
+    public void fail(final RuntimeException e) {
         for (UUID nodeId0 : remainingRows.keySet()) {
             addPage0(new GridResultPage(null, nodeId0, null) {
                 @Override public boolean isFail() {

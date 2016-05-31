@@ -24,22 +24,27 @@ import java.io.ObjectOutput;
 import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractQuerySelfTest;
@@ -62,9 +67,9 @@ import static org.apache.ignite.cache.CachePeekMode.ALL;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 
 /**
- * Tests replicated query.
+ * Tests replicated query cancellation.
  */
-public class IgniteCacheStopQuerySelfTest extends IgniteCacheAbstractQuerySelfTest {
+public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQuerySelfTest {
     @Override protected int gridCount() {
         return 1;
     }
@@ -81,22 +86,37 @@ public class IgniteCacheStopQuerySelfTest extends IgniteCacheAbstractQuerySelfTe
 
             int keyCnt = 10_000;
 
-            IgniteCache<Object, Object> cache1 = client.cache(null);
+            IgniteCache<Object, Object> cache = client.cache(null);
 
-            assertEquals(0, cache1.localSize());
+            assertEquals(0, cache.localSize());
 
             for (int i = 0; i < keyCnt; i++)
-                cache1.put(i, "val" + i);
+                cache.put(i, "val" + i);
 
-            assertEquals(0, cache1.localSize(ALL));
+            assertEquals(0, cache.localSize(ALL));
 
-            QueryCursor<Cache.Entry<Integer, String>> qry =
-                cache1.query(new SqlQuery<Integer, String>(String.class, "true"));
+            // Produce a klller result set.
+            SqlFieldsQuery qry = new SqlFieldsQuery("select a._key, b._key from String a, String b");
 
-            // Initiate remote query by requesting the iterator.
-            Iterator<Cache.Entry<Integer, String>> iterator = qry.iterator();
+            //qry.setTimeout(3, TimeUnit.SECONDS);
+            final QueryCursor<List<?>> query = cache.query(qry);
 
-            qry.close();
+            ignite().scheduler().scheduleLocal(new Runnable() {
+                @Override public void run() {
+                    query.close();
+                }
+            }, 3000, -1);
+
+            // Trigger remote execution.
+            try {
+                query.iterator().next();
+            }
+            catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            // Validate if map query was cancelled.
+            Thread.sleep(10000);
         }
     }
 }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal;
 
+import java.io.Closeable;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -28,6 +29,7 @@ import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.scheduler.SchedulerFuture;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * {@link IgniteScheduler} implementation.
@@ -103,6 +105,19 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
 
         try {
             return ctx.schedule().schedule(job, ptrn);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    @Override public Closeable scheduleLocal(@Nullable Runnable r, long delay, long period) {
+        A.notNull(r, "r");
+
+        guard();
+
+        try {
+            return ctx.timeout().schedule(r, delay, period);
         }
         finally {
             unguard();

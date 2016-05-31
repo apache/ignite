@@ -18,9 +18,9 @@
 package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.lang.reflect.Field;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.AbstractCollection;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -451,11 +451,19 @@ public class GridMapQueryExecutor {
             int i = 0;
 
             for (GridCacheSqlQuery qry : qrys) {
-                ResultSet rs = h2.executeSqlQueryWithTimer(req.space(),
+                final QueryResult res = qr.addResult(i, qry, node.id());
+
+                ResultSet rs = h2.executeSqlQueryWithTimer(new CI1<PreparedStatement>() {
+                                                               @Override public void apply(PreparedStatement statement) {
+                                                                   res.prepStmt = statement;
+                                                               }
+                                                           }, req.space(),
                     h2.connectionForSpace(req.space()),
                     qry.query(),
                     F.asList(qry.parameters()),
                     true);
+
+                res.rs(rs);
 
                 if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                     ctx.event().record(new CacheQueryExecutedEvent<>(
@@ -475,10 +483,8 @@ public class GridMapQueryExecutor {
 
                 assert rs instanceof JdbcResultSet : rs.getClass();
 
-                qr.addResult(i, qry, node.id(), rs);
-
                 if (qr.canceled) {
-                    qr.result(i).close();
+                    res.close();
 
                     return;
                 }
@@ -666,11 +672,12 @@ public class GridMapQueryExecutor {
          * @param qry Query result index.
          * @param q Query object.
          * @param qrySrcNodeId Query source node.
-         * @param rs Result set.
          */
-        void addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, ResultSet rs) {
-            if (!results.compareAndSet(qry, null, new QueryResult(rs, cctx, qrySrcNodeId, q)))
+        QueryResult addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId) {
+            QueryResult update = new QueryResult(cctx, qrySrcNodeId, q);
+            if (!results.compareAndSet(qry, null, update))
                 throw new IllegalStateException();
+            return update;
         }
 
         /**
@@ -707,13 +714,16 @@ public class GridMapQueryExecutor {
      */
     private class QueryResult implements AutoCloseable {
         /** */
-        private final ResultInterface res;
+        private ResultInterface res;
 
         /** */
-        private final ResultSet rs;
+        private ResultSet rs;
 
         /** */
-        private final GridCacheContext<?,?> cctx;
+        private PreparedStatement prepStmt;
+
+        /** */
+        private final GridCacheContext<?, ?> cctx;
 
         /** */
         private final GridCacheSqlQuery qry;
@@ -722,38 +732,26 @@ public class GridMapQueryExecutor {
         private final UUID qrySrcNodeId;
 
         /** */
-        private final int cols;
+        private volatile int cols;
 
         /** */
         private int page;
 
         /** */
-        private final int rowCount;
+        private int rowCount;
 
         /** */
-        private volatile boolean closed;
+        private boolean closed;
 
         /**
-         * @param rs Result set.
          * @param cctx Cache context.
          * @param qrySrcNodeId Query source node.
          * @param qry Query.
          */
-        private QueryResult(ResultSet rs, GridCacheContext<?,?> cctx, UUID qrySrcNodeId, GridCacheSqlQuery qry) {
-            this.rs = rs;
+        private QueryResult(GridCacheContext<?, ?> cctx, UUID qrySrcNodeId, GridCacheSqlQuery qry) {
             this.cctx = cctx;
             this.qry = qry;
             this.qrySrcNodeId = qrySrcNodeId;
-
-            try {
-                res = (ResultInterface)RESULT_FIELD.get(rs);
-            }
-            catch (IllegalAccessException e) {
-                throw new IllegalStateException(e); // Must not happen.
-            }
-
-            rowCount = res.getRowCount();
-            cols = res.getVisibleColumnCount();
         }
 
         /**
@@ -769,7 +767,7 @@ public class GridMapQueryExecutor {
 
             page++;
 
-            for (int i = 0 ; i < pageSize; i++) {
+            for (int i = 0; i < pageSize; i++) {
                 if (!res.next())
                     return true;
 
@@ -823,7 +821,40 @@ public class GridMapQueryExecutor {
 
             closed = true;
 
+            if (prepStmt != null)
+                try {
+                    prepStmt.cancel();
+                }
+                catch (SQLException e) {
+                    U.error(log, "Failed to close statement", e);
+                }
+
             U.close(rs, log);
+        }
+
+        /**
+         * @return Rs.
+         */
+        public ResultSet rs() {
+            return rs;
+        }
+
+        /**
+         * @param rs New rs.
+         */
+        public void rs(ResultSet rs) {
+            this.rs = rs;
+
+            try {
+                res = (ResultInterface)RESULT_FIELD.get(rs);
+            }
+            catch (IllegalAccessException e) {
+                throw new IllegalStateException(e); // Must not happen.
+            }
+
+            rowCount = res.getRowCount();
+            cols = res.getVisibleColumnCount();
+
         }
     }
 

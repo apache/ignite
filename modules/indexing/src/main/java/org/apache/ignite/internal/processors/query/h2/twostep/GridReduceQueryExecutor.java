@@ -451,7 +451,7 @@ public class GridReduceQueryExecutor {
      * @param keepBinary Keep binary.
      * @return Cursor.
      */
-    public Iterator<List<?>> query(GridCacheContext<?,?> cctx, GridCacheTwoStepQuery qry, boolean keepBinary) {
+    public Iterator<List<?>> query(long qryReqId, GridCacheContext<?,?> cctx, GridCacheTwoStepQuery qry, boolean keepBinary) {
         for (int attempt = 0;; attempt++) {
             if (attempt != 0) {
                 try {
@@ -463,8 +463,6 @@ public class GridReduceQueryExecutor {
                     throw new CacheException("Query was interrupted.", e);
                 }
             }
-
-            long qryReqId = reqIdGen.incrementAndGet();
 
             QueryRun r = new QueryRun();
 
@@ -576,11 +574,21 @@ public class GridReduceQueryExecutor {
                     Object state = r.state.get();
 
                     if (state != null) {
+                        if (state instanceof GridRemoteQueryCancelledException) {
+                            // We have to explicitly cancel queries on remote nodes.
+                            send(nodes, new GridQueryCancelRequest(qryReqId), null);
+
+                            throw (GridRemoteQueryCancelledException) state;
+                        }
+
+                        // if cancelled and still running remotely force remote
+
                         if (state instanceof CacheException) {
                             CacheException err = (CacheException)state;
 
                             if (err.getCause() instanceof IgniteClientDisconnectedException)
                                 throw err;
+
 
                             throw new CacheException("Failed to run map query remotely.", err);
                         }
@@ -630,7 +638,7 @@ public class GridReduceQueryExecutor {
                         GridCacheSqlQuery rdc = qry.reduceQuery();
 
                         // Statement caching is prohibited here because we can't guarantee correct merge index reuse.
-                        ResultSet res = h2.executeSqlQueryWithTimer(space,
+                        ResultSet res = h2.executeSqlQueryWithTimer(null, space,
                             r.conn,
                             rdc.query(),
                             F.asList(rdc.parameters()),
@@ -641,8 +649,12 @@ public class GridReduceQueryExecutor {
                 }
 
                 for (GridMergeIndex idx : r.idxs) {
-                    if (!idx.fetchedAll()) // We have to explicitly cancel queries on remote nodes.
+                    if (!idx.fetchedAll()) {
+                        // We have to explicitly cancel queries on remote nodes.
                         send(nodes, new GridQueryCancelRequest(qryReqId), null);
+
+                        break;
+                    }
                 }
 
                 if (retry) {
@@ -986,7 +998,7 @@ public class GridReduceQueryExecutor {
         List<List<?>> lists = new ArrayList<>();
 
         for (int i = 0, mapQrys = qry.mapQueries().size(); i < mapQrys; i++) {
-            ResultSet rs = h2.executeSqlQueryWithTimer(space, c, "SELECT PLAN FROM " + table(i), null, false);
+            ResultSet rs = h2.executeSqlQueryWithTimer(null, space, c, "SELECT PLAN FROM " + table(i), null, false);
 
             lists.add(F.asList(getPlan(rs)));
         }
@@ -1001,7 +1013,7 @@ public class GridReduceQueryExecutor {
 
         GridCacheSqlQuery rdc = qry.reduceQuery();
 
-        ResultSet rs = h2.executeSqlQueryWithTimer(space,
+        ResultSet rs = h2.executeSqlQueryWithTimer(null, space,
             c,
             "EXPLAIN " + rdc.query(),
             F.asList(rdc.parameters()),
@@ -1161,7 +1173,19 @@ public class GridReduceQueryExecutor {
             new IgniteClientDisconnectedException(reconnectFut, "Client node disconnected."));
 
         for (Map.Entry<Long, QueryRun> e : runs.entrySet())
-            e.getValue().disconnected(err);
+            e.getValue().failed(err);
+    }
+
+    /**
+     * Cancels a query by id.
+     * @param qryId Query id.
+     */
+    public void cancel(long qryId) {
+        QueryRun run = runs.get(qryId);
+
+        if ( run == null ) return;
+
+        run.failed(new GridRemoteQueryCancelledException());
     }
 
     /**
@@ -1204,7 +1228,7 @@ public class GridReduceQueryExecutor {
         /**
          * @param e Error.
          */
-        void disconnected(CacheException e) {
+        void failed(RuntimeException e) {
             if (!state.compareAndSet(null, e))
                 return;
 
@@ -1239,5 +1263,12 @@ public class GridReduceQueryExecutor {
 
             return res;
         }
+    }
+
+    /**
+     *
+     */
+    public long nextQryId() {
+        return reqIdGen.incrementAndGet();
     }
 }

@@ -17,6 +17,7 @@
 
 package org.apache.ignite;
 
+import java.io.Closeable;
 import java.util.concurrent.Callable;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteOutClosure;
@@ -96,4 +97,7 @@ public interface IgniteScheduler {
      * @return Scheduled execution future.
      */
     public <R> SchedulerFuture<R> scheduleLocal(Callable<R> c, String ptrn);
+
+    public Closeable scheduleLocal(@Nullable Runnable r, long delay, long period);
+
 }

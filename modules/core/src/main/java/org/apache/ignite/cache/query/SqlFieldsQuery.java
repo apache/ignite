@@ -18,6 +18,7 @@
 package org.apache.ignite.cache.query;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -55,6 +56,9 @@ public final class SqlFieldsQuery extends Query<List<?>> {
 
     /** Collocation flag. */
     private boolean collocated;
+
+    /** Query timeout in millis. */
+    private long timeout;
 
     /**
      * Constructs SQL fields query.
@@ -154,5 +158,21 @@ public final class SqlFieldsQuery extends Query<List<?>> {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SqlFieldsQuery.class, this);
+    }
+
+    /**
+     * Sets the query execution timeout in seconds. Query will be automatically cancelled if timeout is exceeded.
+     * @param timeout Timeout.
+     * @param timeUnit Time unit.
+     */
+    public void setTimeout(long timeout, TimeUnit timeUnit) {
+        this.timeout = timeUnit.convert(timeout, TimeUnit.MILLISECONDS);
+    }
+
+    /**
+     * Gets the query execution timeout.
+     */
+    public long getTimeout() {
+        return timeout;
     }
 }
