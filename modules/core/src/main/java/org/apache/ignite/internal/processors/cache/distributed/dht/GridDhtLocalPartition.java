@@ -282,12 +282,17 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         return (int)storageSize.get();
     }
 
-    /** {@inheritDoc} */
+
+    /**
+     *
+     */
     public void onInsert() {
         storageSize.incrementAndGet();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * 
+     */
     public void onRemove() {
         storageSize.decrementAndGet();
     }
