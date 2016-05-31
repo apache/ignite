@@ -130,8 +130,6 @@ public class CachePluginManager extends GridCacheManagerAdapter {
         }
         else if (cls.equals(CacheStoreManager.class))
             return (T)new CacheOsStoreManager(ctx, cfg);
-        else if (cls.equals(IgniteCacheOffheapManager.class))
-            return (T)new IgniteCacheOffheapManager();
 
         throw new IgniteException("Unsupported component type: " + cls);
     }

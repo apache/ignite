@@ -112,6 +112,17 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
+    @Override protected GridDhtLocalPartition localPartition() {
+        return locPart;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onUpdateFinished(Long cntr) {
+        if (cntr != null)
+            locPart.onUpdateReceived(cntr);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isDht() {
         return true;
     }

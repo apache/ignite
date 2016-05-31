@@ -79,6 +79,6 @@ public class DataRecord extends WALRecord {
      * @return Collection of write entries.
      */
     public List<DataEntry> writeEntries() {
-        return writeEntries;
+        return writeEntries == null ? Collections.<DataEntry>emptyList() : writeEntries;
     }
 }

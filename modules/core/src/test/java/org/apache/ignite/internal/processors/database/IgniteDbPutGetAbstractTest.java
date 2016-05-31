@@ -83,7 +83,7 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
 
         dbCfg.setPageSize(1024);
 
-        dbCfg.setPageCacheSize(100 * 1024 * 1024);
+        dbCfg.setPageCacheSize(200 * 1024 * 1024);
 
         cfg.setDatabaseConfiguration(dbCfg);
 
@@ -403,6 +403,8 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
             assertEquals(v0, cache.get(i));
         }
 
+        assertEquals(cnt, cache.size());
+
         if (indexingEnabled()) {
             awaitPartitionMapExchange();
 
@@ -410,7 +412,7 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
 
             assertEquals(cnt, cache.query(new SqlFieldsQuery("select null from dbvalue")).getAll().size());
 
-            List<List<?>> res = cache.query(new SqlFieldsQuery("select ival, _val from dbvalue where ival < ?")
+            List<List<?>> res = cache.query(new SqlFieldsQuery("select ival, _val from dbvalue where ival < ? order by ival asc")
                 .setArgs(10_000)).getAll();
 
             assertEquals(10_000, res.size());

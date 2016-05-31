@@ -38,7 +38,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList
  */
 public class MetadataStorage implements MetaStore {
     /** Max index name length (symbols num) */
-    public static final int MAX_IDX_NAME_LEN = 30;
+    public static final int MAX_IDX_NAME_LEN = 64;
 
     /** Bytes in byte. */
     private static final int BYTE_LEN = 1;
@@ -83,8 +83,7 @@ public class MetadataStorage implements MetaStore {
             final IndexItem row = tree.findOne(new IndexItem(idxNameBytes, 0, cacheId, 0));
 
             if (row == null) {
-                final FullPageId idxRoot = pageMem.allocatePage(cacheId, 0, idx
-                    ? PageIdAllocator.FLAG_IDX : PageIdAllocator.FLAG_META);
+                final FullPageId idxRoot = pageMem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_META);
 
                 final long rootId = this.rootId.getAndIncrement();
 
@@ -202,7 +201,7 @@ public class MetadataStorage implements MetaStore {
 
         /** {@inheritDoc} */
         @Override protected long allocatePage0() throws IgniteCheckedException {
-            return pageMem.allocatePage(0, 0, PageIdAllocator.FLAG_META).pageId();
+            return pageMem.allocatePage(getCacheId(), 0, PageIdAllocator.FLAG_META).pageId();
         }
 
         /** {@inheritDoc} */

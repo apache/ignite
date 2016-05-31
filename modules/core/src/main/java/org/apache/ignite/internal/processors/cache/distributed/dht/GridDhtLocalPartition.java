@@ -21,6 +21,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentNavigableMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -113,6 +115,15 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     /** Update counter. */
     private final AtomicLong cntr = new AtomicLong();
 
+    /** Partition size. */
+    private final AtomicLong storageSize = new AtomicLong();
+
+    /** Partition updates. */
+    private ConcurrentNavigableMap<Long, Boolean> updates = new ConcurrentSkipListMap<>();
+
+    /** Last applied update. */
+    private AtomicLong lastApplied = new AtomicLong(0);
+
     /**
      * @param cctx Context.
      * @param id Partition ID.
@@ -138,8 +149,15 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             Math.max(MAX_DELETE_QUEUE_SIZE / cctx.affinity().partitions(), 20);
 
         rmvQueue = new GridCircularBuffer<>(U.ceilPow2(delQueueSize));
+    }
 
-        cntr.set(cctx.offheap().lastUpdatedPartitionCounter(id));
+    /**
+     * @param size Partition size.
+     * @param partCntr Partition counter.
+     */
+    public void init(long size, long partCntr) {
+        storageSize.set(size);
+        cntr.set(partCntr);
     }
 
     /**
@@ -203,24 +221,75 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @return {@code True} if partition is empty.
      */
     public boolean isEmpty() {
-        try {
-            return map.size() == 0 && cctx.offheap().empty(id);
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to check if partition is empty: " + id, e);
+        return size() == 0;
+    }
 
-            return false;
+    /**
+     * @return Last applied update.
+     */
+    public long lastAppliedUpdate() {
+        return lastApplied.get();
+    }
+
+    /**
+     * @return Last received update.
+     */
+    private long lastReceivedUpdate() {
+        if (updates.isEmpty())
+            return lastApplied.get();
+
+        return updates.lastKey();
+    }
+
+    /**
+     * @param cntr Received counter.
+     */
+    public void onUpdateReceived(long cntr) {
+        boolean changed = updates.putIfAbsent(cntr, true) == null;
+
+        if (!changed)
+            return;
+
+        while (true) {
+            Map.Entry<Long, Boolean> entry = updates.firstEntry();
+
+            if (entry == null)
+                return;
+
+            long first = entry.getKey();
+
+            long cntr0 = lastApplied.get();
+
+            if (first <= cntr0)
+                updates.remove(first);
+            else if (first == cntr0 + 1)
+                if (lastApplied.compareAndSet(cntr0, first))
+                    updates.remove(first);
+                else
+                    break;
+            else
+                break;
         }
     }
 
     /** {@inheritDoc} */
     @Override public int size() {
-        return map.size();
+        return (int)storageSize.get();
     }
 
     /** {@inheritDoc} */
     @Override public int publicSize() {
-        return map.publicSize();
+        return (int)storageSize.get();
+    }
+
+    /** {@inheritDoc} */
+    public void onInsert() {
+        storageSize.incrementAndGet();
+    }
+
+    /** {@inheritDoc} */
+    public void onRemove() {
+        storageSize.decrementAndGet();
     }
 
     /** {@inheritDoc} */

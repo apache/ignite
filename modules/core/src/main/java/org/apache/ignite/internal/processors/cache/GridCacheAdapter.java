@@ -3870,32 +3870,18 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                 size += size();
         }
         else {
-            if (modes.heap) {
-                if (modes.near)
-                    size += nearSize();
+            if (modes.near)
+                size += nearSize();
 
-                GridCacheAdapter cache = ctx.isNear() ? ctx.near().dht() : ctx.cache();
+            // Swap and offheap are disabled for near cache.
+            if (modes.primary || modes.backup) {
+                AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
-                if (!(modes.primary && modes.backup)) {
-                    if (modes.primary)
-                        size += cache.primarySize();
+                IgniteCacheOffheapManager offheap = ctx.isNear() ? ctx.near().dht().context().offheap() : ctx.offheap();
 
-                    if (modes.backup)
-                        size += (cache.size() - cache.primarySize());
-                }
-                else
-                    size += cache.size();
+                if (modes.offheap)
+                    size += offheap.entriesCount(modes.primary, modes.backup, topVer);
             }
-        }
-
-        // Swap and offheap are disabled for near cache.
-        if (modes.primary || modes.backup) {
-            AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
-
-            IgniteCacheOffheapManager offheap = ctx.isNear() ? ctx.near().dht().context().offheap() : ctx.offheap();
-
-            if (modes.offheap)
-                size += offheap.entriesCount(modes.primary, modes.backup, topVer);
         }
 
         return size;

@@ -330,6 +330,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         return 0;
     }
 
+    /**
+     * @return Local partition that owns this entry.
+     */
+    protected GridDhtLocalPartition localPartition() {
+        return null;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean partitionValid() {
         return true;
@@ -2976,8 +2983,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     protected void onUpdateFinished(Long cntr) {
-        if (!cctx.isLocal() && !isNear() && cntr != null)
-            cctx.offheap().onPartitionCounterUpdated(partition(), cntr);
+        // No-op.
     }
 
     /**
@@ -3497,7 +3503,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert Thread.holdsLock(this);
         assert val != null : "null values in update for key: " + key;
 
-        cctx.offheap().update(key, val, ver, expireTime, partition());
+        cctx.offheap().update(key, val, ver, expireTime, partition(), localPartition());
     }
 
     /**
@@ -3538,7 +3544,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     protected void removeValue(CacheObject prevVal, GridCacheVersion prevVer) throws IgniteCheckedException {
         assert Thread.holdsLock(this);
 
-        cctx.offheap().remove(key, prevVal, prevVer, partition());
+        cctx.offheap().remove(key, prevVal, prevVer, partition(), localPartition());
     }
 
     /**
