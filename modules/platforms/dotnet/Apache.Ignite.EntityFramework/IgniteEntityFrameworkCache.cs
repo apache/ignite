@@ -102,7 +102,7 @@ namespace Apache.Ignite.EntityFramework
         {
             var invalidSets = new HashSet<string>(entitySets);
 
-            // TODO: IGNITE-2546
+            // TODO: IGNITE-2546 or IGNITE-3222
             // TODO: ScanQuery, Compute, or even Java implementation?
             // TODO: Or store entity set<->keys mapping separately?
             foreach (var entry in _cache)
@@ -127,6 +127,7 @@ namespace Apache.Ignite.EntityFramework
         /// Gets the cache with expiry policy according to provided expiration date.
         /// </summary>
         /// <returns>Cache with expiry policy.</returns>
+        // ReSharper disable once UnusedParameter.Local
         private ICache<string, IBinaryObject> GetCacheWithExpiry(TimeSpan slidingExpiration, 
             DateTimeOffset absoluteExpiration)
         {
