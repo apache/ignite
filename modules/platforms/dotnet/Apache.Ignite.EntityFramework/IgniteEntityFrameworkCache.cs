@@ -50,8 +50,8 @@ namespace Apache.Ignite.EntityFramework
         private readonly IBinary _binary;
 
         /** Cached caches per expiry seconds. */
-        private volatile Dictionary<KeyValuePair<long, long>, ICache<string, IBinaryObject>> _expiryCaches =
-            new Dictionary<KeyValuePair<long, long>, ICache<string, IBinaryObject>>();
+        private volatile Dictionary<KeyValuePair<double, double>, ICache<string, IBinaryObject>> _expiryCaches =
+            new Dictionary<KeyValuePair<double, double>, ICache<string, IBinaryObject>>();
 
         /** Sync object. */
         private readonly object _syncRoot = new object();
@@ -130,11 +130,11 @@ namespace Apache.Ignite.EntityFramework
             if (slidingExpiration == TimeSpan.MaxValue && absoluteExpiration == DateTimeOffset.MaxValue)
                 return _cache;
 
-            // Round up to seconds
+            // Round up to 0.1 of a second so that we share expiry caches
             var slidingExpirySeconds = GetSeconds(slidingExpiration);
             var absoluteExpirySeconds = GetSeconds(absoluteExpiration);
 
-            var key = new KeyValuePair<long, long>(absoluteExpirySeconds, slidingExpirySeconds);
+            var key = new KeyValuePair<double, double>(absoluteExpirySeconds, slidingExpirySeconds);
 
             ICache<string, IBinaryObject> expiryCache;
 
@@ -148,8 +148,8 @@ namespace Apache.Ignite.EntityFramework
 
                 // Copy on write with size limit
                 _expiryCaches = _expiryCaches.Count > MaxExpiryCaches
-                    ? new Dictionary<KeyValuePair<long, long>, ICache<string, IBinaryObject>>()
-                    : new Dictionary<KeyValuePair<long, long>, ICache<string, IBinaryObject>>(_expiryCaches);
+                    ? new Dictionary<KeyValuePair<double, double>, ICache<string, IBinaryObject>>()
+                    : new Dictionary<KeyValuePair<double, double>, ICache<string, IBinaryObject>>(_expiryCaches);
 
                 expiryCache =
                     _cache.WithExpiryPolicy(GetExpiryPolicy(absoluteExpirySeconds, slidingExpirySeconds));
@@ -163,13 +163,13 @@ namespace Apache.Ignite.EntityFramework
         /// <summary>
         /// Gets the expiry policy.
         /// </summary>
-        private static ExpiryPolicy GetExpiryPolicy(long absoluteSeconds, long slidingSeconds)
+        private static ExpiryPolicy GetExpiryPolicy(double absoluteSeconds, double slidingSeconds)
         {
-            var absolute = absoluteSeconds != long.MaxValue
+            var absolute = double.IsNaN(absoluteSeconds)
                 ? TimeSpan.FromSeconds(absoluteSeconds)
                 : (TimeSpan?) null;
 
-            var sliding = slidingSeconds != long.MaxValue
+            var sliding = double.IsNaN(slidingSeconds)
                 ? TimeSpan.FromSeconds(slidingSeconds)
                 : (TimeSpan?) null;
 
@@ -179,28 +179,27 @@ namespace Apache.Ignite.EntityFramework
         /// <summary>
         /// Gets the seconds.
         /// </summary>
-        private static long GetSeconds(TimeSpan ts)
+        private static double GetSeconds(TimeSpan ts)
         {
-            var seconds = (long) (ts == TimeSpan.MaxValue ? long.MaxValue : ts.TotalSeconds);
+            var seconds = ts == TimeSpan.MaxValue ? double.NaN : ts.TotalSeconds;
 
             if (seconds < 0)
                 seconds = 0;
 
-            return seconds;
+            return Math.Round(seconds, 1);
         }
 
         /// <summary>
         /// Gets the seconds.
         /// </summary>
-        private static long GetSeconds(DateTimeOffset ts)
+        private static double GetSeconds(DateTimeOffset ts)
         {
-            var seconds =
-                (long) (ts == DateTimeOffset.MaxValue ? long.MaxValue : (ts - DateTimeOffset.Now).TotalSeconds);
+            var seconds = ts == DateTimeOffset.MaxValue ? double.NaN : (ts - DateTimeOffset.Now).TotalSeconds;
 
             if (seconds < 0)
                 seconds = 0;
 
-            return seconds;
+            return Math.Round(seconds, 1);
         }
     }
 }
