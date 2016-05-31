@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.EntityFramework;
+    using EFCache;
     using NUnit.Framework;
 
     /// <summary>
@@ -159,7 +160,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         /// <summary>
         /// Checks the expiry.
         /// </summary>
-        private static void CheckExpiry(IgniteEntityFrameworkCache cache, string key, int expiryMs)
+        private static void CheckExpiry(ICache cache, string key, int expiryMs)
         {
             object val;
             Assert.IsTrue(cache.GetItem(key, out val));
