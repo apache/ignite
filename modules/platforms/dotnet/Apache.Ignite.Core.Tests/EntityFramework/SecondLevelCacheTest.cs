@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.EntityFramework
 {
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.EntityFramework;
     using NUnit.Framework;
 
@@ -26,16 +27,16 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
     public class SecondLevelCacheTest
     {
         [Test]
+        [SuppressMessage("ReSharper", "ObjectCreationAsStatement")]
         public void TestConfiguration()
         {
-            using (var ignite =
-                    Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration()) {GridName = "auxGrid"}))
-            {
-                Assert.IsTrue(ignite.WaitTopology(1));
+            Assert.IsNull(Ignition.TryGetIgnite());
 
-                var cfg = new IgniteDbConfiguration();
-            }
-            
+            // Test default config (picks up app.config section)
+            new IgniteDbConfiguration();
+            var ignite = Ignition.TryGetIgnite("grid1");
+            Assert.IsNotNull(ignite);
+            Assert.IsNotNull(ignite.GetCache<object, object>(IgniteDbConfiguration.DefaultCacheName));
         }
 
         [Test]
