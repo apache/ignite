@@ -20,6 +20,9 @@
 
 #include <stdint.h>
 
+#include <iostream>
+#include <vector>
+
 #include <ignite/common/dynamic_size_array.h>
 
 namespace ignite
@@ -123,7 +126,7 @@ namespace ignite
         const MagArray& GetMagnitude() const;
 
         /**
-         * Get this number length in bits.
+         * Get this number length in bits as if it was positive.
          *
          * @return Number length in bits.
          */
@@ -170,6 +173,15 @@ namespace ignite
         void Divide(const BigInteger& divisor, BigInteger& res) const;
 
         /**
+         * Divide this to another big integer.
+         *
+         * @param divisor Divisor. Can be *this.
+         * @param res Result placed there. Can be *this.
+         * @param rem Remainder placed there. Can be *this.
+         */
+        void Divide(const BigInteger& divisor, BigInteger& res, BigInteger& rem) const;
+
+        /**
          * Compare this instance to another.
          *
          * @param other Another instance.
@@ -186,6 +198,58 @@ namespace ignite
          */
         int64_t ToInt64() const;
 
+        /**
+         * Output operator.
+         *
+         * @param os Output stream.
+         * @param val Value to output.
+         * @return Reference to the first param.
+         */
+        friend std::ostream& operator<<(std::ostream& os, const BigInteger& val)
+        {
+            if (val.mag.IsEmpty())
+                return os << '0';
+
+            if (val.sign < 0)
+                os << '-';
+
+            const int32_t maxResultDigits = 19;
+            BigInteger maxUintTenPower(10000000000000000000ULL);
+            BigInteger res;
+            BigInteger left;
+
+            std::vector<uint64_t> vals;
+
+            val.Divide(maxUintTenPower, left, res);
+
+            if (res.sign < 0)
+                res.sign = -res.sign;
+
+            if (left.sign < 0)
+                left.sign = -left.sign;
+
+            vals.push_back(static_cast<uint64_t>(res.ToInt64()));
+
+            while (!left.mag.IsEmpty())
+            {
+                left.Divide(maxUintTenPower, left, res);
+
+                vals.push_back(static_cast<uint64_t>(res.ToInt64()));
+            }
+
+            os << vals.back();
+
+            for (int32_t i = static_cast<int32_t>(vals.size()) - 2; i >= 0; --i)
+            {
+                os.fill('0');
+                os.width(maxResultDigits);
+
+                os << vals[i];
+            }
+
+            return os;
+        }
+
     private:
         /**
          * Get n-th integer of the magnitude.
@@ -194,6 +258,16 @@ namespace ignite
          * @return Value of the n-th int of the magnitude.
          */
         int32_t GetMagInt(int32_t n) const;
+
+        /**
+         * Divide this to another big integer.
+         *
+         * @param divisor Divisor. Can be *this.
+         * @param res Result placed there. Can be *this.
+         * @param rem Remainder placed there if requested. Can be *this.
+         *     Can be null if the remainder is not needed.
+         */
+        void Divide(const BigInteger& divisor, BigInteger& res, BigInteger* rem) const;
 
         /**
          * The sign of this BigInteger: -1 for negative, 0 for zero, or

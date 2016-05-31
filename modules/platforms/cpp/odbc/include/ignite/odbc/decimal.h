@@ -19,6 +19,8 @@
 #define _IGNITE_ODBC_DECIMAL
 
 #include <stdint.h>
+#include <sstream>
+#include <iostream>
 
 #include <ignite/common/big_integer.h>
 
@@ -159,6 +161,114 @@ namespace ignite
          */
         void Assign(double val, int32_t scale);
 
+        /**
+         * Output operator.
+         *
+         * @param os Output stream.
+         * @param val Value to output.
+         * @return Reference to the first param.
+         */
+        friend std::ostream& operator<<(std::ostream& os, const Decimal& val)
+        {
+            const BigInteger& unscaled = val.GetUnscaledValue();
+
+            // Zero magnitude case. Scale does not matter.
+            if (unscaled.GetMagnitude().IsEmpty())
+                return os << '0';
+
+            // Scale is zero or negative. No decimal point here.
+            if (val.scale <= 0)
+            {
+                os << unscaled;
+
+                // Adding zeroes if needed.
+                for (int32_t i = 0; i < -val.scale; ++i)
+                    os << '0';
+
+                return os;
+            }
+
+            // Getting magnitude as a string.
+            std::stringstream converter;
+
+            converter << unscaled;
+
+            std::string magStr = converter.str();
+
+            int32_t magLen = static_cast<int32_t>(magStr.size());
+
+            int32_t magBegin = 0;
+
+            // If value is negative passing minus sign.
+            if (magStr[magBegin] == '-')
+            {
+                os << magStr[magBegin];
+
+                ++magBegin;
+                --magLen;
+            }
+
+            // Finding last non-zero char. There is no sense in trailing zeroes
+            // beyond the decimal point.
+            int32_t lastNonZero = static_cast<int32_t>(magStr.size()) - 1;
+
+            while (lastNonZero >= magBegin && magStr[lastNonZero] == '0')
+                --lastNonZero;
+
+            // This is expected as we already covered zero number case.
+            assert(lastNonZero >= magBegin);
+
+            int32_t dotPos = magLen - val.scale;
+
+            if (dotPos <= 0)
+            {
+                // Means we need to add leading zeroes.
+                os << '0' << '.';
+
+                while (dotPos < 0)
+                {
+                    ++dotPos;
+
+                    os << '0';
+                }
+
+                os.write(&magStr[magBegin], lastNonZero - magBegin + 1);
+            }
+            else
+            {
+                // Decimal point is in the middle of the number.
+                // Just output everything before the decimal point.
+                os.write(&magStr[magBegin], dotPos);
+
+                int32_t afterDot = lastNonZero - dotPos + magBegin + 1;
+
+                if (afterDot > 0)
+                {
+                    os << '.';
+
+                    os.write(&magStr[magBegin + dotPos], afterDot);
+                }
+            }
+
+            return os;
+        }
+
+        /**
+         * Input operator.
+         *
+         * @param is Input stream.
+         * @param val Value to input.
+         * @return Reference to the first param.
+         */
+        friend std::ostream& operator>>(std::ostream& is, Decimal& val)
+        {
+            //TODO.
+
+            val.Assign(0ULL);
+
+            return is;
+        }
+
     private:
         /** Scale. */
         int32_t scale;
@@ -166,37 +276,6 @@ namespace ignite
         /** Magnitude. */
         BigInteger magnitude;
     };
-
-    /**
-     * Output operator.
-     *
-     * @param os Output stream.
-     * @param val Value to output.
-     * @return Reference to the first param.
-     */
-    template<typename C>
-    ::std::basic_ostream<C>& operator<<(std::basic_ostream<C>& os, const Decimal& val)
-    {
-        //TODO.
-        os << 0;
-
-        return os;
-    }
-
-    /**
-     * Input operator.
-     *
-     * @param is Input stream.
-     * @param val Value to input.
-     * @return Reference to the first param.
-     */
-    template<typename C>
-    ::std::basic_istream<C>& operator>>(std::basic_istream<C>& is, Decimal& val)
-    {
-        //TODO.
-
-        return is;
-    }
 }
 
 #endif //_IGNITE_ODBC_DECIMAL

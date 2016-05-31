@@ -159,8 +159,11 @@ namespace ignite
 
     void BigInteger::Assign(const BigInteger& val)
     {
-        sign = val.sign;
-        mag = val.mag;
+        if (this != &val)
+        {
+            sign = val.sign;
+            mag = val.mag;
+        }
     }
 
     void BigInteger::Assign(int64_t val)
@@ -244,7 +247,7 @@ namespace ignite
         BigInteger prec(10);
         prec.Pow(r);
 
-        return Compare(prec) < 0 ? r : r + 1;
+        return Compare(prec, true) < 0 ? r : r + 1;
     }
 
     void BigInteger::MagnitudeToBytes(common::FixedSizeArray<int8_t>& buffer) const
@@ -362,6 +365,25 @@ namespace ignite
     }
 
     /**
+     * Shift magnitude right by the specified number of bits.
+     *
+     * @param in Input magnitude.
+     * @param len Magnitude length.
+     * @param out Output magnitude. Should be not shorter than the input
+     *     magnitude.
+     * @param n Number of bits to shift to.
+     */
+    void ShiftRight(const uint32_t* in, int32_t len, uint32_t* out, unsigned n)
+    {
+        assert(n <= 32);
+
+        for (int32_t i = 0; i < len - 1; ++i)
+            out[i] = (in[i] >> n) | (in[i - 1] << (32 - n));
+
+        out[len - 1] = in[len - 1] >> n;
+    }
+
+    /**
      * Part of the division algorithm. Computes q - (a * x).
      *
      * @param q Minuend.
@@ -413,7 +435,61 @@ namespace ignite
         return static_cast<uint32_t>(carry);
     }
 
+    void BigInteger::Divide(const BigInteger& divisor, BigInteger& res, BigInteger& rem) const
+    {
+        Divide(divisor, res, &rem);
+    }
+
     void BigInteger::Divide(const BigInteger& divisor, BigInteger& res) const
+    {
+        Divide(divisor, res, 0);
+    }
+
+    int32_t BigInteger::Compare(const BigInteger& other, bool ignoreSign) const
+    {
+        // What we should return if magnitude is greater.
+        int32_t mgt = 1;
+
+        if (!ignoreSign)
+        {
+            if (sign != other.sign)
+                return sign > other.sign ? 1 : -1;
+            else
+                mgt = sign;
+        }
+
+        if (mag.GetSize() != other.mag.GetSize())
+            return mag.GetSize() > other.mag.GetSize() ? mgt : -mgt;
+
+        for (int32_t i = mag.GetSize() - 1; i >= 0; ++i)
+        {
+            if (mag[i] == other.mag[i])
+                continue;
+            else if (mag[i] > other.mag[i])
+                return mgt;
+            else
+                return -mgt;
+        }
+
+        return 0;
+    }
+
+    int64_t BigInteger::ToInt64() const
+    {
+        return (static_cast<uint64_t>(GetMagInt(1)) << 32) | GetMagInt(0);
+    }
+
+    int32_t BigInteger::GetMagInt(int32_t n) const
+    {
+        assert(n >= 0);
+
+        if (n >= mag.GetSize())
+            return sign > 0 ? 0 : -1;
+
+        return sign * mag[n];
+    }
+
+    void BigInteger::Divide(const BigInteger& divisor, BigInteger& res, BigInteger* rem) const
     {
         // Can't divide by zero.
         if (divisor.mag.IsEmpty())
@@ -423,20 +499,36 @@ namespace ignite
 
         int8_t resSign = sign * divisor.sign;
 
-        // The same magnitude. Result is [-]1.
+        // The same magnitude. Result is [-]1 and remainder is zero.
         if (compRes == 0)
         {
             res.Assign(static_cast<int64_t>(resSign));
 
+            if (rem)
+                rem->Assign(0ULL);
+
             return;
         }
 
-        // Divisor is greater than this. Result is 0.
+        // Divisor is greater than this. Result is 0 and remainder is this.
         if (compRes == -1)
         {
             res.Assign(0LL);
 
+            if (rem)
+                rem->Assign(*this);
+
             return;
+        }
+
+        // If divisor is [-]1 result is [-]this and remainder is zero.
+        if (divisor.GetBitLength() == 1)
+        {
+            res.Assign(*this);
+            res.sign = -res.sign;
+
+            if (rem)
+                rem->Assign(0ULL);
         }
 
         // Trivial case.
@@ -451,7 +543,19 @@ namespace ignite
             if (divisor.mag.GetSize() == 2)
                 v |= static_cast<uint64_t>(divisor.mag[1]) << 32;
 
+            // Divisor can not be 1, or 0.
+            assert(v > 1);
+
+            // It should also be less than dividend.
+            assert(v < u);
+
+            // (u / v) is always fits into int64_t because abs(v) >= 2.
             res.Assign(resSign * static_cast<int64_t>(u / v));
+
+            // (u % v) is always fits into int64_t because (u > v) ->
+            // (u % v) < (u / 2).
+            if (rem)
+                rem->Assign(resSign * static_cast<int64_t>(u % v));
 
             return;
         }
@@ -539,50 +643,29 @@ namespace ignite
 
             q[i] = qhat32;
         }
-    }
 
-    int32_t BigInteger::Compare(const BigInteger& other, bool ignoreSign) const
-    {
-        // What we should return if magnitude is greater.
-        int32_t mgt = 1;
+        res.sign = resSign;
 
-        if (!ignoreSign)
+        // If remainder is needed unnormolize it.
+        if (rem)
         {
-            if (sign != other.sign)
-                return sign > other.sign ? 1 : -1;
-            else
-                mgt = sign;
+            rem->sign = resSign;
+
+            MagArray& r = rem->mag;
+
+            r.Resize(vlen);
+
+            for (int32_t i = 0; i < vlen; ++i)
+                ShiftRight(nu.GetData(), nu.GetSize(), r.GetData(), shift);
+
+            int32_t lastNonZero = r.GetSize() - 1;
+            while (lastNonZero >= 0 && r[lastNonZero] == 0)
+                --lastNonZero;
+
+            r.Resize(lastNonZero + 1);
         }
-
-        if (mag.GetSize() != other.mag.GetSize())
-            return mag.GetSize() > other.mag.GetSize() ? mgt : -mgt;
-
-        for (int32_t i = mag.GetSize() - 1; i >= 0; ++i)
-        {
-            if (mag[i] == other.mag[i])
-                continue;
-            else if (mag[i] > other.mag[i])
-                return mgt;
-            else
-                return -mgt;
-        }
-
-        return 0;
     }
 
-    int64_t BigInteger::ToInt64() const
-    {
-        return (static_cast<uint64_t>(GetMagInt(1)) << 32) | GetMagInt(0);
-    }
 
-    int32_t BigInteger::GetMagInt(int32_t n) const
-    {
-        assert(n >= 0);
-
-        if (n >= mag.GetSize())
-            return sign > 0 ? 0 : -1;
-
-        return sign * mag[n];
-    }
 }
 
