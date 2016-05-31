@@ -38,6 +38,15 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         }
 
         /// <summary>
+        /// Test teardown.
+        /// </summary>
+        [TearDown]
+        public void TearDown()
+        {
+            Ignition.StopAll(true);
+        }
+
+        /// <summary>
         /// Tests the IgniteDbConfiguration.
         /// </summary>
         [Test]
@@ -95,17 +104,34 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             Ignition.StopAll(true);
         }
 
+        /// <summary>
+        /// Tests put/get/invalidate operations.
+        /// </summary>
         [Test]
-        public void TestBasic()
+        public void TestPutGetInvalidate()
         {
+            var cache = CreateEfCache();
 
-            
+            object val;
+            Assert.IsFalse(cache.GetItem("1", out val));
+            Assert.IsNull(val);
         }
 
+        /// <summary>
+        /// Tests expiration logic.
+        /// </summary>
         [Test]
         public void TestExpiration()
         {
-            
+            // TODO
+        }
+
+        private static IgniteEntityFrameworkCache CreateEfCache()
+        {
+            var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
+            var cache = ignite.CreateCache<string, object>("efCache");
+
+            return new IgniteEntityFrameworkCache(cache);
         }
     }
 }
