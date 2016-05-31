@@ -40,17 +40,17 @@ public class ModelUtil {
     private static Class[] keyClasses = {
         Double.class,
         Identifier.class,
-//        Mark.class,
+        Mark.class,
         Integer.class,
-//        UUID.class
+        UUID.class
     };
 
     /**
      * Classes of values.
      */
     private static Class[] valClasses = {
-        Car.class,
-        Truck.class,
+//        Car.class,
+//        Truck.class,
         Person.class,
         Organization.class,
         Account.class,

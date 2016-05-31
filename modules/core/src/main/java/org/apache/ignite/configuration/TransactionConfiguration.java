@@ -270,6 +270,14 @@ public class TransactionConfiguration implements Serializable {
      *  {@code org.apache.ignite.cache.jta.jndi.CacheJndiTmFactory} utilizes configured JNDI names to look up
      *  a transaction manager.
      * </li>
+     * <li>
+     *  {@code org.apache.ignite.cache.jta.websphere.WebSphereTmFactory} an implementation of Transaction Manager
+     *  factory to be used within WebSphere Application Server.
+     * </li>
+     * <li>
+     *  {@code org.apache.ignite.cache.jta.websphere.WebSphereLibertyTmFactory} an implementation of Transaction Manager
+     *  factory to be used within WebSphere Liberty.
+     * </li>
      * </ul>
      *
      * Ignite will throw IgniteCheckedException if {@link Factory#create()} method throws any exception,

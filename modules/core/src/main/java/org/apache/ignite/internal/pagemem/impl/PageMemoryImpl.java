@@ -51,6 +51,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.GridUnsafe;
 import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import sun.misc.JavaNioAccess;
@@ -474,23 +475,28 @@ public class  PageMemoryImpl implements PageMemory {
         // Lock segment by segment and flush changes.
         for (int i = 0; i < segCols.length; i++) {
             Collection<FullPageId> col = segCols[i];
-
             if (col == null)
                 continue;
+
+            Collection<PageImpl> activePages = null;
 
             Segment seg = segments[i];
 
             seg.writeLock().lock();
 
             try {
+                if (!seg.acquiredPages.isEmpty())
+                    activePages = new ArrayList<>(seg.acquiredPages.size());
+
                 for (FullPageId pageId : col) {
                     PageImpl page = seg.acquiredPages.get(pageId);
 
                     if (page != null) {
-                        // We are in the segment write lock, so it is safe to remove the page if use counter is
-                        // equal to 0.
-                        if (page.flushCheckpoint(log))
-                            seg.acquiredPages.remove(pageId);
+                        page.acquireReference();
+
+                        assert activePages != null;
+
+                        activePages.add(page);
                     }
                     // else page was not modified since the checkpoint started.
                     else {
@@ -506,6 +512,15 @@ public class  PageMemoryImpl implements PageMemory {
             }
             finally {
                 seg.writeLock().unlock();
+            }
+
+            // Must release active pages outside of segment write lock.
+            if (activePages != null) {
+                for (PageImpl page : activePages) {
+                    page.flushCheckpoint(log);
+
+                    releasePage(page);
+                }
             }
         }
 
@@ -1352,6 +1367,11 @@ public class  PageMemoryImpl implements PageMemory {
          */
         private long size() {
             return fr.address() - pagesBase + fr.size();
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(Chunk.class, this, "size", size());
         }
     }
 }

@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.reuse.io.ReuseL
  */
 public final class ReuseTree extends BPlusTree<Number, Long> {
     /**
+     * @param name Tree name.
      * @param reuseList Reuse list.
      * @param cacheId Cache ID.
      * @param pageMem Page memory.
@@ -39,9 +40,9 @@ public final class ReuseTree extends BPlusTree<Number, Long> {
      * @param initNew Initialize new index.
      * @throws IgniteCheckedException If failed.
      */
-    public ReuseTree(ReuseList reuseList, int cacheId, PageMemory pageMem, FullPageId metaPageId, boolean initNew)
+    public ReuseTree(String name, ReuseList reuseList, int cacheId, PageMemory pageMem, FullPageId metaPageId, boolean initNew)
         throws IgniteCheckedException {
-        super(cacheId, pageMem, metaPageId, reuseList, ReuseInnerIO.VERSIONS, ReuseLeafIO.VERSIONS);
+        super(name, cacheId, pageMem, metaPageId, reuseList, ReuseInnerIO.VERSIONS, ReuseLeafIO.VERSIONS);
 
         if (initNew)
             initNew();

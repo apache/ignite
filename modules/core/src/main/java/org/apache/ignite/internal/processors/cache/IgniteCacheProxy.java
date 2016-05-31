@@ -21,7 +21,6 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -60,7 +59,6 @@ import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
 import org.apache.ignite.cluster.ClusterGroup;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.AsyncSupportAdapter;
 import org.apache.ignite.internal.GridKernalContext;
@@ -73,6 +71,7 @@ import org.apache.ignite.internal.processors.query.GridQueryProcessor;
 import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
+import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
@@ -87,7 +86,6 @@ import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.plugin.security.SecurityPermission;
-import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -193,8 +191,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /**
-     * Gets cache proxy which does not acquire read lock on gateway enter, should be
-     * used only if grid read lock is externally acquired.
+     * Gets cache proxy which does not acquire read lock on gateway enter, should be used only if grid read lock is
+     * externally acquired.
      *
      * @return Ignite cache proxy with simple gate.
      */
@@ -375,10 +373,18 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             CacheOperationContext prev = onEnter(gate, opCtx);
 
             try {
-                if (isAsync())
-                    setFuture(ctx.cache().globalLoadCacheAsync(p, args));
-                else
-                    ctx.cache().globalLoadCache(p, args);
+                if (isAsync()) {
+                    if (ctx.cache().isLocal())
+                        setFuture(ctx.cache().localLoadCacheAsync(p, args));
+                    else
+                        setFuture(ctx.cache().globalLoadCacheAsync(p, args));
+                }
+                else {
+                    if (ctx.cache().isLocal())
+                        ctx.cache().localLoadCache(p, args);
+                    else
+                        ctx.cache().globalLoadCache(p, args);
+                }
             }
             finally {
                 onLeave(gate, prev);
@@ -469,7 +475,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     private QueryCursor<Cache.Entry<K, V>> query(final Query filter, @Nullable ClusterGroup grp)
         throws IgniteCheckedException {
         final CacheQuery<Map.Entry<K, V>> qry;
-        final CacheQueryFuture<Map.Entry<K, V>> fut;
 
         boolean isKeepBinary = opCtx != null && opCtx.isKeepBinary();
 
@@ -481,14 +486,35 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             if (grp != null)
                 qry.projection(grp);
 
-            fut = ctx.kernalContext().query().executeQuery(ctx,
-                new IgniteOutClosureX<CacheQueryFuture<Map.Entry<K, V>>>() {
-                    @Override public CacheQueryFuture<Map.Entry<K, V>> applyx() throws IgniteCheckedException {
-                        return qry.execute();
+            final GridCloseableIterator<Entry<K, V>> iter = ctx.kernalContext().query().executeQuery(ctx,
+                new IgniteOutClosureX<GridCloseableIterator<Entry<K, V>>>() {
+                    @Override public GridCloseableIterator<Entry<K, V>> applyx() throws IgniteCheckedException {
+                        final GridCloseableIterator<Map.Entry> iter0 = qry.executeScanQuery();
+
+                        return new GridCloseableIteratorAdapter<Cache.Entry<K, V>>() {
+                            @Override protected Cache.Entry<K, V> onNext() throws IgniteCheckedException {
+                                Map.Entry<K, V> next = iter0.nextX();
+
+                                return new CacheEntryImpl<>(next.getKey(), next.getValue());
+                            }
+
+                            @Override protected boolean onHasNext() throws IgniteCheckedException {
+                                return iter0.hasNextX();
+                            }
+
+                            @Override protected void onClose() throws IgniteCheckedException {
+                                iter0.close();
+                            }
+                        };
                     }
                 }, false);
+
+            return new QueryCursorImpl<>(iter);
         }
-        else if (filter instanceof TextQuery) {
+
+        final CacheQueryFuture<Map.Entry<K, V>> fut;
+
+        if (filter instanceof TextQuery) {
             TextQuery p = (TextQuery)filter;
 
             qry = ctx.queries().createFullTextQuery(p.getType(), p.getText(), isKeepBinary);
@@ -1796,6 +1822,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         try {
             return ctx.cache().igniteIterator();
+        }
+        catch (IgniteCheckedException e) {
+            throw cacheException(e);
         }
         finally {
             onLeave(gate, prev);

@@ -84,7 +84,9 @@
         <module>modules/osgi-paxlogging</module>
         <module>modules/osgi-karaf</module>
         <module>modules/osgi</module>
-        <module>modules/web/ignite-weblogic-test</module>
+        <module>modules/web/ignite-appserver-test</module>
+        <module>modules/web/ignite-websphere-test</module>
+        <module>modules/cassandra</module>
         <module>modules/flink</module>
     </modules>
 
@@ -166,11 +168,30 @@
         <profile>
             <id>release</id>
             <activation>
-                <activeByDefault>true</activeByDefault>
-                <jdk>[1.7,)</jdk>
+                <property>
+                    <name>!skipDefault</name><!--activeByDefault-->
+                </property>
             </activation>
             <build>
                 <plugins>
+                    <plugin><!-- skipping generation of dependencies licenses
+                     to keep clean /maven-shared-archive-resources/META-INF
+                     to prevent license.txt moving to sources.zip -->
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-remote-resources-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>ignite-dependencies</id>
+                                <goals>
+                                    <goal>process</goal>
+                                </goals>
+                                <configuration>
+                                   <skip>true</skip>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-javadoc-plugin</artifactId>
@@ -185,7 +206,7 @@
                                     <reportOutputDirectory>${basedir}/target/javadoc</reportOutputDirectory>
                                     <destDir>core</destDir>
                                     <stylesheetfile>${basedir}/assembly/docfiles/javadoc.css</stylesheetfile>
-                                    <subpackages>org.apache.ignite -exclude org.apache.ignite.client:org.apache.ignite.codegen:org.apache.ignite.examples:org.apache.ignite.internal:org.apache.ignite.schema:org.apache.ignite.tests:org.apache.ignite.tools:org.apache.ignite.util:org.apache.ignite.spi.discovery.tcp.messages:org.apache.ignite.spi.discovery.tcp.internal:org.apache.ignite.spi.deployment.uri.scanners:org.apache.ignite.spi.deployment.uri.tasks:org.apache.ignite.yardstick</subpackages>
+                                    <subpackages>org.apache.ignite -exclude org.apache.ignite.client:org.apache.ignite.codegen:org.apache.ignite.examples:org.apache.ignite.internal:org.apache.ignite.schema:org.apache.ignite.tests:org.apache.ignite.tools:org.apache.ignite.util:org.apache.ignite.spi.discovery.tcp.messages:org.apache.ignite.spi.discovery.tcp.internal:org.apache.ignite.spi.deployment.uri.scanners:org.apache.ignite.spi.deployment.uri.tasks:org.apache.ignite.yardstick:org.apache.ignite.webtest</subpackages>
                                 </configuration>
                             </execution>
                         </executions>
@@ -323,6 +344,14 @@
                                         </replaceregexp>
 
                                         <chmod dir="${basedir}/target/release-package" perm="755" includes="**/*.sh" />
+
+                                        <!--
+                                        Line ending bugfix for builds packaged in MS Windows machine to adjust Linux based
+                                        end-of-line characters for Linux shell scripts
+                                        -->
+                                        <fixcrlf srcdir="${basedir}/target/release-package" eol="lf" eof="remove">
+                                            <include name="**/*.sh" />
+                                        </fixcrlf>
 
                                         <zip destfile="${basedir}/target/bin/${ignite.zip.pattern}.zip" encoding="UTF-8">
                                             <zipfileset dir="${basedir}/target/release-package" prefix="${ignite.zip.pattern}" filemode="755">
@@ -661,6 +690,7 @@
             </activation>
             <modules>
                 <module>modules/schema-import</module>
+                <module>modules/schema-import-db</module>
             </modules>
             <build>
                 <plugins>
@@ -717,6 +747,7 @@
             </activation>
             <modules>
                 <module>modules/schema-import</module>
+                <module>modules/schema-import-db</module>
             </modules>
             <build>
                 <plugins>
@@ -762,6 +793,15 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+
+        <profile>
+            <id>web-console</id>
+            <modules>
+                <module>modules/web-agent</module>
+                <module>modules/web-console</module>
+                <module>modules/schema-import-db</module>
+            </modules>
         </profile>
 
         <profile>

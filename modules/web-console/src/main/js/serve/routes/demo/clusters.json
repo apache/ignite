@@ -1,0 +1,50 @@
+[
+  {
+    "name": "cluster-igfs",
+    "connector": {
+      "noDelay": true
+    },
+    "communication": {
+      "tcpNoDelay": true
+    },
+    "igfss": [],
+    "caches": [],
+    "binaryConfiguration": {
+      "compactFooter": true,
+      "typeConfigurations": []
+    },
+    "discovery": {
+      "kind": "Multicast",
+      "Multicast": {
+        "addresses": ["127.0.0.1:47500..47510"]
+      },
+      "Vm": {
+        "addresses": ["127.0.0.1:47500..47510"]
+      }
+    }
+  },
+  {
+    "name": "cluster-caches",
+    "connector": {
+      "noDelay": true
+    },
+    "communication": {
+      "tcpNoDelay": true
+    },
+    "igfss": [],
+    "caches": [],
+    "binaryConfiguration": {
+      "compactFooter": true,
+      "typeConfigurations": []
+    },
+    "discovery": {
+      "kind": "Multicast",
+      "Multicast": {
+        "addresses": ["127.0.0.1:47500..47510"]
+      },
+      "Vm": {
+        "addresses": ["127.0.0.1:47500..47510"]
+      }
+    }
+  }
+]

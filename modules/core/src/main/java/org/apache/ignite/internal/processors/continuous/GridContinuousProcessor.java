@@ -733,7 +733,10 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
         if (info != null) {
             final GridContinuousBatch batch = info.addAll(objs);
 
-            sendNotification(nodeId, routineId, null, batch.collect(), orderedTopic, true, null);
+            Collection<Object> toSnd = batch.collect();
+
+            if (!toSnd.isEmpty())
+                sendNotification(nodeId, routineId, null, toSnd, orderedTopic, true, null);
         }
     }
 
@@ -1399,7 +1402,6 @@ public class GridContinuousProcessor extends GridProcessorAdapter {
          */
         GridContinuousBatch addAll(Collection<?> objs) {
             assert objs != null;
-            assert objs.size() > 0;
 
             GridContinuousBatch toSnd = null;
 

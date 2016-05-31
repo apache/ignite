@@ -24,6 +24,9 @@ import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Input arguments for Ignite benchmarks.
  */
@@ -40,6 +43,10 @@ public class IgniteBenchmarkArguments {
     /** */
     @Parameter(names = {"-cfg", "--Config"}, description = "Configuration file")
     private String cfg = "config/ignite-localhost-config.xml";
+
+    /** */
+    @Parameter(names = {"-ltqf", "--loadTestQueriesFile"}, description = "File with predefined SQL queries")
+    private String loadTestQueriesFile = null;
 
     /** */
     @Parameter(names = {"-sm", "--syncMode"}, description = "Synchronization mode")
@@ -144,6 +151,17 @@ public class IgniteBenchmarkArguments {
     /** */
     @Parameter(names = {"-pp", "--printPartitionStats"}, description = "Print partition statistics")
     private boolean printPartStats;
+
+    /** */
+    @Parameter(names = {"-ltops", "--allowedLoadTestOperations"}, variableArity = true, description = "List of enabled load test operations")
+    private List<String> allowedLoadTestOps = new ArrayList<>();
+
+    /**
+     * @return List of enabled load test operations.
+     */
+    public List<String> allowedLoadTestOps() {
+        return allowedLoadTestOps;
+    }
 
     /**
      * @return If {@code true} when need to print partition statistics.
@@ -276,6 +294,13 @@ public class IgniteBenchmarkArguments {
      */
     public String configuration() {
         return cfg;
+    }
+
+    /**
+     * @return File with predefined SQL queries.
+     */
+    public String loadTestQueriesFile() {
+        return loadTestQueriesFile;
     }
 
     /**

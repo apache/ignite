@@ -112,10 +112,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private volatile DiscoveryEvent discoEvt;
 
     /** */
-    @GridToStringInclude
+    @GridToStringExclude
     private final Set<UUID> remaining = new HashSet<>();
 
     /** */
+    @GridToStringExclude
     private List<ClusterNode> srvNodes;
 
     /** */
@@ -141,6 +142,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private GridFutureAdapter<Boolean> initFut;
 
     /** */
+    @GridToStringExclude
     private final List<IgniteRunnable> discoEvts = new ArrayList<>();
 
     /** */
@@ -1098,9 +1100,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             cacheValidRes = m != null ? m : Collections.<Integer, Boolean>emptyMap();
         }
 
-        cctx.cache().onExchangeDone(exchId.topologyVersion(), reqs, err);
-
         cctx.exchange().onExchangeDone(this, err);
+
+        cctx.cache().onExchangeDone(exchId.topologyVersion(), reqs, err);
 
         if (super.onDone(res, err) && realExchange) {
             if (log.isDebugEnabled())
@@ -1857,19 +1859,18 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        ClusterNode oldestNode;
         Set<UUID> remaining;
+        List<ClusterNode> srvNodes;
 
         synchronized (mux) {
-            oldestNode = this.crd;
             remaining = new HashSet<>(this.remaining);
+            srvNodes = this.srvNodes != null ? new ArrayList<>(this.srvNodes) : null;
         }
 
         return S.toString(GridDhtPartitionsExchangeFuture.class, this,
-            "oldest", oldestNode == null ? "null" : oldestNode.id(),
-            "oldestOrder", oldestNode == null ? "null" : oldestNode.order(),
             "evtLatch", evtLatch == null ? "null" : evtLatch.getCount(),
             "remaining", remaining,
+            "srvNodes", srvNodes,
             "super", super.toString());
     }
 }

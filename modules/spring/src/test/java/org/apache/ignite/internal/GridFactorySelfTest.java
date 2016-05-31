@@ -987,6 +987,31 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testRepeatingStart() throws Exception {
+        try {
+            IgniteConfiguration c = getConfiguration("1");
+
+            startGrid("1", c);
+
+            assert ((TcpDiscoverySpi)c.getDiscoverySpi()).started();
+
+            try {
+                startGrid("2", c);
+
+                fail("Should not be able to start grid using same configuration instance.");
+            }
+            catch (Exception e) {
+                info("Caught expected exception: " + e);
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
      * Test task.
      */
     private static class TestTask extends ComputeTaskSplitAdapter<Void, Void> {

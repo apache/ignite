@@ -47,6 +47,7 @@ import org.apache.ignite.internal.binary.noncompact.BinaryObjectBuilderNonCompac
 import org.apache.ignite.internal.binary.streams.BinaryHeapStreamByteOrderSelfTest;
 import org.apache.ignite.internal.binary.streams.BinaryOffheapStreamByteOrderSelfTest;
 import org.apache.ignite.internal.processors.cache.BinaryObjectOffHeapUnswapTemporaryTest;
+import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryObjectUserClassloaderSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryStoreBinariesDefaultMappersSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryStoreBinariesSimpleNameMappersSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.GridCacheBinaryStoreObjectsSelfTest;
@@ -139,6 +140,8 @@ public class IgniteBinaryObjectsTestSuite extends TestSuite {
         // Byte order
         suite.addTestSuite(BinaryHeapStreamByteOrderSelfTest.class);
         suite.addTestSuite(BinaryOffheapStreamByteOrderSelfTest.class);
+
+        suite.addTestSuite(GridCacheBinaryObjectUserClassloaderSelfTest.class);
 
         return suite;
     }

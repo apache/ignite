@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.cache.database;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * Meta store.
@@ -30,10 +28,21 @@ public interface MetaStore {
      *
      * @param cacheId Cache ID.
      * @param idxName Index name.
-     * @return A tuple, consisting of a root page ID for the given index and a boolean flag
-     *      indicating whether the page was newly allocated.
-     * @throws IgniteCheckedException If failed.
+     * @param idx {@code True} if should be allocated in index space, {@code false} for
+     *                        allocation in meta space.
+     * @return {@link RootPage} that keeps pageId, allocated flag that shows whether the page
+     * was newly allocated, and rootId that is counter which increments each time new page allocated.
+     * @throws IgniteCheckedException
      */
-    public IgniteBiTuple<FullPageId, Boolean> getOrAllocateForIndex(int cacheId, String idxName)
-        throws IgniteCheckedException;
+    public RootPage getOrAllocateForTree(int cacheId, String idxName, boolean idx) throws IgniteCheckedException;
+
+    /**
+     * Deallocate index page and remove from tree.
+     *
+     * @param cacheId Cache ID.
+     * @param idxName Index name.
+     * @return Root ID or -1 if no page was removed.
+     * @throws IgniteCheckedException
+     */
+    public long dropRootPage(int cacheId, String idxName) throws IgniteCheckedException;
 }

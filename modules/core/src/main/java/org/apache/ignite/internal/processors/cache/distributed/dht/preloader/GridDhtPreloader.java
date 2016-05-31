@@ -32,6 +32,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -114,6 +115,9 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
 
     /** */
     private final AtomicInteger partsEvictOwning = new AtomicInteger();
+
+    /** */
+    private volatile boolean stopping;
 
     /** Discovery listener. */
     private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
@@ -209,6 +213,8 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         if (log.isDebugEnabled())
             log.debug("DHT rebalancer onKernalStop callback.");
 
+        stopping = true;
+
         cctx.events().removeListener(discoLsnr);
 
         // Acquire write busy lock.
@@ -220,7 +226,18 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
         if (demander != null)
             demander.stop();
 
+        IgniteCheckedException err = stopError();
+
+        for (GridDhtForceKeysFuture fut : forceKeyFuts.values())
+            fut.onDone(err);
+
         top = null;
+    }
+    /**
+     * @return Node stop exception.
+     */
+    private IgniteCheckedException stopError() {
+        return new NodeStoppingException("Operation has been cancelled (cache or node is stopping).");
     }
 
     /** {@inheritDoc} */
@@ -705,9 +722,18 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
      * Adds future to future map.
      *
      * @param fut Future to add.
+     * @return {@code False} if node cache is stopping and future was completed with error.
      */
-    void addFuture(GridDhtForceKeysFuture<?, ?> fut) {
+    boolean addFuture(GridDhtForceKeysFuture<?, ?> fut) {
         forceKeyFuts.put(fut.futureId(), fut);
+
+        if (stopping) {
+            fut.onDone(stopError());
+
+            return false;
+        }
+
+        return true;
     }
 
     /**

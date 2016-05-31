@@ -22,6 +22,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.cache.Cache;
+import javax.cache.expiry.Duration;
+import javax.cache.expiry.ExpiryPolicy;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
@@ -148,6 +150,52 @@ public class GridCacheOffheapIndexGetSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 100; i++) {
             cache.get("key" + i);
             cache.get(i);
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testWithExpiryPolicy() throws Exception {
+        IgniteCache<Long, Long> cache = grid(0).cache(null);
+
+        cache = cache.withExpiryPolicy(new TestExiryPolicy());
+
+        for (long i = 0; i < 100; i++)
+            cache.put(i, i);
+
+        for (long i = 0; i < 100; i++)
+            assertEquals((Long)i, cache.get(i));
+
+        SqlQuery<Long, Long> qry = new SqlQuery<>(Long.class, "_val >= 90");
+
+        List<Cache.Entry<Long, Long>> res = cache.query(qry).getAll();
+
+        assertEquals(10, res.size());
+
+        for (Cache.Entry<Long, Long> e : res) {
+            assertNotNull(e.getKey());
+            assertNotNull(e.getValue());
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TestExiryPolicy implements ExpiryPolicy {
+        /** {@inheritDoc} */
+        @Override public Duration getExpiryForCreation() {
+            return Duration.ONE_MINUTE;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Duration getExpiryForAccess() {
+            return Duration.FIVE_MINUTES;
+        }
+
+        /** {@inheritDoc} */
+        @Override public Duration getExpiryForUpdate() {
+            return Duration.TWENTY_MINUTES;
         }
     }
 
