@@ -155,6 +155,11 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             // Absolute expiration
             cache.PutItem("1", "val", new[] { "persons" }, TimeSpan.MaxValue, DateTimeOffset.Now.AddMilliseconds(300));
             CheckExpiry(cache, "1", 300);
+            
+            // Sliding expiration
+            cache.PutItem("2", "val", new[] {"persons"}, TimeSpan.FromMilliseconds(300),
+                DateTimeOffset.Now.AddSeconds(3));
+            CheckExpiry(cache, "2", 300);
         }
 
         /// <summary>
@@ -171,7 +176,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         /// <summary>
         /// Creates the EntityFramework cache.
         /// </summary>
-        private static IgniteEntityFrameworkCache CreateEfCache()
+        private static ICache CreateEfCache()
         {
             var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
             var cache = ignite.CreateCache<string, object>("efCache");
