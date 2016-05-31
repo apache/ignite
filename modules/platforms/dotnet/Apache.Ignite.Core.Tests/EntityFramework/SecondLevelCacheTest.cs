@@ -151,6 +151,9 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             // TODO
         }
 
+        /// <summary>
+        /// Creates the EntityFramework cache.
+        /// </summary>
         private static IgniteEntityFrameworkCache CreateEfCache()
         {
             var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
