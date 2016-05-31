@@ -54,7 +54,6 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheEntry;
 import org.apache.ignite.cache.CacheInterceptor;
-import org.apache.ignite.cache.CacheMemoryMode;
 import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.Affinity;
@@ -82,6 +81,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.affinity.GridCacheAffinityImpl;
+import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
@@ -2953,8 +2953,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public void removeAll() throws IgniteCheckedException {
         assert ctx.isLocal();
 
-        for (Iterator<KeyCacheObject> it = ctx.offheap().keysIterator(); it.hasNext(); )
-            remove((K)it.next());
+        for (Iterator<CacheDataRow> it = ctx.offheap().iterator(true, true, null); it.hasNext(); )
+            remove((K)it.next().key());
 
         removeAll(keySet());
     }
@@ -3877,7 +3877,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             if (modes.primary || modes.backup) {
                 AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
-                IgniteCacheOffheapManager offheap = ctx.isNear() ? ctx.near().dht().context().offheap() : ctx.offheap();
+                IgniteCacheOffheapManager offheap = ctx.offheap();
 
                 if (modes.offheap)
                     size += offheap.entriesCount(modes.primary, modes.backup, topVer);

@@ -26,13 +26,13 @@ import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandle
  */
 public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
     /** */
-    protected static final int SHIFT_LEFT = ITEMS_OFF;
+    private static final int SHIFT_LEFT = ITEMS_OFF;
 
     /** */
     protected static final int SHIFT_LINK = SHIFT_LEFT + 8;
 
     /** */
-    protected final int SHIFT_RIGHT = SHIFT_LINK + itemSize;
+    private final int SHIFT_RIGHT = SHIFT_LINK + itemSize;
 
     /**
      * @param type Page type.
