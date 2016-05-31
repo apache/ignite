@@ -131,7 +131,11 @@ namespace Apache.Ignite.EntityFramework
             DateTimeOffset absoluteExpiration)
         {
             if (slidingExpiration != TimeSpan.MaxValue)
+            {
+                // Sliding expiration requires that "touch" operations (like Get)
+                // are performed on WithExpiryPolicy cache instance, which is not possible here
                 throw new NotSupportedException(GetType() + " does not support sliding expiration.");
+            }
 
             if (absoluteExpiration == DateTimeOffset.MaxValue)
                 return _cache;
