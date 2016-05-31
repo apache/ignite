@@ -50,13 +50,13 @@ public class MetadataStorage implements MetaStore {
     private static final int LONG_LEN = 8;
 
     /** Constant that's used for tree root page allocation. */
-    private static final int TREE_CACHE_ID = Integer.MAX_VALUE;
+    private static final int TREE_CACHE_ID = Integer.MAX_VALUE; // TODO drop this
 
     /** Page memory. */
     private final PageMemory pageMem;
 
     /** Increments on each root page allocation. */
-    private final AtomicLong rootId = new AtomicLong(0);
+    private final AtomicLong rootId = new AtomicLong(0); // TODO drop this
 
     /** Index tree. */
     private volatile MetaTree metaTree;
@@ -71,14 +71,17 @@ public class MetadataStorage implements MetaStore {
     /** {@inheritDoc} */
     @Override public RootPage getOrAllocateForTree(final int cacheId, final String idxName, final boolean idx)
         throws IgniteCheckedException {
-        if (idxName.length() > MAX_IDX_NAME_LEN)
+        // TODO drop cacheId from signature - must be one metastore per cache and it is bad idea to store more data than needed
+        // TODO drop idx from signature - never used
+
+        if (idxName.length() > MAX_IDX_NAME_LEN) // TODO useless check because we actually store in UTF-8
             throw new IllegalArgumentException("Too long indexName [max allowed length=" + MAX_IDX_NAME_LEN +
                 ", current length=" + idxName.length() + "]");
 
         final MetaTree tree = metaTree();
 
         synchronized (this) {
-            byte[] idxNameBytes = idxName.getBytes(StandardCharsets.UTF_8);
+            byte[] idxNameBytes = idxName.getBytes(StandardCharsets.UTF_8); // TODO either store UTF-16 or calculate for UTF-8
 
             final IndexItem row = tree.findOne(new IndexItem(idxNameBytes, 0, cacheId, 0));
 
@@ -90,7 +93,8 @@ public class MetadataStorage implements MetaStore {
                 tree.put(new IndexItem(idxNameBytes, idxRoot.pageId(), cacheId, rootId));
 
                 return new RootPage(idxRoot, true, rootId);
-            } else {
+            }
+            else {
                 final FullPageId pageId = new FullPageId(row.pageId, cacheId);
 
                 return new RootPage(pageId, false, rootId.get());
@@ -103,17 +107,18 @@ public class MetadataStorage implements MetaStore {
         throws IgniteCheckedException {
         final MetaTree tree = metaTree();
 
-        byte[] idxNameBytes = idxName.getBytes(StandardCharsets.UTF_8);
+        byte[] idxNameBytes = idxName.getBytes(StandardCharsets.UTF_8); // TODO either store UTF-16 or calculate for UTF-8
 
         final IndexItem row;
 
-        synchronized (this) {
+        synchronized (this) { // TODO don't think this synchronisation makes any sense
             row = tree.remove(new IndexItem(idxNameBytes, 0, cacheId, 0));
         }
 
-        if (row != null)
+        if (row != null) // TODO looks like a bug, are we allowed to call freePage?
             pageMem.freePage(new FullPageId(row.pageId, cacheId));
 
+        // TODO Looks like this rootId is useless, and it is better to just return dropped root page ID or true/false.
         return row != null ? row.rootId : -1;
     }
 
@@ -122,6 +127,9 @@ public class MetadataStorage implements MetaStore {
      * @return Meta page.
      */
     private RootPage metaPageTree(int cacheId) throws IgniteCheckedException {
+        // TODO this complex stuff must go away after metastore will be made one per cache
+        // TODO and we must make pageMem.metaPage to be a MetaTree root.
+
         Page meta = pageMem.metaPage();
 
         try {
@@ -193,7 +201,7 @@ public class MetadataStorage implements MetaStore {
             final IOVersions<? extends BPlusInnerIO<IndexItem>> innerIos,
             final IOVersions<? extends BPlusLeafIO<IndexItem>> leafIos, final boolean initNew)
             throws IgniteCheckedException {
-            super("Meta@" + cacheId + "##", cacheId, pageMem, metaPageId, reuseList, innerIos, leafIos);
+            super(treeName("meta", cacheId, "Meta"), cacheId, pageMem, metaPageId, reuseList, innerIos, leafIos);
 
             if (initNew)
                 initNew();
@@ -326,7 +334,7 @@ public class MetadataStorage implements MetaStore {
         // Cache ID.
         dst.putInt(dstOff, src.getInt(srcOff));
 
-        int shift = 0;
+        int shift = 0; // TODO drop shift and use buf.position(off)
 
         shift += INT_LEN;
 
@@ -338,7 +346,7 @@ public class MetadataStorage implements MetaStore {
         shift += BYTE_LEN;
 
         // Index name.
-        for (int i = 0; i < len; i++)
+        for (int i = 0; i < len; i++) // TODO byte by byte write???
             dst.put(dstOff + i + shift, src.get(srcOff + i + shift));
 
         shift += len;
@@ -360,7 +368,7 @@ public class MetadataStorage implements MetaStore {
      * @return Read row.
      */
     private static IndexItem readRow(final ByteBuffer buf, final int off) {
-        int shift = 0;
+        int shift = 0; // TODO drop shift and use buf.position(off)
 
         // Cache ID.
         final int cacheId = buf.getInt(off);
@@ -376,7 +384,7 @@ public class MetadataStorage implements MetaStore {
         final byte[] idxName = new byte[len];
 
         for (int i = 0; i < len; i++)
-            idxName[i] = buf.get(off + i + shift);
+            idxName[i] = buf.get(off + i + shift); // TODO byte by byte read???
 
         shift += len;
 
@@ -415,6 +423,7 @@ public class MetadataStorage implements MetaStore {
          * @param ver Version.
          */
         private IndexInnerIO(final int ver) {
+            // TODO fix calculation for UTF-8 or actually store UTF-16
             // 4 byte cache ID, UTF-16 symbols and 1 byte for length, 8 bytes pageId, 8 bytes root ID
             super(T_INDEX_INNER, ver, false, 4 + MAX_IDX_NAME_LEN * 2 + 1 + 8 + 8);
         }
@@ -457,6 +466,7 @@ public class MetadataStorage implements MetaStore {
          * @param ver Version.
          */
         private IndexLeafIO(final int ver) {
+            // TODO fix calculation for UTF-8 or actually store UTF-16
             // 4 byte cache ID, UTF-16 symbols and 1 byte for length, 8 bytes pageId, 8 bytes root ID
             super(T_INDEX_LEAF, ver, 4 + MAX_IDX_NAME_LEN * 2 + 1 + 8 + 8);
         }
@@ -493,7 +503,7 @@ public class MetadataStorage implements MetaStore {
      * @throws IgniteCheckedException
      */
     private MetaTree metaTree() throws IgniteCheckedException {
-        if (metaTree == null) {
+        if (metaTree == null) { // TODO do we really need this lazy initialization?
             synchronized (this) {
                 if (metaTree == null) {
                     final RootPage rootPage = metaPageTree(TREE_CACHE_ID);
