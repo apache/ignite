@@ -158,12 +158,12 @@ public class IgniteProcessProxy implements IgniteEx {
 
         assert rmtNodeStartedLatch.await(30, TimeUnit.SECONDS): "Remote node has not joined [id=" + id + ']';
 
-        IgniteProcessProxy prevVal = gridProxies.putIfAbsent(cfg.getGridName(), this);
+        IgniteProcessProxy prevVal = gridProxies.putIfAbsent(cfg.getLocalInstanceName(), this);
 
         if (prevVal != null) {
-            remoteCompute().run(new StopGridTask(cfg.getGridName(), true));
+            remoteCompute().run(new StopGridTask(cfg.getLocalInstanceName(), true));
 
-            throw new IllegalStateException("There was found instance assotiated with " + cfg.getGridName() +
+            throw new IllegalStateException("There was found instance assotiated with " + cfg.getLocalInstanceName() +
                 ", instance= " + prevVal + ". New started node was stopped.");
         }
     }
@@ -276,7 +276,7 @@ public class IgniteProcessProxy implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public String name() {
-        return cfg.getGridName();
+        return cfg.getLocalInstanceName();
     }
 
     /** {@inheritDoc} */
