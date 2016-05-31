@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.EntityFramework
 {
+    using Apache.Ignite.EntityFramework;
     using NUnit.Framework;
 
     /// <summary>
@@ -25,8 +26,22 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
     public class SecondLevelCacheTest
     {
         [Test]
+        public void TestConfiguration()
+        {
+            using (var ignite =
+                    Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration()) {GridName = "auxGrid"}))
+            {
+                Assert.IsTrue(ignite.WaitTopology(1));
+
+                var cfg = new IgniteDbConfiguration();
+            }
+            
+        }
+
+        [Test]
         public void TestBasic()
         {
+
             
         }
 

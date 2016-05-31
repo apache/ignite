@@ -37,6 +37,18 @@
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="EFCache, Version=1.0.0.0, Culture=neutral, PublicKeyToken=46c4868af4307d2c, processorArchitecture=MSIL">
+      <HintPath>..\packages\EntityFramework.Cache.1.0.0\lib\net40\EFCache.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="EntityFramework, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>..\packages\EntityFramework.6.1.0\lib\net40\EntityFramework.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="EntityFramework.SqlServer, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, processorArchitecture=MSIL">
+      <HintPath>..\packages\EntityFramework.6.1.0\lib\net40\EntityFramework.SqlServer.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="nunit-console-runner">
       <HintPath>..\libs\nunit-console-runner.dll</HintPath>
@@ -46,6 +58,7 @@
       <HintPath>..\libs\nunit.framework.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Runtime.Serialization" />
@@ -165,6 +178,10 @@
       <Project>{4CD2F726-7E2B-46C4-A5BA-057BB82EECB6}</Project>
       <Name>Apache.Ignite.Core</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Apache.Ignite.EntityFramework\Apache.Ignite.EntityFramework.csproj">
+      <Project>{C558518A-C1A0-4224-AAA9-A8688474B4DC}</Project>
+      <Name>Apache.Ignite.EntityFramework</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Apache.Ignite.Linq\Apache.Ignite.Linq.csproj">
       <Project>{5b571661-17f4-4f29-8c7d-0edb38ca9b55}</Project>
       <Name>Apache.Ignite.Linq</Name>
@@ -276,7 +293,9 @@
   <ItemGroup>
     <None Include="Apache.Ignite.Core.Tests.nunit" />
     <None Include="Apache.Ignite.Core.Tests.snk" />
-    <None Include="app.config" />
+    <None Include="app.config">
+      <SubType>Designer</SubType>
+    </None>
     <Content Include="Config\ignite-dotnet-cfg.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -286,6 +305,7 @@
     <None Include="Config\Apache.Ignite.exe.config.test2">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup Condition="'$(Platform)' != 'AnyCPU'">
