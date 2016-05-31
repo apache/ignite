@@ -72,6 +72,10 @@ namespace Apache.Ignite.EntityFramework
         public bool GetItem(string key, out object value)
         {
             IBinaryObject binVal;
+
+            // TODO: WTF
+            //var cache = _expiryCaches.Select(x => x.Value).FirstOrDefault() ?? _cache;
+
             if (!_cache.TryGet(key, out binVal))
             {
                 value = null;
