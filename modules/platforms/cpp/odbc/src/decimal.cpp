@@ -70,15 +70,7 @@ namespace ignite
 
     double Decimal::ToDouble() const
     {
-        //double res = 0;
-
-        //for (int32_t i = 0; i < len; ++i)
-        //    res = (res * 256) + static_cast<uint8_t>(magnitude[i]);
-
-        //for (int32_t i = 0; i < GetScale(); ++i)
-        //    res /= 10.0;
-
-        //return res * GetSign();
+        // TODO
 
         return 0.0;
     }

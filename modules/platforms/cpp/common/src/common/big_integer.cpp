@@ -232,7 +232,19 @@ namespace ignite
 
     int32_t BigInteger::GetPrecision() const
     {
-        return 0;
+        // See http://graphics.stanford.edu/~seander/bithacks.html
+        // for the details on the algorithm.
+
+        if (mag.GetSize() == 0)
+            return 1;
+
+        int32_t r = static_cast<uint32_t>(((
+            static_cast<uint64_t>(GetBitLength()) + 1) * 646456993ULL) >> 31);
+
+        BigInteger prec(10);
+        prec.Pow(r);
+
+        return Compare(prec) < 0 ? r : r + 1;
     }
 
     void BigInteger::MagnitudeToBytes(common::FixedSizeArray<int8_t>& buffer) const
@@ -557,7 +569,6 @@ namespace ignite
 
         return 0;
     }
-
 
     int64_t BigInteger::ToInt64() const
     {
