@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.EntityFramework
 {
     using System;
+    using System.Threading;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.EntityFramework;
@@ -148,7 +149,21 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         [Test]
         public void TestExpiration()
         {
-            // TODO
+            var cache = CreateEfCache();
+
+            cache.PutItem("1", "val", new[] { "persons" }, TimeSpan.FromMilliseconds(300), DateTimeOffset.MaxValue);
+            CheckExpiry(cache, "1", 300);
+        }
+
+        /// <summary>
+        /// Checks the expiry.
+        /// </summary>
+        private static void CheckExpiry(IgniteEntityFrameworkCache cache, string key, int expiryMs)
+        {
+            object val;
+            Assert.IsTrue(cache.GetItem(key, out val));
+            Thread.Sleep(expiryMs);
+            Assert.IsFalse(cache.GetItem(key, out val));
         }
 
         /// <summary>
