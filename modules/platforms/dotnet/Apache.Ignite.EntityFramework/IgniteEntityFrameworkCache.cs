@@ -90,12 +90,14 @@ namespace Apache.Ignite.EntityFramework
         public void PutItem(string key, object value, IEnumerable<string> dependentEntitySets, 
             TimeSpan slidingExpiration, DateTimeOffset absoluteExpiration)
         {
+            var cache = GetCacheWithExpiry(slidingExpiration, absoluteExpiration);
+
             var binVal = _binary.GetBuilder(CacheEntryTypeName)
                 .SetField(ValueField, value)
                 .SetField(EntitySetsField, dependentEntitySets.ToArray())
                 .Build();
 
-            GetCacheWithExpiry(slidingExpiration, absoluteExpiration).Put(key, binVal);
+            cache.Put(key, binVal);
         }
 
         /** <inheritdoc /> */

@@ -151,7 +151,8 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         {
             var cache = CreateEfCache();
 
-            cache.PutItem("1", "val", new[] { "persons" }, TimeSpan.FromMilliseconds(300), DateTimeOffset.MaxValue);
+            // Absolute expiration
+            cache.PutItem("1", "val", new[] { "persons" }, TimeSpan.MaxValue, DateTimeOffset.Now.AddMilliseconds(300));
             CheckExpiry(cache, "1", 300);
         }
 
