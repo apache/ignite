@@ -44,10 +44,17 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             Assert.IsNull(Ignition.TryGetIgnite());
 
             // Test default config (picks up app.config section)
-            new IgniteDbConfiguration();
-            var ignite = Ignition.TryGetIgnite("myGrid1");
+            CheckCacheAndStop("myGrid1", IgniteDbConfiguration.DefaultCacheName, new IgniteDbConfiguration());
+        }
+
+        // ReSharper disable once UnusedParameter.Local
+        private static void CheckCacheAndStop(string gridName, string cacheName, IgniteDbConfiguration cfg)
+        {
+            Assert.IsNotNull(cfg);
+
+            var ignite = Ignition.TryGetIgnite(gridName);
             Assert.IsNotNull(ignite);
-            Assert.IsNotNull(ignite.GetCache<object, object>(IgniteDbConfiguration.DefaultCacheName));
+            Assert.IsNotNull(ignite.GetCache<object, object>(cacheName));
         }
 
         [Test]
