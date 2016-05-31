@@ -123,9 +123,23 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             Assert.AreEqual("val", val);
 
             // Overwrite
-            cache.PutItem("1", "val1", new[] { "persons1" }, TimeSpan.MaxValue, DateTimeOffset.MaxValue);
+            cache.PutItem("1", "val1", new[] { "persons" }, TimeSpan.MaxValue, DateTimeOffset.MaxValue);
             Assert.IsTrue(cache.GetItem("1", out val));
             Assert.AreEqual("val1", val);
+
+            // Invalidate
+            cache.InvalidateItem("1");
+            Assert.IsFalse(cache.GetItem("1", out val));
+
+            // Invalidate sets
+            cache.PutItem("1", "val1", new[] { "persons" }, TimeSpan.MaxValue, DateTimeOffset.MaxValue);
+            cache.PutItem("2", "val2", new[] { "address" }, TimeSpan.MaxValue, DateTimeOffset.MaxValue);
+            cache.PutItem("3", "val2", new[] { "companies", "persons" }, TimeSpan.MaxValue, DateTimeOffset.MaxValue);
+            cache.InvalidateSets(new[] {"cars", "persons"});
+
+            Assert.IsFalse(cache.GetItem("1", out val));
+            Assert.IsTrue(cache.GetItem("2", out val));
+            Assert.IsFalse(cache.GetItem("3", out val));
         }
 
         /// <summary>
