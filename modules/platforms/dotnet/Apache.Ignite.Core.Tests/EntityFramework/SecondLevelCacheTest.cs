@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Tests.EntityFramework
 {
     using System;
-    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.EntityFramework;
@@ -39,7 +38,6 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         }
 
         [Test]
-        [SuppressMessage("ReSharper", "ObjectCreationAsStatement")]
         public void TestConfiguration()
         {
             Assert.IsNull(Ignition.TryGetIgnite());
