@@ -179,7 +179,8 @@ namespace Apache.Ignite.EntityFramework
                 ? TimeSpan.FromSeconds(slidingSeconds)
                 : (TimeSpan?) null;
 
-            return new ExpiryPolicy(absolute, sliding, sliding);
+            // TODO: ???
+            return new ExpiryPolicy(absolute ?? sliding, sliding, sliding);
         }
 
         /// <summary>

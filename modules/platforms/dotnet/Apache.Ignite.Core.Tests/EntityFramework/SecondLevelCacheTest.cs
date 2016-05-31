@@ -158,7 +158,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             
             // Sliding expiration
             cache.PutItem("2", "val", new[] {"persons"}, TimeSpan.FromMilliseconds(300),
-                DateTimeOffset.Now.AddSeconds(3));
+                DateTimeOffset.MaxValue);
             CheckExpiry(cache, "2", 300);
         }
 
