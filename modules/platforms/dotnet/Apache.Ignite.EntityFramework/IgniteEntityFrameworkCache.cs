@@ -101,6 +101,7 @@ namespace Apache.Ignite.EntityFramework
 
             // TODO: IGNITE-2546
             // TODO: ScanQuery, Compute, or even Java implementation?
+            // TODO: Or store entity set<->keys mapping separately?
             foreach (var entry in _cache)
             {
                 var cachedSets = entry.Value.GetField<string[]>(EntitySetsField);

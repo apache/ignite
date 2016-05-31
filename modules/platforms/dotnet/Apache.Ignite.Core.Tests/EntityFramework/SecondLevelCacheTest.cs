@@ -112,9 +112,20 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         {
             var cache = CreateEfCache();
 
+            // Missing value
             object val;
             Assert.IsFalse(cache.GetItem("1", out val));
             Assert.IsNull(val);
+
+            // Put
+            cache.PutItem("1", "val", new [] {"persons"}, TimeSpan.MaxValue, DateTimeOffset.MaxValue);
+            Assert.IsTrue(cache.GetItem("1", out val));
+            Assert.AreEqual("val", val);
+
+            // Overwrite
+            cache.PutItem("1", "val1", new[] { "persons1" }, TimeSpan.MaxValue, DateTimeOffset.MaxValue);
+            Assert.IsTrue(cache.GetItem("1", out val));
+            Assert.AreEqual("val1", val);
         }
 
         /// <summary>
