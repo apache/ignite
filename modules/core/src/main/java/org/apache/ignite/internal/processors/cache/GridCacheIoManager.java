@@ -58,6 +58,8 @@ import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPr
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxPrepareResponse;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryRequest;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryResponse;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
 import org.apache.ignite.internal.util.F0;
 import org.apache.ignite.internal.util.GridLeanSet;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
@@ -128,16 +130,33 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
                     AffinityTopologyVersion startTopVer = new AffinityTopologyVersion(cctx.localNode().order());
 
-                    assert cacheMsg.topologyVersion().compareTo(startTopVer) > 0 :
-                        "Invalid affinity request [startTopVer=" + startTopVer + ", msg=" + cacheMsg + ']';
+                    DynamicCacheDescriptor cacheDesc = cctx.cache().cacheDescriptor(cacheMsg.cacheId());
 
-                    // Need to wait for initial exchange to avoid race between cache start and affinity request.
+                    if (cacheDesc != null) {
+                        if (cacheDesc.startTopologyVersion() != null)
+                            startTopVer = cacheDesc.startTopologyVersion();
+                        else if (cacheDesc.receivedFromStartVersion() != null)
+                            startTopVer = cacheDesc.receivedFromStartVersion();
+                    }
+
+                    // Need to wait for exchange to avoid race between cache start and affinity request.
                     fut = cctx.exchange().affinityReadyFuture(startTopVer);
 
                     if (fut != null && !fut.isDone()) {
-                        cctx.kernalContext().closure().runLocalSafe(new Runnable() {
-                            @Override public void run() {
-                                lsnr.onMessage(nodeId, cacheMsg);
+                        if (log.isDebugEnabled()) {
+                            log.debug("Wait for exchange before processing message [msg=" + msg +
+                                ", node=" + nodeId +
+                                ", waitVer=" + startTopVer +
+                                ", cacheDesc=" + cacheDesc + ']');
+                        }
+
+                        fut.listen(new CI1<IgniteInternalFuture<?>>() {
+                            @Override public void apply(IgniteInternalFuture<?> fut) {
+                                cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                                    @Override public void run() {
+                                        handleMessage(nodeId, cacheMsg);
+                                    }
+                                });
                             }
                         });
 
@@ -442,7 +461,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             break;
 
             case 45: {
-                processMessage(nodeId,msg,c);// Will be handled by Rebalance Demander.
+                processMessage(nodeId, msg, c);// Will be handled by Rebalance Demander.
             }
 
             break;
@@ -543,7 +562,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             break;
 
             case 114: {
-                processMessage(nodeId,msg,c);// Will be handled by Rebalance Demander.
+                processMessage(nodeId, msg, c);// Will be handled by Rebalance Demander.
             }
 
             break;
@@ -619,7 +638,18 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             cctx.mvcc().contextReset();
 
             // Unwind eviction notifications.
-            CU.unwindEvicts(cctx);
+            if (msg instanceof IgniteTxStateAware) {
+                IgniteTxState txState = ((IgniteTxStateAware)msg).txState();
+
+                if (txState != null)
+                    txState.unwindEvicts(cctx);
+            }
+            else {
+                GridCacheContext ctx = cctx.cacheContext(msg.cacheId());
+
+                if (ctx != null)
+                    CU.unwindEvicts(ctx);
+            }
         }
     }
 

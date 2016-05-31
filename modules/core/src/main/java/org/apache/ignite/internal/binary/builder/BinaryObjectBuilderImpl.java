@@ -195,6 +195,10 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
             Set<Integer> remainsFlds = null;
 
+            BinaryType meta = ctx.metadata(typeId);
+
+            Map<String, Integer> fieldsMeta = null;
+
             if (reader != null) {
                 BinarySchema schema = reader.schema();
 
@@ -204,9 +208,15 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                     assignedFldsById = U.newHashMap(assignedVals.size());
 
                     for (Map.Entry<String, Object> entry : assignedVals.entrySet()) {
-                        int fieldId = ctx.fieldId(typeId, entry.getKey());
+                        String name = entry.getKey();
+                        Object val = entry.getValue();
 
-                        assignedFldsById.put(fieldId, entry.getValue());
+                        int fieldId = ctx.fieldId(typeId, name);
+
+                        assignedFldsById.put(fieldId, val);
+
+                        if (val != REMOVED_FIELD_MARKER)
+                            fieldsMeta = checkMetadata(meta, fieldsMeta, val, name);
                     }
 
                     remainsFlds = assignedFldsById.keySet();
@@ -280,10 +290,6 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
                 }
             }
 
-            BinaryType meta = ctx.metadata(typeId);
-
-            Map<String, Integer> fieldsMeta = null;
-
             if (assignedVals != null && (remainsFlds == null || !remainsFlds.isEmpty())) {
                 for (Map.Entry<String, Object> entry : assignedVals.entrySet()) {
                     Object val = entry.getValue();
@@ -302,43 +308,9 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
 
                     serializer.writeValue(writer, val);
 
-                    String oldFldTypeName = meta == null ? null : meta.fieldTypeName(name);
-
-                    boolean nullObjField = false;
-
-                    int newFldTypeId;
-
-                    if (val instanceof BinaryValueWithType) {
-                        newFldTypeId = ((BinaryValueWithType)val).typeId();
-
-                        if (newFldTypeId == GridBinaryMarshaller.OBJ && ((BinaryValueWithType)val).value() == null)
-                            nullObjField = true;
-                    }
-                    else
-                        newFldTypeId = BinaryUtils.typeByClass(val.getClass());
-
-                    String newFldTypeName = BinaryUtils.fieldTypeName(newFldTypeId);
-
-                    if (oldFldTypeName == null) {
-                        // It's a new field, we have to add it to metadata.
-                        if (fieldsMeta == null)
-                            fieldsMeta = new HashMap<>();
-
-                        fieldsMeta.put(name, BinaryUtils.fieldTypeId(newFldTypeName));
-                    }
-                    else if (!nullObjField) {
-                        String objTypeName = BinaryUtils.fieldTypeName(GridBinaryMarshaller.OBJ);
-
-                        if (!objTypeName.equals(oldFldTypeName) && !oldFldTypeName.equals(newFldTypeName)) {
-                            throw new BinaryObjectException(
-                                "Wrong value has been set [" +
-                                    "typeName=" + (typeName == null ? meta.typeName() : typeName) +
-                                    ", fieldName=" + name +
-                                    ", fieldType=" + oldFldTypeName +
-                                    ", assignedValueType=" + newFldTypeName + ']'
-                            );
-                        }
-                    }
+                    if (reader == null)
+                        // Metadata has already been checked.
+                        fieldsMeta = checkMetadata(meta, fieldsMeta, val, name);
                 }
             }
 
@@ -384,6 +356,55 @@ public class BinaryObjectBuilderImpl implements BinaryObjectBuilder {
         finally {
             writer.popSchema();
         }
+    }
+
+    /**
+     * Checks metadata when a BinaryObject is being serialized.
+     *
+     * @param meta Current metadata.
+     * @param fieldsMeta Map holding metadata information that has to be updated.
+     * @param newVal Field value being serialized.
+     * @param name Field name.
+     */
+    private Map<String, Integer> checkMetadata(BinaryType meta, Map<String, Integer> fieldsMeta, Object newVal,
+        String name) {
+        String oldFldTypeName = meta == null ? null : meta.fieldTypeName(name);
+
+        boolean nullFieldVal = false;
+
+        int newFldTypeId;
+
+        if (newVal instanceof BinaryValueWithType) {
+            newFldTypeId = ((BinaryValueWithType)newVal).typeId();
+
+            if (((BinaryValueWithType)newVal).value() == null)
+                nullFieldVal = true;
+        }
+        else
+            newFldTypeId = BinaryUtils.typeByClass(newVal.getClass());
+
+        if (oldFldTypeName == null) {
+            // It's a new field, we have to add it to metadata.
+            if (fieldsMeta == null)
+                fieldsMeta = new HashMap<>();
+
+            fieldsMeta.put(name, newFldTypeId);
+        }
+        else if (!nullFieldVal) {
+            String newFldTypeName = BinaryUtils.fieldTypeName(newFldTypeId);
+
+            if (!F.eq(newFldTypeName, oldFldTypeName)) {
+                throw new BinaryObjectException(
+                    "Wrong value has been set [" +
+                        "typeName=" + (typeName == null ? meta.typeName() : typeName) +
+                        ", fieldName=" + name +
+                        ", fieldType=" + oldFldTypeName +
+                        ", assignedValueType=" + newFldTypeName + ']'
+                );
+            }
+        }
+
+        return fieldsMeta;
     }
 
     /** {@inheritDoc} */

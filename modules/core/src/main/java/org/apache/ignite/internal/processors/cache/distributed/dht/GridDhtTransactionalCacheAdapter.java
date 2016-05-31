@@ -29,6 +29,7 @@ import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -76,6 +77,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.transactions.TransactionIsolation;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.processors.cache.GridCacheOperation.NOOP;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -377,14 +379,66 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         IgniteInternalFuture<Object> keyFut = F.isEmpty(req.keys()) ? null :
             ctx.dht().dhtPreloader().request(req.keys(), req.topologyVersion());
 
-        if (keyFut == null || keyFut.isDone())
+        if (keyFut == null || keyFut.isDone()) {
+            if (keyFut != null) {
+                try {
+                    keyFut.get();
+                }
+                catch (NodeStoppingException e) {
+                    return;
+                }
+                catch (IgniteCheckedException e) {
+                    onForceKeysError(nodeId, req, e);
+
+                    return;
+                }
+            }
+
             processDhtLockRequest0(nodeId, req);
+        }
         else {
             keyFut.listen(new CI1<IgniteInternalFuture<Object>>() {
-                @Override public void apply(IgniteInternalFuture<Object> t) {
+                @Override public void apply(IgniteInternalFuture<Object> fut) {
+                    try {
+                        fut.get();
+                    }
+                    catch (NodeStoppingException e) {
+                        return;
+                    }
+                    catch (IgniteCheckedException e) {
+                        onForceKeysError(nodeId, req, e);
+
+                        return;
+                    }
+
                     processDhtLockRequest0(nodeId, req);
                 }
             });
+        }
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param req Request.
+     * @param e Error.
+     */
+    private void onForceKeysError(UUID nodeId, GridDhtLockRequest req, IgniteCheckedException e) {
+        GridDhtLockResponse res = new GridDhtLockResponse(ctx.cacheId(),
+            req.version(),
+            req.futureId(),
+            req.miniId(),
+            e,
+            ctx.deploymentEnabled());
+
+        try {
+            ctx.io().send(nodeId, res, ctx.ioPolicy());
+        }
+        catch (ClusterTopologyCheckedException e0) {
+            if (log.isDebugEnabled())
+                log.debug("Failed to send lock reply to remote node because it left grid: " + nodeId);
+        }
+        catch (IgniteCheckedException e0) {
+            U.error(log, "Failed to send lock reply to node: " + nodeId, e);
         }
     }
 
@@ -867,6 +921,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
                         tx = new GridDhtTxLocal(
                             ctx.shared(),
+                            req.topologyVersion(),
                             nearNode.id(),
                             req.version(),
                             req.futureId(),
@@ -888,7 +943,8 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                             req.subjectId(),
                             req.taskNameHash());
 
-                        tx.syncCommit(req.syncCommit());
+                        if (req.syncCommit())
+                            tx.syncMode(FULL_SYNC);
 
                         tx = ctx.tm().onCreated(null, tx);
 
@@ -1123,7 +1179,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                                 CacheObject val = null;
 
                                 if (ret)
-                                    val = e.innerGet(tx,
+                                    val = e.innerGet(
+                                        null,
+                                        tx,
                                         /*swap*/true,
                                         /*read-through*/false,
                                         /*fail-fast.*/false,
@@ -1362,9 +1420,9 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         Map<ClusterNode, List<KeyCacheObject>> dhtMap,
         Map<ClusterNode, List<KeyCacheObject>> nearMap)
         throws IgniteCheckedException {
-        Collection<ClusterNode> dhtNodes = ctx.dht().topology().nodes(cached.partition(), topVer);
+        List<ClusterNode> dhtNodes = ctx.dht().topology().nodes(cached.partition(), topVer);
 
-        ClusterNode primary = F.first(dhtNodes);
+        ClusterNode primary = dhtNodes.get(0);
 
         assert primary != null;
 

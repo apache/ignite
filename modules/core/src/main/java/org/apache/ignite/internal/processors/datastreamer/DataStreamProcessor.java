@@ -24,6 +24,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.managers.communication.GridIoManager;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
@@ -339,7 +340,12 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         DataStreamerResponse res = new DataStreamerResponse(reqId, errBytes, forceLocDep);
 
         try {
-            ctx.io().send(nodeId, resTopic, res, PUBLIC_POOL);
+            Byte plc = GridIoManager.currentPolicy();
+
+            if (plc == null)
+                plc = PUBLIC_POOL;
+
+            ctx.io().send(nodeId, resTopic, res, plc);
         }
         catch (IgniteCheckedException e) {
             if (ctx.discovery().alive(nodeId))

@@ -165,6 +165,60 @@ class IgniteRDDSpec extends FunSpec with Matchers with BeforeAndAfterAll with Be
                 sc.stop()
             }
         }
+
+        it("should successfully query complex object fields") {
+            assert(false, "https://issues.apache.org/jira/browse/IGNITE-3077")
+
+            val sc = new SparkContext("local[*]", "test")
+
+            try {
+                val ic = new IgniteContext[Integer, WithObjectField](sc,
+                    () ⇒ configuration("client", client = true))
+
+                val cache: IgniteRDD[Integer, WithObjectField] = ic.fromCache(PARTITIONED_CACHE_NAME)
+
+                cache.savePairs(sc.parallelize(0 to 1000, 2).map(i ⇒ (i:java.lang.Integer, new WithObjectField(i, new Entity(i, "", i)))))
+
+                val df = cache.sql("select i, ts from WithLocalDate where i = ?", 50)
+
+                df.printSchema()
+
+                val res = df.collect()
+
+                assert(res.length == 1, "Invalid result length")
+                assert(50 == res(0)(0), "Invalid result")
+            }
+            finally {
+                sc.stop()
+            }
+        }
+
+        it("should properly count RDD size") {
+            val sc = new SparkContext("local[*]", "test")
+
+            try {
+                val ic = new IgniteContext[Integer, WithObjectField](sc,
+                    () ⇒ configuration("client", client = true))
+
+                val cache: IgniteRDD[Integer, WithObjectField] = ic.fromCache(PARTITIONED_CACHE_NAME)
+
+                assert(cache.count() == 0)
+                assert(cache.isEmpty())
+
+                cache.savePairs(sc.parallelize(0 until 1000, 2).map(i ⇒ (i:java.lang.Integer, new WithObjectField(i, new Entity(i, "", i)))))
+
+                assert(cache.count() == 1000)
+                assert(!cache.isEmpty())
+
+                cache.clear()
+
+                assert(cache.count() == 0)
+                assert(cache.isEmpty())
+            }
+            finally {
+                sc.stop()
+            }
+        }
     }
 
     override protected def beforeEach() = {
@@ -186,6 +240,12 @@ class IgniteRDDSpec extends FunSpec with Matchers with BeforeAndAfterAll with Be
             Ignition.stop("grid-" + i, false)
         }
     }
+}
+
+case class WithObjectField(
+    @(QuerySqlField @field)(index = true) val i : Int,
+    @(QuerySqlField @field)(index = false) val ts : Object
+) {
 }
 
 /**
@@ -242,7 +302,10 @@ object IgniteRDDSpec {
 
         ccfg.setName(PARTITIONED_CACHE_NAME)
 
-        ccfg.setIndexedTypes(classOf[String], classOf[Entity])
+        ccfg.setIndexedTypes(
+            classOf[String], classOf[Entity],
+            classOf[Integer], classOf[WithObjectField]
+        )
 
         ccfg
     }

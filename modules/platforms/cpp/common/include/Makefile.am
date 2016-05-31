@@ -15,12 +15,15 @@
 ## limitations under the License.
 ##
 
-ACLOCAL_AMFLAGS = "-Im4"
+ACLOCAL_AMFLAGS =-I m4
 
-nobase_include_HEADERS = ignite/common/concurrent.h \
-                         ignite/common/java.h \
-                         ignite/common/exports.h \
-                         ignite/common/utils.h
+nobase_include_HEADERS = \
+    ignite/common/concurrent.h \
+    ignite/common/utils.h \
+    ignite/ignite_error.h \
+    ignite/date.h \
+    ignite/guid.h \
+    ignite/timestamp.h
 
 uninstall-hook:
-	find ${includedir}/ignite -type d -empty -delete
+	if [ -d ${includedir}/ignite ]; then find ${includedir}/ignite -type d -empty -delete; fi

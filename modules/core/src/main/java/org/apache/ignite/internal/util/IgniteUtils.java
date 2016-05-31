@@ -215,6 +215,7 @@ import org.apache.ignite.spi.IgniteSpi;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
+import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionHeuristicException;
 import org.apache.ignite.transactions.TransactionOptimisticException;
 import org.apache.ignite.transactions.TransactionRollbackException;
@@ -292,6 +293,9 @@ public abstract class IgniteUtils {
 
     /** Secure socket protocol to use. */
     private static final String HTTPS_PROTOCOL = "TLS";
+
+    /** Correct Mbean cache name pattern. */
+    private static Pattern MBEAN_CACHE_NAME_PATTERN = Pattern.compile("^[a-zA-Z_0-9]+$");
 
     /** Project home directory. */
     private static volatile GridTuple<String> ggHome;
@@ -805,6 +809,9 @@ public abstract class IgniteUtils {
 
         m.put(IgniteTxTimeoutCheckedException.class, new C1<IgniteCheckedException, IgniteException>() {
             @Override public IgniteException apply(IgniteCheckedException e) {
+                if (e.getCause() instanceof TransactionDeadlockException)
+                    return new TransactionTimeoutException(e.getMessage(), e.getCause());
+
                 return new TransactionTimeoutException(e.getMessage(), e);
             }
         });
@@ -4323,7 +4330,10 @@ public abstract class IgniteUtils {
 
         cacheName = maskName(cacheName);
 
-        sb.a("group=").a(cacheName).a(',');
+        if (!MBEAN_CACHE_NAME_PATTERN.matcher(cacheName).matches())
+            sb.a("group=").a('\"').a(cacheName).a('\"').a(',');
+        else
+            sb.a("group=").a(cacheName).a(',');
 
         sb.a("name=").a(name);
 
@@ -5836,7 +5846,7 @@ public abstract class IgniteUtils {
                 Iterable<Field> fields = cached ? tup.get2() : Arrays.asList(cls.getDeclaredFields());
 
                 if (!cached) {
-                    tup = F.t2();
+                    tup = new IgniteBiTuple<>();
 
                     tup.set1(cls);
                 }
@@ -6517,7 +6527,7 @@ public abstract class IgniteUtils {
      * @return Short string representing the node.
      */
     public static String toShortString(ClusterNode n) {
-        return "GridNode [id=" + n.id() + ", order=" + n.order() + ", addr=" + n.addresses() +
+        return "ClusterNode [id=" + n.id() + ", order=" + n.order() + ", addr=" + n.addresses() +
             ", daemon=" + n.isDaemon() + ']';
     }
 
@@ -8560,7 +8570,7 @@ public abstract class IgniteUtils {
             throw new IgniteCheckedException("Addresses can not be resolved [addr=" + addrs +
                 ", hostNames=" + hostNames + ']');
 
-        return F.viewListReadOnly(res, F.<InetAddress>identity());
+        return Collections.unmodifiableList(res);
     }
 
     /**
@@ -8607,7 +8617,7 @@ public abstract class IgniteUtils {
             res.add(new InetSocketAddress(addr, port));
         }
 
-        return F.viewListReadOnly(res, F.<InetSocketAddress>identity());
+        return Collections.unmodifiableList(res);
     }
 
     /**
@@ -9246,12 +9256,13 @@ public abstract class IgniteUtils {
      * @param name Name of a field to get.
      * @return Field or {@code null}.
      */
-    @Nullable public static Field findNonPublicField(Class<?> cls, String name) {
+    @Nullable public static Field findField(Class<?> cls, String name) {
         while (cls != null) {
             try {
                 Field fld = cls.getDeclaredField(name);
 
-                fld.setAccessible(true);
+                if (!fld.isAccessible())
+                    fld.setAccessible(true);
 
                 return fld;
             }
@@ -9482,5 +9493,21 @@ public abstract class IgniteUtils {
      */
     public static boolean isToStringMethod(Method mtd) {
         return toStringMtd.equals(mtd);
+    }
+
+    /**
+     * @param threadId Thread ID.
+     * @return Thread name if found.
+     */
+    public static String threadName(long threadId) {
+        Thread[] threads = new Thread[Thread.activeCount()];
+
+        int cnt = Thread.enumerate(threads);
+
+        for (int i = 0; i < cnt; i++)
+            if (threads[i].getId() == threadId)
+                return threads[i].getName();
+
+        return "<failed to find active thread " + threadId + '>';
     }
 }

@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.atomic;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
@@ -37,11 +38,11 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
-import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryListener;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
+import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.CI2;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -97,14 +98,14 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
     /** Future keys. */
     private final Collection<KeyCacheObject> keys;
 
+    /** Continuous query closures. */
+    private Collection<CI1<Boolean>> cntQryClsrs;
+
     /** */
     private final boolean waitForExchange;
 
     /** Response count. */
     private volatile int resCnt;
-
-    /** */
-    private Map<UUID, CacheContinuousQueryListener> lsnrs;
 
     /**
      * @param cctx Cache context.
@@ -135,16 +136,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         keys = new ArrayList<>(updateReq.keys().size());
         mappings = U.newHashMap(updateReq.keys().size());
 
-        boolean topLocked = updateReq.topologyLocked() || (updateReq.fastMap() && !updateReq.clientRequest());
-
-        waitForExchange = !topLocked;
-    }
-
-    /**
-     * @param lsnrs Continuous query listeners.
-     */
-    void listeners(@Nullable Map<UUID, CacheContinuousQueryListener> lsnrs) {
-        this.lsnrs = lsnrs;
+        waitForExchange = !(updateReq.topologyLocked() || (updateReq.fastMap() && !updateReq.clientRequest()));
     }
 
     /** {@inheritDoc} */
@@ -214,11 +206,6 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         return null;
     }
 
-    /** {@inheritDoc} */
-    @Override public Collection<KeyCacheObject> keys() {
-        return keys;
-    }
-
     /**
      * @param entry Entry to map.
      * @param val Value to write.
@@ -230,6 +217,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
      * @param prevVal Previous value.
      * @param updateCntr Partition update counter.
      */
+    @SuppressWarnings("ForLoopReplaceableByForEach")
     public void addWriteEntry(GridDhtCacheEntry entry,
         @Nullable CacheObject val,
         EntryProcessor<Object, Object, Object> entryProcessor,
@@ -241,7 +229,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         long updateCntr) {
         AffinityTopologyVersion topVer = updateReq.topologyVersion();
 
-        Collection<ClusterNode> dhtNodes = cctx.dht().topology().nodes(entry.partition(), topVer);
+        List<ClusterNode> dhtNodes = cctx.dht().topology().nodes(entry.partition(), topVer);
 
         if (log.isDebugEnabled())
             log.debug("Mapping entry to DHT nodes [nodes=" + U.nodeIds(dhtNodes) + ", entry=" + entry + ']');
@@ -250,7 +238,9 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
 
         keys.add(entry.key());
 
-        for (ClusterNode node : dhtNodes) {
+        for (int i = 0; i < dhtNodes.size(); i++) {
+            ClusterNode node = dhtNodes.get(i);
+
             UUID nodeId = node.id();
 
             if (!nodeId.equals(cctx.localNodeId())) {
@@ -269,7 +259,8 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
                         this.updateReq.taskNameHash(),
                         forceTransformBackups ? this.updateReq.invokeArguments() : null,
                         cctx.deploymentEnabled(),
-                        this.updateReq.keepBinary());
+                        this.updateReq.keepBinary(),
+                        this.updateReq.skipStore());
 
                     mappings.put(nodeId, updateReq);
                 }
@@ -283,27 +274,7 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
                     addPrevVal,
                     entry.partition(),
                     prevVal,
-                    updateCntr,
-                    lsnrs != null);
-            }
-            else if (lsnrs != null && dhtNodes.size() == 1) {
-                try {
-                    cctx.continuousQueries().onEntryUpdated(
-                        lsnrs,
-                        entry.key(),
-                        val,
-                        prevVal,
-                        entry.key().internal() || !cctx.userCache(),
-                        entry.partition(),
-                        true,
-                        false,
-                        updateCntr,
-                        updateReq.topologyVersion());
-                }
-                catch (IgniteCheckedException e) {
-                    U.warn(log, "Failed to send continuous query message. [key=" + entry.key() + ", newVal="
-                        + val + ", err=" + e + "]");
-                }
+                    updateCntr);
             }
         }
     }
@@ -350,7 +321,8 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
                     this.updateReq.taskNameHash(),
                     forceTransformBackups ? this.updateReq.invokeArguments() : null,
                     cctx.deploymentEnabled(),
-                    this.updateReq.keepBinary());
+                    this.updateReq.keepBinary(),
+                    this.updateReq.skipStore());
 
                 mappings.put(nodeId, updateReq);
             }
@@ -368,77 +340,33 @@ public class GridDhtAtomicUpdateFuture extends GridFutureAdapter<Void>
         }
     }
 
+    /**
+     * @param clsr Continuous query closure.
+     */
+    public void addContinuousQueryClosure(CI1<Boolean> clsr){
+        assert !isDone() : this;
+
+        if (cntQryClsrs == null)
+            cntQryClsrs = new ArrayList<>(10);
+
+        cntQryClsrs.add(clsr);
+    }
+
     /** {@inheritDoc} */
     @Override public boolean onDone(@Nullable Void res, @Nullable Throwable err) {
         if (super.onDone(res, err)) {
             cctx.mvcc().removeAtomicFuture(version());
 
-            if (err != null) {
-                if (!mappings.isEmpty() && lsnrs != null) {
-                    Collection<KeyCacheObject> hndKeys = new ArrayList<>(keys.size());
+            boolean suc = err == null;
 
-                    exit: for (GridDhtAtomicUpdateRequest req : mappings.values()) {
-                        for (int i = 0; i < req.size(); i++) {
-                            KeyCacheObject key = req.key(i);
-
-                            if (!hndKeys.contains(key)) {
-                                updateRes.addFailedKey(key, err);
-
-                                cctx.continuousQueries().skipUpdateEvent(
-                                    lsnrs,
-                                    key,
-                                    req.partitionId(i),
-                                    req.updateCounter(i),
-                                    updateReq.topologyVersion());
-
-                                hndKeys.add(key);
-
-                                if (hndKeys.size() == keys.size())
-                                    break exit;
-                            }
-                        }
-                    }
-                }
-                else
-                    for (KeyCacheObject key : keys)
-                        updateRes.addFailedKey(key, err);
+            if (!suc) {
+                for (KeyCacheObject key : keys)
+                    updateRes.addFailedKey(key, err);
             }
-            else {
-                if (lsnrs != null) {
-                    Collection<KeyCacheObject> hndKeys = new ArrayList<>(keys.size());
 
-                    exit: for (GridDhtAtomicUpdateRequest req : mappings.values()) {
-                        for (int i = 0; i < req.size(); i++) {
-                            KeyCacheObject key = req.key(i);
-
-                            if (!hndKeys.contains(key)) {
-                                try {
-                                    cctx.continuousQueries().onEntryUpdated(
-                                        lsnrs,
-                                        key,
-                                        req.value(i),
-                                        req.localPreviousValue(i),
-                                        key.internal() || !cctx.userCache(),
-                                        req.partitionId(i),
-                                        true,
-                                        false,
-                                        req.updateCounter(i),
-                                        updateReq.topologyVersion());
-                                }
-                                catch (IgniteCheckedException e) {
-                                    U.warn(log, "Failed to send continuous query message. [key=" + key +
-                                        ", newVal=" + req.value(i) +
-                                        ", err=" + e + "]");
-                                }
-
-                                hndKeys.add(key);
-
-                                if (hndKeys.size() == keys.size())
-                                    break exit;
-                            }
-                        }
-                    }
-                }
+            if (cntQryClsrs != null) {
+                for (CI1<Boolean> clsr : cntQryClsrs)
+                    clsr.apply(suc);
             }
 
             if (updateReq.writeSynchronizationMode() == FULL_SYNC)

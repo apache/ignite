@@ -28,6 +28,7 @@
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="localHost" value="127.0.0.1"/>
         <property name="connectorConfiguration"><null/></property>
+        <property name="lateAffinityAssignment" value="false"/>
 
         <property name="platformConfiguration">
             <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration">
@@ -52,6 +53,7 @@
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="cache"/>
                     <property name="cacheMode" value="PARTITIONED"/>
+                    <property name="backups" value="0"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
                     <property name="writeSynchronizationMode" value="FULL_SYNC"/>
 
@@ -89,11 +91,12 @@
                         <property name="addresses">
                             <list>
                                 <!-- In distributed environment, replace with actual host IP address. -->
-                                <value>127.0.0.1:47500..47501</value>
+                                <value>127.0.0.1:47500</value>
                             </list>
                         </property>
                     </bean>
                 </property>
+                <property name="socketTimeout" value="300" />
             </bean>
         </property>
     </bean>

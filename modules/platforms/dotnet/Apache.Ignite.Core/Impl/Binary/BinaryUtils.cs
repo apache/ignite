@@ -187,6 +187,9 @@ namespace Apache.Ignite.Core.Impl.Binary
         /** Type: stream receiver holder. */
         public const byte TypeStreamReceiverHolder = 94;
 
+        /** Type: platform object proxy. */
+        public const byte TypePlatformJavaObjectFactoryProxy = 99;
+
         /** Collection: custom. */
         public const byte CollectionCustom = 0;
 
@@ -1123,12 +1126,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             var stream = ctx.Stream;
 
+            var pos = stream.Position;
+
             if (typed)
                 stream.ReadInt();
 
             int len = stream.ReadInt();
 
             var vals = new T[len];
+
+            ctx.AddHandle(pos - 1, vals);
 
             for (int i = 0; i < len; i++)
                 vals[i] = ctx.Deserialize<T>();
@@ -1209,6 +1216,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             IBinaryStream stream = ctx.Stream;
 
+            int pos = stream.Position;
+
             int len = stream.ReadInt();
 
             byte colType = ctx.Stream.ReadByte();
@@ -1224,6 +1233,8 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
             else
                 res = factory.Invoke(len);
+
+            ctx.AddHandle(pos - 1, res);
 
             if (adder == null)
                 adder = (col, elem) => ((ArrayList) col).Add(elem);
@@ -1286,12 +1297,16 @@ namespace Apache.Ignite.Core.Impl.Binary
         {
             IBinaryStream stream = ctx.Stream;
 
+            int pos = stream.Position;
+
             int len = stream.ReadInt();
 
             // Skip dictionary type as we can do nothing with it here.
             ctx.Stream.ReadByte();
 
             var res = factory == null ? new Hashtable(len) : factory.Invoke(len);
+
+            ctx.AddHandle(pos - 1, res);
 
             for (int i = 0; i < len; i++)
             {

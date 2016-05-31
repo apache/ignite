@@ -19,8 +19,10 @@ package org.apache.ignite.internal.processors.datastructures;
 
 import java.io.Externalizable;
 import java.io.IOException;
+import java.io.InvalidObjectException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.io.ObjectStreamException;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -32,11 +34,12 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -62,7 +65,7 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
     private static final ThreadLocal<IgniteBiTuple<GridKernalContext, String>> stash =
         new ThreadLocal<IgniteBiTuple<GridKernalContext, String>>() {
             @Override protected IgniteBiTuple<GridKernalContext, String> initialValue() {
-                return F.t2();
+                return new IgniteBiTuple<>();
             }
         };
 
@@ -884,6 +887,35 @@ public final class GridCacheSemaphoreImpl implements GridCacheSemaphoreEx, Exter
 
         t.set1((GridKernalContext)in.readObject());
         t.set2(in.readUTF());
+    }
+
+    /**
+     * Reconstructs object on unmarshalling.
+     *
+     * @return Reconstructed object.
+     * @throws ObjectStreamException Thrown in case of unmarshalling error.
+     */
+    private Object readResolve() throws ObjectStreamException {
+        try {
+            IgniteBiTuple<GridKernalContext, String> t = stash.get();
+
+            IgniteSemaphore sem = IgnitionEx.localIgnite().context().dataStructures().semaphore(
+                t.get2(),
+                0,
+                false,
+                false);
+
+            if (sem == null)
+                throw new IllegalStateException("Semaphore was not found on deserialization: " + t.get2());
+
+            return sem;
+        }
+        catch (IgniteCheckedException e) {
+            throw U.withCause(new InvalidObjectException(e.getMessage()), e);
+        }
+        finally {
+            stash.remove();
+        }
     }
 
     /** {@inheritDoc} */

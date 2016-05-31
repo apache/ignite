@@ -27,6 +27,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -220,6 +221,9 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                                     log.debug("Failed to request keys from preloader " +
                                         "[keys=" + key + ", err=" + e + ']');
 
+                                if (e instanceof NodeStoppingException)
+                                    return;
+
                                 onDone(e);
                             }
                             else
@@ -356,6 +360,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
             }
             else {
                 fut = tx.getAllAsync(cctx,
+                    null,
                     Collections.singleton(key),
                     /*deserialize binary*/false,
                     skipVals,
@@ -390,6 +395,7 @@ public final class GridDhtGetSingleFuture<K, V> extends GridFutureAdapter<GridCa
                         }
                         else {
                             fut0 = tx.getAllAsync(cctx,
+                                null,
                                 Collections.singleton(key),
                                 /*deserialize binary*/false,
                                 skipVals,
