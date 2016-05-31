@@ -50,8 +50,8 @@ namespace Apache.Ignite.EntityFramework
         private readonly IBinary _binary;
 
         /** Cached caches per expiry seconds. */
-        private volatile Dictionary<KeyValuePair<double, double>, ICache<string, IBinaryObject>> _expiryCaches =
-            new Dictionary<KeyValuePair<double, double>, ICache<string, IBinaryObject>>();
+        private volatile Dictionary<double, ICache<string, IBinaryObject>> _expiryCaches =
+            new Dictionary<double, ICache<string, IBinaryObject>>();
 
         /** Sync object. */
         private readonly object _syncRoot = new object();
@@ -72,9 +72,6 @@ namespace Apache.Ignite.EntityFramework
         public bool GetItem(string key, out object value)
         {
             IBinaryObject binVal;
-
-            // TODO: WTF
-            //var cache = _expiryCaches.Select(x => x.Value).FirstOrDefault() ?? _cache;
 
             if (!_cache.TryGet(key, out binVal))
             {
@@ -133,34 +130,34 @@ namespace Apache.Ignite.EntityFramework
         private ICache<string, IBinaryObject> GetCacheWithExpiry(TimeSpan slidingExpiration, 
             DateTimeOffset absoluteExpiration)
         {
-            if (slidingExpiration == TimeSpan.MaxValue && absoluteExpiration == DateTimeOffset.MaxValue)
+            if (slidingExpiration != TimeSpan.MaxValue)
+                throw new NotSupportedException(GetType() + " does not support sliding expiration.");
+
+            if (absoluteExpiration == DateTimeOffset.MaxValue)
                 return _cache;
 
             // Round up to 0.1 of a second so that we share expiry caches
-            var slidingExpirySeconds = GetSeconds(slidingExpiration);
-            var absoluteExpirySeconds = GetSeconds(absoluteExpiration);
-
-            var key = new KeyValuePair<double, double>(absoluteExpirySeconds, slidingExpirySeconds);
+            var expirySeconds = GetSeconds(absoluteExpiration);
 
             ICache<string, IBinaryObject> expiryCache;
 
-            if (_expiryCaches.TryGetValue(key, out expiryCache))
+            if (_expiryCaches.TryGetValue(expirySeconds, out expiryCache))
                 return expiryCache;
 
             lock (_syncRoot)
             {
-                if (_expiryCaches.TryGetValue(key, out expiryCache))
+                if (_expiryCaches.TryGetValue(expirySeconds, out expiryCache))
                     return expiryCache;
 
                 // Copy on write with size limit
                 _expiryCaches = _expiryCaches.Count > MaxExpiryCaches
-                    ? new Dictionary<KeyValuePair<double, double>, ICache<string, IBinaryObject>>()
-                    : new Dictionary<KeyValuePair<double, double>, ICache<string, IBinaryObject>>(_expiryCaches);
+                    ? new Dictionary<double, ICache<string, IBinaryObject>>()
+                    : new Dictionary<double, ICache<string, IBinaryObject>>(_expiryCaches);
 
                 expiryCache =
-                    _cache.WithExpiryPolicy(GetExpiryPolicy(absoluteExpirySeconds, slidingExpirySeconds));
+                    _cache.WithExpiryPolicy(GetExpiryPolicy(expirySeconds));
 
-                _expiryCaches[key] = expiryCache;
+                _expiryCaches[expirySeconds] = expiryCache;
 
                 return expiryCache;
             }
@@ -169,30 +166,13 @@ namespace Apache.Ignite.EntityFramework
         /// <summary>
         /// Gets the expiry policy.
         /// </summary>
-        private static ExpiryPolicy GetExpiryPolicy(double absoluteSeconds, double slidingSeconds)
+        private static ExpiryPolicy GetExpiryPolicy(double absoluteSeconds)
         {
             var absolute = !double.IsNaN(absoluteSeconds)
                 ? TimeSpan.FromSeconds(absoluteSeconds)
                 : (TimeSpan?) null;
 
-            var sliding = !double.IsNaN(slidingSeconds)
-                ? TimeSpan.FromSeconds(slidingSeconds)
-                : (TimeSpan?) null;
-
-            return new ExpiryPolicy(absolute, sliding, sliding);
-        }
-
-        /// <summary>
-        /// Gets the seconds.
-        /// </summary>
-        private static double GetSeconds(TimeSpan ts)
-        {
-            var seconds = ts == TimeSpan.MaxValue ? double.NaN : ts.TotalSeconds;
-
-            if (seconds < 0)
-                seconds = 0;
-
-            return Math.Round(seconds, 1);
+            return new ExpiryPolicy(absolute, null, null);
         }
 
         /// <summary>

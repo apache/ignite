@@ -161,16 +161,10 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
             Thread.Sleep(150);
             Assert.IsFalse(cache.GetItem("1", out val));
 
-            // Sliding expiration
-            cache.PutItem("2", "val", new[] {"persons"}, TimeSpan.FromMilliseconds(300),
-                DateTimeOffset.Now.AddMilliseconds(300));
-            Assert.IsTrue(cache.GetItem("2", out val));
-            Thread.Sleep(150);
-            Assert.IsTrue(cache.GetItem("2", out val));
-            Thread.Sleep(150);
-            Assert.IsTrue(cache.GetItem("2", out val));
-            Thread.Sleep(300);
-            Assert.IsFalse(cache.GetItem("2", out val));
+            // Sliding expiration: not supported
+            Assert.Throws<NotSupportedException>(
+                () => cache.PutItem("2", "val", new[] {"persons"}, TimeSpan.FromMilliseconds(300),
+                    DateTimeOffset.Now.AddMilliseconds(300)));
         }
 
         /// <summary>
