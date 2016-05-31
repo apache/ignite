@@ -78,19 +78,6 @@ class ScalarExamplesSelfTest extends GridAbstractExamplesTest with JUnitSuiteLik
         }
     }
 
-    private def runWithDataBase(f: () => Unit) {
-        val srv = DbH2ServerStartup.startServer()
-
-        if (srv != null) {
-            try {
-                f()
-            }
-            finally {
-                srv.stop()
-            }
-        }
-    }
-
     /** Binary examples */
 
     /** */
@@ -110,7 +97,7 @@ class ScalarExamplesSelfTest extends GridAbstractExamplesTest with JUnitSuiteLik
 
     /** */
     def testScalarCacheBinaryAutoStoreExample() {
-        runWithDataBase(() => ScalarCacheBinaryAutoStoreExample.main(EMPTY_ARGS))
+        ScalarCacheBinaryAutoStoreExample.main(EMPTY_ARGS)
     }
 
     /** Compute grid examples */
@@ -189,12 +176,12 @@ class ScalarExamplesSelfTest extends GridAbstractExamplesTest with JUnitSuiteLik
 
     /** */
     def testScalarCacheAutoStoreExample() {
-        runWithDataBase(() => ScalarCacheAutoStoreExample.main(EMPTY_ARGS))
+        ScalarCacheAutoStoreExample.main(EMPTY_ARGS)
     }
 
     /** */
     def testScalarCacheSpringStoreExample() {
-        runWithDataBase(() => ScalarCacheSpringStoreExample.main(EMPTY_ARGS))
+        ScalarCacheSpringStoreExample.main(EMPTY_ARGS)
     }
 
     /** */

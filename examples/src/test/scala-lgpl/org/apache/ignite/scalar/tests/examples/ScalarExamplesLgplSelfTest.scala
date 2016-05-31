@@ -46,19 +46,6 @@ class ScalarExamplesLgplSelfTest extends GridAbstractExamplesTest with JUnitSuit
         }
     }
 
-    private def runWithDataBase(f: () => Unit) {
-        val srv = DbH2ServerStartup.startServer()
-
-        if (srv != null) {
-            try {
-                f()
-            }
-            finally {
-                srv.stop()
-            }
-        }
-    }
-
     // Compute examples
 
     /** */
@@ -75,8 +62,6 @@ class ScalarExamplesLgplSelfTest extends GridAbstractExamplesTest with JUnitSuit
 
     /** */
     def testScalarCacheHibernateStoreExample() {
-        runWithNode(CONFIG, () => {
-            runWithDataBase(() => ScalarCacheHibernateStoreExampleStartup.main(EMPTY_ARGS))
-        })
+        runWithNode(CONFIG, () => ScalarCacheHibernateStoreExampleStartup.main(EMPTY_ARGS))
     }
 }

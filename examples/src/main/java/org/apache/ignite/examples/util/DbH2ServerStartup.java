@@ -50,7 +50,7 @@ public class DbH2ServerStartup {
      */
     public static void populateDatabase() throws SQLException {
         // Try to connect to database TCP server.
-        JdbcConnectionPool dataSrc = JdbcConnectionPool.create("jdbc:h2:tcp://localhost/mem:ExampleDb;DB_CLOSE_DELAY=-1", "sa", "");
+        JdbcConnectionPool dataSrc = JdbcConnectionPool.create("jdbc:h2:tcp://localhost/mem:ExampleDb", "sa", "");
 
         // Create Person table in database.
         RunScript.execute(dataSrc.getConnection(), new StringReader(CREATE_PERSON_TABLE));
@@ -66,32 +66,33 @@ public class DbH2ServerStartup {
      * @throws IgniteException If start H2 database TCP server failed.
      */
     public static void main(String[] args) throws IgniteException {
-        if (startServer() != null) {
-            try {
-                do {
-                    System.out.println("Type 'q' and press 'Enter' to stop H2 TCP server...");
-                }
-                while ('q' != System.in.read());
-            }
-            catch (IOException ignored) {
-                // No-op.
-            }
-        }
-    }
-
-    public static Server startServer() {
-        Server srv;
-
         try {
             // Start H2 database TCP server in order to access sample in-memory database from other processes.
-            srv = Server.createTcpServer("-tcpDaemon").start();
+            Server.createTcpServer("-tcpDaemon").start();
 
             populateDatabase();
+
+            // Try to connect to database TCP server.
+            JdbcConnectionPool dataSrc = JdbcConnectionPool.create("jdbc:h2:tcp://localhost/mem:ExampleDb", "sa", "");
+
+            // Create Person table in database.
+            RunScript.execute(dataSrc.getConnection(), new StringReader(CREATE_PERSON_TABLE));
+
+            // Populates Person table with sample data in database.
+            RunScript.execute(dataSrc.getConnection(), new StringReader(POPULATE_PERSON_TABLE));
         }
         catch (SQLException e) {
             throw new IgniteException("Failed to start database TCP server", e);
         }
 
-        return srv;
+        try {
+            do {
+                System.out.println("Type 'q' and press 'Enter' to stop H2 TCP server...");
+            }
+            while ('q' != System.in.read());
+        }
+        catch (IOException ignored) {
+            // No-op.
+        }
     }
 }

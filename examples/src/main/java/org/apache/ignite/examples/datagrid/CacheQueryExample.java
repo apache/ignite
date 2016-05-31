@@ -76,7 +76,8 @@ public class CacheQueryExample {
      */
     public static void main(String[] args) throws Exception {
         try (Ignite ignite = Ignition.start("examples/config/example-ignite.xml")) {
-            print("Cache query example started.");
+            System.out.println();
+            System.out.println(">>> Cache query example started.");
 
             CacheConfiguration<Long, Organization> orgCacheCfg = new CacheConfiguration<>(ORG_CACHE);
 
