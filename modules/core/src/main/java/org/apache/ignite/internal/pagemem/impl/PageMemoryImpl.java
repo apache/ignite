@@ -83,7 +83,7 @@ import sun.nio.ch.DirectBuffer;
  * on whether the page is in use or not.
  */
 @SuppressWarnings({"LockAcquiredButNotSafelyReleased", "FieldAccessedSynchronizedAndUnsynchronized"})
-public class  PageMemoryImpl implements PageMemory {
+public class PageMemoryImpl implements PageMemory {
     /** */
     public static final long PAGE_MARKER = 0x0000000000000001L;
 
@@ -197,9 +197,10 @@ public class  PageMemoryImpl implements PageMemory {
         this.segments = new Segment[segments];
         this.directMemoryProvider = directMemoryProvider;
 
-        if (sharedCtx != null)
-        storeMgr = sharedCtx.pageStore();
-        walMgr = sharedCtx.wal();
+        if (sharedCtx != null) {
+            storeMgr = sharedCtx.pageStore();
+            walMgr = sharedCtx.wal();
+        }
 
         chunks = new ArrayList<>();
         sysPageSize = pageSize + PAGE_OVERHEAD;

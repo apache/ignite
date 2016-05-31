@@ -137,8 +137,12 @@ public class PageImpl extends AbstractQueuedSynchronizer implements Page {
 
         pageMem.writeCurrentTimestamp(ptr);
 
-        if (cp != null)
+        if (cp != null) {
+            assert pageMem.isInCheckpoint(fullId) :
+                "The page has a temporary buffer but is not in the checkpoint set: " + this;
+
             return reset(cp.userBuf.asReadOnlyBuffer());
+        }
 
         return reset(buf.asReadOnlyBuffer());
     }
@@ -190,6 +194,8 @@ public class PageImpl extends AbstractQueuedSynchronizer implements Page {
 
             return reset(cp.userBuf);
         }
+        else
+            assert cp == null;
 
         return reset(buf);
     }
@@ -197,7 +203,8 @@ public class PageImpl extends AbstractQueuedSynchronizer implements Page {
     /**
      * If page was concurrently modified during the checkpoint phase, this method will flush all changes from the
      * temporary location to main memory.
-     * This method must be called from the segment write lock.
+     * This method must be called outside of the segment write lock because we can ask for another pages
+     *      while holding a page read or write lock.
      */
     public boolean flushCheckpoint(IgniteLogger log) {
         acquire(1); // This call is not reentrant.
@@ -214,6 +221,7 @@ public class PageImpl extends AbstractQueuedSynchronizer implements Page {
 
                 buf.put(cpBuf);
 
+                // It is important to clear checkpoint status before the write lock is released.
                 pageMem.clearCheckpoint(fullId);
 
                 pageMem.setDirty(fullId, ptr, cp.dirty, true);
@@ -222,8 +230,12 @@ public class PageImpl extends AbstractQueuedSynchronizer implements Page {
 
                 return releaseReference();
             }
-            else
+            else {
+                // It is important to clear checkpoint status before the write lock is released.
+                pageMem.clearCheckpoint(fullId);
+
                 pageMem.setDirty(fullId, ptr, false, true);
+            }
 
             return false;
         }

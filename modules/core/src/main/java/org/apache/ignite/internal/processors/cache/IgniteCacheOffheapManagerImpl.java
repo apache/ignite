@@ -91,11 +91,18 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
             int cpus = Runtime.getRuntime().availableProcessors();
 
-            reuseList = new ReuseList(cctx.cacheId(), dbMgr.pageMemory(), cpus * 2, dbMgr.meta());
-            freeList = new FreeList(cctx, reuseList);
+            cctx.shared().database().checkpointReadLock();
 
-            if (cctx.isLocal())
-                locCacheDataStore = createCacheDataStore(0, null);
+            try {
+                reuseList = new ReuseList(cctx.cacheId(), dbMgr.pageMemory(), cpus * 2, dbMgr.meta());
+                freeList = new FreeList(cctx, reuseList);
+
+                if (cctx.isLocal())
+                    locCacheDataStore = createCacheDataStore(0, null);
+            }
+            finally {
+                cctx.shared().database().checkpointReadUnlock();
+            }
         }
     }
 
@@ -536,7 +543,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         String idxName = BPlusTree.treeName(cctx.name(), cctx.cacheId(), "Cache-" + p);
 
         // TODO: cleanup when cache/partition is destroyed.
-        final RootPage rootPage = dbMgr.meta().getOrAllocateForTree(cctx.cacheId(), idxName, false);
+        final RootPage rootPage = dbMgr.meta().getOrAllocateForTree(cctx.cacheId(), idxName);
 
         CacheDataRowStore rowStore = new CacheDataRowStore(cctx, freeList);
 

@@ -18,13 +18,11 @@
 package org.apache.ignite.internal.processors.cache.database.tree.reuse;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.database.MetaStore;
 import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
 import org.apache.ignite.internal.util.typedef.internal.A;
-import org.apache.ignite.lang.IgniteBiTuple;
 
 /**
  * Reuse list for index pages.
@@ -48,7 +46,7 @@ public final class ReuseList {
         for (int i = 0; i < segments; i++) {
             String idxName = BPlusTree.treeName("s" + i, cacheId, "Reuse");
 
-            final RootPage rootPage = metaStore.getOrAllocateForTree(cacheId, idxName, false);
+            final RootPage rootPage = metaStore.getOrAllocateForTree(cacheId, idxName);
 
             trees0[i] = new ReuseTree(idxName, this, cacheId, pageMem, rootPage.pageId(), rootPage.isAllocated());
         }
