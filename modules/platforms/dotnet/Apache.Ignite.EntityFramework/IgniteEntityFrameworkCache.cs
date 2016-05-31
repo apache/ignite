@@ -165,11 +165,11 @@ namespace Apache.Ignite.EntityFramework
         /// </summary>
         private static ExpiryPolicy GetExpiryPolicy(double absoluteSeconds, double slidingSeconds)
         {
-            var absolute = double.IsNaN(absoluteSeconds)
+            var absolute = !double.IsNaN(absoluteSeconds)
                 ? TimeSpan.FromSeconds(absoluteSeconds)
                 : (TimeSpan?) null;
 
-            var sliding = double.IsNaN(slidingSeconds)
+            var sliding = !double.IsNaN(slidingSeconds)
                 ? TimeSpan.FromSeconds(slidingSeconds)
                 : (TimeSpan?) null;
 
