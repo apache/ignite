@@ -131,19 +131,8 @@ namespace Apache.Ignite.EntityFramework
                 return _cache;
 
             // Round up to seconds
-            var absoluteExpirySeconds = absoluteExpiration == DateTimeOffset.MaxValue
-                ? (long) TimeSpan.MaxValue.TotalSeconds
-                : (long) (absoluteExpiration - DateTime.UtcNow).TotalSeconds;
-
-            if (absoluteExpirySeconds < 1)
-                absoluteExpirySeconds = 0;
-
-            var slidingExpirySeconds = slidingExpiration == TimeSpan.MaxValue
-                ? (long) TimeSpan.MaxValue.TotalSeconds
-                : (long) slidingExpiration.TotalSeconds;
-
-            if (slidingExpirySeconds < 1)
-                slidingExpirySeconds = 0;
+            var slidingExpirySeconds = GetSeconds(slidingExpiration);
+            var absoluteExpirySeconds = GetSeconds(absoluteExpiration);
 
             var key = new KeyValuePair<long, long>(absoluteExpirySeconds, slidingExpirySeconds);
 
@@ -163,13 +152,55 @@ namespace Apache.Ignite.EntityFramework
                     : new Dictionary<KeyValuePair<long, long>, ICache<string, IBinaryObject>>(_expiryCaches);
 
                 expiryCache =
-                    _cache.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromSeconds(absoluteExpirySeconds),
-                        TimeSpan.FromSeconds(slidingExpirySeconds), TimeSpan.FromSeconds(slidingExpirySeconds)));
+                    _cache.WithExpiryPolicy(GetExpiryPolicy(absoluteExpirySeconds, slidingExpirySeconds));
 
                 _expiryCaches[key] = expiryCache;
 
                 return expiryCache;
             }
+        }
+
+        /// <summary>
+        /// Gets the expiry policy.
+        /// </summary>
+        private static ExpiryPolicy GetExpiryPolicy(long absoluteSeconds, long slidingSeconds)
+        {
+            var absolute = absoluteSeconds != long.MaxValue
+                ? TimeSpan.FromSeconds(absoluteSeconds)
+                : (TimeSpan?) null;
+
+            var sliding = slidingSeconds != long.MaxValue
+                ? TimeSpan.FromSeconds(slidingSeconds)
+                : (TimeSpan?) null;
+
+            return new ExpiryPolicy(absolute, sliding, sliding);
+        }
+
+        /// <summary>
+        /// Gets the seconds.
+        /// </summary>
+        private static long GetSeconds(TimeSpan ts)
+        {
+            var seconds = (long) (ts == TimeSpan.MaxValue ? long.MaxValue : ts.TotalSeconds);
+
+            if (seconds < 0)
+                seconds = 0;
+
+            return seconds;
+        }
+
+        /// <summary>
+        /// Gets the seconds.
+        /// </summary>
+        private static long GetSeconds(DateTimeOffset ts)
+        {
+            var seconds =
+                (long) (ts == DateTimeOffset.MaxValue ? long.MaxValue : (ts - DateTimeOffset.Now).TotalSeconds);
+
+            if (seconds < 0)
+                seconds = 0;
+
+            return seconds;
         }
     }
 }
