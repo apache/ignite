@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
 {
     using System;
     using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.EntityFramework;
     using NUnit.Framework;
@@ -45,16 +46,47 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
 
             // Test default config (picks up app.config section)
             CheckCacheAndStop("myGrid1", IgniteDbConfiguration.DefaultCacheName, new IgniteDbConfiguration());
+
+            // Specific config section
+            CheckCacheAndStop("myGrid2", IgniteDbConfiguration.DefaultCacheName, 
+                new IgniteDbConfiguration("igniteConfiguration2", "cacheName2", null));
+
+            // Specific config section, nonexistent cache
+            CheckCacheAndStop("myGrid2", IgniteDbConfiguration.DefaultCacheName, 
+                new IgniteDbConfiguration("igniteConfiguration2", "newCache", null));
+
+            // In-code configuration
+            CheckCacheAndStop("myGrid3", IgniteDbConfiguration.DefaultCacheName,
+                new IgniteDbConfiguration(new IgniteConfiguration
+                {
+                    GridName = "myGrid3",
+                    CacheConfiguration = new[]
+                    {
+                        new CacheConfiguration
+                        {
+                            Name = "myCache",
+                            CacheMode = CacheMode.Replicated
+                        }
+                    }
+                }, "myCache", null), CacheMode.Replicated);
+
+            // Existing instance
         }
 
         // ReSharper disable once UnusedParameter.Local
-        private static void CheckCacheAndStop(string gridName, string cacheName, IgniteDbConfiguration cfg)
+        private static void CheckCacheAndStop(string gridName, string cacheName, IgniteDbConfiguration cfg,
+            CacheMode cacheMode = CacheMode.Partitioned)
         {
             Assert.IsNotNull(cfg);
 
             var ignite = Ignition.TryGetIgnite(gridName);
             Assert.IsNotNull(ignite);
-            Assert.IsNotNull(ignite.GetCache<object, object>(cacheName));
+
+            var cache = ignite.GetCache<object, object>(cacheName);
+            Assert.IsNotNull(cache);
+            Assert.AreEqual(cacheMode, cache.GetConfiguration().CacheMode);
+
+            Ignition.StopAll(true);
         }
 
         [Test]
