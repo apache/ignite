@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Tests.NuGet
 {
+    using Apache.Ignite.EntityFramework;
     using NUnit.Framework;
 
     /// <summary>
@@ -27,7 +28,12 @@ namespace Apache.Ignite.Core.Tests.NuGet
         [Test]
         public void TestStartupPutGet()
         {
-            // TODO
+            var cfg = new IgniteConfiguration
+            {
+                DiscoverySpi = TestUtil.GetLocalDiscoverySpi()
+            };
+            // ReSharper disable once ObjectCreationAsStatement
+            new IgniteDbConfiguration(cfg, "efCache", null);
         }
     }
 }
