@@ -114,6 +114,7 @@
     <Compile Include="DataStructures\AtomicReferenceTest.cs" />
     <Compile Include="DataStructures\AtomicSequenceTest.cs" />
     <Compile Include="DeploymentTest.cs" />
+    <Compile Include="EntityFramework\SecondLevelCacheTest.cs" />
     <Compile Include="EventsTest.cs" />
     <Compile Include="Examples\Example.cs" />
     <Compile Include="Examples\ExamplesTest.cs" />
