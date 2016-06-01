@@ -483,22 +483,7 @@ consoleModule.controller('clustersController', [
                     return showPopoverMessage($scope.ui, 'sslConfiguration', 'sslConfiguration-title', 'Trust storage file or managers should be configured!');
             }
 
-            if (!swapKind && item.caches) {
-                for (let i = 0; i < item.caches.length; i++) {
-                    const idx = $scope.indexOfCache(item.caches[i]);
-
-                    if (idx >= 0) {
-                        const cache = $scope.caches[idx];
-
-                        if (cache.cache.swapEnabled) {
-                            return showPopoverMessage($scope.ui, 'swap', 'swapSpaceSpi',
-                                'Swap space SPI is not configured, but cache "' + cache.label + '" configured to use swap!');
-                        }
-                    }
-                }
-            }
-
-            if (item.rebalanceThreadPoolSize && item.systemThreadPoolSize && item.systemThreadPoolSize <= item.rebalanceThreadPoolSize)
+``            if (item.rebalanceThreadPoolSize && item.systemThreadPoolSize && item.systemThreadPoolSize <= item.rebalanceThreadPoolSize)
                 return showPopoverMessage($scope.ui, 'pools', 'rebalanceThreadPoolSize', 'Rebalance thread pool size exceed or equals System thread pool size!');
 
             return true;
