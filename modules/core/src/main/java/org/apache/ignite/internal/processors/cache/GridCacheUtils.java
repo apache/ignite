@@ -1546,7 +1546,7 @@ public class GridCacheUtils {
      * @return {@code True} if node is not client node and pass given filter.
      */
     public static boolean affinityNode(ClusterNode node, IgnitePredicate<ClusterNode> filter) {
-        return !clientNode(node) && filter.apply(node);
+        return !node.isDaemon() && !clientNode(node) && filter.apply(node);
     }
 
     /**
