@@ -324,10 +324,21 @@ public class PageImpl extends AbstractQueuedSynchronizer implements Page {
      * Increments reference count. This method is invoked from the PageMemoryImpl segment read lock, so it
      * must be synchronized.
      */
-    void acquireReference() {
-        refCntUpd.incrementAndGet(this);
+    boolean acquireReference() {
+        while (true) {
+            int cnt = refCntUpd.get(this);
+
+            if (cnt >= 0) {
+                if (refCntUpd.compareAndSet(this, cnt, cnt + 1))
+                    break;
+            }
+            else
+                return false;
+        }
 
         pageMem.writeCurrentTimestamp(ptr);
+
+        return true;
     }
 
     /**
@@ -341,11 +352,16 @@ public class PageImpl extends AbstractQueuedSynchronizer implements Page {
      * @return {@code True} if last reference has been released. This method is invoked
      */
     boolean releaseReference() {
-        int refs = refCntUpd.decrementAndGet(this);
+        while (true) {
+            int refs = refCntUpd.get(this);
 
-        assert refs >= 0: fullId;
+            assert refs > 0 : fullId;
 
-        return refs == 0;
+            int next = refs == 1 ? -1 : refs - 1;
+
+            if (refCntUpd.compareAndSet(this, refs, next))
+                return next == -1;
+        }
     }
 
     /** {@inheritDoc} */
