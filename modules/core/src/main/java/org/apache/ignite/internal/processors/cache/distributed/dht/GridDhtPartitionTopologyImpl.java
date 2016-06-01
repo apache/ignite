@@ -710,7 +710,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         try {
             loc = locParts[p];
 
-            boolean belongs = cctx.affinity().localNode(p, topVer);
+//            boolean belongs = cctx.affinity().localNode(p, topVer);
+            boolean belongs = true; // TODO
 
             if (loc != null && loc.state() == EVICTED) {
                 locParts[p] = loc = null;
@@ -1141,10 +1142,40 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
             AffinityTopologyVersion affVer = cctx.affinity().affinityTopologyVersion();
 
+            for (Map.Entry<Integer, GridDhtPartitionState> e : partMap.get(cctx.localNodeId()).entrySet()) {
+                int p = e.getKey();
+                GridDhtPartitionState state = e.getValue();
+
+                if (state == OWNING) {
+                    GridDhtLocalPartition locPart = locParts[p];
+
+                    assert locPart != null;
+
+                    if (locPart.state() != OWNING) {
+                        boolean success = locPart.own();
+
+                        assert success;
+
+                        changed |= success;
+                    }
+                }
+                else if (state == MOVING) {
+                    GridDhtLocalPartition locPart = locParts[p];
+
+                    assert locPart != null;
+
+                    if (locPart.state() == OWNING) {
+                        locParts[p] = new GridDhtLocalPartition(cctx, p, entryFactory);
+
+                        changed = true;
+                    }
+                }
+            }
+
             if (!affVer.equals(AffinityTopologyVersion.NONE) && affVer.compareTo(topVer) >= 0) {
                 List<List<ClusterNode>> aff = cctx.affinity().assignments(topVer);
 
-                changed = checkEvictions(updateSeq, aff);
+                changed |= checkEvictions(updateSeq, aff);
 
                 updateRebalanceVersion(aff);
             }

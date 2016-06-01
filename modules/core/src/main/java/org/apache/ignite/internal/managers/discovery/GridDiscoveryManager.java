@@ -612,12 +612,6 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             }
                         }, FILTER_DAEMON)));
 
-                    try {
-                        ctx.cache().context().database().beforeExchange(discoEvt);
-                    } catch (IgniteCheckedException e) {
-                        assert false : e;
-                    }
-
                     locJoinEvt.onDone(discoEvt);
 
                     return;

@@ -1244,7 +1244,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             if (crd.isLocal()) {
                 if (remaining.remove(node.id())) {
-                    updatePartitionSingleMap(msg);
+                    updatePartitionSingleMap(node, msg);
 
                     allReceived = remaining.isEmpty();
                 }
@@ -1323,6 +1323,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             }
         }
 
+        for (GridDhtLocalPartition part : top.currentLocalPartitions()) {
+            Long maxCntr = maxCntrs.get(part.id());
+
+            if (maxCntr == null || part.updateCounter() > maxCntr)
+                maxCntrs.put(part.id(), part.updateCounter());
+        }
+
         for (Map.Entry<Integer, Long> e : maxCntrs.entrySet()) {
             int p = e.getKey();
             long maxCntr = e.getValue();
@@ -1345,6 +1352,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 if (cntr == maxCntr)
                     owners.add(e0.getKey());
             }
+
+            GridDhtLocalPartition locPart = top.localPartition(p, topologyVersion(), false);
+
+            if (locPart != null && locPart.updateCounter() == maxCntr)
+                owners.add(cctx.localNodeId());
 
             top.setOwners(p, owners);
         }
@@ -1631,8 +1643,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      *
      * @param msg Partitions single message.
      */
-    private void updatePartitionSingleMap(GridDhtPartitionsSingleMessage msg) {
-        msgs.put(msg.exchangeId().nodeId(), msg);
+    private void updatePartitionSingleMap(ClusterNode node, GridDhtPartitionsSingleMessage msg) {
+        msgs.put(node.id(), msg);
 
         for (Map.Entry<Integer, GridDhtPartitionMap2> entry : msg.partitions().entrySet()) {
             Integer cacheId = entry.getKey();
