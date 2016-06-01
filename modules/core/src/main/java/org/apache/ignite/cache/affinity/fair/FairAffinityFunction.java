@@ -911,13 +911,15 @@ public class FairAffinityFunction implements AffinityFunction {
 
                 if (tier == 0) {
                     for (int t=1; t<assigment.size(); t++) {
-                        newAssignment = new ArrayList<>();
+                        newAssignment = new ArrayList<>(assigment.size() - 1);
 
                         newAssignment.add(node);
 
-                        newAssignment.addAll(assigment.subList(1, t));
+                        if (1 < t)
+                            newAssignment.addAll(assigment.subList(1, t));
 
-                        newAssignment.addAll(assigment.subList(t + 1, assigment.size()));
+                        if (t + 1 < assigment.size())
+                            newAssignment.addAll(assigment.subList(t + 1, assigment.size()));
 
                         if (!affinityBackupFilter.apply(assigment.get(t), newAssignment))
                             return false;
