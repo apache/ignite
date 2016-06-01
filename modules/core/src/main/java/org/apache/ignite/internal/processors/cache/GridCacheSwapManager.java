@@ -820,6 +820,9 @@ public class GridCacheSwapManager extends GridCacheManagerAdapter {
         IgniteBiTuple<Long, Integer> ptr =
             offheap.valuePointer(spaceName, part, key, key.valueBytes(cctx.cacheObjectContext()));
 
+        if (cctx.config().isStatisticsEnabled())
+            cctx.cache().metrics0().onOffHeapRead(ptr != null);
+
         if (ptr != null) {
             assert ptr.get1() != null;
             assert ptr.get2() != null;
