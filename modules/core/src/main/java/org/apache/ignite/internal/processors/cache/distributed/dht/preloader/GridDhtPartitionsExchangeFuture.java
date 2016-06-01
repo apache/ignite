@@ -738,7 +738,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         waitPartitionRelease();
 
-        boolean topChanged = discoEvt.type() != EVT_DISCOVERY_CUSTOM_EVT || affChangeMsg != null;
+        DiscoveryCustomMessage customMsg = discoEvt instanceof DiscoveryCustomEvent ?
+            ((DiscoveryCustomEvent)discoEvt).customMessage() : null;
+
+        boolean topChanged = discoEvt.type() != EVT_DISCOVERY_CUSTOM_EVT || affChangeMsg != null ||
+            customMsg instanceof TcpDiscoveryNodeActivatedMessage;
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (cacheCtx.isLocal() || stopping(cacheCtx.cacheId()))
