@@ -1411,7 +1411,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         // In case if node joins, get topology at the time of joining node.
         ClusterNode oldest = CU.oldestAliveCacheServerNode(cctx.shared(), topVer);
 
-        assert oldest != null || cctx.kernalContext().clientNode();
+        assert oldest != null || cctx.kernalContext().clientNode() || !cctx.discovery().activated(cctx.localNode(), topVer);
 
         // If this node became the oldest node.
         if (cctx.localNode().equals(oldest)) {
