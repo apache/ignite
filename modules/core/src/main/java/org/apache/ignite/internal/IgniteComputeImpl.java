@@ -43,6 +43,7 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.internal.GridClosureCallMode.BALANCE;
@@ -110,6 +111,25 @@ public class IgniteComputeImpl extends AsyncSupportAdapter<IgniteCompute>
 
         try {
             saveOrGet(ctx.closure().affinityRun(cacheName, affKey, job, prj.nodes()));
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+        finally {
+            unguard();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void affinityRun(@Nullable String cacheName, Object affKey, IgniteRunnable job,
+        @NotNull Map<String, int[]> partsToLock) {
+        A.notNull(affKey, "affKey");
+        A.notNull(job, "job");
+
+        guard();
+
+        try {
+            saveOrGet(ctx.closure().affinityRun(cacheName, affKey, job, prj.nodes(), partsToLock));
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);

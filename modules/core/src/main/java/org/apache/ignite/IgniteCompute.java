@@ -18,6 +18,7 @@
 package org.apache.ignite;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.compute.ComputeTask;
@@ -131,6 +132,19 @@ public interface IgniteCompute extends IgniteAsyncSupport {
      */
     @IgniteAsyncSupported
     public void affinityRun(@Nullable String cacheName, Object affKey, IgniteRunnable job) throws IgniteException;
+
+    /**
+     * Executes given job on the node where data for provided affinity key is located
+     * (a.k.a. affinity co-location).
+     *
+     * @param cacheName Name of the cache to use for affinity co-location.
+     * @param affKey Affinity key.
+     * @param job Job which will be co-located on the node with given affinity key.
+     * @throws IgniteException If job failed.
+     */
+    @IgniteAsyncSupported
+    public void affinityRun(@Nullable String cacheName, Object affKey, IgniteRunnable job,
+        Map<String, int[]> partsToLock) throws IgniteException;
 
     /**
      * Executes given job on the node where data for provided affinity key is located

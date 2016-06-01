@@ -25,6 +25,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -32,9 +33,12 @@ import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.testframework.GridTestUtils;
 
+import javax.cache.CacheException;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -127,28 +131,58 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
         }, "restart-node");
 
         while (System.currentTimeMillis() < endTime) {
-            for (int orgId : orgIds) {
+            for (final int orgId : orgIds) {
                 try {
+//                    List res = grid(0).cache(Person.class.getSimpleName()).query(new SqlFieldsQuery(
+//                        String.format("SELECT * FROM \"%s\".Person as p, \"%s\".Organization as o " +
+//                            "WHERE p.orgId=o.id " +
+//                            "AND p.orgId=" + orgId,
+//                            Person.class.getSimpleName(), Organization.class.getSimpleName()))).getAll();
+
                     grid(0).compute().affinityRun(Organization.class.getSimpleName(), orgId, new IgniteRunnable() {
                         @IgniteInstanceResource
                         private Ignite ignite;
 
                         @Override public void run() {
                             System.out.println("+++ RUN on: " + ignite.name());
-                            List res = ignite.cache(Person.class.getSimpleName()).query(new SqlFieldsQuery(
-                                "SELECT * FROM Person as p where p.orgId").setLocal(true))
+                            List res = ignite.cache(Person.class.getSimpleName())
+                                .query(new SqlFieldsQuery(
+                                    String.format("SELECT * FROM \"%s\".Person as p, \"%s\".Organization as o " +
+                                            "WHERE p.orgId = o.id " +
+                                            "AND p.orgId = " + orgId,
+                                        Person.class.getSimpleName(), Organization.class.getSimpleName())).setLocal(true))
                                 .getAll();
-                            assertTrue(res.size() % PERS_AT_ORG_COUNT == 0);
+//                            System.out.println("+++ RES: " + res.size());
+                            assertEquals(PERS_AT_ORG_COUNT, res.size());
                         }
-                    });
+                    }, lockedParts(orgId));
+
+//                    System.out.println("+++ RES: " + res.size());
                 }
-                catch (IgniteException | IllegalStateException ex) {
+                catch (IgniteException | IllegalStateException | CacheException ex) {
                     // Swallow exceptions in case node is shutdown
                 }
             }
         }
 
         stop.set(true);
+    }
+
+    private Map<String, int[]> lockedParts(Object key) {
+        Map<String, int[]> map = new HashMap<>();
+
+        int[] parts = new int[] {grid(0).affinity(Organization.class.getSimpleName()).partition(key)};
+        map.put(Organization.class.getSimpleName(),
+            parts);
+        map.put(Person.class.getSimpleName(),
+            parts);
+
+//        ClusterNode node = grid(0).affinity(Organization.class.getSimpleName()).mapKeyToNode(key);
+
+//        map.put(Person.class.getSimpleName(),
+//            grid(0).affinity(Person.class.getSimpleName()).primaryPartitions(node));
+
+        return map;
     }
 
     /**
@@ -167,6 +201,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
                 grid(0).dataStreamer(Organization.class.getSimpleName());
             IgniteDataStreamer<Person.Key, Person> persStreamer =
                 grid(0).dataStreamer(Person.class.getSimpleName())) {
+
 
             int persId = 0;
             for (int orgId : orgIds) {
@@ -284,17 +319,14 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
 
                 Key key = (Key)o;
 
-                if (id != key.id)
-                    return false;
-                return orgId == key.orgId;
-
+                return id == key.id && orgId == key.orgId;
             }
 
             /** {@inheritDoc} */
             @Override public int hashCode() {
-                int result = id;
-                result = 31 * result + orgId;
-                return result;
+                int res = id;
+                res = 31 * res + orgId;
+                return res;
             }
         }
     }

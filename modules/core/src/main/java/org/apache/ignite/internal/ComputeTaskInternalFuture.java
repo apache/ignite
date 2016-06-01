@@ -229,6 +229,15 @@ public class ComputeTaskInternalFuture<R> extends GridFutureAdapter<R> {
         return ses;
     }
 
+    /**
+     * Gets context.
+     *
+     * @return Context.
+     */
+    public GridKernalContext getContext() {
+        return ctx;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean cancel() throws IgniteCheckedException {
         ctx.security().authorize(ses.getTaskName(), SecurityPermission.TASK_CANCEL, null);
