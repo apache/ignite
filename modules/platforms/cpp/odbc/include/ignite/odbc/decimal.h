@@ -62,6 +62,13 @@ namespace ignite
         Decimal(const Decimal& other);
 
         /**
+         * Integer constructor.
+         *
+         * @param val Integer value.
+         */
+        Decimal(int64_t val);
+
+        /**
          * Destructor.
          */
         ~Decimal();

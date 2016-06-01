@@ -293,18 +293,23 @@ namespace ignite
 
     void BigInteger::Pow(int32_t exp)
     {
+        if (exp < 0)
+        {
+            Assign(0ULL);
+
+            return;
+        }
+
         uint32_t bitsLen = GetBitLength();
 
-        if (!bitsLen || exp < 0)
+        if (!bitsLen)
             return;
-
-        if (sign == -1 && exp % 2 == 0)
-            sign = 1;
 
         if (bitsLen == 1)
             return;
 
         BigInteger multiplicant(*this);
+        Assign(1ULL);
 
         int32_t mutExp = exp;
         while (mutExp)
@@ -343,6 +348,8 @@ namespace ignite
 
         res.mag.Swap(resMag);
         res.sign = sign * other.sign;
+
+        res.Normalize();
     }
 
     /**
@@ -730,6 +737,13 @@ namespace ignite
         }
     }
 
+    void BigInteger::Normalize()
+    {
+        int32_t lastNonZero = mag.GetSize() - 1;
+        while (lastNonZero >= 0 && mag[lastNonZero] == 0)
+            --lastNonZero;
 
+        mag.Resize(lastNonZero + 1);
+    }
 }
 

@@ -33,9 +33,10 @@ namespace ignite
     class BigInteger
     {
         friend class Decimal;
+    public:
+        // Magnitude array type.
         typedef common::DynamicSizeArray<uint32_t> MagArray;
 
-    public:
         /**
          * Default constructor. Constructs zero-value big integer.
          */
@@ -330,6 +331,11 @@ namespace ignite
          *     Can be null if the remainder is not needed.
          */
         void Divide(const BigInteger& divisor, BigInteger& res, BigInteger* rem) const;
+
+        /**
+         * Normalizes current value removing trailing zeroes from the magnitude.
+         */
+        void Normalize();
 
         /**
          * The sign of this BigInteger: -1 for negative, 0 for zero, or

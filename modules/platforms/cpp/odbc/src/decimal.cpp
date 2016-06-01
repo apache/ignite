@@ -45,6 +45,13 @@ namespace ignite
         // No-op.
     }
 
+    Decimal::Decimal(int64_t val) :
+        scale(0),
+        magnitude(val)
+    {
+        // No-op.
+    }
+
     Decimal::~Decimal()
     {
         // No-op.
