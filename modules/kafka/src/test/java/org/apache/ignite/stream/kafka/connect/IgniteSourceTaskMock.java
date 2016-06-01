@@ -21,11 +21,11 @@ package org.apache.ignite.stream.kafka.connect;
  * Source task mock for tests. It avoids closing the grid from test to test.
  */
 public class IgniteSourceTaskMock extends IgniteSourceTask {
-
     /** {@inheritDoc} */
     @Override public void stop() {
+        // Don't stop the grid for tests.
         stopRemoteListen();
 
-        // don't stop the grid for tests.
+        setStopped(true);
     }
 }

@@ -153,11 +153,16 @@ public class PageImpl extends AbstractQueuedSynchronizer implements Page {
         assert getExclusiveOwnerThread() == null: fullId();
         assert getState() == 0: fullId();
 
-        markDirty();
+        markDirty(true);
 
         pageMem.writeCurrentTimestamp(ptr);
 
         return reset(buf);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void finishInitialWrite() {
+        pageMem.beforeReleaseWrite(fullId, pageMem.wrapPointer(ptr, pageMem.systemPageSize()));
     }
 
     /** {@inheritDoc} */
@@ -246,11 +251,11 @@ public class PageImpl extends AbstractQueuedSynchronizer implements Page {
     /**
      * Mark dirty.
      */
-    private void markDirty() {
+    private void markDirty(boolean forceAdd) {
         if (cp != null)
             cp.dirty = true;
         else
-            pageMem.setDirty(fullId, ptr, true, false);
+            pageMem.setDirty(fullId, ptr, true, forceAdd);
     }
 
     /** {@inheritDoc} */
@@ -259,7 +264,7 @@ public class PageImpl extends AbstractQueuedSynchronizer implements Page {
         assert getExclusiveOwnerThread() == Thread.currentThread() : "illegal monitor state";
 
         if (markDirty) {
-            markDirty();
+            markDirty(false);
 
             if (cp != null)
                 pageMem.beforeReleaseWrite(fullId, reset(cp.sysBuf));

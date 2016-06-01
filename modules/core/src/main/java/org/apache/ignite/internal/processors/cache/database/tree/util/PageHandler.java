@@ -26,7 +26,7 @@ import sun.nio.ch.DirectBuffer;
 /**
  * Page handler.
  */
-public abstract class PageHandler<X> {
+public abstract class PageHandler<X, R> {
     /**
      * @param pageId Page ID.
      * @param page Page.
@@ -36,7 +36,7 @@ public abstract class PageHandler<X> {
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
-    public abstract int run(long pageId, Page page, ByteBuffer buf, X arg, int intArg) throws IgniteCheckedException;
+    public abstract R run(long pageId, Page page, ByteBuffer buf, X arg, int intArg) throws IgniteCheckedException;
 
     /**
      * @param pageId Page ID.
@@ -58,7 +58,7 @@ public abstract class PageHandler<X> {
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
-    public static <X> int readPage(long pageId, Page page, PageHandler<X> h, X arg, int intArg)
+    public static <X, R> R readPage(long pageId, Page page, PageHandler<X, R> h, X arg, int intArg)
         throws IgniteCheckedException {
         assert page != null;
 
@@ -83,11 +83,11 @@ public abstract class PageHandler<X> {
      * @return Handler result.
      * @throws IgniteCheckedException If failed.
      */
-    public static <X> int writePage(long pageId, Page page, PageHandler<X> h, X arg, int intArg)
+    public static <X, R> R writePage(long pageId, Page page, PageHandler<X, R> h, X arg, int intArg)
         throws IgniteCheckedException {
         assert page != null;
 
-        int res;
+        R res;
 
         boolean ok = false;
 

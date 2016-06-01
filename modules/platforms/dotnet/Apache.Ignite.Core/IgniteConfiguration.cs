@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-#pragma warning disable 618  // deprecated SpringConfigUrl
  namespace Apache.Ignite.Core
 {
     using System;
@@ -29,6 +28,8 @@
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Communication;
+    using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.DataStructures.Configuration;
     using Apache.Ignite.Core.Discovery;
     using Apache.Ignite.Core.Discovery.Tcp;
@@ -86,6 +87,36 @@
         /// </summary>
         public static readonly TimeSpan DefaultNetworkSendRetryDelay = TimeSpan.FromMilliseconds(1000);
 
+        /** */
+        private TimeSpan? _metricsExpireTime;
+
+        /** */
+        private int? _metricsHistorySize;
+
+        /** */
+        private TimeSpan? _metricsLogFrequency;
+
+        /** */
+        private TimeSpan? _metricsUpdateFrequency;
+
+        /** */
+        private int? _networkSendRetryCount;
+
+        /** */
+        private TimeSpan? _networkSendRetryDelay;
+
+        /** */
+        private TimeSpan? _networkTimeout;
+
+        /** */
+        private bool? _isDaemon;
+
+        /** */
+        private bool? _isLateAffinityAssignment;
+
+        /** */
+        private bool? _clientMode;
+
         /// <summary>
         /// Default network retry count.
         /// </summary>
@@ -103,15 +134,6 @@
         {
             JvmInitialMemoryMb = DefaultJvmInitMem;
             JvmMaxMemoryMb = DefaultJvmMaxMem;
-
-            MetricsExpireTime = DefaultMetricsExpireTime;
-            MetricsHistorySize = DefaultMetricsHistorySize;
-            MetricsLogFrequency = DefaultMetricsLogFrequency;
-            MetricsUpdateFrequency = DefaultMetricsUpdateFrequency;
-            NetworkTimeout = DefaultNetworkTimeout;
-            NetworkSendRetryCount = DefaultNetworkSendRetryCount;
-            NetworkSendRetryDelay = DefaultNetworkSendRetryDelay;
-            IsLateAffinityAssignment = DefaultIsLateAffinityAssignment;
         }
 
         /// <summary>
@@ -128,7 +150,7 @@
             {
                 var marsh = new Marshaller(configuration.BinaryConfiguration);
 
-                configuration.WriteCore(marsh.StartMarshal(stream));
+                configuration.Write(marsh.StartMarshal(stream));
 
                 stream.SynchronizeOutput();
 
@@ -155,40 +177,21 @@
         {
             Debug.Assert(writer != null);
 
-            if (!string.IsNullOrEmpty(SpringConfigUrl))
-            {
-                // Do not write details when there is Spring config.
-                writer.WriteBoolean(false);
-                return;
-            }
-
-            writer.WriteBoolean(true);  // details are present
-
-            WriteCore(writer);
-        }
-
-        /// <summary>
-        /// Writes this instance to a writer.
-        /// </summary>
-        /// <param name="writer">The writer.</param>
-        private void WriteCore(BinaryWriter writer)
-        {
             // Simple properties
-            writer.WriteBoolean(ClientMode);
+            writer.WriteBooleanNullable(_clientMode);
             writer.WriteIntArray(IncludedEventTypes == null ? null : IncludedEventTypes.ToArray());
 
-            writer.WriteLong((long) MetricsExpireTime.TotalMilliseconds);
-            writer.WriteInt(MetricsHistorySize);
-            writer.WriteLong((long) MetricsLogFrequency.TotalMilliseconds);
-            var metricsUpdateFreq = (long) MetricsUpdateFrequency.TotalMilliseconds;
-            writer.WriteLong(metricsUpdateFreq >= 0 ? metricsUpdateFreq : -1);
-            writer.WriteInt(NetworkSendRetryCount);
-            writer.WriteLong((long) NetworkSendRetryDelay.TotalMilliseconds);
-            writer.WriteLong((long) NetworkTimeout.TotalMilliseconds);
+            writer.WriteTimeSpanAsLongNullable(_metricsExpireTime);
+            writer.WriteIntNullable(_metricsHistorySize);
+            writer.WriteTimeSpanAsLongNullable(_metricsLogFrequency);
+            writer.WriteTimeSpanAsLongNullable(_metricsUpdateFrequency);
+            writer.WriteIntNullable(_networkSendRetryCount);
+            writer.WriteTimeSpanAsLongNullable(_networkSendRetryDelay);
+            writer.WriteTimeSpanAsLongNullable(_networkTimeout);
             writer.WriteString(WorkDirectory);
             writer.WriteString(Localhost);
-            writer.WriteBoolean(IsDaemon);
-            writer.WriteBoolean(IsLateAffinityAssignment);
+            writer.WriteBooleanNullable(_isDaemon);
+            writer.WriteBooleanNullable(_isLateAffinityAssignment);
 
             // Cache config
             var caches = CacheConfiguration;
@@ -216,6 +219,23 @@
                     throw new InvalidOperationException("Unsupported discovery SPI: " + disco.GetType());
 
                 tcpDisco.Write(writer);
+            }
+            else
+                writer.WriteBoolean(false);
+
+            // Communication config
+            var comm = CommunicationSpi;
+
+            if (comm != null)
+            {
+                writer.WriteBoolean(true);
+
+                var tcpComm = comm as TcpCommunicationSpi;
+
+                if (tcpComm == null)
+                    throw new InvalidOperationException("Unsupported communication SPI: " + comm.GetType());
+
+                tcpComm.Write(writer);
             }
             else
                 writer.WriteBoolean(false);
@@ -278,20 +298,19 @@
         private void ReadCore(BinaryReader r)
         {
             // Simple properties
-            ClientMode = r.ReadBoolean();
+            _clientMode = r.ReadBooleanNullable();
             IncludedEventTypes = r.ReadIntArray();
-
-            MetricsExpireTime = r.ReadLongAsTimespan();
-            MetricsHistorySize = r.ReadInt();
-            MetricsLogFrequency = r.ReadLongAsTimespan();
-            MetricsUpdateFrequency = r.ReadLongAsTimespan();
-            NetworkSendRetryCount = r.ReadInt();
-            NetworkSendRetryDelay = r.ReadLongAsTimespan();
-            NetworkTimeout = r.ReadLongAsTimespan();
+            _metricsExpireTime = r.ReadTimeSpanNullable();
+            _metricsHistorySize = r.ReadIntNullable();
+            _metricsLogFrequency = r.ReadTimeSpanNullable();
+            _metricsUpdateFrequency = r.ReadTimeSpanNullable();
+            _networkSendRetryCount = r.ReadIntNullable();
+            _networkSendRetryDelay = r.ReadTimeSpanNullable();
+            _networkTimeout = r.ReadTimeSpanNullable();
             WorkDirectory = r.ReadString();
             Localhost = r.ReadString();
-            IsDaemon = r.ReadBoolean();
-            IsLateAffinityAssignment = r.ReadBoolean();
+            _isDaemon = r.ReadBooleanNullable();
+            _isLateAffinityAssignment = r.ReadBooleanNullable();
 
             // Cache config
             var cacheCfgCount = r.ReadInt();
@@ -301,6 +320,9 @@
 
             // Discovery config
             DiscoverySpi = r.ReadBoolean() ? new TcpDiscoverySpi(r) : null;
+
+            // Communication config
+            CommunicationSpi = r.ReadBoolean() ? new TcpCommunicationSpi(r) : null;
 
             // Binary config
             if (r.ReadBoolean())
@@ -403,11 +425,12 @@
         /// <summary>
         /// URL to Spring configuration file.
         /// <para />
-        /// Ignite.NET can be configured natively without Spring. 
-        /// Setting this property will ignore all other properties except <see cref="IgniteHome"/>, 
-        /// <see cref="Assemblies"/>, <see cref="SuppressWarnings"/>, <see cref="LifecycleBeans"/>, 
-        /// <see cref="JvmOptions"/>, <see cref="JvmDllPath"/>, <see cref="IgniteHome"/>, 
-        /// <see cref="JvmInitialMemoryMb"/>, <see cref="JvmMaxMemoryMb"/>.
+        /// Spring configuration is loaded first, then <see cref="IgniteConfiguration"/> properties are applied.
+        /// Null property values do not override Spring values.
+        /// Value-typed properties are tracked internally: if setter was not called, Spring value won't be overwritten.
+        /// <para />
+        /// This merging happens on the top level only; e. g. if there are cache configurations defined in Spring 
+        /// and in .NET, .NET caches will overwrite Spring caches.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1056:UriPropertiesShouldNotBeStrings")]
         public string SpringConfigUrl { get; set; }
@@ -478,10 +501,20 @@
         public IDiscoverySpi DiscoverySpi { get; set; }
 
         /// <summary>
+        /// Gets or sets the communication service provider.
+        /// Null for default communication.
+        /// </summary>
+        public ICommunicationSpi CommunicationSpi { get; set; }
+
+        /// <summary>
         /// Gets or sets a value indicating whether node should start in client mode.
         /// Client node cannot hold data in the caches.
         /// </summary>
-        public bool ClientMode { get; set; }
+        public bool ClientMode
+        {
+            get { return _clientMode ?? default(bool); }
+            set { _clientMode = value; }
+        }
 
         /// <summary>
         /// Gets or sets a set of event types (<see cref="EventType" />) to be recorded by Ignite. 
@@ -493,20 +526,32 @@
         /// Gets or sets the time after which a certain metric value is considered expired.
         /// </summary>
         [DefaultValue(typeof(TimeSpan), "10675199.02:48:05.4775807")]
-        public TimeSpan MetricsExpireTime { get; set; }
+        public TimeSpan MetricsExpireTime
+        {
+            get { return _metricsExpireTime ?? DefaultMetricsExpireTime; }
+            set { _metricsExpireTime = value; }
+        }
 
         /// <summary>
         /// Gets or sets the number of metrics kept in history to compute totals and averages.
         /// </summary>
         [DefaultValue(DefaultMetricsHistorySize)]
-        public int MetricsHistorySize { get; set; }
+        public int MetricsHistorySize
+        {
+            get { return _metricsHistorySize ?? DefaultMetricsHistorySize; }
+            set { _metricsHistorySize = value; }
+        }
 
         /// <summary>
         /// Gets or sets the frequency of metrics log print out.
         /// <see cref="TimeSpan.Zero"/> to disable metrics print out.
         /// </summary>
         [DefaultValue(typeof(TimeSpan), "00:01:00")]
-        public TimeSpan MetricsLogFrequency { get; set; }
+        public TimeSpan MetricsLogFrequency
+        {
+            get { return _metricsLogFrequency ?? DefaultMetricsLogFrequency; }
+            set { _metricsLogFrequency = value; }
+        }
 
         /// <summary>
         /// Gets or sets the job metrics update frequency.
@@ -514,25 +559,41 @@
         /// Negative value to never update metrics.
         /// </summary>
         [DefaultValue(typeof(TimeSpan), "00:00:02")]
-        public TimeSpan MetricsUpdateFrequency { get; set; }
+        public TimeSpan MetricsUpdateFrequency
+        {
+            get { return _metricsUpdateFrequency ?? DefaultMetricsUpdateFrequency; }
+            set { _metricsUpdateFrequency = value; }
+        }
 
         /// <summary>
         /// Gets or sets the network send retry count.
         /// </summary>
         [DefaultValue(DefaultNetworkSendRetryCount)]
-        public int NetworkSendRetryCount { get; set; }
+        public int NetworkSendRetryCount
+        {
+            get { return _networkSendRetryCount ?? DefaultNetworkSendRetryCount; }
+            set { _networkSendRetryCount = value; }
+        }
 
         /// <summary>
         /// Gets or sets the network send retry delay.
         /// </summary>
         [DefaultValue(typeof(TimeSpan), "00:00:01")]
-        public TimeSpan NetworkSendRetryDelay { get; set; }
+        public TimeSpan NetworkSendRetryDelay
+        {
+            get { return _networkSendRetryDelay ?? DefaultNetworkSendRetryDelay; }
+            set { _networkSendRetryDelay = value; }
+        }
 
         /// <summary>
         /// Gets or sets the network timeout.
         /// </summary>
         [DefaultValue(typeof(TimeSpan), "00:00:05")]
-        public TimeSpan NetworkTimeout { get; set; }
+        public TimeSpan NetworkTimeout
+        {
+            get { return _networkTimeout ?? DefaultNetworkTimeout; }
+            set { _networkTimeout = value; }
+        }
 
         /// <summary>
         /// Gets or sets the work directory.
@@ -561,7 +622,11 @@
         /// and needs to participate in the topology, but also needs to be excluded from the "normal" topology, 
         /// so that it won't participate in the task execution or in-memory data grid storage.
         /// </summary>
-        public bool IsDaemon { get; set; }
+        public bool IsDaemon
+        {
+            get { return _isDaemon ?? default(bool); }
+            set { _isDaemon = value; }
+        }
 
         /// <summary>
         /// Gets or sets the user attributes for this node.
@@ -606,6 +671,10 @@
         /// If not provided, default value is <see cref="DefaultIsLateAffinityAssignment"/>.
         /// </summary>
         [DefaultValue(DefaultIsLateAffinityAssignment)]
-        public bool IsLateAffinityAssignment { get; set; }
+        public bool IsLateAffinityAssignment
+        {
+            get { return _isLateAffinityAssignment ?? DefaultIsLateAffinityAssignment; }
+            set { _isLateAffinityAssignment = value; }
+        }
     }
 }

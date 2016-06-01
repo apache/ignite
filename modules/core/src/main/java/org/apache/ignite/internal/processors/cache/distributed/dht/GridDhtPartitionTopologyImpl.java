@@ -1042,8 +1042,18 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
                     Long cntr = cntrMap.get(part.id());
 
-                    if (cntr != null)
+                    if (cntr != null) {
+                        if (cntr > part.updateCounter() && part.state().active()) {
+                            try {
+                                cctx.offheap().clear(part);
+                            }
+                            catch (Exception ex) {
+                                assert false : ex;
+                            }
+                        }
+
                         part.updateCounter(cntr);
+                    }
                 }
             }
 
@@ -1277,8 +1287,16 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             GridDhtLocalPartition locPart = locParts[p];
 
             if (locPart != null) {
-                if (locPart.state() == OWNING && !owners.contains(cctx.localNodeId()))
+                if (locPart.state() == OWNING && !owners.contains(cctx.localNodeId())) {
+                    try {
+                        cctx.offheap().clear(locPart);
+                    }
+                    catch (Exception ex) {
+                        assert false : ex;
+                    }
+
                     locParts[p] = new GridDhtLocalPartition(cctx, p, entryFactory);
+                }
             }
 
             for (Map.Entry<UUID, GridDhtPartitionMap2> e : node2part.entrySet()) {

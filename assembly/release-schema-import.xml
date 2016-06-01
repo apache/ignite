@@ -21,7 +21,7 @@
           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
           xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2
           http://maven.apache.org/xsd/assembly-1.1.2.xsd">
-    <id>scala</id>
+    <id>release-schema-import</id>
 
     <includeBaseDirectory>false</includeBaseDirectory>
 

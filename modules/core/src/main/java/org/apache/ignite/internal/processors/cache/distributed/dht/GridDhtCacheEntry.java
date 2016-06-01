@@ -112,6 +112,17 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
+    @Override protected GridDhtLocalPartition localPartition() {
+        return locPart;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onUpdateFinished(Long cntr) {
+        if (cntr != null)
+            locPart.onUpdateReceived(cntr);
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean isDht() {
         return true;
     }
@@ -578,6 +589,13 @@ public class GridDhtCacheEntry extends GridDistributedCacheEntry {
 
                 if (log.isDebugEnabled())
                     log.debug("Entry has been marked obsolete: " + this);
+
+                if (log.isTraceEnabled()) {
+                    log.trace("clearInternal [key=" + key +
+                        ", entry=" + System.identityHashCode(this) +
+                        ", prev=" + prev +
+                        ']');
+                }
 
                 removeValue(prev, ver);
 

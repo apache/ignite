@@ -330,6 +330,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         return 0;
     }
 
+    /**
+     * @return Local partition that owns this entry.
+     */
+    protected GridDhtLocalPartition localPartition() {
+        return null;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean partitionValid() {
         return true;
@@ -371,14 +378,22 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         return unswap(true);
     }
 
+    /** {@inheritDoc} */
+    @Nullable @Override public final CacheObject unswap(boolean needVal)
+        throws IgniteCheckedException, GridCacheEntryRemovedException {
+        return unswap(needVal, true);
+    }
+
     /**
      * Unswaps an entry.
      *
      * @param needVal If {@code false} then do not to deserialize value during unswap.
+     * @param checkExpire If {@code true} checks for expiration, as result entry can be obsoleted or marked deleted.
      * @return Value.
      * @throws IgniteCheckedException If failed.
+     * @throws GridCacheEntryRemovedException If entry was removed.
      */
-    @Nullable @Override public CacheObject unswap(boolean needVal)
+    @Nullable protected CacheObject unswap(boolean needVal, boolean checkExpire)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         synchronized (this) {
             checkObsolete();
@@ -510,116 +525,68 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         GridCacheMvccCandidate owner;
 
-        CacheObject old;
-        CacheObject ret = null;
+        CacheObject ret;
 
         GridCacheVersion startVer;
         GridCacheVersion resVer = null;
 
-        boolean expired = false;
-
-        CacheObject expiredVal = null;
+        boolean obsolete = false;
+        boolean deferred = false;
+        GridCacheVersion ver0 = null;
 
         synchronized (this) {
             checkObsolete();
-
-            // Cache version for optimistic check.
-            startVer = ver;
 
             GridCacheMvcc mvcc = mvccExtras();
 
             owner = mvcc == null ? null : mvcc.anyOwner();
 
-            double delta;
-
-            long expireTime = expireTimeExtras();
-
-            if (expireTime > 0) {
-                delta = expireTime - U.currentTimeMillis();
-
-                if (log.isDebugEnabled())
-                    log.debug("Checked expiration time for entry [timeLeft=" + delta + ", entry=" + this + ']');
-
-                if (delta <= 0)
-                    expired = true;
-            }
-
-            CacheObject val = this.val;
-
             boolean valid = valid(tx != null ? tx.topologyVersion() : cctx.affinity().affinityTopologyVersion());
 
-            // Attempt to load from swap.
-            if (val == null && !isNear()) {
-                // Only promote when loading initial state.
-                if (isNew() || !valid) {
-                    // If this entry is already expired (expiration time was too low),
-                    // we simply remove from swap and clear index.
-                    if (expired) {
-                        // Previous value is guaranteed to be null
-                        removeValue(null, ver);
+            CacheObject val;
+
+            if (valid) {
+                val = this.val;
+
+                if (val == null) {
+                    if (isStartVersion()) {
+                        val = unswap(true, false);
                     }
-                    else {
-                        val = unswap();
+                }
 
-                        // Recalculate expiration after swap read.
-                        if (expireTime > 0) {
-                            delta = expireTime - U.currentTimeMillis();
+                if (val != null) {
+                    long expireTime = expireTimeExtras();
 
-                            if (log.isDebugEnabled())
-                                log.debug("Checked expiration time for entry [timeLeft=" + delta +
-                                    ", entry=" + this + ']');
+                    if (expireTime > 0 && (expireTime - U.currentTimeMillis() <= 0)) {
+                        if (onExpired((CacheObject)cctx.unwrapTemporary(val), null)) {
+                            val = null;
+                            evt = false;
 
-                            if (delta <= 0)
-                                expired = true;
+                            if (cctx.deferredDelete()) {
+                                deferred = true;
+                                ver0 = ver;
+                            }
+                            else
+                                obsolete = true;
                         }
                     }
                 }
             }
+            else
+                val = null;
 
-            old = expired || !valid ? null : val;
+            ret = val;
 
-            if (expired) {
-                expiredVal = val;
-
-                value(null);
-            }
-
-            if (old == null) {
+            if (ret == null) {
                 if (updateMetrics && cctx.cache().configuration().isStatisticsEnabled())
                     cctx.cache().metrics0().onRead(false);
             }
             else {
                 if (updateMetrics && cctx.cache().configuration().isStatisticsEnabled())
                     cctx.cache().metrics0().onRead(true);
-
-                // Set retVal here for event notification.
-                ret = old;
             }
 
-            if (evt && expired) {
-                if (cctx.events().isRecordable(EVT_CACHE_OBJECT_EXPIRED)) {
-                    cctx.events().addEvent(partition(),
-                        key,
-                        tx,
-                        owner,
-                        EVT_CACHE_OBJECT_EXPIRED,
-                        null,
-                        false,
-                        expiredVal,
-                        expiredVal != null,
-                        subjId,
-                        null,
-                        taskName,
-                        keepBinary);
-                }
-
-                cctx.continuousQueries().onEntryExpired(this, key, expiredVal);
-
-                // No more notifications.
-                evt = false;
-            }
-
-            if (evt && !expired && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
+            if (evt && cctx.events().isRecordable(EVT_CACHE_OBJECT_READ)) {
                 cctx.events().addEvent(
                     partition(),
                     key,
@@ -628,8 +595,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     EVT_CACHE_OBJECT_READ,
                     ret,
                     ret != null,
-                    old,
-                    old != null,
+                    ret,
+                    ret != null,
                     subjId,
                     transformClo != null ? transformClo.getClass().getName() : null,
                     taskName,
@@ -648,15 +615,29 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (resVer == null)
                     ret = null;
             }
+
+            // Cache version for optimistic check.
+            startVer = ver;
         }
 
-        if (ret != null)
+        if (ret != null) {
+            assert !obsolete;
+            assert !deferred;
+
             // If return value is consistent, then done.
             return retVer ? new T2<>(ret, resVer) : ret;
+        }
 
-        boolean loadedFromStore = false;
+        if (obsolete) {
+            onMarkedObsolete();
 
-        if (ret == null && readThrough) {
+            throw new GridCacheEntryRemovedException();
+        }
+
+        if (deferred)
+            cctx.onDeferredDelete(this, ver0);
+
+        if (readThrough) {
             IgniteInternalTx tx0 = null;
 
             if (tx != null && tx.local()) {
@@ -672,9 +653,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             Object storeVal = readThrough(tx0, key, false, subjId, taskName);
 
             ret = cctx.toCacheObject(storeVal);
-
-            loadedFromStore = true;
         }
+
+        if (ret == null && !evt)
+            return null;
 
         synchronized (this) {
             long ttl = ttlExtras();
@@ -689,9 +671,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                     long expTime = CU.toExpireTime(ttl);
 
-                    if (loadedFromStore)
-                        // Update indexes before actual write to entry.
-                        storeValue(ret, expTime, nextVer);
+                    // Update indexes before actual write to entry.
+                    storeValue(ret, expTime, nextVer);
 
                     update(ret, expTime, ttl, nextVer, true);
 
@@ -708,8 +689,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         EVT_CACHE_OBJECT_READ,
                         ret,
                         ret != null,
-                        old,
-                        old != null,
+                        null,
+                        false,
                         subjId,
                         transformClo != null ? transformClo.getClass().getName() : null,
                         taskName,
@@ -881,7 +862,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             old = this.val;
 
             if (intercept) {
-                val0 = CU.value(val, cctx, false);
+                val0 = cctx.unwrapBinaryIfNeeded(val, keepBinary, false);
 
                 CacheLazyEntry e = new CacheLazyEntry(cctx, key, old, keepBinary);
 
@@ -1166,6 +1147,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             deferred = cctx.deferredDelete() && !detached() && !isInternal();
 
+            if (intercept) {
+                entry0.updateCounter(updateCntr0);
+
+                cctx.config().getInterceptor().onAfterRemove(entry0);
+            }
+
             if (!deferred) {
                 // If entry is still removed.
                 assert newVer == ver;
@@ -1266,7 +1253,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             // Load and remove from swap if it is new.
             if (isNew())
-                unswap(retval);
+                unswap(retval, false);
 
             old = val;
 
@@ -1384,14 +1371,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 CacheLazyEntry e;
 
                 if (op == GridCacheOperation.UPDATE) {
-                    updated0 = value(updated0, updated, false);
+                    updated0 = value(updated0, updated, keepBinary, false);
 
                     e = new CacheLazyEntry(cctx, key, key0, old, old0, keepBinary);
 
                     Object interceptorVal = cctx.config().getInterceptor().onBeforePut(e, updated0);
 
                     if (interceptorVal == null)
-                        return new GridTuple3<>(false, cctx.unwrapTemporary(value(old0, old, false)), invokeRes);
+                        return new GridTuple3<>(false, cctx.unwrapTemporary(value(old0, old, keepBinary, false)), invokeRes);
                     else {
                         updated0 = cctx.unwrapTemporary(interceptorVal);
 
@@ -1435,6 +1422,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             if (ttl == CU.TTL_ZERO)
                 op = GridCacheOperation.DELETE;
+
+            boolean hasValPtr = false;
 
             // Try write-through.
             if (op == GridCacheOperation.UPDATE) {
@@ -1613,8 +1602,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             checkObsolete();
 
             // Load and remove from swap if it is new.
-            if (isNew())
-                unswap(retval);
+            if (isStartVersion())
+                unswap(retval, false);
 
             Object transformClo = null;
 
@@ -2025,10 +2014,17 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             IgniteBiTuple<Boolean, Object> interceptRes = null;
 
+            boolean hasValPtr = false;
+
             // Actual update.
             if (op == GridCacheOperation.UPDATE) {
+                if (log.isTraceEnabled()) {
+                    log.trace("innerUpdate [key=" + key +
+                        ", entry=" + System.identityHashCode(this) + ']');
+                }
+
                 if (intercept) {
-                    updated0 = value(updated0, updated, false);
+                    updated0 = value(updated0, updated, keepBinary, false);
 
                     Object interceptorVal = cctx.config().getInterceptor()
                         .onBeforePut(new CacheLazyEntry(cctx, key, key0, oldVal, old0, keepBinary), updated0);
@@ -2207,8 +2203,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
             // Continuous query filter should be perform under lock.
             if (lsnrs != null) {
-                CacheObject evtVal = updated;
-                CacheObject evtOldVal = oldVal;
+                CacheObject evtVal = cctx.unwrapTemporary(updated);
+                CacheObject evtOldVal = cctx.unwrapTemporary(oldVal);
 
                 cctx.continuousQueries().onEntryUpdated(lsnrs, key, evtVal, evtOldVal, internal,
                     partition(), primary, false, updateCntr0, fut, topVer);
@@ -2261,14 +2257,15 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /**
      * @param val Value.
      * @param cacheObj Cache object.
+     * @param keepBinary Keep binary flag.
      * @param cpy Copy flag.
      * @return Cache object value.
      */
-    @Nullable private Object value(@Nullable Object val, @Nullable CacheObject cacheObj, boolean cpy) {
+    @Nullable private Object value(@Nullable Object val, @Nullable CacheObject cacheObj, boolean keepBinary, boolean cpy) {
         if (val != null)
             return val;
 
-        return cacheObj != null ? cacheObj.value(cctx.cacheObjectContext(), cpy) : null;
+        return cctx.unwrapBinaryIfNeeded(cacheObj, keepBinary, cpy);
     }
 
     /**
@@ -2408,8 +2405,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 return false;
             }
 
-            if (log.isDebugEnabled())
-                log.debug("Entry has been marked obsolete: " + this);
+            if (log.isTraceEnabled()) {
+                log.trace("entry clear [key=" + key +
+                    ", entry=" + System.identityHashCode(this) +
+                    ", val=" + val + ']');
+            }
 
             removeValue(val, ver);
         }
@@ -2441,19 +2441,31 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public boolean markObsoleteIfEmpty(@Nullable GridCacheVersion ver) throws IgniteCheckedException {
+    @Override public boolean markObsoleteIfEmpty(@Nullable GridCacheVersion obsoleteVer) throws IgniteCheckedException {
         boolean obsolete = false;
         boolean deferred = false;
+        GridCacheVersion ver0 = null;
 
         try {
             synchronized (this) {
                 if (obsoleteVersionExtras() != null)
                     return false;
 
-                if (!hasValueUnlocked() || checkExpired()) {
-                    if (ver == null)
-                        ver = nextVersion();
+                if (hasValueUnlocked()) {
+                    long expireTime = expireTimeExtras();
 
+                    if (expireTime > 0 && (expireTime - U.currentTimeMillis() <= 0)) {
+                        if (onExpired(this.val, obsoleteVer)) {
+                            if (cctx.deferredDelete()) {
+                                deferred = true;
+                                ver0 = ver;
+                            }
+                            else
+                                obsolete = true;
+                        }
+                    }
+                }
+                else {
                     if (cctx.deferredDelete() && !isStartVersion() && !detached() && !isInternal()) {
                         if (!deletedUnlocked()) {
                             update(null, 0L, 0L, ver, true);
@@ -2461,10 +2473,15 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             deletedUnlocked(true);
 
                             deferred = true;
+                            ver0 = ver;
                         }
                     }
-                    else
-                        obsolete = markObsolete0(ver, true, null);
+                    else {
+                        if (obsoleteVer == null)
+                            obsoleteVer = nextVersion();
+
+                        obsolete = markObsolete0(obsoleteVer, true, null);
+                    }
                 }
             }
         }
@@ -2473,7 +2490,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 onMarkedObsolete();
 
             if (deferred)
-                cctx.onDeferredDelete(this, ver);
+                cctx.onDeferredDelete(this, ver0);
         }
 
         return obsolete;
@@ -2543,6 +2560,13 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 if (clear)
                     value(null);
+
+                if (log.isTraceEnabled()) {
+                    log.trace("markObsolete0 [key=" + key +
+                        ", entry=" + System.identityHashCode(this) +
+                        ", clear=" + clear +
+                        ']');
+                }
             }
 
             return obsoleteVer != null;
@@ -2844,9 +2868,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         if (expireTime > 0) {
             long delta = expireTime - U.currentTimeMillis();
 
-            if (log.isDebugEnabled())
-                log.debug("Checked expiration time for entry [timeLeft=" + delta + ", entry=" + this + ']');
-
             if (delta <= 0) {
                 removeValue(saveValueForIndexUnlocked(), ver);
 
@@ -2962,8 +2983,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     protected void onUpdateFinished(Long cntr) {
-        if (!cctx.isLocal() && !isNear() && cntr != null)
-            cctx.offheap().onPartitionCounterUpdated(partition(), cntr);
+        // No-op.
     }
 
     /**
@@ -3017,7 +3037,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         boolean isNew = isStartVersion();
 
-        CacheObject val = isNew ? unswap(true) : this.val;
+        CacheObject val = isNew ? unswap(true, false) : this.val;
 
         return new GridCachePlainVersionedEntry<>(cctx.unwrapBinaryIfNeeded(key, keepBinary, true),
             cctx.unwrapBinaryIfNeeded(val, keepBinary, true),
@@ -3258,53 +3278,37 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onTtlExpired(GridCacheVersion obsoleteVer) {
+    @Override public boolean onTtlExpired(GridCacheVersion obsoleteVer) throws GridCacheEntryRemovedException {
+        assert obsoleteVer != null;
+
         boolean obsolete = false;
         boolean deferred = false;
         GridCacheVersion ver0 = null;
 
         try {
             synchronized (this) {
-                CacheObject expiredVal = saveOldValueUnlocked(false);
+                checkObsolete();
 
-                boolean expired = checkExpired();
+                if (isStartVersion())
+                    unswap(true, false);
 
-                if (expired) {
-                    if (!obsolete()) {
-                        if (cctx.deferredDelete() && !detached() && !isInternal()) {
-                            if (!deletedUnlocked()) {
-                                update(null, 0L, 0L, ver0 = ver, true);
+                long expireTime = expireTimeExtras();
 
-                                deletedUnlocked(true);
+                if (expireTime == 0 || (expireTime - U.currentTimeMillis() > 0))
+                    return false;
 
-                                deferred = true;
-                            }
-                        }
-                        else {
-                            if (markObsolete0(obsoleteVer, true, null))
-                                obsolete = true; // Success, will return "true".
-                        }
+                CacheObject expiredVal = this.val;
+
+                if (expiredVal == null)
+                    return false;
+
+                if (onExpired(expiredVal, obsoleteVer)) {
+                    if (cctx.deferredDelete()) {
+                        deferred = true;
+                        ver0 = ver;
                     }
-
-                    removeValue(expiredVal, ver);
-
-                    if (cctx.events().isRecordable(EVT_CACHE_OBJECT_EXPIRED)) {
-                        cctx.events().addEvent(partition(),
-                            key,
-                            cctx.localNodeId(),
-                            null,
-                            EVT_CACHE_OBJECT_EXPIRED,
-                            null,
-                            false,
-                            expiredVal,
-                            expiredVal != null,
-                            null,
-                            null,
-                            null,
-                            true);
-                    }
-
-                    cctx.continuousQueries().onEntryExpired(this, key, expiredVal);
+                    else
+                        obsolete = true;
                 }
             }
         }
@@ -3328,7 +3332,65 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 cctx.cache().metrics0().onEvict();
         }
 
-        return obsolete;
+        return true;
+    }
+
+    /**
+     * @param expiredVal Expired value.
+     * @param obsoleteVer Version.
+     * @return {@code True} if entry was marked as removed.
+     * @throws IgniteCheckedException If failed.
+     */
+    private boolean onExpired(CacheObject expiredVal, GridCacheVersion obsoleteVer) throws IgniteCheckedException {
+        assert expiredVal != null;
+
+        boolean rmvd = false;
+
+        if (mvccExtras() != null)
+            return false;
+
+        if (cctx.deferredDelete() && !detached() && !isInternal()) {
+            if (!deletedUnlocked() && !isStartVersion()) {
+                update(null, 0L, 0L, ver, true);
+
+                deletedUnlocked(true);
+
+                rmvd = true;
+            }
+        }
+        else {
+            if (obsoleteVer == null)
+                obsoleteVer = nextVersion();
+
+            if (markObsolete0(obsoleteVer, true, null))
+                rmvd = true;
+        }
+
+        if (log.isTraceEnabled())
+            log.trace("onExpired clear [key=" + key +
+                ", entry=" + System.identityHashCode(this) + ']');
+
+        removeValue(expiredVal, ver);
+
+        if (cctx.events().isRecordable(EVT_CACHE_OBJECT_EXPIRED)) {
+            cctx.events().addEvent(partition(),
+                key,
+                cctx.localNodeId(),
+                null,
+                EVT_CACHE_OBJECT_EXPIRED,
+                null,
+                false,
+                expiredVal,
+                expiredVal != null,
+                null,
+                null,
+                null,
+                true);
+        }
+
+        cctx.continuousQueries().onEntryExpired(this, key, expiredVal);
+
+        return rmvd;
     }
 
     /** {@inheritDoc} */
@@ -3389,7 +3451,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         synchronized (this) {
             checkObsolete();
 
-            updateTtl(ttl);
+            if (hasValueUnlocked())
+                updateTtl(ttl);
 
             /*
             TODO IGNITE-305.
@@ -3440,7 +3503,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert Thread.holdsLock(this);
         assert val != null : "null values in update for key: " + key;
 
-        cctx.offheap().update(key, val, ver, expireTime, partition());
+        cctx.offheap().update(key, val, ver, expireTime, partition(), localPartition());
     }
 
     /**
@@ -3481,7 +3544,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     protected void removeValue(CacheObject prevVal, GridCacheVersion prevVer) throws IgniteCheckedException {
         assert Thread.holdsLock(this);
 
-        cctx.offheap().remove(key, prevVal, prevVer, partition());
+        cctx.offheap().remove(key, prevVal, prevVer, partition(), localPartition());
     }
 
     /**

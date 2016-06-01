@@ -21,6 +21,9 @@ package org.apache.ignite.internal.pagemem.wal;
  *
  */
 public class StorageException extends Exception {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * @param e Cause exception.
      */

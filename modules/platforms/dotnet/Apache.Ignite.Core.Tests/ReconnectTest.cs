@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-#pragma warning disable 618  // Deprecated SpringConfigUrl
 namespace Apache.Ignite.Core.Tests
 {
     using Apache.Ignite.Core.Cache;

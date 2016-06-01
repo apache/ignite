@@ -24,6 +24,7 @@ import org.apache.ignite.internal.mem.DirectMemory;
 import org.apache.ignite.internal.mem.DirectMemoryFragment;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.util.GridUnsafe;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lifecycle.LifecycleAware;
 
 /**
@@ -119,6 +120,11 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider, LifecycleAwar
         /** {@inheritDoc} */
         @Override public long size() {
             return len;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(UnsafeChunk.class, this);
         }
     }
 }

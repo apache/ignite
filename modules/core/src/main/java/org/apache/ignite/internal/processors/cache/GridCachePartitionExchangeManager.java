@@ -1351,13 +1351,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             if (exchFut.exchangeId().nodeId().equals(cctx.localNodeId()))
                                 lastRefresh.compareAndSet(-1, U.currentTimeMillis());
 
-                            boolean changed = false;
-
                             // Just pick first worker to do this, so we don't
                             // invoke topology callback more than once for the
                             // same event.
 
                             if (activated) {
+                                boolean changed = false;
+
                                 for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
                                     if (cacheCtx.isLocal())
                                         continue;
