@@ -97,7 +97,7 @@ public interface IgniteScheduler {
      *      parameters are optional.
      * @return Scheduled execution future.
      */
-    public SchedulerFuture<?> runLocal(Runnable job, String ptrn);
+    public SchedulerFuture<?> scheduleLocal(Runnable job, String ptrn);
 
     /**
      * Schedules job for execution using local <b>cron-based</b> scheduling.
@@ -108,5 +108,5 @@ public interface IgniteScheduler {
      *      parameters are optional.
      * @return Scheduled execution future.
      */
-    public <R> SchedulerFuture<R> runLocal(Callable<R> c, String ptrn);
+    public <R> SchedulerFuture<R> scheduleLocal(Callable<R> c, String ptrn);
 }

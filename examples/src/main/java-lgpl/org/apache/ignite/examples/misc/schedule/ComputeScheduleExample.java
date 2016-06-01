@@ -49,7 +49,7 @@ public class ComputeScheduleExample {
             System.out.println("Compute schedule example started.");
 
             // Schedule output message every minute.
-            SchedulerFuture<?> fut = ignite.scheduler().runLocal(
+            SchedulerFuture<?> fut = ignite.scheduler().scheduleLocal(
                 new Callable<Integer>() {
                     private int invocations;
 

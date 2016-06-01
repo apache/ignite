@@ -85,7 +85,7 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public SchedulerFuture<?> runLocal(Runnable job, String ptrn) {
+    @Override public SchedulerFuture<?> scheduleLocal(Runnable job, String ptrn) {
         A.notNull(job, "job");
 
         guard();
@@ -99,7 +99,7 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> SchedulerFuture<R> runLocal(Callable<R> job, String ptrn) {
+    @Override public <R> SchedulerFuture<R> scheduleLocal(Callable<R> job, String ptrn) {
         A.notNull(job, "job");
 
         guard();
