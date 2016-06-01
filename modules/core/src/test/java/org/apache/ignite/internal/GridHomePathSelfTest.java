@@ -30,8 +30,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_HOME;
  */
 public class GridHomePathSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setLocalHost(getTestResources().getLocalHost());
 
@@ -46,7 +46,7 @@ public class GridHomePathSelfTest extends GridCommonAbstractTest {
             startGrid(0);
 
             // Test home override.
-            IgniteConfiguration c = getConfiguration(getTestGridName(1));
+            IgniteConfiguration c = getConfiguration(getTestInstanceName(1));
 
             c.setIgniteHome("/new/path");
 
@@ -63,7 +63,7 @@ public class GridHomePathSelfTest extends GridCommonAbstractTest {
             }
 
             // Test no override.
-            IgniteConfiguration c1 = getConfiguration(getTestGridName(1));
+            IgniteConfiguration c1 = getConfiguration(getTestInstanceName(1));
 
             c1.setIgniteHome(System.getProperty(IGNITE_HOME));
 

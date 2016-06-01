@@ -94,8 +94,8 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(instanceName);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -109,8 +109,8 @@ public abstract class GridCacheInterceptorAbstractSelfTest extends GridCacheAbst
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String instanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(instanceName);
 
         assertNotNull(interceptor);
 

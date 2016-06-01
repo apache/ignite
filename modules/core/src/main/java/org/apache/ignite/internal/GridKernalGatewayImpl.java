@@ -51,7 +51,7 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
 
     /** */
     @GridToStringExclude
-    private final String gridName;
+    private final String instanceName;
 
     /**
      * User stack trace.
@@ -61,10 +61,10 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
     private String stackTrace;
 
     /**
-     * @param gridName Grid name.
+     * @param instanceName Grid name.
      */
-    public GridKernalGatewayImpl(String gridName) {
-        this.gridName = gridName;
+    public GridKernalGatewayImpl(String instanceName) {
+        this.instanceName = instanceName;
     }
 
     /** {@inheritDoc} */
@@ -84,7 +84,7 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
             if (state == GridKernalState.DISCONNECTED) {
                 assert reconnectFut != null;
 
-                throw new IgniteClientDisconnectedException(reconnectFut, "Client node disconnected: " + gridName);
+                throw new IgniteClientDisconnectedException(reconnectFut, "Client node disconnected: " + instanceName);
             }
 
             throw illegalState();
@@ -99,7 +99,7 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
         rwLock.readLock();
 
         if (state.get() == GridKernalState.DISCONNECTED)
-            throw new IgniteClientDisconnectedException(reconnectFut, "Client node disconnected: " + gridName);
+            throw new IgniteClientDisconnectedException(reconnectFut, "Client node disconnected: " + instanceName);
     }
 
     /** {@inheritDoc} */
@@ -188,7 +188,7 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
      */
     private IllegalStateException illegalState() {
         return new IllegalStateException("Grid is in invalid state to perform this operation. " +
-            "It either not started yet or has already being or have stopped [gridName=" + gridName +
+            "It either not started yet or has already being or have stopped [gridName=" + instanceName +
             ", state=" + state + ']');
     }
 

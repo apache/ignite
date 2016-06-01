@@ -73,11 +73,11 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
     /**
      * Gets cache configuration.
      *
-     * @param gridName Grid name.
+     * @param instanceName Grid name.
      * @return Cache configuration.
      */
     @SuppressWarnings("deprecation")
-    protected CacheConfiguration[] getCacheConfiguration(String gridName) {
+    protected CacheConfiguration[] getCacheConfiguration(String instanceName) {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setName("dataCache");
@@ -116,30 +116,30 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        return getConfiguration(gridName, getIgfsConfiguration());
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        return getConfiguration(instanceName, getIgfsConfiguration());
     }
 
     /**
      * The same as getConfiguration(String gridName) but it sets custom IGFS configuration
      *
-     * @param gridName Grid name.
+     * @param instanceName Grid name.
      * @param igfsCfg IGFS configuration.
      * @return Grid configuration.
      * @throws Exception If failed.
      */
-    protected IgniteConfiguration getConfiguration(String gridName, FileSystemConfiguration igfsCfg) throws Exception {
+    protected IgniteConfiguration getConfiguration(String instanceName, FileSystemConfiguration igfsCfg) throws Exception {
         IgniteConfiguration cfg = IgnitionEx.loadConfiguration("config/hadoop/default-config.xml").get1();
 
         assert cfg != null;
 
-        cfg.setGridName(gridName);
+        cfg.setInstanceName(instanceName);
 
         cfg.setIncludeEventTypes(concat(EVTS_IGFS, EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED));
 
         cfg.setFileSystemConfiguration(igfsCfg);
 
-        cfg.setCacheConfiguration(getCacheConfiguration(gridName));
+        cfg.setCacheConfiguration(getCacheConfiguration(instanceName));
 
         cfg.setHadoopConfiguration(null);
 

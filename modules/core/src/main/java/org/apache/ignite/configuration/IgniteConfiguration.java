@@ -216,11 +216,7 @@ public class IgniteConfiguration {
     @Deprecated
     private String gridName;
 
-<<<<<<< HEAD
     /** Optional instance name. */
-=======
-    /** Optional local instance name. */
->>>>>>> modified the localInstanceName to instanceName
     private String instanceName;
 
     /** User attributes. */
@@ -509,14 +505,7 @@ public class IgniteConfiguration {
         deployMode = cfg.getDeploymentMode();
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
         failureDetectionTimeout = cfg.getFailureDetectionTimeout();
-<<<<<<< HEAD
         gridName = cfg.getGridName();
-        hadoopCfg = cfg.getHadoopConfiguration();
-=======
-        ggHome = cfg.getIgniteHome();
-        ggWork = cfg.getWorkDirectory();
-        gridName = cfg.getGridName();
->>>>>>> modified the localInstanceName to instanceName
         instanceName = cfg.getInstanceName();
         igfsCfg = cfg.getFileSystemConfiguration();
         igfsPoolSize = cfg.getIgfsThreadPoolSize();
@@ -650,8 +639,6 @@ public class IgniteConfiguration {
         return this;
     }
 
-<<<<<<< HEAD
-=======
     /**
      * Sets of local instance name. Note that{@code null} is a default local instance name.
      *
@@ -659,7 +646,6 @@ public class IgniteConfiguration {
      *                          local instance name.
      * @return {@code this} for chaining.
      */
->>>>>>> modified the localInstanceName to instanceName
     public IgniteConfiguration setInstanceName(String instanceName) {
         this.instanceName = instanceName;
 

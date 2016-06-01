@@ -34,8 +34,8 @@ public class CacheNamesWithSpecialCharactersTest extends GridCommonAbstractTest 
     public static final String CACHE_NAME_2 = ":_&:: (partitioned)";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         CacheConfiguration cacheCfg1 = new CacheConfiguration();
         cacheCfg1.setCacheMode(CacheMode.REPLICATED);

@@ -28,28 +28,28 @@ public interface TestAopTargetInterface extends Serializable {
      * @param arg Argument.
      * @return Result.
      */
-    @Gridify(gridName="TestAopTargetInterface")
+    @Gridify(instanceName="TestAopTargetInterface")
     public int gridifyDefault(String arg);
 
     /**
      * @param arg Argument.
      * @return Result.
      */
-    @Gridify(gridName="TestAopTargetInterface", taskName = TestGridifyTask.TASK_NAME)
+    @Gridify(instanceName="TestAopTargetInterface", taskName = TestGridifyTask.TASK_NAME)
     public int gridifyNonDefaultName(String arg);
 
     /**
      * @param arg Argument.
      * @return Result.
      */
-    @Gridify(gridName="TestAopTargetInterface", taskClass = TestGridifyTask.class)
+    @Gridify(instanceName="TestAopTargetInterface", taskClass = TestGridifyTask.class)
     public int gridifyNonDefaultClass(String arg);
 
     /**
      * @param arg Argument.
      * @return Result.
      */
-    @Gridify(gridName="TestAopTargetInterface", taskName = "")
+    @Gridify(instanceName="TestAopTargetInterface", taskName = "")
     public int gridifyNoName(String arg);
 
     /**
@@ -57,7 +57,7 @@ public interface TestAopTargetInterface extends Serializable {
      * @return Result.
      * @throws TestGridifyException If failed.
      */
-    @Gridify(gridName="TestAopTargetInterface")
+    @Gridify(instanceName="TestAopTargetInterface")
     public int gridifyDefaultException(String arg) throws TestGridifyException;
 
     /**
@@ -65,7 +65,7 @@ public interface TestAopTargetInterface extends Serializable {
      * @return Result.
      * @throws TestGridifyException If failed.
      */
-    @Gridify(gridName="TestAopTargetInterface")
+    @Gridify(instanceName="TestAopTargetInterface")
     public int gridifyDefaultResource(String arg) throws TestGridifyException;
 
     /**
@@ -73,7 +73,7 @@ public interface TestAopTargetInterface extends Serializable {
      * @return Result.
      * @throws TestGridifyException If failed.
      */
-    @Gridify(gridName="TestAopTargetInterface", taskClass = TestGridifyTask.class)
+    @Gridify(instanceName="TestAopTargetInterface", taskClass = TestGridifyTask.class)
     public int gridifyNonDefaultClassResource(String arg) throws TestGridifyException;
 
     /**
@@ -81,6 +81,6 @@ public interface TestAopTargetInterface extends Serializable {
      * @return Result.
      * @throws TestGridifyException If failed.
      */
-    @Gridify(gridName="TestAopTargetInterface", taskName = TestGridifyTask.TASK_NAME)
+    @Gridify(instanceName="TestAopTargetInterface", taskName = TestGridifyTask.TASK_NAME)
     public int gridifyNonDefaultNameResource(String arg) throws TestGridifyException;
 }

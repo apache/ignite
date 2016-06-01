@@ -79,7 +79,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
     protected Ignite ignite;
 
     /** Grid instance name. */
-    protected String gridName;
+    protected String instanceName;
 
     /** SPI name. */
     private String name;
@@ -278,7 +278,7 @@ public abstract class IgniteSpiAdapter implements IgniteSpi, IgniteSpiManagement
         this.ignite = ignite;
 
         if (ignite != null)
-            gridName = ignite.name();
+            instanceName = ignite.name();
     }
 
     /**

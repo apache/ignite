@@ -117,18 +117,18 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
-        CacheConfiguration cacheCfg = cache(gridName, null, 0);
+        CacheConfiguration cacheCfg = cache(instanceName, null, 0);
 
         cacheCfg.setAffinity(new RendezvousAffinityFunction());
 
-        CacheConfiguration cacheBackup1Cfg = cache(gridName, BACKUP_CACHE_1, 1);
+        CacheConfiguration cacheBackup1Cfg = cache(instanceName, BACKUP_CACHE_1, 1);
 
         cacheBackup1Cfg.setAffinity(new RendezvousAffinityFunction());
 
-        CacheConfiguration cacheBackup2Cfg = cache(gridName, BACKUP_CACHE_2, 2);
+        CacheConfiguration cacheBackup2Cfg = cache(instanceName, BACKUP_CACHE_2, 2);
 
         cacheBackup2Cfg.setAffinity(new RendezvousAffinityFunction());
 
@@ -158,13 +158,13 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
     }
 
     /**
-     * @param gridName Grid name.
+     * @param instanceName Instance name.
      * @param cacheName Cache name.
      * @param backups Number of backups.
      * @return Configuration.
      */
     @SuppressWarnings("unchecked")
-    private CacheConfiguration cache(String gridName, String cacheName, int backups) {
+    private CacheConfiguration cache(String instanceName, String cacheName, int backups) {
         CacheConfiguration cacheCfg = new CacheConfiguration();
 
         cacheCfg.setName(cacheName);
@@ -178,15 +178,15 @@ public abstract class GridCacheAbstractLocalStoreSelfTest extends GridCommonAbst
 
         cacheCfg.setRebalanceMode(SYNC);
 
-        if (gridName.endsWith("1"))
+        if (instanceName.endsWith("1"))
             cacheCfg.setCacheStoreFactory(singletonFactory(LOCAL_STORE_1));
-        else if (gridName.endsWith("2"))
+        else if (instanceName.endsWith("2"))
             cacheCfg.setCacheStoreFactory(singletonFactory(LOCAL_STORE_2));
-        else if (gridName.endsWith("3"))
+        else if (instanceName.endsWith("3"))
             cacheCfg.setCacheStoreFactory(singletonFactory(LOCAL_STORE_3));
-        else if (gridName.endsWith("4"))
+        else if (instanceName.endsWith("4"))
             cacheCfg.setCacheStoreFactory(singletonFactory(LOCAL_STORE_4));
-        else if (gridName.endsWith("5"))
+        else if (instanceName.endsWith("5"))
             cacheCfg.setCacheStoreFactory(singletonFactory(LOCAL_STORE_5));
         else
             cacheCfg.setCacheStoreFactory(singletonFactory(LOCAL_STORE_6));

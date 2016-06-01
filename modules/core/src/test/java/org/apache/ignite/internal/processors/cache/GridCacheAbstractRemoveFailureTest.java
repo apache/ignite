@@ -95,12 +95,12 @@ public abstract class GridCacheAbstractRemoveFailureTest extends GridCommonAbstr
     private static String sizePropVal;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER).setForceServerMode(true);
 
-        if (testClientNode() && getTestGridName(0).equals(gridName))
+        if (testClientNode() && getTestInstanceName(0).equals(instanceName))
             cfg.setClientMode(true);
 
         cfg.setSwapSpaceSpi(new GridTestSwapSpaceSpi());

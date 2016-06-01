@@ -91,10 +91,10 @@ public class GridCacheStoreManagerDeserializationTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(final String instanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(instanceName);
 
-        if (gridName != null && gridName.toLowerCase().startsWith("binary"))
+        if (instanceName != null && instanceName.toLowerCase().startsWith("binary"))
             c.setMarshaller(new BinaryMarshaller());
         else
             c.setMarshaller(new OptimizedMarshaller());

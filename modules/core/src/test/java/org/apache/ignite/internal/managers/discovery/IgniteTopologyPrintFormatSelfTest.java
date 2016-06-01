@@ -50,16 +50,16 @@ public class IgniteTopologyPrintFormatSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         TcpDiscoverySpi disc = new TcpDiscoverySpi();
         disc.setIpFinder(IP_FINDER);
 
-        if (gridName.endsWith("client"))
+        if (instanceName.endsWith("client"))
             cfg.setClientMode(true);
 
-        if (gridName.endsWith("client_force_server")) {
+        if (instanceName.endsWith("client_force_server")) {
             cfg.setClientMode(true);
             disc.setForceServerMode(true);
         }

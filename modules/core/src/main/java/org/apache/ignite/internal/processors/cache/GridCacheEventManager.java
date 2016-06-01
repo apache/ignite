@@ -384,7 +384,7 @@ public class GridCacheEventManager extends GridCacheManagerAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>> ");
-        X.println(">>> Cache event manager memory stats [grid=" + cctx.gridName() + ", cache=" + cctx.name() +
+        X.println(">>> Cache event manager memory stats [grid=" + cctx.instanceName() + ", cache=" + cctx.name() +
             ", stats=" + "N/A" + ']');
     }
 }

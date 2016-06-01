@@ -68,10 +68,10 @@ public class GridifySpringAspect implements MethodInterceptor {
         // string as intended grid name.
         // NOTE: the 'ann.gridName() == null' check is added to mitigate
         // annotation bugs in some scripting languages (e.g. Groovy).
-        String gridName = F.isEmpty(ann.gridName()) ? null : ann.gridName();
+        String instanceName = F.isEmpty(ann.instanceName()) ? null : ann.instanceName();
 
-        if (G.state(gridName) != STARTED)
-            throw new IgniteCheckedException("Grid is not locally started: " + gridName);
+        if (G.state(instanceName) != STARTED)
+            throw new IgniteCheckedException("Grid is not locally started: " + instanceName);
 
         // Initialize defaults.
         GridifyArgument arg = new GridifyArgumentAdapter(mtd.getDeclaringClass(), mtd.getName(),
@@ -88,7 +88,7 @@ public class GridifySpringAspect implements MethodInterceptor {
                 "Gridify.taskClass(), but not both: " + ann);
 
         try {
-            Ignite ignite = G.ignite(gridName);
+            Ignite ignite = G.ignite(instanceName);
 
             if (!ann.taskClass().equals(GridifyDefaultTask.class))
                 return ignite.compute().withTimeout(ann.timeout()).execute(

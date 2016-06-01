@@ -408,8 +408,8 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -480,7 +480,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
      * @return Hibernate configuration.
      */
     protected Configuration hibernateConfiguration(org.hibernate.cache.spi.access.AccessType accessType,
-        String gridName) {
+        String instanceName) {
         Configuration cfg = new Configuration();
 
         cfg.addAnnotatedClass(Entity.class);
@@ -507,7 +507,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
         cfg.setProperty(RELEASE_CONNECTIONS, "on_close");
 
-        cfg.setProperty(GRID_NAME_PROPERTY, gridName);
+        cfg.setProperty(GRID_NAME_PROPERTY, instanceName);
 
         // Use the same cache for Entity and Entity2.
         cfg.setProperty(REGION_CACHE_PROPERTY + ENTITY2_NAME, ENTITY_NAME);
@@ -1917,8 +1917,8 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
      * @param gridName Grid name.
      * @return Session factory.
      */
-    private SessionFactory startHibernate(org.hibernate.cache.spi.access.AccessType accessType, String gridName) {
-        Configuration cfg = hibernateConfiguration(accessType, gridName);
+    private SessionFactory startHibernate(org.hibernate.cache.spi.access.AccessType accessType, String instanceName) {
+        Configuration cfg = hibernateConfiguration(accessType, instanceName);
 
         ServiceRegistryBuilder builder = registryBuilder();
 

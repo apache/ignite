@@ -50,8 +50,8 @@ public abstract class GridDiscoveryManagerSelfTest extends GridCommonAbstractTes
 
     /** {@inheritDoc} */
     @SuppressWarnings("IfMayBeConditional")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         CacheConfiguration ccfg1 = defaultCacheConfiguration();
 
@@ -61,7 +61,7 @@ public abstract class GridDiscoveryManagerSelfTest extends GridCommonAbstractTes
 
         ccfg2.setName(null);
 
-        if (gridName.equals(getTestGridName(1)))
+        if (instanceName.equals(getTestInstanceName(1)))
             cfg.setClientMode(true);
         else {
             ccfg1.setNearConfiguration(null);
@@ -196,8 +196,8 @@ public abstract class GridDiscoveryManagerSelfTest extends GridCommonAbstractTes
      */
     public static class RegularDiscovery extends GridDiscoveryManagerSelfTest {
         /** {@inheritDoc} */
-        @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-            IgniteConfiguration cfg = super.getConfiguration(gridName);
+        @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+            IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 

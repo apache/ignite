@@ -51,8 +51,8 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
     private static final String HOST = "127.0.0.1";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setCacheConfiguration(cacheConfiguration(null), cacheConfiguration(CUSTOM_CACHE_NAME));
 
@@ -66,7 +66,7 @@ public class JdbcConnectionSelfTest extends GridCommonAbstractTest {
 
         ConnectorConfiguration clientCfg = new ConnectorConfiguration();
 
-        if (!gridName.endsWith("0"))
+        if (!instanceName.endsWith("0"))
             clientCfg.setPort(CUSTOM_PORT);
 
         cfg.setConnectorConfiguration(clientCfg);

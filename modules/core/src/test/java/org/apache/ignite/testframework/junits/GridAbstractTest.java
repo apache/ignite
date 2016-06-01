@@ -1238,16 +1238,6 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * @return Generated unique test grid name.
-     */
-    @Deprecated
-    public String getTestGridName() {
-        String[] parts = getClass().getName().split("\\.");
-
-        return parts[parts.length - 2] + '.' + parts[parts.length - 1];
-    }
-
-    /**
      * @return Generated unique test local instance name.
      */
     public String getTestInstanceName() {
@@ -1264,26 +1254,14 @@ public abstract class GridAbstractTest extends TestCase {
         return getTestInstanceName() + idx;
     }
 
-    public int getTestInstanceIndex(String testInstanceName) {
-        return Integer.parseInt(testInstanceName.substring(getTestInstanceName().length()));
-    }
-
-    /**
-     * @param idx Index of the grid.
-     * @return Indexed grid name.
-     */
-    public String getTestGridName(int idx) {
-        return getTestGridName() + idx;
-    }
-
     /**
      * Parses test grid index from test grid name.
      *
-     * @param testGridName Test grid name, returned by {@link #getTestGridName(int)}.
-     * @return Test grid index.
+     * @param testInstanceName Test instance name, returned by {@link #getTestInstanceName(int)}.
+     * @return Test instance index.
      */
-    public int getTestGridIndex(String testGridName) {
-        return Integer.parseInt(testGridName.substring(getTestGridName().length()));
+    public int getTestInstanceIndex(String testInstanceName) {
+        return Integer.parseInt(testInstanceName.substring(getTestInstanceName().length()));
     }
 
     /**

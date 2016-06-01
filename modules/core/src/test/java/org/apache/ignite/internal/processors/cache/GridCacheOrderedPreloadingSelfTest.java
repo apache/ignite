@@ -56,8 +56,8 @@ public class GridCacheOrderedPreloadingSelfTest extends GridCommonAbstractTest {
     private CacheMode secondCacheMode;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setCacheConfiguration(
             cacheConfig(firstCacheMode, 1, FIRST_CACHE_NAME),

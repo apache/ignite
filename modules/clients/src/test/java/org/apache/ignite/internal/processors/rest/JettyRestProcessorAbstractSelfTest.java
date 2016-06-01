@@ -115,8 +115,8 @@ import static org.apache.ignite.internal.IgniteVersionUtils.VER_STR;
  */
 @SuppressWarnings("unchecked")
 public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestProcessorSelfTest {
-    /** Grid count. */
-    private static final int GRID_CNT = 3;
+    /** Instance count. */
+    private static final int INSTANCE_CNT = 3;
 
     /** Url address to send HTTP request. */
     private final String TEST_URL = "http://" + LOC_HOST + ":" + restPort() + "/ignite?";
@@ -150,7 +150,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
-        return GRID_CNT;
+        return INSTANCE_CNT;
     }
 
     /**
@@ -494,7 +494,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         info("Name command result: " + ret);
 
-        assertEquals(getTestGridName(0), jsonResponse(ret).asText());
+        assertEquals(getTestInstanceName(0), jsonResponse(ret).asText());
     }
 
     /**
@@ -1139,7 +1139,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         JsonNode res = jsonResponse(ret);
 
-        assertEquals(GRID_CNT, res.size());
+        assertEquals(INSTANCE_CNT, res.size());
 
         for (JsonNode node : res) {
             assertTrue(node.get("attributes").isNull());
@@ -1813,7 +1813,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     private boolean queryCursorFound() {
         boolean found = false;
 
-        for (int i = 0; i < GRID_CNT; ++i) {
+        for (int i = 0; i < INSTANCE_CNT; ++i) {
             Map<GridRestCommand, GridRestCommandHandler> handlers =
                 GridTestUtils.getFieldValue(grid(i).context().rest(), "handlers");
 
@@ -2160,8 +2160,8 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         CacheConfiguration cacheIgfs_data = new CacheConfiguration();
 

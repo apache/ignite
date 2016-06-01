@@ -61,13 +61,13 @@ public class IgniteSlowClientDetectionSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setClientReconnectDisabled(true);
 
-        if (getTestGridName(nodeCount() - 1).equals(gridName) || getTestGridName(nodeCount() - 2).equals(gridName))
+        if (getTestInstanceName(nodeCount() - 1).equals(instanceName) || getTestInstanceName(nodeCount() - 2).equals(gridName))
             cfg.setClientMode(true);
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();

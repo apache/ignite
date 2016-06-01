@@ -51,8 +51,8 @@ public class IgniteClientReconnectFailoverTest extends IgniteClientReconnectFail
     protected static final String TX_CACHE = "TX_CACHE";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         CacheConfiguration ccfg1 = new CacheConfiguration();
 

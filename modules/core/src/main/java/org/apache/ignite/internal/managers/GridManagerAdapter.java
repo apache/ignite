@@ -264,7 +264,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
             onBeforeSpiStart();
 
             try {
-                spi.spiStart(ctx.gridName());
+                spi.spiStart(ctx.instanceName());
             }
             catch (IgniteSpiException e) {
                 throw new IgniteCheckedException("Failed to start SPI: " + spi, e);

@@ -134,10 +134,10 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        assert gridName != null;
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        assert instanceName != null;
 
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -145,7 +145,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
 
         cfg.setDiscoverySpi(discoSpi);
 
-        if (gridName.contains("cache")) {
+        if (instanceName.contains("cache")) {
             String cacheName = "test-checkpoints";
 
             CacheConfiguration cacheCfg = defaultCacheConfiguration();
@@ -161,7 +161,7 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
 
             cfg.setCheckpointSpi(spi);
         }
-        else if (gridName.contains("jdbc")) {
+        else if (instanceName.contains("jdbc")) {
             JdbcCheckpointSpi spi = new JdbcCheckpointSpi();
 
             jdbcDataSource ds = new jdbcDataSource();
@@ -184,16 +184,16 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
     }
 
     /**
-     * @param gridName Grid name.
+     * @param instanceName Grid name.
      * @throws Exception If test failed.
      */
-    protected void doTest(String gridName) throws Exception {
+    protected void doTest(String instanceName) throws Exception {
         final AtomicInteger savedCnt = new AtomicInteger();
         final AtomicInteger loadedCnt = new AtomicInteger();
         final AtomicInteger rmvCnt = new AtomicInteger();
 
         try {
-            Ignite ignite = startGrid(gridName);
+            Ignite ignite = startGrid(instanceName);
 
             ignite.events().localListen(new IgnitePredicate<Event>() {
                 @Override public boolean apply(Event evt) {
@@ -233,23 +233,23 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
                 checkpoints(ignite).sessionIds();
         }
         finally {
-            stopGrid(gridName);
+            stopGrid(instanceName);
         }
 
         assertEquals(8, savedCnt.get());
         assertEquals(10, loadedCnt.get());
 
-        if ("jdbc".equals(gridName))
+        if ("jdbc".equals(instanceName))
             assertEquals(5, rmvCnt.get());
         else
             assertEquals(6, rmvCnt.get());
     }
 
     /**
-     * @param gridName Grid name.
+     * @param instanceName Grid name.
      * @throws Exception If test failed.
      */
-    protected void doMultiNodeTest(String gridName) throws Exception {
+    protected void doMultiNodeTest(String instanceName) throws Exception {
         startLatch = new CountDownLatch(3);
 
         read1Latch = new CountDownLatch(1);
@@ -264,9 +264,9 @@ public abstract class GridCheckpointManagerAbstractSelfTest extends GridCommonAb
         rmvLatch = new CountDownLatch(1);
 
         try {
-            startGrid(gridName + 1);
+            startGrid(instanceName + 1);
 
-            Ignite ignite = startGrid(gridName);
+            Ignite ignite = startGrid(instanceName);
 
             ComputeTaskFuture fut = executeAsync(ignite.compute(), new GridMultiNodeGlobalConsumerTask(), null);
 

@@ -90,7 +90,7 @@ public class GridCacheGateway<K, V> {
                 assert reconnectFut != null;
 
                 throw new CacheException(
-                    new IgniteClientDisconnectedException(reconnectFut, "Client node disconnected: " + ctx.gridName()));
+                    new IgniteClientDisconnectedException(reconnectFut, "Client node disconnected: " + ctx.instanceName()));
             }
         }
 

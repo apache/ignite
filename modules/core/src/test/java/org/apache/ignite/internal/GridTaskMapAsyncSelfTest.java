@@ -50,8 +50,8 @@ public class GridTaskMapAsyncSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(instanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -66,7 +66,7 @@ public class GridTaskMapAsyncSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testTaskMap() throws Exception {
-        Ignite ignite = G.ignite(getTestGridName());
+        Ignite ignite = G.ignite(getTestInstanceName());
 
         info("Executing sync mapped task.");
 

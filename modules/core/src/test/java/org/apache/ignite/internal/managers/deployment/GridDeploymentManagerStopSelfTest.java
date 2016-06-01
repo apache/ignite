@@ -80,7 +80,7 @@ public class GridDeploymentManagerStopSelfTest extends GridCommonAbstractTest {
         @Override public void onContextInitialized(IgniteSpiContext spiCtx) throws IgniteSpiException { /* No-op. */ }
 
         /** {@inheritDoc} */
-        @Override public void spiStart(String gridName) throws IgniteSpiException { /* No-op. */ }
+        @Override public void spiStart(String instanceName) throws IgniteSpiException { /* No-op. */ }
 
         /** {@inheritDoc} */
         @Override public void spiStop() throws IgniteSpiException { /* No-op. */ }

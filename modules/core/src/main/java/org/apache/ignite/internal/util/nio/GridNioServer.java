@@ -2358,6 +2358,9 @@ public class GridNioServer<T> {
         /** Grid name. */
         private String gridName;
 
+        /** Instance name. */
+        private String instanceName;
+
         /** TCP_NO_DELAY flag. */
         private boolean tcpNoDelay;
 
@@ -2488,9 +2491,16 @@ public class GridNioServer<T> {
         /**
          * @param gridName Grid name.
          * @return This for chaining.
+         * @deprecated Use {@link #instanceName} instead.
          */
         public Builder<T> gridName(@Nullable String gridName) {
             this.gridName = gridName;
+
+            return this;
+        }
+
+        public Builder<T> instanceName(@Nullable String instanceName) {
+            this.instanceName = instanceName;
 
             return this;
         }

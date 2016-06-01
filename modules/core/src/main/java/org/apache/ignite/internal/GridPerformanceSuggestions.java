@@ -64,15 +64,15 @@ public class GridPerformanceSuggestions {
 
     /**
      * @param log Log.
-     * @param gridName Grid name.
+     * @param instanceName Grid name.
      */
-    public synchronized void logSuggestions(IgniteLogger log, @Nullable String gridName) {
+    public synchronized void logSuggestions(IgniteLogger log, @Nullable String instanceName) {
         if (disabled)
             return;
 
         if (!F.isEmpty(perfs) && !suppressed.containsAll(perfs)) {
             U.quietAndInfo(log, "Performance suggestions for grid " +
-                (gridName == null ? "" : '\'' + gridName + '\'') + " (fix if possible)");
+                (instanceName == null ? "" : '\'' + instanceName + '\'') + " (fix if possible)");
             U.quietAndInfo(log, "To disable, set -D" + IGNITE_PERFORMANCE_SUGGESTIONS_DISABLED + "=true");
 
             for (String s : perfs)

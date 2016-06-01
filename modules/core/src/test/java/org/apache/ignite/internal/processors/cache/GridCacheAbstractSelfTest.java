@@ -213,8 +213,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -227,18 +227,18 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setCacheConfiguration(cacheConfiguration(gridName));
+        cfg.setCacheConfiguration(cacheConfiguration(instanceName));
 
         return cfg;
     }
 
     /**
-     * @param gridName Grid name.
+     * @param instanceName Grid name.
      * @return Cache configuration.
      * @throws Exception In case of error.
      */
     @SuppressWarnings("unchecked")
-    protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+    protected CacheConfiguration cacheConfiguration(String instanceName) throws Exception {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         CacheStore<?, ?> store = cacheStore();

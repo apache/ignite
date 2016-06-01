@@ -33,8 +33,12 @@ import org.jetbrains.annotations.Nullable;
 public final class IgniteSystemProperties {
     /**
      * If this system property is present the Ignite will include grid name into verbose log.
+     * @deprecated Use {@link #IGNITE_LOG_INSTANCR_NAME} instead.
      */
+    @Deprecated
     public static final String IGNITE_LOG_GRID_NAME = "IGNITE_LOG_GRID_NAME";
+
+    public static final String IGNITE_LOG_INSTANCR_NAME = "IGNITE_LOG_INSTANCE_NAME";
 
     /**
      * This property is used internally to pass an exit code to loader when

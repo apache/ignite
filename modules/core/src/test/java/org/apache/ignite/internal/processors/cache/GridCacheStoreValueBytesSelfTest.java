@@ -31,7 +31,11 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
+<<<<<<< HEAD
  * Test for {@link CacheConfiguration#isStoreKeepBinary()}.
+=======
+ * Test for {@link org.apache.ignite.configuration.CacheConfiguration#isStoreKeepBinary()}.
+>>>>>>> try to fix GridCacheStoreValueBytesSelfTest.java's invalid link
  */
 public class GridCacheStoreValueBytesSelfTest extends GridCommonAbstractTest {
     /** */

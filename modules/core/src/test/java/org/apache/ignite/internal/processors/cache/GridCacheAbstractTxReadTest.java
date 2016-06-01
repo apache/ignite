@@ -32,8 +32,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
 
@@ -42,8 +42,8 @@ public abstract class GridCacheAbstractTxReadTest extends GridCacheAbstractSelfT
 
     /** {@inheritDoc} */
     @SuppressWarnings("NullableProblems")
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String instanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(instanceName);
 
         cfg.setWriteSynchronizationMode(FULL_SYNC);
 

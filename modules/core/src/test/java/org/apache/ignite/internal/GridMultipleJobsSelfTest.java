@@ -78,8 +78,8 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(instanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -87,7 +87,7 @@ public class GridMultipleJobsSelfTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(disco);
 
-        if (getTestGridName(1).equals(gridName))
+        if (getTestInstanceName(1).equals(instanceName))
             c.setCacheConfiguration(/* no configured caches */);
         else {
             CacheConfiguration cc = defaultCacheConfiguration();

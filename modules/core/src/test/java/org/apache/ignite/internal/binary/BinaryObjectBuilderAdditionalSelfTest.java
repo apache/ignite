@@ -70,8 +70,8 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  */
 public class BinaryObjectBuilderAdditionalSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         CacheConfiguration cacheCfg = new CacheConfiguration();
 

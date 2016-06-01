@@ -41,7 +41,7 @@ public class RouterFactorySelfTest extends GridCommonAbstractTest {
     private static final int GRID_HTTP_PORT = 11087;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
         discoSpi.setIpFinder(IP_FINDER);
@@ -49,7 +49,7 @@ public class RouterFactorySelfTest extends GridCommonAbstractTest {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         cfg.setDiscoverySpi(discoSpi);
-        cfg.setGridName(gridName);
+        cfg.setInstanceName(instanceName);
 
         return cfg;
     }

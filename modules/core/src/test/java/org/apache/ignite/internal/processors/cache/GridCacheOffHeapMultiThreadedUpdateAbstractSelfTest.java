@@ -47,7 +47,7 @@ public abstract class GridCacheOffHeapMultiThreadedUpdateAbstractSelfTest extend
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+    @Override protected CacheConfiguration cacheConfiguration(String instanceName) throws Exception {
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setAtomicityMode(atomicityMode());

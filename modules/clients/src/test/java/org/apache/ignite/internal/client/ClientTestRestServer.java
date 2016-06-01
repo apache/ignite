@@ -127,7 +127,7 @@ public class ClientTestRestServer {
      */
     public void start() throws IgniteCheckedException {
         try {
-            String gridName = "test";
+            String instanceName = "test";
 
             srv = GridNioServer.<GridClientMessage>builder()
                 .address(InetAddress.getByName("127.0.0.1"))
@@ -135,12 +135,12 @@ public class ClientTestRestServer {
                 .listener(new TestListener())
                 .logger(log)
                 .selectorCount(2)
-                .gridName(gridName)
+                .instanceName(instanceName)
                 .byteOrder(ByteOrder.nativeOrder())
                 .tcpNoDelay(true)
                 .directBuffer(false)
                 .filters(
-                    new GridNioAsyncNotifyFilter(gridName, Executors.newFixedThreadPool(2), log),
+                    new GridNioAsyncNotifyFilter(instanceName, Executors.newFixedThreadPool(2), log),
                     new GridNioCodecFilter(new TestParser(), log, false)
                 )
                 .build();

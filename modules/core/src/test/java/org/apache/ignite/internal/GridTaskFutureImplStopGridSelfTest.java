@@ -70,7 +70,7 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     public void testGet() throws Exception {
-        Ignite ignite = startGrid(getTestGridName());
+        Ignite ignite = startGrid(getTestInstanceName());
 
         Thread futThread = null;
 
@@ -127,7 +127,7 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
             }
 
             // Stops grid.
-            stopGrid(getTestGridName());
+            stopGrid(getTestInstanceName());
 
             boolean finished = latch.await(WAIT_TIME, TimeUnit.MILLISECONDS);
 
@@ -146,8 +146,8 @@ public class GridTaskFutureImplStopGridSelfTest extends GridCommonAbstractTest {
                 futThread.interrupt();
             }
 
-            if (G.state(getTestGridName()) != IgniteState.STOPPED)
-                stopGrid(getTestGridName());
+            if (G.state(getTestInstanceName()) != IgniteState.STOPPED)
+                stopGrid(getTestInstanceName());
         }
     }
 

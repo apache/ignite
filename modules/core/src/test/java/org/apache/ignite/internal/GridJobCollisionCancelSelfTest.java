@@ -80,7 +80,7 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings( {"AssignmentToCatchBlockParameter"})
     public void testCancel() throws Exception {
-        Ignite ignite = G.ignite(getTestGridName());
+        Ignite ignite = G.ignite(getTestInstanceName());
 
         ignite.compute().localDeployTask(GridCancelTestTask.class, GridCancelTestTask.class.getClassLoader());
 
@@ -269,7 +269,7 @@ public class GridJobCollisionCancelSelfTest extends GridCommonAbstractTest {
         }
 
         /** {@inheritDoc} */
-        @Override public void spiStart(String gridName) throws IgniteSpiException {
+        @Override public void spiStart(String instanceName) throws IgniteSpiException {
             // Start SPI start stopwatch.
             startStopwatch();
 

@@ -103,8 +103,8 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
     private UUID nodeId;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanxeName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanxeName);
 
         TestCommunicationSpi commSpi = new TestCommunicationSpi();
 
@@ -697,7 +697,7 @@ public class IgniteClientReconnectCacheTest extends IgniteClientReconnectAbstrac
         IgniteInternalFuture<Boolean> fut = GridTestUtils.runAsync(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
                 try {
-                    Ignition.start(optimize(getConfiguration(getTestGridName(SRV_CNT))));
+                    Ignition.start(optimize(getConfiguration(getTestInstanceName(SRV_CNT))));
 
                     fail();
 

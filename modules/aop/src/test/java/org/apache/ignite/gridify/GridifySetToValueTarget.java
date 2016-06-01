@@ -36,7 +36,7 @@ public class GridifySetToValueTarget implements GridifySetToValueTargetInterface
      * @param input Input collection.
      * @return Maximum value.
      */
-    @GridifySetToValue(gridName = "GridifySetToValueTarget", threshold = 2, splitSize = 2)
+    @GridifySetToValue(instanceName = "GridifySetToValueTarget", threshold = 2, splitSize = 2)
     @Override public Long findMaximum(Collection<Long> input) {
         return findMaximum0(input);
     }
@@ -47,7 +47,7 @@ public class GridifySetToValueTarget implements GridifySetToValueTargetInterface
      * @param input Input collection.
      * @return Maximum value.
      */
-    @GridifySetToValue(gridName = "GridifySetToValueTarget")
+    @GridifySetToValue(instanceName = "GridifySetToValueTarget")
     @Override public Long findMaximumInList(List<Long> input) {
         return findMaximum0(input);
     }
@@ -58,7 +58,7 @@ public class GridifySetToValueTarget implements GridifySetToValueTargetInterface
      * @param input Input collection.
      * @return Maximum value.
      */
-    @GridifySetToValue(gridName = "GridifySetToValueTarget", threshold = 2)
+    @GridifySetToValue(instanceName = "GridifySetToValueTarget", threshold = 2)
     @Override public Long findMaximumWithoutSplitSize(Collection<Long> input) {
         return findMaximum0(input);
     }
@@ -69,7 +69,7 @@ public class GridifySetToValueTarget implements GridifySetToValueTargetInterface
      * @param input Input collection.
      * @return Maximum value.
      */
-    @GridifySetToValue(gridName = "GridifySetToValueTarget")
+    @GridifySetToValue(instanceName = "GridifySetToValueTarget")
     @Override public Long findMaximumWithoutSplitSizeAndThreshold(Collection<Long> input) {
         return findMaximum0(input);
     }
@@ -80,7 +80,7 @@ public class GridifySetToValueTarget implements GridifySetToValueTargetInterface
      * @param input Input collection.
      * @return Maximum value.
      */
-    @GridifySetToValue(gridName = "GridifySetToValueTarget", threshold = 2, splitSize = 2)
+    @GridifySetToValue(instanceName = "GridifySetToValueTarget", threshold = 2, splitSize = 2)
     @Override public Long findPrimesInArray(Long[] input) {
         return findMaximumInArray0(input);
     }
@@ -91,7 +91,7 @@ public class GridifySetToValueTarget implements GridifySetToValueTargetInterface
      * @param input Input collection.
      * @return Maximum value.
      */
-    @GridifySetToValue(gridName = "GridifySetToValueTarget", threshold = 2, splitSize = 2)
+    @GridifySetToValue(instanceName = "GridifySetToValueTarget", threshold = 2, splitSize = 2)
     @Override public long findMaximumInPrimitiveArray(long[] input) {
         return findMaximumInPrimitiveArray0(input);
     }
@@ -153,7 +153,7 @@ public class GridifySetToValueTarget implements GridifySetToValueTargetInterface
      * @param input Input collection.
      * @return Maximum value.
      */
-    @GridifySetToValue(gridName = "GridifySetToValueTarget", threshold = 2, splitSize = 2)
+    @GridifySetToValue(instanceName = "GridifySetToValueTarget", threshold = 2, splitSize = 2)
     @Override public long findMaximumInIterator(Iterator<Long> input) {
         assert input != null;
         assert input.hasNext();
@@ -180,7 +180,7 @@ public class GridifySetToValueTarget implements GridifySetToValueTargetInterface
      * @param input Input collection.
      * @return Maximum value.
      */
-    @GridifySetToValue(gridName = "GridifySetToValueTarget", threshold = 2, splitSize = 2)
+    @GridifySetToValue(instanceName = "GridifySetToValueTarget", threshold = 2, splitSize = 2)
     @Override public long findMaximumInEnumeration(Enumeration<Long> input) {
         assert input != null;
         assert input.hasMoreElements();

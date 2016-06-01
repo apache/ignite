@@ -54,10 +54,10 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     private static boolean binaryMarshallerEnabled;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
-        if (gridName.equals(getTestGridName(1)))
+        if (instanceName.equals(getTestInstanceName(1)))
             cfg.setClientMode(true);
 
         if (binaryMarshallerEnabled)
@@ -346,8 +346,8 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
      */
     public static class RegularDiscovery extends GridDiscoveryManagerAttributesSelfTest {
         /** {@inheritDoc} */
-        @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-            IgniteConfiguration cfg = super.getConfiguration(gridName);
+        @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+            IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 

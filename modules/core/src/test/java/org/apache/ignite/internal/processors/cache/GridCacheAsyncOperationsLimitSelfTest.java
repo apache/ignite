@@ -37,8 +37,8 @@ public class GridCacheAsyncOperationsLimitSelfTest extends GridCacheAbstractSelf
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cCfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String instanceName) throws Exception {
+        CacheConfiguration cCfg = super.cacheConfiguration(instanceName);
 
         cCfg.setMaxConcurrentAsyncOperations(MAX_CONCURRENT_ASYNC_OPS);
 

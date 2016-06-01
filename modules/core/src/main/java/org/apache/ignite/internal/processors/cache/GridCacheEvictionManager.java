@@ -1426,14 +1426,14 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
      * Prints out eviction stats.
      */
     public void printStats() {
-        X.println("Eviction stats [grid=" + cctx.gridName() + ", cache=" + cctx.cache().name() +
+        X.println("Eviction stats [grid=" + cctx.instanceName() + ", cache=" + cctx.cache().name() +
             ", buffEvictQ=" + bufEvictQ.sizex() + ']');
     }
 
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>> ");
-        X.println(">>> Eviction manager memory stats [grid=" + cctx.gridName() + ", cache=" + cctx.name() + ']');
+        X.println(">>> Eviction manager memory stats [grid=" + cctx.instanceName() + ", cache=" + cctx.name() + ']');
         X.println(">>>   buffEvictQ size: " + bufEvictQ.sizex());
         X.println(">>>   futsSize: " + futs.size());
         X.println(">>>   futsCreated: " + idGen.get());
@@ -1453,7 +1453,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
          *
          */
         private BackupWorker() {
-            super(cctx.gridName(), "cache-eviction-backup-worker", GridCacheEvictionManager.this.log);
+            super(cctx.instanceName(), "cache-eviction-backup-worker", GridCacheEvictionManager.this.log);
 
             assert plcEnabled;
         }

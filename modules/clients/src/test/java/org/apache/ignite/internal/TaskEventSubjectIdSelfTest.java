@@ -71,8 +71,8 @@ public class TaskEventSubjectIdSelfTest extends GridCommonAbstractTest {
     private static GridClient client;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setConnectorConfiguration(new ConnectorConfiguration());
 

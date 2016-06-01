@@ -317,9 +317,18 @@ public class GridCacheSharedContext<K, V> {
 
     /**
      * @return Grid name.
+     * @deprecated Use {@link #instanceName} instead.
      */
+    @Deprecated
     public String gridName() {
         return kernalCtx.gridName();
+    }
+
+    /**
+     * @return Instance name.
+     */
+    public String instanceName() {
+        return kernalCtx.instanceName();
     }
 
     /**

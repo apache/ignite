@@ -514,7 +514,7 @@ public class GridAffinityProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> Affinity processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Affinity processor memory stats [grid=" + ctx.instanceName() + ']');
         X.println(">>>   affMapSize: " + affMap.size());
     }
 

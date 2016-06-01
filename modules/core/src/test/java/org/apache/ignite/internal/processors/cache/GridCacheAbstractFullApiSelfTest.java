@@ -195,8 +195,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -209,8 +209,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String instanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(instanceName);
 
         if (memoryMode() == OFFHEAP_TIERED || memoryMode() == OFFHEAP_VALUES) {
             ccfg.setMemoryMode(memoryMode());
@@ -332,20 +332,20 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected Ignite startGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
+    @Override protected Ignite startGrid(String instanceName, GridSpringResourceContext ctx) throws Exception {
         if (cacheCfgMap == null)
-            return super.startGrid(gridName, ctx);
+            return super.startGrid(instanceName, ctx);
 
-        IgniteConfiguration cfg = getConfiguration(gridName);
+        IgniteConfiguration cfg = getConfiguration(instanceName);
 
-        cacheCfgMap.put(gridName, cfg.getCacheConfiguration());
+        cacheCfgMap.put(instanceName, cfg.getCacheConfiguration());
 
         cfg.setCacheConfiguration();
 
-        if (!isRemoteJvm(gridName))
+        if (!isRemoteJvm(instanceName))
             return IgnitionEx.start(optimize(cfg), ctx);
         else
-            return startRemoteGrid(gridName, optimize(cfg), ctx);
+            return startRemoteGrid(instanceName, optimize(cfg), ctx);
     }
 
     /** {@inheritDoc} */

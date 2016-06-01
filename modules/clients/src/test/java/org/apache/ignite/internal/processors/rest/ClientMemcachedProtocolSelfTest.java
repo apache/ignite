@@ -78,8 +78,8 @@ public class ClientMemcachedProtocolSelfTest extends AbstractRestProcessorSelfTe
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         assert cfg.getConnectorConfiguration() != null;
 

@@ -977,7 +977,7 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>> ");
-        X.println(">>> Mvcc manager memory stats [grid=" + cctx.gridName() + ']');
+        X.println(">>> Mvcc manager memory stats [grid=" + cctx.instanceName() + ']');
         X.println(">>>   rmvLocksSize: " + rmvLocks.sizex());
         X.println(">>>   lockedSize: " + locked.size());
         X.println(">>>   futsSize: " + (mvccFuts.size() + futs.size()));

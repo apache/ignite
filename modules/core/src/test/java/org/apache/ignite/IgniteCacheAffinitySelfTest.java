@@ -56,8 +56,8 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         CacheConfiguration cache0 = cacheConfiguration(null);
 
@@ -69,7 +69,7 @@ public class IgniteCacheAffinitySelfTest extends IgniteCacheAbstractTest {
         cache2.setName(CACHE2);
         cache2.setAffinity(new RendezvousAffinityFunction());
 
-        if (gridName.contains("0"))
+        if (instanceName.contains("0"))
             cfg.setCacheConfiguration(cache0);
         else
             cfg.setCacheConfiguration(cache0, cache1, cache2);

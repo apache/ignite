@@ -37,8 +37,8 @@ public class StoreResourceInjectionSelfTest extends GridCommonAbstractTest {
     private CacheConfiguration<Integer, String> cacheCfg = new CacheConfiguration<>();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cacheCfg.setReadThrough(true);
         cacheCfg.setWriteThrough(true);

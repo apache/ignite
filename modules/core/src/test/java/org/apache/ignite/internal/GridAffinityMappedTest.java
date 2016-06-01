@@ -50,18 +50,18 @@ public class GridAffinityMappedTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
         disco.setMaxMissedHeartbeats(Integer.MAX_VALUE);
         disco.setIpFinder(ipFinder);
         cfg.setDiscoverySpi(disco);
 
-        if (gridName.endsWith("1"))
+        if (instanceName.endsWith("1"))
             cfg.setCacheConfiguration(); // Empty cache configuration.
         else {
-            assert gridName.endsWith("2") || gridName.endsWith("3");
+            assert instanceName.endsWith("2") || instanceName.endsWith("3");
 
             CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
@@ -70,7 +70,7 @@ public class GridAffinityMappedTest extends GridCommonAbstractTest {
             cacheCfg.setAffinityMapper(new MockCacheAffinityKeyMapper());
 
             cfg.setCacheConfiguration(cacheCfg);
-            cfg.setUserAttributes(F.asMap(GridCacheModuloAffinityFunction.IDX_ATTR, gridName.endsWith("2") ? 0 : 1));
+            cfg.setUserAttributes(F.asMap(GridCacheModuloAffinityFunction.IDX_ATTR, instanceName.endsWith("2") ? 0 : 1));
         }
 
         return cfg;

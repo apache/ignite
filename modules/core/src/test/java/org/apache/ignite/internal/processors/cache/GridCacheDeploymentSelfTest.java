@@ -74,12 +74,12 @@ public class GridCacheDeploymentSelfTest extends GridCommonAbstractTest {
     protected DeploymentMode depMode;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setDeploymentMode(depMode);
 
-        if (GRID_NAME.equals(gridName))
+        if (GRID_NAME.equals(instanceName))
             cfg.setCacheConfiguration();
         else
             cfg.setCacheConfiguration(cacheConfiguration());

@@ -262,7 +262,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
         igfsPool = ctx.getIgfsExecutorService();
         affPool = new IgniteThreadPoolExecutor(
             "aff",
-            ctx.gridName(),
+            ctx.instanceName(),
             1,
             1,
             0,
@@ -2002,7 +2002,7 @@ public class GridIoManager extends GridManagerAdapter<CommunicationSpi<Serializa
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> IO manager memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> IO manager memory stats [grid=" + ctx.instanceName() + ']');
         X.println(">>>  lsnrMapSize: " + lsnrMap.size());
         X.println(">>>  msgSetMapSize: " + msgSetMap.size());
         X.println(">>>  closedTopicsSize: " + closedTopics.sizex());

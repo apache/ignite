@@ -43,18 +43,18 @@ final class GridDiagnostic {
     }
 
     /**
-     * @param gridName Grid instance name. Can be {@code null}.
+     * @param instanceName Grid instance name. Can be {@code null}.
      * @param exec Executor service.
      * @param parentLog Parent logger.
      */
-    static void runBackgroundCheck(String gridName, Executor exec, IgniteLogger parentLog) {
+    static void runBackgroundCheck(String instanceName, Executor exec, IgniteLogger parentLog) {
         assert exec != null;
         assert parentLog != null;
 
         final IgniteLogger log = parentLog.getLogger(GridDiagnostic.class);
 
         try {
-            exec.execute(new GridWorker(gridName, "grid-diagnostic-1", log) {
+            exec.execute(new GridWorker(instanceName, "grid-diagnostic-1", log) {
                 @Override public void body() {
                     try {
                         InetAddress locHost = U.getLocalHost();
@@ -73,7 +73,7 @@ final class GridDiagnostic {
                 }
             });
 
-            exec.execute(new GridWorker(gridName, "grid-diagnostic-2", log) {
+            exec.execute(new GridWorker(instanceName, "grid-diagnostic-2", log) {
                 @Override public void body() {
                     try {
                         InetAddress locHost = U.getLocalHost();
@@ -92,7 +92,7 @@ final class GridDiagnostic {
                 }
             });
 
-            exec.execute(new GridWorker(gridName, "grid-diagnostic-4", log) {
+            exec.execute(new GridWorker(instanceName, "grid-diagnostic-4", log) {
                 @Override public void body() {
                     // Sufficiently tested OS.
                     if (!U.isSufficientlyTestedOs()) {
@@ -104,7 +104,7 @@ final class GridDiagnostic {
                 }
             });
 
-            exec.execute(new GridWorker(gridName, "grid-diagnostic-5", log) {
+            exec.execute(new GridWorker(instanceName, "grid-diagnostic-5", log) {
                 @Override public void body() {
                     // Fix for GG-1075.
                     if (F.isEmpty(U.allLocalMACs()))
@@ -114,7 +114,7 @@ final class GridDiagnostic {
                 }
             });
 
-            exec.execute(new GridWorker(gridName, "grid-diagnostic-6", log) {
+            exec.execute(new GridWorker(instanceName, "grid-diagnostic-6", log) {
                 @Override public void body() {
                     if (System.getProperty("com.sun.management.jmxremote") != null) {
                         String portStr = System.getProperty("com.sun.management.jmxremote.port");
@@ -138,7 +138,7 @@ final class GridDiagnostic {
 
             final long HALF_GB = 512/*MB*/ * 1024 * 1024;
 
-            exec.execute(new GridWorker(gridName, "grid-diagnostic-7", log) {
+            exec.execute(new GridWorker(instanceName, "grid-diagnostic-7", log) {
                 @Override public void body() {
                     long initBytes = ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getInit();
                     long initMb = initBytes / 1024 / 1024;

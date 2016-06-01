@@ -152,8 +152,8 @@ public class GridLifecycleAwareSelfTest extends GridAbstractLifecycleAwareSelfTe
     }
 
     /** {@inheritDoc} */
-    @Override protected final IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected final IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         TestConnectorMessageInterceptor interceptor = new TestConnectorMessageInterceptor();
 

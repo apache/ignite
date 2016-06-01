@@ -58,8 +58,8 @@ public class BinaryObjectBuilderDefaultMappersSelfTest extends GridCommonAbstrac
     private static IgniteConfiguration cfg;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         BinaryTypeConfiguration customTypeCfg = new BinaryTypeConfiguration();
 

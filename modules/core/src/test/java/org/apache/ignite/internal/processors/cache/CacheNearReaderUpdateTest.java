@@ -79,8 +79,8 @@ public class CacheNearReaderUpdateTest extends GridCommonAbstractTest {
     private static Map<Integer, Integer> storeMap = new ConcurrentHashMap8<>();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instaceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instaceName);
 
         cfg.setPeerClassLoadingEnabled(false);
 

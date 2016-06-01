@@ -71,8 +71,8 @@ public class GridCancelUnusedJobSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(instanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -90,7 +90,7 @@ public class GridCancelUnusedJobSelfTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("unchecked")
     public void testCancel() throws Exception {
-        Ignite ignite = G.ignite(getTestGridName());
+        Ignite ignite = G.ignite(getTestInstanceName());
 
         ignite.compute().localDeployTask(GridCancelTestTask.class, U.detectClassLoader(GridCancelTestTask.class));
 

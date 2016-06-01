@@ -50,8 +50,8 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
     private LifeCycleBaseBean bean;
 
     /** */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(instanceName);
 
         c.setLifecycleBeans(bean);
 
@@ -102,7 +102,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
         startGrid();
 
         try {
-            assertEquals(IgniteState.STARTED, G.state(getTestGridName()));
+            assertEquals(IgniteState.STARTED, G.state(getTestInstanceName()));
 
             assertEquals(1, bean.count(BEFORE_NODE_START));
             assertEquals(1, bean.count(AFTER_NODE_START));
@@ -114,7 +114,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
         }
 
 
-        assertEquals(IgniteState.STOPPED, G.state(getTestGridName()));
+        assertEquals(IgniteState.STOPPED, G.state(getTestInstanceName()));
 
         assertEquals(1, bean.count(BEFORE_NODE_START));
         assertEquals(1, bean.count(AFTER_NODE_START));
@@ -165,7 +165,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
         catch (IgniteCheckedException expected) {
             info("Got expected exception: " + expected);
 
-            assertEquals(IgniteState.STOPPED, G.state(getTestGridName()));
+            assertEquals(IgniteState.STOPPED, G.state(getTestInstanceName()));
         }
         finally {
             stopAllGrids();
@@ -192,7 +192,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
         catch (IgniteCheckedException expected) {
             info("Got expected exception: " + expected);
 
-            assertEquals(IgniteState.STOPPED, G.state(getTestGridName()));
+            assertEquals(IgniteState.STOPPED, G.state(getTestInstanceName()));
         }
         finally {
             stopAllGrids();
@@ -263,7 +263,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
         try {
             startGrid();
 
-            assertEquals(IgniteState.STARTED, G.state(getTestGridName()));
+            assertEquals(IgniteState.STARTED, G.state(getTestInstanceName()));
         }
         catch (IgniteCheckedException ignore) {
             assertTrue(false);

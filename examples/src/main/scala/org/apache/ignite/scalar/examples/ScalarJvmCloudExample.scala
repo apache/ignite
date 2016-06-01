@@ -55,7 +55,7 @@ object ScalarJvmCloudExample {
                     // All defaults.
                     val cfg = new IgniteConfiguration
 
-                    cfg.setGridName(name)
+                    cfg.setInstanceName(name)
 
                     // Configure in-VM TCP discovery so we don't
                     // interfere with other ignites running on the same network.

@@ -49,8 +49,8 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
     private DeploymentMode depMode = DeploymentMode.PRIVATE;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setDeploymentSpi(new LocalDeploymentSpi());
 
@@ -412,7 +412,7 @@ public abstract class AbstractAopTest extends GridCommonAbstractTest {
         // Create remote grid to execute test on.
         Ignite locIgnite = startGrid();
 
-        Ignite rmtIgnite = startGrid(getTestGridName() + "Remote");
+        Ignite rmtIgnite = startGrid(getTestInstanceName() + "Remote");
 
         try {
             AtomicInteger locDepCnt = new AtomicInteger(0);

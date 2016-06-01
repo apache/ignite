@@ -73,8 +73,8 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceNme) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceNme);
 
         cfg.setNetworkTimeout(60_000);
 
@@ -94,8 +94,8 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String instanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(instanceName);
 
         cfg.setRebalanceMode(SYNC);
 
