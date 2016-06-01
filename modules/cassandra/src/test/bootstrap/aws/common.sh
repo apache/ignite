@@ -156,7 +156,7 @@ printInstanceInfo()
 {
     if [ "$NODE_TYPE" == "cassandra" ]; then
         echo "[INFO] Cassandra download URL: $CASSANDRA_DOWNLOAD_URL"
-        echo "[INFO] Tests package download URL: $TESTS_DOWNLOAD_URL"
+        echo "[INFO] Tests package download URL: $TESTS_PACKAGE_DONLOAD_URL"
         echo "[INFO] Ganglia Core download URL: $GANGLIA_CORE_DOWNLOAD_URL"
         echo "[INFO] Ganglia Web download URL: $GANGLIA_WEB_DOWNLOAD_URL"
         echo "[INFO] RRD download URL: $RRD_DOWNLOAD_URL"
@@ -172,7 +172,7 @@ printInstanceInfo()
 
     if [ "$NODE_TYPE" == "ignite" ]; then
         echo "[INFO] Ignite download URL: $IGNITE_DOWNLOAD_URL"
-        echo "[INFO] Tests package download URL: $TESTS_DOWNLOAD_URL"
+        echo "[INFO] Tests package download URL: $TESTS_PACKAGE_DONLOAD_URL"
         echo "[INFO] Ganglia Core download URL: $GANGLIA_CORE_DOWNLOAD_URL"
         echo "[INFO] Ganglia Web download URL: $GANGLIA_WEB_DOWNLOAD_URL"
         echo "[INFO] RRD download URL: $RRD_DOWNLOAD_URL"
@@ -194,7 +194,7 @@ printInstanceInfo()
         echo "[INFO] Cassandra nodes count: $CASSANDRA_NODES_COUNT"
         echo "[INFO] Tests summary URL: $S3_TESTS_SUMMARY"
         echo "[INFO] ----------------------------------------------------"
-        echo "[INFO] Tests package download URL: $TESTS_DOWNLOAD_URL"
+        echo "[INFO] Tests package download URL: $TESTS_PACKAGE_DONLOAD_URL"
         echo "[INFO] Ganglia Core download URL: $GANGLIA_CORE_DOWNLOAD_URL"
         echo "[INFO] Ganglia Web download URL: $GANGLIA_WEB_DOWNLOAD_URL"
         echo "[INFO] RRD download URL: $RRD_DOWNLOAD_URL"
@@ -221,7 +221,7 @@ printInstanceInfo()
         echo "[INFO] Ganglia Core download URL: $GANGLIA_CORE_DOWNLOAD_URL"
         echo "[INFO] Ganglia Web download URL: $GANGLIA_WEB_DOWNLOAD_URL"
         echo "[INFO] RRD download URL: $RRD_DOWNLOAD_URL"
-        echo "[INFO] Tests package download URL: $TESTS_DOWNLOAD_URL"
+        echo "[INFO] Tests package download URL: $TESTS_PACKAGE_DONLOAD_URL"
         echo "[INFO] Logs URL: $S3_GANGLIA_LOGS"
         echo "[INFO] Logs trigger URL: $S3_LOGS_TRIGGER"
         echo "[INFO] Ganglia master discovery URL: $S3_GANGLIA_MASTER_DISCOVERY"

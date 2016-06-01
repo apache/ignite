@@ -91,7 +91,7 @@ export S3_IGNITE_FIRST_NODE_LOCK=$S3_IGNITE_SYSTEM/first-node-lock
 export S3_IGNITE_NODES_JOIN_LOCK=$S3_IGNITE_SYSTEM/i-join-lock
 
 # Tests related settings
-export TESTS_DOWNLOAD_URL=$S3_DOWNLOADS/ignite-cassandra-tests-1.6.0-SNAPSHOT.zip
+export TESTS_PACKAGE_DONLOAD_URL=$S3_DOWNLOADS/ignite-cassandra-tests-1.6.0-SNAPSHOT.zip
 export S3_TESTS_TRIGGER=$S3_SYSTEM/tests-trigger
 export S3_TESTS_NODES_DISCOVERY=$S3_TESTS_SYSTEM/discovery
 export S3_TESTS_SUCCESS=$S3_TESTS_SYSTEM/success
