@@ -155,7 +155,7 @@ public class FreeList {
                 String idxName = BPlusTree.treeName("p" + partId, cctx.cacheId(), "Free");
 
                 final RootPage rootPage = cctx.shared().database().meta()
-                    .getOrAllocateForTree(cctx.cacheId(), idxName, false);
+                    .getOrAllocateForTree(cctx.cacheId(), idxName);
 
                 fut.onDone(new FreeTree(idxName, reuseList, cctx.cacheId(), partId, pageMem, rootPage.pageId(), rootPage.isAllocated()));
             }

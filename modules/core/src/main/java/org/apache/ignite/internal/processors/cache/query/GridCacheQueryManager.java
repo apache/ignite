@@ -901,7 +901,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             else {
                 locPart = null;
 
-                it = cctx.offheap().iterator(backups, topVer);
+                it = cctx.offheap().iterator(true, backups, topVer);
             }
 
             return new PeekValueExpiryAwareIterator(it, plc, topVer, keyValFilter, qry.keepBinary(), locNode) {

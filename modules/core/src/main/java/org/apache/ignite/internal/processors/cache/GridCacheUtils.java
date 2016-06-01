@@ -1548,7 +1548,7 @@ public class GridCacheUtils {
      * TODO: GG-11010 review usages + CachePredicate usages.
      */
     public static boolean affinityNode(ClusterNode node, IgnitePredicate<ClusterNode> filter) {
-        return !clientNode(node) && filter.apply(node);
+        return !node.isDaemon() && !clientNode(node) && filter.apply(node);
     }
 
     /**

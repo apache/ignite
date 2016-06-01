@@ -29,18 +29,13 @@ public class RootPage {
     /** */
     private boolean allocated;
 
-    /** */
-    private long rootId;
-
     /**
      * @param pageId Page ID.
      * @param allocated {@code True} if was allocated new page.
-     * @param rootId Root page ID.
      */
-    public RootPage(final FullPageId pageId, final boolean allocated, final long rootId) {
+    public RootPage(final FullPageId pageId, final boolean allocated) {
         this.pageId = pageId;
         this.allocated = allocated;
-        this.rootId = rootId;
     }
 
     /**
@@ -55,12 +50,5 @@ public class RootPage {
      */
     public boolean isAllocated() {
         return allocated;
-    }
-
-    /**
-     * @return Root page ID.
-     */
-    public long rootId() {
-        return rootId;
     }
 }

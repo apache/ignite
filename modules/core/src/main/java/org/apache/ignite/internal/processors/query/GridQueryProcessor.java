@@ -462,10 +462,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (!busyLock.enterBusy())
             return;
 
+        cctx.shared().database().checkpointReadLock();
+
         try {
             initializeCache(cctx.config());
         }
         finally {
+            cctx.shared().database().checkpointReadUnlock();
+
             busyLock.leaveBusy();
         }
     }

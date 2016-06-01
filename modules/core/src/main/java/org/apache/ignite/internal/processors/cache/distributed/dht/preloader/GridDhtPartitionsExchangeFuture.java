@@ -487,8 +487,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             updateTopologies(crdNode);
 
-            cctx.database().beforeExchange(discoEvt);
-
             // Possible if there are no active nodes.
             if (exchange == ExchangeType.ALL && crd == null)
                 exchange = ExchangeType.NONE;
@@ -755,6 +753,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             cacheCtx.topology().beforeExchange(this, !centralizedAff);
         }
+
+        cctx.database().beforeExchange(discoEvt);
 
         if (crd.isLocal()) {
             if (remaining.isEmpty())
