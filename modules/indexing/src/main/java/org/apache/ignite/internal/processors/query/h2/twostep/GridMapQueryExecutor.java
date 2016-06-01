@@ -837,10 +837,6 @@ public class GridMapQueryExecutor {
             U.close(rs, log);
         }
 
-        private boolean isCompleted() {
-            return false;
-        }
-
         /**
          * @return Rs.
          */
