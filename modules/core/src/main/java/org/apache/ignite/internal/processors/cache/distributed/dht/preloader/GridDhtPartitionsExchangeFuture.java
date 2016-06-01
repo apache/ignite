@@ -420,6 +420,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         if (isDone())
             return;
 
+        if (log.isInfoEnabled())
+            log.info("Init exchange [localNode=" + cctx.localNodeId() + ", id= " + exchId + ']');
+
         initTs = U.currentTimeMillis();
 
         U.await(evtLatch);
