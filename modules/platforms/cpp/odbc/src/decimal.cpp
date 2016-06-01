@@ -99,17 +99,17 @@ namespace ignite
 
         int32_t diff = newScale - scale;
 
-        BigInteger adjustment(10);
+        BigInteger adjustment;
 
         if (diff > 0)
         {
-            adjustment.Pow(diff);
+            BigInteger::GetPowerOfTen(diff, adjustment);
 
             magnitude.Divide(adjustment, res.magnitude);
         }
         else
         {
-            adjustment.Pow(-diff);
+            BigInteger::GetPowerOfTen(-diff, adjustment);
 
             magnitude.Multiply(adjustment, res.magnitude);
         }

@@ -29,6 +29,11 @@ namespace ignite
         namespace bits
         {
             /**
+             * Maximum number of digits in uint64_t number.
+             */
+            const int32_t UINT64_MAX_PRECISION = 20;
+
+            /**
              * Get number of trailing zero bits in the two's complement binary
              * representation of the specified 32-bit int value.
              *
@@ -122,6 +127,15 @@ namespace ignite
              * @return The number of decimal digits of the integer value.
              */
             IGNITE_IMPORT_EXPORT int32_t DigitLength(uint64_t x);
+
+            /**
+             * Get n-th power of ten.
+             *
+             * @param n Power. Should be in range [0, UINT64_MAX_PRECISION]
+             * @return 10 pow n, if n is in range [0, UINT64_MAX_PRECISION].
+             *     Otherwise, behaviour is undefined.
+             */
+            IGNITE_IMPORT_EXPORT uint64_t TenPowerU64(int32_t n);
 
             /**
              * Get the signum function of the specified 64-bit integer value.

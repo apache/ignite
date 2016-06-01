@@ -244,8 +244,8 @@ namespace ignite
         int32_t r = static_cast<uint32_t>(((
             static_cast<uint64_t>(GetBitLength()) + 1) * 646456993ULL) >> 31);
 
-        BigInteger prec(10);
-        prec.Pow(r);
+        BigInteger prec;
+        BigInteger::GetPowerOfTen(r, prec);
 
         return Compare(prec, true) < 0 ? r : r + 1;
     }
@@ -435,14 +435,61 @@ namespace ignite
         return static_cast<uint32_t>(carry);
     }
 
+    void BigInteger::Divide(const BigInteger& divisor, BigInteger& res) const
+    {
+        Divide(divisor, res, 0);
+    }
+
     void BigInteger::Divide(const BigInteger& divisor, BigInteger& res, BigInteger& rem) const
     {
         Divide(divisor, res, &rem);
     }
 
-    void BigInteger::Divide(const BigInteger& divisor, BigInteger& res) const
+    void BigInteger::Add(const uint32_t* addend, int32_t len)
     {
-        Divide(divisor, res, 0);
+        if (mag.GetSize() < len)
+        {
+            mag.Reserve(len + 1);
+
+            mag.Resize(len);
+        }
+
+        mag.Reserve(mag.GetSize() + 1);
+
+        uint64_t carry = 0;
+
+        for (int32_t i = 0; i < len; ++i)
+        {
+            uint64_t sum = static_cast<uint64_t>(mag[i]) + addend[i] + carry;
+            mag[i] = static_cast<uint32_t>(sum);
+            carry = sum >> 32;
+        }
+
+        for (int32_t i = len; (i < mag.GetSize()) && carry; ++i)
+        {
+            uint64_t sum = static_cast<uint64_t>(mag[i]) + carry;
+            mag[i] = static_cast<uint32_t>(sum);
+            carry = sum >> 32;
+        }
+
+        if (carry)
+            mag.PushBack(static_cast<uint32_t>(carry));
+    }
+
+    void BigInteger::Add(uint64_t x)
+    {
+        if (!x)
+            return;
+
+        if (mag.IsEmpty())
+            Assign(x);
+
+        uint32_t val[2];
+
+        val[0] = static_cast<uint32_t>(x);
+        val[1] = static_cast<uint32_t>(x >> 32);
+
+        Add(val, val[1] ? 2 : 1);
     }
 
     int32_t BigInteger::Compare(const BigInteger& other, bool ignoreSign) const
@@ -477,6 +524,23 @@ namespace ignite
     int64_t BigInteger::ToInt64() const
     {
         return (static_cast<uint64_t>(GetMagInt(1)) << 32) | GetMagInt(0);
+    }
+
+    void BigInteger::GetPowerOfTen(int32_t pow, BigInteger& res)
+    {
+        using namespace common;
+
+        assert(pow >= 0);
+
+        if (pow < bits::UINT64_MAX_PRECISION)
+        {
+            res.Assign(bits::TenPowerU64(pow));
+
+            return;
+        }
+
+        res.Assign(10ULL);
+        res.Pow(pow);
     }
 
     int32_t BigInteger::GetMagInt(int32_t n) const
@@ -636,7 +700,7 @@ namespace ignite
             if (difference < 0)
             {
                 --qhat32;
-                carry = Add(nu.GetData() + i, nv.GetData(), vlen);
+                carry = ignite::Add(nu.GetData() + i, nv.GetData(), vlen);
 
                 assert(carry == 0);
             }

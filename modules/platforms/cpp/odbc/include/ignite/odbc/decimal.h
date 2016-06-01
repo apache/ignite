@@ -19,6 +19,8 @@
 #define _IGNITE_ODBC_DECIMAL
 
 #include <stdint.h>
+#include <cctype>
+
 #include <sstream>
 #include <iostream>
 
@@ -260,11 +262,101 @@ namespace ignite
          * @param val Value to input.
          * @return Reference to the first param.
          */
-        friend std::ostream& operator>>(std::ostream& is, Decimal& val)
+        friend std::istream& operator>>(std::istream& is, Decimal& val)
         {
-            //TODO.
+            std::istream::sentry sentry(is);
 
+            // Return zero if input failed.
             val.Assign(0ULL);
+
+            if (!is)
+                return is;
+
+            // Current char.
+            int c = is.peek();
+
+            // Current value parts.
+            uint64_t part = 0;
+            int32_t partDigits = 0;
+            int32_t scale = -1;
+            int32_t sign = 1;
+
+            BigInteger& mag = val.magnitude;
+            BigInteger pow;
+            BigInteger bigPart;
+
+            if (!is)
+                return is;
+
+            // Checking sign.
+            if (c == '-' || c == '+')
+            {
+                if (c == '-')
+                    sign = -1;
+
+                is.ignore();
+                c = is.peek();
+            }
+
+            // Reading number itself.
+            while (is)
+            {
+                if (isdigit(c))
+                {
+                    part = part * 10 + (c - '0');
+                    ++partDigits;
+                }
+                else if (c == '.' && scale < 0)
+                {
+                    // We have found decimal point. Starting counting scale.
+                    scale = 0;
+                }
+                else
+                    break;
+
+                is.ignore();
+                c = is.peek();
+
+                if (part >= 10000000000000000000ULL)
+                {
+                    BigInteger::GetPowerOfTen(partDigits, pow);
+                    mag.Multiply(pow, mag);
+
+                    mag.Add(part);
+
+                    part = 0;
+                    partDigits = 0;
+                }
+
+                // Counting scale if the decimal point have been encountered.
+                if (scale >= 0)
+                    ++scale;
+            }
+
+            // Adding last part of the number.
+            if (partDigits)
+            {
+                BigInteger::GetPowerOfTen(partDigits, pow);
+                mag.Multiply(pow, mag);
+
+                mag.Add(part);
+            }
+
+            // Reading exponent.
+            if (c == 'e' || c == 'E')
+            {
+                is.ignore();
+
+                int32_t exp = 0;
+                is >> exp;
+
+                scale -= exp;
+            }
+
+            val.scale = scale;
+
+            if (sign < 0)
+                mag.Negate();
 
             return is;
         }

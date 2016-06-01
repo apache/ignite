@@ -22,9 +22,7 @@
 
 namespace
 {
-    const int32_t UINT64_MAX_PRECISION = 20;
-
-    const uint64_t TEN_POWERS_TABLE[UINT64_MAX_PRECISION] = {
+    const uint64_t TEN_POWERS_TABLE[ignite::common::bits::UINT64_MAX_PRECISION] = {
         1ULL,                     // 0  / 10^0
         10ULL,                    // 1  / 10^1
         100ULL,                   // 2  / 10^2
@@ -47,7 +45,7 @@ namespace
         10000000000000000000ULL   // 19 / 10^19
     };
 
-    const uint64_t THRESHOLDS_TABLE[UINT64_MAX_PRECISION] = {
+    const uint64_t THRESHOLDS_TABLE[ignite::common::bits::UINT64_MAX_PRECISION] = {
         UINT64_MAX,                          // 0
         UINT64_MAX / 10ULL,                  // 1
         UINT64_MAX / 100ULL,                 // 2
@@ -248,6 +246,13 @@ namespace ignite
                 assert(r <= UINT64_MAX_PRECISION);
 
                 return (r == UINT64_MAX_PRECISION || x < TEN_POWERS_TABLE[r]) ? r : r + 1;
+            }
+
+            uint64_t TenPowerU64(int32_t n)
+            {
+                assert(n >= 0 && n < UINT64_MAX_PRECISION);
+
+                return TEN_POWERS_TABLE[n];
             }
         }
     }

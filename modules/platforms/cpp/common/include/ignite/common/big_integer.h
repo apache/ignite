@@ -182,6 +182,13 @@ namespace ignite
         void Divide(const BigInteger& divisor, BigInteger& res, BigInteger& rem) const;
 
         /**
+         * Add unsigned integer number to this BigInteger.
+         *
+         * @param x Number to add.
+         */
+        void Add(uint64_t x);
+
+        /**
          * Compare this instance to another.
          *
          * @param other Another instance.
@@ -197,6 +204,45 @@ namespace ignite
          * @return int64_t value.
          */
         int64_t ToInt64() const;
+
+        /**
+         * Check whether this value is negative.
+         *
+         * @return True if this value is negative and false otherwise.
+         */
+        bool IsNegative() const
+        {
+            return sign < 0;
+        }
+
+        /**
+         * Check whether this value is zero.
+         *
+         * @return True if this value is negative and false otherwise.
+         */
+        bool IsZero() const
+        {
+            return mag.GetSize() == 0;
+        }
+
+        /**
+         * Check whether this value is positive.
+         *
+         * @return True if this value is positive and false otherwise.
+         */
+        bool IsPositive() const
+        {
+            return sign > 0 && !IsZero();
+        }
+
+        /**
+         * Rverses sign of this value.
+         */
+        void Negate()
+        {
+            if (!IsZero())
+                sign = -sign;
+        }
 
         /**
          * Output operator.
@@ -250,7 +296,23 @@ namespace ignite
             return os;
         }
 
+        /**
+         * Get BigInteger which value is the ten of the specified power.
+         *
+         * @param pow Tenth power.
+         * @param res Result is placed here.
+         */
+        static void GetPowerOfTen(int32_t pow, BigInteger& res);
+
     private:
+        /**
+         * Add magnitude array to current.
+         *
+         * @param addend Addend.
+         * @param len Length of the addend.
+         */
+        void Add(const uint32_t* addend, int32_t len);
+
         /**
          * Get n-th integer of the magnitude.
          *

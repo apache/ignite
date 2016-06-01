@@ -383,6 +383,19 @@ namespace ignite
                 return data[0];
             }
 
+            /**
+             * Pushes new value to the back of the array, effectively increasing
+             * array size by one.
+             *
+             * @param val Value to push.
+             */
+            void PushBack(ConstReferenceType val)
+            {
+                Resize(size + 1);
+
+                Back() = val;
+            }
+
         private:
             /** Allocator */
             AllocatorType alloc;
