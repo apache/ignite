@@ -164,7 +164,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 }
 
                 if (backup) {
-                    if (cctx.affinity().backup(locNode, locPart.size(), topVer))
+                    if (cctx.affinity().backup(locNode, locPart.id(), topVer))
                         cnt += locPart.size();
                 }
             }
