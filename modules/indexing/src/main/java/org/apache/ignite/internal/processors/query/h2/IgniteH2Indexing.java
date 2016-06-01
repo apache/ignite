@@ -844,7 +844,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * Executes sql query and prints warning if query is too slow..
      *
      *
-     * @param onPrepStmtReady
+     * @param prepStmtReadyClo Prepared statement ready callback.
      * @param space Space name.
      * @param conn Connection,.
      * @param sql Sql query.
@@ -853,7 +853,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
-    public ResultSet executeSqlQueryWithTimer(IgniteInClosure<PreparedStatement> onPrepStmtReady, String space,
+    public ResultSet executeSqlQueryWithTimer(@Nullable IgniteInClosure<PreparedStatement> prepStmtReadyClo,
+        String space,
         Connection conn,
         String sql,
         @Nullable Collection<Object> params,
@@ -870,8 +871,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                 throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
             }
 
-            if (onPrepStmtReady != null)
-                onPrepStmtReady.apply(stmt);
+            if (prepStmtReadyClo != null)
+                prepStmtReadyClo.apply(stmt);
 
             ResultSet rs = executeSqlQuery(sql, stmt, params);
 

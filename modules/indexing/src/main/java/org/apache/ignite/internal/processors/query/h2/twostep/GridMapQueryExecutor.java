@@ -675,8 +675,10 @@ public class GridMapQueryExecutor {
          */
         QueryResult addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId) {
             QueryResult update = new QueryResult(cctx, qrySrcNodeId, q);
+
             if (!results.compareAndSet(qry, null, update))
                 throw new IllegalStateException();
+
             return update;
         }
 
@@ -694,6 +696,9 @@ public class GridMapQueryExecutor {
             return true;
         }
 
+        /**
+         *
+         */
         void cancel() {
             if (canceled)
                 return;
@@ -821,15 +826,19 @@ public class GridMapQueryExecutor {
 
             closed = true;
 
-            if (prepStmt != null)
-                try {
-                    prepStmt.cancel();
-                }
-                catch (SQLException e) {
-                    U.error(log, "Failed to close statement", e);
-                }
+            // Cancel a query if it's still executing. No-op if query was already finished.
+            try {
+                prepStmt.cancel();
+            }
+            catch (SQLException e) {
+                U.error(log, "Failed to close statement", e);
+            }
 
             U.close(rs, log);
+        }
+
+        private boolean isCompleted() {
+            return false;
         }
 
         /**

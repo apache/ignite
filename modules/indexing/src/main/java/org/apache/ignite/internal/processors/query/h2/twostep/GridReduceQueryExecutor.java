@@ -1204,7 +1204,7 @@ public class GridReduceQueryExecutor {
         /** */
         private int pageSize;
 
-        /** Can be either CacheException in case of error or AffinityTopologyVersion to retry if needed. */
+        /** Can be either CacheException in case of error/cancellation or AffinityTopologyVersion to retry if needed. */
         private final AtomicReference<Object> state = new AtomicReference<>();
 
         /**
@@ -1266,7 +1266,7 @@ public class GridReduceQueryExecutor {
     }
 
     /**
-     *
+     * Generates next query id.
      */
     public long nextQryId() {
         return reqIdGen.incrementAndGet();
