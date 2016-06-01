@@ -148,6 +148,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** */
     private final GridQueryIndexing idx;
 
+    /** */
+    private boolean skipFieldLookup;
+
     /**
      * @param ctx Kernal context.
      */
@@ -401,6 +404,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
             throw e;
         }
+    }
+
+    /**
+     * @param skipFieldLookup If {@code true}, will skip binary field object lookup and will instead use
+     *      {@link BinaryObject#field(String)} method to obtain field values.
+     */
+    public void skipFieldLookup(boolean skipFieldLookup) {
+        this.skipFieldLookup = skipFieldLookup;
     }
 
     /**
@@ -2064,6 +2075,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          * @return Binary field.
          */
         private BinaryField binaryField(BinaryObject obj) {
+            if (skipFieldLookup)
+                return null;
+
             BinaryField field0 = field;
 
             if (field0 == null && !fieldTaken) {

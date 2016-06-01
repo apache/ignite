@@ -104,6 +104,9 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.preloa
  * Partition exchange manager.
  */
 public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
+    /** */
+    private static final GridDhtPartitionsExchangeFuture STOP = new GridDhtPartitionsExchangeFuture();
+
     /** Exchange history size. */
     private static final int EXCHANGE_HISTORY_SIZE = 1000;
 
@@ -1270,6 +1273,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         /** {@inheritDoc} */
+        @Override public void cancel() {
+            if (log.isDebugEnabled())
+                log.debug("Cancelling exchange worker: " + this);
+
+            isCancelled = true;
+
+            futQ.offer(STOP);
+        }
+
+        /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             long timeout = cctx.gridConfig().getNetworkTimeout();
 
@@ -1315,6 +1328,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     if (exchFut == null)
                         continue; // Main while loop.
+
+                    if (exchFut == STOP) {
+                        assert isCancelled();
+
+                        break; // While.
+                    }
 
                     busy = true;
 
