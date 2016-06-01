@@ -875,9 +875,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
             ResultSet rs = executeSqlQuery(sql, stmt, params);
 
-            if (onPrepStmtReady != null)
-                onPrepStmtReady.apply(null);
-
             long time = U.currentTimeMillis() - start;
 
             long longQryExecTimeout = schemas.get(schema(space)).ccfg.getLongQueryWarningTimeout();

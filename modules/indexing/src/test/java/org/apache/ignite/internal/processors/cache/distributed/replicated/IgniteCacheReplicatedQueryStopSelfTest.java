@@ -17,54 +17,18 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.lang.reflect.Field;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import javax.cache.Cache;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cache.query.SqlQuery;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
-import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.events.DiscoveryEvent;
-import org.apache.ignite.events.Event;
-import org.apache.ignite.events.EventType;
-import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractQuerySelfTest;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
-import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.internal.util.lang.GridCloseableIterator;
-import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.transactions.Transaction;
-import org.springframework.util.ReflectionUtils;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
-import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CachePeekMode.ALL;
-import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
 
 /**
  * Tests replicated query cancellation.
@@ -101,18 +65,19 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
             //qry.setTimeout(3, TimeUnit.SECONDS);
             final QueryCursor<List<?>> query = cache.query(qry);
 
-            ignite().scheduler().scheduleLocal(new Runnable() {
+            ignite().scheduler().runLocal(new Runnable() {
                 @Override public void run() {
                     query.close();
                 }
-            }, 3000, -1);
+            }, 3, TimeUnit.SECONDS);
 
             // Trigger remote execution.
             try {
                 query.iterator().next();
+                fail();
             }
-            catch (Exception e) {
-                e.printStackTrace();
+            catch (CacheException ex) {
+                log().error("Got expected exception", ex);
             }
 
             // Validate if map query was cancelled.

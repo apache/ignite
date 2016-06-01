@@ -24,6 +24,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
 import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteScheduler;
 import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -84,7 +85,7 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public SchedulerFuture<?> scheduleLocal(Runnable job, String ptrn) {
+    @Override public SchedulerFuture<?> runLocal(Runnable job, String ptrn) {
         A.notNull(job, "job");
 
         guard();
@@ -98,7 +99,7 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
     }
 
     /** {@inheritDoc} */
-    @Override public <R> SchedulerFuture<R> scheduleLocal(Callable<R> job, String ptrn) {
+    @Override public <R> SchedulerFuture<R> runLocal(Callable<R> job, String ptrn) {
         A.notNull(job, "job");
 
         guard();
@@ -111,13 +112,14 @@ public class IgniteSchedulerImpl implements IgniteScheduler, Externalizable {
         }
     }
 
-    @Override public Closeable scheduleLocal(@Nullable Runnable r, long delay, long period) {
+    @Override public Closeable runLocal(@Nullable Runnable r, long delay, TimeUnit timeUnit) {
         A.notNull(r, "r");
+        A.ensure(delay >= 0, "Illegal delay");
 
         guard();
 
         try {
-            return ctx.timeout().schedule(r, delay, period);
+            return ctx.timeout().schedule(r, timeUnit.toMillis(delay), -1);
         }
         finally {
             unguard();

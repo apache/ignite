@@ -574,21 +574,18 @@ public class GridReduceQueryExecutor {
                     Object state = r.state.get();
 
                     if (state != null) {
-                        if (state instanceof GridRemoteQueryCancelledException) {
-                            // We have to explicitly cancel queries on remote nodes.
-                            send(nodes, new GridQueryCancelRequest(qryReqId), null);
-
-                            throw (GridRemoteQueryCancelledException) state;
-                        }
-
-                        // if cancelled and still running remotely force remote
-
                         if (state instanceof CacheException) {
                             CacheException err = (CacheException)state;
 
                             if (err.getCause() instanceof IgniteClientDisconnectedException)
                                 throw err;
 
+                            if (err.getCause() instanceof GridRemoteQueryCancelledException) {
+                                // We have to explicitly cancel queries on remote nodes.
+                                send(nodes, new GridQueryCancelRequest(qryReqId), null);
+
+                                throw err;
+                            }
 
                             throw new CacheException("Failed to run map query remotely.", err);
                         }
@@ -1185,7 +1182,10 @@ public class GridReduceQueryExecutor {
 
         if ( run == null ) return;
 
-        run.failed(new GridRemoteQueryCancelledException());
+        CacheException err = new CacheException("Query was cancelled by user.",
+            new GridRemoteQueryCancelledException());
+
+        run.failed(err);
     }
 
     /**
@@ -1228,7 +1228,7 @@ public class GridReduceQueryExecutor {
         /**
          * @param e Error.
          */
-        void failed(RuntimeException e) {
+        void failed(CacheException e) {
             if (!state.compareAndSet(null, e))
                 return;
 
