@@ -113,17 +113,6 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
             GridDhtLocalPartition part
     ) throws IgniteCheckedException;
 
-    public void clear(GridDhtLocalPartition part) throws IgniteCheckedException {
-        GridIterator<CacheDataRow> iterator = iterator(part.id());
-
-        while (iterator.hasNext()) {
-            CacheDataRow row = iterator.next();
-
-            remove(row.key(), row.value(), row.version(), part.id(), part);
-        }
-
-    }
-
     /**
      * @param ldr Class loader.
      * @return Number of undeployed entries.
@@ -183,6 +172,8 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * @param readers {@code True} to clear readers.
      */
     public void clear(boolean readers);
+
+    public void clear(GridDhtLocalPartition part) throws IgniteCheckedException;
 
     /**
      * @param part Partition.
