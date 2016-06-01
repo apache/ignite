@@ -306,7 +306,12 @@ namespace ignite
             return;
 
         if (bitsLen == 1)
+        {
+            if ((exp % 2 == 0) && sign < 0)
+                sign = -sign;
+
             return;
+        }
 
         BigInteger multiplicant(*this);
         Assign(1ULL);
@@ -550,7 +555,7 @@ namespace ignite
         res.Pow(pow);
     }
 
-    int32_t BigInteger::GetMagInt(int32_t n) const
+    uint32_t BigInteger::GetMagInt(int32_t n) const
     {
         assert(n >= 0);
 

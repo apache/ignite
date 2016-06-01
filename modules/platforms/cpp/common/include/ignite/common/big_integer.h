@@ -261,9 +261,11 @@ namespace ignite
                 os << '-';
 
             const int32_t maxResultDigits = 19;
-            BigInteger maxUintTenPower(10000000000000000000ULL);
+            BigInteger maxUintTenPower;
             BigInteger res;
             BigInteger left;
+
+            maxUintTenPower.Assign(10000000000000000000ULL);
 
             std::vector<uint64_t> vals;
 
@@ -320,7 +322,7 @@ namespace ignite
          * @param n Index.
          * @return Value of the n-th int of the magnitude.
          */
-        int32_t GetMagInt(int32_t n) const;
+        uint32_t GetMagInt(int32_t n) const;
 
         /**
          * Divide this to another big integer.

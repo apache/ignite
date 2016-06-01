@@ -28,6 +28,21 @@
 using namespace ignite;
 using namespace ignite::common::bits;
 
+template<typename T>
+void CheckOutputSimple(int64_t val)
+{
+    T dec(val);
+
+    std::stringstream ss1;
+    std::stringstream ss2;
+
+    ss1 << val;
+    ss2 << dec;
+
+    BOOST_CHECK_EQUAL(ss1.str(), ss2.str());
+}
+
+
 BOOST_AUTO_TEST_SUITE(DecimalTestSuite)
 
 BOOST_AUTO_TEST_CASE(TestMultiplyBigIntegerArguments)
@@ -36,7 +51,7 @@ BOOST_AUTO_TEST_CASE(TestMultiplyBigIntegerArguments)
 
     BigInteger res;
 
-    //152399025
+    // 152399025
     bigInt.Multiply(BigInteger(12345), res);
 
     {
@@ -47,7 +62,7 @@ BOOST_AUTO_TEST_CASE(TestMultiplyBigIntegerArguments)
         BOOST_CHECK_EQUAL(mag[0], 152399025ULL);
     }
 
-    //152399025
+    // 152399025
     bigInt.Assign(12345LL);
     bigInt.Multiply(bigInt, res);
 
@@ -59,7 +74,7 @@ BOOST_AUTO_TEST_CASE(TestMultiplyBigIntegerArguments)
         BOOST_CHECK_EQUAL(mag[0], 152399025ULL);
     }
 
-    //152399025
+    // 152399025
     bigInt.Assign(12345LL);
     bigInt.Multiply(BigInteger(12345), bigInt);
 
@@ -71,7 +86,7 @@ BOOST_AUTO_TEST_CASE(TestMultiplyBigIntegerArguments)
         BOOST_CHECK_EQUAL(mag[0], 152399025ULL);
     }
 
-    //152399025
+    // 152399025
     bigInt.Assign(12345LL);
     bigInt.Multiply(bigInt, bigInt);
 
@@ -90,12 +105,13 @@ BOOST_AUTO_TEST_CASE(TestMultiplyBigIntegerBigger)
 
     BigInteger buf;
 
-    //152399025
+    // 152399025
     bigInt.Multiply(bigInt, bigInt);
 
     buf.Assign(bigInt);
 
-    //3539537889086624823140625 == 0002 ED86  BBC3 30D1  DDC6 6111
+    // 3539537889086624823140625
+    // 0002 ED86  BBC3 30D1  DDC6 6111
     bigInt.Multiply(buf, bigInt);
     bigInt.Multiply(buf, bigInt);
 
@@ -139,7 +155,7 @@ BOOST_AUTO_TEST_CASE(TestPowBigInteger)
         BOOST_CHECK_EQUAL(mag[0], 12345);
     }
 
-    //152399025
+    // 152399025
     bigInt.Pow(2);
 
     {
@@ -150,7 +166,8 @@ BOOST_AUTO_TEST_CASE(TestPowBigInteger)
         BOOST_CHECK_EQUAL(mag[0], 152399025ULL);
     }
 
-    //3539537889086624823140625 ==  0002 ED86  BBC3 30D1  DDC6 6111
+    // 3539537889086624823140625
+    // 0002 ED86  BBC3 30D1  DDC6 6111
     bigInt.Pow(3);
 
     {
@@ -207,6 +224,185 @@ BOOST_AUTO_TEST_CASE(TestPowBigInteger)
         BOOST_CHECK_EQUAL(mag[24], 0x1355772E);
         BOOST_CHECK_EQUAL(mag[25], 0x0000B4D0);
     }
+
+    bigInt.Assign(-1LL);
+
+    bigInt.Pow(57298735);
+    BOOST_REQUIRE_EQUAL(bigInt.ToInt64(), -1);
+
+    bigInt.Pow(325347312);
+    BOOST_REQUIRE_EQUAL(bigInt.ToInt64(), 1);
+
+    bigInt.Assign(2LL);
+
+    bigInt.Pow(10);
+    BOOST_REQUIRE_EQUAL(bigInt.ToInt64(), 1024);
+
+    bigInt.Assign(-2LL);
+
+    bigInt.Pow(10);
+    BOOST_REQUIRE_EQUAL(bigInt.ToInt64(), 1024);
+
+    bigInt.Assign(2LL);
+
+    bigInt.Pow(11);
+    BOOST_REQUIRE_EQUAL(bigInt.ToInt64(), 2048);
+
+    bigInt.Assign(-2LL);
+
+    bigInt.Pow(11);
+    BOOST_REQUIRE_EQUAL(bigInt.ToInt64(), -2048);
+}
+
+BOOST_AUTO_TEST_CASE(TestMultiplyDivideSimple)
+{
+    BigInteger bigInt(12345);
+
+    // 152399025
+    bigInt.Multiply(bigInt, bigInt);
+
+    // 23225462820950625
+    bigInt.Multiply(bigInt, bigInt);
+
+    // 23225462820 and 950625
+    BigInteger bi1;
+    BigInteger bi2;
+    bigInt.Divide(BigInteger(1000000), bi1, bi2);
+
+    // 23225 and 462820
+    BigInteger bi3;
+    BigInteger bi4;
+    bi1.Divide(BigInteger(1000000), bi3, bi4);
+
+    BOOST_CHECK_EQUAL(bi2.ToInt64(), 950625);
+    BOOST_CHECK_EQUAL(bi3.ToInt64(), 23225);
+    BOOST_CHECK_EQUAL(bi4.ToInt64(), 462820);
+}
+
+BOOST_AUTO_TEST_CASE(TestOutputSimpleBigInteger)
+{
+    CheckOutputSimple<BigInteger>(0);
+
+    CheckOutputSimple<BigInteger>(1);
+    CheckOutputSimple<BigInteger>(9);
+    CheckOutputSimple<BigInteger>(10);
+    CheckOutputSimple<BigInteger>(11);
+    CheckOutputSimple<BigInteger>(19);
+    CheckOutputSimple<BigInteger>(123);
+    CheckOutputSimple<BigInteger>(1234);
+    CheckOutputSimple<BigInteger>(12345);
+    CheckOutputSimple<BigInteger>(123456);
+    CheckOutputSimple<BigInteger>(1234567);
+    CheckOutputSimple<BigInteger>(12345678);
+    CheckOutputSimple<BigInteger>(123456789);
+    CheckOutputSimple<BigInteger>(1234567890);
+    CheckOutputSimple<BigInteger>(12345678909);
+    CheckOutputSimple<BigInteger>(123456789098);
+    CheckOutputSimple<BigInteger>(1234567890987);
+    CheckOutputSimple<BigInteger>(12345678909876);
+    CheckOutputSimple<BigInteger>(123456789098765);
+    CheckOutputSimple<BigInteger>(1234567890987654);
+    CheckOutputSimple<BigInteger>(12345678909876543);
+    CheckOutputSimple<BigInteger>(123456789098765432);
+    CheckOutputSimple<BigInteger>(1234567890987654321);
+    CheckOutputSimple<BigInteger>(9999999999999999999LL);
+    CheckOutputSimple<BigInteger>(9999999990999999999LL);
+    CheckOutputSimple<BigInteger>(10000000000000000000LL);
+    CheckOutputSimple<BigInteger>(10000000000000000001LL);
+    CheckOutputSimple<BigInteger>(10000000050000000000LL);
+    CheckOutputSimple<BigInteger>(INT64_MAX);
+
+    CheckOutputSimple<BigInteger>(-1);
+    CheckOutputSimple<BigInteger>(-9);
+    CheckOutputSimple<BigInteger>(-10);
+    CheckOutputSimple<BigInteger>(-11);
+    CheckOutputSimple<BigInteger>(-19);
+    CheckOutputSimple<BigInteger>(-123);
+    CheckOutputSimple<BigInteger>(-1234);
+    CheckOutputSimple<BigInteger>(-12345);
+    CheckOutputSimple<BigInteger>(-123456);
+    CheckOutputSimple<BigInteger>(-1234567);
+    CheckOutputSimple<BigInteger>(-12345678);
+    CheckOutputSimple<BigInteger>(-123456789);
+    CheckOutputSimple<BigInteger>(-1234567890);
+    CheckOutputSimple<BigInteger>(-12345678909);
+    CheckOutputSimple<BigInteger>(-123456789098);
+    CheckOutputSimple<BigInteger>(-1234567890987);
+    CheckOutputSimple<BigInteger>(-12345678909876);
+    CheckOutputSimple<BigInteger>(-123456789098765);
+    CheckOutputSimple<BigInteger>(-1234567890987654);
+    CheckOutputSimple<BigInteger>(-12345678909876543);
+    CheckOutputSimple<BigInteger>(-123456789098765432);
+    CheckOutputSimple<BigInteger>(-1234567890987654321);
+    CheckOutputSimple<BigInteger>(-9999999999999999999LL);
+    CheckOutputSimple<BigInteger>(-9999999990999999999LL);
+    CheckOutputSimple<BigInteger>(-10000000000000000000LL);
+    CheckOutputSimple<BigInteger>(-10000000000000000001LL);
+    CheckOutputSimple<BigInteger>(-10000000050000000000LL);
+    CheckOutputSimple<BigInteger>(INT64_MIN);
+}
+
+BOOST_AUTO_TEST_CASE(TestOutputSimpleDecimal)
+{
+    CheckOutputSimple<Decimal>(0);
+
+    CheckOutputSimple<Decimal>(1);
+    CheckOutputSimple<Decimal>(9);
+    CheckOutputSimple<Decimal>(10);
+    CheckOutputSimple<Decimal>(11);
+    CheckOutputSimple<Decimal>(19);
+    CheckOutputSimple<Decimal>(123);
+    CheckOutputSimple<Decimal>(1234);
+    CheckOutputSimple<Decimal>(12345);
+    CheckOutputSimple<Decimal>(123456);
+    CheckOutputSimple<Decimal>(1234567);
+    CheckOutputSimple<Decimal>(12345678);
+    CheckOutputSimple<Decimal>(123456789);
+    CheckOutputSimple<Decimal>(1234567890);
+    CheckOutputSimple<Decimal>(12345678909);
+    CheckOutputSimple<Decimal>(123456789098);
+    CheckOutputSimple<Decimal>(1234567890987);
+    CheckOutputSimple<Decimal>(12345678909876);
+    CheckOutputSimple<Decimal>(123456789098765);
+    CheckOutputSimple<Decimal>(1234567890987654);
+    CheckOutputSimple<Decimal>(12345678909876543);
+    CheckOutputSimple<Decimal>(123456789098765432);
+    CheckOutputSimple<Decimal>(1234567890987654321);
+    CheckOutputSimple<Decimal>(9999999999999999999LL);
+    CheckOutputSimple<Decimal>(9999999990999999999LL);
+    CheckOutputSimple<Decimal>(10000000000000000000LL);
+    CheckOutputSimple<Decimal>(10000000000000000001LL);
+    CheckOutputSimple<Decimal>(10000000050000000000LL);
+    CheckOutputSimple<Decimal>(INT64_MAX);
+
+    CheckOutputSimple<Decimal>(-1);
+    CheckOutputSimple<Decimal>(-9);
+    CheckOutputSimple<Decimal>(-10);
+    CheckOutputSimple<Decimal>(-11);
+    CheckOutputSimple<Decimal>(-19);
+    CheckOutputSimple<Decimal>(-123);
+    CheckOutputSimple<Decimal>(-1234);
+    CheckOutputSimple<Decimal>(-12345);
+    CheckOutputSimple<Decimal>(-123456);
+    CheckOutputSimple<Decimal>(-1234567);
+    CheckOutputSimple<Decimal>(-12345678);
+    CheckOutputSimple<Decimal>(-123456789);
+    CheckOutputSimple<Decimal>(-1234567890);
+    CheckOutputSimple<Decimal>(-12345678909);
+    CheckOutputSimple<Decimal>(-123456789098);
+    CheckOutputSimple<Decimal>(-1234567890987);
+    CheckOutputSimple<Decimal>(-12345678909876);
+    CheckOutputSimple<Decimal>(-123456789098765);
+    CheckOutputSimple<Decimal>(-1234567890987654);
+    CheckOutputSimple<Decimal>(-12345678909876543);
+    CheckOutputSimple<Decimal>(-123456789098765432);
+    CheckOutputSimple<Decimal>(-1234567890987654321);
+    CheckOutputSimple<Decimal>(-9999999999999999999LL);
+    CheckOutputSimple<Decimal>(-9999999990999999999LL);
+    CheckOutputSimple<Decimal>(-10000000000000000000LL);
+    CheckOutputSimple<Decimal>(-10000000000000000001LL);
+    CheckOutputSimple<Decimal>(-10000000050000000000LL);
+    CheckOutputSimple<Decimal>(INT64_MIN);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
