@@ -17,7 +17,11 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -28,6 +32,7 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractQuerySelfTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -50,7 +55,7 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
     /**
      * Tests stopping two-step long query.
      */
-    public void testRemoteLongQueryStop() throws Exception {
+    public void testRemoteQueryExecutionStop() throws Exception {
         try(Ignite client = startGrid("client")) {
 
             int keyCnt = 10_000;
@@ -74,7 +79,8 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
 
             // Trigger remote execution.
             try {
-                qry.iterator().next();
+                qry.iterator();
+
                 fail();
             }
             catch (CacheException ex) {
@@ -94,7 +100,7 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
     /**
      * Tests stopping two step short query.
      */
-    public void testRemoteShortQueryStop() throws Exception {
+    public void testRemoteQueryAlreadyFinishedStop() throws Exception {
         try(Ignite client = startGrid("client")) {
 
             int keyCnt = 100;
@@ -114,7 +120,9 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
 
             ignite().scheduler().runLocal(new Runnable() {
                 @Override public void run() {
+                    // Query should be finished at this point.
                     qry.close();
+
                     l.countDown();
                 }
             }, 3, TimeUnit.SECONDS);
@@ -130,6 +138,56 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
 
             // Test should complete without any exceptions.
             l.await();
+        }
+    }
+
+    /**
+     * Tests stopping two step short query.
+     */
+    public void testRemoteQueryFetchngStop() throws Exception {
+        try (Ignite client = startGrid("client")) {
+
+            int keyCnt = 1_000;
+
+            IgniteCache<Object, Object> cache = client.cache(null);
+
+            assertEquals(0, cache.localSize());
+
+            int buf = 512;
+
+            for (int i = 0; i < keyCnt; i++) {
+                char[] tmp = new char[buf];
+                Arrays.fill(tmp, ' ');
+                cache.put(i, new String(tmp));
+            }
+
+            assertEquals(0, cache.localSize(ALL));
+
+            final QueryCursor<List<?>> qry = cache.query(new SqlFieldsQuery("select a._val, b._val from String a, String b"));
+
+            ignite().scheduler().runLocal(new Runnable() {
+                @Override public void run() {
+                    qry.close();
+                }
+            }, 3, TimeUnit.SECONDS);
+
+            // Trigger remote execution.
+            try {
+                qry.iterator();
+
+                fail();
+            }
+            catch (CacheException ex) {
+                log().error("Got expected exception", ex);
+            }
+
+            // Validate everything was cleaned up.
+            ConcurrentMap<UUID, ConcurrentMap<Long, ?>> map = U.field(((IgniteH2Indexing)U.field(U.field(
+                grid(0).context(), "qryProc"), "idx")).mapQueryExecutor(), "qryRess");
+
+            assertEquals(1, map.size());
+
+            assertEquals(0, map.entrySet().iterator().next().getValue().size());
         }
     }
 }
