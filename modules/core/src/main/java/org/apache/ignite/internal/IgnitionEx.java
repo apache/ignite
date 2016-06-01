@@ -599,24 +599,29 @@ public class IgnitionEx {
      * the Grid configuration bean is ignored.
      *
      * @param springCfgPath Spring XML configuration file path or URL.
-     * @param localInstanceName Grid name that will override default.
+     * @param instanceName Grid name that will override default.
      * @return Started grid. If Spring configuration contains multiple grid instances,
      *      then the 1st found instance is returned.
      * @throws IgniteCheckedException If grid could not be started or configuration
      *      read. This exception will be thrown also if grid with given name has already
      *      been started or Spring XML configuration file is invalid.
      */
-    public static Ignite start(@Nullable String springCfgPath, @Nullable String localInstanceName) throws IgniteCheckedException {
+    public static Ignite start(@Nullable String springCfgPath, @Nullable String instanceName) throws IgniteCheckedException {
         if (springCfgPath == null) {
             IgniteConfiguration cfg = new IgniteConfiguration();
 
+<<<<<<< HEAD
             if (cfg.getInstanceName() == null && !F.isEmpty(localInstanceName))
                 cfg.setInstanceName(localInstanceName);
+=======
+            if (cfg.getInstanceName() == null && !F.isEmpty(instanceName))
+                cfg.setInstanceName(instanceName);
+>>>>>>> modified the localInstanceName to instanceName
 
             return start(cfg);
         }
         else
-            return start(springCfgPath, localInstanceName, null, null);
+            return start(springCfgPath, instanceName, null, null);
     }
 
     /**
