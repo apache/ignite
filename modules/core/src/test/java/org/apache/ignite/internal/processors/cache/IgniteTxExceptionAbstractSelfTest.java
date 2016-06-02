@@ -28,6 +28,7 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -53,7 +54,7 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 /**
  * Tests that transaction is invalidated in case of {@link IgniteTxHeuristicCheckedException}.
  */
-public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstractSelfTest {
+public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstractSelfTest
     /** */
     private static final int PRIMARY = 0;
 
