@@ -44,6 +44,8 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.transactions.TransactionState.PREPARED;
+
 /**
  * Future verifying that all remote transactions related to transaction were prepared or committed.
  */
@@ -531,11 +533,13 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
                 log.debug("Transaction node left grid (will ignore) [fut=" + this + ']');
 
             if (nearTxCheck) {
-                Set<UUID> failedNodeIds0 = new HashSet<>(failedNodeIds);
-                failedNodeIds0.add(nodeId);
+                if (tx.state() == PREPARED) {
+                    Set<UUID> failedNodeIds0 = new HashSet<>(failedNodeIds);
+                    failedNodeIds0.add(nodeId);
 
-                // Near and originating nodes left, need initiate tx check.
-                cctx.tm().commitIfPrepared(tx, failedNodeIds0);
+                    // Near and originating nodes left, need initiate tx check.
+                    cctx.tm().commitIfPrepared(tx, failedNodeIds0);
+                }
 
                 onDone(new ClusterTopologyCheckedException("Transaction node left grid (will ignore)."));
             }

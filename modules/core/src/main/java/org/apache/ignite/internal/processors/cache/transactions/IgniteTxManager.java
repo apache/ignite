@@ -1719,73 +1719,56 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         @Nullable GridFutureAdapter<Boolean> fut,
         @Nullable Collection<GridCacheVersion> processedVers)
     {
-        for (final IgniteInternalTx tx : txs()) {
-            if (nearVer.equals(tx.nearXidVersion())) {
-                IgniteInternalFuture<?> prepFut = tx.currentPrepareFuture();
+        long start = U.currentTimeMillis();
 
-                if (prepFut != null && !prepFut.isDone()) {
-                    if (log.isDebugEnabled())
-                        log.debug("Transaction is preparing (will wait): " + tx);
+        try {
+            for (final IgniteInternalTx tx : txs()) {
+                if (nearVer.equals(tx.nearXidVersion())) {
+                    IgniteInternalFuture<?> prepFut = tx.currentPrepareFuture();
 
-                    final GridFutureAdapter<Boolean> fut0 = fut != null ? fut : new GridFutureAdapter<Boolean>();
-
-                    final int txNum0 = txNum;
-
-                    final Collection<GridCacheVersion> processedVers0 = processedVers;
-
-                    prepFut.listen(new CI1<IgniteInternalFuture<?>>() {
-                        @Override public void apply(IgniteInternalFuture<?> prepFut) {
-                            if (log.isDebugEnabled())
-                                log.debug("Transaction prepare future finished: " + tx);
-
-                            IgniteInternalFuture<Boolean> fut = txsPreparedOrCommitted(nearVer,
-                                txNum0,
-                                fut0,
-                                processedVers0);
-
-                            assert fut == fut0;
-                        }
-                    });
-
-                    return fut0;
-                }
-
-                TransactionState state = tx.state();
-
-                if (state == PREPARED || state == COMMITTING || state == COMMITTED) {
-                    if (--txNum == 0) {
-                        if (fut != null)
-                            fut.onDone(true);
-
-                        return fut;
-                    }
-                }
-                else {
-                    if (tx.state(MARKED_ROLLBACK) || tx.state() == UNKNOWN) {
-                        tx.rollbackAsync();
-
+                    if (prepFut != null && !prepFut.isDone()) {
                         if (log.isDebugEnabled())
-                            log.debug("Transaction was not prepared (rolled back): " + tx);
+                            log.debug("Transaction is preparing (will wait): " + tx);
 
-                        if (fut == null)
-                            fut = new GridFutureAdapter<>();
+                        final GridFutureAdapter<Boolean> fut0 = fut != null ? fut : new GridFutureAdapter<Boolean>();
 
-                        fut.onDone(false);
+                        final int txNum0 = txNum;
 
-                        return fut;
+                        final Collection<GridCacheVersion> processedVers0 = processedVers;
+
+                        prepFut.listen(new CI1<IgniteInternalFuture<?>>() {
+                            @Override public void apply(IgniteInternalFuture<?> prepFut) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Transaction prepare future finished: " + tx);
+
+                                IgniteInternalFuture<Boolean> fut = txsPreparedOrCommitted(nearVer,
+                                    txNum0,
+                                    fut0,
+                                    processedVers0);
+
+                                assert fut == fut0;
+                            }
+                        });
+
+                        return fut0;
+                    }
+
+                    TransactionState state = tx.state();
+
+                    if (state == PREPARED || state == COMMITTING || state == COMMITTED) {
+                        if (--txNum == 0) {
+                            if (fut != null)
+                                fut.onDone(true);
+
+                            return fut;
+                        }
                     }
                     else {
-                        if (tx.state() == COMMITTED) {
-                            if (--txNum == 0) {
-                                if (fut != null)
-                                    fut.onDone(true);
+                        if (tx.state(MARKED_ROLLBACK) || tx.state() == UNKNOWN) {
+                            tx.rollbackAsync();
 
-                                return fut;
-                            }
-                        }
-                        else {
                             if (log.isDebugEnabled())
-                                log.debug("Transaction is not prepared: " + tx);
+                                log.debug("Transaction was not prepared (rolled back): " + tx);
 
                             if (fut == null)
                                 fut = new GridFutureAdapter<>();
@@ -1794,47 +1777,77 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
                             return fut;
                         }
+                        else {
+                            if (tx.state() == COMMITTED) {
+                                if (--txNum == 0) {
+                                    if (fut != null)
+                                        fut.onDone(true);
+
+                                    return fut;
+                                }
+                            }
+                            else {
+                                if (log.isDebugEnabled())
+                                    log.debug("Transaction is not prepared: " + tx);
+
+                                if (fut == null)
+                                    fut = new GridFutureAdapter<>();
+
+                                fut.onDone(false);
+
+                                return fut;
+                            }
+                        }
                     }
-                }
 
-                if (processedVers == null)
-                    processedVers = new HashSet<>(txNum, 1.0f);
+                    if (processedVers == null)
+                        processedVers = new HashSet<>(txNum, 1.0f);
 
-                processedVers.add(tx.xidVersion());
-            }
-        }
-
-        // Not all transactions were found. Need to scan committed versions to check
-        // if transaction was already committed.
-        for (Map.Entry<GridCacheVersion, Boolean> e : completedVersHashMap.entrySet()) {
-            if (!e.getValue())
-                continue;
-
-            GridCacheVersion ver = e.getKey();
-
-            if (processedVers != null && processedVers.contains(ver))
-                continue;
-
-            if (ver instanceof CommittedVersion) {
-                CommittedVersion commitVer = (CommittedVersion)ver;
-
-                if (commitVer.nearVer.equals(nearVer)) {
-                    if (--txNum == 0) {
-                        if (fut != null)
-                            fut.onDone(true);
-
-                        return fut;
-                    }
+                    processedVers.add(tx.xidVersion());
                 }
             }
+
+            // Not all transactions were found. Need to scan committed versions to check
+            // if transaction was already committed.
+            for (Map.Entry<GridCacheVersion, Boolean> e : completedVersHashMap.entrySet()) {
+                if (!e.getValue())
+                    continue;
+
+                GridCacheVersion ver = e.getKey();
+
+                if (processedVers != null && processedVers.contains(ver))
+                    continue;
+
+                if (ver instanceof CommittedVersion) {
+                    CommittedVersion commitVer = (CommittedVersion)ver;
+
+                    if (commitVer.nearVer.equals(nearVer)) {
+                        if (--txNum == 0) {
+                            if (fut != null)
+                                fut.onDone(true);
+
+                            return fut;
+                        }
+                    }
+                }
+            }
+
+            if (fut == null)
+                fut = new GridFutureAdapter<>();
+
+            fut.onDone(false);
+
+            return fut;
         }
+        finally {
+            long time = U.currentTimeMillis() - start;
 
-        if (fut == null)
-            fut = new GridFutureAdapter<>();
-
-        fut.onDone(false);
-
-        return fut;
+            if (time > 200) {
+                U.warn(log, "Slow txsPreparedOrCommitted [time=" + time +
+                    ", nearVer=" + nearVer +
+                    ", processedVers=" + processedVers + ']');
+            }
+        }
     }
 
     /**
