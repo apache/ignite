@@ -20,10 +20,11 @@ namespace Apache.Ignite.EntityFramework
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Transactions;
     using EFCache;
 
     /// <summary>
@@ -31,27 +32,15 @@ namespace Apache.Ignite.EntityFramework
     /// </summary>
     public class IgniteEntityFrameworkCache : ICache
     {
-        /** Value field name. */
-        private const string ValueField = "value";
-        
-        /** Entity sets field name. */
-        private const string EntitySetsField = "entitySets";
-
-        /** Binary type name. */
-        private const string CacheEntryTypeName = "IgniteEntityFrameworkCacheEntry";
-
         /** Max number of cached expiry caches. */
         private const int MaxExpiryCaches = 1000;
 
         /** Cache. */
-        private readonly ICache<string, IBinaryObject> _cache;
-
-        /** Binary API. */
-        private readonly IBinary _binary;
+        private readonly ICache<string, object> _cache;
 
         /** Cached caches per expiry seconds. */
-        private volatile Dictionary<double, ICache<string, IBinaryObject>> _expiryCaches =
-            new Dictionary<double, ICache<string, IBinaryObject>>();
+        private volatile Dictionary<double, ICache<string, object>> _expiryCaches =
+            new Dictionary<double, ICache<string, object>>();
 
         /** Sync object. */
         private readonly object _syncRoot = new object();
@@ -63,24 +52,16 @@ namespace Apache.Ignite.EntityFramework
         public IgniteEntityFrameworkCache(ICache<string, object> cache)
         {
             IgniteArgumentCheck.NotNull(cache, "cache");
+            IgniteArgumentCheck.Ensure(cache.GetConfiguration().AtomicityMode == CacheAtomicityMode.Transactional,
+                "cache", GetType() + " requires Transactional cache.");
 
-            _cache = cache.WithKeepBinary<string, IBinaryObject>();
-            _binary = _cache.Ignite.GetBinary();
+            _cache = cache;
         }
 
         /** <inheritdoc /> */
         public bool GetItem(string key, out object value)
         {
-            IBinaryObject binVal;
-
-            if (!_cache.TryGet(key, out binVal))
-            {
-                value = null;
-                return false;
-            }
-
-            value = binVal.GetField<object>(ValueField);
-            return true;
+            return _cache.TryGet(key, out value);
         }
 
         /** <inheritdoc /> */
@@ -89,31 +70,77 @@ namespace Apache.Ignite.EntityFramework
         {
             var cache = GetCacheWithExpiry(slidingExpiration, absoluteExpiration);
 
-            var binVal = _binary.GetBuilder(CacheEntryTypeName)
-                .SetField(ValueField, value)
-                .SetField(EntitySetsField, dependentEntitySets.ToArray())
-                .Build();
+            //var binVal = _binary.GetBuilder(CacheEntryTypeName)
+            //    .SetField(ValueField, value)
+            //    .SetField(EntitySetsField, dependentEntitySets.ToArray())
+            //    .Build();
 
-            cache.Put(key, binVal);
+            using (var tx = TxStart())
+            {
+                // Put the value
+                cache.Put(key, value);
+
+                // Update the entitySet -> key[] mapping
+                foreach (var entitySet in dependentEntitySets)
+                {
+                    object existingKeys;
+                    if (cache.TryGet(entitySet, out existingKeys))
+                    {
+                        // Existing entity set mapping - append new dependent key
+                        var keysArr = (object[]) existingKeys;
+                        var keys = new string[keysArr.Length + 1];
+                        keys[0] = key;
+                        Array.Copy(keysArr, 0, keys, 1, keysArr.Length);
+                        cache.Put(entitySet, keys);
+                    }
+                    else
+                    {
+                        cache.Put(entitySet, new[] {key});
+                    }
+                }
+
+                tx.Commit();
+            }
+        }
+
+        private ITransaction TxStart()
+        {
+            return _cache.Ignite.GetTransactions()
+                .TxStart(TransactionConcurrency.Optimistic, TransactionIsolation.RepeatableRead);
         }
 
         /** <inheritdoc /> */
         public void InvalidateSets(IEnumerable<string> entitySets)
         {
-            var invalidSets = new HashSet<string>(entitySets);
+            //var invalidSets = new HashSet<string>(entitySets);
 
             // TODO: IGNITE-2546 or IGNITE-3222
             // TODO: ScanQuery, Compute, or even Java implementation?
             // TODO: Or store entity set<->keys mapping separately?
-            foreach (var entry in _cache)
-            {
-                var cachedSets = entry.Value.GetField<string[]>(EntitySetsField);
+            //foreach (var entry in _cache)
+            //{
+            //    var cachedSets = entry.Value.GetField<string[]>(EntitySetsField);
 
-                foreach (var cachedSet in cachedSets)
+            //    foreach (var cachedSet in cachedSets)
+            //    {
+            //        if (invalidSets.Contains(cachedSet))
+            //            _cache.Remove(entry.Key);
+            //    }
+            //}
+
+            using (var tx = TxStart())
+            {
+                var sets = _cache.GetAll(entitySets);
+
+                foreach (var dependentKeys in sets)
                 {
-                    if (invalidSets.Contains(cachedSet))
-                        _cache.Remove(entry.Key);
+                    // TODO: OfType? Wtf?
+                    _cache.RemoveAll(((object[]) dependentKeys.Value).OfType<string>());
                 }
+
+                _cache.RemoveAll(sets.Keys);
+
+                tx.Commit();
             }
         }
 
@@ -128,7 +155,7 @@ namespace Apache.Ignite.EntityFramework
         /// </summary>
         /// <returns>Cache with expiry policy.</returns>
         // ReSharper disable once UnusedParameter.Local
-        private ICache<string, IBinaryObject> GetCacheWithExpiry(TimeSpan slidingExpiration, 
+        private ICache<string, object> GetCacheWithExpiry(TimeSpan slidingExpiration, 
             DateTimeOffset absoluteExpiration)
         {
             if (slidingExpiration != TimeSpan.MaxValue)
@@ -144,7 +171,7 @@ namespace Apache.Ignite.EntityFramework
             // Round up to 0.1 of a second so that we share expiry caches
             var expirySeconds = GetSeconds(absoluteExpiration);
 
-            ICache<string, IBinaryObject> expiryCache;
+            ICache<string, object> expiryCache;
 
             if (_expiryCaches.TryGetValue(expirySeconds, out expiryCache))
                 return expiryCache;
@@ -156,8 +183,8 @@ namespace Apache.Ignite.EntityFramework
 
                 // Copy on write with size limit
                 _expiryCaches = _expiryCaches.Count > MaxExpiryCaches
-                    ? new Dictionary<double, ICache<string, IBinaryObject>>()
-                    : new Dictionary<double, ICache<string, IBinaryObject>>(_expiryCaches);
+                    ? new Dictionary<double, ICache<string, object>>()
+                    : new Dictionary<double, ICache<string, object>>(_expiryCaches);
 
                 expiryCache =
                     _cache.WithExpiryPolicy(GetExpiryPolicy(expirySeconds));

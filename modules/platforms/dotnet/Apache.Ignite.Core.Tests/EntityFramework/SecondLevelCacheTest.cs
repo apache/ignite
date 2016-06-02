@@ -173,7 +173,10 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
         private static ICache CreateEfCache()
         {
             var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
-            var cache = ignite.CreateCache<string, object>("efCache");
+            var cache = ignite.CreateCache<string, object>(new CacheConfiguration("efCache")
+            {
+                AtomicityMode = CacheAtomicityMode.Transactional
+            });
 
             return new IgniteEntityFrameworkCache(cache);
         }
