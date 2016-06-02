@@ -73,11 +73,6 @@ namespace Apache.Ignite.EntityFramework
         {
             var cache = GetCacheWithExpiry(slidingExpiration, absoluteExpiration);
 
-            //var binVal = _binary.GetBuilder(CacheEntryTypeName)
-            //    .SetField(ValueField, value)
-            //    .SetField(EntitySetsField, dependentEntitySets.ToArray())
-            //    .Build();
-
             using (var tx = TxStart())
             {
                 // Put the value
@@ -115,22 +110,6 @@ namespace Apache.Ignite.EntityFramework
         /** <inheritdoc /> */
         public void InvalidateSets(IEnumerable<string> entitySets)
         {
-            //var invalidSets = new HashSet<string>(entitySets);
-
-            // TODO: IGNITE-2546 or IGNITE-3222
-            // TODO: ScanQuery, Compute, or even Java implementation?
-            // TODO: Or store entity set<->keys mapping separately?
-            //foreach (var entry in _cache)
-            //{
-            //    var cachedSets = entry.Value.GetField<string[]>(EntitySetsField);
-
-            //    foreach (var cachedSet in cachedSets)
-            //    {
-            //        if (invalidSets.Contains(cachedSet))
-            //            _cache.Remove(entry.Key);
-            //    }
-            //}
-
             using (var tx = TxStart())
             {
                 var sets = _cache.GetAll(entitySets);
