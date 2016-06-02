@@ -288,7 +288,7 @@ consoleModule.controller('cachesController', [
             if (item.memoryMode === 'OFFHEAP_VALUES' && !_.isEmpty(item.domains))
                 return showPopoverMessage($scope.ui, 'memory', 'memoryMode', 'Query indexing could not be enabled while values are stored off-heap!');
 
-            if (item.memoryMode === 'OFFHEAP_TIERED' && !$common.isDefined(item.offHeapMaxMemory))
+            if (item.memoryMode === 'OFFHEAP_TIERED' && (!$common.isDefined(item.offHeapMaxMemory) || item.offHeapMaxMemory < 0))
                 return showPopoverMessage($scope.ui, 'memory', 'offHeapMaxMemory', 'Off-heap max memory should be specified!');
 
             const cacheStoreFactorySelected = item.cacheStoreFactory && item.cacheStoreFactory.kind;
@@ -297,36 +297,17 @@ consoleModule.controller('cachesController', [
                 const storeFactory = item.cacheStoreFactory[item.cacheStoreFactory.kind];
 
                 if (item.cacheStoreFactory.kind === 'CacheJdbcPojoStoreFactory') {
-                    if ($common.isEmptyString(storeFactory.dataSourceBean))
-                        return showPopoverMessage($scope.ui, 'store', 'dataSourceBean', 'Data source bean name should not be empty!');
-
-                    if (!$common.isValidJavaIdentifier('Data source bean', storeFactory.dataSourceBean, 'dataSourceBean', $scope.ui, 'store'))
+                    if (!$common.isValidJavaIdentifier('Data source bean', storeFactory.dataSourceBean, 'pojoDataSourceBean', $scope.ui, 'store'))
                         return false;
-
-                    if (!storeFactory.dialect)
-                        return showPopoverMessage($scope.ui, 'store', 'pojoDialect', 'Dialect should not be empty!');
 
                     if (!checkDataSources())
                         return false;
                 }
 
                 if (item.cacheStoreFactory.kind === 'CacheJdbcBlobStoreFactory') {
-                    if (storeFactory.connectVia === 'URL') {
-                        if ($common.isEmptyString(storeFactory.connectionUrl))
-                            return showPopoverMessage($scope.ui, 'store', 'connectionUrl', 'Connection URL should not be empty!');
-
-                        if ($common.isEmptyString(storeFactory.user))
-                            return showPopoverMessage($scope.ui, 'store', 'user', 'User should not be empty!');
-                    }
-                    else {
-                        if ($common.isEmptyString(storeFactory.dataSourceBean))
-                            return showPopoverMessage($scope.ui, 'store', 'dataSourceBean', 'Data source bean name should not be empty!');
-
-                        if (!$common.isValidJavaIdentifier('Data source bean', storeFactory.dataSourceBean, 'dataSourceBean', $scope.ui, 'store'))
+                    if (storeFactory.connectVia !== 'URL') {
+                        if (!$common.isValidJavaIdentifier('Data source bean', storeFactory.dataSourceBean, 'blobDataSourceBean', $scope.ui, 'store'))
                             return false;
-
-                        if (!storeFactory.dialect)
-                            return showPopoverMessage($scope.ui, 'store', 'blobDialect', 'Database should not be empty!');
 
                         if (!checkDataSources())
                             return false;
@@ -347,9 +328,6 @@ consoleModule.controller('cachesController', [
 
             if (item.writeBehindFlushSize === 0 && item.writeBehindFlushFrequency === 0)
                 return showPopoverMessage($scope.ui, 'store', 'writeBehindFlushSize', 'Both "Flush frequency" and "Flush size" are not allowed as 0!');
-
-            if (item.cacheMode !== 'LOCAL' && item.rebalanceMode !== 'NONE' && item.rebalanceBatchSize === 0)
-                return showPopoverMessage($scope.ui, 'rebalance', 'rebalanceBatchSize', 'Batch size should be more than 0 if rebalance mode is "SYNC" or "ASYNC" !', 10000);
 
             return true;
         }

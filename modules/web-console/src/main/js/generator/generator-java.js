@@ -325,7 +325,7 @@ $generatorJava.multiparamProperty = function(res, varName, obj, propName, dataTy
         res.startBlock(varName + '.' + $generatorJava.setterName(propName, setterName) + '(');
 
         _.forEach(val, function(v, ix) {
-            res.append($generatorJava.toJavaCode(v, dataType) + (ix < val.length - 1 ? ', ' : ''));
+            res.append($generatorJava.toJavaCode(dataType === 'class' ? res.importClass(v) : v, dataType) + (ix < val.length - 1 ? ', ' : ''));
         });
 
         res.endBlock(');');
