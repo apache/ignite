@@ -399,14 +399,20 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
     }
 
     /** {@inheritDoc} */
-    @Override public boolean onNodeLeft(UUID nodeId) {
-        for (IgniteInternalFuture<?> fut : futures())
+    @Override public boolean onNodeLeft(final UUID nodeId) {
+        for (IgniteInternalFuture<?> fut : futures()) {
             if (isMini(fut)) {
-                MiniFuture f = (MiniFuture)fut;
+                final MiniFuture f = (MiniFuture) fut;
 
-                if (f.nodeId().equals(nodeId))
-                    f.onNodeLeft(nodeId);
+                if (f.nodeId().equals(nodeId)) {
+                    cctx.kernalContext().closure().runLocalSafe(new Runnable() {
+                        @Override public void run() {
+                            f.onNodeLeft(nodeId);
+                        }
+                    });
+                }
             }
+        }
 
         return true;
     }
