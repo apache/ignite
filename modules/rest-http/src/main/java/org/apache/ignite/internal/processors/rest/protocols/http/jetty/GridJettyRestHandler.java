@@ -74,11 +74,13 @@ import static org.apache.ignite.internal.processors.rest.GridRestResponse.STATUS
 public class GridJettyRestHandler extends AbstractHandler {
     /** JSON value processor that does not transform input object. */
     private static final JsonValueProcessor SKIP_STR_VAL_PROC = new JsonValueProcessor() {
-        @Override public Object processArrayValue(Object o, JsonConfig jsonConfig) {
+        /** {@inheritDoc} */
+        @Override public Object processArrayValue(Object o, JsonConfig jsonCfg) {
             return o;
         }
 
-        @Override public Object processObjectValue(String s, Object o, JsonConfig jsonConfig) {
+        /** {@inheritDoc} */
+        @Override public Object processObjectValue(String s, Object o, JsonConfig jsonCfg) {
             return o;
         }
     };
