@@ -504,9 +504,10 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
             cctx.database().checkpointReadLock();
 
-            switch (exchange) {
-                case ALL: {
-                    distributedExchange();
+            try {
+                switch (exchange) {
+                    case ALL: {
+                        distributedExchange();
 
                         break;
                     }
@@ -535,6 +536,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 cctx.database().checkpointReadUnlock();
             }
         }
+
         catch (IgniteInterruptedCheckedException e) {
             onDone(e);
 

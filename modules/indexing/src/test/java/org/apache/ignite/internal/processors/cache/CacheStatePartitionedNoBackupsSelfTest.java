@@ -23,6 +23,9 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 
+/**
+ *
+ */
 public class CacheStatePartitionedNoBackupsSelfTest extends CacheStateAbstractTest {
 
     /** {@inheritDoc} */
