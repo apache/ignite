@@ -34,6 +34,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.util.GridLeanMap;
 import org.apache.ignite.internal.util.future.GridCompoundIdentityFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -72,6 +73,7 @@ public class GridCacheTxRecoveryFuture extends GridCompoundIdentityFuture<Boolea
     private final Map<UUID, ClusterNode> nodes;
 
     /** ID of failed nodes started transaction. */
+    @GridToStringInclude
     private final Set<UUID> failedNodeIds;
 
     /** Transaction nodes mapping. */
