@@ -334,7 +334,8 @@ class IgniteRDD[K, V] (
     private def affinityKeyFunc(value: V, node: ClusterNode): IgniteUuid = {
         val aff = ic.ignite().affinity[IgniteUuid](cacheName)
 
-        Stream.from(1, 1000).map(_ ⇒ IgniteUuid.randomUuid()).find(node == null || aff.mapKeyToNode(_).eq(node))
+        Stream.from(1, Math.max(1000, aff.partitions() * 2))
+            .map(_ ⇒ IgniteUuid.randomUuid()).find(node == null || aff.mapKeyToNode(_).eq(node))
             .getOrElse(IgniteUuid.randomUuid())
     }
 }
