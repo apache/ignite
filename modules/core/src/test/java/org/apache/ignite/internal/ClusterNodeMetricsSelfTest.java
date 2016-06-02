@@ -19,13 +19,21 @@ package org.apache.ignite.internal;
 
 import java.io.Serializable;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import org.apache.ignite.GridTestTask;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheMemoryMode;
+import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cluster.ClusterMetrics;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.processors.task.GridInternal;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.messaging.MessagingListenActor;
@@ -52,6 +60,18 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
     /** Number of messages. */
     private static final int MSG_CNT = 3;
 
+    /** */
+    private static final int VAL_SIZE = 512 * 1024; // bytes
+
+    /** */
+    private static final int MAX_VALS_AMOUNT = 100;
+
+    /** With OFFHEAP_VALUES policy. */
+    private final String OFF_HEAP_VALUE_NAME = "offHeapValuesCfg";
+
+    /** With ONHEAP_TIERED policy. */
+    private final String ON_HEAP_TIERED_NAME = "onHeapTieredCfg";
+
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         startGrid();
@@ -75,7 +95,85 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         cfg.setCacheConfiguration();
         cfg.setMetricsUpdateFrequency(0);
 
-        return cfg;
+        CacheConfiguration<Integer, Object> offHeapValuesCfg = defaultCacheConfiguration();
+        offHeapValuesCfg.setName(OFF_HEAP_VALUE_NAME);
+        offHeapValuesCfg.setStatisticsEnabled(true);
+        offHeapValuesCfg.setMemoryMode(CacheMemoryMode.OFFHEAP_VALUES);
+        offHeapValuesCfg.setOffHeapMaxMemory(MAX_VALS_AMOUNT * VAL_SIZE);
+
+        CacheConfiguration<Integer, Object> onHeapTieredCfg = defaultCacheConfiguration();
+        onHeapTieredCfg.setName(ON_HEAP_TIERED_NAME);
+        onHeapTieredCfg.setStatisticsEnabled(true);
+        onHeapTieredCfg.setMemoryMode(CacheMemoryMode.ONHEAP_TIERED);
+        onHeapTieredCfg.setOffHeapMaxMemory(MAX_VALS_AMOUNT * VAL_SIZE);
+
+        FifoEvictionPolicy plc = new FifoEvictionPolicy();
+        plc.setMaxMemorySize(MAX_VALS_AMOUNT * VAL_SIZE);
+        plc.setMaxSize(0);
+
+        onHeapTieredCfg.setEvictionPolicy(plc);
+
+        return cfg.setCacheConfiguration(offHeapValuesCfg, onHeapTieredCfg);
+    }
+
+    /**
+     *
+     */
+    public void testAllocatedMemory() throws Exception {
+        Ignite ignite = grid();
+
+        final IgniteCache onHeapCache = ignite.getOrCreateCache(ON_HEAP_TIERED_NAME);
+        final IgniteCache offHeapCache = ignite.getOrCreateCache(OFF_HEAP_VALUE_NAME);
+
+        long prevTieredOffHeapSize = onHeapCache.metrics().getOffHeapAllocatedSize();
+        long prevValuesOffHeapSize = offHeapCache.metrics().getOffHeapAllocatedSize();
+
+        assertEquals(0, prevTieredOffHeapSize);
+        assertEquals(0, prevValuesOffHeapSize);
+
+        long prevClusterNonHeapMemoryUsed = ignite.cluster().metrics().getNonHeapMemoryUsed();
+
+        fillCache(onHeapCache, getTestTimeout());
+
+        assertTrue(onHeapCache.metrics().getOffHeapAllocatedSize() > (MAX_VALS_AMOUNT - 5) * VAL_SIZE + prevTieredOffHeapSize);
+        assertEquals(0, offHeapCache.metrics().getOffHeapAllocatedSize());
+
+        System.out.println(">> prevClusterNonHeapMemoryUsed " + prevClusterNonHeapMemoryUsed);
+        // prevClusterNonHeapMemoryUsed = 69_277_368
+        // (MAX_VALS_AMOUNT - 5) * VAL_SIZE = 49_807_360
+        // tiered.metrics().getOffHeapAllocatedSize() = 51_012_531
+
+        assertTrue((MAX_VALS_AMOUNT - 5) * VAL_SIZE + prevClusterNonHeapMemoryUsed < ignite.cluster().metrics().getNonHeapMemoryUsed());
+
+        prevClusterNonHeapMemoryUsed = ignite.cluster().metrics().getNonHeapMemoryUsed();
+        prevTieredOffHeapSize = onHeapCache.metrics().getOffHeapAllocatedSize();
+
+        fillCache(offHeapCache, getTestTimeout());
+
+        assertTrue(offHeapCache.metrics().getOffHeapAllocatedSize() > (MAX_VALS_AMOUNT - 5) * VAL_SIZE);
+        assertEquals(prevTieredOffHeapSize, onHeapCache.metrics().getOffHeapAllocatedSize());
+        assertTrue((MAX_VALS_AMOUNT - 5) * VAL_SIZE + prevClusterNonHeapMemoryUsed < ignite.cluster().metrics().getNonHeapMemoryUsed());
+    }
+
+    /** Fill cache with values. */
+    private static void fillCache(final IgniteCache<Integer, Object> cache, long timeout) throws Exception{
+        final int THREAD_COUNT = 4;
+        final byte[] val = new byte[VAL_SIZE];
+        final AtomicInteger keyStart = new AtomicInteger(0);
+
+        GridTestUtils.runMultiThreaded(new Callable<Void>() {
+            @Override public Void call() throws Exception {
+                final int start = keyStart.addAndGet(MAX_VALS_AMOUNT);
+
+                for (int i = start; i < start + MAX_VALS_AMOUNT; i++)
+                    cache.put(i, val);
+
+
+                return null;
+            }
+        }, THREAD_COUNT, "test");
+
+        IgniteUtils.sleep(2_000);
     }
 
     /**
@@ -267,7 +365,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
 
         assert metrics0.getHeapMemoryUsed() > 0;
         assert metrics0.getHeapMemoryTotal() > 0;
-        assert metrics0.getNonHeapMemoryMaximum() > 0;
+//        assert metrics0.getNonHeapMemoryMaximum() > 0;
     }
 
     /**

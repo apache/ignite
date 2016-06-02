@@ -383,9 +383,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
 
             nonHeapCommitted += m.getNonHeapMemoryCommitted();
 
-            addCacheOffHeapAllocatedSize((TcpDiscoveryNode)node);
-
-            nonHeapUsed += m.getNonHeapMemoryUsed();
+            nonHeapMemoryUsage(node);
 
             nonHeapMax = max(nonHeapMax, m.getNonHeapMemoryMaximum());
 
@@ -434,14 +432,19 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
      *
      * @param node Ignite node.
      */
-    private void addCacheOffHeapAllocatedSize(TcpDiscoveryNode node) {
-        Map<Integer, CacheMetrics> nodeCacheMetrics = node.cacheMetrics();
+    private void nonHeapMemoryUsage(ClusterNode node) {
+        if (node instanceof TcpDiscoveryNode) {
+            Map<Integer, CacheMetrics> nodeCacheMetrics = ((TcpDiscoveryNode)node).cacheMetrics();
 
-        for (Map.Entry<Integer, CacheMetrics> entry: nodeCacheMetrics.entrySet()) {
-            CacheMetrics e = entry.getValue();
-            if (e != null)
-                nonHeapUsed += e.getOffHeapAllocatedSize();
+            if (nodeCacheMetrics != null)
+                for (Map.Entry<Integer, CacheMetrics> entry: nodeCacheMetrics.entrySet()) {
+                    CacheMetrics e = entry.getValue();
+                    if (e != null)
+                        nonHeapUsed += e.getOffHeapAllocatedSize();
+                }
         }
+
+        nonHeapUsed += node.metrics().getNonHeapMemoryUsed();
     }
 
     /** {@inheritDoc} */

@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.cache.local.GridCacheAtomicLocalMet
 import org.apache.ignite.internal.processors.cache.local.GridCacheAtomicLocalMetricsSelfTest;
 import org.apache.ignite.internal.processors.cache.local.GridCacheAtomicLocalTckMetricsSelfTestImpl;
 import org.apache.ignite.internal.processors.cache.local.GridCacheLocalMetricsSelfTest;
-import org.apache.ignite.internal.processors.closure.ClusterMetricsOnCacheSelfTest;
 
 /**
  * Test suite for cache metrics.
@@ -50,7 +49,6 @@ public class IgniteCacheMetricsSelfTestSuite extends TestSuite {
         suite.addTestSuite(GridCachePartitionedMetricsSelfTest.class);
         suite.addTestSuite(GridCachePartitionedHitsAndMissesSelfTest.class);
         suite.addTestSuite(CacheLocalOffHeapAndSwapMetricsSelfTest.class);
-        suite.addTestSuite(ClusterMetricsOnCacheSelfTest.class);
 
         // Atomic cache.
         suite.addTestSuite(GridCacheAtomicLocalMetricsSelfTest.class);
