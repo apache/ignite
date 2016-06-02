@@ -1872,8 +1872,9 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * transactions were prepared (invalidates transaction if it is not fully prepared).
      *
      * @param tx Transaction.
+     * @param failedNodeIds Failed nodes IDs.
      */
-    public void commitIfPrepared(IgniteInternalTx tx) {
+    public void commitIfPrepared(IgniteInternalTx tx, Set<UUID> failedNodeIds) {
         assert tx instanceof GridDhtTxLocal || tx instanceof GridDhtTxRemote  : tx;
         assert !F.isEmpty(tx.transactionNodes()) : tx;
         assert tx.nearXidVersion() != null : tx;
@@ -1881,7 +1882,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
         GridCacheTxRecoveryFuture fut = new GridCacheTxRecoveryFuture(
             cctx,
             tx,
-            tx.originatingNodeId(),
+            failedNodeIds,
             tx.transactionNodes());
 
         cctx.mvcc().addFuture(fut, fut.futureId());
@@ -2147,7 +2148,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                         // Check prepare only if originating node ID failed. Otherwise parent node will finish this tx.
                         if (tx.originatingNodeId().equals(evtNodeId)) {
                             if (tx.state() == PREPARED)
-                                commitIfPrepared(tx);
+                                commitIfPrepared(tx, Collections.singleton(evtNodeId));
                             else {
                                 IgniteInternalFuture<?> prepFut = tx.currentPrepareFuture();
 
@@ -2155,7 +2156,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
                                     prepFut.listen(new CI1<IgniteInternalFuture<?>>() {
                                         @Override public void apply(IgniteInternalFuture<?> fut) {
                                             if (tx.state() == PREPARED)
-                                                commitIfPrepared(tx);
+                                                commitIfPrepared(tx, Collections.singleton(evtNodeId));
                                             else if (tx.setRollbackOnly())
                                                 tx.rollbackAsync();
                                         }
