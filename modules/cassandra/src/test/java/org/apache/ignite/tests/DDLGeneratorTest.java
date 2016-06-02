@@ -17,9 +17,13 @@
 
 package org.apache.ignite.tests;
 
+import java.net.URL;
 import org.apache.ignite.cache.store.cassandra.utils.DDLGenerator;
 import org.junit.Test;
 
+/**
+ * DDLGenerator test.
+ */
 import java.net.URL;
 
 /**
@@ -28,14 +32,15 @@ import java.net.URL;
 public class DDLGeneratorTest {
     @Test
     @SuppressWarnings("unchecked")
+    /** */
     public void generatorTest() {
         ClassLoader clsLdr = DDLGeneratorTest.class.getClassLoader();
 
         URL url1 = clsLdr.getResource("org/apache/ignite/tests/persistence/primitive/persistence-settings-1.xml");
-        String file1 = url1.getFile();
+        String file1 = url1.getFile(); // TODO IGNITE-1371 Possible NPE
 
         URL url2 = clsLdr.getResource("org/apache/ignite/tests/persistence/pojo/persistence-settings-3.xml");
-        String file2 = url2.getFile();
+        String file2 = url2.getFile();  // TODO IGNITE-1371 Possible NPE
 
         DDLGenerator.main(new String[]{file1, file2});
     }

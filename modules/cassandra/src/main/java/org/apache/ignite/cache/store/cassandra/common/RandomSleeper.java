@@ -17,10 +17,9 @@
 
 package org.apache.ignite.cache.store.cassandra.common;
 
+import java.util.Random;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
-
-import java.util.Random;
 
 /**
  * Provides sleep method with randomly selected sleep time from specified range and
@@ -28,16 +27,30 @@ import java.util.Random;
  *
  */
 public class RandomSleeper {
+    /** Min sleep time */
     private int min;
+
+    /** Max sleep time */
     private int max;
+
+    /** Sleep time increment */
     private int incr;
+
+    /** Logger */
     private IgniteLogger log;
+
+    /** Random instance */
     private Random random = new Random(System.currentTimeMillis());
+
+    /** Summary sleep duration */
     private int duration = 0;
+
+    /** Sleep count  */
     private int count = 0;
 
     /**
-     * Creates sleeper instance
+     * Creates sleeper instance.
+     *
      * @param min minimum sleep time (in milliseconds)
      * @param max maximum sleep time (in milliseconds)
      * @param incr time range shift increment (in milliseconds)

@@ -20,7 +20,7 @@ package org.apache.ignite.tests.load;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
-import org.apache.ignite.tests.pojos.*;
+import org.apache.ignite.tests.pojos.Person;
 
 /**
  * Implementation of {@link Generator} generating {@link Person} instance.

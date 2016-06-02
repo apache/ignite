@@ -22,7 +22,6 @@ import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
-
 import java.lang.reflect.Field;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -30,7 +29,6 @@ import java.net.URL;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ResourceBundle;
-
 import org.apache.ignite.cache.store.cassandra.bean.CassandraLifeCycleBean;
 import org.apache.ignite.cache.store.cassandra.datasource.DataSource;
 import org.apache.ignite.cache.store.cassandra.session.pool.SessionPool;
@@ -333,7 +331,7 @@ public class CassandraHelper {
     }
 
     /** */
-    public static void startEmbeddedCassandra(Logger logger) {
+    public static void startEmbeddedCassandra(Logger log) {
         ClassLoader clsLdr = CassandraHelper.class.getClassLoader();
         URL url = clsLdr.getResource(EMBEDDED_CASSANDRA_YAML);
 
@@ -343,7 +341,7 @@ public class CassandraHelper {
         try {
             Field logField = CassandraLifeCycleBean.class.getDeclaredField("log");
             logField.setAccessible(true);
-            logField.set(embeddedCassandraBean, new Log4JLogger(logger));
+            logField.set(embeddedCassandraBean, new Log4JLogger(log));
         }
         catch (Throwable e) {
             throw new RuntimeException("Failed to initialize logger for CassandraLifeCycleBean", e);
