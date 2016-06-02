@@ -249,6 +249,8 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
             if (log.isDebugEnabled())
                 log.debug("Processing node left [nodeId=" + discoEvt.eventNode().id() + "]");
 
+            long start = U.currentTimeMillis();
+
             for (GridCacheFuture<?> fut : activeFutures())
                 fut.onNodeLeft(discoEvt.eventNode().id());
 
@@ -262,6 +264,8 @@ public class GridCacheMvccManager extends GridCacheSharedManagerAdapter {
                         atomicFuts.remove(futVer, cacheFut);
                 }
             }
+
+            log.info("Node fail handle time: " + (U.currentTimeMillis() - start));
         }
     };
 
