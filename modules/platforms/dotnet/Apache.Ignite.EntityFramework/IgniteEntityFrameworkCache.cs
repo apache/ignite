@@ -35,8 +35,15 @@ namespace Apache.Ignite.EntityFramework
         /** Max number of cached expiry caches. */
         private const int MaxExpiryCaches = 1000;
 
-        /** Cache. */
+        /** Main cache: stores SQL -> QueryResult mappings. */
         private readonly ICache<string, object> _cache;
+
+        /** 
+         * Dependency cache: stores EntitySet -> SQL[] mappings. 
+         * Each query uses one or more EntitySets (SQL tables). This cache tracks which queries should be 
+         * removed from cache when specific entity set (table) gets updated.
+         */
+        private readonly ICache<string, string[]> _dependencyCache;
 
         /** Cached caches per expiry seconds. */
         private volatile Dictionary<double, ICache<string, object>> _expiryCaches =
@@ -59,6 +66,7 @@ namespace Apache.Ignite.EntityFramework
                     GetType(), CacheAtomicityMode.Transactional, cache.Name, atomicityMode));
 
             _cache = cache;
+            _dependencyCache = cache.Ignite.GetCache<string, string[]>(cache.Name);  // same cache with different types
         }
 
         /** <inheritdoc /> */
@@ -79,21 +87,19 @@ namespace Apache.Ignite.EntityFramework
                 cache.Put(key, value);
 
                 // Update the entitySet -> key[] mapping
+                // With a finite set of cached queries, we will reach a point when all dependencies are populated,
+                // so _dependencyCache won't be updated on PutItem any more.
                 foreach (var entitySet in dependentEntitySets)
                 {
-                    object existingKeys;
-                    if (cache.TryGet(entitySet, out existingKeys))
+                    string[] keys;
+
+                    if (!_dependencyCache.TryGet(entitySet, out keys))
                     {
-                        // Existing entity set mapping - append new dependent key
-                        var keysArr = (object[]) existingKeys;
-                        var keys = new string[keysArr.Length + 1];
-                        keys[0] = key;
-                        Array.Copy(keysArr, 0, keys, 1, keysArr.Length);
-                        cache.Put(entitySet, keys);
+                        _dependencyCache.Put(entitySet, new[] {key});
                     }
-                    else
+                    else if (!keys.Contains(entitySet))
                     {
-                        cache.Put(entitySet, new[] {key});
+                        _dependencyCache.Put(entitySet, Append(keys, key));
                     }
                 }
 
@@ -101,26 +107,18 @@ namespace Apache.Ignite.EntityFramework
             }
         }
 
-        private ITransaction TxStart()
-        {
-            return _cache.Ignite.GetTransactions()
-                .TxStart(TransactionConcurrency.Optimistic, TransactionIsolation.RepeatableRead);
-        }
-
         /** <inheritdoc /> */
         public void InvalidateSets(IEnumerable<string> entitySets)
         {
             using (var tx = TxStart())
             {
-                var sets = _cache.GetAll(entitySets);
+                var sets = _dependencyCache.GetAll(entitySets);
 
+                // Remove all cached queries that depend on specific entity set
                 foreach (var dependentKeys in sets)
-                {
-                    // TODO: OfType? Wtf?
-                    _cache.RemoveAll(((object[]) dependentKeys.Value).OfType<string>());
-                }
+                    _cache.RemoveAll(dependentKeys.Value);
 
-                _cache.RemoveAll(sets.Keys);
+                // Do not remove dependency information: same query always depends on same entity sets
 
                 tx.Commit();
             }
@@ -130,6 +128,28 @@ namespace Apache.Ignite.EntityFramework
         public void InvalidateItem(string key)
         {
             _cache.Remove(key);
+        }
+
+        /// <summary>
+        /// Appends element to array and returns resulting array.
+        /// </summary>
+        private static string[] Append(string[] array, string element)
+        {
+            var len = array.Length;
+            var keys = new string[len + 1];
+            Array.Copy(array, 0, keys, 0, len);
+            keys[len] = element;
+            return keys;
+        }
+
+        /// <summary>
+        /// Starts the transaction
+        /// </summary>
+        /// <returns></returns>
+        private ITransaction TxStart()
+        {
+            return _cache.Ignite.GetTransactions()
+                .TxStart(TransactionConcurrency.Optimistic, TransactionIsolation.RepeatableRead);
         }
 
         /// <summary>
