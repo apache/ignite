@@ -205,6 +205,32 @@ class GridJettyJsonConfig extends JsonConfig {
     };
 
     /**
+     * Helper class for simple to-string conversion for {@link UUID}.
+     */
+    private static JsonValueProcessor THROWABLE_PROCESSOR = new AbstractJsonValueProcessor() {
+        /** {@inheritDoc} */
+        protected Object processBean(Object bean, JsonConfig jsonCfg) {
+            if (bean == null)
+                return new JSONObject(true);
+
+            if (bean instanceof Throwable) {
+                Throwable e = (Throwable)bean;
+
+                final JSONObject ret = new JSONObject();
+
+                ret.element("message", e.getMessage(), jsonCfg);
+
+                if (e.getCause() != null)
+                    ret.element("cause", e.getCause(), jsonCfg);
+
+                return ret;
+            }
+
+            throw new UnsupportedOperationException("Serialize value to json is not supported: " + bean);
+        }
+    };
+
+    /**
      * Constructs default jetty json config.
      */
     GridJettyJsonConfig(IgniteLogger log) {
@@ -218,6 +244,7 @@ class GridJettyJsonConfig extends JsonConfig {
         registerJsonValueProcessor(Date.class, DATE_PROCESSOR);
         registerJsonValueProcessor(java.sql.Date.class, DATE_PROCESSOR);
         registerJsonValueProcessor(HashMap.class, NULL_MAP_PREPROCESSOR);
+        registerJsonValueProcessor(Throwable.class, THROWABLE_PROCESSOR);
 
         final LessNamingProcessor lessNamingProcessor = new LessNamingProcessor();
 
