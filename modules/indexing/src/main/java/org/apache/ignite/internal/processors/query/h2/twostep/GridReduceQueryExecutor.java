@@ -514,12 +514,9 @@ public class GridReduceQueryExecutor {
 
             r.rmtCancellationClo = new CI1<UUID>() {
                 @Override public void apply(final UUID nodeId) {
-                    boolean fetchedAll = true;
-                    for (GridMergeIndex idx : r.idxs)
-                        fetchedAll &= idx.fetchedAll();
-
+                    // TODO correctly detect if fetching is done.
                     // If all records are fetched do not send messages.
-                    if (fetchedAll) return;
+                    // if (fetchedAll) return;
 
                     if (nodeId == null)
                         send(finalNodes.iterator(), new GridQueryCancelRequest(qryReqId), null);

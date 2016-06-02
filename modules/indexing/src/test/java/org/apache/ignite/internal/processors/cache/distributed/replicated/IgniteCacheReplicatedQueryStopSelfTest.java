@@ -18,10 +18,8 @@
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
@@ -32,22 +30,25 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractQuerySelfTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CachePeekMode.ALL;
 
 /**
- * Tests replicated query cancellation.
+ * Tests distributed query cancellation.
  */
 public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQuerySelfTest {
+    /** {@inheritDoc} */
     @Override protected int gridCount() {
-        return 1;
+        return 3;
     }
 
+    /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return PARTITIONED;
     }
@@ -56,7 +57,7 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
      * Tests stopping two-step long query.
      */
     public void testRemoteQueryExecutionStop() throws Exception {
-        try(Ignite client = startGrid("client")) {
+        try (Ignite client = startGrid("client")) {
 
             int keyCnt = 10_000;
 
@@ -88,13 +89,10 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
                 log().error("Got expected exception", ex);
             }
 
-            // Validate everything was cleaned up.
-            ConcurrentMap<UUID, ConcurrentMap<Long, ?>> map = U.field(((IgniteH2Indexing)U.field(U.field(
-                grid(0).context(), "qryProc"), "idx")).mapQueryExecutor(), "qryRess");
+            // Give some time to clean up.
+            Thread.sleep(3000);
 
-            assertEquals(1, map.size());
-
-            assertEquals(0, map.entrySet().iterator().next().getValue().size());
+            checkCleanState();
         }
     }
 
@@ -102,7 +100,7 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
      * Tests stopping two step short query.
      */
     public void testRemoteQueryAlreadyFinishedStop() throws Exception {
-        try(Ignite client = startGrid("client")) {
+        try (Ignite client = startGrid("client")) {
 
             int keyCnt = 100;
 
@@ -139,6 +137,8 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
 
             // Test should complete without any exceptions.
             l.await();
+
+            checkCleanState();
         }
     }
 
@@ -186,9 +186,56 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
             // Give some time to clean up.
             Thread.sleep(3000);
 
+            checkCleanState();
+        }
+    }
+
+    /**
+     * Tests stopping two step short query.
+     */
+    public void testRemoteQueryReducingStop() throws Exception {
+        try (Ignite client = startGrid("client")) {
+
+            int keyCnt = 2_000;
+
+            IgniteCache<Object, Object> cache = client.cache(null);
+
+            for (int i = 0; i < keyCnt; i++)
+                cache.put(i, "val" + i);
+
+            assertEquals(0, cache.localSize(ALL));
+
+            final QueryCursor<List<?>> qry = cache.query(new SqlFieldsQuery("select a._key from String a"));
+
+            // Trigger remote execution.
+            Iterator<List<?>> iter = qry.iterator();
+
+            // For reduce part close currently does nothing.
+            qry.close();
+
+            int c = 0;
+            while (iter.hasNext()) {
+                iter.next();
+
+                c++;
+            }
+
+            assertEquals(keyCnt, c);
+
+            checkCleanState();
+        }
+    }
+
+    /**
+     *
+     */
+    private void checkCleanState() {
+        int total = gridCount();
+
+        for (int i = 0; i < total; i++) {
             // Validate everything was cleaned up.
             ConcurrentMap<UUID, ConcurrentMap<Long, ?>> map = U.field(((IgniteH2Indexing)U.field(U.field(
-                grid(0).context(), "qryProc"), "idx")).mapQueryExecutor(), "qryRess");
+                grid(i).context(), "qryProc"), "idx")).mapQueryExecutor(), "qryRess");
 
             assertEquals(1, map.size());
 
