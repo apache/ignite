@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import ace from 'ace';
+import ace from 'brace';
 
 export default ['previewPanel', ['$interval', '$timeout', ($interval, $timeout) => {
     let animation = {editor: null, stage: 0, start: 0, stop: 0};

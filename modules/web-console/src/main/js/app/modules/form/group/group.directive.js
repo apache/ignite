@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import template from './group.jade!';
+import templateUrl from './group.jade';
 
 export default ['igniteFormGroup', [() => {
     const controller = [function() { }];
@@ -71,7 +71,7 @@ export default ['igniteFormGroup', [() => {
             label: '@'
         },
         link,
-        template,
+        templateUrl,
         controller,
         controllerAs: 'group',
         replace: true,

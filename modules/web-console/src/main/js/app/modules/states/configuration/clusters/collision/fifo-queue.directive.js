@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './fifo-queue.jade!';
+import templateUrl from './fifo-queue.jade';
 
 export default ['igniteConfigurationClustersCollisionFifoQueue', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

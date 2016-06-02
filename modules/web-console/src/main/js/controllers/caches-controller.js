@@ -280,7 +280,7 @@ consoleModule.controller('cachesController', [
                     }
                 };
 
-                const msg = extractErrorMessage(errNameFull) || extractErrorMessage(errNameShort) || 'Invalid value!';
+                const msg = extractErrorMessage(errNameFull) || extractErrorMessage(errNameShort) || 'Invalid value';
 
                 return showPopoverMessage($scope.ui, firstError.$name, errNameFull, msg);
             }

@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './priority-queue.jade!';
+import templateUrl from './priority-queue.jade';
 
 export default ['igniteConfigurationClustersCollisionPriorityQueue', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

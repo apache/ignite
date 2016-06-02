@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 
-import template from './loading.jade!';
-import './loading.css!';
+import templateUrl from './loading.jade';
+import './loading.css';
 
 export default ['igniteLoading', ['$loading', '$compile', ($loading, $compile) => {
     const link = (scope, element) => {
-        const compiledTemplate = $compile(template());
+        const compiledTemplate = $compile(templateUrl());
 
         const build = () => {
             scope.position = scope.position || 'middle';

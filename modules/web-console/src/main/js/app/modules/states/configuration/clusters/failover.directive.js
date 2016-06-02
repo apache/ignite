@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './failover.jade!';
+import templateUrl from './failover.jade';
 
 export default ['igniteConfigurationClustersFailover', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

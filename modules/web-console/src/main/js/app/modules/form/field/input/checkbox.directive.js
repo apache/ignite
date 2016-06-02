@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import template from './checkbox.jade!';
+import templateUrl from './checkbox.jade';
 
 export default ['igniteFormFieldInputCheckbox', ['IgniteFormGUID', '$table', (guid, $table) => {
     const link = (scope, el, attrs, [form, label]) => {
@@ -59,7 +59,7 @@ export default ['igniteFormFieldInputCheckbox', ['IgniteFormGUID', '$table', (gu
             value: '=ngModel'
         },
         link,
-        template,
+        templateUrl,
         replace: true,
         transclude: true,
         require: ['^form', '?^igniteFormField']

@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './table.jade!';
+import templateUrl from './table.jade';
 
 export default ['igniteFormGroupTable', [() => {
     return {
         restrict: 'E',
         scope: {},
-        template,
+        templateUrl,
         replace: true,
         transclude: true,
         require: ['^form', '^igniteFormGroup']

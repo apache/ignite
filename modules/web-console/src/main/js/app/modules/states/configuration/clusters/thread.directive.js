@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './thread.jade!';
+import templateUrl from './thread.jade';
 
 export default ['igniteConfigurationClustersThread', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

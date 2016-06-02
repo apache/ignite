@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './until-elapsed.jade!';
+import templateUrl from './until-elapsed.jade';
 
 export default ['igniteConfigurationClustersGeneralDiscoveryZookeeperUntilElapsed', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

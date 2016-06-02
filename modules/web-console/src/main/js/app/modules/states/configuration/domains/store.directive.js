@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './store.jade!';
+import templateUrl from './store.jade';
 
 export default ['igniteConfigurationDomainsStore', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

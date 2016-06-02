@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import template from './ui-ace-docker.jade!';
+import templateUrl from './ui-ace-docker.jade';
 import controller from './ui-ace-docker.controller';
 
 export default ['igniteUiAceDocker', [() => {
@@ -38,7 +38,7 @@ export default ['igniteUiAceDocker', [() => {
             data: '=ngModel'
         },
         link,
-        template,
+        templateUrl,
         controller,
         controllerAs: 'ctrl',
         require: ['?^igniteUiAceTabs']

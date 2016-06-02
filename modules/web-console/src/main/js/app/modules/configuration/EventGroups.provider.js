@@ -16,7 +16,7 @@
  */
 
 // Events groups.
-import GROUPS from 'app/data/event-types.json!';
+import GROUPS from 'app/data/event-types.json';
 
 export default ['igniteEventGroups', function() {
     const groups = GROUPS;

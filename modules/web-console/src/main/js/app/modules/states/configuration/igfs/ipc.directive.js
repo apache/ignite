@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './ipc.jade!';
+import templateUrl from './ipc.jade';
 
 export default ['igniteConfigurationIgfsIpc', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './discovery.jade!';
+import templateUrl from './discovery.jade';
 
 export default ['igniteConfigurationClustersDiscovery', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

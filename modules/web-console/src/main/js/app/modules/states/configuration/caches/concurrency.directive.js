@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './concurrency.jade!';
+import templateUrl from './concurrency.jade';
 
 export default ['igniteConfigurationCachesConcurrency', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

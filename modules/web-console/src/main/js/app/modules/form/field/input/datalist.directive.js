@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import template from './datalist.jade!';
+import templateUrl from './datalist.jade';
 
 export default ['igniteFormFieldInputDatalist', ['IgniteFormGUID', '$table', (guid, $table) => {
     const link = (scope, element, attrs, [ngModel, form, label], transclude) => {
@@ -115,7 +115,7 @@ export default ['igniteFormFieldInputDatalist', ['IgniteFormGUID', '$table', (gu
             autofocus: '=igniteFormFieldInputAutofocus'
         },
         link,
-        template,
+        templateUrl,
         replace: true,
         transclude: true,
         require: ['ngModel', '^form', '?^igniteFormField']

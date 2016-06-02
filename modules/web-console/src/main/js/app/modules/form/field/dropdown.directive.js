@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import template from './dropdown.jade!';
+import templateUrl from './dropdown.jade';
 
 export default ['igniteFormFieldDropdown', ['IgniteFormGUID', '$table', (guid, $table) => {
     const controller = () => {};
@@ -74,7 +74,7 @@ export default ['igniteFormFieldDropdown', ['IgniteFormGUID', '$table', (guid, $
             multiple: '='
         },
         link,
-        template,
+        templateUrl,
         controller,
         controllerAs: 'dropdown',
         replace: true,

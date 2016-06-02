@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './log4j2.jade!';
+import templateUrl from './log4j2.jade';
 
 export default ['igniteConfigurationClustersLoggerLog4j2', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

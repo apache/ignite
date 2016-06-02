@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './collision.jade!';
+import templateUrl from './collision.jade';
 
 export default ['igniteConfigurationClustersCollision', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

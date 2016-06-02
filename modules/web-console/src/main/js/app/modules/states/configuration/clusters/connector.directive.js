@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './connector.jade!';
+import templateUrl from './connector.jade';
 
 export default ['igniteConfigurationClustersConnector', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

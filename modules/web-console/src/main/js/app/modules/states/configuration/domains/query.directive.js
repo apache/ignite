@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './query.jade!';
+import templateUrl from './query.jade';
 
 export default ['igniteConfigurationDomainsQuery', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

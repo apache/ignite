@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './metrics.jade!';
+import templateUrl from './metrics.jade';
 
 export default ['igniteConfigurationClustersMetrics', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

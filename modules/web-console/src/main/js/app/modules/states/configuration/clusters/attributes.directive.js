@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './attributes.jade!';
+import templateUrl from './attributes.jade';
 
 export default ['igniteConfigurationUserAttributes', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

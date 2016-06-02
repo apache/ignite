@@ -17,7 +17,7 @@
 
 import angular from 'angular';
 
-import DEMO_INFO from 'app/data/demo-info.json!';
+import DEMO_INFO from 'app/data/demo-info.json';
 
 angular
 .module('ignite-console.demo', [

@@ -16,12 +16,12 @@
  */
 
 // Java built-in class names.
-import JAVA_CLASSES from 'app/data/java-classes.json!';
+import JAVA_CLASSES from 'app/data/java-classes.json';
 
 // Java build-in primitive.
-import JAVA_PRIMITIVES from 'app/data/java-primitives.json!';
+import JAVA_PRIMITIVES from 'app/data/java-primitives.json';
 
-import JAVA_KEYWORDS from 'app/data/java-keywords.json!';
+import JAVA_KEYWORDS from 'app/data/java-keywords.json';
 
 export default ['JavaTypes', function() {
     return {
