@@ -546,7 +546,7 @@ namespace ignite
         if (mag.GetSize() != other.mag.GetSize())
             return mag.GetSize() > other.mag.GetSize() ? mgt : -mgt;
 
-        for (int32_t i = mag.GetSize() - 1; i >= 0; ++i)
+        for (int32_t i = mag.GetSize() - 1; i >= 0; --i)
         {
             if (mag[i] == other.mag[i])
                 continue;
