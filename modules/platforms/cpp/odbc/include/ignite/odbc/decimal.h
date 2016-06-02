@@ -69,6 +69,22 @@ namespace ignite
         Decimal(int64_t val);
 
         /**
+         * Integer constructor with scale.
+         *
+         * @param val Integer value.
+         * @param scale Scale.
+         */
+        Decimal(int64_t val, int32_t scale);
+
+        /**
+         * BigInteger constructor with scale.
+         *
+         * @param val BigInteger value.
+         * @param scale Scale.
+         */
+        Decimal(const BigInteger& val, int32_t scale);
+
+        /**
          * Destructor.
          */
         ~Decimal();

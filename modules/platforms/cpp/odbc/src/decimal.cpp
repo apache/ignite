@@ -52,6 +52,20 @@ namespace ignite
         // No-op.
     }
 
+    Decimal::Decimal(int64_t val, int32_t scale) :
+        scale(scale),
+        magnitude(val)
+    {
+        // No-op.
+    }
+
+    Decimal::Decimal(const BigInteger& val, int32_t scale) :
+        scale(scale),
+        magnitude(val)
+    {
+        // No-op.
+    }
+
     Decimal::~Decimal()
     {
         // No-op.
@@ -104,7 +118,7 @@ namespace ignite
         if (scale == newScale)
             return;
 
-        int32_t diff = newScale - scale;
+        int32_t diff = scale - newScale;
 
         BigInteger adjustment;
 

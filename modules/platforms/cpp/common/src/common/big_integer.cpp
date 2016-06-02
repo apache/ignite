@@ -368,7 +368,14 @@ namespace ignite
      */
     void ShiftLeft(const uint32_t* in, int32_t len, uint32_t* out, unsigned n)
     {
-        assert(n <= 32);
+        assert(n < 32);
+
+        if (n == 0)
+        {
+            std::copy(in, in + len, out);
+
+            return;
+        }
 
         for (int32_t i = len - 1; i > 0; --i)
             out[i] = (in[i] << n) | (in[i - 1] >> (32 - n));
@@ -387,10 +394,17 @@ namespace ignite
      */
     void ShiftRight(const uint32_t* in, int32_t len, uint32_t* out, unsigned n)
     {
-        assert(n <= 32);
+        assert(n < 32);
+
+        if (n == 0)
+        {
+            std::copy(in, in + len, out);
+
+            return;
+        }
 
         for (int32_t i = 0; i < len - 1; ++i)
-            out[i] = (in[i] >> n) | (in[i - 1] << (32 - n));
+            out[i] = (in[i] >> n) | (in[i + 1] << (32 - n));
 
         out[len - 1] = in[len - 1] >> n;
     }
@@ -411,7 +425,7 @@ namespace ignite
         for (int32_t i = 0; i < alen; ++i)
         {
             uint64_t product = a[i] * static_cast<uint64_t>(x);
-            int64_t difference = q[i] - carry - product;
+            int64_t difference = q[i] - carry - (product & 0xFFFFFFFF);
 
             q[i] = static_cast<uint32_t>(difference);
 
@@ -447,6 +461,29 @@ namespace ignite
         return static_cast<uint32_t>(carry);
     }
 
+    /**
+     * Add single number to a magnitude array and return carry.
+     *
+     * @param res First addend. Result is placed here. Length of this addend
+     *     should be equal or greater than len.
+     * @param len Length of the First addend.
+     * @param addend Second addend.
+     * @return Carry.
+     */
+    uint32_t Add(uint32_t* res, int32_t len, uint32_t addend)
+    {
+        uint64_t carry = 0;
+
+        for (int32_t i = 0; (i < len) && carry; ++i)
+        {
+            uint64_t sum = static_cast<uint64_t>(res[i]) + carry;
+            res[i] = static_cast<uint32_t>(sum);
+            carry = sum >> 32;
+        }
+
+        return static_cast<uint32_t>(carry);
+    }
+
     void BigInteger::Divide(const BigInteger& divisor, BigInteger& res) const
     {
         Divide(divisor, res, 0);
@@ -468,24 +505,13 @@ namespace ignite
 
         mag.Reserve(mag.GetSize() + 1);
 
-        uint64_t carry = 0;
-
-        for (int32_t i = 0; i < len; ++i)
-        {
-            uint64_t sum = static_cast<uint64_t>(mag[i]) + addend[i] + carry;
-            mag[i] = static_cast<uint32_t>(sum);
-            carry = sum >> 32;
-        }
-
-        for (int32_t i = len; (i < mag.GetSize()) && carry; ++i)
-        {
-            uint64_t sum = static_cast<uint64_t>(mag[i]) + carry;
-            mag[i] = static_cast<uint32_t>(sum);
-            carry = sum >> 32;
-        }
+        uint32_t carry = ignite::Add(mag.GetData(), addend, len);
 
         if (carry)
-            mag.PushBack(static_cast<uint32_t>(carry));
+            carry = ignite::Add(mag.GetData() + len, mag.GetSize() - len, carry);
+
+        if (carry)
+            mag.PushBack(carry);
     }
 
     void BigInteger::Add(uint64_t x)
@@ -589,10 +615,12 @@ namespace ignite
         // Divisor is greater than this. Result is 0 and remainder is this.
         if (compRes == -1)
         {
-            res.Assign(0LL);
-
+            // Order is important here! Copy to rem first to handle the case
+            // when &res == this.
             if (rem)
                 rem->Assign(*this);
+
+            res.Assign(0LL);
 
             return;
         }
@@ -600,8 +628,9 @@ namespace ignite
         // If divisor is [-]1 result is [-]this and remainder is zero.
         if (divisor.GetBitLength() == 1)
         {
+            // Once again: order is important.
             res.Assign(*this);
-            res.sign = -res.sign;
+            res.sign = sign * divisor.sign;
 
             if (rem)
                 rem->Assign(0ULL);
@@ -663,7 +692,7 @@ namespace ignite
 
             ShiftLeft(u.GetData(), ulen, nu.GetData(), shift);
 
-            assert((u.Back() >> (32 - shift)) == 0);
+            assert((static_cast<uint64_t>(u.Back()) >> (32 - shift)) == 0);
         }
         else
         {
@@ -691,7 +720,8 @@ namespace ignite
             uint64_t rhat = base % nv[vlen - 1]; // A remainder.
 
             // Adjusting result if needed.
-            while (qhat >= UINT32_MAX || qhat * nv[vlen - 2] > UINT32_MAX * rhat + nu[i + vlen - 2])
+            while (qhat >= UINT32_MAX ||
+                  ((qhat * nv[vlen - 2]) > (UINT32_MAX * rhat + nu[i + vlen - 2])))
             {
                 --qhat;
                 rhat += nv[vlen - 1];
@@ -726,19 +756,11 @@ namespace ignite
         if (rem)
         {
             rem->sign = resSign;
+            rem->mag.Resize(vlen);
 
-            MagArray& r = rem->mag;
+            ShiftRight(nu.GetData(), rem->mag.GetSize(), rem->mag.GetData(), shift);
 
-            r.Resize(vlen);
-
-            for (int32_t i = 0; i < vlen; ++i)
-                ShiftRight(nu.GetData(), nu.GetSize(), r.GetData(), shift);
-
-            int32_t lastNonZero = r.GetSize() - 1;
-            while (lastNonZero >= 0 && r[lastNonZero] == 0)
-                --lastNonZero;
-
-            r.Resize(lastNonZero + 1);
+            rem->Normalize();
         }
     }
 
