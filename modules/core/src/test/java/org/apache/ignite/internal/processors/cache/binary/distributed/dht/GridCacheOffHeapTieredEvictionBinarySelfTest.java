@@ -29,9 +29,9 @@ import org.apache.ignite.binary.BinaryObject;
  */
 public class GridCacheOffHeapTieredEvictionBinarySelfTest extends GridCacheOffHeapTieredEvictionSelfTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
         // Enable binary.
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         BinaryConfiguration bCfg = new BinaryConfiguration();
 

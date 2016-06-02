@@ -82,9 +82,9 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /**
-     * @return Grids count to start.
+     * @return Instances count to start.
      */
-    protected abstract int gridCount();
+    protected abstract int instanceCount();
 
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
@@ -93,7 +93,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        int cnt = gridCount();
+        int cnt = instanceCount();
 
         assert cnt >= 1 : "At least one grid must be started";
 
@@ -125,7 +125,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
             fail("Cache transaction remained after test completion: " + tx);
         }
 
-        for (int i = 0; i < gridCount(); i++) {
+        for (int i = 0; i < instanceCount(); i++) {
             info("Checking grid: " + i);
 
             while (true) {

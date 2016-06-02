@@ -64,8 +64,8 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -73,7 +73,7 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setCacheConfiguration(cacheConfiguration(gridName));
+        cfg.setCacheConfiguration(cacheConfiguration(instanceName));
 
         cfg.setMarshaller(new BinaryMarshaller());
 
@@ -124,10 +124,10 @@ public class GridCacheBinaryObjectUserClassloaderSelfTest extends GridCommonAbst
     /**
      * Gets cache configuration for grid with specified name.
      *
-     * @param gridName Grid name.
+     * @param instanceName Grid name.
      * @return Cache configuration.
      */
-    CacheConfiguration cacheConfiguration(String gridName) {
+    CacheConfiguration cacheConfiguration(String instanceName) {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(REPLICATED);

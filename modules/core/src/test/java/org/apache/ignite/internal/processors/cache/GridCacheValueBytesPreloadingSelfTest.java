@@ -40,20 +40,20 @@ public class GridCacheValueBytesPreloadingSelfTest extends GridCommonAbstractTes
     private CacheMemoryMode memMode;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
-        cfg.setCacheConfiguration(cacheConfiguration(gridName));
+        cfg.setCacheConfiguration(cacheConfiguration(instanceName));
 
         return cfg;
     }
 
     /**
-     * @param gridName Grid name.
+     * @param instanceName Grid name.
      * @return Cache configuration.
      * @throws Exception If failed.
      */
-    protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+    protected CacheConfiguration cacheConfiguration(String instanceName) throws Exception {
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setCacheMode(PARTITIONED);

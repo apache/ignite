@@ -30,24 +30,24 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class GridCacheMixedModeSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
 
-        cfg.setCacheConfiguration(cacheConfiguration(gridName));
+        cfg.setCacheConfiguration(cacheConfiguration(instanceName));
 
-        if (F.eq(gridName, getTestGridName(0)))
+        if (F.eq(instanceName, getTestInstanceName(0)))
             cfg.setClientMode(true);
 
         return cfg;
     }
 
     /**
-     * @param gridName Grid name.
+     * @param instanceName Instance name.
      * @return Cache configuration.
      */
-    private CacheConfiguration cacheConfiguration(String gridName) {
+    private CacheConfiguration cacheConfiguration(String instanceName) {
         CacheConfiguration cfg = new CacheConfiguration();
 
         cfg.setCacheMode(CacheMode.PARTITIONED);

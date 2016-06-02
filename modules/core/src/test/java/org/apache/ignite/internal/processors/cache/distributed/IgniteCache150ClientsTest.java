@@ -52,8 +52,8 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
     private static final int CACHES = 10;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setLocalHost("127.0.0.1");
         cfg.setNetworkTimeout(30_000);
@@ -69,7 +69,7 @@ public class IgniteCache150ClientsTest extends GridCommonAbstractTest {
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setJoinTimeout(0);
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setMaxMissedClientHeartbeats(200);
 
-        cfg.setClientMode(!gridName.equals(getTestGridName(0)));
+        cfg.setClientMode(!instanceName.equals(getTestInstanceName(0)));
 
         CacheConfiguration[] ccfgs = new CacheConfiguration[CACHES];
 

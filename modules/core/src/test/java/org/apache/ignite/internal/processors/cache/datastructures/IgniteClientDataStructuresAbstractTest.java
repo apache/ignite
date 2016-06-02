@@ -50,10 +50,10 @@ public abstract class IgniteClientDataStructuresAbstractTest extends GridCommonA
     private static final int NODE_CNT = 4;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
-        if (gridName.equals(getTestGridName(NODE_CNT - 1))) {
+        if (instanceName.equals(getTestInstanceName(NODE_CNT - 1))) {
             cfg.setClientMode(true);
 
             if (!clientDiscovery())

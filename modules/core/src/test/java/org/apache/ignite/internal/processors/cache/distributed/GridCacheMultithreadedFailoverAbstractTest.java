@@ -381,21 +381,21 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
                         try {
                             int idx = ThreadLocalRandom.current().nextInt(1, dataNodes());
 
-                            String gridName = nodeName(idx);
+                            String instanceName = nodeName(idx);
 
                             if (stop.get())
                                 return null;
 
-                            log.info("Killing node [gridName=" + gridName + ']');
+                            log.info("Killing node [gridName=" + instanceName + ']');
 
-                            stopGrid(gridName);
+                            stopGrid(instanceName);
 
                             U.sleep(ThreadLocalRandom.current().nextLong(restartDelay().get1(), restartDelay().get2()));
 
                             if (stop.get())
                                 return null;
 
-                            log.info("Restarting node [gridName=" + gridName + ']');
+                            log.info("Restarting node [gridName=" + instanceName + ']');
 
                             G.start(configuration(idx));
                         }

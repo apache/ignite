@@ -64,8 +64,8 @@ public class IgniteCacheStartStopLoadTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        return super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        return super.getConfiguration(instanceName);
     }
 
     /** {@inheritDoc} */

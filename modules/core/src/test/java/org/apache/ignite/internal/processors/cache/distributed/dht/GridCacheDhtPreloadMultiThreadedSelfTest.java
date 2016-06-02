@@ -138,12 +138,12 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
             multithreadedAsync(
                 new Callable<Object>() {
                     @Nullable @Override public Object call() throws Exception {
-                        String gridName = "grid-" + Thread.currentThread().getName();
+                        String instanceName = "instance-" + Thread.currentThread().getName();
 
-                        startGrid(gridName, "modules/core/src/test/config/example-cache.xml");
+                        startGrid(instanceName, "modules/core/src/test/config/example-cache.xml");
 
-                        // Immediately stop the grid.
-                        stopGrid(gridName);
+                        // Immediately stop the instance.
+                        stopGrid(instanceName);
 
                         return null;
                     }
@@ -158,10 +158,10 @@ public class GridCacheDhtPreloadMultiThreadedSelfTest extends GridCommonAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
         IgniteConfiguration cfg = loadConfiguration("modules/core/src/test/config/spring-multicache.xml");
 
-        cfg.setGridName(gridName);
+        cfg.setInstanceName(instanceName);
 
         for (CacheConfiguration cCfg : cfg.getCacheConfiguration()) {
             if (cCfg.getCacheMode() == CacheMode.PARTITIONED) {

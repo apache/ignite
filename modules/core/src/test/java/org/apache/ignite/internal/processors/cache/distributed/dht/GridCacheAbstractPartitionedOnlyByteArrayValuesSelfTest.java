@@ -52,8 +52,8 @@ public abstract class GridCacheAbstractPartitionedOnlyByteArrayValuesSelfTest ex
     private static IgniteCache<Integer, Object>[] cachesAtomicOffheapTiered;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(instanceName);
 
         CacheConfiguration atomicCacheCfg = cacheConfiguration0();
 

@@ -59,8 +59,8 @@ public abstract class GridCacheValueConsistencyAbstractSelfTest extends GridCach
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cCfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String instanceName) throws Exception {
+        CacheConfiguration cCfg = super.cacheConfiguration(instanceName);
 
         cCfg.setCacheMode(PARTITIONED);
         cCfg.setAtomicityMode(atomicityMode());

@@ -33,8 +33,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public abstract class GridCacheAbstractPartitionedByteArrayValuesSelfTest extends
     GridCacheAbstractDistributedByteArrayValuesSelfTest {
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         TransactionConfiguration tCfg = new TransactionConfiguration();
 

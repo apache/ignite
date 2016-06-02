@@ -95,8 +95,8 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setPublicThreadPoolSize(RETRIES * 2);
 

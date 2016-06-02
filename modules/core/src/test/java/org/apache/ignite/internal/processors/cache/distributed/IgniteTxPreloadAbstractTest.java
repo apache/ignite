@@ -47,7 +47,7 @@ import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
  */
 public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfTest {
     /** */
-    private static final int GRID_CNT = 6;
+    private static final int INSTANCE_CNT = 6;
 
     /** */
     private static volatile boolean keyNotLoaded;
@@ -70,8 +70,8 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
     }
 
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return GRID_CNT;
+    @Override protected int instanceCount() {
+        return INSTANCE_CNT;
     }
 
     /**
@@ -95,7 +95,7 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
                     return null;
                 }
             },
-            GRID_CNT - 1,
+            INSTANCE_CNT - 1,
             "grid-starter-" + getName()
         );
 
@@ -137,7 +137,7 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
 
         fut.get();
 
-        for (int i = 0; i < GRID_CNT; i++) {
+        for (int i = 0; i < INSTANCE_CNT; i++) {
             for (String key : keys)
                 assertEquals("Unexpected value for cache " + i, (Integer)1, jcache(i).get(key));
         }
@@ -177,7 +177,7 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
 
         int expVal = 0;
 
-        for (int i = 1; i < GRID_CNT; i++) {
+        for (int i = 1; i < INSTANCE_CNT; i++) {
             assertEquals((Integer)expVal, cache0.get(TX_KEY));
 
             startGrid(i);
@@ -215,13 +215,13 @@ public abstract class IgniteTxPreloadAbstractTest extends GridCacheAbstractSelfT
             assertEquals((Integer)expVal, cache.get(TX_KEY));
         }
 
-        for (int i = 0; i < GRID_CNT; i++)
+        for (int i = 0; i < INSTANCE_CNT; i++)
             assertEquals("Unexpected value for cache " + i, (Integer)expVal, jcache(i).get(TX_KEY));
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String instanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(instanceName);
 
         cfg.setRebalanceMode(ASYNC);
         cfg.setWriteSynchronizationMode(FULL_SYNC);

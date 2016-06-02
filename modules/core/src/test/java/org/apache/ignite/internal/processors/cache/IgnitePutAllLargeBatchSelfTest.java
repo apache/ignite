@@ -53,19 +53,19 @@ public class IgnitePutAllLargeBatchSelfTest extends GridCommonAbstractTest {
     private int backups = 1;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
-        cfg.setCacheConfiguration(cacheConfiguration(gridName));
+        cfg.setCacheConfiguration(cacheConfiguration(instanceName));
 
         return cfg;
     }
 
     /**
-     * @param gridName Grid name.
+     * @param instanceName Grid name.
      * @return Test cache configuration.
      */
-    public CacheConfiguration cacheConfiguration(String gridName) {
+    public CacheConfiguration cacheConfiguration(String instanceName) {
         CacheConfiguration ccfg = defaultCacheConfiguration();
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);

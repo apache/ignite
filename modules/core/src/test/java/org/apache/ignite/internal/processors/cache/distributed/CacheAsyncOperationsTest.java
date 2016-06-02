@@ -51,12 +51,12 @@ public class CacheAsyncOperationsTest extends GridCommonAbstractTest {
     private static volatile CountDownLatch latch;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
-        if (gridName.equals(getTestGridName(1)))
+        if (instanceName.equals(getTestInstanceName(1)))
             cfg.setClientMode(true);
 
         return cfg;
