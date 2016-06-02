@@ -307,7 +307,11 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
                 }
             }
             else {
-                Collection<ClusterNode> all = ctx.discovery().allNodes();
+                Collection<ClusterNode> all;
+                if (p != null && p instanceof DaemonFilter)
+                    all = F.concat(false, ctx.discovery().daemonNodes(), ctx.discovery().allNodes());
+                else
+                    all = ctx.discovery().allNodes();
 
                 return p != null ? F.view(all, p) : all;
             }
@@ -618,26 +622,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public final ClusterGroup forDaemons() {
-        if (F.isEmpty(ids)) {
-            guard();
-
-            try {
-                Collection<ClusterNode> all = F.concat(false, ctx.discovery().daemonNodes(), ctx.discovery().allNodes());
-                Set<UUID> nodeIds = U.newHashSet(all.size());
-                DaemonFilter filter = new DaemonFilter();
-
-                for (ClusterNode node : all)
-                    if (filter.apply(node))
-                        nodeIds.add(node.id());
-
-                return new ClusterGroupAdapter(ctx, subjId, nodeIds);
-            }
-            finally {
-                unguard();
-            }
-        }
-        else
-            return forPredicate(new DaemonFilter());
+        return forPredicate(new DaemonFilter());
     }
 
     /** {@inheritDoc} */
