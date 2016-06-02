@@ -540,7 +540,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     @Override public final CacheDataStore createCacheDataStore(int p, @Nullable GridDhtLocalPartition part) throws IgniteCheckedException {
         IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
 
-        String idxName = BPlusTree.treeName(cctx.name(), cctx.cacheId(), "Cache-" + p);
+        String idxName = BPlusTree.treeName("p-" + p, cctx.cacheId(), "CacheData");
 
         // TODO: cleanup when cache/partition is destroyed.
         final RootPage rootPage = dbMgr.meta().getOrAllocateForTree(cctx.cacheId(), idxName);

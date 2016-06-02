@@ -79,7 +79,7 @@ public class MetadataStorage implements MetaStore {
 
             if (idxNameBytes.length > MAX_IDX_NAME_LEN)
                 throw new IllegalArgumentException("Too long encoded indexName [maxAllowed=" + MAX_IDX_NAME_LEN +
-                    ", currentLength=" + idxNameBytes.length + "]");
+                    ", currentLength=" + idxNameBytes.length + ", name=" + idxName + "]");
 
             final IndexItem row = tree.findOne(new IndexItem(idxNameBytes, 0, cacheId));
 
