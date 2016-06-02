@@ -156,7 +156,7 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
                 title: errorMessage(msg),
                 placement: placement ? placement : 'top-right',
                 container: container ? container : 'body',
-                duration: persistent ? false : 5
+                duration: persistent ? false : 10
             });
 
             msgModal.$scope.icon = icon ? icon : 'fa-exclamation-triangle';
