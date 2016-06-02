@@ -33,4 +33,9 @@ public class GridCachePartitionedNearDisabledFairAffinityMultiNodeFullApiSelfTes
 
         return cfg;
     }
+
+    /** {@inheritDoc} */
+    @Override protected int gridCount() {
+        return 1;
+    }
 }
