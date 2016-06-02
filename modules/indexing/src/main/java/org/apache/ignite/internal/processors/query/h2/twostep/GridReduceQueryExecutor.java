@@ -72,6 +72,8 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryRequest;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.lang.GridFilteredIterator;
+import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
@@ -451,7 +453,7 @@ public class GridReduceQueryExecutor {
      * @param keepBinary Keep binary.
      * @return Cursor.
      */
-    public Iterator<List<?>> query(long qryReqId, GridCacheContext<?,?> cctx, GridCacheTwoStepQuery qry, boolean keepBinary) {
+    public Iterator<List<?>> query(final long qryReqId, GridCacheContext<?,?> cctx, GridCacheTwoStepQuery qry, boolean keepBinary) {
         for (int attempt = 0;; attempt++) {
             if (attempt != 0) {
                 try {
@@ -464,7 +466,7 @@ public class GridReduceQueryExecutor {
                 }
             }
 
-            QueryRun r = new QueryRun();
+            final QueryRun r = new QueryRun();
 
             r.pageSize = qry.pageSize() <= 0 ? GridCacheTwoStepQuery.DFLT_PAGE_SIZE : qry.pageSize();
 
@@ -507,6 +509,30 @@ public class GridReduceQueryExecutor {
                 // Select random data node to run query on a replicated data or get EXPLAIN PLAN from a single node.
                 nodes = Collections.singleton(F.rand(nodes));
             }
+
+            final Collection<ClusterNode> finalNodes = nodes;
+
+            r.rmtCancellationClo = new CI1<UUID>() {
+                @Override public void apply(final UUID nodeId) {
+                    boolean fetchedAll = true;
+                    for (GridMergeIndex idx : r.idxs)
+                        fetchedAll &= idx.fetchedAll();
+
+                    // If all records are fetched do not send messages.
+                    if (fetchedAll) return;
+
+                    if (nodeId == null)
+                        send(finalNodes.iterator(), new GridQueryCancelRequest(qryReqId), null);
+                    else {
+                        // Do not send message to failed node.
+                        send(new GridFilteredIterator<ClusterNode>(finalNodes.iterator()) {
+                            @Override protected boolean accept(ClusterNode node) {
+                                return !node.id().equals(nodeId);
+                            }
+                        }, new GridQueryCancelRequest(qryReqId), null);
+                    }
+                }
+            };
 
             int tblIdx = 0;
 
@@ -567,7 +593,7 @@ public class GridReduceQueryExecutor {
 
                 boolean retry = false;
 
-                if (send(nodes,
+                if (send(nodes.iterator(),
                     new GridQueryRequest(qryReqId, r.pageSize, space, mapQrys, topVer, extraSpaces, null), partsMap)) {
                     awaitAllReplies(r, nodes);
 
@@ -580,12 +606,8 @@ public class GridReduceQueryExecutor {
                             if (err.getCause() instanceof IgniteClientDisconnectedException)
                                 throw err;
 
-                            if (err.getCause() instanceof GridRemoteQueryCancelledException) {
-                                // We have to explicitly cancel queries on remote nodes.
-                                send(nodes, new GridQueryCancelRequest(qryReqId), null);
-
+                            if (err.getCause() instanceof GridRemoteQueryCancelledException)
                                 throw err;
-                            }
 
                             throw new CacheException("Failed to run map query remotely.", err);
                         }
@@ -648,7 +670,7 @@ public class GridReduceQueryExecutor {
                 for (GridMergeIndex idx : r.idxs) {
                     if (!idx.fetchedAll()) {
                         // We have to explicitly cancel queries on remote nodes.
-                        send(nodes, new GridQueryCancelRequest(qryReqId), null);
+                        send(nodes.iterator(), new GridQueryCancelRequest(qryReqId), null);
 
                         break;
                     }
@@ -1045,7 +1067,7 @@ public class GridReduceQueryExecutor {
      * @return {@code true} If all messages sent successfully.
      */
     private boolean send(
-        Collection<ClusterNode> nodes,
+        Iterator<ClusterNode> nodes,
         Message msg,
         Map<ClusterNode,IntArray> partsMap
     ) {
@@ -1053,7 +1075,8 @@ public class GridReduceQueryExecutor {
 
         boolean ok = true;
 
-        for (ClusterNode node : nodes) {
+        while (nodes.hasNext()) {
+            ClusterNode node = nodes.next();
             if (node.isLocal()) {
                 locNodeFound = true;
 
@@ -1204,8 +1227,11 @@ public class GridReduceQueryExecutor {
         /** */
         private int pageSize;
 
-        /** Can be either CacheException in case of error/cancellation or AffinityTopologyVersion to retry if needed. */
+        /** Can be either CacheException in case of error or AffinityTopologyVersion to retry if needed. */
         private final AtomicReference<Object> state = new AtomicReference<>();
+
+        /** Closure for cancelling remote queries. */
+        public CI1<UUID> rmtCancellationClo;
 
         /**
          * @param o Fail state object.
@@ -1217,6 +1243,10 @@ public class GridReduceQueryExecutor {
 
             if (!state.compareAndSet(null, o))
                 return;
+
+            // Cancel other queries.
+            if (o instanceof CacheException )
+                rmtCancellationClo.apply(nodeId); // Stop active executions.
 
             while (latch.getCount() != 0) // We don't need to wait for all nodes to reply.
                 latch.countDown();
@@ -1231,6 +1261,8 @@ public class GridReduceQueryExecutor {
         void failed(CacheException e) {
             if (!state.compareAndSet(null, e))
                 return;
+
+            rmtCancellationClo.apply(null); // Stop active executions.
 
             while (latch.getCount() != 0) // We don't need to wait for all nodes to reply.
                 latch.countDown();

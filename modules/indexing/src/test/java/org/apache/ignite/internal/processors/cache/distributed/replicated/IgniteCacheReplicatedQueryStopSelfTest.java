@@ -81,6 +81,7 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
             try {
                 qry.iterator();
 
+                // Iterator should not return.
                 fail();
             }
             catch (CacheException ex) {
@@ -175,11 +176,15 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
             try {
                 qry.iterator();
 
+                // Iterator should not return.
                 fail();
             }
             catch (CacheException ex) {
                 log().error("Got expected exception", ex);
             }
+
+            // Give some time to clean up.
+            Thread.sleep(3000);
 
             // Validate everything was cleaned up.
             ConcurrentMap<UUID, ConcurrentMap<Long, ?>> map = U.field(((IgniteH2Indexing)U.field(U.field(
