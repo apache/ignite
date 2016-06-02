@@ -225,8 +225,6 @@ public abstract class HadoopMultimapBase implements HadoopMultimap {
             long newPageSize = nextPageSize(writtenSize + requestedSize);
             long newPagePtr = mem.allocate(newPageSize);
 
-            System.out.println("ALLOCATED: " + newPageSize);
-
             HadoopOffheapBuffer b = out.buffer();
 
             b.set(newPagePtr, newPageSize);
