@@ -180,6 +180,39 @@ class IgniteRDD[K, V] (
     }
 
     /**
+     * Saves values from given RDD into Ignite. A unique key will be generated for each value of the given RDD.
+     *
+     * @param rdd RDD instance to save values from.
+     * @param f Transformation function.
+     */
+    def saveValues[T](rdd: RDD[T], f: (T, IgniteContext[K, V]) ⇒ V) = {
+        rdd.foreachPartition(it ⇒ {
+            val ig = ic.ignite()
+
+            ensureCache()
+
+            val locNode = ig.cluster().localNode()
+
+            val node: Option[ClusterNode] = ig.cluster().forHost(locNode).nodes().find(!_.eq(locNode))
+
+            val streamer = ig.dataStreamer[Object, V](cacheName)
+
+            try {
+                it.foreach(t ⇒ {
+                    val value = f(t, ic)
+
+                    val key = affinityKeyFunc(value, node.orNull)
+
+                    streamer.addData(key, value)
+                })
+            }
+            finally {
+                streamer.close()
+            }
+        })
+    }
+
+    /**
      * Saves values from the given key-value RDD into Ignite.
      *
      * @param rdd RDD instance to save values from.
@@ -206,6 +239,48 @@ class IgniteRDD[K, V] (
                 streamer.close()
             }
         })
+    }
+
+    /**
+     * Saves values from the given RDD into Ignite.
+     *
+     * @param rdd RDD instance to save values from.
+     * @param f Transformation function.
+     * @param overwrite Boolean flag indicating whether the call on this method should overwrite existing
+     *      values in Ignite cache.
+     */
+    def savePairs[T](rdd: RDD[T], f: (T, IgniteContext[K, V]) ⇒ (K, V), overwrite: Boolean) = {
+        rdd.foreachPartition(it ⇒ {
+            val ig = ic.ignite()
+
+            // Make sure to deploy the cache
+            ensureCache()
+
+            val streamer = ig.dataStreamer[K, V](cacheName)
+
+            try {
+                streamer.allowOverwrite(overwrite)
+
+                it.foreach(t ⇒ {
+                    val tup = f(t, ic)
+
+                    streamer.addData(tup._1, tup._2)
+                })
+            }
+            finally {
+                streamer.close()
+            }
+        })
+    }
+
+    /**
+     * Saves values from the given RDD into Ignite.
+     *
+     * @param rdd RDD instance to save values from.
+     * @param f Transformation function.
+     */
+    def savePairs[T](rdd: RDD[T], f: (T, IgniteContext[K, V]) ⇒ (K, V)): Unit = {
+        savePairs(rdd, f, overwrite = false)
     }
 
     /**
