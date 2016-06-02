@@ -1004,9 +1004,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /** {@inheritDoc} */
     @Override public Set<Cache.Entry<K, V>> entrySetx(final CacheEntryPredicate... filter) {
-        CacheOperationContext opCtx = ctx.operationContextPerCall();
-
-        boolean keepBinary = opCtx != null && opCtx.isKeepBinary();
+        boolean keepBinary = ctx.keepBinary();
 
         return new EntrySet(map.entrySet(filter), keepBinary);
     }
