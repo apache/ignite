@@ -162,8 +162,6 @@ namespace ignite
 
             converter << val;
             converter >> res;
-
-            return res;
         }
 
         /**

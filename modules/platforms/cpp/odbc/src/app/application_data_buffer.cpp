@@ -1280,8 +1280,7 @@ namespace ignite
                     case IGNITE_ODBC_C_TYPE_FLOAT:
                     case IGNITE_ODBC_C_TYPE_DOUBLE:
                     {
-                        //TODO: Replace 0 with user-specified scale.
-                        val.Assign(GetNum<double>(), 0);
+                        val.Assign(GetNum<double>());
 
                         break;
                     }

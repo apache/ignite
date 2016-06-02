@@ -91,9 +91,7 @@ namespace ignite
 
     double Decimal::ToDouble() const
     {
-        // TODO
-
-        return 0.0;
+        return common::LexicalCast<double>(*this);
     }
 
     int64_t Decimal::ToInt64() const
@@ -175,9 +173,9 @@ namespace ignite
         scale = 0;
     }
 
-    void Decimal::Assign(double val, int32_t scale)
+    void Decimal::Assign(double val)
     {
-        // TODO.
+        common::LexicalCast(val, *this);
     }
 }
 

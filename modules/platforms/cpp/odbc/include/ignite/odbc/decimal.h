@@ -184,7 +184,7 @@ namespace ignite
          *
          * @param val Value to assign.
          */
-        void Assign(double val, int32_t scale);
+        void Assign(double val);
 
         /**
          * Output operator.

@@ -282,6 +282,7 @@ BOOST_AUTO_TEST_CASE(TestMultiplyDivideSimple)
 BOOST_AUTO_TEST_CASE(TestDivideBigger)
 {
     BigInteger bigInt(69213205262741);
+
     BigInteger res;
     BigInteger rem;
 
