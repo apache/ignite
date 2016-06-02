@@ -145,13 +145,23 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
      */
     public void testForDaemons() throws Exception {
         assertEquals(4, ignite.cluster().nodes().size());
-        assertEquals(0, ignite.cluster().forDaemons().nodes().size());
+
+        ClusterGroup daemons = ignite.cluster().forDaemons();
+        ClusterGroup srvs = ignite.cluster().forServers();
+
+        assertEquals(0, daemons.nodes().size());
+        assertEquals(2, srvs.nodes().size());
 
         Ignition.setDaemon(true);
 
         try (Ignite g = startGrid(NODES_CNT)) {
-            assertEquals(4, g.cluster().nodes().size());
-            assertEquals(1, g.cluster().forDaemons().nodes().size());
+            Ignition.setDaemon(false);
+
+            try (Ignite g1 = startGrid(NODES_CNT + 1)) {
+                assertEquals(1, ignite.cluster().forDaemons().nodes().size());
+                assertEquals(3, srvs.nodes().size());
+                assertEquals(1, daemons.nodes().size());
+            }
         }
     }
 
