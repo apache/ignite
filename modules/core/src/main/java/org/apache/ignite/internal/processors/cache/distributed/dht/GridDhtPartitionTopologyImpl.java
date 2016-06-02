@@ -703,8 +703,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         try {
             loc = locParts[p];
 
-//            boolean belongs = cctx.affinity().localNode(p, topVer);
-            boolean belongs = true; // TODO
+            boolean belongs = cctx.shared().database().persistenceEnabled() || cctx.affinity().localNode(p, topVer);
 
             if (loc != null && loc.state() == EVICTED) {
                 locParts[p] = loc = null;
