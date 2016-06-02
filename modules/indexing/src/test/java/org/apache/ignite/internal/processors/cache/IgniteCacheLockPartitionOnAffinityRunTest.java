@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheAtomicityMode;
@@ -25,9 +24,10 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -141,7 +141,7 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
 
                     grid(0).compute().affinityRun(Organization.class.getSimpleName(), orgId, new IgniteRunnable() {
                         @IgniteInstanceResource
-                        private Ignite ignite;
+                        private IgniteEx ignite;
 
                         @Override public void run() {
                             System.out.println("+++ RUN on: " + ignite.name());
@@ -152,8 +152,21 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
                                             "AND p.orgId = " + orgId,
                                         Person.class.getSimpleName(), Organization.class.getSimpleName())).setLocal(true))
                                 .getAll();
-//                            System.out.println("+++ RES: " + res.size());
-                            assertEquals(PERS_AT_ORG_COUNT, res.size());
+
+                            try {
+                                assertEquals(PERS_AT_ORG_COUNT, res.size());
+                            } catch( Throwable t) {
+//                                if (PERS_AT_ORG_COUNT != res.size()) {
+                                    int part = ignite.affinity(Organization.class.getSimpleName()).partition(orgId);
+
+                                    GridCacheAdapter<?, ?> cacheAdapterOrg = ignite.context().cache().internalCache(Organization.class.getName());
+                                    GridCacheAdapter<?, ?> cacheAdapterPers = ignite.context().cache().internalCache(Person.class.getName());
+
+                                    System.out.println("+++ ORG part: " + cacheAdapterOrg.context().topology().localPartition(part, AffinityTopologyVersion.NONE, false));
+                                    System.out.println("+++ PERS part: " + cacheAdapterPers.context().topology().localPartition(part, AffinityTopologyVersion.NONE, false));
+                                    assertTrue(false);
+//                                }
+                            }
                         }
                     }, lockedParts(orgId));
 
@@ -201,7 +214,6 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
                 grid(0).dataStreamer(Organization.class.getSimpleName());
             IgniteDataStreamer<Person.Key, Person> persStreamer =
                 grid(0).dataStreamer(Person.class.getSimpleName())) {
-
 
             int persId = 0;
             for (int orgId : orgIds) {

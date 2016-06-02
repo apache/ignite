@@ -2410,10 +2410,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
             GridKernalContext ctx = ignite.context();
             for (Map.Entry<String, int[]> entry : partsToLock.entrySet()) {
                 GridCacheAdapter<?, ?> cacheAdapter = ctx.cache().internalCache(entry.getKey());
-                if (cacheAdapter == null) {
-                    System.out.println("cacheAdapter == null");
+                if (cacheAdapter == null)
                     return false;
-                }
 
                 GridCacheContext<?, ?> cctx = cacheAdapter.context();
                 for (int partId : entry.getValue()) {
@@ -2421,17 +2419,15 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                         AffinityTopologyVersion.NONE, false);
 
                     if (part == null || part.state() != OWNING || !part.reserve()) {
-                        System.out.println("Cannot reserve: " + entry.getKey() + ":" + partId);
+//                        System.out.println("Cannot reserve: " + entry.getKey() + ":" + partId);
                         return false;
                     }
 
                     reserved.add(part);
 
                     // Double check that we are still in owning state and partition contents are not cleared.
-                    if (part.state() != OWNING) {
-                        System.out.println("Double check fail: " + entry.getKey() + ":" + partId);
+                    if (part.state() != OWNING)
                         return false;
-                    }
                 }
             }
             return true;
@@ -2495,6 +2491,8 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
 
         private class Listener implements IgniteInClosure<IgniteInternalFuture<AffinityJobWrapper.ResultWrapper<R>>> {
+            /** */
+            private static final long serialVersionUID = 0L;
 
             @Override public void apply(IgniteInternalFuture<AffinityJobWrapper.ResultWrapper<R>> fut) {
                 try {
@@ -2505,11 +2503,13 @@ public class GridClosureProcessor extends GridProcessorAdapter {
                     if (res != null)
                         onDone(res.get());
                     else {
+                        // Delay on 10 ms before retry
                         getContext().timeout().schedule(new Runnable() {
                             @Override public void run() {
+                                System.out.println("+++ Retry");
                                 retry();
                             }
-                        }, 0, -1);
+                        }, 10, -1);
                     }
                 }
                 catch (Throwable e) {
