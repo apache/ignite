@@ -692,9 +692,8 @@ public class IgniteTxHandler {
         if (tx == null && !req.explicitLock()) {
             assert locTx == null : "DHT local tx should never be lost for near local tx: " + locTx;
 
-            U.warn(log, "Received finish request for completed transaction (the message may be too late " +
-                "and transaction could have been DGCed by now) [commit=" + req.commit() +
-                ", xid=" + req.version() + ']');
+            U.warn(log, "Received finish request for completed transaction (the message may be too late) " +
+                "[commit=" + req.commit() + ", xid=" + req.version() + ']');
 
             // Always send finish response.
             GridCacheMessage res = new GridNearTxFinishResponse(req.version(), req.threadId(), req.futureId(),
