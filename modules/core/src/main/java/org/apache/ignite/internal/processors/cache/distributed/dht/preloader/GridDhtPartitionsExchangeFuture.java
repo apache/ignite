@@ -199,6 +199,17 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private final ConcurrentMap<UUID, GridDhtPartitionsAbstractMessage> msgs = new ConcurrentHashMap8<>();
 
     /**
+     * Constructor to create a dummy future to stop exchange worker.
+     */
+    public GridDhtPartitionsExchangeFuture() {
+        dummy = true;
+        forcePreload = false;
+        reassign = false;
+        exchId = null;
+        cctx = null;
+    }
+
+    /**
      * Dummy future created to trigger reassignments if partition
      * topology changed while preloading.
      *
@@ -491,31 +502,37 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (exchange == ExchangeType.ALL && crd == null)
                 exchange = ExchangeType.NONE;
 
+            cctx.database().checkpointReadLock();
+
             switch (exchange) {
                 case ALL: {
                     distributedExchange();
 
-                    break;
+                        break;
+                    }
+
+                    case CLIENT: {
+                        initTopologies();
+
+                        clientOnlyExchange();
+
+                        break;
+                    }
+
+                    case NONE: {
+                        initTopologies();
+
+                        onDone(topologyVersion());
+
+                        break;
+                    }
+
+                    default:
+                        assert false;
                 }
-
-                case CLIENT: {
-                    initTopologies();
-
-                    clientOnlyExchange();
-
-                    break;
-                }
-
-                case NONE: {
-                    initTopologies();
-
-                    onDone(topologyVersion());
-
-                    break;
-                }
-
-                default:
-                    assert false;
+            }
+            finally {
+                cctx.database().checkpointReadUnlock();
             }
         }
         catch (IgniteInterruptedCheckedException e) {

@@ -352,73 +352,66 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
         int num = cctx.affinity().partitions();
 
-        cctx.shared().database().checkpointReadLock();
+        if (cctx.rebalanceEnabled()) {
+            boolean added = exchFut.isCacheAdded(cctx.cacheId(), exchId.topologyVersion());
 
-        try {
-            if (cctx.rebalanceEnabled()) {
-                boolean added = exchFut.isCacheAdded(cctx.cacheId(), exchId.topologyVersion());
+            boolean first = (loc.equals(oldest) && loc.id().equals(exchId.nodeId()) && exchId.isJoined()) || added;
 
-                boolean first = (loc.equals(oldest) && loc.id().equals(exchId.nodeId()) && exchId.isJoined()) || added;
+            if (first) {
+                assert exchId.isJoined() || added;
 
-                if (first) {
-                    assert exchId.isJoined() || added;
-
-                    for (int p = 0; p < num; p++) {
-                        if (localNode(p, aff)) {
-                            GridDhtLocalPartition locPart = createPartition(p);
-
-                            boolean owned = locPart.own();
-
-                            assert owned : "Failed to own partition for oldest node [cacheName" + cctx.name() +
-                                ", part=" + locPart + ']';
-
-                            if (log.isDebugEnabled())
-                                log.debug("Owned partition for oldest node: " + locPart);
-
-                            updateLocal(p, loc.id(), locPart.state(), updateSeq);
-                        }
-                    }
-                }
-                else
-                    createPartitions(aff, updateSeq);
-            }
-            else {
-                // If preloader is disabled, then we simply clear out
-                // the partitions this node is not responsible for.
                 for (int p = 0; p < num; p++) {
-                    GridDhtLocalPartition locPart = localPartition(p, topVer, false, false);
+                    if (localNode(p, aff)) {
+                        GridDhtLocalPartition locPart = createPartition(p);
 
-                    boolean belongs = localNode(p, aff);
+                        boolean owned = locPart.own();
 
-                    if (locPart != null) {
-                        if (!belongs) {
-                            GridDhtPartitionState state = locPart.state();
+                        assert owned : "Failed to own partition for oldest node [cacheName" + cctx.name() +
+                            ", part=" + locPart + ']';
 
-                            if (state.active()) {
-                                locPart.rent(false);
-
-                                updateLocal(p, loc.id(), locPart.state(), updateSeq);
-
-                                if (log.isDebugEnabled())
-                                    log.debug("Evicting partition with rebalancing disabled " +
-                                        "(it does not belong to affinity): " + locPart);
-                            }
-                        }
-                        else
-                            locPart.own();
-                    }
-                    else if (belongs) {
-                        locPart = createPartition(p);
-
-                        locPart.own();
+                        if (log.isDebugEnabled())
+                            log.debug("Owned partition for oldest node: " + locPart);
 
                         updateLocal(p, loc.id(), locPart.state(), updateSeq);
                     }
                 }
             }
+            else
+                createPartitions(aff, updateSeq);
         }
-        finally {
-            cctx.shared().database().checkpointReadUnlock();
+        else {
+            // If preloader is disabled, then we simply clear out
+            // the partitions this node is not responsible for.
+            for (int p = 0; p < num; p++) {
+                GridDhtLocalPartition locPart = localPartition(p, topVer, false, false);
+
+                boolean belongs = localNode(p, aff);
+
+                if (locPart != null) {
+                    if (!belongs) {
+                        GridDhtPartitionState state = locPart.state();
+
+                        if (state.active()) {
+                            locPart.rent(false);
+
+                            updateLocal(p, loc.id(), locPart.state(), updateSeq);
+
+                            if (log.isDebugEnabled())
+                                log.debug("Evicting partition with rebalancing disabled " +
+                                    "(it does not belong to affinity): " + locPart);
+                        }
+                    }
+                    else
+                        locPart.own();
+                }
+                else if (belongs) {
+                    locPart = createPartition(p);
+
+                    locPart.own();
+
+                    updateLocal(p, loc.id(), locPart.state(), updateSeq);
+                }
+            }
         }
 
         if (node2part != null && node2part.valid())
