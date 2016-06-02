@@ -77,10 +77,23 @@ namespace Apache.Ignite.Core.Tests.EntityFramework
                         new CacheConfiguration
                         {
                             Name = "myCache",
-                            CacheMode = CacheMode.Replicated
+                            CacheMode = CacheMode.Replicated,
+                            AtomicityMode = CacheAtomicityMode.Transactional
                         }
                     }
                 }, "myCache", null), CacheMode.Replicated);
+
+            // Non-transactional cache
+            var ex = Assert.Throws<ArgumentException>(() =>
+                CheckCacheAndStop("myGrid5", "myCache",
+                    new IgniteDbConfiguration(new IgniteConfiguration
+                    {
+                        GridName = "myGrid5",
+                        CacheConfiguration = new[] {new CacheConfiguration("myCache")}
+                    }, "myCache", null)));
+            Ignition.StopAll(true);
+            Assert.IsTrue(ex.Message.Contains(
+                    "IgniteEntityFrameworkCache requires Transactional cache. Specified 'myCache' cache is Atomic."));
 
             // Existing instance
             var ignite = Ignition.Start(TestUtils.GetTestConfiguration());

@@ -22,6 +22,7 @@ namespace Apache.Ignite.EntityFramework
     using System.Data.Entity.Core.Common;
     using System.Globalization;
     using Apache.Ignite.Core;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Common;
     using EFCache;
@@ -94,7 +95,10 @@ namespace Apache.Ignite.EntityFramework
         {
             IgniteArgumentCheck.NotNull(ignite, "ignite");
 
-            var cache = ignite.GetOrCreateCache<string, object>(cacheName);
+            var cache = ignite.GetOrCreateCache<string, object>(new CacheConfiguration(cacheName)
+            {
+                AtomicityMode = CacheAtomicityMode.Transactional
+            });
 
             var efCache = new IgniteEntityFrameworkCache(cache);
             var transactionHandler = new CacheTransactionHandler(efCache);

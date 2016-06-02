@@ -52,8 +52,11 @@ namespace Apache.Ignite.EntityFramework
         public IgniteEntityFrameworkCache(ICache<string, object> cache)
         {
             IgniteArgumentCheck.NotNull(cache, "cache");
-            IgniteArgumentCheck.Ensure(cache.GetConfiguration().AtomicityMode == CacheAtomicityMode.Transactional,
-                "cache", GetType() + " requires Transactional cache.");
+
+            var atomicityMode = cache.GetConfiguration().AtomicityMode;
+            IgniteArgumentCheck.Ensure(atomicityMode == CacheAtomicityMode.Transactional, "cache",
+                string.Format("{0} requires {1} cache. Specified '{2}' cache is {3}.",
+                    GetType(), CacheAtomicityMode.Transactional, cache.Name, atomicityMode));
 
             _cache = cache;
         }
