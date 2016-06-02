@@ -254,7 +254,7 @@ namespace ignite
          */
         friend std::ostream& operator<<(std::ostream& os, const BigInteger& val)
         {
-            if (val.mag.IsEmpty())
+            if (val.IsZero())
                 return os << '0';
 
             if (val.sign < 0)
@@ -279,7 +279,7 @@ namespace ignite
 
             vals.push_back(static_cast<uint64_t>(res.ToInt64()));
 
-            while (!left.mag.IsEmpty())
+            while (!left.IsZero())
             {
                 left.Divide(maxUintTenPower, left, res);
 

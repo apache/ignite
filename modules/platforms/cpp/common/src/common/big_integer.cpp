@@ -751,6 +751,7 @@ namespace ignite
         }
 
         res.sign = resSign;
+        res.Normalize();
 
         // If remainder is needed unnormolize it.
         if (rem)

@@ -498,4 +498,78 @@ BOOST_AUTO_TEST_CASE(TestScalingBig)
     BOOST_CHECK_EQUAL(decimal.ToInt64(), 63647190455381106LL);
 }
 
+//BOOST_AUTO_TEST_CASE(TestPrecisionChange)
+//{
+//    BigInteger bigInt(32421);
+//
+//    //75946938183
+//    bigInt = bigInt.Multiply(BigInteger(2342523));
+//
+//    //4244836901495581620
+//    bigInt = bigInt.Multiply(BigInteger(55892140));
+//
+//    //1361610054778960404282184020
+//    bigInt = bigInt.Multiply(BigInteger(320768521));
+//
+//    //1454144449122723409814375680476734820
+//    bigInt = bigInt.Multiply(BigInteger(1067959541));
+//
+//    //117386322514277938455905731466723946155156640
+//    bigInt = bigInt.Multiply(BigInteger(80725352));
+//
+//    //1173863225142779384559.05731466723946155156640
+//    BigDecimal decimal(bigInt, 23, 0);
+//
+//    BOOST_CHECK_EQUAL(decimal.GetPrecision(), 45);
+//    BOOST_CHECK_EQUAL(decimal.GetScale(), 23);
+//
+//    for (int32_t i = 0; i < decimal.GetScale(); ++i) {
+//        BOOST_CHECK_EQUAL(decimal.SetScale(i, BigDecimal::ROUND_DOWN).GetPrecision(),
+//            decimal.GetPrecision() - decimal.GetScale() + i);
+//    }
+//}
+//
+//int testPrecision(BigDecimal bd, int32_t expected)
+//{
+//    int32_t precision = bd.GetPrecision();
+//
+//    BOOST_CHECK_EQUAL(precision, expected);
+//
+//    return precision == expected ? 0 : 1;
+//}
+//
+//BOOST_AUTO_TEST_CASE(TestPrecisionSimple)
+//{
+//    BigDecimal test(1);
+//
+//    BOOST_CHECK_EQUAL(BigDecimal(0).GetPrecision(), 1);
+//
+//    for (int32_t i = 1; i < 100; i++)
+//    {
+//        BOOST_CHECK_EQUAL(test.GetPrecision(), i);
+//
+//        test = test.Multiply(BigDecimal(10));
+//    }
+//
+//    // The following test tries to cover testings for precision of long values
+//    std::vector<BigDecimal> randomTestVals;
+//
+//    randomTestVals.push_back(BigDecimal(2147483648LL));            // 2^31:       10 digits
+//    randomTestVals.push_back(BigDecimal(-2147483648LL));           // -2^31:      10 digits
+//    randomTestVals.push_back(BigDecimal(98893745455LL));           // random:     11 digits
+//    randomTestVals.push_back(BigDecimal(3455436789887LL));         // random:     13 digits
+//    randomTestVals.push_back(BigDecimal(140737488355328LL));       // 2^47:       15 digits
+//    randomTestVals.push_back(BigDecimal(-140737488355328LL));      // -2^47:      15 digits
+//    randomTestVals.push_back(BigDecimal(7564232235739573LL));      // random:     16 digits
+//    randomTestVals.push_back(BigDecimal(25335434990002322LL));     // random:     17 digits
+//    randomTestVals.push_back(BigDecimal(9223372036854775807LL));   // 2^63 - 1:   19 digits
+//    randomTestVals.push_back(BigDecimal(-9223372036854775807LL));  // -2^63 + 1:  19 digits
+//
+//    // The array below contains the expected precision of the above numbers
+//    int32_t expectedPrecision[] = { 10, 10, 11, 13, 15, 15, 16, 17, 19, 19 };
+//
+//    for (int32_t i = 0; i < randomTestVals.size(); ++i)
+//        BOOST_CHECK_EQUAL(randomTestVals[i].GetPrecision(), expectedPrecision[i]);
+//}
+
 BOOST_AUTO_TEST_SUITE_END()
