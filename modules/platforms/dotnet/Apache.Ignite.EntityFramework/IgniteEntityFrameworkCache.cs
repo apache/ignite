@@ -32,6 +32,8 @@ namespace Apache.Ignite.EntityFramework
     /// </summary>
     public class IgniteEntityFrameworkCache : ICache
     {
+        // TODO: Fix IgniteHome in ASP.NET ticket!
+
         /** Max number of cached expiry caches. */
         private const int MaxExpiryCaches = 1000;
 
