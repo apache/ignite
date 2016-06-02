@@ -353,7 +353,7 @@ mixin table-text-field(field, items, valid, save, placeholder, newItem)
     -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
 
     ignite-form-field-input-text(
-        data-name=field
+        data-name='#{field}{{ $index || "" }}'
         data-ng-model=field
         data-ng-required='true'
         data-placeholder=placeholder
@@ -376,7 +376,7 @@ mixin table-java-class-field(lbl, field, items, valid, save, newItem)
     -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
 
     ignite-form-field-input-text(
-        data-name=field
+        data-name='#{field}{{ $index || "" }}'
         data-ng-model=field
         data-ng-required='true'
         data-ignite-unique=items
@@ -411,7 +411,7 @@ mixin table-java-package-field(field, items, valid, save, newItem)
     -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
 
     ignite-form-field-input-text(
-        data-name=field
+        data-name='#{field}{{ $index || "" }}'
         data-ng-model=field
         data-ng-required='true'
         data-placeholder='Enter package name'
@@ -436,7 +436,7 @@ mixin table-address-field(field, items, valid, save, newItem, portRange)
     -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
 
     ignite-form-field-input-text(
-        data-name=field
+        data-name='#{field}{{ $index || "" }}'
         data-ng-model=field
         data-ng-required='true'
         data-placeholder='IP address:port'
