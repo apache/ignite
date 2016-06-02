@@ -25,7 +25,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
  */
 public class GridNearCacheTxNodeFailureSelfTest extends GridCacheTxNodeFailureSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) {
-        return super.cacheConfiguration(gridName).setNearConfiguration(new NearCacheConfiguration());
+    @Override protected CacheConfiguration cacheConfiguration(String instanceName) {
+        return super.cacheConfiguration(instanceName).setNearConfiguration(new NearCacheConfiguration());
     }
 }
