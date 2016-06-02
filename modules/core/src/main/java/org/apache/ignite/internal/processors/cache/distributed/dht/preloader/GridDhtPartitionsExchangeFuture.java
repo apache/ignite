@@ -1392,8 +1392,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         assert crd.isLocal();
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-            if (cacheCtx.cache().state().active())
-                detectLostPartitions(cacheCtx);
+            detectLostPartitions(cacheCtx);
         }
     }
 
@@ -1488,11 +1487,12 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             else if (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT) {
                 assert discoEvt instanceof DiscoveryCustomEvent;
 
-                if (((DiscoveryCustomEvent)discoEvt).customMessage() instanceof DynamicCacheChangeBatch)
+                if (((DiscoveryCustomEvent)discoEvt).customMessage() instanceof DynamicCacheChangeBatch ||
+                    ((DiscoveryCustomEvent)discoEvt).customMessage() instanceof TcpDiscoveryNodeActivatedMessage)
                     assignRolesByCounters();
             }
 
-            if (discoEvt.type() != EventType.EVT_NODE_JOINED && discoEvt.type() != 18)
+            if (discoEvt.type() != EventType.EVT_NODE_JOINED && discoEvt.type() != EVT_DISCOVERY_CUSTOM_EVT)
                 detectLostPartitions();
 
             updateLastVersion(cctx.versions().last());

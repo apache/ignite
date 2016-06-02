@@ -1051,8 +1051,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                                 assert false : ex;
                             }
                         }
-
-                        part.updateCounter(cntr);
                     }
                 }
             }
@@ -1143,6 +1141,13 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
                     assert locPart != null;
 
+                    if (cntrMap != null) {
+                        Long cntr = cntrMap.get(p);
+
+                        if (cntr != null && cntr > locPart.updateCounter())
+                            locPart.updateCounter(cntr);
+                    }
+
                     if (locPart.state() != OWNING) {
                         boolean success = locPart.own();
 
@@ -1157,9 +1162,16 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                     assert locPart != null;
 
                     if (locPart.state() == OWNING) {
-                        locParts[p] = new GridDhtLocalPartition(cctx, p, entryFactory);
+                        locPart = locParts[p] = new GridDhtLocalPartition(cctx, p, entryFactory);
 
                         changed = true;
+                    }
+
+                    if (cntrMap != null) {
+                        Long cntr = cntrMap.get(p);
+
+                        if (cntr != null && cntr > locPart.updateCounter())
+                            locPart.updateCounter(cntr);
                     }
                 }
             }
@@ -1335,8 +1347,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
                 if (e.getValue().get(p) == OWNING && !owners.contains(e.getKey()))
                     e.getValue().put(p, MOVING);
-                else if (owners.contains(e.getKey()))
-                    e.getValue().put(p, OWNING);
             }
 
             part2node.put(p, owners);

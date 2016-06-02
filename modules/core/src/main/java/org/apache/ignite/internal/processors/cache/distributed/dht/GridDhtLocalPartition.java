@@ -133,8 +133,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @param cctx Context.
      * @param id Partition ID.
      */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    GridDhtLocalPartition(GridCacheContext cctx, int id, GridCacheMapEntryFactory entryFactory) {
+    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor") GridDhtLocalPartition(GridCacheContext cctx,
+        int id, GridCacheMapEntryFactory entryFactory) {
         assert cctx != null;
 
         this.id = id;
@@ -178,6 +178,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     public void init(long size, long partCntr) {
         storageSize.set(size);
         cntr.set(partCntr);
+
+        own();
     }
 
     /**
@@ -302,7 +304,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         return (int)storageSize.get();
     }
 
-
     /**
      *
      */
@@ -311,7 +312,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     }
 
     /**
-     * 
+     *
      */
     public void onRemove() {
         storageSize.decrementAndGet();
