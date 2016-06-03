@@ -26,7 +26,7 @@ gulp.task('watch:ignite-modules', (cb) => sequence('clean:ignite-modules-temp', 
 
 // Build + connect + watch task.
 gulp.task('watch', ['build', 'connect'], () => {
-    gulp.watch(sassPaths, ['watch:sass']);
+    //gulp.watch(sassPaths, ['watch:sass']);
 
     gulp.watch(jadePaths.concat(jadeModulePaths), ['jade']);
 

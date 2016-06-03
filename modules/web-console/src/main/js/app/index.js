@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-import 'vendor.js';
 import _ from 'lodash';
 import ace from 'brace';
 import angular from 'angular';
@@ -26,7 +25,6 @@ ace.config.set('basePath', '/jspm_packages/github/ajaxorg/ace-builds@1.2.3');
 window._ = _;
 window.require = ace.require; // TODO Should be removed after full refactoring to directives.
 // window.pdfMake = pdfMake;
-
 
 
 import '../public/stylesheets/style.scss';

@@ -30,10 +30,20 @@ html(ng-app='ignite-console' id='app' ng-strict-di)
         meta(name='keywords' content='{{$meta.keywords}}')
         meta(ng-repeat='(key, value) in $meta.properties' name='{{::key}}' content='{{::value}}')
 
-        // build:css
-        link(rel='stylesheet', href='/vendors.css')
-        link(rel='stylesheet', href='/app.css')
-        // endbuild
+
+
+        = '{% if (o.htmlWebpackPlugin.files.favicon) { %}'
+        link(rel='shortcut icon' href='{%=o.htmlWebpackPlugin.files.favicon%}')
+        = '{% } %}'
+
+        = '{% for (var css in o.htmlWebpackPlugin.files.css) { %}'
+        link(href='{%=o.htmlWebpackPlugin.files.css[css] %}' rel='stylesheet')
+        = '{% } %}'
+
+
+        = '{% for (var chunk in o.htmlWebpackPlugin.files.chunks) { %}'
+        script(src="{%=o.htmlWebpackPlugin.files.chunks[chunk].entry %}")
+        = '{% } %}'
 
     body.theme-line.body-overlap.greedy
 
@@ -52,15 +62,3 @@ html(ng-app='ignite-console' id='app' ng-strict-di)
                 label {{IgniteDemoMode ? "Demo" : "Beta" }}
 
         .wrapper(ui-view='')
-
-
-        // build:js
-        script(src='jspm_packages/system.js')
-        script(src='system.config.js')
-        script(src='vendors.js')
-        script(src='app.js')
-        script System.import('app/index');
-        // endbuild
-
-        // ignite:plugins
-        // endignite

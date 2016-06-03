@@ -71,10 +71,6 @@ module.exports = function (_path) {
                     ]
                 },
                 {
-                    test: /index\.jade$/,
-                    loader: 'jade'
-                },
-                {
                     test: /\.jade$/,
                     loaders: [
                         'ngtemplate-loader?relativeTo=' + _path,
