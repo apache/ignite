@@ -359,7 +359,7 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToNumeric)
     appBuf.PutDecimal(decimal);
     BOOST_CHECK_EQUAL(1, buf.sign);         // Positive
     BOOST_CHECK_EQUAL(0, buf.scale);        // Scale is 0 by default according to specification
-    BOOST_CHECK_EQUAL(20, buf.precision);   // Precision is driver specific. We use 20.
+    BOOST_CHECK_EQUAL(1, buf.precision);    // Precision is 1 for default constructed Decimal (0).
 
     for (int i = 0; i < SQL_MAX_NUMERIC_LEN; ++i)
         BOOST_CHECK_EQUAL(0, buf.val[i]);
@@ -372,7 +372,7 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToNumeric)
     appBuf.PutDecimal(decimal);
     BOOST_CHECK_EQUAL(1, buf.sign);         // Positive
     BOOST_CHECK_EQUAL(0, buf.scale);        // Scale is 0 by default according to specification
-    BOOST_CHECK_EQUAL(20, buf.precision);   // Precision is driver specific. We use 20.
+    BOOST_CHECK_EQUAL(3, buf.precision);    // Precision is 3, as the scale is set to 0.
 
     // 123.45 => (scale=0) 123 => 0x7B => [0x7B].
     BOOST_CHECK_EQUAL(buf.val[0], 0x7B);
@@ -386,9 +386,9 @@ BOOST_AUTO_TEST_CASE(TestPutDecimalToNumeric)
     decimal = Decimal(reinterpret_cast<int8_t*>(mag2), sizeof(mag2), 3, -1);
 
     appBuf.PutDecimal(decimal);
-    BOOST_CHECK_EQUAL(2, buf.sign);         // Negative
+    BOOST_CHECK_EQUAL(0, buf.sign);         // Negative
     BOOST_CHECK_EQUAL(0, buf.scale);        // Scale is 0 by default according to specification
-    BOOST_CHECK_EQUAL(20, buf.precision);   // Precision is driver specific. We use 20.
+    BOOST_CHECK_EQUAL(5, buf.precision);    // Precision is 5, as the scale is set to 0.
 
     // 12345.678 => (scale=0) 12345 => 0x3039 => [0x39, 0x30].
     BOOST_CHECK_EQUAL(buf.val[0], 0x39);
