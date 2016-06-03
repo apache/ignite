@@ -466,8 +466,9 @@ mixin table-save-button(valid, save, newItem)
 //- Mixin for table remove button.
 mixin table-remove-conditional-button(items, show, tip)
     i.tipField.fa.fa-remove(
-        ng-hide='!(#{show} && !field.edit)'
-        bs-tooltip='"#{tip}"'
+        ng-hide='!#{show} || field.edit'
+        bs-tooltip
+        data-title=tip
         ng-click='#{items}.splice(#{items}.indexOf(model), 1)'
     )
 
