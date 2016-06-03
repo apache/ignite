@@ -225,6 +225,36 @@ namespace ignite
         void Assign(double val);
 
         /**
+         * Compare this instance to another.
+         *
+         * @param other Another instance.
+         * @return Comparasion result - 0 if equal, 1 if this is greater, -1 if
+         *     this is less.
+         */
+        int32_t Compare(const Decimal& other) const;
+
+        /**
+         * Check whether this value is negative.
+         *
+         * @return True if this value is negative and false otherwise.
+         */
+        bool IsNegative() const;
+
+        /**
+         * Check whether this value is zero.
+         *
+         * @return True if this value is negative and false otherwise.
+         */
+        bool IsZero() const;
+
+        /**
+         * Check whether this value is positive.
+         *
+         * @return True if this value is positive and false otherwise.
+         */
+        bool IsPositive() const;
+
+        /**
          * Output operator.
          *
          * @param os Output stream.
@@ -436,6 +466,60 @@ namespace ignite
         /** Magnitude. */
         BigInteger magnitude;
     };
+
+    /**
+     * Comparison operator.
+     *
+     * @param val1 First value.
+     * @param val2 Second value.
+     * @return True if equal.
+     */
+    bool IGNITE_IMPORT_EXPORT operator==(const Decimal& val1, const Decimal& val2);
+
+    /**
+     * Comparison operator.
+     *
+     * @param val1 First value.
+     * @param val2 Second value.
+     * @return True if not equal.
+     */
+    bool IGNITE_IMPORT_EXPORT operator!=(const Decimal& val1, const Decimal& val2);
+
+    /**
+     * Comparison operator.
+     *
+     * @param val1 First value.
+     * @param val2 Second value.
+     * @return True if less.
+     */
+    bool IGNITE_IMPORT_EXPORT operator<(const Decimal& val1, const Decimal& val2);
+
+    /**
+     * Comparison operator.
+     *
+     * @param val1 First value.
+     * @param val2 Second value.
+     * @return True if less or equal.
+     */
+    bool IGNITE_IMPORT_EXPORT operator<=(const Decimal& val1, const Decimal& val2);
+
+    /**
+     * Comparison operator.
+     *
+     * @param val1 First value.
+     * @param val2 Second value.
+     * @return True if gretter.
+     */
+    bool IGNITE_IMPORT_EXPORT operator>(const Decimal& val1, const Decimal& val2);
+
+    /**
+     * Comparison operator.
+     *
+     * @param val1 First value.
+     * @param val2 Second value.
+     * @return True if gretter or equal.
+     */
+    bool IGNITE_IMPORT_EXPORT operator>=(const Decimal& val1, const Decimal& val2);
 }
 
 #endif //_IGNITE_ODBC_DECIMAL

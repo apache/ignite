@@ -445,8 +445,6 @@ namespace ignite
 
             q[i] = static_cast<uint32_t>(difference);
 
-            assert(difference >> 32 == 0 || difference >> 32 == -1);
-
             // This will add one if difference is negative.
             carry = (product >> 32) - (difference >> 32);
         }
@@ -656,6 +654,8 @@ namespace ignite
 
             if (rem)
                 rem->Assign(0ULL);
+
+            return;
         }
 
         // Trivial case.
@@ -794,6 +794,36 @@ namespace ignite
             --lastNonZero;
 
         mag.Resize(lastNonZero + 1);
+    }
+
+    bool operator==(const BigInteger& val1, const BigInteger& val2)
+    {
+        return val1.Compare(val2) == 0;
+    }
+
+    bool operator!=(const BigInteger& val1, const BigInteger& val2)
+    {
+        return val1.Compare(val2) != 0;
+    }
+
+    bool operator<(const BigInteger& val1, const BigInteger& val2)
+    {
+        return val1.Compare(val2) < 0;
+    }
+
+    bool operator<=(const BigInteger& val1, const BigInteger& val2)
+    {
+        return val1.Compare(val2) <= 0;
+    }
+
+    bool operator>(const BigInteger& val1, const BigInteger& val2)
+    {
+        return val1.Compare(val2) > 0;
+    }
+
+    bool operator>=(const BigInteger& val1, const BigInteger& val2)
+    {
+        return val1.Compare(val2) >= 0;
     }
 }
 

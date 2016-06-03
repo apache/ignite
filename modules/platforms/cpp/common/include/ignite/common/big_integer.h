@@ -353,10 +353,7 @@ namespace ignite
 
             if (!is)
                 return is;
-
-            // Current char.
-            int c = is.peek();
-
+            
             // Current value parts.
             uint64_t part = 0;
             int32_t partDigits = 0;
@@ -364,6 +361,9 @@ namespace ignite
 
             BigInteger pow;
             BigInteger bigPart;
+
+            // Current char.
+            int c = is.peek();
 
             if (!is)
                 return is;
@@ -379,20 +379,12 @@ namespace ignite
             }
 
             // Reading number itself.
-            while (is)
+            while (is && isdigit(c))
             {
-                if (isdigit(c))
-                {
-                    part = part * 10 + (c - '0');
-                    ++partDigits;
-                }
-                else
-                    break;
+                part = part * 10 + (c - '0');
+                ++partDigits;
 
-                is.ignore();
-                c = is.peek();
-
-                if (part >= 10000000000000000000ULL)
+                if (part >= 1000000000000000000ULL)
                 {
                     BigInteger::GetPowerOfTen(partDigits, pow);
                     val.Multiply(pow, val);
@@ -402,12 +394,16 @@ namespace ignite
                     part = 0;
                     partDigits = 0;
                 }
+
+                is.ignore();
+                c = is.peek();
             }
 
             // Adding last part of the number.
             if (partDigits)
             {
                 BigInteger::GetPowerOfTen(partDigits, pow);
+
                 val.Multiply(pow, val);
 
                 val.Add(part);
@@ -470,6 +466,60 @@ namespace ignite
          */
         MagArray mag;
     };
+
+    /**
+     * Comparison operator.
+     *
+     * @param val1 First value.
+     * @param val2 Second value.
+     * @return True if equal.
+     */
+    bool IGNITE_IMPORT_EXPORT operator==(const BigInteger& val1, const BigInteger& val2);
+
+    /**
+     * Comparison operator.
+     *
+     * @param val1 First value.
+     * @param val2 Second value.
+     * @return True if not equal.
+     */
+    bool IGNITE_IMPORT_EXPORT operator!=(const BigInteger& val1, const BigInteger& val2);
+
+    /**
+     * Comparison operator.
+     *
+     * @param val1 First value.
+     * @param val2 Second value.
+     * @return True if less.
+     */
+    bool IGNITE_IMPORT_EXPORT operator<(const BigInteger& val1, const BigInteger& val2);
+
+    /**
+     * Comparison operator.
+     *
+     * @param val1 First value.
+     * @param val2 Second value.
+     * @return True if less or equal.
+     */
+    bool IGNITE_IMPORT_EXPORT operator<=(const BigInteger& val1, const BigInteger& val2);
+
+    /**
+     * Comparison operator.
+     *
+     * @param val1 First value.
+     * @param val2 Second value.
+     * @return True if gretter.
+     */
+    bool IGNITE_IMPORT_EXPORT operator>(const BigInteger& val1, const BigInteger& val2);
+
+    /**
+     * Comparison operator.
+     *
+     * @param val1 First value.
+     * @param val2 Second value.
+     * @return True if gretter or equal.
+     */
+    bool IGNITE_IMPORT_EXPORT operator>=(const BigInteger& val1, const BigInteger& val2);
 }
 
 #endif //_IGNITE_BIG_INTEGER

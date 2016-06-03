@@ -191,7 +191,82 @@ namespace ignite
 
     void Decimal::Assign(double val)
     {
-        common::LexicalCast(val, *this);
+        std::stringstream converter;
+
+        converter.precision(16);
+
+        converter << val;
+        converter >> *this;
+    }
+
+    int32_t Decimal::Compare(const Decimal& other) const
+    {
+        if (IsZero() && other.IsZero())
+            return 0;
+
+        if (scale == other.scale)
+            return magnitude.Compare(other.magnitude);
+        else if (scale > other.scale)
+        {
+            Decimal scaled;
+
+            other.SetScale(scale, scaled);
+
+            return magnitude.Compare(scaled.magnitude);
+        }
+        else
+        {
+            Decimal scaled;
+
+            SetScale(other.scale, scaled);
+
+            return scaled.magnitude.Compare(other.magnitude);
+        }
+    }
+
+    bool Decimal::IsNegative() const
+    {
+        return magnitude.IsNegative();
+    }
+
+    bool Decimal::IsZero() const
+    {
+        return magnitude.IsZero();
+    }
+
+    bool Decimal::IsPositive() const
+    {
+        return magnitude.IsPositive();
+    }
+
+    bool operator==(const Decimal& val1, const Decimal& val2)
+    {
+        return val1.Compare(val2) == 0;
+    }
+
+    bool operator!=(const Decimal& val1, const Decimal& val2)
+    {
+        return val1.Compare(val2) != 0;
+    }
+
+    bool operator<(const Decimal& val1, const Decimal& val2)
+    {
+        return val1.Compare(val2) < 0;
+    }
+
+    bool operator<=(const Decimal& val1, const Decimal& val2)
+    {
+        return val1.Compare(val2) <= 0;
+    }
+
+    bool operator>(const Decimal& val1, const Decimal& val2)
+    {
+        return val1.Compare(val2) > 0;
+    }
+
+    bool operator>=(const Decimal& val1, const Decimal& val2)
+    {
+        return val1.Compare(val2) >= 0;
     }
 }
 
