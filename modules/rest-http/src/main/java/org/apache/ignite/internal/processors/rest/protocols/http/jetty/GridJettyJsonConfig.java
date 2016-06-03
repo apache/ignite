@@ -205,16 +205,20 @@ class GridJettyJsonConfig extends JsonConfig {
     };
 
     /**
-     * Helper class for simple to-string conversion for {@link UUID}.
+     * Workaround for false cycle detection in Spring exceptions.
+     *
+     * Cycle detection of json-lib is quite primitive.
+     * If some bean has more than one reference to same object false cycle will be detected.
      */
-    private static JsonValueProcessor THROWABLE_PROCESSOR = new AbstractJsonValueProcessor() {
+    private static JsonValueProcessor RUNTIME_EXCEPTION_PROCESSOR = new AbstractJsonValueProcessor() {
         /** {@inheritDoc} */
         protected Object processBean(Object bean, JsonConfig jsonCfg) {
             if (bean == null)
                 return new JSONObject(true);
 
-            if (bean instanceof Throwable) {
-                Throwable e = (Throwable)bean;
+            if (bean instanceof RuntimeException &&
+                bean.getClass().getCanonicalName().startsWith("org.springframework.")) {
+                RuntimeException e = (RuntimeException)bean;
 
                 final JSONObject ret = new JSONObject();
 
@@ -226,7 +230,7 @@ class GridJettyJsonConfig extends JsonConfig {
                 return ret;
             }
 
-            throw new UnsupportedOperationException("Serialize value to json is not supported: " + bean);
+            return JSONObject.fromObject(bean, jsonCfg);
         }
     };
 
@@ -244,7 +248,7 @@ class GridJettyJsonConfig extends JsonConfig {
         registerJsonValueProcessor(Date.class, DATE_PROCESSOR);
         registerJsonValueProcessor(java.sql.Date.class, DATE_PROCESSOR);
         registerJsonValueProcessor(HashMap.class, NULL_MAP_PREPROCESSOR);
-        registerJsonValueProcessor(Throwable.class, THROWABLE_PROCESSOR);
+        registerJsonValueProcessor(RuntimeException.class, RUNTIME_EXCEPTION_PROCESSOR);
 
         final LessNamingProcessor lessNamingProcessor = new LessNamingProcessor();
 
