@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.query.h2.twostep;
 
 import java.lang.reflect.Constructor;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -57,6 +58,7 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
@@ -77,6 +79,7 @@ import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.h2.command.ddl.CreateTableData;
@@ -514,10 +517,6 @@ public class GridReduceQueryExecutor {
 
             r.rmtCancellationClo = new CI1<UUID>() {
                 @Override public void apply(final UUID nodeId) {
-                    // TODO correctly detect if fetching is done.
-                    // If all records are fetched do not send messages.
-                    // if (fetchedAll) return;
-
                     if (nodeId == null)
                         send(finalNodes.iterator(), new GridQueryCancelRequest(qryReqId), null);
                     else {
@@ -528,6 +527,15 @@ public class GridReduceQueryExecutor {
                             }
                         }, new GridQueryCancelRequest(qryReqId), null);
                     }
+
+                    // Give a change to the reduce query to terminate.
+                    if ( r.rdcPrepStmt != null )
+                        try {
+                            r.rdcPrepStmt.cancel();
+                        }
+                        catch (SQLException e) {
+                            throw new IgniteException("Cannot close reduce stmt", e);
+                        }
                 }
             };
 
@@ -654,7 +662,12 @@ public class GridReduceQueryExecutor {
                         GridCacheSqlQuery rdc = qry.reduceQuery();
 
                         // Statement caching is prohibited here because we can't guarantee correct merge index reuse.
-                        ResultSet res = h2.executeSqlQueryWithTimer(null, space,
+                        ResultSet res = h2.executeSqlQueryWithTimer(new IgniteInClosure<PreparedStatement>() {
+                                                                        @Override
+                                                                        public void apply(PreparedStatement statement) {
+                                                                            r.rdcPrepStmt = statement;
+                                                                        }
+                                                                    }, space,
                             r.conn,
                             rdc.query(),
                             F.asList(rdc.parameters()),
@@ -1229,6 +1242,9 @@ public class GridReduceQueryExecutor {
 
         /** Closure for cancelling remote queries. */
         public CI1<UUID> rmtCancellationClo;
+
+        /** */
+        public volatile PreparedStatement rdcPrepStmt;
 
         /**
          * @param o Fail state object.

@@ -21,9 +21,11 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
@@ -31,10 +33,12 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractQuerySelfTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CachePeekMode.ALL;
@@ -54,174 +58,87 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
     }
 
     /**
-     * Tests stopping two-step long query.
+     * Tests stopping two-step long query while result set is being generated on remote nodes.
      */
     public void testRemoteQueryExecutionStop() throws Exception {
-        try (Ignite client = startGrid("client")) {
-
-            int keyCnt = 10_000;
-
-            IgniteCache<Object, Object> cache = client.cache(null);
-
-            assertEquals(0, cache.localSize());
-
-            for (int i = 0; i < keyCnt; i++)
-                cache.put(i, "val" + i);
-
-            assertEquals(0, cache.localSize(ALL));
-
-            final QueryCursor<List<?>> qry = cache.query(new SqlFieldsQuery("select a._key, b._key from String a, String b"));
-
-            ignite().scheduler().runLocal(new Runnable() {
-                @Override public void run() {
-                    qry.close();
-                }
-            }, 3, TimeUnit.SECONDS);
-
-            // Trigger remote execution.
-            try {
-                qry.iterator();
-
-                // Iterator should not return.
-                fail();
-            }
-            catch (CacheException ex) {
-                log().error("Got expected exception", ex);
-            }
-
-            // Give some time to clean up.
-            Thread.sleep(3000);
-
-            checkCleanState();
-        }
+        testQueryStop(10_000, 4, "select a._key, b._key from String a, String b", 3000);
     }
 
     /**
-     * Tests stopping two step short query.
+     * Tests stopping two step query while reducing.
      */
-    public void testRemoteQueryAlreadyFinishedStop() throws Exception {
-        try (Ignite client = startGrid("client")) {
-
-            int keyCnt = 100;
-
-            IgniteCache<Object, Object> cache = client.cache(null);
-
-            assertEquals(0, cache.localSize());
-
-            for (int i = 0; i < keyCnt; i++)
-                cache.put(i, "val" + i);
-
-            assertEquals(0, cache.localSize(ALL));
-
-            final QueryCursor<List<?>> qry = cache.query(new SqlFieldsQuery("select a._key from String a"));
-
-            final CountDownLatch l = new CountDownLatch(1);
-
-            ignite().scheduler().runLocal(new Runnable() {
-                @Override public void run() {
-                    // Query should be finished at this point.
-                    qry.close();
-
-                    l.countDown();
-                }
-            }, 3, TimeUnit.SECONDS);
-
-            try {
-                List<List<?>> all = qry.getAll();
-
-                assertEquals(keyCnt, all.size());
-            }
-            catch (CacheException ex) {
-                fail("Query should be finished without errors.");
-            }
-
-            // Test should complete without any exceptions.
-            l.await();
-
-            checkCleanState();
-        }
+    public void testRemoteQueryReducingStop() throws Exception {
+        testQueryStop(100_000, 4, "select a._key, count(*) from String a group by a._key", 3000);
     }
 
     /**
-     * Tests stopping two step short query.
+     * Tests stopping two step query while fetching data from remote nodes.
      */
     public void testRemoteQueryFetchngStop() throws Exception {
-        try (Ignite client = startGrid("client")) {
+        testQueryStop(100_000, 512, "select a._val, b._val from String a, String b", 3000);
+    }
 
-            int keyCnt = 1_000;
+    /**
+     * Tests stopping two step query after it was finished.
+     */
+    public void testRemoteQueryAlreadyFinishedStop() throws Exception {
+        testQueryStop(100, 4, "select a._key from String a", 3000);
+    }
+
+    /**
+     * Tests stopping two step query while fetching result set from remote nodes.
+     */
+    private void testQueryStop(int keyCnt, int valSize, String sql, long cancelTimeout) throws Exception {
+        try (Ignite client = startGrid("client")) {
 
             IgniteCache<Object, Object> cache = client.cache(null);
 
             assertEquals(0, cache.localSize());
 
-            int buf = 512;
-
             for (int i = 0; i < keyCnt; i++) {
-                char[] tmp = new char[buf];
+                char[] tmp = new char[valSize];
                 Arrays.fill(tmp, ' ');
                 cache.put(i, new String(tmp));
             }
 
             assertEquals(0, cache.localSize(ALL));
 
-            final QueryCursor<List<?>> qry = cache.query(new SqlFieldsQuery("select a._val, b._val from String a, String b"));
+            final QueryCursor<List<?>> qry = cache.query(new SqlFieldsQuery(sql));
+
+            final CountDownLatch l = new CountDownLatch(1);
+
+            final AtomicBoolean first = new AtomicBoolean();
 
             ignite().scheduler().runLocal(new Runnable() {
                 @Override public void run() {
-                    qry.close();
-                }
-            }, 3, TimeUnit.SECONDS);
+                    boolean res = first.compareAndSet(false, true);
+                    if (res)
+                        qry.close();
 
-            // Trigger remote execution.
+                    l.countDown();
+                }
+            }, cancelTimeout, TimeUnit.MILLISECONDS);
+
             try {
+                // Trigger remote execution.
                 qry.iterator();
 
-                // Iterator should not return.
-                fail();
+                // Fail if close was already invoked.
+                boolean res = first.compareAndSet(false, true);
+
+                if (!res)
+                    fail();
             }
             catch (CacheException ex) {
                 log().error("Got expected exception", ex);
             }
 
-            // Give some time to clean up.
+            l.await();
+
+            // Give some time to clean up after query cancellation.
             Thread.sleep(3000);
 
-            checkCleanState();
-        }
-    }
-
-    /**
-     * Tests stopping two step short query.
-     */
-    public void testRemoteQueryReducingStop() throws Exception {
-        try (Ignite client = startGrid("client")) {
-
-            int keyCnt = 2_000;
-
-            IgniteCache<Object, Object> cache = client.cache(null);
-
-            for (int i = 0; i < keyCnt; i++)
-                cache.put(i, "val" + i);
-
-            assertEquals(0, cache.localSize(ALL));
-
-            final QueryCursor<List<?>> qry = cache.query(new SqlFieldsQuery("select a._key from String a"));
-
-            // Trigger remote execution.
-            Iterator<List<?>> iter = qry.iterator();
-
-            // For reduce part close currently does nothing.
-            qry.close();
-
-            int c = 0;
-            while (iter.hasNext()) {
-                iter.next();
-
-                c++;
-            }
-
-            assertEquals(keyCnt, c);
-
+            // Validate nodes query result buffer.
             checkCleanState();
         }
     }
