@@ -83,7 +83,7 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeActivatedMessage;
+import org.apache.ignite.internal.managers.discovery.NodeActivatedMessage;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -263,8 +263,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         else
                             exchangeFuture(msg.exchangeId(), null, null, null).onAffinityChangeMessage(customEvt.eventNode(), msg);
                     }
-                    else if (customEvt.customMessage() instanceof TcpDiscoveryNodeActivatedMessage) {
-                        TcpDiscoveryNodeActivatedMessage msg = (TcpDiscoveryNodeActivatedMessage)customEvt.customMessage();
+                    else if (customEvt.customMessage() instanceof NodeActivatedMessage) {
+                        NodeActivatedMessage msg = (NodeActivatedMessage)customEvt.customMessage();
 
                         exchId = exchangeId(n.id(), affinityTopologyVersion(e), e.type());
 

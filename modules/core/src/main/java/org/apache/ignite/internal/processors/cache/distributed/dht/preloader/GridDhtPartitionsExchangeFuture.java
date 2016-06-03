@@ -77,7 +77,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteRunnable;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeActivatedMessage;
+import org.apache.ignite.internal.managers.discovery.NodeActivatedMessage;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -469,7 +469,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
                 DiscoveryCustomMessage customMessage = ((DiscoveryCustomEvent)discoEvt).customMessage();
 
-                if (customMessage instanceof TcpDiscoveryNodeActivatedMessage) {
+                if (customMessage instanceof NodeActivatedMessage) {
                     assert !CU.clientNode(discoEvt.eventNode());
 
                     exchange = onServerNodeEvent(crdNode);
@@ -761,7 +761,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             ((DiscoveryCustomEvent)discoEvt).customMessage() : null;
 
         boolean topChanged = discoEvt.type() != EVT_DISCOVERY_CUSTOM_EVT || affChangeMsg != null ||
-            customMsg instanceof TcpDiscoveryNodeActivatedMessage;
+            customMsg instanceof NodeActivatedMessage;
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
             if (cacheCtx.isLocal() || stopping(cacheCtx.cacheId()))
@@ -1488,7 +1488,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 assert discoEvt instanceof DiscoveryCustomEvent;
 
                 if (((DiscoveryCustomEvent)discoEvt).customMessage() instanceof DynamicCacheChangeBatch ||
-                    ((DiscoveryCustomEvent)discoEvt).customMessage() instanceof TcpDiscoveryNodeActivatedMessage)
+                    ((DiscoveryCustomEvent)discoEvt).customMessage() instanceof NodeActivatedMessage)
                     assignRolesByCounters();
             }
 
