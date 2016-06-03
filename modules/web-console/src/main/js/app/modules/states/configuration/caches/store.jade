@@ -60,7 +60,7 @@ mixin hibernateField(items, field, valid, save, newItem)
     -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
 
     ignite-form-field-input-text(
-        data-name=field
+        data-name='#{field}{{ $index || "" }}'
         data-ng-model=field
         data-ng-required='true'
         data-placeholder='key=value'
