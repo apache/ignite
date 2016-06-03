@@ -463,11 +463,11 @@ BOOST_AUTO_TEST_CASE(TestOutputSimpleBigInteger)
     CheckOutputSimple<BigInteger>(12345678909876543);
     CheckOutputSimple<BigInteger>(123456789098765432);
     CheckOutputSimple<BigInteger>(1234567890987654321);
-    CheckOutputSimple<BigInteger>(9999999999999999999LL);
-    CheckOutputSimple<BigInteger>(9999999990999999999LL);
-    CheckOutputSimple<BigInteger>(10000000000000000000LL);
-    CheckOutputSimple<BigInteger>(10000000000000000001LL);
-    CheckOutputSimple<BigInteger>(10000000050000000000LL);
+    CheckOutputSimple<BigInteger>(999999999999999999LL);
+    CheckOutputSimple<BigInteger>(999999999099999999LL);
+    CheckOutputSimple<BigInteger>(1000000000000000000LL);
+    CheckOutputSimple<BigInteger>(1000000000000000001LL);
+    CheckOutputSimple<BigInteger>(1000000005000000000LL);
     CheckOutputSimple<BigInteger>(INT64_MAX);
 
     CheckOutputSimple<BigInteger>(-1);
@@ -492,11 +492,11 @@ BOOST_AUTO_TEST_CASE(TestOutputSimpleBigInteger)
     CheckOutputSimple<BigInteger>(-12345678909876543);
     CheckOutputSimple<BigInteger>(-123456789098765432);
     CheckOutputSimple<BigInteger>(-1234567890987654321);
-    CheckOutputSimple<BigInteger>(-9999999999999999999LL);
-    CheckOutputSimple<BigInteger>(-9999999990999999999LL);
-    CheckOutputSimple<BigInteger>(-10000000000000000000LL);
-    CheckOutputSimple<BigInteger>(-10000000000000000001LL);
-    CheckOutputSimple<BigInteger>(-10000000050000000000LL);
+    CheckOutputSimple<BigInteger>(-999999999999999999LL);
+    CheckOutputSimple<BigInteger>(-999999999999999999LL);
+    CheckOutputSimple<BigInteger>(-1000000000000000000LL);
+    CheckOutputSimple<BigInteger>(-1000000000000000001LL);
+    CheckOutputSimple<BigInteger>(-1000000000000000000LL);
     CheckOutputSimple<BigInteger>(INT64_MIN);
 }
 
@@ -526,11 +526,11 @@ BOOST_AUTO_TEST_CASE(TestOutputSimpleDecimal)
     CheckOutputSimple<Decimal>(12345678909876543);
     CheckOutputSimple<Decimal>(123456789098765432);
     CheckOutputSimple<Decimal>(1234567890987654321);
-    CheckOutputSimple<Decimal>(9999999999999999999LL);
-    CheckOutputSimple<Decimal>(9999999990999999999LL);
-    CheckOutputSimple<Decimal>(10000000000000000000LL);
-    CheckOutputSimple<Decimal>(10000000000000000001LL);
-    CheckOutputSimple<Decimal>(10000000050000000000LL);
+    CheckOutputSimple<Decimal>(999999999999999999LL);
+    CheckOutputSimple<Decimal>(999999999099999999LL);
+    CheckOutputSimple<Decimal>(1000000000000000000LL);
+    CheckOutputSimple<Decimal>(1000000000000000001LL);
+    CheckOutputSimple<Decimal>(1000000005000000000LL);
     CheckOutputSimple<Decimal>(INT64_MAX);
 
     CheckOutputSimple<Decimal>(-1);
@@ -555,11 +555,11 @@ BOOST_AUTO_TEST_CASE(TestOutputSimpleDecimal)
     CheckOutputSimple<Decimal>(-12345678909876543);
     CheckOutputSimple<Decimal>(-123456789098765432);
     CheckOutputSimple<Decimal>(-1234567890987654321);
-    CheckOutputSimple<Decimal>(-9999999999999999999LL);
-    CheckOutputSimple<Decimal>(-9999999990999999999LL);
-    CheckOutputSimple<Decimal>(-10000000000000000000LL);
-    CheckOutputSimple<Decimal>(-10000000000000000001LL);
-    CheckOutputSimple<Decimal>(-10000000050000000000LL);
+    CheckOutputSimple<Decimal>(-999999999999999999LL);
+    CheckOutputSimple<Decimal>(-999999999099999999LL);
+    CheckOutputSimple<Decimal>(-1000000000000000000LL);
+    CheckOutputSimple<Decimal>(-1000000000000000001LL);
+    CheckOutputSimple<Decimal>(-1000000005000000000LL);
     CheckOutputSimple<Decimal>(INT64_MIN);
 }
 BOOST_AUTO_TEST_CASE(TestInputOutputSimpleBigInteger)
@@ -782,11 +782,11 @@ BOOST_AUTO_TEST_CASE(TestInputSimpleDecimal)
     CheckOutputInput(Decimal(12345678909876543));
     CheckOutputInput(Decimal(123456789098765432));
     CheckOutputInput(Decimal(1234567890987654321));
-    CheckOutputInput(Decimal(9999999999999999999LL));
-    CheckOutputInput(Decimal(9999999990999999999LL));
-    CheckOutputInput(Decimal(10000000000000000000LL));
-    CheckOutputInput(Decimal(10000000000000000001LL));
-    CheckOutputInput(Decimal(10000000050000000000LL));
+    CheckOutputInput(Decimal(999999999999999999LL));
+    CheckOutputInput(Decimal(999999999099999999LL));
+    CheckOutputInput(Decimal(1000000000000000000LL));
+    CheckOutputInput(Decimal(1000000000000000001LL));
+    CheckOutputInput(Decimal(1000000005000000000LL));
     CheckOutputInput(Decimal(INT64_MAX));
 
     CheckOutputInput(Decimal(-1));
@@ -811,11 +811,11 @@ BOOST_AUTO_TEST_CASE(TestInputSimpleDecimal)
     CheckOutputInput(Decimal(-12345678909876543));
     CheckOutputInput(Decimal(-123456789098765432));
     CheckOutputInput(Decimal(-1234567890987654321));
-    CheckOutputInput(Decimal(-9999999999999999999LL));
-    CheckOutputInput(Decimal(-9999999990999999999LL));
-    CheckOutputInput(Decimal(-10000000000000000000LL));
-    CheckOutputInput(Decimal(-10000000000000000001LL));
-    CheckOutputInput(Decimal(-10000000050000000000LL));
+    CheckOutputInput(Decimal(-999999999999999999LL));
+    CheckOutputInput(Decimal(-999999999099999999LL));
+    CheckOutputInput(Decimal(-1000000000000000000LL));
+    CheckOutputInput(Decimal(-1000000000000000001LL));
+    CheckOutputInput(Decimal(-1000000005000000000LL));
     CheckOutputInput(Decimal(INT64_MIN));
 }
 

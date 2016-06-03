@@ -121,4 +121,4 @@ namespace ignite
     }
 }
 
-#endif _IGNITE_CACHE_CACHE_ENTRY
+#endif //_IGNITE_CACHE_CACHE_ENTRY
