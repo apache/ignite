@@ -22,6 +22,7 @@
 #include <cassert>
 
 #include <utility>
+#include <algorithm>
 
 #include <ignite/common/common.h>
 
