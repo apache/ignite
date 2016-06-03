@@ -18,7 +18,7 @@
 import path from 'path';
 
 const srcDir = './app';
-const destDir = './build';
+const destDir = './dist';
 
 const igniteModulesDir = process.env.IGNITE_MODULES ? path.normalize(process.env.IGNITE_MODULES) : './ignite_modules';
 const igniteModulesTemp = './ignite_modules_temp';

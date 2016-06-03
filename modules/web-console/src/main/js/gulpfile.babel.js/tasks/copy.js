@@ -25,20 +25,20 @@ import { destDir, jsPaths, jsModulePaths, resourcePaths, resourceModulePaths, ig
 gulp.task('copy', (cb) => {
     const tasks = ['copy:resource', 'copy:ignite_modules:resource'];
 
-    if (util.env.debug || util.env.sourcemaps) {
-        tasks.push('copy:js');
+    // if (util.env.debug || util.env.sourcemaps) {
+    //     tasks.push('copy:js');
 
         tasks.push('copy:ignite_modules:js');
-    }
+    // }
 
     return sequence(tasks, cb);
 });
 
-gulp.task('copy:js', () =>
-    gulp.src(jsPaths, {base: './'})
-        .pipe(cache('copy:js'))
-        .pipe(gulp.dest(destDir))
-);
+// gulp.task('copy:js', () =>
+//     gulp.src(jsPaths, {base: './'})
+//         .pipe(cache('copy:js'))
+//         .pipe(gulp.dest(destDir))
+// );
 
 gulp.task('copy:ignite_modules:js', () =>
     gulp.src(jsModulePaths)

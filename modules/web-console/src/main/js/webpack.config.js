@@ -4,11 +4,11 @@ var _ = require('lodash');
 var _configs = {
 
   // global section
-  global: require(__dirname + '/config/webpack/global'),
+  global: require(__dirname + '/gulpfile.babel.js/webpack/global'),
 
   // config by enviroments
-  production: require(__dirname + '/config/webpack/environments/production'),
-  development: require(__dirname + '/config/webpack/environments/development')
+  production: require(__dirname + '/gulpfile.babel.js/webpack/environments/production'),
+  development: require(__dirname + '/gulpfile.babel.js/webpack/environments/development')
 };
 
 var _load = function() {
