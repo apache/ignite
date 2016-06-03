@@ -60,7 +60,21 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
     /**
      * Tests stopping two-step long query while result set is being generated on remote nodes.
      */
-    public void testRemoteQueryExecutionStop() throws Exception {
+    public void testRemoteQueryExecutionStop1() throws Exception {
+        testQueryStop(10_000, 4, "select a._key, b._key from String a, String b", 500);
+    }
+
+    /**
+     *
+     */
+    public void testRemoteQueryExecutionStop2() throws Exception {
+        testQueryStop(10_000, 4, "select a._key, b._key from String a, String b", 1000);
+    }
+
+    /**
+     *
+     */
+    public void testRemoteQueryExecutionStop3() throws Exception {
         testQueryStop(10_000, 4, "select a._key, b._key from String a, String b", 3000);
     }
 
@@ -118,6 +132,64 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
                     l.countDown();
                 }
             }, cancelTimeout, TimeUnit.MILLISECONDS);
+
+            try {
+                // Trigger remote execution.
+                qry.iterator();
+
+                // Fail if close was already invoked.
+                boolean res = first.compareAndSet(false, true);
+
+                if (!res)
+                    fail();
+            }
+            catch (CacheException ex) {
+                log().error("Got expected exception", ex);
+            }
+
+            l.await();
+
+            // Give some time to clean up after query cancellation.
+            Thread.sleep(3000);
+
+            // Validate nodes query result buffer.
+            checkCleanState();
+        }
+    }
+
+    /**
+     * Tests stopping two step query while fetching result set from remote nodes.
+     */
+    private void testQueryStopOnNodeFail(int keyCnt, int valSize, String sql, long failTimeout) throws Exception {
+        try (Ignite client = startGrid("client")) {
+
+            IgniteCache<Object, Object> cache = client.cache(null);
+
+            assertEquals(0, cache.localSize());
+
+            for (int i = 0; i < keyCnt; i++) {
+                char[] tmp = new char[valSize];
+                Arrays.fill(tmp, ' ');
+                cache.put(i, new String(tmp));
+            }
+
+            assertEquals(0, cache.localSize(ALL));
+
+            final QueryCursor<List<?>> qry = cache.query(new SqlFieldsQuery(sql));
+
+            final CountDownLatch l = new CountDownLatch(1);
+
+            final AtomicBoolean first = new AtomicBoolean();
+
+            ignite().scheduler().runLocal(new Runnable() {
+                @Override public void run() {
+                    boolean res = first.compareAndSet(false, true);
+                    if (res)
+                        qry.close();
+
+                    l.countDown();
+                }
+            }, failTimeout, TimeUnit.MILLISECONDS);
 
             try {
                 // Trigger remote execution.
