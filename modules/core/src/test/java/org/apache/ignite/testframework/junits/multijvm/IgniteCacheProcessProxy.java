@@ -471,7 +471,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> recoverPartitions(Collection<Integer> partitions) {
+    @Override public IgniteFuture<?> recoverPartitions(Set<Integer> partitions) {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 

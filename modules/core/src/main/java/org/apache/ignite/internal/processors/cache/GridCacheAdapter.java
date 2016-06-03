@@ -1394,7 +1394,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         V val = get(key, !keeyBinary, false);
 
         if (ctx.config().getInterceptor() != null) {
-            key = keeyBinary ? (K) ctx.unwrapBinaryIfNeeded(key, true, false) : key;
+            key = keeyBinary ? (K)ctx.unwrapBinaryIfNeeded(key, true, false) : key;
 
             val = (V)ctx.config().getInterceptor().onGet(key, val);
         }
@@ -1427,7 +1427,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             : null;
 
         if (ctx.config().getInterceptor() != null) {
-            key = keepBinary ? (K) ctx.unwrapBinaryIfNeeded(key, true, false) : key;
+            key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key, true, false) : key;
 
             V val0 = (V)ctx.config().getInterceptor().onGet(key, t != null ? val.getValue() : null);
 
@@ -1492,23 +1492,23 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     throws IgniteCheckedException {
                     T2<V, GridCacheVersion> t = f.get();
 
-                K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false) : key0;
+                    K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false) : key0;
 
-                CacheEntry val = t != null ? new CacheEntryImplEx<>(
-                    key,
-                    t.get1(),
-                    t.get2())
-                    : null;
+                    CacheEntry val = t != null ? new CacheEntryImplEx<>(
+                        key,
+                        t.get1(),
+                        t.get2())
+                        : null;
 
-                if (intercept) {
-                    V val0 = (V)ctx.config().getInterceptor().onGet(key, t != null ? val.getValue() : null);
+                    if (intercept) {
+                        V val0 = (V)ctx.config().getInterceptor().onGet(key, t != null ? val.getValue() : null);
 
-                    return val0 != null ? new CacheEntryImplEx(key, val0, t != null ? t.get2() : null) : null;
+                        return val0 != null ? new CacheEntryImplEx(key, val0, t != null ? t.get2() : null) : null;
+                    }
+                    else
+                        return val;
                 }
-                else
-                    return val;
-            }
-        });
+            });
 
         if (statsEnabled)
             fut.listen(new UpdateGetTimeStatClosure<T2<V, GridCacheVersion>>(metrics0(), start));
@@ -2472,7 +2472,8 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
             validateCacheKeys(map.keySet());
 
         IgniteInternalFuture<?> fut = asyncOp(new AsyncOp(map.keySet()) {
-            @Override public IgniteInternalFuture<GridCacheReturn> op(IgniteTxLocalAdapter tx, AffinityTopologyVersion readyTopVer) {
+            @Override public IgniteInternalFuture<GridCacheReturn> op(IgniteTxLocalAdapter tx,
+                AffinityTopologyVersion readyTopVer) {
                 return tx.invokeAsync(ctx,
                     readyTopVer,
                     (Map<? extends K, ? extends EntryProcessor<K, V, Object>>)map,
@@ -2758,7 +2759,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         return asyncOp(new AsyncOp<Boolean>() {
             @Override public IgniteInternalFuture<Boolean> op(IgniteTxLocalAdapter tx, AffinityTopologyVersion readyTopVer) {
                 return tx.putAsync(ctx, readyTopVer, key, val, false, ctx.hasVal()).chain(
-                    (IgniteClosure<IgniteInternalFuture<GridCacheReturn>, Boolean>) RET2FLAG);
+                    (IgniteClosure<IgniteInternalFuture<GridCacheReturn>, Boolean>)RET2FLAG);
             }
 
             @Override public String toString() {
@@ -3933,20 +3934,44 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public boolean state(CacheState state) {
+    @Override public boolean changeState(CacheState state) {
         CacheState previousState = this.state.get();
 
         if (state.equals(previousState))
             return false;
 
-        assert this.state.compareAndSet(previousState, state);
+        boolean success = this.state.compareAndSet(previousState, state);
+
+        assert success;
 
         if (previousState.active() && !state.active()) {
             // TODO: trigger a checkpoint
         }
 
         return true;
+    }
 
+    /** {@inheritDoc} */
+    @Override public boolean changeState(CacheState.Difference diff) {
+        CacheState previousState = this.state.get();
+
+        CacheState state = previousState.apply(diff);
+
+        if (state.equals(previousState))
+            return false;
+
+        if (!previousState.active() && state.active())
+            System.out.println("!!!");
+
+        boolean success = this.state.compareAndSet(previousState, state);
+
+        assert success;
+
+        if (previousState.active() && !state.active()) {
+            // TODO: trigger a checkpoint
+        }
+
+        return true;
     }
 
     /**

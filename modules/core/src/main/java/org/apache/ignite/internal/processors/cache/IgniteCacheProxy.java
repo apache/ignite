@@ -2083,7 +2083,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<?> active(boolean active) {
-        return new IgniteFutureImpl<>(ctx.kernalContext().cache().changeCacheState(getName(), new CacheState(active, lostPartitions())));
+        return new IgniteFutureImpl<>(ctx.kernalContext().cache().changeCacheState(getName(), new CacheState.Difference(active, null, null)));
     }
 
     /** {@inheritDoc} */
@@ -2092,7 +2092,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> recoverPartitions(Collection<Integer> partitions) {
+    @Override public IgniteFuture<?> recoverPartitions(Set<Integer> partitions) {
 
         CacheState state = delegate.state();
 
@@ -2100,7 +2100,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         lostParts.removeAll(partitions);
 
-        return new IgniteFutureImpl<>(ctx.kernalContext().cache().changeCacheState(getName(), new CacheState(state.active(), lostParts)));
+        return new IgniteFutureImpl<>(ctx.kernalContext().cache().changeCacheState(getName(),
+            new CacheState.Difference(null, null, partitions)));
     }
 
     /** {@inheritDoc} */

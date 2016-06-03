@@ -1885,5 +1885,11 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param state New cache state.
      * @return {@code True} if state was changed.
      */
-    public boolean state(CacheState state);
+    public boolean changeState(CacheState state);
+
+    /**
+     * @param diff Cache state diff.
+     * @return {@code True} if state was changed.
+     */
+    public boolean changeState(CacheState.Difference diff);
 }

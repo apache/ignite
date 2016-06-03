@@ -1457,14 +1457,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 lostParts.add(p);
         }
 
-        CacheState state = cacheCtx.cache().state();
-
-        if (state.lostPartitions().containsAll(lostParts))
-            return;
-
-        lostParts.addAll(state.lostPartitions());
-
-        cctx.cache().changeCacheState(cacheCtx.name(), new CacheState(state.active(), lostParts));
+        cctx.cache().changeCacheState(cacheCtx.name(), new CacheState.Difference(null, lostParts, null));
     }
 
     /**

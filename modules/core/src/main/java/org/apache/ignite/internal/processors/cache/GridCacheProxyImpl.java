@@ -1629,8 +1629,13 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public boolean state(CacheState state) {
-        return delegate.state(state);
+    @Override public boolean changeState(CacheState state) {
+        return delegate.changeState(state);
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean changeState(CacheState.Difference diff) {
+        return delegate.changeState(diff);
     }
 
     /** {@inheritDoc} */

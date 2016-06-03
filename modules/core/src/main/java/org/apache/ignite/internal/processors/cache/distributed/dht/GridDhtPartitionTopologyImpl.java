@@ -1033,26 +1033,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                     if (cntr == null || cntr < e.getValue())
                         this.cntrMap.put(e.getKey(), e.getValue());
                 }
-
-                for (int i = 0; i < locParts.length; i++) {
-                    GridDhtLocalPartition part = locParts[i];
-
-                    if (part == null)
-                        continue;
-
-                    Long cntr = cntrMap.get(part.id());
-
-                    if (cntr != null) {
-                        if (cntr > part.updateCounter() && part.state().active()) {
-                            try {
-                                cctx.offheap().clear(part);
-                            }
-                            catch (Exception ex) {
-                                assert false : ex;
-                            }
-                        }
-                    }
-                }
             }
 
             if (exchId != null && lastExchangeId != null && lastExchangeId.compareTo(exchId) >= 0) {
@@ -1162,6 +1142,12 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                     assert locPart != null;
 
                     if (locPart.state() == OWNING) {
+                        try {
+                            cctx.offheap().clear(locPart);
+                        } catch (IgniteCheckedException ex) {
+                            throw new IgniteException(ex);
+                        }
+
                         locPart = locParts[p] = new GridDhtLocalPartition(cctx, p, entryFactory);
 
                         changed = true;
@@ -1333,8 +1319,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                     try {
                         cctx.offheap().clear(locPart);
                     }
-                    catch (Exception ex) {
-                        assert false : ex;
+                    catch (IgniteCheckedException ex) {
+                        throw new IgniteException(ex);
                     }
 
                     locParts[p] = new GridDhtLocalPartition(cctx, p, entryFactory);

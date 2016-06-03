@@ -71,8 +71,8 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** */
     private UUID rcvdFrom;
 
-    /** Cache state. */
-    private CacheState state;
+    /** Cache state diff. */
+    private CacheState.Difference stateDiff;
 
     /** */
     private transient boolean exchangeNeeded;
@@ -158,7 +158,7 @@ public class DynamicCacheChangeRequest implements Serializable {
      * @return {@code True} if this is a state modification request.
      */
     public boolean modify() {
-        return state != null;
+        return stateDiff != null;
     }
 
     /**
@@ -295,17 +295,17 @@ public class DynamicCacheChangeRequest implements Serializable {
     }
 
     /**
-     * @return Cache state.
+     * @return Cache state diff.
      */
-    public CacheState state() {
-        return state;
+    public CacheState.Difference stateDiff() {
+        return stateDiff;
     }
 
     /**
-     * @param state New cache state.
+     * @param stateDiff Cache state diff.
      */
-    public void state(CacheState state) {
-        this.state = state;
+    public void stateDiff(CacheState.Difference stateDiff) {
+        this.stateDiff = stateDiff;
     }
 
     /** {@inheritDoc} */
