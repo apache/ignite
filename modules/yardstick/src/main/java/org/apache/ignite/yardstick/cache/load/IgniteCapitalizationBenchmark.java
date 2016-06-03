@@ -47,22 +47,28 @@ import java.util.UUID;
 
 /**
  * Ignite capitalization benchmark.
+ * Topology should NOT be changed during benchmark processing.
  */
 public class IgniteCapitalizationBenchmark extends IgniteAbstractBenchmark {
-
+    /** Person cache name. */
     static final String PERSON_CACHE = "person";
-    static final String DEPOSIT_CACHE = "deposit";
-    static SqlFieldsQuery findDepositQuery;
 
-    static {
-        findDepositQuery = new SqlFieldsQuery("SELECT _key FROM \"" + DEPOSIT_CACHE + "\".Deposit WHERE affKey=?").setLocal(true);
-    }
+    /** Deposit cache name. */
+    static final String DEPOSIT_CACHE = "deposit";
+
+    /** Find deposit SQL query. */
+    static final String FIND_DEPOSIT_SQL = "SELECT _key FROM \"" + DEPOSIT_CACHE + "\".Deposit WHERE affKey=?";
+
+    /** Distribution of partitions by nodes. */
+    private Map<UUID, List<Integer>> partitionsMap;
 
     /** {@inheritDoc} */
     @Override public void setUp(BenchmarkConfiguration cfg) throws Exception {
         super.setUp(cfg);
 
         preLoading();
+
+        partitionsMap = personCachePartitions();
     }
 
     /**
@@ -144,8 +150,6 @@ public class IgniteCapitalizationBenchmark extends IgniteAbstractBenchmark {
 
     /** {@inheritDoc} */
     @Override public boolean test(Map<Object, Object> ctx) throws Exception {
-
-        Map<UUID, List<Integer>> partitionsMap = personCachePartitions();
 
         ScanQueryBroadcastClosure c = new ScanQueryBroadcastClosure(partitionsMap);
 
@@ -236,6 +240,8 @@ public class IgniteCapitalizationBenchmark extends IgniteAbstractBenchmark {
                         Integer personId = entry.getKey();
 
                         IgniteCache<AffinityKey, BinaryObject> depositCache = node.cache(DEPOSIT_CACHE);
+
+                        SqlFieldsQuery findDepositQuery = new SqlFieldsQuery(FIND_DEPOSIT_SQL).setLocal(true);
 
                         try (QueryCursor cursor1 = depositCache.query(findDepositQuery.setArgs(personId))) {
                             for (Object obj : cursor1) {
