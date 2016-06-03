@@ -251,6 +251,26 @@ createGmondReceiverConfig()
     rm -f /opt/gmond-default.conf
 }
 
+createGmondSenderReceiverConfig()
+{
+    /usr/local/sbin/gmond --default_config > /opt/gmond-default.conf
+    if [ $? -ne 0 ]; then
+        terminate "Failed to create gmond default config in: /opt/gmond-default.txt"
+    fi
+
+    HOST_NAME=$(hostname -f | tr '[:upper:]' '[:lower:]')
+
+    cat /opt/gmond-default.conf | sed -r "s/name = \"unspecified\"/name = \"$1\"/g" | \
+    sed -r "s/#bind_hostname/bind_hostname/g" | \
+    sed "0,/mcast_join = 239.2.11.71/s/mcast_join = 239.2.11.71/host = $HOST_NAME/g" | \
+    sed -r "s/mcast_join = 239.2.11.71//g" | sed -r "s/bind = 239.2.11.71//g" | \
+    sed -r "s/port = 8649/port = $2/g" | sed -r "s/retry_bind = true//g" > /opt/gmond-${1}.conf
+
+    chmod a+r /opt/gmond-${1}.conf
+
+    rm -f /opt/gmond-default.conf
+}
+
 setupGangliaPackages()
 {
     echo "[INFO] Installing Ganglia master required packages"
@@ -405,6 +425,7 @@ setupGangliaPackages()
     echo "data_source \"cassandra\" ${HOST_NAME}:8641" > /opt/gmetad.conf
     echo "data_source \"ignite\" ${HOST_NAME}:8642" >> /opt/gmetad.conf
     echo "data_source \"test\" ${HOST_NAME}:8643" >> /opt/gmetad.conf
+    echo "data_source \"ganglia\" ${HOST_NAME}:8644" >> /opt/gmetad.conf
     echo "setuid_username \"nobody\"" >> /opt/gmetad.conf
     echo "case_sensitive_hostnames 0" >> /opt/gmetad.conf
 
@@ -413,6 +434,7 @@ setupGangliaPackages()
     createGmondReceiverConfig cassandra 8641
     createGmondReceiverConfig ignite 8642
     createGmondReceiverConfig test 8643
+    createGmondSenderReceiverConfig ganglia 8644
 }
 
 startGmondReceiver()
@@ -505,6 +527,7 @@ registerNode
 startGmondReceiver cassandra
 startGmondReceiver ignite
 startGmondReceiver test
+startGmondReceiver ganglia
 startGmetadCollector
 startHttpdService
 
