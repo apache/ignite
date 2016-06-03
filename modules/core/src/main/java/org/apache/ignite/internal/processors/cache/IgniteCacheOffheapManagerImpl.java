@@ -149,7 +149,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     @Override public long entriesCount(boolean primary, boolean backup,
         AffinityTopologyVersion topVer) throws IgniteCheckedException {
         if (cctx.isLocal())
-            return 0; // TODO: ignite-db-x.
+            return 0; // TODO: GG-11208.
         else {
             ClusterNode locNode = cctx.localNode();
 
@@ -177,7 +177,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     /** {@inheritDoc} */
     @Override public long entriesCount(int part) {
         if (cctx.isLocal())
-            return 0; // TODO: ignite-db-x.
+            return 0; // TODO: GG-11208.
         else {
             GridDhtLocalPartition locPart = cctx.topology().localPartition(part, AffinityTopologyVersion.NONE, false);
 
@@ -553,9 +553,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         @Nullable GridDhtLocalPartition part) throws IgniteCheckedException {
         IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
 
-        String idxName = BPlusTree.treeName(cctx.name(), cctx.cacheId(), "Cache-" + p);
+        String idxName = treeName(p);
 
-        // TODO: cleanup when cache/partition is destroyed.
+        // TODO: GG-11220 cleanup when cache/partition is destroyed.
         final RootPage rootPage = dbMgr.meta().getOrAllocateForTree(cctx.cacheId(), idxName);
 
         CacheDataRowStore rowStore = new CacheDataRowStore(cctx, freeList);
@@ -569,6 +569,14 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             rootPage.isAllocated());
 
         return new CacheDataStoreImpl(rowStore, dataTree, part);
+    }
+
+    /**
+     * @param p Partition.
+     * @return Tree name for given partition.
+     */
+    private String treeName(int p) {
+        return BPlusTree.treeName("p-" + p, cctx.cacheId(), "CacheData");
     }
 
     /**
