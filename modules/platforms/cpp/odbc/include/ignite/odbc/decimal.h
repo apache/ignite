@@ -85,6 +85,26 @@ namespace ignite
         Decimal(const BigInteger& val, int32_t scale);
 
         /**
+         * String constructor.
+         *
+         * @param val String to assign.
+         * @param len String length.
+         */
+        Decimal(const char* val, int32_t len);
+
+        /**
+         * String constructor.
+         *
+         * @param val String to assign.
+         */
+        Decimal(const std::string& val) :
+            scale(0),
+            magnitude(0)
+        {
+            Assign(val);
+        }
+
+        /**
          * Destructor.
          */
         ~Decimal();
@@ -164,6 +184,24 @@ namespace ignite
          * @return Length of the magnitude.
          */
         int32_t GetMagnitudeLength() const;
+
+        /**
+         * Assign specified value to this Decimal.
+         *
+         * @param val String to assign.
+         */
+        void Assign(const std::string& val)
+        {
+            Assign(val.data(), static_cast<int32_t>(val.size()));
+        }
+
+        /**
+         * Assign specified value to this Decimal.
+         *
+         * @param val String to assign.
+         * @param len String length.
+         */
+        void Assign(const char* val, int32_t len);
 
         /**
          * Assign specified value to this Decimal.
@@ -265,7 +303,7 @@ namespace ignite
                 // Just output everything before the decimal point.
                 os.write(&magStr[magBegin], dotPos);
 
-                int32_t afterDot = lastNonZero - dotPos + magBegin + 1;
+                int32_t afterDot = lastNonZero - dotPos - magBegin + 1;
 
                 if (afterDot > 0)
                 {
@@ -340,7 +378,7 @@ namespace ignite
                 is.ignore();
                 c = is.peek();
 
-                if (part >= 10000000000000000000ULL)
+                if (part >= 1000000000000000000ULL)
                 {
                     BigInteger::GetPowerOfTen(partDigits, pow);
                     mag.Multiply(pow, mag);
@@ -360,10 +398,17 @@ namespace ignite
             if (partDigits)
             {
                 BigInteger::GetPowerOfTen(partDigits, pow);
+
                 mag.Multiply(pow, mag);
 
                 mag.Add(part);
             }
+
+            // Adjusting scale.
+            if (scale < 0)
+                scale = 0;
+            else
+                --scale;
 
             // Reading exponent.
             if (c == 'e' || c == 'E')

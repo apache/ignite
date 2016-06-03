@@ -66,6 +66,13 @@ namespace ignite
         // No-op.
     }
 
+    Decimal::Decimal(const char* val, int32_t len) :
+        scale(0),
+        magnitude(0)
+    {
+        Assign(val, len);
+    }
+
     Decimal::~Decimal()
     {
         // No-op.
@@ -157,6 +164,15 @@ namespace ignite
     int32_t Decimal::GetMagnitudeLength() const
     {
         return magnitude.mag.GetSize();
+    }
+
+    void Decimal::Assign(const char* val, int32_t len)
+    {
+        std::stringstream converter;
+
+        converter.write(val, len);
+
+        converter >> *this;
     }
 
     void Decimal::Assign(int64_t val)

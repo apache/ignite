@@ -50,6 +50,26 @@ namespace ignite
         BigInteger(int64_t val);
 
         /**
+         * String constructor.
+         *
+         * @param val String to assign.
+         * @param len String length.
+         */
+        BigInteger(const char* val, int32_t len);
+
+        /**
+         * String constructor.
+         *
+         * @param val String to assign.
+         */
+        BigInteger(const std::string& val) :
+            sign(1),
+            mag()
+        {
+            Assign(val);
+        }
+
+        /**
          * Copy constructor.
          *
          * @param other Other value.
@@ -104,6 +124,24 @@ namespace ignite
          * @param val Value to assign.
          */
         void Assign(uint64_t val);
+
+        /**
+         * Assign specified value to this Decimal.
+         *
+         * @param val String to assign.
+         */
+        void Assign(const std::string& val)
+        {
+            Assign(val.data(), static_cast<int32_t>(val.size()));
+        }
+
+        /**
+         * Assign specified value to this Decimal.
+         *
+         * @param val String to assign.
+         * @param len String length.
+         */
+        void Assign(const char* val, int32_t len);
 
         /**
          * Get number sign. Returns -1 if negative and 1 otherwise.
@@ -297,6 +335,88 @@ namespace ignite
             }
 
             return os;
+        }
+
+        /**
+         * Input operator.
+         *
+         * @param is Input stream.
+         * @param val Value to input.
+         * @return Reference to the first param.
+         */
+        friend std::istream& operator>>(std::istream& is, BigInteger& val)
+        {
+            std::istream::sentry sentry(is);
+
+            // Return zero if input failed.
+            val.Assign(0ULL);
+
+            if (!is)
+                return is;
+
+            // Current char.
+            int c = is.peek();
+
+            // Current value parts.
+            uint64_t part = 0;
+            int32_t partDigits = 0;
+            int32_t sign = 1;
+
+            BigInteger pow;
+            BigInteger bigPart;
+
+            if (!is)
+                return is;
+
+            // Checking sign.
+            if (c == '-' || c == '+')
+            {
+                if (c == '-')
+                    sign = -1;
+
+                is.ignore();
+                c = is.peek();
+            }
+
+            // Reading number itself.
+            while (is)
+            {
+                if (isdigit(c))
+                {
+                    part = part * 10 + (c - '0');
+                    ++partDigits;
+                }
+                else
+                    break;
+
+                is.ignore();
+                c = is.peek();
+
+                if (part >= 10000000000000000000ULL)
+                {
+                    BigInteger::GetPowerOfTen(partDigits, pow);
+                    val.Multiply(pow, val);
+
+                    val.Add(part);
+
+                    part = 0;
+                    partDigits = 0;
+                }
+            }
+
+            // Adding last part of the number.
+            if (partDigits)
+            {
+                BigInteger::GetPowerOfTen(partDigits, pow);
+                val.Multiply(pow, val);
+
+                val.Add(part);
+            }
+
+            if (sign < 0)
+                val.Negate();
+
+            return is;
         }
 
         /**

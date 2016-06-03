@@ -37,6 +37,13 @@ namespace ignite
         Assign(val);
     }
 
+    BigInteger::BigInteger(const char* val, int32_t len) :
+        sign(1),
+        mag()
+    {
+        Assign(val, len);
+    }
+
     BigInteger::BigInteger(const BigInteger& other) :
         sign(other.sign),
         mag(other.mag)
@@ -200,6 +207,15 @@ namespace ignite
         }
 
         mag[0] = static_cast<uint32_t>(val);
+    }
+
+    void BigInteger::Assign(const char* val, int32_t len)
+    {
+        std::stringstream converter;
+
+        converter.write(val, len);
+
+        converter >> *this;
     }
 
     int8_t BigInteger::GetSign() const
@@ -472,7 +488,7 @@ namespace ignite
      */
     uint32_t Add(uint32_t* res, int32_t len, uint32_t addend)
     {
-        uint64_t carry = 0;
+        uint64_t carry = addend;
 
         for (int32_t i = 0; (i < len) && carry; ++i)
         {
@@ -502,25 +518,31 @@ namespace ignite
 
             mag.Resize(len);
         }
-
-        mag.Reserve(mag.GetSize() + 1);
+        else
+            mag.Reserve(mag.GetSize() + 1);
 
         uint32_t carry = ignite::Add(mag.GetData(), addend, len);
 
         if (carry)
+        {
             carry = ignite::Add(mag.GetData() + len, mag.GetSize() - len, carry);
 
-        if (carry)
-            mag.PushBack(carry);
+            if (carry)
+                mag.PushBack(carry);
+        }
     }
 
     void BigInteger::Add(uint64_t x)
     {
-        if (!x)
+        if (x == 0)
             return;
 
-        if (mag.IsEmpty())
+        if (IsZero())
+        {
             Assign(x);
+
+            return;
+        }
 
         uint32_t val[2];
 
@@ -720,13 +742,13 @@ namespace ignite
             uint64_t rhat = base % nv[vlen - 1]; // A remainder.
 
             // Adjusting result if needed.
-            while (qhat >= UINT32_MAX ||
-                  ((qhat * nv[vlen - 2]) > (UINT32_MAX * rhat + nu[i + vlen - 2])))
+            while (qhat > UINT32_MAX ||
+                  ((qhat * nv[vlen - 2]) > ((UINT32_MAX + 1ULL) * rhat + nu[i + vlen - 2])))
             {
                 --qhat;
                 rhat += nv[vlen - 1];
 
-                if (rhat >= UINT32_MAX)
+                if (rhat > UINT32_MAX)
                     break;
             }
 
