@@ -1400,7 +1400,7 @@ namespace ignite
 
                     ignite::common::FixedSizeArray<char> arr(realLen + 1);
 
-                    for (int32_t i = 0; i < arr.GetSize(); i++)
+                    for (int32_t i = 0; i < realLen; i++)
                         arr[i] = static_cast<char>(stream->ReadInt8());
 
                     arr[realLen] = 0;

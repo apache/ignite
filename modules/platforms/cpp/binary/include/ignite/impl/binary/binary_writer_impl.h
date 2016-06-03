@@ -972,7 +972,7 @@ namespace ignite
             {
                 const char* obj0 = obj.c_str();
 
-                int32_t len = static_cast<int32_t>(strlen(obj0));
+                int32_t len = static_cast<int32_t>(obj.size());
 
                 stream->WriteInt8(IGNITE_TYPE_STRING);
 
