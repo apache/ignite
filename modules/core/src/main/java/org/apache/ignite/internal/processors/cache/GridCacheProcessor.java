@@ -171,7 +171,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
     private IgniteTransactionsImpl transactions;
 
     /** Pending cache starts. */
-    private ConcurrentMap<String, IgniteInternalFuture> pendingFuts = new ConcurrentHashMap<>();
+    private ConcurrentMap<UUID, IgniteInternalFuture> pendingFuts = new ConcurrentHashMap<>();
 
     /** Template configuration add futures. */
     private ConcurrentMap<String, IgniteInternalFuture> pendingTemplateFuts = new ConcurrentHashMap<>();
@@ -1817,7 +1817,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param req Request to complete future for.
      */
     public void completeStartFuture(DynamicCacheChangeRequest req) {
-        DynamicCacheStartFuture fut = (DynamicCacheStartFuture)pendingFuts.get(maskNull(req.cacheName()));
+        DynamicCacheStartFuture fut = (DynamicCacheStartFuture)pendingFuts.get(req.requestId());
 
         assert req.deploymentId() != null;
         assert fut == null || fut.deploymentId != null;
@@ -1899,7 +1899,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 if (desc == null)
                     continue;
 
-                DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(cache.name(), null);
+                DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cache.name(), null);
 
                 req.startCacheConfiguration(desc.cacheConfiguration());
 
@@ -1926,7 +1926,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             reqs = new ArrayList<>(registeredCaches.size() + registeredTemplates.size());
 
             for (DynamicCacheDescriptor desc : registeredCaches.values()) {
-                DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(desc.cacheConfiguration().getName(), null);
+                DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), desc.cacheConfiguration().getName(), null);
 
                 req.startCacheConfiguration(desc.cacheConfiguration());
 
@@ -1942,7 +1942,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
 
             for (DynamicCacheDescriptor desc : registeredTemplates.values()) {
-                DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(desc.cacheConfiguration().getName(), null);
+                DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), desc.cacheConfiguration().getName(), null);
 
                 req.startCacheConfiguration(desc.cacheConfiguration());
 
@@ -2288,7 +2288,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         DynamicCacheDescriptor desc = registeredCaches.get(maskNull(cacheName));
 
-        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(cacheName, ctx.localNodeId());
+        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
 
         req.failIfExists(failIfExists);
 
@@ -2382,7 +2382,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (checkThreadTx)
             checkEmptyTransactions();
 
-        DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(cacheName, ctx.localNodeId());
+        DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
 
         t.stop(true);
 
@@ -2401,7 +2401,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         checkEmptyTransactions();
 
-        DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(cacheName, ctx.localNodeId());
+        DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
 
         t.close(true);
 
@@ -2421,7 +2421,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         checkEmptyTransactions();
 
-        DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(cacheName, ctx.localNodeId());
+        DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
 
         t.stateDiff(diff);
 
@@ -2472,33 +2472,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                     continue;
 
                 DynamicCacheStartFuture old = (DynamicCacheStartFuture)pendingFuts.putIfAbsent(
-                    maskNull(req.cacheName()), fut);
+                    req.requestId(), fut);
 
-                if (old != null) {
-                    if (req.start()) {
-                        if (!req.clientStartOnly()) {
-                            if (failIfExists)
-                                fut.onDone(new CacheExistsException("Failed to start cache " +
-                                    "(a cache with the same name is already being started or stopped): " +
-                                    req.cacheName()));
-                            else {
-                                fut = old;
-
-                                continue;
-                            }
-                        }
-                        else {
-                            fut = old;
-
-                            continue;
-                        }
-                    }
-                    else {
-                        fut = old;
-
-                        continue;
-                    }
-                }
+                assert old == null; //TODO : check failIfExists.
 
                 if (fut.isDone())
                     continue;
@@ -2624,7 +2600,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             DynamicCacheStartFuture fut = null;
 
             if (ctx.localNodeId().equals(req.initiatingNodeId())) {
-                fut = (DynamicCacheStartFuture)pendingFuts.get(maskNull(req.cacheName()));
+                fut = (DynamicCacheStartFuture)pendingFuts.get(req.requestId());
 
                 if (fut != null && !req.deploymentId().equals(fut.deploymentId()))
                     fut = null;
@@ -3256,7 +3232,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (desc != null)
             return;
 
-        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(cacheCfg.getName(), ctx.localNodeId());
+        DynamicCacheChangeRequest req = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheCfg.getName(), ctx.localNodeId());
 
         CacheConfiguration cfg = new CacheConfiguration(cacheCfg);
 
@@ -3672,7 +3648,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public boolean onDone(@Nullable Object res, @Nullable Throwable err) {
             // Make sure to remove future before completion.
-            pendingFuts.remove(maskNull(cacheName), this);
+            pendingFuts.remove(req.requestId(), this);
 
             return super.onDone(res, err);
         }

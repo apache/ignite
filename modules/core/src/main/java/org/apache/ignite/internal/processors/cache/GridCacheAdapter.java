@@ -3960,9 +3960,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (state.equals(previousState))
             return false;
 
-        if (!previousState.active() && state.active())
-            System.out.println("!!!");
-
         boolean success = this.state.compareAndSet(previousState, state);
 
         assert success;

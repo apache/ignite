@@ -259,6 +259,8 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
         ignite1.close();
         ignite2.close();
 
+        awaitPartitionMapExchange();
+
         cache3.active(true).get();
 
         assert GridTestUtils.waitForCondition(new GridAbsPredicate() {

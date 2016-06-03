@@ -34,6 +34,8 @@ public class DynamicCacheChangeRequest implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
+    private UUID requestId;
+
     /** Start ID. */
     private IgniteUuid deploymentId;
 
@@ -86,9 +88,14 @@ public class DynamicCacheChangeRequest implements Serializable {
      * @param cacheName Cache stop name.
      * @param initiatingNodeId Initiating node ID.
      */
-    public DynamicCacheChangeRequest(String cacheName, UUID initiatingNodeId) {
+    public DynamicCacheChangeRequest(UUID requestId, String cacheName, UUID initiatingNodeId) {
+        this.requestId = requestId;
         this.cacheName = cacheName;
         this.initiatingNodeId = initiatingNodeId;
+    }
+
+    public UUID requestId() {
+        return requestId;
     }
 
     /**
