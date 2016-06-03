@@ -47,7 +47,7 @@ namespace ignite
          *
          * @param val Value.
          */
-        BigInteger(int64_t val);
+        explicit BigInteger(int64_t val);
 
         /**
          * String constructor.
@@ -62,11 +62,11 @@ namespace ignite
          *
          * @param val String to assign.
          */
-        BigInteger(const std::string& val) :
+        explicit BigInteger(const std::string& val) :
             sign(1),
             mag()
         {
-            Assign(val);
+            AssignString(val);
         }
 
         /**
@@ -116,23 +116,16 @@ namespace ignite
          *
          * @param val Value to assign.
          */
-        void Assign(int64_t val);
-
-        /**
-         * Assign specified value to this BigInteger.
-         *
-         * @param val Value to assign.
-         */
-        void Assign(uint64_t val);
+        void AssignInt64(int64_t val);
 
         /**
          * Assign specified value to this Decimal.
          *
          * @param val String to assign.
          */
-        void Assign(const std::string& val)
+        void AssignString(const std::string& val)
         {
-            Assign(val.data(), static_cast<int32_t>(val.size()));
+            AssignString(val.data(), static_cast<int32_t>(val.size()));
         }
 
         /**
@@ -141,7 +134,14 @@ namespace ignite
          * @param val String to assign.
          * @param len String length.
          */
-        void Assign(const char* val, int32_t len);
+        void AssignString(const char* val, int32_t len);
+
+        /**
+         * Assign specified value to this BigInteger.
+         *
+         * @param val Value to assign.
+         */
+        void AssignUint64(uint64_t val);
 
         /**
          * Get number sign. Returns -1 if negative and 1 otherwise.
@@ -303,7 +303,7 @@ namespace ignite
             BigInteger res;
             BigInteger left;
 
-            maxUintTenPower.Assign(10000000000000000000ULL);
+            maxUintTenPower.AssignUint64(10000000000000000000ULL);
 
             std::vector<uint64_t> vals;
 
@@ -349,7 +349,7 @@ namespace ignite
             std::istream::sentry sentry(is);
 
             // Return zero if input failed.
-            val.Assign(0ULL);
+            val.AssignInt64(0);
 
             if (!is)
                 return is;

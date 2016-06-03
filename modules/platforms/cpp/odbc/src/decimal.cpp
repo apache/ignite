@@ -70,7 +70,7 @@ namespace ignite
         scale(0),
         magnitude(0)
     {
-        Assign(val, len);
+        AssignString(val, len);
     }
 
     Decimal::~Decimal()
@@ -166,7 +166,7 @@ namespace ignite
         return magnitude.mag.GetSize();
     }
 
-    void Decimal::Assign(const char* val, int32_t len)
+    void Decimal::AssignString(const char* val, int32_t len)
     {
         std::stringstream converter;
 
@@ -175,21 +175,14 @@ namespace ignite
         converter >> *this;
     }
 
-    void Decimal::Assign(int64_t val)
+    void Decimal::AssignInt64(int64_t val)
     {
-        magnitude.Assign(val);
+        magnitude.AssignInt64(val);
 
         scale = 0;
     }
 
-    void Decimal::Assign(uint64_t val)
-    {
-        magnitude.Assign(val);
-
-        scale = 0;
-    }
-
-    void Decimal::Assign(double val)
+    void Decimal::AssignDouble(double val)
     {
         std::stringstream converter;
 
@@ -197,6 +190,13 @@ namespace ignite
 
         converter << val;
         converter >> *this;
+    }
+
+    void Decimal::AssignUint64(uint64_t val)
+    {
+        magnitude.AssignUint64(val);
+
+        scale = 0;
     }
 
     int32_t Decimal::Compare(const Decimal& other) const

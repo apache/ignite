@@ -34,14 +34,14 @@ namespace ignite
         sign(1),
         mag()
     {
-        Assign(val);
+        AssignInt64(val);
     }
 
     BigInteger::BigInteger(const char* val, int32_t len) :
         sign(1),
         mag()
     {
-        Assign(val, len);
+        AssignString(val, len);
     }
 
     BigInteger::BigInteger(const BigInteger& other) :
@@ -173,19 +173,28 @@ namespace ignite
         }
     }
 
-    void BigInteger::Assign(int64_t val)
+    void BigInteger::AssignInt64(int64_t val)
     {
         if (val < 0)
         {
-            Assign(static_cast<uint64_t>(-val));
+            AssignUint64(static_cast<uint64_t>(-val));
 
             sign = -1;
         }
         else
-            Assign(static_cast<uint64_t>(val));
+            AssignUint64(static_cast<uint64_t>(val));
     }
 
-    void BigInteger::Assign(uint64_t val)
+    void BigInteger::AssignString(const char* val, int32_t len)
+    {
+        std::stringstream converter;
+
+        converter.write(val, len);
+
+        converter >> *this;
+    }
+
+    void BigInteger::AssignUint64(uint64_t val)
     {
         sign = 1;
 
@@ -207,15 +216,6 @@ namespace ignite
         }
 
         mag[0] = static_cast<uint32_t>(val);
-    }
-
-    void BigInteger::Assign(const char* val, int32_t len)
-    {
-        std::stringstream converter;
-
-        converter.write(val, len);
-
-        converter >> *this;
     }
 
     int8_t BigInteger::GetSign() const
@@ -311,7 +311,7 @@ namespace ignite
     {
         if (exp < 0)
         {
-            Assign(0ULL);
+            AssignInt64(0);
 
             return;
         }
@@ -330,7 +330,7 @@ namespace ignite
         }
 
         BigInteger multiplicant(*this);
-        Assign(1ULL);
+        AssignInt64(1);
 
         int32_t mutExp = exp;
         while (mutExp)
@@ -537,7 +537,7 @@ namespace ignite
 
         if (IsZero())
         {
-            Assign(x);
+            AssignUint64(x);
 
             return;
         }
@@ -592,12 +592,12 @@ namespace ignite
 
         if (pow < bits::UINT64_MAX_PRECISION)
         {
-            res.Assign(bits::TenPowerU64(pow));
+            res.AssignUint64(bits::TenPowerU64(pow));
 
             return;
         }
 
-        res.Assign(10ULL);
+        res.AssignInt64(10);
         res.Pow(pow);
     }
 
@@ -624,10 +624,10 @@ namespace ignite
         // The same magnitude. Result is [-]1 and remainder is zero.
         if (compRes == 0)
         {
-            res.Assign(static_cast<int64_t>(resSign));
+            res.AssignInt64(resSign);
 
             if (rem)
-                rem->Assign(0ULL);
+                rem->AssignInt64(0);
 
             return;
         }
@@ -640,7 +640,7 @@ namespace ignite
             if (rem)
                 rem->Assign(*this);
 
-            res.Assign(0LL);
+            res.AssignInt64(0);
 
             return;
         }
@@ -653,7 +653,7 @@ namespace ignite
             res.sign = sign * divisor.sign;
 
             if (rem)
-                rem->Assign(0ULL);
+                rem->AssignInt64(0);
 
             return;
         }
@@ -677,12 +677,12 @@ namespace ignite
             assert(v < u);
 
             // (u / v) is always fits into int64_t because abs(v) >= 2.
-            res.Assign(resSign * static_cast<int64_t>(u / v));
+            res.AssignInt64(resSign * static_cast<int64_t>(u / v));
 
             // (u % v) is always fits into int64_t because (u > v) ->
             // (u % v) < (u / 2).
             if (rem)
-                rem->Assign(resSign * static_cast<int64_t>(u % v));
+                rem->AssignInt64(resSign * static_cast<int64_t>(u % v));
 
             return;
         }

@@ -1262,7 +1262,7 @@ namespace ignite
                     case IGNITE_ODBC_C_TYPE_SIGNED_LONG:
                     case IGNITE_ODBC_C_TYPE_SIGNED_BIGINT:
                     {
-                        val.Assign(GetNum<int64_t>());
+                        val.AssignInt64(GetNum<int64_t>());
 
                         break;
                     }
@@ -1272,7 +1272,7 @@ namespace ignite
                     case IGNITE_ODBC_C_TYPE_UNSIGNED_LONG:
                     case IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT:
                     {
-                        val.Assign(GetNum<uint64_t>());
+                        val.AssignUint64(GetNum<uint64_t>());
 
                         break;
                     }
@@ -1280,7 +1280,7 @@ namespace ignite
                     case IGNITE_ODBC_C_TYPE_FLOAT:
                     case IGNITE_ODBC_C_TYPE_DOUBLE:
                     {
-                        val.Assign(GetNum<double>());
+                        val.AssignDouble(GetNum<double>());
 
                         break;
                     }
@@ -1300,7 +1300,7 @@ namespace ignite
 
                     default:
                     {
-                        val.Assign(0LL);
+                        val.AssignInt64(0);
 
                         break;
                     }

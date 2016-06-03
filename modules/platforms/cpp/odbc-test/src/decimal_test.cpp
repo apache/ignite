@@ -74,7 +74,7 @@ void CheckDoubleCast(double val)
 {
     Decimal dec;
 
-    dec.Assign(val);
+    dec.AssignDouble(val);
 
     BOOST_CHECK_CLOSE(val, dec.ToDouble(), 1E-10);
 }
@@ -99,7 +99,7 @@ BOOST_AUTO_TEST_CASE(TestMultiplyBigIntegerArguments)
     }
 
     // 152399025
-    bigInt.Assign(12345LL);
+    bigInt.AssignInt64(12345);
     bigInt.Multiply(bigInt, res);
 
     {
@@ -111,7 +111,7 @@ BOOST_AUTO_TEST_CASE(TestMultiplyBigIntegerArguments)
     }
 
     // 152399025
-    bigInt.Assign(12345LL);
+    bigInt.AssignInt64(12345);
     bigInt.Multiply(BigInteger(12345), bigInt);
 
     {
@@ -123,7 +123,7 @@ BOOST_AUTO_TEST_CASE(TestMultiplyBigIntegerArguments)
     }
 
     // 152399025
-    bigInt.Assign(12345LL);
+    bigInt.AssignInt64(12345);
     bigInt.Multiply(bigInt, bigInt);
 
     {
@@ -261,7 +261,7 @@ BOOST_AUTO_TEST_CASE(TestPowBigInteger)
         BOOST_CHECK_EQUAL(mag[25], 0x0000B4D0);
     }
 
-    bigInt.Assign(-1LL);
+    bigInt.AssignInt64(-1);
 
     bigInt.Pow(57298735);
     BOOST_REQUIRE_EQUAL(bigInt.ToInt64(), -1);
@@ -269,22 +269,22 @@ BOOST_AUTO_TEST_CASE(TestPowBigInteger)
     bigInt.Pow(325347312);
     BOOST_REQUIRE_EQUAL(bigInt.ToInt64(), 1);
 
-    bigInt.Assign(2LL);
+    bigInt.AssignInt64(2);
 
     bigInt.Pow(10);
     BOOST_REQUIRE_EQUAL(bigInt.ToInt64(), 1024);
 
-    bigInt.Assign(-2LL);
+    bigInt.AssignInt64(-2);
 
     bigInt.Pow(10);
     BOOST_REQUIRE_EQUAL(bigInt.ToInt64(), 1024);
 
-    bigInt.Assign(2LL);
+    bigInt.AssignInt64(2);
 
     bigInt.Pow(11);
     BOOST_REQUIRE_EQUAL(bigInt.ToInt64(), 2048);
 
-    bigInt.Assign(-2LL);
+    bigInt.AssignInt64(-2);
 
     bigInt.Pow(11);
     BOOST_REQUIRE_EQUAL(bigInt.ToInt64(), -2048);
@@ -296,7 +296,7 @@ BOOST_AUTO_TEST_CASE(TestMultiplyDivideSimple)
     BigInteger res;
     BigInteger rem;
 
-    val.Assign(23225462820950625LL);
+    val.AssignInt64(23225462820950625LL);
 
     // 23225462820 and 950625
     BigInteger bi1;
@@ -375,23 +375,23 @@ BOOST_AUTO_TEST_CASE(TestMultiplyDivideSimple)
     BigInteger(123456789).Divide(BigInteger(1000), res);
     BOOST_CHECK_EQUAL(res, BigInteger(123456));
 
-    val.Assign(79823695862);
+    val.AssignInt64(79823695862);
     val.Divide(val, res);
 
     BOOST_CHECK_EQUAL(res, BigInteger(1));
 
-    val.Assign(28658345673);
+    val.AssignInt64(28658345673);
     val.Divide(val, val);
 
     BOOST_CHECK_EQUAL(val, BigInteger(1));
 
-    val.Assign(-97598673406);
+    val.AssignInt64(-97598673406);
     val.Divide(val, res, val);
 
     BOOST_CHECK_EQUAL(res, BigInteger(1));
     BOOST_CHECK_EQUAL(val, BigInteger(0));
 
-    val.Assign(1LL);
+    val.AssignInt64(1);
     val.Divide(val, res, val);
 
     BOOST_CHECK_EQUAL(res, BigInteger(1));

@@ -66,7 +66,7 @@ namespace ignite
          *
          * @param val Integer value.
          */
-        Decimal(int64_t val);
+        explicit Decimal(int64_t val);
 
         /**
          * Integer constructor with scale.
@@ -97,11 +97,11 @@ namespace ignite
          *
          * @param val String to assign.
          */
-        Decimal(const std::string& val) :
+        explicit Decimal(const std::string& val) :
             scale(0),
             magnitude(0)
         {
-            Assign(val);
+            AssignString(val);
         }
 
         /**
@@ -190,9 +190,9 @@ namespace ignite
          *
          * @param val String to assign.
          */
-        void Assign(const std::string& val)
+        void AssignString(const std::string& val)
         {
-            Assign(val.data(), static_cast<int32_t>(val.size()));
+            AssignString(val.data(), static_cast<int32_t>(val.size()));
         }
 
         /**
@@ -201,28 +201,28 @@ namespace ignite
          * @param val String to assign.
          * @param len String length.
          */
-        void Assign(const char* val, int32_t len);
+        void AssignString(const char* val, int32_t len);
 
         /**
          * Assign specified value to this Decimal.
          *
          * @param val Value to assign.
          */
-        void Assign(int64_t val);
+        void AssignInt64(int64_t val);
 
         /**
          * Assign specified value to this Decimal.
          *
          * @param val Value to assign.
          */
-        void Assign(uint64_t val);
+        void AssignDouble(double val);
 
         /**
          * Assign specified value to this Decimal.
          *
          * @param val Value to assign.
          */
-        void Assign(double val);
+        void AssignUint64(uint64_t val);
 
         /**
          * Compare this instance to another.
@@ -358,7 +358,7 @@ namespace ignite
             std::istream::sentry sentry(is);
 
             // Return zero if input failed.
-            val.Assign(0ULL);
+            val.AssignInt64(0);
 
             if (!is)
                 return is;
