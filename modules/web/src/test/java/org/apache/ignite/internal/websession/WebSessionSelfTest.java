@@ -88,8 +88,8 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testSessionInitiationFromCookie() throws Exception {
-        testSessionInitiationFromCookie("/modules/core/src/test/config/websession/example-cache.xml");
+    public void testSessionRenewalDuringLogin() throws Exception {
+        testSessionRenewalDuringLogin("/modules/core/src/test/config/websession/example-cache.xml");
     }
 
     /**
@@ -296,12 +296,12 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Tests single request to a server. Checks modification attribute in cache.
+     * Tests session renewal during login. Checks modification attribute in cache.
      *
      * @param cfg Configuration.
      * @throws Exception If failed.
      */
-    private void testSessionInitiationFromCookie(String cfg) throws Exception {
+    private void testSessionRenewalDuringLogin(String cfg) throws Exception {
         Server srv = null;
         String sesId = null;
         try {
@@ -836,7 +836,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * Starts server with Login Service.
+     * Starts server with Login Service and create a realm file.
      *
      * @param port Port number.
      * @param cfg Configuration.
@@ -875,16 +875,21 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
             srv.stop();
     }
 
+    /**
+     * Stops server and delete realm file.
+     *
+     * @param srv Server.
+     * @throws Exception In case of error.
+     */
     private void stopServerWithLoginService(@Nullable Server srv) throws Exception{
         if (srv != null){
             srv.stop();
             File realmFile = new File("realm.properties");
             realmFile.delete();
-
         }
-
     }
 
+    /** Creates a realm file to store test user credentials */
     private void createRealm() throws Exception{
         File realmFile = new File("realm.properties");
         FileWriter fileWriter = new FileWriter(realmFile);
@@ -893,6 +898,12 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
         fileWriter.close();
     }
 
+    /**
+     * Retrieves HttpSession sessionId from Cookie
+     *
+     * @param conn URLConnection
+     * @return sesId
+     */
     private String getSessionIdFromCookie(URLConnection conn) {
         String sessionCookieValue = null;
         String sesId = null;
@@ -912,13 +923,11 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
                     sesId = sessionCookieValue.substring(sessionCookieValue.indexOf("=")+1,
                             sessionCookieValue.length());
                 }
-
             }
         }
 
         return sesId;
     }
-
 
     /**
      * Test servlet.
