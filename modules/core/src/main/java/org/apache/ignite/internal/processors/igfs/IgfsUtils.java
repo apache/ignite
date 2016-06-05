@@ -702,6 +702,40 @@ public class IgfsUtils {
     }
 
     /**
+     * Write IGFS path.
+     *
+     * @param writer Writer.
+     * @param path Path.
+     */
+    public static void writePath(BinaryRawWriter writer, @Nullable IgfsPath path) {
+        if (path != null) {
+            writer.writeBoolean(true);
+
+            path.writeRawBinary(writer);
+        }
+        else
+            writer.writeBoolean(false);
+    }
+
+    /**
+     * Read IGFS path.
+     *
+     * @param reader Reader.
+     * @return Path.
+     */
+    @Nullable public static IgfsPath readPath(BinaryRawReader reader) {
+        if (reader.readBoolean()) {
+            IgfsPath path = new IgfsPath();
+
+            path.readRawBinary(reader);
+
+            return path;
+        }
+        else
+            return null;
+    }
+
+    /**
      * Parses the TRASH file name to extract the original path.
      *
      * @param name The TRASH short (entry) name.
