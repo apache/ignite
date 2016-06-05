@@ -49,6 +49,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.igfs.client.IgfsClientAbstractCallable;
+import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaIdsForPathCallable;
+import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaInfoForPathCallable;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryCreateProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileCreateProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileLockProcessor;
@@ -2097,6 +2099,28 @@ public class IgfsMetaManager extends IgfsManager {
     }
 
     /**
+     * Get info for the given path.
+     *
+     * @param path Path.
+     * @return Info.
+     * @throws IgniteCheckedException If failed.
+     */
+    @Nullable public IgfsEntryInfo infoForPath(IgfsPath path) throws IgniteCheckedException {
+        return client ? runClientTask(new IgfsClientMetaInfoForPathCallable(cfg.getName(), path)) : info(fileId(path));
+    }
+
+    /**
+     * Get IDs for the given path.
+     *
+     * @param path Path.
+     * @return IDs.
+     * @throws IgniteCheckedException If failed.
+     */
+    public List<IgniteUuid> idsForPath(IgfsPath path) throws IgniteCheckedException {
+        return client ? runClientTask(new IgfsClientMetaIdsForPathCallable(cfg.getName(), path)) : fileIds(path);
+    }
+
+    /**
      * Open file in DUAL mode.
      *
      * @param fs Secondary file system.
@@ -2106,15 +2130,14 @@ public class IgfsMetaManager extends IgfsManager {
      * @throws IgniteCheckedException If input stream open has failed.
      */
     public IgfsSecondaryInputStreamDescriptor openDual(final IgfsSecondaryFileSystem fs, final IgfsPath path,
-        final int bufSize)
-        throws IgniteCheckedException {
+        final int bufSize) throws IgniteCheckedException {
         if (busyLock.enterBusy()) {
             try {
                 assert fs != null;
                 assert path != null;
 
                 // First, try getting file info without any transactions and synchronization.
-                IgfsEntryInfo info = info(fileId(path));
+                IgfsEntryInfo info = infoForPath(path);
 
                 if (info != null) {
                     if (!info.isFile())
@@ -2176,7 +2199,7 @@ public class IgfsMetaManager extends IgfsManager {
         if (busyLock.enterBusy()) {
             try {
                 // First, try getting file info without any transactions and synchronization.
-                IgfsEntryInfo info = info(fileId(path));
+                IgfsEntryInfo info = infoForPath(path);
 
                 if (info != null)
                     return info;
@@ -2652,10 +2675,9 @@ public class IgfsMetaManager extends IgfsManager {
             List<List<IgniteUuid>> pathIds = new ArrayList<>(paths.length);
 
             for (IgfsPath path : paths)
-                pathIds.add(fileIds(path));
+                pathIds.add(idsForPath(path));
 
             // Start pessimistic.
-
             try (IgniteInternalTx tx = startTx()) {
                 // Lock the very first existing parents and possibly the leaf as well.
                 Map<IgfsPath, IgfsPath> pathToParent = new HashMap<>();

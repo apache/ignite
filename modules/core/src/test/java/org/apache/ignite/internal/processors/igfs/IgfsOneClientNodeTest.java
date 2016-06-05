@@ -128,6 +128,6 @@ public class IgfsOneClientNodeTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, IgfsException.class, "Cache server nodes not found.");
+        }, IgfsException.class, "Failed to execute operation because there are no IGFS metadata nodes.");
     }
 }
