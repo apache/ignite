@@ -24,8 +24,10 @@ import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
+import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
+import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
@@ -39,6 +41,9 @@ public abstract class IgfsClientAbstractCallable<T> implements IgniteCallable<T>
 
     /** IGFS name. */
     protected String igfsName;
+
+    /** Path for operation. */
+    protected IgfsPath path;
 
     /** Injected instance. */
     @IgniteInstanceResource
@@ -55,9 +60,11 @@ public abstract class IgfsClientAbstractCallable<T> implements IgniteCallable<T>
      * Constructor.
      *
      * @param igfsName IGFS name.
+     * @param path Path.
      */
-    protected IgfsClientAbstractCallable(@Nullable String igfsName) {
+    protected IgfsClientAbstractCallable(@Nullable String igfsName, @Nullable IgfsPath path) {
         this.igfsName = igfsName;
+        this.path = path;
     }
 
     /** {@inheritDoc} */
@@ -83,6 +90,7 @@ public abstract class IgfsClientAbstractCallable<T> implements IgniteCallable<T>
         BinaryRawWriter rawWriter = writer.rawWriter();
 
         rawWriter.writeString(igfsName);
+        IgfsUtils.writePath(rawWriter, path);
 
         writeBinary0(rawWriter);
     }
@@ -92,6 +100,7 @@ public abstract class IgfsClientAbstractCallable<T> implements IgniteCallable<T>
         BinaryRawReader rawReader = reader.rawReader();
 
         igfsName = rawReader.readString();
+        path = IgfsUtils.readPath(rawReader);
 
         readBinary0(rawReader);
     }
@@ -101,12 +110,16 @@ public abstract class IgfsClientAbstractCallable<T> implements IgniteCallable<T>
      *
      * @param rawWriter Raw writer.
      */
-    protected abstract void writeBinary0(BinaryRawWriter rawWriter);
+    protected void writeBinary0(BinaryRawWriter rawWriter) {
+        // No-op.
+    }
 
     /**
      * Read binary.
      *
      * @param rawReader Raw reader.
      */
-    protected abstract void readBinary0(BinaryRawReader rawReader);
+    protected void readBinary0(BinaryRawReader rawReader) {
+        // No-op.
+    }
 }

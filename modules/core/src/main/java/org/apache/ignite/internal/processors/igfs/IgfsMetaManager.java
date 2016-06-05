@@ -247,7 +247,7 @@ public class IgfsMetaManager extends IgfsManager {
             return clientCompute().call(task);
         }
         catch (ClusterTopologyException e) {
-            throw new IgfsException("Failed to execute operation because there are no IGFS metadata nodes left." , e);
+            throw new IgfsException("Failed to execute operation because there are no IGFS metadata nodes." , e);
         }
     }
 

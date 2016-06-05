@@ -55,6 +55,18 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.hadoop.HadoopPayloadAware;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientAffinityCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientDeleteCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientExistsCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientInfoCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientListFilesCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientListPathsCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientMkdirsCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientRenameCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientSetTimesCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientSizeCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientSummaryCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientUpdateCallable;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -530,6 +542,9 @@ public final class IgfsImpl implements IgfsEx {
     @Override public boolean exists(final IgfsPath path) {
         A.notNull(path, "path");
 
+        if (meta.isClient())
+            return meta.runClientTask(new IgfsClientExistsCallable(cfg.getName(), path));
+
         return safeOp(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
                 if (log.isDebugEnabled())
@@ -575,6 +590,9 @@ public final class IgfsImpl implements IgfsEx {
     @Override @Nullable public IgfsFile info(final IgfsPath path) {
         A.notNull(path, "path");
 
+        if (meta.isClient())
+            return meta.runClientTask(new IgfsClientInfoCallable(cfg.getName(), path));
+
         return safeOp(new Callable<IgfsFile>() {
             @Override public IgfsFile call() throws Exception {
                 if (log.isDebugEnabled())
@@ -590,6 +608,9 @@ public final class IgfsImpl implements IgfsEx {
     /** {@inheritDoc} */
     @Override public IgfsPathSummary summary(final IgfsPath path) {
         A.notNull(path, "path");
+
+        if (meta.isClient())
+            return meta.runClientTask(new IgfsClientSummaryCallable(cfg.getName(), path));
 
         return safeOp(new Callable<IgfsPathSummary>() {
             @Override public IgfsPathSummary call() throws Exception {
@@ -615,6 +636,9 @@ public final class IgfsImpl implements IgfsEx {
         A.notNull(path, "path");
         A.notNull(props, "props");
         A.ensure(!props.isEmpty(), "!props.isEmpty()");
+
+        if (meta.isClient())
+            return meta.runClientTask(new IgfsClientUpdateCallable(cfg.getName(), path, props));
 
         return safeOp(new Callable<IgfsFile>() {
             @Override public IgfsFile call() throws Exception {
@@ -662,6 +686,12 @@ public final class IgfsImpl implements IgfsEx {
         A.notNull(src, "src");
         A.notNull(dest, "dest");
 
+        if (meta.isClient()) {
+            meta.runClientTask(new IgfsClientRenameCallable(cfg.getName(), src, dest));
+
+            return;
+        }
+
         safeOp(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 if (log.isDebugEnabled())
@@ -707,6 +737,9 @@ public final class IgfsImpl implements IgfsEx {
     /** {@inheritDoc} */
     @Override public boolean delete(final IgfsPath path, final boolean recursive) {
         A.notNull(path, "path");
+
+        if (meta.isClient())
+            return meta.runClientTask(new IgfsClientDeleteCallable(cfg.getName(), path, recursive));
 
         return safeOp(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
@@ -761,6 +794,12 @@ public final class IgfsImpl implements IgfsEx {
     @Override public void mkdirs(final IgfsPath path, @Nullable final Map<String, String> props)  {
         A.notNull(path, "path");
 
+        if (meta.isClient()) {
+            meta.runClientTask(new IgfsClientMkdirsCallable(cfg.getName(), path, props));
+
+            return ;
+        }
+
         safeOp(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 if (log.isDebugEnabled())
@@ -789,6 +828,9 @@ public final class IgfsImpl implements IgfsEx {
     @SuppressWarnings("unchecked")
     @Override public Collection<IgfsPath> listPaths(final IgfsPath path) {
         A.notNull(path, "path");
+
+        if (meta.isClient())
+            meta.runClientTask(new IgfsClientListPathsCallable(cfg.getName(), path));
 
         return safeOp(new Callable<Collection<IgfsPath>>() {
             @Override public Collection<IgfsPath> call() throws Exception {
@@ -839,6 +881,9 @@ public final class IgfsImpl implements IgfsEx {
     /** {@inheritDoc} */
     @Override public Collection<IgfsFile> listFiles(final IgfsPath path) {
         A.notNull(path, "path");
+
+        if (meta.isClient())
+            meta.runClientTask(new IgfsClientListFilesCallable(cfg.getName(), path));
 
         return safeOp(new Callable<Collection<IgfsFile>>() {
             @Override public Collection<IgfsFile> call() throws Exception {
@@ -1146,11 +1191,17 @@ public final class IgfsImpl implements IgfsEx {
     @Override public void setTimes(final IgfsPath path, final long accessTime, final long modificationTime) {
         A.notNull(path, "path");
 
+        if (accessTime == -1 && modificationTime == -1)
+            return;
+
+        if (meta.isClient()) {
+            meta.runClientTask(new IgfsClientSetTimesCallable(cfg.getName(), path, accessTime, modificationTime));
+
+            return;
+        }
+
         safeOp(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                if (accessTime == -1 && modificationTime == -1)
-                    return null;
-
                 FileDescriptor desc = getFileDescriptor(path);
 
                 if (desc == null) {
@@ -1196,6 +1247,9 @@ public final class IgfsImpl implements IgfsEx {
         A.notNull(path, "path");
         A.ensure(start >= 0, "start >= 0");
         A.ensure(len >= 0, "len >= 0");
+
+        if (meta.isClient())
+            return meta.runClientTask(new IgfsClientAffinityCallable(cfg.getName(), path, start, len, maxLen));
 
         return safeOp(new Callable<Collection<IgfsBlockLocation>>() {
             @Override public Collection<IgfsBlockLocation> call() throws Exception {
@@ -1277,6 +1331,9 @@ public final class IgfsImpl implements IgfsEx {
     /** {@inheritDoc} */
     @Override public long size(final IgfsPath path) {
         A.notNull(path, "path");
+
+        if (meta.isClient())
+            return meta.runClientTask(new IgfsClientSizeCallable(cfg.getName(), path));
 
         return safeOp(new Callable<Long>() {
             @Override public Long call() throws Exception {
