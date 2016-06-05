@@ -56,6 +56,7 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_RETRIES_COUNT;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGFS;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -680,5 +681,25 @@ public class IgfsUtils {
         }
         else
             return null;
+    }
+
+    /**
+     * Check whether provided node contains IGFS with the given name.
+     *
+     * @param node Node.
+     * @param igfsName IGFS name.
+     * @return {@code True} if it contains IGFS.
+     */
+    public static boolean isIgfsNode(ClusterNode node, String igfsName) {
+        assert node != null;
+
+        IgfsAttributes[] igfs = node.attribute(ATTR_IGFS);
+
+        if (igfs != null)
+            for (IgfsAttributes attrs : igfs)
+                if (F.eq(igfsName, attrs.igfsName()))
+                    return true;
+
+        return false;
     }
 }
