@@ -660,7 +660,7 @@ public final class IgfsImpl implements IgfsEx {
                     return new IgfsFileImpl(path, info, data.groupBlockSize());
                 }
 
-                List<IgniteUuid> fileIds = meta.fileIds(path);
+                List<IgniteUuid> fileIds = meta.idsForPath(path);
 
                 IgniteUuid fileId = fileIds.get(fileIds.size() - 1);
 
@@ -938,7 +938,8 @@ public final class IgfsImpl implements IgfsEx {
                             }
                         }
                     }
-                } else if (mode == PRIMARY) {
+                }
+                else if (mode == PRIMARY) {
                     checkConflictWithPrimary(path);
 
                     throw new IgfsPathNotFoundException("Failed to list files (path not found): " + path);
@@ -993,7 +994,7 @@ public final class IgfsImpl implements IgfsEx {
                     return os;
                 }
 
-                IgfsEntryInfo info = meta.info(meta.fileId(path));
+                IgfsEntryInfo info = meta.infoForPath(path);
 
                 if (info == null) {
                     checkConflictWithPrimary(path);
@@ -1144,7 +1145,7 @@ public final class IgfsImpl implements IgfsEx {
                     return new IgfsEventAwareOutputStream(path, desc.info(), bufferSize(bufSize), mode, batch);
                 }
 
-                final List<IgniteUuid> ids = meta.fileIds(path);
+                final List<IgniteUuid> ids = meta.idsForPath(path);
 
                 final IgniteUuid id = ids.get(ids.size() - 1);
 
@@ -1259,8 +1260,7 @@ public final class IgfsImpl implements IgfsEx {
                 IgfsMode mode = resolveMode(path);
 
                 // Check memory first.
-                IgniteUuid fileId = meta.fileId(path);
-                IgfsEntryInfo info = meta.info(fileId);
+                IgfsEntryInfo info = meta.infoForPath(path);
 
                 if (info == null && mode != PRIMARY) {
                     assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
@@ -1469,7 +1469,7 @@ public final class IgfsImpl implements IgfsEx {
     @Nullable private FileDescriptor getFileDescriptor(IgfsPath path) throws IgniteCheckedException {
         assert path != null;
 
-        List<IgniteUuid> ids = meta.fileIds(path);
+        List<IgniteUuid> ids = meta.idsForPath(path);
 
         IgfsEntryInfo fileInfo = meta.info(ids.get(ids.size() - 1));
 
@@ -1645,13 +1645,13 @@ public final class IgfsImpl implements IgfsEx {
 
         switch (mode) {
             case PRIMARY:
-                info = meta.info(meta.fileId(path));
+                info = meta.infoForPath(path);
 
                 break;
 
             case DUAL_SYNC:
             case DUAL_ASYNC:
-                info = meta.info(meta.fileId(path));
+                info = meta.infoForPath(path);
 
                 if (info == null) {
                     try {

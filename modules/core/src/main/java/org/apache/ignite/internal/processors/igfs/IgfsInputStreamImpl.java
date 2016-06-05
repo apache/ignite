@@ -319,7 +319,7 @@ public class IgfsInputStreamImpl extends IgfsInputStreamAdapter {
                 }
 
                 // Safety to ensure no orphaned data blocks exist in case file was concurrently deleted.
-               if (!meta.exists(fileInfo.id()))
+                if (!meta.exists(fileInfo.id()))
                     data.delete(fileInfo);
             }
         }
