@@ -655,6 +655,22 @@ public class BinaryUtils {
     }
 
     /**
+     * @param arr Array to check.
+     * @return {@code true} if this array is of a known type.
+     */
+    public static boolean knownArray(Object arr) {
+        if (arr == null)
+            return false;
+
+        Class<?> cls =  arr.getClass();
+
+        return cls == byte[].class || cls == short[].class || cls == int[].class || cls == long[].class ||
+            cls == float[].class || cls == double[].class || cls == char[].class || cls == boolean[].class ||
+            cls == String[].class || cls == UUID[].class || cls == Date[].class || cls == Timestamp[].class ||
+            cls == BigDecimal[].class;
+    }
+
+    /**
      * Attempts to create a new collection of the same known type. Will return null if collection type is unknown.
      *
      * @param col Collection.

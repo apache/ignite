@@ -149,6 +149,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
@@ -4723,6 +4725,44 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Writes UUID to binary writer.
+     *
+     * @param out Output Binary writer.
+     * @param uid UUID to write.
+     * @throws IOException If write failed.
+     */
+    public static void writeUuid(BinaryRawWriter out, UUID uid) {
+        // Write null flag.
+        if (uid != null) {
+            out.writeBoolean(true);
+
+            out.writeLong(uid.getMostSignificantBits());
+            out.writeLong(uid.getLeastSignificantBits());
+        }
+        else
+            out.writeBoolean(false);
+    }
+
+    /**
+     * Reads UUID from binary reader.
+     *
+     * @param in Binary reader.
+     * @return Read UUID.
+     * @throws IOException If read failed.
+     */
+    @Nullable public static UUID readUuid(BinaryRawReader in) {
+        // If UUID is not null.
+        if (in.readBoolean()) {
+            long most = in.readLong();
+            long least = in.readLong();
+
+            return new UUID(most, least);
+        }
+        else
+            return null;
+    }
+
+    /**
      * Writes {@link org.apache.ignite.lang.IgniteUuid} to output stream. This method is meant to be used by
      * implementations of {@link Externalizable} interface.
      *
@@ -8232,7 +8272,11 @@ public abstract class IgniteUtils {
         if (cls != null)
             return cls;
 
-        if (ldr == null)
+        if (ldr != null) {
+            if (ldr instanceof ClassCache)
+                return ((ClassCache)ldr).getFromCache(clsName);
+        }
+        else
             ldr = gridClassLoader;
 
         ConcurrentMap<String, Class> ldrMap = classCache.get(ldr);
