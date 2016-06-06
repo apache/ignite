@@ -45,7 +45,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsOneClientNodeTest;
 import org.apache.ignite.internal.processors.igfs.IgfsPrimaryOffheapTieredSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsPrimaryOffheapValuesSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsPrimaryOptimziedMarshallerSelfTest;
-import org.apache.ignite.internal.processors.igfs.IgfsPrimaryRelaxedClientSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsPrimaryRelaxedConsistencyClientSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsPrimaryRelaxedConsistencyMultiNodeSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsPrimaryRelaxedConsistencySelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsPrimarySelfTest;
@@ -107,7 +107,7 @@ public class IgniteIgfsTestSuite extends TestSuite {
         suite.addTest(new TestSuite(IgfsMetricsSelfTest.class));
 
         suite.addTest(new TestSuite(IgfsPrimaryClientSelfTest.class));
-        suite.addTest(new TestSuite(IgfsPrimaryRelaxedClientSelfTest.class));
+        suite.addTest(new TestSuite(IgfsPrimaryRelaxedConsistencyClientSelfTest.class));
         suite.addTest(new TestSuite(IgfsDualSyncClientSelfTest.class));
         suite.addTest(new TestSuite(IgfsDualAsyncClientSelfTest.class));
 
