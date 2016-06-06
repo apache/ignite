@@ -61,7 +61,7 @@ public abstract class GenericBatchExecutionAssistant<R, V> implements BatchExecu
         return false;
     }
 
-    /** {@inheritDoc} */
+    /** Method to process single row from batch. Should be implemented in child classes. */
     protected void process(Row row) {
     }
 }
