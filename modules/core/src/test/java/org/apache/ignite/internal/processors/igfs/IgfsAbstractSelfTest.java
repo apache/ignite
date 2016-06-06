@@ -288,7 +288,8 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         for (int i = 0; i < nodes.length; i++) {
             String nodeName = i == 0 ? "ignite" : "ignite" + i;
 
-            nodes[i] = startGridWithIgfs(nodeName, "igfs", mode, igfsSecondaryFileSystem, PRIMARY_REST_CFG, ipFinder);
+            nodes[i] = startGridWithIgfs(nodeName, "igfs", mode, igfsSecondaryFileSystem, PRIMARY_REST_CFG,
+                primaryIpFinder);
         }
 
         igfs = (IgfsImpl) nodes[0].fileSystem("igfs");
