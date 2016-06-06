@@ -199,6 +199,9 @@ import org.apache.ignite.internal.util.typedef.F;
      * @return Result.
      */
     public Object[] unwrapBinariesInArrayIfNeeded(Object[] arr, boolean keepBinary, boolean cpy) {
+        if (BinaryUtils.knownArray(arr))
+            return arr;
+
         Object[] res = new Object[arr.length];
 
         for (int i = 0; i < arr.length; i++)
