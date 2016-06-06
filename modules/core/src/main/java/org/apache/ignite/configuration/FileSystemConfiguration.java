@@ -83,7 +83,7 @@ public class FileSystemConfiguration {
     public static final boolean DFLT_IPC_ENDPOINT_ENABLED = true;
 
     /** Default value of whether to initialize default path modes. */
-    public static final boolean DFLT_INIT_DFLT_PATH_MODES = true;
+    public static final boolean DFLT_INIT_DFLT_PATH_MODES = false;
 
     /** Default value of metadata co-location flag. */
     public static final boolean DFLT_COLOCATE_META = true;
