@@ -15,6 +15,7 @@
 * limitations under the License.
 */
 
+using System;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
@@ -30,6 +31,8 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 [assembly: Guid("c558518a-c1a0-4224-aaa9-a8688474b4dc")]
 
-[assembly: AssemblyVersion("1.7.0.11627")]
-[assembly: AssemblyFileVersion("1.7.0.11627")]
+[assembly: AssemblyVersion("1.7.0.11707")]
+[assembly: AssemblyFileVersion("1.7.0.11707")]
 [assembly: AssemblyInformationalVersion("1.7.0")]
+
+[assembly: CLSCompliant(true)]
