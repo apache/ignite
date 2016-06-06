@@ -233,7 +233,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 else
                     CheckCallbackSingle(key2, null, Entry(key2));
 
-                cache1.GetAndPut(key2, Entry(key2 + 1));
+                Assert.AreEqual(Entry(key2), cache1.GetAndPut(key2, Entry(key2 + 1)));
 
                 if (loc)
                     CheckNoCallback(100);
@@ -1055,6 +1055,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             public override bool Equals(object obj)
             {
                 return obj != null && obj is BinarizableEntry && ((BinarizableEntry)obj).val == val;
+            }
+
+            public override string ToString()
+            {
+                return string.Format("BinarizableEntry [Val: {0}]", val);
             }
         }
 
