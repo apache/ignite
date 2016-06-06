@@ -31,7 +31,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
     using Apache.Ignite.Core.Cache.Query.Continuous;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Cache.Event;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
@@ -171,6 +170,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             int key1 = PrimaryKey(cache1);
             int key2 = PrimaryKey(cache2);
 
+            Assert.AreNotEqual(key1, key2);
+
             ContinuousQuery<int, BinarizableEntry> qry =
                 new ContinuousQuery<int, BinarizableEntry>(new Listener<BinarizableEntry>());
 
@@ -196,10 +197,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         [Test]
         public void TestCallback()
         {
-            for (int i = 0; i < 15; i++)
-            {
-                CheckCallback(false);
-            }
+            CheckCallback(false);
         }
 
         /// <summary>
