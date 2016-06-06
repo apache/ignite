@@ -233,8 +233,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 else
                     CheckCallbackSingle(key2, null, Entry(key2));
 
-                Assert.IsTrue(cache1.ContainsKey(key2));
-                Console.WriteLine("Replacing " + key2);
+                //Assert.IsTrue(cache1.ContainsKey(key2));
+                //Console.WriteLine("Replacing " + key2);
                 Assert.AreEqual(Entry(key2), cache1.GetAndPut(key2, Entry(key2 + 1)).Value);
 
                 if (loc)
