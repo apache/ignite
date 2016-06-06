@@ -19,6 +19,8 @@ namespace Apache.Ignite.EntityFramework
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -56,13 +58,16 @@ namespace Apache.Ignite.EntityFramework
         /// Initializes a new instance of the <see cref="IgniteEntityFrameworkCache"/> class.
         /// </summary>
         /// <param name="cache">The cache.</param>
+        [SuppressMessage("Microsoft.Globalization", "CA1303:Do not pass literals as localized parameters")]
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods",
+            Justification = "Validation is present")]
         public IgniteEntityFrameworkCache(ICache<string, object> cache)
         {
             IgniteArgumentCheck.NotNull(cache, "cache");
 
             var atomicityMode = cache.GetConfiguration().AtomicityMode;
             IgniteArgumentCheck.Ensure(atomicityMode == CacheAtomicityMode.Transactional, "cache",
-                string.Format("{0} requires {1} cache. Specified '{2}' cache is {3}.",
+                string.Format(CultureInfo.InvariantCulture, "{0} requires {1} cache. Specified '{2}' cache is {3}.",
                     GetType(), CacheAtomicityMode.Transactional, cache.Name, atomicityMode));
 
             _cache = cache;
@@ -79,6 +84,9 @@ namespace Apache.Ignite.EntityFramework
         public void PutItem(string key, object value, IEnumerable<string> dependentEntitySets, 
             TimeSpan slidingExpiration, DateTimeOffset absoluteExpiration)
         {
+            if (dependentEntitySets == null)
+                return;
+
             var cache = GetCacheWithExpiry(slidingExpiration, absoluteExpiration);
 
             using (var tx = TxStart())

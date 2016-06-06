@@ -17,9 +17,11 @@
 
 namespace Apache.Ignite.EntityFramework
 {
+    using System;
     using System.Configuration;
     using System.Data.Entity;
     using System.Data.Entity.Core.Common;
+    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -66,6 +68,7 @@ namespace Apache.Ignite.EntityFramework
         /// <param name="configurationSectionName">Name of the configuration section.</param>
         /// <param name="cacheName">Name of the cache.</param>
         /// <param name="cachingPolicy">The caching policy. Null for default <see cref="CachingPolicy"/>.</param>
+        [CLSCompliant(false)]
         public IgniteDbConfiguration(string configurationSectionName, string cacheName, CachingPolicy cachingPolicy)
              : this(GetConfiguration(configurationSectionName, true), cacheName, cachingPolicy)
         {
@@ -78,6 +81,7 @@ namespace Apache.Ignite.EntityFramework
         /// <param name="igniteConfiguration">The ignite configuration to use for starting Ignite instance.</param>
         /// <param name="cacheName">Name of the cache. Can be null. Cache will be created if it does not exist.</param>
         /// <param name="cachingPolicy">The caching policy. Null for default <see cref="CachingPolicy"/>.</param>
+        [CLSCompliant(false)]
         public IgniteDbConfiguration(IgniteConfiguration igniteConfiguration, string cacheName, 
             CachingPolicy cachingPolicy)
             : this(GetOrStartIgnite(igniteConfiguration), cacheName, cachingPolicy)
@@ -91,6 +95,9 @@ namespace Apache.Ignite.EntityFramework
         /// <param name="ignite">The ignite instance to use.</param>
         /// <param name="cacheName">Name of the cache. Can be null. Cache will be created if it does not exist.</param>
         /// <param name="cachingPolicy">The caching policy. Null for default <see cref="CachingPolicy"/>.</param>
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods", 
+            Justification = "Validation is present")]
+        [CLSCompliant(false)]
         public IgniteDbConfiguration(IIgnite ignite, string cacheName, CachingPolicy cachingPolicy)
         {
             IgniteArgumentCheck.NotNull(ignite, "ignite");
