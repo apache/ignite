@@ -2192,7 +2192,7 @@ public class IgfsMetaManager extends IgfsManager {
                         throw fsException(new IgfsPathIsDirectoryException("Failed to open file (not a file): " +
                             path));
 
-                    return new IgfsSecondaryInputStreamDescriptor(info, fs.open(path, bufSize));
+                    return new IgfsSecondaryInputStreamDescriptor(info, lazySecondaryReader(fs, path, bufSize));
                 }
 
                 // If failed, try synchronize.
@@ -2208,7 +2208,8 @@ public class IgfsMetaManager extends IgfsManager {
                                 throw fsException(new IgfsPathIsDirectoryException("Failed to open file " +
                                     "(not a file): " + path));
 
-                            return new IgfsSecondaryInputStreamDescriptor(infos.get(path), fs.open(path, bufSize));
+                            return new IgfsSecondaryInputStreamDescriptor(infos.get(path),
+                                lazySecondaryReader(fs, path, bufSize));
                         }
 
                         @Override public IgfsSecondaryInputStreamDescriptor onFailure(@Nullable Exception err)
@@ -2229,6 +2230,19 @@ public class IgfsMetaManager extends IgfsManager {
         }
         else
             throw new IllegalStateException("Failed to open file in DUAL mode because Grid is stopping: " + path);
+    }
+
+    /**
+     * Create lazy secondary file system reader.
+     *
+     * @param fs File system.
+     * @param path Path.
+     * @param bufSize Buffer size.
+     * @return Lazy reader.
+     */
+    private static IgfsLazySecondaryFileSystemPositionedReadable lazySecondaryReader(IgfsSecondaryFileSystem fs,
+        IgfsPath path, int bufSize) {
+        return new IgfsLazySecondaryFileSystemPositionedReadable(fs, path, bufSize);
     }
 
     /**

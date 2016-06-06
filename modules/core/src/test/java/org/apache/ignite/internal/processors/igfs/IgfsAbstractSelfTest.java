@@ -1094,6 +1094,9 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         createFile(igfs.asSecondary(), FILE, true, chunk);
 
         checkFileContent(igfs, FILE, chunk);
+
+        // Read again when the whole file is in memory.
+        checkFileContent(igfs, FILE, chunk);
     }
 
     /**
