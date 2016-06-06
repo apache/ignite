@@ -65,6 +65,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
 
     /** */
     private static final int MAX_VALS_AMOUNT = 100;
+    public static final int DEFAUTL_HEARTBEAT = 2_000;
 
     /** With OFFHEAP_VALUES policy. */
     private final String OFF_HEAP_VALUE_NAME = "offHeapValuesCfg";
@@ -173,7 +174,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
             }
         }, THREAD_COUNT, "test");
 
-        IgniteUtils.sleep(2_000);
+        IgniteUtils.sleep(2*DEFAUTL_HEARTBEAT);
     }
 
     /**
