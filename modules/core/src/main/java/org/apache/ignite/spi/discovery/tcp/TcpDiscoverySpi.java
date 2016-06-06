@@ -1470,7 +1470,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         catch (IOException | IgniteCheckedException e) {
             if (X.hasCause(e, SocketTimeoutException.class))
                 LT.warn(log, null, "Timed out waiting for message to be read (most probably, the reason is " +
-                    "in long GC pauses on remote node) [curTimeout=" + timeout + ']');
+                    "in long GC pauses on remote node) [rmtAddr=" + sock.getRemoteSocketAddress() +
+                    ", curTimeout=" + timeout + ']');
 
             throw e;
         }
@@ -1512,7 +1513,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
             LT.warn(log, null, "Timed out waiting for message delivery receipt (most probably, the reason is " +
                 "in long GC pauses on remote node; consider tuning GC and increasing 'ackTimeout' " +
                 "configuration property). Will retry to send message with increased timeout. " +
-                "Current timeout: " + timeout + '.');
+                "[rmtAddr=" + sock.getRemoteSocketAddress() + ", curTimeout=" + timeout + ']');
 
             stats.onAckTimeout();
 
