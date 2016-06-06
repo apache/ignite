@@ -233,7 +233,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 else
                     CheckCallbackSingle(key2, null, Entry(key2));
 
-                Assert.AreEqual(Entry(key2), cache1.GetAndPut(key2, Entry(key2 + 1)));
+                Assert.AreEqual(Entry(key2), cache1.GetAndPut(key2, Entry(key2 + 1)).Value);
 
                 if (loc)
                     CheckNoCallback(100);
