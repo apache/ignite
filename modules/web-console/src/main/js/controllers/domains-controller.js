@@ -1203,53 +1203,8 @@ consoleModule.controller('domainsController', [
             }
         };
 
-        // Check domain model logical consistency.
-        function validate(item) {
-            const form = $scope.ui.inputForm;
-            const errors = form.$error;
-            const errKeys = Object.keys(errors);
-
-            if (errKeys && errKeys.length > 0) {
-                const firstErrorKey = errKeys[0];
-
-                const firstError = errors[firstErrorKey][0];
-                const actualError = firstError.$error[firstErrorKey][0];
-
-                const errNameFull = actualError.$name;
-                const errNameShort = errNameFull.endsWith('TextInput') ? errNameFull.substring(0, errNameFull.length - 9) : errNameFull;
-
-                const extractErrorMessage = function(errName) {
-                    try {
-                        return errors[firstErrorKey][0].$errorMessages[errName][firstErrorKey];
-                    }
-                    catch (ignored) {
-                        try {
-                            return form[firstError.$name].$errorMessages[errName][firstErrorKey];
-                        }
-                        catch (ignited) {
-                            return false;
-                        }
-                    }
-                };
-
-                const msg = extractErrorMessage(errNameFull) || extractErrorMessage(errNameShort) || 'Invalid value!';
-
-                return showPopoverMessage($scope.ui, firstError.$name, errNameFull, msg);
-            }
-
-            if ($common.isEmptyString(item.keyType))
-                return showPopoverMessage($scope.ui, 'general', 'keyType', 'Key type should not be empty');
-            else if (!$common.isValidJavaClass('Key type', item.keyType, true, 'keyType', false, $scope.ui, 'general'))
-                return false;
-
-            if ($common.isEmptyString(item.valueType))
-                return showPopoverMessage($scope.ui, 'general', 'valueType', 'Value type should not be empty');
-            else if (!$common.isValidJavaClass('Value type', item.valueType, false, 'valueType', false, $scope.ui, 'general'))
-                return false;
-
-            const qry = $common.domainForQueryConfigured(item);
-
-            if (item.queryMetadata === 'Configuration' && qry) {
+        function checkQueryConfiguration(item) {
+            if (item.queryMetadata === 'Configuration' && $common.domainForQueryConfigured(item)) {
                 if (_.isEmpty(item.fields))
                     return showPopoverMessage($scope.ui, 'query', 'queryFields', 'Query fields should not be empty');
 
@@ -1264,6 +1219,10 @@ consoleModule.controller('domainsController', [
                 }
             }
 
+            return true;
+        }
+
+        function checkStoreConfiguration(item) {
             if ($common.domainForStoreConfigured(item)) {
                 if ($common.isEmptyString(item.databaseSchema))
                     return showPopoverMessage($scope.ui, 'store', 'databaseSchema', 'Database schema should not be empty');
@@ -1280,7 +1239,22 @@ consoleModule.controller('domainsController', [
                 if (_.isEmpty(item.valueFields))
                     return showPopoverMessage($scope.ui, 'store', 'valueFields', 'Value fields are not specified');
             }
-            else if (!qry && item.queryMetadata === 'Configuration')
+
+            return true;
+        }
+
+        // Check domain model logical consistency.
+        function validate(item) {
+            if (!$common.checkFieldValidators($scope.ui))
+                return false;
+
+            if (!checkQueryConfiguration(item))
+                return false;
+
+            if (!checkStoreConfiguration(item))
+                return false;
+
+            if (!$common.domainForStoreConfigured(item) && !$common.domainForQueryConfigured(item) && item.queryMetadata === 'Configuration')
                 return showPopoverMessage($scope.ui, 'query', 'query-title', 'SQL query domain model should be configured');
 
             return true;

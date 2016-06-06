@@ -1016,6 +1016,41 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
                     res += possible.charAt(Math.floor(Math.random() * possibleLen));
 
                 return res;
+            },
+            checkFieldValidators(ui) {
+                const form = ui.inputForm;
+                const errors = form.$error;
+                const errKeys = Object.keys(errors);
+
+                if (errKeys && errKeys.length > 0) {
+                    const firstErrorKey = errKeys[0];
+
+                    const firstError = errors[firstErrorKey][0];
+                    const actualError = firstError.$error[firstErrorKey][0];
+
+                    const errNameFull = actualError.$name;
+                    const errNameShort = errNameFull.endsWith('TextInput') ? errNameFull.substring(0, errNameFull.length - 9) : errNameFull;
+
+                    const extractErrorMessage = function(errName) {
+                        try {
+                            return errors[firstErrorKey][0].$errorMessages[errName][firstErrorKey];
+                        }
+                        catch (ignored) {
+                            try {
+                                return form[firstError.$name].$errorMessages[errName][firstErrorKey];
+                            }
+                            catch (ignited) {
+                                return false;
+                            }
+                        }
+                    };
+
+                    const msg = extractErrorMessage(errNameFull) || extractErrorMessage(errNameShort) || 'Invalid value!';
+
+                    return showPopoverMessage(ui, firstError.$name, errNameFull, msg);
+                }
+
+                return true;
             }
         };
     }]);

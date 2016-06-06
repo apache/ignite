@@ -334,47 +334,9 @@ consoleModule.controller('clustersController', [
             return _.findIndex($scope.caches, (cache) => cache.value === cacheId);
         };
 
-        // Check cluster logical consistency.
-        function validate(item) {
-            $common.hidePopover();
-
-            if ($common.isEmptyString(item.name))
-                return showPopoverMessage($scope.ui, 'general', 'clusterName', 'Cluster name should not be empty!');
-
-            const form = $scope.ui.inputForm;
-            const errors = form.$error;
-            const errKeys = Object.keys(errors);
-
-            if (errKeys && errKeys.length > 0) {
-                const firstErrorKey = errKeys[0];
-
-                const firstError = errors[firstErrorKey][0];
-                const actualError = firstError.$error[firstErrorKey][0];
-
-                const errNameFull = actualError.$name;
-                const errNameShort = errNameFull.endsWith('TextInput') ? errNameFull.substring(0, errNameFull.length - 9) : errNameFull;
-
-                const extractErrorMessage = function(errName) {
-                    try {
-                        return errors[firstErrorKey][0].$errorMessages[errName][firstErrorKey];
-                    }
-                    catch (ignored) {
-                        try {
-                            return form[firstError.$name].$errorMessages[errName][firstErrorKey];
-                        }
-                        catch (ignited) {
-                            return false;
-                        }
-                    }
-                };
-
-                const msg = extractErrorMessage(errNameFull) || extractErrorMessage(errNameShort) || 'Invalid value!';
-
-                return showPopoverMessage($scope.ui, firstError.$name, errNameFull, msg);
-            }
-
+        function checkCacheDatasources(item) {
             const caches = _.filter(_.map($scope.caches, (scopeCache) => scopeCache.cache),
-                (cache) => _.includes($scope.backupItem.caches, cache._id));
+                (cache) => _.includes(item.caches, cache._id));
 
             const checkRes = $common.checkCachesDataSources(caches);
 
@@ -386,6 +348,10 @@ consoleModule.controller('clustersController', [
                     $common.cacheStoreJdbcDialectsLabel(checkRes.secondDB) + '" in "' + checkRes.secondCache.name + '"', 10000);
             }
 
+            return true;
+        }
+
+        function checkBinaryConfiguration(item) {
             const b = item.binaryConfiguration;
 
             if ($common.isDefined(b)) {
@@ -402,6 +368,10 @@ consoleModule.controller('clustersController', [
                 }
             }
 
+            return true;
+        }
+
+        function checkCommunicationConfiguration(item) {
             const c = item.communication;
 
             if ($common.isDefined(c)) {
@@ -417,13 +387,10 @@ consoleModule.controller('clustersController', [
                     return showPopoverMessage($scope.ui, 'communication', 'sharedMemoryPort', 'Shared memory port should be more than "0" or equals to "-1"!');
             }
 
-            const r = item.connector;
+            return true;
+        }
 
-            if ($common.isDefined(r)) {
-                if (r.sslEnabled && $common.isEmptyString(r.sslFactory))
-                    return showPopoverMessage($scope.ui, 'connector', 'connectorSslFactory', 'SSL factory should not be empty!');
-            }
-
+        function checkDiscoveryConfiguration(item) {
             const d = item.discovery;
 
             if (d) {
@@ -432,33 +399,12 @@ consoleModule.controller('clustersController', [
 
                 if (d.kind === 'Vm' && d.Vm && d.Vm.addresses.length === 0)
                     return showPopoverMessage($scope.ui, 'general', 'addresses', 'Addresses are not specified!');
-
-                if (d.kind === 'S3' && d.S3 && $common.isEmptyString(d.S3.bucketName))
-                    return showPopoverMessage($scope.ui, 'general', 'bucketName', 'Bucket name should not be empty!');
-
-                if (d.kind === 'Cloud' && d.Cloud) {
-                    if ($common.isEmptyString(d.Cloud.identity))
-                        return showPopoverMessage($scope.ui, 'general', 'identity', 'Identity should not be empty!');
-
-                    if ($common.isEmptyString(d.Cloud.provider))
-                        return showPopoverMessage($scope.ui, 'general', 'provider', 'Provider should not be empty!');
-                }
-
-                if (d.kind === 'GoogleStorage' && d.GoogleStorage) {
-                    if ($common.isEmptyString(d.GoogleStorage.projectName))
-                        return showPopoverMessage($scope.ui, 'general', 'projectName', 'Project name should not be empty!');
-
-                    if ($common.isEmptyString(d.GoogleStorage.bucketName))
-                        return showPopoverMessage($scope.ui, 'general', 'bucketName', 'Bucket name should not be empty!');
-
-                    if ($common.isEmptyString(d.GoogleStorage.serviceAccountP12FilePath))
-                        return showPopoverMessage($scope.ui, 'general', 'serviceAccountP12FilePath', 'Private key path should not be empty!');
-
-                    if ($common.isEmptyString(d.GoogleStorage.serviceAccountId))
-                        return showPopoverMessage($scope.ui, 'general', 'serviceAccountId', 'Account ID should not be empty!');
-                }
             }
 
+            return true;
+        }
+
+        function checkSwapConfiguration(item) {
             const swapKind = item.swapSpaceSpi && item.swapSpaceSpi.kind;
 
             if (swapKind && item.swapSpaceSpi[swapKind]) {
@@ -475,6 +421,17 @@ consoleModule.controller('clustersController', [
                     return showPopoverMessage($scope.ui, 'swap', 'readStripesNumber', 'Read stripe size must be positive and power of two!');
             }
 
+            return true;
+        }
+
+        function checkSslConfiguration(item) {
+            const r = item.connector;
+
+            if ($common.isDefined(r)) {
+                if (r.sslEnabled && $common.isEmptyString(r.sslFactory))
+                    return showPopoverMessage($scope.ui, 'connector', 'connectorSslFactory', 'SSL factory should not be empty!');
+            }
+
             if (item.sslEnabled) {
                 if (!$common.isDefined(item.sslContextFactory) || $common.isEmptyString(item.sslContextFactory.keyStoreFilePath))
                     return showPopoverMessage($scope.ui, 'sslConfiguration', 'keyStoreFilePath', 'Key store file should not be empty!');
@@ -483,8 +440,46 @@ consoleModule.controller('clustersController', [
                     return showPopoverMessage($scope.ui, 'sslConfiguration', 'sslConfiguration-title', 'Trust storage file or managers should be configured!');
             }
 
+            return true;
+        }
+
+        function checkPoolSizes(item) {
             if (item.rebalanceThreadPoolSize && item.systemThreadPoolSize && item.systemThreadPoolSize <= item.rebalanceThreadPoolSize)
                 return showPopoverMessage($scope.ui, 'pools', 'rebalanceThreadPoolSize', 'Rebalance thread pool size exceed or equals System thread pool size!');
+
+            return true;
+        }
+
+        // Check cluster logical consistency.
+        function validate(item) {
+            $common.hidePopover();
+
+            if ($common.isEmptyString(item.name))
+                return showPopoverMessage($scope.ui, 'general', 'clusterName', 'Cluster name should not be empty!');
+
+            if (!$common.checkFieldValidators($scope.ui))
+                return false;
+
+            if (!checkCacheDatasources(item))
+                return false;
+
+            if (!checkBinaryConfiguration(item))
+                return false;
+
+            if (!checkCommunicationConfiguration(item))
+                return false;
+
+            if (!checkDiscoveryConfiguration(item))
+                return false;
+
+            if (!checkSwapConfiguration(item))
+                return false;
+
+            if (!checkSslConfiguration(item))
+                return false;
+
+            if (!checkPoolSizes(item))
+                return false;
 
             return true;
         }
