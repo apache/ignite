@@ -939,6 +939,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             CallbackEvent evt;
 
             Assert.IsTrue(CB_EVTS.TryTake(out evt, timeout));
+            Assert.AreEqual(0, CB_EVTS.Count);
 
             var e = evt.entries.Single();
 
@@ -1019,6 +1020,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// </summary>
         private static ICacheEntryEvent<object, object> CreateEvent<T, V>(ICacheEntryEvent<T,V> e)
         {
+            Console.WriteLine("{0} {1}: {2} -> {3}", e.EventType, e.Key, e.OldValue, e.Value);
+
             if (!e.HasOldValue)
                 return new CacheEntryCreateEvent<object, object>(e.Key, e.Value);
 
