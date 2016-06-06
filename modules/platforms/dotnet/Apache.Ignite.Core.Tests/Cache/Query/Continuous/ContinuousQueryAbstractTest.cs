@@ -1020,8 +1020,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         /// </summary>
         private static ICacheEntryEvent<object, object> CreateEvent<T, V>(ICacheEntryEvent<T,V> e)
         {
-            Console.WriteLine("{0} {1}: {2} -> {3}", e.EventType, e.Key, e.OldValue, e.Value);
-
             if (!e.HasOldValue)
                 return new CacheEntryCreateEvent<object, object>(e.Key, e.Value);
 
@@ -1180,6 +1178,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             /** <inheritDoc /> */
             public void OnEvent(IEnumerable<ICacheEntryEvent<int, V>> evts)
             {
+                foreach (var e in evts)
+                    Console.WriteLine("{0} {1}: {2} -> {3}", e.EventType, e.Key, e.OldValue, e.Value);
+
                 CB_EVTS.Add(new CallbackEvent(evts.Select(CreateEvent).ToList()));
             }
         }
