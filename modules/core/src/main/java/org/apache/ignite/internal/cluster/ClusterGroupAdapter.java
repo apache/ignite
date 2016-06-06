@@ -51,6 +51,7 @@ import org.apache.ignite.internal.IgniteServicesImpl;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.executor.GridExecutorService;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.processors.igfs.IgfsNodePredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -599,6 +600,11 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
         checkDaemon();
 
         return forPredicate(new CachesFilter(cacheName, affNodes, nearNodes, clientNodes));
+    }
+
+    /** {@inheritDoc} */
+    @Override public ClusterGroup forIgfsMetadataDataNodes(@Nullable String igfsName, @Nullable String metaCacheName) {
+        return forPredicate(new IgfsNodePredicate(igfsName)).forDataNodes(metaCacheName);
     }
 
     /** {@inheritDoc} */
