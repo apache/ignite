@@ -17,6 +17,12 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import org.apache.ignite.binary.BinaryObjectException;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryReader;
+import org.apache.ignite.binary.BinaryWriter;
+import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.typedef.internal.A;
@@ -35,7 +41,7 @@ import java.util.Map;
 /**
  * File or directory information.
  */
-public final class IgfsFileImpl implements IgfsFile, Externalizable {
+public final class IgfsFileImpl implements IgfsFile, Externalizable, Binarylizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -226,6 +232,32 @@ public final class IgfsFileImpl implements IgfsFile, Externalizable {
         props = U.readStringMap(in);
         accessTime = in.readLong();
         modificationTime = in.readLong();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
+        BinaryRawWriter rawWriter = writer.rawWriter();
+
+        IgfsUtils.writePath(rawWriter, path);
+        rawWriter.writeInt(blockSize);
+        rawWriter.writeLong(grpBlockSize);
+        rawWriter.writeLong(len);
+        IgfsUtils.writeProperties(rawWriter, props);
+        rawWriter.writeLong(accessTime);
+        rawWriter.writeLong(modificationTime);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
+        BinaryRawReader rawReader = reader.rawReader();
+
+        path = IgfsUtils.readPath(rawReader);
+        blockSize = rawReader.readInt();
+        grpBlockSize = rawReader.readLong();
+        len = rawReader.readLong();
+        props = IgfsUtils.readProperties(rawReader);
+        accessTime = rawReader.readLong();
+        modificationTime = rawReader.readLong();
     }
 
     /** {@inheritDoc} */
