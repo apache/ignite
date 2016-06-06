@@ -238,7 +238,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 if (loc)
                     CheckNoCallback(100);
                 else
-                    CheckCallbackSingle(key2, Entry(key2), Entry(key2 + 1));
+                    CheckCallbackSingle(key2, Entry(key2), Entry(key2 + 1));  // failure is here
 
                 cache1.Remove(key2);
 
@@ -942,9 +942,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
             var e = evt.entries.Single();
 
-            Assert.AreEqual(expKey, evt.entries.First().Key);
-            Assert.AreEqual(expOldVal, evt.entries.First().OldValue);
-            Assert.AreEqual(expVal, evt.entries.First().Value);
+            Assert.AreEqual(expKey, e.Key);
+            Assert.AreEqual(expOldVal, e.OldValue);  // failure is here (null instead of real entry)
+            Assert.AreEqual(expVal, e.Value);
         }
 
         /// <summary>
