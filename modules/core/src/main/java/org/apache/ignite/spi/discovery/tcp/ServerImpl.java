@@ -402,7 +402,10 @@ class ServerImpl extends TcpDiscoveryImpl {
             final long writeTimeout = spi.failureDetectionTimeoutEnabled() ? spi.failureDetectionTimeout() :
                 spi.getSocketTimeout();
 
-            final String gridName = ((IgniteThread) Thread.currentThread()).getGridName();
+            String gridName = "client";
+
+            if (Thread.currentThread() instanceof IgniteThread)
+                gridName = ((IgniteThread) Thread.currentThread()).getGridName();
 
             srv = GridNioServer.builder().address(U.getLocalHost())
                 .port(-1)
