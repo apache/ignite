@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 {
+    using NUnit.Framework;
+
     /// <summary>
     /// Continuous query tests for ATOMIC cache with no backups.
     /// </summary>
@@ -29,6 +31,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             : base(CACHE_ATOMIC_NO_BACKUP)
         {
             // No-op.
+        }
+
+        [Test]
+        public void TestCallback1()
+        {
+            TestCallback();
         }
     }
 }

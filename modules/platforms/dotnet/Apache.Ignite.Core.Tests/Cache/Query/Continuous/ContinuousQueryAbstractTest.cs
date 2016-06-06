@@ -196,7 +196,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
         [Test]
         public void TestCallback()
         {
-            CheckCallback(false);
+            for (int i = 0; i < 15; i++)
+            {
+                CheckCallback(false);
+            }
         }
 
         /// <summary>
@@ -939,11 +942,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
             Assert.IsTrue(CB_EVTS.TryTake(out evt, timeout));
 
-            Assert.AreEqual(1, evt.entries.Count);
+            var e = evt.entries.Single();
 
-            Assert.AreEqual(expKey, evt.entries.First().Key);
-            Assert.AreEqual(expOldVal, evt.entries.First().OldValue);
-            Assert.AreEqual(expVal, evt.entries.First().Value);
+            // TODO: Some problem here! One of the asserts might fail
+            Assert.AreEqual(expKey, e.Key);
+            Assert.AreEqual(expOldVal, e.OldValue);
+            Assert.AreEqual(expVal, e.Value);
         }
 
         /// <summary>
