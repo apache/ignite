@@ -207,19 +207,20 @@ public class IgfsMetaManager extends IgfsManager {
         locNode = igfsCtx.kernalContext().discovery().localNode();
 
         // Start background delete worker.
-        delWorker = new IgfsDeleteWorker(igfsCtx);
+        if (!client) {
+            delWorker = new IgfsDeleteWorker(igfsCtx);
 
-        delWorker.start();
+            delWorker.start();
+        }
     }
 
     /** {@inheritDoc} */
     @Override protected void onKernalStop0(boolean cancel) {
         IgfsDeleteWorker delWorker0 = delWorker;
 
-        if (delWorker0 != null)
+        if (delWorker0 != null) {
             delWorker0.cancel();
 
-        if (delWorker0 != null) {
             try {
                 U.join(delWorker0);
             }
@@ -1136,7 +1137,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                     tx.commit();
 
-                    delWorker.signal();
+                    signalDeleteWorker();
 
                     return newInfo.id();
                 }
@@ -1212,7 +1213,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                     tx.commit();
 
-                    delWorker.signal();
+                    signalDeleteWorker();
 
                     return victimId;
                 }
@@ -2476,7 +2477,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                 Boolean res = synchronizeAndExecute(task, fs, false, Collections.singleton(trashId), path);
 
-                delWorker.signal();
+                signalDeleteWorker();
 
                 return res;
             }
@@ -3340,5 +3341,15 @@ public class IgfsMetaManager extends IgfsManager {
         }
         else
             IgfsUtils.sendEvents(igfsCtx.kernalContext(), leafPath, EventType.EVT_IGFS_DIR_CREATED);
+    }
+
+    /**
+     * Signal delete worker thread.
+     */
+    private void signalDeleteWorker() {
+        IgfsDeleteWorker delWorker0 = delWorker;
+
+        if (delWorker0 != null)
+            delWorker0.signal();
     }
 }
