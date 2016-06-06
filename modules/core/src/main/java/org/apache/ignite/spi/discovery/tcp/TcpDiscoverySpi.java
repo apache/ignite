@@ -379,6 +379,9 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     /** SSL server socket factory. */
     protected SSLServerSocketFactory sslSrvSockFactory;
 
+    /** SSL context. */
+    protected SSLContext sslCtx;
+
     /** SSL socket factory. */
     protected SSLSocketFactory sslSockFactory;
 
@@ -1774,6 +1777,8 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
                 sslSockFactory = sslCtx.getSocketFactory();
                 sslSrvSockFactory = sslCtx.getServerSocketFactory();
+
+                this.sslCtx = sslCtx;
             }
             catch (IgniteException e) {
                 throw new IgniteSpiException("Failed to create SSL context. SSL factory: "

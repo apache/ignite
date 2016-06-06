@@ -48,6 +48,9 @@ public abstract class TcpDiscoveryAbstractMessage implements Serializable {
     /** */
     protected static final int CLIENT_ACK_FLAG_POS = 4;
 
+    /** */
+    protected static final int ASYNC_MODE_POS = 5;
+
     /** Sender of the message (transient). */
     private transient UUID sndNodeId;
 

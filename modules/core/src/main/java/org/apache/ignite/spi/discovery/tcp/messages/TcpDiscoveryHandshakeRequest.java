@@ -40,4 +40,12 @@ public class TcpDiscoveryHandshakeRequest extends TcpDiscoveryAbstractMessage {
     @Override public String toString() {
         return S.toString(TcpDiscoveryHandshakeRequest.class, this, "super", super.toString());
     }
+
+    public void asyncMode(final boolean async) {
+        setFlag(ASYNC_MODE_POS, async);
+    }
+
+    public boolean asyncMode() {
+        return getFlag(ASYNC_MODE_POS);
+    }
 }

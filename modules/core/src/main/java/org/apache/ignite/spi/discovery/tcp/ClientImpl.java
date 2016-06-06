@@ -23,6 +23,8 @@ import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -58,9 +60,9 @@ import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
-import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.LT;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
@@ -461,7 +463,7 @@ class ClientImpl extends TcpDiscoveryImpl {
      * @see TcpDiscoverySpi#joinTimeout
      */
     @SuppressWarnings("BusyWait")
-    @Nullable private T2<SocketStream, Boolean> joinTopology(boolean recon, long timeout)
+    @Nullable private JoinResult joinTopology(boolean recon, long timeout)
         throws IgniteSpiException, InterruptedException {
         Collection<InetSocketAddress> addrs = null;
 
@@ -502,21 +504,21 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 InetSocketAddress addr = it.next();
 
-                T3<SocketStream, Integer, Boolean> sockAndRes = sendJoinRequest(recon, addr);
+                final JoinResult joinRes = sendJoinRequest(recon, addr);
 
-                if (sockAndRes == null) {
+                if (joinRes == null) {
                     it.remove();
 
                     continue;
                 }
 
-                assert sockAndRes.get1() != null && sockAndRes.get2() != null : sockAndRes;
+                assert joinRes.sockStream != null && joinRes.receipt > 0 : joinRes;
 
-                Socket sock = sockAndRes.get1().socket();
+                Socket sock = joinRes.sockStream.socket();
 
-                switch (sockAndRes.get2()) {
+                switch (joinRes.receipt) {
                     case RES_OK:
-                        return new T2<>(sockAndRes.get1(), sockAndRes.get3());
+                        return joinRes;
 
                     case RES_CONTINUE_JOIN:
                     case RES_WAIT:
@@ -526,7 +528,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     default:
                         if (log.isDebugEnabled())
-                            log.debug("Received unexpected response to join request: " + sockAndRes.get2());
+                            log.debug("Received unexpected response to join request: " + joinRes.receipt);
 
                         U.closeQuiet(sock);
                 }
@@ -549,7 +551,7 @@ class ClientImpl extends TcpDiscoveryImpl {
      * @param addr Address.
      * @return Socket, connect response and client acknowledge support flag.
      */
-    @Nullable private T3<SocketStream, Integer, Boolean> sendJoinRequest(boolean recon, InetSocketAddress addr) {
+    @Nullable private JoinResult sendJoinRequest(boolean recon, InetSocketAddress addr) {
         assert addr != null;
 
         if (log.isDebugEnabled())
@@ -583,12 +585,15 @@ class ClientImpl extends TcpDiscoveryImpl {
                 TcpDiscoveryHandshakeRequest req = new TcpDiscoveryHandshakeRequest(locNodeId);
 
                 req.client(true);
+                req.asyncMode(true);
 
                 spi.writeToSocket(sock, req, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                 TcpDiscoveryHandshakeResponse res = spi.readMessage(sock, null, ackTimeout0);
 
                 UUID rmtNodeId = res.creatorNodeId();
+
+                final boolean async = res.asyncMode();
 
                 assert rmtNodeId != null;
                 assert !getLocalNodeId().equals(rmtNodeId);
@@ -614,7 +619,10 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                 msg.client(true);
 
-                spi.writeToSocket(sock, msg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+                if (async)
+                    writeToSocketWithLength(msg, sock, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
+                else
+                    spi.writeToSocket(sock, msg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
                 spi.stats.onMessageSent(msg, U.currentTimeMillis() - tstamp);
 
@@ -622,9 +630,9 @@ class ClientImpl extends TcpDiscoveryImpl {
                     log.debug("Message has been sent to address [msg=" + msg + ", addr=" + addr +
                         ", rmtNodeId=" + rmtNodeId + ']');
 
-                return new T3<>(new SocketStream(sock),
+                return new JoinResult(new SocketStream(sock),
                     spi.readReceipt(sock, timeoutHelper.nextTimeoutChunk(ackTimeout0)),
-                    res.clientAck());
+                    res.clientAck(), res.asyncMode());
             }
             catch (IOException | IgniteCheckedException e) {
                 U.closeQuiet(sock);
@@ -671,6 +679,29 @@ class ClientImpl extends TcpDiscoveryImpl {
 
         return null;
     }
+
+    /**
+     * Marshal message, append data length in head of it and send to server.
+     *
+     * @param msg Message to send.
+     * @param sock Socket connected to the server.
+     * @param sockTimeout Write timeout.
+     * @throws IgniteCheckedException
+     * @throws IOException
+     */
+    private void writeToSocketWithLength(final TcpDiscoveryAbstractMessage msg,
+        final Socket sock, final long sockTimeout) throws IgniteCheckedException, IOException {
+        final byte[] data = spi.marsh.marshal(msg); // TODO maybe optimize
+
+        final ByteBuffer buf = ByteBuffer.allocate(data.length + 4);
+
+        buf.order(ByteOrder.BIG_ENDIAN);
+        buf.putInt(data.length);
+        buf.put(data);
+
+        spi.writeToSocket(sock, msg, buf.array(), sockTimeout);
+    }
+
 
     /**
      * Marshalls credentials with discovery SPI marshaller (will replace attribute value).
@@ -962,10 +993,13 @@ class ClientImpl extends TcpDiscoveryImpl {
         private final Queue<TcpDiscoveryAbstractMessage> queue = new ArrayDeque<>();
 
         /** */
-        private final long socketTimeout;
+        private final long sockTimeout;
 
         /** */
         private TcpDiscoveryAbstractMessage unackedMsg;
+
+        /** */
+        private boolean writeLength;
 
         /**
          *
@@ -973,7 +1007,7 @@ class ClientImpl extends TcpDiscoveryImpl {
         protected SocketWriter() {
             super(spi.ignite().name(), "tcp-client-disco-sock-writer", log);
 
-            socketTimeout = spi.failureDetectionTimeoutEnabled() ? spi.failureDetectionTimeout() :
+            sockTimeout = spi.failureDetectionTimeoutEnabled() ? spi.failureDetectionTimeout() :
                 spi.getSocketTimeout();
         }
 
@@ -991,12 +1025,15 @@ class ClientImpl extends TcpDiscoveryImpl {
         /**
          * @param sock Socket.
          * @param clientAck {@code True} is server supports client message acknowlede.
+         * @param writeLength Add message length if {@code true}.
          */
-        private void setSocket(Socket sock, boolean clientAck) {
+        private void setSocket(Socket sock, boolean clientAck, boolean writeLength) {
             synchronized (mux) {
                 this.sock = sock;
 
                 this.clientAck = clientAck;
+
+                this.writeLength = writeLength;
 
                 unackedMsg = null;
 
@@ -1068,10 +1105,14 @@ class ClientImpl extends TcpDiscoveryImpl {
                         }
                     }
 
-                    spi.writeToSocket(
-                        sock,
-                        msg,
-                        socketTimeout);
+                    if (!writeLength) {
+                        spi.writeToSocket(
+                            sock,
+                            msg,
+                            sockTimeout);
+                    }
+                    else
+                        writeToSocketWithLength(msg, sock, sockTimeout);
 
                     msg = null;
 
@@ -1172,7 +1213,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
             try {
                 while (true) {
-                    T2<SocketStream, Boolean> joinRes = joinTopology(true, timeout);
+                    final JoinResult joinRes = joinTopology(true, timeout);
 
                     if (joinRes == null) {
                         if (join) {
@@ -1187,8 +1228,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                         return;
                     }
 
-                    sockStream = joinRes.get1();
-                    clientAck = joinRes.get2();
+                    sockStream = joinRes.sockStream;
+                    clientAck = joinRes.clientAck;
 
                     Socket sock = sockStream.socket();
 
@@ -1506,7 +1547,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
             joinCnt++;
 
-            T2<SocketStream, Boolean> joinRes = joinTopology(false, spi.joinTimeout);
+            final JoinResult joinRes = joinTopology(false, spi.joinTimeout);
 
             if (joinRes == null) {
                 if (join)
@@ -1520,9 +1561,9 @@ class ClientImpl extends TcpDiscoveryImpl {
                 return;
             }
 
-            currSock = joinRes.get1();
+            currSock = joinRes.sockStream;
 
-            sockWriter.setSocket(joinRes.get1().socket(), joinRes.get2());
+            sockWriter.setSocket(joinRes.sockStream.socket(), joinRes.clientAck, joinRes.asyncMode);
 
             if (spi.joinTimeout > 0) {
                 final int joinCnt0 = joinCnt;
@@ -1535,7 +1576,7 @@ class ClientImpl extends TcpDiscoveryImpl {
                 }, spi.joinTimeout);
             }
 
-            sockReader.setSocket(joinRes.get1(), locNode.clientRouterNodeId());
+            sockReader.setSocket(joinRes.sockStream, locNode.clientRouterNodeId());
         }
 
         /**
@@ -1924,7 +1965,7 @@ class ClientImpl extends TcpDiscoveryImpl {
 
                     currSock = reconnector.sockStream;
 
-                    sockWriter.setSocket(currSock.socket(), reconnector.clientAck);
+                    sockWriter.setSocket(currSock.socket(), reconnector.clientAck, false); // TODO implement reconnect correctly
                     sockReader.setSocket(currSock, locNode.clientRouterNodeId());
 
                     reconnector = null;
@@ -2160,5 +2201,42 @@ class ClientImpl extends TcpDiscoveryImpl {
 
         /** */
         STOPPED
+    }
+
+    /**
+     *
+     */
+    private static class JoinResult {
+        /** */
+        final SocketStream sockStream;
+
+        /** */
+        final int receipt;
+
+        /** */
+        final boolean clientAck;
+
+        /** Marks if client must add length to each message. */
+        final boolean asyncMode;
+
+        /**
+         * @param sockStream Socket stream.
+         * @param receipt Receipt.
+         * @param clientAck Client acknowledge.
+         * @param asyncMode Clietn async mode.
+         */
+        private JoinResult(final SocketStream sockStream, final int receipt,
+            final boolean clientAck,
+            final boolean asyncMode) {
+            this.sockStream = sockStream;
+            this.receipt = receipt;
+            this.clientAck = clientAck;
+            this.asyncMode = asyncMode;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(JoinResult.class, this);
+        }
     }
 }
