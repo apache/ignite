@@ -1030,25 +1030,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         }
     }
 
-    /**
-     * Gets entry set containing internal entries.
-     *
-     * @param filter Filter.
-     * @return Entry set.
-     */
-    public Set<Cache.Entry<K, V>> entrySetx(CacheEntryPredicate... filter) {
-        GridCacheGateway<K, V> gate = this.gate;
-
-        CacheOperationContext prev = onEnter(gate, opCtx);
-
-        try {
-            return delegate.entrySetx(filter);
-        }
-        finally {
-            onLeave(gate, prev);
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public boolean containsKey(K key) {
         GridCacheGateway<K, V> gate = this.gate;
