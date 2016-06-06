@@ -45,13 +45,16 @@ public class IgniteCacheMessageWriteTimeoutTest extends GridCommonAbstractTest {
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
 
+        TcpCommunicationSpi commSpi = (TcpCommunicationSpi)cfg.getCommunicationSpi();
+
         // Try provoke connection close on socket writeTimeout.
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setMessageQueueLimit(10);
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSocketReceiveBuffer(32);
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSocketSendBuffer(32);
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSocketWriteTimeout(100);
-        ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setUnacknowledgedMessagesBufferSize(1000);
+        commSpi.setSharedMemoryPort(-1);
+        commSpi.setMessageQueueLimit(10);
+        commSpi.setSocketReceiveBuffer(32);
+        commSpi.setSocketSendBuffer(32);
+        commSpi.setSocketWriteTimeout(100);
+        commSpi.setUnacknowledgedMessagesBufferSize(1000);
+        commSpi.setConnectTimeout(10_000);
 
         return cfg;
     }
