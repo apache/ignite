@@ -33,7 +33,7 @@ namespace Apache.Ignite.Core.Tests
             Debug.Listeners.Add(new TextWriterTraceListener(Console.Out));
             Debug.AutoFlush = true;
 
-            for (int i = 0; i < 100; i++)
+            for (int i = 0; i < 1000; i++)
             {
                 //TestOne(typeof(ContinuousQueryAtomiclNoBackupTest), "TestCallback1");
                 TestAll(typeof(ContinuousQueryAtomiclNoBackupTest));
