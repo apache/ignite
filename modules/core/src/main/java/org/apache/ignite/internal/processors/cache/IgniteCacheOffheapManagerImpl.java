@@ -274,7 +274,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 //                return t.get1() != null ? t : null;
 //        }
 
-        assert entry.localPartition() != null : entry;
+        assert cctx.isLocal() || entry.localPartition() != null : entry;
 
         return dataStore(entry.localPartition()).find(key);
     }
