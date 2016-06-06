@@ -35,7 +35,9 @@ namespace Apache.Ignite.Core.Tests
 
             for (int i = 0; i < 100; i++)
             {
-                TestOne(typeof(ContinuousQueryAtomiclNoBackupTest), "TestCallback1");
+                //TestOne(typeof(ContinuousQueryAtomiclNoBackupTest), "TestCallback1");
+                TestAll(typeof(ContinuousQueryAtomiclNoBackupTest));
+                TestAll(typeof(ContinuousQueryAtomiclBackupTest));
             }
 
 
@@ -63,7 +65,10 @@ namespace Apache.Ignite.Core.Tests
             int returnCode = Runner.Main(args);
 
             if (returnCode != 0)
+            {
                 Console.Beep();
+                Console.ReadKey();
+            }
         }
 
         private static void TestAllInAssembly()
@@ -73,7 +78,10 @@ namespace Apache.Ignite.Core.Tests
             int returnCode = Runner.Main(args);
 
             if (returnCode != 0)
+            {
                 Console.Beep();
+                Console.ReadKey();
+            }
         }
 
     }

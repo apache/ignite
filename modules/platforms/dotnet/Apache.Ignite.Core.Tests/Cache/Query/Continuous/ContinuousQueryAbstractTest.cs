@@ -942,10 +942,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
 
             var e = evt.entries.Single();
 
-            // TODO: Some problem here! One of the asserts might fail
-            Assert.AreEqual(expKey, e.Key);
-            Assert.AreEqual(expOldVal, e.OldValue);
-            Assert.AreEqual(expVal, e.Value);
+            Assert.AreEqual(expKey, evt.entries.First().Key);
+            Assert.AreEqual(expOldVal, evt.entries.First().OldValue);
+            Assert.AreEqual(expVal, evt.entries.First().Value);
         }
 
         /// <summary>

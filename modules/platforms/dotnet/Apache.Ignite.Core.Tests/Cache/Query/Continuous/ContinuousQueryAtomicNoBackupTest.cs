@@ -33,10 +33,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             // No-op.
         }
 
-        [Test]
-        public void TestCallback1()
-        {
-            TestCallback();
-        }
+        //[Test]
+        //public void TestCallback1()
+        //{
+        //    TestCallback();
+        //}
     }
 }
