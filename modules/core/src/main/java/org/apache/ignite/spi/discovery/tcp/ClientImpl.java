@@ -1263,7 +1263,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                                             ", msg=" + msg + ']');
 
                                     if (res.success()) {
-                                        msgWorker.addMessage(res);
+                                        msgWorker.addMessage(
+                                            new TcpDiscoveryClientReconnectMessageWrapper(res, joinRes.asyncMode));
 
                                         if (msgs != null) {
                                             for (TcpDiscoveryAbstractMessage msg0 : msgs)
@@ -1959,13 +1960,24 @@ class ClientImpl extends TcpDiscoveryImpl {
             if (spi.getSpiContext().isStopping())
                 return;
 
+            boolean async = false;
+
+            if (msg instanceof TcpDiscoveryClientReconnectMessageWrapper) {
+                final TcpDiscoveryClientReconnectMessageWrapper wrapper =
+                    (TcpDiscoveryClientReconnectMessageWrapper) msg;
+
+                async = wrapper.async;
+
+                msg = wrapper.msg;
+            }
+
             if (getLocalNodeId().equals(msg.creatorNodeId())) {
                 if (reconnector != null) {
                     assert msg.success() : msg;
 
                     currSock = reconnector.sockStream;
 
-                    sockWriter.setSocket(currSock.socket(), reconnector.clientAck, false); // TODO implement reconnect correctly
+                    sockWriter.setSocket(currSock.socket(), reconnector.clientAck, async);
                     sockReader.setSocket(currSock, locNode.clientRouterNodeId());
 
                     reconnector = null;
@@ -2237,6 +2249,32 @@ class ClientImpl extends TcpDiscoveryImpl {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(JoinResult.class, this);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class TcpDiscoveryClientReconnectMessageWrapper extends TcpDiscoveryClientReconnectMessage {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        final TcpDiscoveryClientReconnectMessage msg;
+
+        /** */
+        final boolean async;
+
+        /**
+         * @param msg Original message.
+         * @param async Async flag.
+         */
+        public TcpDiscoveryClientReconnectMessageWrapper(final TcpDiscoveryClientReconnectMessage msg,
+            final boolean async) {
+            super(msg.creatorNodeId(), msg.routerNodeId(), msg.lastMessageId());
+
+            this.msg = msg;
+            this.async = async;
         }
     }
 }
