@@ -228,6 +228,9 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
     @Nullable public byte[] remove(@Nullable String spaceName, int part, KeyCacheObject key, byte[] keyBytes) throws IgniteCheckedException {
         GridOffHeapPartitionedMap m = offheap(spaceName);
 
+        if (log.isTraceEnabled())
+            log.trace("offheap remove [key=" + key + ']');
+
         return m == null ? null : m.remove(part, U.hash(key), keyBytes(key, keyBytes));
     }
 
@@ -249,6 +252,9 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
             throw new IgniteCheckedException("Failed to write data to off-heap space, no space registered for name: " +
                 spaceName);
 
+        if (log.isTraceEnabled())
+            log.trace("offheap put [key=" + key + ']');
+
         m.put(part, U.hash(key), keyBytes(key, keyBytes), valBytes);
     }
 
@@ -265,6 +271,9 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
     public boolean removex(@Nullable String spaceName, int part, KeyCacheObject key, byte[] keyBytes)
         throws IgniteCheckedException {
         GridOffHeapPartitionedMap m = offheap(spaceName);
+
+        if (log.isTraceEnabled())
+            log.trace("offheap removex [key=" + key + ']');
 
         return m != null && m.removex(part, U.hash(key), keyBytes(key, keyBytes));
     }
@@ -286,6 +295,9 @@ public class GridOffHeapProcessor extends GridProcessorAdapter {
         byte[] keyBytes,
         IgniteBiPredicate<Long, Integer> p) throws IgniteCheckedException {
         GridOffHeapPartitionedMap m = offheap(spaceName);
+
+        if (log.isTraceEnabled())
+            log.trace("offheap removex [key=" + key + ']');
 
         return m != null && m.removex(part, U.hash(key), keyBytes(key, keyBytes), p);
     }

@@ -55,6 +55,18 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.hadoop.HadoopPayloadAware;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientAffinityCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientDeleteCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientExistsCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientInfoCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientListFilesCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientListPathsCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientMkdirsCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientRenameCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientSetTimesCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientSizeCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientSummaryCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientUpdateCallable;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.future.GridCompoundFuture;
@@ -530,6 +542,9 @@ public final class IgfsImpl implements IgfsEx {
     @Override public boolean exists(final IgfsPath path) {
         A.notNull(path, "path");
 
+        if (meta.isClient())
+            return meta.runClientTask(new IgfsClientExistsCallable(cfg.getName(), path));
+
         return safeOp(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
                 if (log.isDebugEnabled())
@@ -549,8 +564,16 @@ public final class IgfsImpl implements IgfsEx {
                     case DUAL_ASYNC:
                         res = meta.fileId(path) != null;
 
-                        if (!res)
-                            res = secondaryFs.exists(path);
+                        if (!res) {
+                            try {
+                                res = secondaryFs.exists(path);
+                            }
+                            catch (Exception e) {
+                                U.error(log, "Exists in DUAL mode failed [path=" + path + ']', e);
+
+                                throw e;
+                            }
+                        }
 
                         break;
 
@@ -567,6 +590,9 @@ public final class IgfsImpl implements IgfsEx {
     @Override @Nullable public IgfsFile info(final IgfsPath path) {
         A.notNull(path, "path");
 
+        if (meta.isClient())
+            return meta.runClientTask(new IgfsClientInfoCallable(cfg.getName(), path));
+
         return safeOp(new Callable<IgfsFile>() {
             @Override public IgfsFile call() throws Exception {
                 if (log.isDebugEnabled())
@@ -582,6 +608,9 @@ public final class IgfsImpl implements IgfsEx {
     /** {@inheritDoc} */
     @Override public IgfsPathSummary summary(final IgfsPath path) {
         A.notNull(path, "path");
+
+        if (meta.isClient())
+            return meta.runClientTask(new IgfsClientSummaryCallable(cfg.getName(), path));
 
         return safeOp(new Callable<IgfsPathSummary>() {
             @Override public IgfsPathSummary call() throws Exception {
@@ -608,6 +637,9 @@ public final class IgfsImpl implements IgfsEx {
         A.notNull(props, "props");
         A.ensure(!props.isEmpty(), "!props.isEmpty()");
 
+        if (meta.isClient())
+            return meta.runClientTask(new IgfsClientUpdateCallable(cfg.getName(), path, props));
+
         return safeOp(new Callable<IgfsFile>() {
             @Override public IgfsFile call() throws Exception {
                 if (log.isDebugEnabled())
@@ -628,7 +660,7 @@ public final class IgfsImpl implements IgfsEx {
                     return new IgfsFileImpl(path, info, data.groupBlockSize());
                 }
 
-                List<IgniteUuid> fileIds = meta.fileIds(path);
+                List<IgniteUuid> fileIds = meta.idsForPath(path);
 
                 IgniteUuid fileId = fileIds.get(fileIds.size() - 1);
 
@@ -653,6 +685,12 @@ public final class IgfsImpl implements IgfsEx {
     @Override public void rename(final IgfsPath src, final IgfsPath dest) {
         A.notNull(src, "src");
         A.notNull(dest, "dest");
+
+        if (meta.isClient()) {
+            meta.runClientTask(new IgfsClientRenameCallable(cfg.getName(), src, dest));
+
+            return;
+        }
 
         safeOp(new Callable<Void>() {
             @Override public Void call() throws Exception {
@@ -699,6 +737,9 @@ public final class IgfsImpl implements IgfsEx {
     /** {@inheritDoc} */
     @Override public boolean delete(final IgfsPath path, final boolean recursive) {
         A.notNull(path, "path");
+
+        if (meta.isClient())
+            return meta.runClientTask(new IgfsClientDeleteCallable(cfg.getName(), path, recursive));
 
         return safeOp(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
@@ -753,6 +794,12 @@ public final class IgfsImpl implements IgfsEx {
     @Override public void mkdirs(final IgfsPath path, @Nullable final Map<String, String> props)  {
         A.notNull(path, "path");
 
+        if (meta.isClient()) {
+            meta.runClientTask(new IgfsClientMkdirsCallable(cfg.getName(), path, props));
+
+            return ;
+        }
+
         safeOp(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 if (log.isDebugEnabled())
@@ -782,6 +829,9 @@ public final class IgfsImpl implements IgfsEx {
     @Override public Collection<IgfsPath> listPaths(final IgfsPath path) {
         A.notNull(path, "path");
 
+        if (meta.isClient())
+            meta.runClientTask(new IgfsClientListPathsCallable(cfg.getName(), path));
+
         return safeOp(new Callable<Collection<IgfsPath>>() {
             @Override public Collection<IgfsPath> call() throws Exception {
                 if (log.isDebugEnabled())
@@ -796,10 +846,17 @@ public final class IgfsImpl implements IgfsEx {
                 if (childrenModes.contains(DUAL_SYNC) || childrenModes.contains(DUAL_ASYNC)) {
                     assert secondaryFs != null;
 
-                    Collection<IgfsPath> children = secondaryFs.listPaths(path);
+                    try {
+                        Collection<IgfsPath> children = secondaryFs.listPaths(path);
 
-                    for (IgfsPath child : children)
-                        files.add(child.name());
+                        for (IgfsPath child : children)
+                            files.add(child.name());
+                    }
+                    catch (Exception e) {
+                        U.error(log, "List paths in DUAL mode failed [path=" + path + ']', e);
+
+                        throw e;
+                    }
                 }
 
                 IgniteUuid fileId = meta.fileId(path);
@@ -825,6 +882,9 @@ public final class IgfsImpl implements IgfsEx {
     @Override public Collection<IgfsFile> listFiles(final IgfsPath path) {
         A.notNull(path, "path");
 
+        if (meta.isClient())
+            meta.runClientTask(new IgfsClientListFilesCallable(cfg.getName(), path));
+
         return safeOp(new Callable<Collection<IgfsFile>>() {
             @Override public Collection<IgfsFile> call() throws Exception {
                 if (log.isDebugEnabled())
@@ -839,12 +899,19 @@ public final class IgfsImpl implements IgfsEx {
                 if (childrenModes.contains(DUAL_SYNC) || childrenModes.contains(DUAL_ASYNC)) {
                     assert secondaryFs != null;
 
-                    Collection<IgfsFile> children = secondaryFs.listFiles(path);
+                    try {
+                        Collection<IgfsFile> children = secondaryFs.listFiles(path);
 
-                    for (IgfsFile child : children) {
-                        IgfsFileImpl impl = new IgfsFileImpl(child, data.groupBlockSize());
+                        for (IgfsFile child : children) {
+                            IgfsFileImpl impl = new IgfsFileImpl(child, data.groupBlockSize());
 
-                        files.add(impl);
+                            files.add(impl);
+                        }
+                    }
+                    catch (Exception e) {
+                        U.error(log, "List files in DUAL mode failed [path=" + path + ']', e);
+
+                        throw e;
                     }
                 }
 
@@ -871,7 +938,8 @@ public final class IgfsImpl implements IgfsEx {
                             }
                         }
                     }
-                } else if (mode == PRIMARY) {
+                }
+                else if (mode == PRIMARY) {
                     checkConflictWithPrimary(path);
 
                     throw new IgfsPathNotFoundException("Failed to list files (path not found): " + path);
@@ -926,7 +994,7 @@ public final class IgfsImpl implements IgfsEx {
                     return os;
                 }
 
-                IgfsEntryInfo info = meta.info(meta.fileId(path));
+                IgfsEntryInfo info = meta.infoForPath(path);
 
                 if (info == null) {
                     checkConflictWithPrimary(path);
@@ -1077,7 +1145,7 @@ public final class IgfsImpl implements IgfsEx {
                     return new IgfsEventAwareOutputStream(path, desc.info(), bufferSize(bufSize), mode, batch);
                 }
 
-                final List<IgniteUuid> ids = meta.fileIds(path);
+                final List<IgniteUuid> ids = meta.idsForPath(path);
 
                 final IgniteUuid id = ids.get(ids.size() - 1);
 
@@ -1124,11 +1192,17 @@ public final class IgfsImpl implements IgfsEx {
     @Override public void setTimes(final IgfsPath path, final long accessTime, final long modificationTime) {
         A.notNull(path, "path");
 
+        if (accessTime == -1 && modificationTime == -1)
+            return;
+
+        if (meta.isClient()) {
+            meta.runClientTask(new IgfsClientSetTimesCallable(cfg.getName(), path, accessTime, modificationTime));
+
+            return;
+        }
+
         safeOp(new Callable<Void>() {
             @Override public Void call() throws Exception {
-                if (accessTime == -1 && modificationTime == -1)
-                    return null;
-
                 FileDescriptor desc = getFileDescriptor(path);
 
                 if (desc == null) {
@@ -1175,6 +1249,9 @@ public final class IgfsImpl implements IgfsEx {
         A.ensure(start >= 0, "start >= 0");
         A.ensure(len >= 0, "len >= 0");
 
+        if (meta.isClient())
+            return meta.runClientTask(new IgfsClientAffinityCallable(cfg.getName(), path, start, len, maxLen));
+
         return safeOp(new Callable<Collection<IgfsBlockLocation>>() {
             @Override public Collection<IgfsBlockLocation> call() throws Exception {
                 if (log.isDebugEnabled())
@@ -1183,8 +1260,7 @@ public final class IgfsImpl implements IgfsEx {
                 IgfsMode mode = resolveMode(path);
 
                 // Check memory first.
-                IgniteUuid fileId = meta.fileId(path);
-                IgfsEntryInfo info = meta.info(fileId);
+                IgfsEntryInfo info = meta.infoForPath(path);
 
                 if (info == null && mode != PRIMARY) {
                     assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
@@ -1219,7 +1295,8 @@ public final class IgfsImpl implements IgfsEx {
                 if (secondaryFs != null) {
                     try {
                         secondarySpaceSize = secondaryFs.usedSpaceSize();
-                    } catch (IgniteException e) {
+                    }
+                    catch (IgniteException e) {
                         LT.warn(log, e, "Failed to get secondary file system consumed space size.");
 
                         secondarySpaceSize = -1;
@@ -1254,6 +1331,9 @@ public final class IgfsImpl implements IgfsEx {
     /** {@inheritDoc} */
     @Override public long size(final IgfsPath path) {
         A.notNull(path, "path");
+
+        if (meta.isClient())
+            return meta.runClientTask(new IgfsClientSizeCallable(cfg.getName(), path));
 
         return safeOp(new Callable<Long>() {
             @Override public Long call() throws Exception {
@@ -1389,7 +1469,7 @@ public final class IgfsImpl implements IgfsEx {
     @Nullable private FileDescriptor getFileDescriptor(IgfsPath path) throws IgniteCheckedException {
         assert path != null;
 
-        List<IgniteUuid> ids = meta.fileIds(path);
+        List<IgniteUuid> ids = meta.idsForPath(path);
 
         IgfsEntryInfo fileInfo = meta.info(ids.get(ids.size() - 1));
 
@@ -1555,9 +1635,9 @@ public final class IgfsImpl implements IgfsEx {
      * @param path Path.
      * @param mode Mode.
      * @return File info or {@code null} in case file is not found.
-     * @throws IgniteCheckedException If failed.
+     * @throws Exception If failed.
      */
-    private IgfsFileImpl resolveFileInfo(IgfsPath path, IgfsMode mode) throws IgniteCheckedException {
+    private IgfsFileImpl resolveFileInfo(IgfsPath path, IgfsMode mode) throws Exception {
         assert path != null;
         assert mode != null;
 
@@ -1565,19 +1645,26 @@ public final class IgfsImpl implements IgfsEx {
 
         switch (mode) {
             case PRIMARY:
-                info = meta.info(meta.fileId(path));
+                info = meta.infoForPath(path);
 
                 break;
 
             case DUAL_SYNC:
             case DUAL_ASYNC:
-                info = meta.info(meta.fileId(path));
+                info = meta.infoForPath(path);
 
                 if (info == null) {
-                    IgfsFile status = secondaryFs.info(path);
+                    try {
+                        IgfsFile status = secondaryFs.info(path);
 
-                    if (status != null)
-                        return new IgfsFileImpl(status, data.groupBlockSize());
+                        if (status != null)
+                            return new IgfsFileImpl(status, data.groupBlockSize());
+                    }
+                    catch (Exception e) {
+                        U.error(log, "File info operation in DUAL mode failed [path=" + path + ']', e);
+
+                        throw e;
+                    }
                 }
 
                 break;
