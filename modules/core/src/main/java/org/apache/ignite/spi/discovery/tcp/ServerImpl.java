@@ -82,6 +82,7 @@ import org.apache.ignite.internal.processors.security.SecurityContext;
 import org.apache.ignite.internal.util.GridBoundedLinkedHashSet;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
@@ -5311,6 +5312,23 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
+     * NIO worker state.
+     */
+    private enum WorkerState {
+        /** */
+        NOT_STARTED,
+
+        /** */
+        STARTED,
+
+        /** */
+        JOINED,
+
+        /** */
+        STOPPED
+    }
+
+    /**
      * Non blocking client message processor.
      */
     private class ClientNioMessageWorker implements ClientMessageProcessor {
@@ -5332,6 +5350,9 @@ class ServerImpl extends TcpDiscoveryImpl {
         /** Messages that added before this processor was properly initialized. */
         private volatile Queue<T2<TcpDiscoveryAbstractMessage, byte[]>> msgQueue;
 
+        /** Worker state. */
+        private volatile WorkerState state = WorkerState.NOT_STARTED;
+
         /**
          * @param clientNodeId Client node ID.
          * @param sock Socket.
@@ -5339,6 +5360,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         public ClientNioMessageWorker(final UUID clientNodeId, final Socket sock) {
             this.clientNodeId = clientNodeId;
             this.sock = sock;
+
+            msgQueue = new LinkedList<>();
         }
 
         /**
@@ -5347,7 +5370,10 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @throws IgniteCheckedException
          */
         @SuppressWarnings("unchecked")
-        public void start() throws IgniteCheckedException, SSLException {
+        public synchronized void start() throws IgniteCheckedException, SSLException {
+            if (state != WorkerState.NOT_STARTED)
+                return;
+
             final Map<Integer, Object> meta = new HashMap<>();
 
             meta.put(NODE_ID_META, clientNodeId());
@@ -5362,23 +5388,30 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             ses = (GridNioSession) clientNioSrv.createSession(ch, meta).get();
+
+            state = WorkerState.STARTED;
         }
 
         /**
-         * Send all messages added before worker start.
+         * Send all messages added before client join.
          */
         public void sendPendingMessages() {
             if (msgQueue == null)
                 return;
 
-            // process all pending messages
-            while (!msgQueue.isEmpty()) {
-                final T2<TcpDiscoveryAbstractMessage, byte[]> addedMsg = msgQueue.poll();
+            synchronized (this) {
+                if (msgQueue == null)
+                    return;
 
-                addMessage(addedMsg.get1(), addedMsg.get2());
+                // process all pending messages
+                while (!msgQueue.isEmpty()) {
+                    final T2<TcpDiscoveryAbstractMessage, byte[]> addedMsg = msgQueue.poll();
+
+                    addMessage(addedMsg.get1(), addedMsg.get2());
+                }
+
+                msgQueue = null;
             }
-
-            msgQueue = null;
         }
 
         /**
@@ -5396,20 +5429,42 @@ class ServerImpl extends TcpDiscoveryImpl {
          *
          * @return Operation future.
          */
-        public IgniteInternalFuture nonblockingStop() {
-            return ses.close().chain(new C1<IgniteInternalFuture<Boolean>, Object>() {
+        public synchronized IgniteInternalFuture nonblockingStop() {
+            if (state == WorkerState.NOT_STARTED)
+                state = WorkerState.STOPPED;
+
+            if (state == WorkerState.STOPPED)
+                return new GridFinishedFuture<>(null);
+
+            final IgniteInternalFuture<Object> res = ses.close().chain(new C1<IgniteInternalFuture<Boolean>, Object>() {
                 @Override public Object apply(final IgniteInternalFuture<Boolean> fut) {
                     try {
                         return fut.get();
                     }
                     catch (IgniteCheckedException e) {
-                        throw new IgniteSpiException(e);
+                        throw new IgniteSpiException(e.getMessage(), e);
                     }
                     finally {
                         U.closeQuiet(sock);
                     }
                 }
             });
+
+            state = WorkerState.STOPPED;
+
+            return res;
+        }
+
+        /**
+         * Set state as joined.
+         */
+        public void joined() {
+            if (state == WorkerState.STARTED) {
+                synchronized (this) {
+                    if (state == WorkerState.STARTED)
+                        state = WorkerState.JOINED;
+                }
+            }
         }
 
         /**
@@ -5429,13 +5484,15 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /** {@inheritDoc} */
         @Override public void addMessage(final TcpDiscoveryAbstractMessage msg, @Nullable final byte[] msgBytes) {
-            // add message to queue if worker is not started yet
-            if (ses == null) {
-                synchronized (this) {
-                    if (ses == null) {
-                        if (msgQueue == null)
-                            msgQueue = new LinkedBlockingQueue<>();
+            // add message to queue if client is not joined yet
+            final WorkerState state0 = this.state;
 
+            if (state0 == WorkerState.STOPPED)
+                return;
+
+            if (state0 == WorkerState.NOT_STARTED || state0 == WorkerState.STARTED) {
+                synchronized (this) {
+                    if (state == WorkerState.NOT_STARTED || state == WorkerState.STARTED) {
                         msgQueue.add(new T2<>(msg, msgBytes));
 
                         return;
@@ -5443,6 +5500,16 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
             }
 
+            sendMessage(msg, msgBytes);
+        }
+
+        /**
+         * Send message despite of worker state.
+         *
+         * @param msg Message to send.
+         * @param msgBytes Message bytes to send.
+         */
+        public void sendMessage(final TcpDiscoveryAbstractMessage msg, @Nullable final byte[] msgBytes) {
             if (msgBytes != null)
                 ses.send(msgBytes);
             else
@@ -5547,6 +5614,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             final ClientNioMessageWorker clientMsgWrk = (ClientNioMessageWorker) clientMsgWorkers.get(clientNodeId);
 
+            assert clientMsgWrk != null;
+
             if (msg instanceof TcpDiscoveryConnectionCheckMessage) {
                 clientMsgWrk.addReceipt(RES_OK);
 
@@ -5564,6 +5633,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                         req.responded(true);
 
                         msgWorker.addMessage(req);
+
+                        clientMsgWrk.joined();
+
+                        clientMsgWrk.sendPendingMessages();
 
                         return;
                     }
@@ -5610,6 +5683,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                     clientMsgWrk.addReceipt(RES_OK);
 
                     msgWorker.addMessage(msg);
+
+                    clientMsgWrk.joined();
+
+                    clientMsgWrk.sendPendingMessages();
                 }
                 else {
                     clientMsgWrk.addReceipt(RES_CONTINUE_JOIN);
@@ -6111,11 +6188,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                         nioWrk.start();
 
-                        nioWrk.addMessage(res);
-
-                        // We have to send all added messages by RingWorker strictly after sending
-                        // handshake response.
-                        nioWrk.sendPendingMessages();
+                        nioWrk.sendMessage(res, null);
 
                         return;
                     }
