@@ -96,11 +96,11 @@ form.panel.panel-default(name=form novalidate)
                         ]',
                         'Factory for persistent storage for cache data'
                     )
-                    span(ng-if=storeFactoryKind ng-init='__.expanded = true')
+                    span(ng-show=storeFactoryKind ng-init='__.expanded = true')
                         a.customize(ng-show='__.expanded' ng-click='__.expanded = false') Hide settings
                         a.customize(ng-hide='__.expanded' ng-click='__.expanded = true') Show settings
-                        .panel-details(ng-if='__.expanded')
-                            div(ng-if='#{storeFactoryKind} === "CacheJdbcPojoStoreFactory"')
+                        .panel-details(ng-show='__.expanded')
+                            div(ng-show='#{storeFactoryKind} === "CacheJdbcPojoStoreFactory"')
                                 -var pojoStoreFactory = storeFactory + '.CacheJdbcPojoStoreFactory'
 
                                 .details-row
@@ -111,7 +111,7 @@ form.panel.panel-default(name=form novalidate)
                                     +dialect('Dialect:', pojoStoreFactory + '.dialect', 'pojoDialect',
                                         'Dialect of SQL implemented by a particular RDBMS:', 'Generic JDBC dialect',
                                         'Choose JDBC dialect')
-                            div(ng-if='#{storeFactoryKind} === "CacheJdbcBlobStoreFactory"')
+                            div(ng-show='#{storeFactoryKind} === "CacheJdbcBlobStoreFactory"')
                                 -var blobStoreFactory = storeFactory + '.CacheJdbcBlobStoreFactory'
                                 -var blobStoreFactoryVia = blobStoreFactory + '.connectVia'
 
@@ -126,7 +126,7 @@ form.panel.panel-default(name=form novalidate)
                                             <li>JDBC URL, for example: jdbc:h2:mem:myDatabase</li>\
                                             <li>Configured data source</li>\
                                         </ul>')
-                                div(ng-if='#{blobStoreFactoryVia} === "URL"')
+                                div(ng-show='#{blobStoreFactoryVia} === "URL"')
                                     .details-row
                                         +text('Connection URL:', blobStoreFactory + '.connectionUrl', 'connectionUrl', 'true', 'Input URL',
                                             'URL for database access, for example: jdbc:h2:mem:myDatabase')
@@ -134,7 +134,7 @@ form.panel.panel-default(name=form novalidate)
                                         +text('User:', blobStoreFactory + '.user', 'user', 'true', 'Input user name', 'User name for database access')
                                     .details-row
                                         label Note, password will be generated as stub
-                                div(ng-if='#{blobStoreFactoryVia} !== "URL"')
+                                div(ng-show='#{blobStoreFactoryVia} !== "URL"')
                                     .details-row
                                         +text('Data source bean name:', blobStoreFactory + '.dataSourceBean', 'blobDataSourceBean', 'true', 'Input bean name',
                                             'Name of the data source bean in Spring context')
@@ -164,7 +164,7 @@ form.panel.panel-default(name=form novalidate)
                                         'Query for delete entry from underlying database<br/>\
                                         Default value: delete from ENTRIES where key=?')
 
-                            div(ng-if='#{storeFactoryKind} === "CacheHibernateBlobStoreFactory"')
+                            div(ng-show='#{storeFactoryKind} === "CacheHibernateBlobStoreFactory"')
                                 -var hibernateStoreFactory = storeFactory + '.CacheHibernateBlobStoreFactory'
                                 -var hibernateProperties = hibernateStoreFactory + '.hibernateProperties'
 
