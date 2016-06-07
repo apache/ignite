@@ -21,12 +21,32 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
+
 /**
  * Logger that delegates to platform.
  */
 public class PlatformLogger implements IgniteLogger {
     /** Callbacks. */
     private final PlatformCallbackGateway gate;
+
+    /** Quiet flag. */
+    private final Boolean quiet;
+
+    /** */
+    private static final byte LVL_TRACE = 0;
+
+    /** */
+    private static final byte LVL_DEBUG = 1;
+
+    /** */
+    private static final byte LVL_INFO = 2;
+
+    /** */
+    private static final byte LVL_WARN = 3;
+
+    /** */
+    private static final byte LVL_ERROR = 4;
 
     /**
      * Ctor.
@@ -35,6 +55,7 @@ public class PlatformLogger implements IgniteLogger {
      */
     public PlatformLogger(PlatformCallbackGateway gate, Object ctgr) {
         this.gate = gate;
+        this.quiet = Boolean.valueOf(System.getProperty(IGNITE_QUIET, "true"));
 
         String cat = ctgr instanceof Class ? ((Class)ctgr).getName() : String.valueOf(ctgr);
 
@@ -48,61 +69,78 @@ public class PlatformLogger implements IgniteLogger {
 
     /** {@inheritDoc} */
     @Override public void trace(String msg) {
-
+        log(LVL_TRACE, msg, null);
     }
 
     /** {@inheritDoc} */
     @Override public void debug(String msg) {
-
+        log(LVL_DEBUG, msg, null);
     }
 
     /** {@inheritDoc} */
     @Override public void info(String msg) {
-
+        log(LVL_INFO, msg, null);
     }
 
     /** {@inheritDoc} */
     @Override public void warning(String msg) {
-
+        log(LVL_WARN, msg, null);
     }
 
     /** {@inheritDoc} */
     @Override public void warning(String msg, @Nullable Throwable e) {
-
+        log(LVL_WARN, msg, e);
     }
 
     /** {@inheritDoc} */
     @Override public void error(String msg) {
-
+        log(LVL_ERROR, msg, null);
     }
 
     /** {@inheritDoc} */
     @Override public void error(String msg, @Nullable Throwable e) {
-
+        log(LVL_ERROR, msg, e);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isTraceEnabled() {
-        return false;
+        return isLevelEnabled(LVL_TRACE);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isDebugEnabled() {
-        return false;
+        return isLevelEnabled(LVL_DEBUG);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isInfoEnabled() {
-        return false;
+        return isLevelEnabled(LVL_INFO);
     }
 
     /** {@inheritDoc} */
     @Override public boolean isQuiet() {
-        return false;
+        // TODO: Do we need this on platform side? Not sure.
+        return quiet;
     }
 
     /** {@inheritDoc} */
     @Override public String fileName() {
         return null;
+    }
+
+    /**
+     * Returns a value indicating whether specified log level is enabled.
+     *
+     * @param level Log level.
+     * @return Whether specified log level is enabled.
+     */
+    private boolean isLevelEnabled(byte level) {
+        // TODO: native
+        return true;
+    }
+
+    private void log(byte level, String msg, @Nullable Throwable e) {
+        // TODO: native
+        // TODO: Unwrap platform error if possible
     }
 }
