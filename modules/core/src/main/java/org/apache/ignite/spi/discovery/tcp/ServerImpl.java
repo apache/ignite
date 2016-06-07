@@ -7037,7 +7037,7 @@ class ServerImpl extends TcpDiscoveryImpl {
      * and {@link Socket#getOutputStream()} that return custom implementations which
      * use passed {@link SSLEngine}.
      */
-    private static class NioSSLSocket extends Socket {
+    static class NioSSLSocket extends Socket {
         /** Genuine socket. */
         private final Socket delegate;
 
