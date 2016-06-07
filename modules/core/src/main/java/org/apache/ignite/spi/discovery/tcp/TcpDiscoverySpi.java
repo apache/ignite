@@ -1323,7 +1323,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
             // Use channel directly as a workaround, because output stream
             // from NIO socket may block infinitely.
-            if (ch != null)
+            if (ch != null && !(sock instanceof ServerImpl.NioSSLSocket))
                 ch.write(ByteBuffer.wrap(data));
             else {
                 OutputStream out = sock.getOutputStream();
