@@ -282,6 +282,30 @@ $generatorJava.listProperty = function(res, varName, obj, propName, dataType, se
 };
 
 /**
+ * Add function with varargs arguments.
+ *
+ * @param res Resulting output with generated code.
+ * @param fx Function name.
+ * @param quote Whether to quote arguments.
+ * @param args Array with arguments.
+ */
+$generatorJava.fxVarArgs = function(res, fx, quote, args) {
+    const quoteArg = (arg) => quote ? '"' + arg + '"' : arg;
+
+    if (args.length === 1)
+        res.append(fx + '(' + quoteArg(args[0]) + ');');
+    else {
+        res.startBlock(fx + '(');
+
+        const len = args.length - 1;
+
+        _.forEach(args, (arg, ix) => res.line(quoteArg(arg) + (ix < len ? ', ' : '')));
+
+        res.endBlock(');');
+    }
+};
+
+/**
  * Add array property.
  *
  * @param res Resulting output with generated code.
