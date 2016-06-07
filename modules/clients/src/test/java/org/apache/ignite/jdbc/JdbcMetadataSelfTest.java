@@ -52,20 +52,11 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** URL. */
-    private static final String URL = "jdbc:ignite://127.0.0.1/";
+    private static final String URL = "jdbc:ignite://127.0.0.1/pers";
 
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
-
-        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
-
-        cache.setCacheMode(PARTITIONED);
-        cache.setBackups(1);
-        cache.setWriteSynchronizationMode(FULL_SYNC);
-        cache.setIndexedTypes(String.class, Organization.class, AffinityKey.class, Person.class);
-
-        cfg.setCacheConfiguration(cache);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -78,18 +69,33 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         return cfg;
     }
 
+    /**
+     * @return Cache configuration.
+     */
+    protected CacheConfiguration cacheConfiguration() {
+        CacheConfiguration<?,?> cache = defaultCacheConfiguration();
+
+        cache.setCacheMode(PARTITIONED);
+        cache.setBackups(1);
+        cache.setWriteSynchronizationMode(FULL_SYNC);
+
+        return cache;
+    }
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         startGridsMultiThreaded(3);
 
-        IgniteCache<String, Organization> orgCache = grid(0).cache(null);
+        IgniteCache<String, Organization> orgCache = jcache(grid(0), cacheConfiguration(), "org",
+            String.class, Organization.class);
 
         assert orgCache != null;
 
         orgCache.put("o1", new Organization(1, "A"));
         orgCache.put("o2", new Organization(2, "B"));
 
-        IgniteCache<AffinityKey<String>, Person> personCache = grid(0).cache(null);
+        IgniteCache<AffinityKey, Person> personCache = jcache(grid(0), cacheConfiguration(), "pers",
+            AffinityKey.class, Person.class);
 
         assert personCache != null;
 
@@ -112,7 +118,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
         Statement stmt = DriverManager.getConnection(URL).createStatement();
 
         ResultSet rs = stmt.executeQuery(
-            "select p.name, o.id as orgId from Person p, Organization o where p.orgId = o.id");
+            "select p.name, o.id as orgId from \"pers\".Person p, \"org\".Organization o where p.orgId = o.id");
 
         assert rs != null;
 
@@ -141,53 +147,35 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testGetTables() throws Exception {
-
         try (Connection conn = DriverManager.getConnection(URL)) {
             DatabaseMetaData meta = conn.getMetaData();
 
-            Collection<String> names = new ArrayList<>(2);
+            ResultSet rs = meta.getTables("", "pers", "%", new String[]{"TABLE"});
+            assertNotNull(rs);
+            assertTrue(rs.next());
+            assertEquals("TABLE", rs.getString("TABLE_TYPE"));
+            assertEquals("PERSON", rs.getString("TABLE_NAME"));
 
-            names.add("PERSON");
-            names.add("ORGANIZATION");
+            rs = meta.getTables("", "org", "%", new String[]{"TABLE"});
+            assertNotNull(rs);
+            assertTrue(rs.next());
+            assertEquals("TABLE", rs.getString("TABLE_TYPE"));
+            assertEquals("ORGANIZATION", rs.getString("TABLE_NAME"));
 
-            ResultSet rs = meta.getTables("", "PUBLIC", "%", new String[]{"TABLE"});
+            rs = meta.getTables("", "pers", "%", null);
+            assertNotNull(rs);
+            assertTrue(rs.next());
+            assertEquals("TABLE", rs.getString("TABLE_TYPE"));
+            assertEquals("PERSON", rs.getString("TABLE_NAME"));
 
-            assert rs != null;
-
-            int cnt = 0;
-
-            while (rs.next()) {
-                assert "TABLE".equals(rs.getString("TABLE_TYPE"));
-                assert names.remove(rs.getString("TABLE_NAME"));
-
-                cnt++;
-            }
-
-            assert names.isEmpty();
-            assert cnt == 2;
-
-            names.add("PERSON");
-            names.add("ORGANIZATION");
-
-            rs = meta.getTables("", "PUBLIC", "%", null);
-
-            assert rs != null;
-
-            cnt = 0;
-
-            while (rs.next()) {
-                assert "TABLE".equals(rs.getString("TABLE_TYPE"));
-                assert names.remove(rs.getString("TABLE_NAME"));
-
-                cnt++;
-            }
-
-            assert names.isEmpty();
-            assert cnt == 2;
+            rs = meta.getTables("", "org", "%", null);
+            assertNotNull(rs);
+            assertTrue(rs.next());
+            assertEquals("TABLE", rs.getString("TABLE_TYPE"));
+            assertEquals("ORGANIZATION", rs.getString("TABLE_NAME"));
 
             rs = meta.getTables("", "PUBLIC", "", new String[]{"WRONG"});
-
-            assert !rs.next();
+            assertFalse(rs.next());
         }
     }
 
@@ -195,11 +183,10 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testGetColumns() throws Exception {
-
         try (Connection conn = DriverManager.getConnection(URL)) {
             DatabaseMetaData meta = conn.getMetaData();
 
-            ResultSet rs = meta.getColumns("", "PUBLIC", "Person", "%");
+            ResultSet rs = meta.getColumns("", "pers", "Person", "%");
 
             assert rs != null;
 
@@ -244,7 +231,7 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             assert names.isEmpty();
             assert cnt == 5;
 
-            rs = meta.getColumns("", "PUBLIC", "Organization", "%");
+            rs = meta.getColumns("", "org", "Organization", "%");
 
             assert rs != null;
 
