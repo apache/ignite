@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Tests
     using System.Diagnostics;
     using System.Reflection;
     using Apache.Ignite.Core.Tests.Cache.Query;
-    using Apache.Ignite.Core.Tests.Cache.Query.Continuous;
     using Apache.Ignite.Core.Tests.Memory;
     using NUnit.ConsoleRunner;
 
@@ -33,13 +32,7 @@ namespace Apache.Ignite.Core.Tests
             Debug.Listeners.Add(new TextWriterTraceListener(Console.Out));
             Debug.AutoFlush = true;
 
-            for (int i = 0; i < 1000; i++)
-            {
-                //TestOne(typeof(ContinuousQueryAtomiclNoBackupTest), "TestCallback1");
-                TestAll(typeof(ContinuousQueryAtomiclNoBackupTest));
-                TestAll(typeof(ContinuousQueryAtomiclBackupTest));
-            }
-
+            TestOne(typeof(CacheLinqTest), "TestExcept");
 
             //TestAll(typeof (CacheQueriesCodeConfigurationTest));
             //TestAllInAssembly();
@@ -52,10 +45,7 @@ namespace Apache.Ignite.Core.Tests
             int returnCode = Runner.Main(args);
 
             if (returnCode != 0)
-            {
                 Console.Beep();
-                Console.ReadKey();
-            }
         }
 
         private static void TestAll(Type testClass)
@@ -65,10 +55,7 @@ namespace Apache.Ignite.Core.Tests
             int returnCode = Runner.Main(args);
 
             if (returnCode != 0)
-            {
                 Console.Beep();
-                Console.ReadKey();
-            }
         }
 
         private static void TestAllInAssembly()
@@ -78,10 +65,7 @@ namespace Apache.Ignite.Core.Tests
             int returnCode = Runner.Main(args);
 
             if (returnCode != 0)
-            {
                 Console.Beep();
-                Console.ReadKey();
-            }
         }
 
     }

@@ -233,14 +233,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 else
                     CheckCallbackSingle(key2, null, Entry(key2));
 
-                //Assert.IsTrue(cache1.ContainsKey(key2));
-                //Console.WriteLine("Replacing " + key2);
-                Assert.AreEqual(Entry(key2), cache1.GetAndPut(key2, Entry(key2 + 1)).Value);
+                cache1.GetAndPut(key2, Entry(key2 + 1));
 
                 if (loc)
                     CheckNoCallback(100);
                 else
-                    CheckCallbackSingle(key2, Entry(key2), Entry(key2 + 1));  // failure is here
+                    CheckCallbackSingle(key2, Entry(key2), Entry(key2 + 1));
 
                 cache1.Remove(key2);
 
@@ -946,7 +944,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             var e = evt.entries.Single();
 
             Assert.AreEqual(expKey, e.Key);
-            Assert.AreEqual(expOldVal, e.OldValue);  // failure is here (null instead of real entry)
+            Assert.AreEqual(expOldVal, e.OldValue);
             Assert.AreEqual(expVal, e.Value);
         }
 
@@ -1060,6 +1058,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
                 return obj != null && obj is BinarizableEntry && ((BinarizableEntry)obj).val == val;
             }
 
+            /** <inheritDoc /> */
             public override string ToString()
             {
                 return string.Format("BinarizableEntry [Val: {0}]", val);
@@ -1180,9 +1179,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Query.Continuous
             /** <inheritDoc /> */
             public void OnEvent(IEnumerable<ICacheEntryEvent<int, V>> evts)
             {
-                foreach (var e in evts)
-                    Console.WriteLine("{0} {1}: {2} -> {3}", e.EventType, e.Key, e.OldValue, e.Value);
-
                 CB_EVTS.Add(new CallbackEvent(evts.Select(CreateEvent).ToList()));
             }
         }
