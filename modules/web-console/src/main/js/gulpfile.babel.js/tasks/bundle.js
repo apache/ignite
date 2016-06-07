@@ -16,46 +16,34 @@
  */
 
 import gulp from 'gulp';
-// import jspm from 'jspm';
 import util from 'gulp-util';
-import sequence from 'gulp-sequence';
-import htmlReplace from 'gulp-html-replace';
 import webpack from 'webpack';
 import webpackConfig from '../../webpack.config';
 import WebpackDevServer from 'webpack-dev-server';
 
 import {srcDir, destDir, igniteModulesTemp} from '../paths';
 
-const options = {
-    minify: true
-};
 
-if (util.env.debug)
-    delete options.minify;
+// TODO source map
+// const options = {
+//     minify: true
+// };
+//
+// if (util.env.debug)
+//     delete options.minify;
+//
+// if (util.env.debug || util.env.sourcemaps)
+//     options.sourceMaps = true;
 
-if (util.env.debug || util.env.sourcemaps)
-    options.sourceMaps = true;
-
-gulp.task('bundle', ['eslint', 'bundle:ignite']);
+gulp.task('bundle', ['bundle:ignite']);
 
 // Package all external dependencies and ignite-console.
 gulp.task('bundle:ignite', (cb) => {
-    return sequence('bundle:ignite:app', cb);
-
-    // return sequence('bundle:ignite:app-min', 'bundle:ignite:app-min:replace', cb);
-});
-
-gulp.task('bundle:ignite:app', (callback) => {
-    const bundler = webpack(webpackConfig);
-    new WebpackDevServer(bundler, webpackConfig.devServer).listen(9000, 'localhost', function() {
-        callback();
+    const bundler = webpack(webpackConfig, (err) => {
+            // if(err) throw new gutil.PluginError("webpack", err);
+            cb();
     });
+
+    if(process.env.NODE_ENV==='development')
+        new WebpackDevServer(bundler).listen(webpackConfig.devServer.port, 'localhost', cb);
 });
-
-
-gulp.task('webpack-dev-server', () => {
-    new WebpackDevServer(webpackConfig).listen(9000);
-
-});
-
-gulp.task('bundle:ignite:app-min', () => jspm.bundleSFX(`${srcDir}/index`, `${destDir}/app.min.js`, options));

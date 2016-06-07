@@ -16,15 +16,11 @@
  */
 
 import _ from 'lodash';
-import ace from 'brace';
 import angular from 'angular';
-// import pdfMake from 'pdfmake';
-
-ace.config.set('basePath', '/jspm_packages/github/ajaxorg/ace-builds@1.2.3');
+import pdfMake from 'pdfmake';
 
 window._ = _;
-window.require = ace.require; // TODO Should be removed after full refactoring to directives.
-// window.pdfMake = pdfMake;
+window.pdfMake = pdfMake;
 
 
 import '../public/stylesheets/style.scss';

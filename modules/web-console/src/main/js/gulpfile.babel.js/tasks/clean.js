@@ -16,16 +16,13 @@
  */
 
 import gulp from 'gulp';
-import ignore from 'gulp-ignore';
 import clean from 'gulp-rimraf';
 
 import { destDir, igniteModulesTemp } from '../paths';
 
 // Clean build folder, remove files.
 gulp.task('clean', () =>
-    gulp.src(`${ destDir }/*`, {read: false})
-        .pipe(ignore('jspm_packages'))
-        .pipe(ignore('system.config.js'))
+    gulp.src(`${destDir}/*`, {read: false})
         .pipe(clean({ force: true }))
 );
 

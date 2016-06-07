@@ -16,10 +16,7 @@
  */
 
 import gulp from 'gulp';
-import sass from 'gulp-sass';
 
-gulp.task('sass', () =>
-    gulp.src('./public/stylesheets/style.scss')
-        .pipe(sass({ outputStyle: 'nested' }).on('error', sass.logError))
-        .pipe(gulp.dest('./public/stylesheets'))
-);
+gulp.task('server', () => {
+    require('../../serve');
+});

@@ -26,9 +26,10 @@ module.exports = function (_path) {
             polyfill: 'babel-polyfill'
         },
 
+
         // output system
         output: {
-            path: 'dist',
+            path: path.resolve("dist"),
             filename: '[name].js',
             publicPath: '/'
         },
@@ -39,36 +40,27 @@ module.exports = function (_path) {
             modulesDirectories: ['node_modules', './'],
             alias: {
                 _appRoot: path.join(_path, 'app'),
-                _images: path.join(_path,  'app', 'assets', 'images'),
+                _images: path.join(_path, 'app', 'assets', 'images'),
                 _stylesheets: path.join(_path, 'app', 'assets', 'styles'),
-                _scripts: path.join(_path,  'app', 'assets', 'js'),
-                ace: path.join(_path, 'node_modules','ace-builds','src')
+                _scripts: path.join(_path, 'app', 'assets', 'js'),
+                ace: path.join(_path, 'node_modules', 'ace-builds', 'src')
             }
         },
 
         // modules resolvers
         module: {
             noParse: [],
-            // preLoaders: [
-            //     {
-            //         test: /\.js$/,
-            //         exclude: [
-            //             path.resolve(_path, "node_modules")
-            //         ],
-            //         loader: 'eslint-loader'
-            //     }
-            // ],
+            preLoaders: [
+                {
+                    test: /\.js$/,
+                    exclude: [path.resolve(_path, "node_modules")],
+                    loader: 'eslint-loader'
+                }
+            ],
             loaders: [
                 {
                     test: /\.json$/,
                     loader: 'json-loader'
-                },
-                {
-                    test: /\.html$/,
-                    loaders: [
-                        'ngtemplate-loader?relativeTo=' + _path,
-                        'html-loader?attrs[]=img:src&attrs[]=img:data-src'
-                    ]
                 },
                 {
                     test: /\.jade$/,
@@ -77,72 +69,55 @@ module.exports = function (_path) {
                         'html-loader?attrs[]=img:src&attrs[]=img:data-src',
                         'jade-html-loader'
                     ]
-                }, {
+                },
+                {
                     test: /\.js$/,
-                    loaders: [
-                        'baggage-loader?[file].html&[file].css'
-                    ]
-                }, {
+                    loaders: ['baggage-loader?[file].html&[file].css']
+                },
+                {
                     test: /\.js$/,
-                    exclude: [
-                        path.resolve(_path, "node_modules")
-                    ],
-                    loaders: [
-                        'ng-annotate-loader'
-                    ]
-                }, {
+                    exclude: [path.resolve(_path, "node_modules")],
+                    loaders: ['ng-annotate-loader']
+                },
+                {
                     test: /\.js$/,
-                    exclude: [
-                        path.resolve(_path, "node_modules")
-                    ],
+                    exclude: [path.resolve(_path, "node_modules")],
                     loader: 'babel-loader',
                     query: {
                         cacheDirectory: true,
                         plugins: ['transform-runtime', 'add-module-exports'],
                         presets: ['angular', 'es2017']
                     }
-                }
-                , {
+                },
+                {
                     test: /\.css$/,
-                    loaders: [
-                        'style-loader',
-                        'css-loader?sourceMap',
-                        'postcss-loader'
-                    ]
-                }, {
+                    loaders: ['style-loader', 'css-loader?sourceMap', 'postcss-loader']
+                },
+                {
                     test: /\.(scss|sass)$/,
                     loader: DEVELOPMENT ? ('style-loader!' + stylesLoader) : ExtractTextPlugin.extract('style-loader', stylesLoader)
-                }, {
+                },
+                {
                     test: /\.(woff2|woff|ttf|eot|svg)?(\?v=[0-9]\.[0-9]\.[0-9])?$/,
                     loaders: [
-                        "url-loader?name=assets/fonts/[name]_[hash].[ext]"
+                        "url-loader?name=fonts/[name]_[hash].[ext]"
                     ]
-                }, {
-                    test: /\.(jpe?g|png|gif)$/i,
-                    loaders: [
-                        'url-loader?name=assets/images/[name]_[hash].[ext]'
-                    ]
-                }, {
-                    test: require.resolve("angular"),
-                    loaders: [
-                        "expose?angular"
-                    ]
-                    
                 },
-
+                {
+                    test: /\.(jpe?g|png|gif)$/i,
+                    loaders: ['url-loader?name=images/[name]_[hash].[ext]']
+                },
+                {
+                    test: require.resolve("angular"),
+                    loaders: ["expose?angular"]
+                },
                 {
                     test: require.resolve("jquery"),
-                    loaders: [
-                        "expose?$",
-                        "expose?jQuery"
-                    ]
+                    loaders: ["expose?$", "expose?jQuery"]
                 }
 
             ]
         },
-        
-        
-        
 
         // post css
         postcss: [autoprefixer({browsers: ['last 2 versions']})],
@@ -153,7 +128,8 @@ module.exports = function (_path) {
             new webpack.ProvidePlugin({
                 $: 'jquery',
                 jQuery: 'jquery',
-                _: 'lodash'
+                _: 'lodash',
+                nv: 'nvd3'
             }),
             new webpack.DefinePlugin({
                 'NODE_ENV': JSON.stringify(NODE_ENV)

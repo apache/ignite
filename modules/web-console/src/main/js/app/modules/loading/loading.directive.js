@@ -18,9 +18,9 @@
 import templateUrl from './loading.jade';
 import './loading.css';
 
-export default ['igniteLoading', ['$loading', '$compile', ($loading, $compile) => {
+export default ['igniteLoading', ['$loading', '$templateCache', '$compile', ($loading, $templateCache, $compile) => {
     const link = (scope, element) => {
-        const compiledTemplate = $compile(templateUrl());
+        const compiledTemplate = $compile($templateCache.get(templateUrl));
 
         const build = () => {
             scope.position = scope.position || 'middle';
