@@ -5157,6 +5157,10 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     onException("Failed to bind to local port. " +
                         "[port=" + port + ", localHost=" + spi.locHost + ']', e);
+
+                    // TODO temporary for tests!!
+                    log.error("Failed to bind to local port. " +
+                        "[port=" + port + ", localHost=" + spi.locHost + ']', e);
                 }
             }
 
