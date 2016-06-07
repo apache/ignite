@@ -139,14 +139,11 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
         assertTrue(onHeapCache.metrics().getOffHeapAllocatedSize() > (MAX_VALS_AMOUNT - 5) * VAL_SIZE + prevTieredOffHeapSize);
         assertEquals(0, offHeapCache.metrics().getOffHeapAllocatedSize());
 
-        System.out.println(">> prevClusterNonHeapMemoryUsed " + prevClusterNonHeapMemoryUsed);
         // prevClusterNonHeapMemoryUsed = 69_277_368
         // (MAX_VALS_AMOUNT - 5) * VAL_SIZE = 49_807_360
         // tiered.metrics().getOffHeapAllocatedSize() = 51_012_531
-        System.out.println("getNonHeapMemoryUsed >>" + ignite.cluster().metrics().getNonHeapMemoryUsed()
-            + " prev " + ((MAX_VALS_AMOUNT - 5) * VAL_SIZE + prevClusterNonHeapMemoryUsed));
 
-        assertTrue((MAX_VALS_AMOUNT - 5) * VAL_SIZE + prevClusterNonHeapMemoryUsed < ignite.cluster().metrics().getNonHeapMemoryUsed());
+        assertTrue(prevClusterNonHeapMemoryUsed < ignite.cluster().metrics().getNonHeapMemoryUsed());
 
         prevClusterNonHeapMemoryUsed = ignite.cluster().metrics().getNonHeapMemoryUsed();
         prevTieredOffHeapSize = onHeapCache.metrics().getOffHeapAllocatedSize();
