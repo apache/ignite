@@ -5434,7 +5434,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 state = WorkerState.STOPPED;
 
             if (state == WorkerState.STOPPED)
-                return new GridFinishedFuture<>(null);
+                return new GridFinishedFuture<>();
 
             final IgniteInternalFuture<Object> res = ses.close().chain(new C1<IgniteInternalFuture<Boolean>, Object>() {
                 @Override public Object apply(final IgniteInternalFuture<Boolean> fut) {
@@ -5614,7 +5614,13 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             final ClientNioMessageWorker clientMsgWrk = (ClientNioMessageWorker) clientMsgWorkers.get(clientNodeId);
 
-            assert clientMsgWrk != null;
+            if (clientMsgWrk == null) {
+                if (log.isDebugEnabled())
+                    log.debug("NIO Worker has been closed, drop message. [clientNodeId="
+                        + clientNodeId + ", message=" + msg + "]");
+
+                return;
+            }
 
             if (msg instanceof TcpDiscoveryConnectionCheckMessage) {
                 clientMsgWrk.addReceipt(RES_OK);
