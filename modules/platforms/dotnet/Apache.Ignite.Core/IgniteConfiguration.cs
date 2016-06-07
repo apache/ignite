@@ -38,6 +38,7 @@
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Lifecycle;
+    using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Transactions;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using BinaryWriter = Apache.Ignite.Core.Impl.Binary.BinaryWriter;
@@ -676,5 +677,11 @@
             get { return _isLateAffinityAssignment ?? DefaultIsLateAffinityAssignment; }
             set { _isLateAffinityAssignment = value; }
         }
+
+        /// <summary>
+        /// Gets or sets the logger.
+        /// TODO: Console logger
+        /// </summary>
+        public ILogger Logger { get; set; }
     }
 }

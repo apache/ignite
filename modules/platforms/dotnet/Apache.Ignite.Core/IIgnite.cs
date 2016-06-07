@@ -29,6 +29,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.DataStructures;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Messaging;
     using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Transactions;
@@ -274,5 +275,12 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <returns>Collection of names of currently available caches.</returns>
         ICollection<string> GetCacheNames();
+
+        /// <summary>
+        /// Gets the logger.
+        /// <para />
+        /// See <see cref="IgniteConfiguration.Logger"/> for customization.
+        /// </summary>
+        ILogger Log { get; }
     }
 }
