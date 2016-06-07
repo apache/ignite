@@ -937,7 +937,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                         sendQueryExecutedEvent(
                             sqlQry,
-                            params);
+                            params,
+                            space);
 
                         return new ClIter<Cache.Entry<K, V>>() {
                             @Override public void close() throws Exception {
@@ -975,14 +976,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param sqlQry Sql query.
      * @param params Params.
      */
-    private void sendQueryExecutedEvent(String sqlQry, Object[] params) {
+    private void sendQueryExecutedEvent(String sqlQry, Object[] params, String cacheName) {
         if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
             ctx.event().record(new CacheQueryExecutedEvent<>(
                 ctx.discovery().localNode(),
                 "SQL query executed.",
                 EVT_CACHE_QUERY_EXECUTED,
                 CacheQueryType.SQL.name(),
-                null,
+                cacheName,
                 null,
                 sqlQry,
                 null,
@@ -1021,7 +1022,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     final GridQueryFieldsResult res = idx.queryFields(space, sql, F.asList(args),
                         idx.backupFilter(null, null, null));
 
-                    sendQueryExecutedEvent(sql, args);
+                    sendQueryExecutedEvent(sql, args, space);
 
                     QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(new Iterable<List<?>>() {
                         @Override public Iterator<List<?>> iterator() {

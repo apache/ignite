@@ -408,7 +408,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     private boolean clientReconnectDisabled;
 
     /** */
-    private Object consistentId;
+    private Serializable consistentId;
 
     /** Local node addresses. */
     private IgniteBiTuple<Collection<String>, Collection<String>> addrs;
@@ -974,17 +974,23 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Object consistentId() throws IgniteSpiException {
+    @Nullable @Override public Serializable consistentId() throws IgniteSpiException {
         if (consistentId == null) {
             initializeImpl();
 
             initAddresses();
 
-            List<String> sortedAddrs = new ArrayList<>(addrs.get1());
+            Serializable cfgId = ignite.configuration().getConsistentId();
 
-            Collections.sort(sortedAddrs);
+            if (cfgId == null) {
+                List<String> sortedAddrs = new ArrayList<>(addrs.get1());
 
-            consistentId = U.consistentId(sortedAddrs, impl.boundPort());
+                Collections.sort(sortedAddrs);
+
+                consistentId = U.consistentId(sortedAddrs, impl.boundPort());
+            }
+            else
+                consistentId = cfgId;
         }
 
         return consistentId;
@@ -1020,7 +1026,7 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
             srvPort,
             metricsProvider,
             locNodeVer,
-            (Serializable)consistentId());
+            consistentId());
 
         if (addExtAddrAttr) {
             Collection<InetSocketAddress> extAddrs = addrRslvr == null ? null :
@@ -1040,7 +1046,10 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         locNode.setAttributes(locNodeAttrs);
         locNode.local(true);
 
-        lsnr.onLocalNodeInitialized(locNode);
+        DiscoverySpiListener lsnr = this.lsnr;
+
+        if (lsnr != null)
+            lsnr.onLocalNodeInitialized(locNode);
 
         if (log.isDebugEnabled())
             log.debug("Local node initialized: " + locNode);

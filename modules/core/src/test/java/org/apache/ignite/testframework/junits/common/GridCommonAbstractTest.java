@@ -124,6 +124,40 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
+     * Get or create instance of cache specified by K,V types;
+     * new instance of cache is created for each pair of types key and value
+     *
+     * @param clsK Key class.
+     * @param clsV Value class.
+     *
+     * @return cache instance
+     */
+    protected <K, V> IgniteCache<K, V> jcache(CacheConfiguration ccfg, Class<K> clsK, Class<V> clsV) {
+        return jcache(grid(), ccfg, clsK, clsV);
+    }
+
+    /**
+     * Get or create instance of cache specified by K,V types;
+     * new instance of cache is created for each pair of types key and value
+     *
+     * @param ig Ignite.
+     * @param clsK Key class.
+     * @param clsV Value class.
+     *
+     * @return cache instance
+     */
+    protected <K, V> IgniteCache<K, V> jcache(Ignite ig, CacheConfiguration ccfg, Class<K> clsK, Class<V> clsV) {
+        String name = clsK.getSimpleName() + "-" + clsV.getSimpleName();
+
+        CacheConfiguration<K, V> cc = (CacheConfiguration<K, V>)ccfg;
+        cc.setName(name);
+        cc.setIndexedTypes(clsK, clsV);
+
+        return ig.getOrCreateCache(cc);
+    }
+
+
+    /**
      * @param idx Grid index.
      * @param name Cache name.
      * @return Cache.

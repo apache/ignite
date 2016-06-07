@@ -181,6 +181,6 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
 
     /** {@inheritDoc} */
     public String toString() {
-        return "CacheObjectByteArrayImpl [arrLen" + (val != null ? val.length : 0) + ']';
+        return "CacheObjectByteArrayImpl [arrLen=" + (val != null ? val.length : 0) + ']';
     }
 }

@@ -449,7 +449,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     private List<GridCacheManager> dhtManagers(GridCacheContext ctx) {
         return F.asList(ctx.store(), ctx.events(), ctx.evicts(), ctx.queries(), ctx.continuousQueries(),
-            ctx.dr());
+            ctx.dr(), ctx.offheap());
     }
 
     /**

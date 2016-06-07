@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -69,12 +70,9 @@ import org.apache.ignite.internal.binary.streams.BinaryInputStream;
 import org.apache.ignite.internal.binary.streams.BinaryOffheapInputStream;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
-import org.apache.ignite.internal.processors.cache.CacheEntryPredicateAdapter;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -86,7 +84,6 @@ import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
@@ -124,15 +121,6 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
     /** */
     private final ConcurrentHashMap8<Integer, BinaryTypeImpl> clientMetaDataCache;
-
-    /** Predicate to filter binary meta data in utility cache. */
-    private final CacheEntryPredicate metaPred = new CacheEntryPredicateAdapter() {
-        private static final long serialVersionUID = 0L;
-
-        @Override public boolean apply(GridCacheEntryEx e) {
-            return e.key().value(e.context().cacheObjectContext(), false) instanceof BinaryMetadataKey;
-        }
-    };
 
     /** */
     private BinaryContext binaryCtx;
@@ -631,14 +619,23 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 }
             });
         else {
-            return F.viewReadOnly(metaDataCache.entrySetx(metaPred),
-                new C1<Cache.Entry<BinaryMetadataKey, BinaryMetadata>, BinaryType>() {
-                    private static final long serialVersionUID = 0L;
+            try {
+                Iterator<Cache.Entry<Object, Object>> it =
+                    metaDataCache.delegate().scanIterator(false, MetaDataPredicate.INSTANCE);
 
-                    @Override public BinaryType apply(Cache.Entry<BinaryMetadataKey, BinaryMetadata> e) {
-                        return e.getValue().wrap(binaryCtx);
-                    }
-                });
+                Collection<BinaryType> res = new ArrayList<>();
+
+                while (it.hasNext()) {
+                    Cache.Entry<Object, Object> e = it.next();
+
+                    res.add(((BinaryMetadata)e.getValue()).wrap(binaryCtx));
+                }
+
+                return res;
+            }
+            catch (IgniteCheckedException e) {
+                throw new BinaryObjectException(e);
+            }
         }
     }
 
@@ -1005,6 +1002,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     static class MetaDataPredicate implements IgniteBiPredicate<Object, Object> {
         /** */
         private static final long serialVersionUID = 0L;
+
+        /** */
+        static MetaDataPredicate INSTANCE = new MetaDataPredicate();
 
         /** {@inheritDoc} */
         @Override public boolean apply(Object key, Object val) {

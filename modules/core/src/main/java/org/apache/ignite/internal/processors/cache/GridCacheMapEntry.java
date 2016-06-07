@@ -3572,7 +3572,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         CacheObject val = this.val;
 
         if (val == null && isStartVersion()) {
-            IgniteBiTuple<CacheObject, GridCacheVersion> t = cctx.offheap().read(this);
+            IgniteBiTuple<CacheObject, GridCacheVersion> t = detached() || isNear() ? null : cctx.offheap().read(this);
 
             if (t != null)
                 val = t.get1();
