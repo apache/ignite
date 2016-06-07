@@ -976,7 +976,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             if (locNode && plc == null && !cctx.isLocal()) {
                 GridDhtCacheAdapter<K, V> cache = cctx.isNear() ? cctx.near().dht() : cctx.dht();
 
-                final Iterator<Cache.Entry<K, V>> iter = cache.localEntriesIterator(true, backups);
+                final Iterator<Cache.Entry<K, V>> iter = cache.localEntriesIterator(true,
+                    backups,
+                    cache.context().keepBinary());
 
                 return new GridIteratorAdapter<IgniteBiTuple<K, V>>() {
                     /** */
@@ -1156,8 +1158,9 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                     K key = e.key();
                     V val = e.value();
 
+                    key = (K)cctx.unwrapBinaryIfNeeded(key, keepBinary);
+
                     if (filter != null || locNode) {
-                        key = (K)cctx.unwrapBinaryIfNeeded(key, keepBinary);
                         val = (V)cctx.unwrapBinaryIfNeeded(val, keepBinary);
                     }
 
@@ -2668,7 +2671,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
                 if (key != null)
                     return key;
 
-                key = cctx.toCacheKeyObject(keyBytes()).value(cctx.cacheObjectContext(), false);
+                key = (K)cctx.toCacheKeyObject(keyBytes());
 
                 return key;
             }

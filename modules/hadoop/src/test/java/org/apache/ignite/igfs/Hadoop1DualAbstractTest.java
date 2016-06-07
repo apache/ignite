@@ -19,10 +19,16 @@ package org.apache.ignite.igfs;
 
 import java.io.IOException;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory;
 import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
+import org.apache.ignite.hadoop.util.ChainedUserNameMapper;
+import org.apache.ignite.hadoop.util.KerberosUserNameMapper;
+import org.apache.ignite.hadoop.util.UserNameMapper;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.processors.igfs.IgfsDualAbstractSelfTest;
+import org.apache.ignite.lifecycle.LifecycleAware;
+import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.igfs.HadoopSecondaryFileSystemConfigurationTest.IGFS_SCHEME;
 import static org.apache.ignite.igfs.HadoopSecondaryFileSystemConfigurationTest.SECONDARY_CFG_PATH;
@@ -74,10 +80,21 @@ public abstract class Hadoop1DualAbstractTest extends IgfsDualAbstractSelfTest {
 
         prepareConfiguration();
 
+        KerberosUserNameMapper mapper1 = new KerberosUserNameMapper();
+
+        mapper1.setRealm("TEST.COM");
+
+        TestUserNameMapper mapper2 = new TestUserNameMapper();
+
+        ChainedUserNameMapper mapper = new ChainedUserNameMapper();
+
+        mapper.setMappers(mapper1, mapper2);
+
         CachingHadoopFileSystemFactory factory = new CachingHadoopFileSystemFactory();
 
         factory.setUri(secondaryUri);
         factory.setConfigPaths(secondaryConfFullPath);
+        factory.setUserNameMapper(mapper);
 
         IgniteHadoopIgfsSecondaryFileSystem second = new IgniteHadoopIgfsSecondaryFileSystem();
 
@@ -108,5 +125,34 @@ public abstract class Hadoop1DualAbstractTest extends IgfsDualAbstractSelfTest {
         secondaryConfFullPath = writeConfiguration(secondaryConf, SECONDARY_CFG_PATH);
 
         secondaryUri = mkUri(IGFS_SCHEME, SECONDARY_AUTHORITY);
+    }
+
+    /**
+     * Test user name mapper.
+     */
+    private static class TestUserNameMapper implements UserNameMapper, LifecycleAware {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Started flag. */
+        private boolean started;
+
+        /** {@inheritDoc} */
+        @Nullable @Override public String map(String name) {
+            assert started;
+            assert name != null && name.contains("@");
+
+            return name.substring(0, name.indexOf("@"));
+        }
+
+        /** {@inheritDoc} */
+        @Override public void start() throws IgniteException {
+            started = true;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void stop() throws IgniteException {
+            // No-op.
+        }
     }
 }

@@ -27,6 +27,7 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
+import org.apache.curator.utils.CloseableUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
@@ -64,6 +65,7 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
 
     /**
      * Before test.
+     *
      * @throws Exception
      */
     @Override public void beforeTest() throws Exception {
@@ -71,6 +73,9 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
 
         // remove stale system properties
         System.getProperties().remove(TcpDiscoveryZookeeperIpFinder.PROP_ZK_CONNECTION_STRING);
+
+        // disable JMX for tests
+        System.setProperty("zookeeper.jmx.log4j.disable", "true");
 
         // start the ZK cluster
         zkCluster = new TestingCluster(ZK_CLUSTER_SIZE);
@@ -84,18 +89,17 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
 
     /**
      * After test.
+     *
      * @throws Exception
      */
     @Override public void afterTest() throws Exception {
         super.afterTest();
 
         if (zkCurator != null)
-            zkCurator.close();
+            CloseableUtils.closeQuietly(zkCurator);
 
-        if (zkCluster != null) {
-            zkCluster.stop();
-            zkCluster.close();
-        }
+        if (zkCluster != null)
+            CloseableUtils.closeQuietly(zkCluster);
 
         stopAllGrids();
 
@@ -111,7 +115,7 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration configuration = super.getConfiguration(gridName);
 
-        TcpDiscoverySpi tcpDisco = (TcpDiscoverySpi) configuration.getDiscoverySpi();
+        TcpDiscoverySpi tcpDisco = (TcpDiscoverySpi)configuration.getDiscoverySpi();
         TcpDiscoveryZookeeperIpFinder zkIpFinder = new TcpDiscoveryZookeeperIpFinder();
         zkIpFinder.setAllowDuplicateRegistrations(isAllowDuplicateRegistrations());
 
@@ -148,7 +152,7 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
         startGrid(0);
 
         // set up an event listener to expect one NODE_JOINED event
-        CountDownLatch latch =  expectJoinEvents(grid(0), 1);
+        CountDownLatch latch = expectJoinEvents(grid(0), 1);
 
         // start the other node
         startGrid(1);
@@ -171,7 +175,7 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
         startGrid(0);
 
         // set up an event listener to expect one NODE_JOINED event
-        CountDownLatch latch =  expectJoinEvents(grid(0), 2);
+        CountDownLatch latch = expectJoinEvents(grid(0), 2);
 
         // start the 2nd node
         startGrid(1);
@@ -202,7 +206,7 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
         startGrid(0);
 
         // set up an event listener to expect one NODE_JOINED event
-        CountDownLatch latch =  expectJoinEvents(grid(0), 3);
+        CountDownLatch latch = expectJoinEvents(grid(0), 3);
 
         // start the 2nd node
         startGrid(1);
