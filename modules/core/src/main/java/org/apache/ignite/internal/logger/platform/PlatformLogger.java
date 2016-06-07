@@ -18,60 +18,90 @@
 package org.apache.ignite.internal.logger.platform;
 
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Logger that delegates to platform.
  */
 public class PlatformLogger implements IgniteLogger {
-    @Override public IgniteLogger getLogger(Object ctgr) {
-        return null;
+    /** Callbacks. */
+    private final PlatformCallbackGateway gate;
+
+    /**
+     * Ctor.
+     *
+     * @param gate Callback gateway.
+     */
+    public PlatformLogger(PlatformCallbackGateway gate, Object ctgr) {
+        this.gate = gate;
+
+        String cat = ctgr instanceof Class ? ((Class)ctgr).getName() : String.valueOf(ctgr);
+
+        // TODO: Initialize instance in platform
     }
 
+    /** {@inheritDoc} */
+    @Override public IgniteLogger getLogger(Object ctgr) {
+        return new PlatformLogger(gate, ctgr);
+    }
+
+    /** {@inheritDoc} */
     @Override public void trace(String msg) {
 
     }
 
+    /** {@inheritDoc} */
     @Override public void debug(String msg) {
 
     }
 
+    /** {@inheritDoc} */
     @Override public void info(String msg) {
 
     }
 
+    /** {@inheritDoc} */
     @Override public void warning(String msg) {
 
     }
 
+    /** {@inheritDoc} */
     @Override public void warning(String msg, @Nullable Throwable e) {
 
     }
 
+    /** {@inheritDoc} */
     @Override public void error(String msg) {
 
     }
 
+    /** {@inheritDoc} */
     @Override public void error(String msg, @Nullable Throwable e) {
 
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isTraceEnabled() {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isDebugEnabled() {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isInfoEnabled() {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public boolean isQuiet() {
         return false;
     }
 
+    /** {@inheritDoc} */
     @Override public String fileName() {
         return null;
     }

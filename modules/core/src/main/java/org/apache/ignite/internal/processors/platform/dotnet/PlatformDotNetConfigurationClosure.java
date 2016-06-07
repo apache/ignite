@@ -30,6 +30,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.binary.BinaryReaderExImpl;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.logger.platform.PlatformLogger;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractConfigurationClosure;
 import org.apache.ignite.internal.processors.platform.lifecycle.PlatformLifecycleBean;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -157,6 +158,8 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
             throw U.convertException(e);
         }
 
+        // Set logger
+
         // 4. Callback to .Net.
         prepare(igniteCfg, dotNetCfg0);
     }
@@ -240,6 +243,10 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
                 cfg.setLifecycleBeans(mergedBeans);
             }
         }
+
+        // Set up platform logger
+        if (cfg.getGridLogger() == null)
+            cfg.setGridLogger(new PlatformLogger(gate, null));
     }
 
     /**
