@@ -1112,52 +1112,57 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
             AffinityTopologyVersion affVer = cctx.affinity().affinityTopologyVersion();
 
-            for (Map.Entry<Integer, GridDhtPartitionState> e : partMap.get(cctx.localNodeId()).entrySet()) {
-                int p = e.getKey();
-                GridDhtPartitionState state = e.getValue();
+            GridDhtPartitionMap2 nodeMap = partMap.get(cctx.localNodeId());
 
-                if (state == OWNING) {
-                    GridDhtLocalPartition locPart = locParts[p];
+            if (nodeMap != null) {
+                for (Map.Entry<Integer, GridDhtPartitionState> e : nodeMap.entrySet()) {
+                    int p = e.getKey();
+                    GridDhtPartitionState state = e.getValue();
 
-                    assert locPart != null;
+                    if (state == OWNING) {
+                        GridDhtLocalPartition locPart = locParts[p];
 
-                    if (cntrMap != null) {
-                        Long cntr = cntrMap.get(p);
+                        assert locPart != null;
 
-                        if (cntr != null && cntr > locPart.updateCounter())
-                            locPart.updateCounter(cntr);
-                    }
+                        if (cntrMap != null) {
+                            Long cntr = cntrMap.get(p);
 
-                    if (locPart.state() != OWNING) {
-                        boolean success = locPart.own();
-
-                        assert success;
-
-                        changed |= success;
-                    }
-                }
-                else if (state == MOVING) {
-                    GridDhtLocalPartition locPart = locParts[p];
-
-                    assert locPart != null;
-
-                    if (locPart.state() == OWNING) {
-                        try {
-                            cctx.offheap().clear(locPart);
-                        } catch (IgniteCheckedException ex) {
-                            throw new IgniteException(ex);
+                            if (cntr != null && cntr > locPart.updateCounter())
+                                locPart.updateCounter(cntr);
                         }
 
-                        locPart = locParts[p] = new GridDhtLocalPartition(cctx, p, entryFactory);
+                        if (locPart.state() != OWNING) {
+                            boolean success = locPart.own();
 
-                        changed = true;
+                            assert success;
+
+                            changed |= success;
+                        }
                     }
+                    else if (state == MOVING) {
+                        GridDhtLocalPartition locPart = locParts[p];
 
-                    if (cntrMap != null) {
-                        Long cntr = cntrMap.get(p);
+                        assert locPart != null;
 
-                        if (cntr != null && cntr > locPart.updateCounter())
-                            locPart.updateCounter(cntr);
+                        if (locPart.state() == OWNING) {
+                            try {
+                                cctx.offheap().clear(locPart);
+                            }
+                            catch (IgniteCheckedException ex) {
+                                throw new IgniteException(ex);
+                            }
+
+                            locPart = locParts[p] = new GridDhtLocalPartition(cctx, p, entryFactory);
+
+                            changed = true;
+                        }
+
+                        if (cntrMap != null) {
+                            Long cntr = cntrMap.get(p);
+
+                            if (cntr != null && cntr > locPart.updateCounter())
+                                locPart.updateCounter(cntr);
+                        }
                     }
                 }
             }

@@ -357,7 +357,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         assert startTime > 0;
 
         // Generate dummy discovery event for local node joining.
-        DiscoveryEvent discoEvt = cctx.discovery().localActivationEvent();
+        DiscoveryEvent discoEvt;
+
+        if (loc.isClient() || loc.isDaemon())
+            discoEvt = cctx.discovery().localJoinEvent();
+        else
+            discoEvt = cctx.discovery().localActivationEvent();
 
         GridDhtPartitionExchangeId exchId = initialExchangeId();
 
