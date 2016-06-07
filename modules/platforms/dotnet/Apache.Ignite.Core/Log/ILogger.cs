@@ -22,6 +22,8 @@ namespace Apache.Ignite.Core.Log
     /// </summary>
     public interface ILogger
     {
+        // TODO: Logger should only have the simplest methods
+        // Convenience overloads go to extension class!
     }
 
     // TODO: LogEventInfo, LogLevel - see NLog
