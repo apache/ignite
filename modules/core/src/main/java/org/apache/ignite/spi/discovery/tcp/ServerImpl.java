@@ -31,6 +31,7 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.AlreadyBoundException;
@@ -5133,6 +5134,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 srvCh = ServerSocketChannel.open();
 
                 srvCh.configureBlocking(true);
+
+                srvCh.setOption(StandardSocketOptions.SO_REUSEADDR, true);
             }
             catch (IOException e) {
                 throw new IgniteSpiException("Failed to open socket channel", e);
