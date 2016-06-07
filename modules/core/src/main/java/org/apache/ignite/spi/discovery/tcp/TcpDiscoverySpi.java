@@ -29,6 +29,8 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
+import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -1317,11 +1319,19 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
         IOException err = null;
 
         try {
-            OutputStream out = sock.getOutputStream();
+            final SocketChannel ch = sock.getChannel();
 
-            out.write(data);
+            // Use channel directly as a workaround, because output stream
+            // from NIO socket may block infinitely.
+            if (ch != null)
+                ch.write(ByteBuffer.wrap(data));
+            else {
+                OutputStream out = sock.getOutputStream();
 
-            out.flush();
+                out.write(data);
+
+                out.flush();
+            }
         }
         catch (IOException e) {
             err = e;
