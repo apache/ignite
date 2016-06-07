@@ -340,7 +340,7 @@ $generatorJava.multiparamProperty = function(res, varName, obj, propName, dataTy
 
     if (val && val.length > 0) {
         $generatorJava.fxVarArgs(res, varName + '.' + $generatorJava.setterName(propName, setterName), false,
-            _.map(val, (v, ix) => $generatorJava.toJavaCode(dataType === 'class' ? res.importClass(v) : v, dataType)));
+            _.map(val, (v) => $generatorJava.toJavaCode(dataType === 'class' ? res.importClass(v) : v, dataType)));
     }
 };
 
@@ -1879,9 +1879,8 @@ $generatorJava.domainModelGeneral = function(domain, res) {
                 else
                     types.push('???');
 
-                if ($generatorCommon.isDefinedAndNotEmpty(types)) {
+                if ($generatorCommon.isDefinedAndNotEmpty(types))
                     $generatorJava.fxVarArgs(res, 'cache.setIndexedTypes', false, types);
-                }
             }
 
             break;
