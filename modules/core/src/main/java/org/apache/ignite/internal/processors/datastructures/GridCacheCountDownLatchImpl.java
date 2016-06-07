@@ -236,11 +236,21 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
     @Override public void onUpdate(int cnt) {
         assert cnt >= 0;
 
-        if (initGuard.get())
-                U.awaitQuiet(initLatch);
+        if (!initGuard.get())
+            return;
 
-        while (internalLatch != null && internalLatch.getCount() > cnt)
-            internalLatch.countDown();
+        CountDownLatch latch0 = internalLatch;
+
+        if (latch0 == null) {
+            U.awaitQuiet(initLatch);
+
+            latch0 = internalLatch;
+        }
+
+        assert latch0 != null;
+
+        while (latch0.getCount() > cnt)
+            latch0.countDown();
     }
 
     /**
