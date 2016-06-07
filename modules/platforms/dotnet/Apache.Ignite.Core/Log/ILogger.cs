@@ -23,4 +23,6 @@ namespace Apache.Ignite.Core.Log
     public interface ILogger
     {
     }
+
+    // TODO: LogEventInfo, LogLevel - see NLog
 }
