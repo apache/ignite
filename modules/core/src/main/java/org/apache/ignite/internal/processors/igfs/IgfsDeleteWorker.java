@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.igfs;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -36,7 +35,6 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static org.apache.ignite.internal.GridTopic.TOPIC_IGFS;
 import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_PURGED;
 
 /**
@@ -48,6 +46,9 @@ public class IgfsDeleteWorker extends IgfsThread {
 
     /** How many files/folders to delete at once (i.e in a single transaction). */
     private static final int MAX_DELETE_BATCH = 100;
+
+    /** IGFS context. */
+    private final IgfsContext igfsCtx;
 
     /** Metadata manager. */
     private final IgfsMetaManager meta;
@@ -77,6 +78,8 @@ public class IgfsDeleteWorker extends IgfsThread {
      */
     IgfsDeleteWorker(IgfsContext igfsCtx) {
         super("igfs-delete-worker%" + igfsCtx.igfs().name() + "%" + igfsCtx.kernalContext().localNodeId() + "%");
+
+        this.igfsCtx = igfsCtx;
 
         meta = igfsCtx.meta();
         data = igfsCtx.data();
