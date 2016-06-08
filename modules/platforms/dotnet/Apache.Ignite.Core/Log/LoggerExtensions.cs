@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Log
         /// <param name="message">The message.</param>
         public static void LogError(this ILogger logger, string message)
         {
-            logger.Log(LogLevel.Error, message, null, null, null, null);
+            logger.Log(LogLevel.Error, message, null, null, null, null, null);
         }
 
         /// <summary>
@@ -42,7 +42,7 @@ namespace Apache.Ignite.Core.Log
         /// <param name="ex">The exception.</param>
         public static void LogError(this ILogger logger, string message, Exception ex)
         {
-            logger.Log(LogLevel.Error, message, null, null, null, ex);
+            logger.Log(LogLevel.Error, message, null, null, null, null, ex);
         }
 
         /// <summary>
@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Log
         /// <param name="message">The message.</param>
         public static void LogWarning(this ILogger logger, string message)
         {
-            logger.Log(LogLevel.Warn, message, null, null, null, null);
+            logger.Log(LogLevel.Warn, message, null, null, null, null, null);
         }
 
         // TODO: More!

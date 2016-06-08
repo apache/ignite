@@ -502,9 +502,10 @@ public class PlatformCallbackUtils {
      * @param level Log level.
      * @param message Message.
      * @param category Category.
+     * @param errorInfo Error info.
      * @param memPtr Pointer to optional payload (serialized exception).
      */
-    static native void loggerLog(long envPtr, int level, String message, String category, long memPtr);
+    static native void loggerLog(long envPtr, int level, String message, String category, String errorInfo, long memPtr);
 
     /**
      * Gets a value indicating whether native logger has specified level enabled.

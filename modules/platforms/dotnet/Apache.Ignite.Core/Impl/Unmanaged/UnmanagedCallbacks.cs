@@ -170,7 +170,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void OnClientDisconnectedDelegate(void* target);
         private delegate void OnClientReconnectedDelegate(void* target, bool clusterRestarted);
 
-        private delegate void LoggerLogDelegate(void* target, int level, sbyte* messageChars, int messageCharsLen, sbyte* categoryChars, int categoryCharsLen, long memPtr);
+        private delegate void LoggerLogDelegate(void* target, int level, sbyte* messageChars, int messageCharsLen, sbyte* categoryChars, int categoryCharsLen, sbyte* errorInfoChars, int errorInfoCharsLen, long memPtr);
         private delegate bool LoggerIsLevelEnabledDelegate(void* target, int level);
 
         /// <summary>
@@ -1102,15 +1102,17 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private void LoggerLog(void* target, int level, sbyte* messageChars, int messageCharsLen, sbyte* categoryChars, int categoryCharsLen, long memPtr)
+        private void LoggerLog(void* target, int level, sbyte* messageChars, int messageCharsLen, sbyte* categoryChars,
+            int categoryCharsLen, sbyte* errorInfoChars, int errorInfoCharsLen, long memPtr)
         {
             SafeCall(() =>
             {
                 // TODO: Unmarshal exception
                 var message = IgniteUtils.Utf8UnmanagedToString(messageChars, messageCharsLen);
                 var category = IgniteUtils.Utf8UnmanagedToString(categoryChars, categoryCharsLen);
+                var nativeError = IgniteUtils.Utf8UnmanagedToString(errorInfoChars, errorInfoCharsLen);
 
-                _log.Log((LogLevel) level, message, null, CultureInfo.InvariantCulture, category, null);
+                _log.Log((LogLevel) level, message, null, CultureInfo.InvariantCulture, category, nativeError, null);
             }, true);
         }
 

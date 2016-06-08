@@ -19,6 +19,7 @@ package org.apache.ignite.internal.logger.platform;
 
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
+import org.apache.ignite.internal.util.typedef.X;
 import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
@@ -166,14 +167,16 @@ public class PlatformLogger implements IgniteLogger {
      * @return Whether specified log level is enabled.
      */
     private boolean isLevelEnabled(int level) {
-        // TODO: Native
-        // TODO: This is going to be called a lot!
-        // Prefetch these in the ctor.
         return gate.loggerIsLevelEnabled(level);
     }
 
     private void log(int level, String msg, @Nullable Throwable e) {
         // TODO: Unwrap platform error if possible
-        gate.loggerLog(level, msg, category, 0);
+        String errorInfo = null;
+
+        if (e != null)
+            errorInfo = X.getFullStackTrace(e);
+
+        gate.loggerLog(level, msg, category, errorInfo, 0);
     }
 }

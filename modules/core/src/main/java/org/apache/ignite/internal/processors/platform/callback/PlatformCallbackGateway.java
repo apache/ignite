@@ -946,11 +946,12 @@ public class PlatformCallbackGateway {
      * @param level Log level.
      * @param message Message.
      * @param category Category.
+     * @param errorInfo Error info.
      * @param memPtr Pointer to optional payload (serialized exception).
      */
-    public void loggerLog(int level, String message, String category, long memPtr) {
+    public void loggerLog(int level, String message, String category, String errorInfo, long memPtr) {
         // Do not lock for logger: this should work during shutdown
-        PlatformCallbackUtils.loggerLog(envPtr, level, message, category, memPtr);
+        PlatformCallbackUtils.loggerLog(envPtr, level, message, category, errorInfo, memPtr);
     }
 
     /**

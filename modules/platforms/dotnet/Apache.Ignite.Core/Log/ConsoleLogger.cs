@@ -20,6 +20,8 @@ using System;
 namespace Apache.Ignite.Core.Log
 {
     using System.Globalization;
+    using System.Text;
+    using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
@@ -43,24 +45,36 @@ namespace Apache.Ignite.Core.Log
 
         /** <inheritdoc /> */
         public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider, string category, 
-            Exception ex)
+            string nativeErrorInfo, Exception ex)
         {
             IgniteArgumentCheck.NotNull(message, "message");
 
             if (!IsEnabled(level))
                 return;
 
+            var sb = new StringBuilder();
+
+            sb.AppendFormat("[{0}] ", DateTime.Now.ToString("T", CultureInfo.InvariantCulture));
+
             if (args != null)
             {
                 IgniteArgumentCheck.NotNull(formatProvider, "formatProvider");
 
-                message = string.Format(message, formatProvider, args);
+                sb.AppendFormat(message, formatProvider, args);
+            }
+            else
+            {
+                sb.Append(message);
             }
 
-            Console.WriteLine("[{0}] {1}", DateTime.Now.ToString("T", CultureInfo.InvariantCulture), message);
+            if (!string.IsNullOrWhiteSpace(nativeErrorInfo))
+                sb.AppendFormat("\nNative error: {0}", nativeErrorInfo);
 
             if (ex != null)
-                Console.WriteLine(ex);
+                sb.AppendFormat("\nException: {0}", ex);
+
+            Console.WriteLine(sb);
+
         }
 
         /** <inheritdoc /> */

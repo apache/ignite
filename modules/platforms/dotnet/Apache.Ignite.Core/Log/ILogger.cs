@@ -32,13 +32,14 @@ namespace Apache.Ignite.Core.Log
         /// </summary>
         /// <param name="level">The level.</param>
         /// <param name="message">The message.</param>
-        /// <param name="args">The arguments to format <paramref name="message" />. 
+        /// <param name="args">The arguments to format <paramref name="message" />.
         /// Can be null (formatting will not occur).</param>
         /// <param name="formatProvider">The format provider. Can be null if <paramref name="args" /> is null.</param>
         /// <param name="category">The logging category name.</param>
+        /// <param name="nativeErrorInfo">The native error information.</param>
         /// <param name="ex">The exception. Can be null.</param>
         void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider, string category, 
-            Exception ex);
+            string nativeErrorInfo, Exception ex);
 
         /// <summary>
         /// Determines whether the specified log level is enabled.
