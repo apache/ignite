@@ -34,19 +34,19 @@ public class PlatformLogger implements IgniteLogger {
     private final Boolean quiet;
 
     /** */
-    private static final byte LVL_TRACE = 0;
+    private static final int LVL_TRACE = 0;
 
     /** */
-    private static final byte LVL_DEBUG = 1;
+    private static final int LVL_DEBUG = 1;
 
     /** */
-    private static final byte LVL_INFO = 2;
+    private static final int LVL_INFO = 2;
 
     /** */
-    private static final byte LVL_WARN = 3;
+    private static final int LVL_WARN = 3;
 
     /** */
-    private static final byte LVL_ERROR = 4;
+    private static final int LVL_ERROR = 4;
 
     /** */
     private final String category;
@@ -138,14 +138,14 @@ public class PlatformLogger implements IgniteLogger {
      * @param level Log level.
      * @return Whether specified log level is enabled.
      */
-    private boolean isLevelEnabled(byte level) {
+    private boolean isLevelEnabled(int level) {
         // TODO: native
         // TODO: This is going to be called a lot!
         // Prefetch these in the ctor.
         return true;
     }
 
-    private void log(byte level, String msg, @Nullable Throwable e) {
+    private void log(int level, String msg, @Nullable Throwable e) {
         // TODO: native
         // TODO: Unwrap platform error if possible
         // TODO: pass category

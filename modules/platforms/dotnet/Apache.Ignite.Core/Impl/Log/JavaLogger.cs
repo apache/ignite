@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Log
     using System.Diagnostics;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Log;
+    
     /// <summary>
     /// Logger that delegates to Java.
     /// </summary>

@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using System.Globalization;
     using System.Runtime.InteropServices;
     using System.Threading;
 
@@ -41,6 +42,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Impl.Services;
     using Apache.Ignite.Core.Lifecycle;
+    using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Services;
     using UU = UnmanagedUtils;
 
@@ -164,6 +166,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private delegate void OnClientDisconnectedDelegate(void* target);
         private delegate void OnClientReconnectedDelegate(void* target, bool clusterRestarted);
+
+        private delegate void LoggerLogDelegate(void* target, int level, sbyte* messageChars, int messageCharsLen, sbyte* categoryChars, int categoryCharsLen, long memPtr);
+        private delegate void LoggerIsLevelEnabledDelegate(void* target, int level);
 
         /// <summary>
         /// constructor.
@@ -1084,6 +1089,26 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             SafeCall(() =>
             {
                 _ignite.OnClientReconnected(clusterRestarted);
+            });
+        }
+
+        private void LoggerLog(void* target, int level, sbyte* messageChars, int messageCharsLen, sbyte* categoryChars, int categoryCharsLen, long memPtr)
+        {
+            SafeCall(() =>
+            {
+                // TODO: Unmarshal exception
+                var message = IgniteUtils.Utf8UnmanagedToString(messageChars, messageCharsLen);
+                var category = IgniteUtils.Utf8UnmanagedToString(categoryChars, categoryCharsLen);
+
+                _ignite.UserLog.Log((LogLevel) level, message, null, CultureInfo.InvariantCulture, category, null);
+            });
+        }
+
+        private void LoggerIsLevelEnabled(void* target, int level)
+        {
+            SafeCall(() =>
+            {
+                _ignite.UserLog.IsEnabled((LogLevel) level);
             });
         }
 
