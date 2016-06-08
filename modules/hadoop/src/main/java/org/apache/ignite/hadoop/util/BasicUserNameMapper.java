@@ -41,9 +41,7 @@ public class BasicUserNameMapper implements UserNameMapper {
 
     /** {@inheritDoc} */
     @Nullable @Override public String map(String name) {
-        assert mappings != null;
-
-        String res = mappings.get(name);
+        String res = mappings != null ? mappings.get(name) : null;
 
         return res != null ? res : useDfltUsrName ? dfltUsrName : name;
     }
