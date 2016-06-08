@@ -32,6 +32,7 @@ namespace Apache.Ignite.Core.Impl.Common
         public static void LogWarning(string warning, params object[] args)
         {
             // TODO: Change this to use ILogger
+            // We can work around startup with a ThreadLocal, then dispose of it.
             Console.WriteLine("WARNING: " + string.Format(warning, args));
         }
     }
