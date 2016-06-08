@@ -175,7 +175,7 @@ namespace Apache.Ignite.Core
 
                 var cbs = new UnmanagedCallbacks(log);
 
-                IgniteManager.CreateJvmContext(cfg, cbs);
+                IgniteManager.CreateJvmContext(cfg, cbs, log);
 
                 var gridName = cfg.GridName;
 
