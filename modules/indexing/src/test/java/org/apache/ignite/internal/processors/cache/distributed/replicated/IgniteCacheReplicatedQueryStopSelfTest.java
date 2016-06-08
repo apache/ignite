@@ -18,27 +18,22 @@
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractQuerySelfTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
-import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.processors.query.h2.twostep.GridRemoteQueryCancelledException;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CachePeekMode.ALL;
@@ -76,6 +71,13 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
      */
     public void testRemoteQueryExecutionStop3() throws Exception {
         testQueryStop(10_000, 4, "select a._key, b._key from String a, String b", 3000);
+    }
+
+    /**
+     * Tests stopping two-step long query while result set is being generated on remote nodes.
+     */
+    public void testRemoteQueryExecutionStopNodeFail1() throws Exception {
+        testQueryStopOnNodeFail(10_000, 4, "select a._key, b._key from String a, String b", 2000);
     }
 
     /**
@@ -121,30 +123,22 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
 
             final CountDownLatch l = new CountDownLatch(1);
 
-            final AtomicBoolean first = new AtomicBoolean();
-
             ignite().scheduler().runLocal(new Runnable() {
                 @Override public void run() {
-                    boolean res = first.compareAndSet(false, true);
-                    if (res)
-                        qry.close();
-
                     l.countDown();
+
                 }
             }, cancelTimeout, TimeUnit.MILLISECONDS);
 
             try {
-                // Trigger remote execution.
+                // Trigger distributed execution.
                 qry.iterator();
-
-                // Fail if close was already invoked.
-                boolean res = first.compareAndSet(false, true);
-
-                if (!res)
-                    fail();
             }
             catch (CacheException ex) {
                 log().error("Got expected exception", ex);
+
+                // Expecting instance of GridRemoteQueryCancelledException.
+                assertTrue(ex.getCause() instanceof GridRemoteQueryCancelledException);
             }
 
             l.await();
@@ -153,7 +147,7 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
             Thread.sleep(3000);
 
             // Validate nodes query result buffer.
-            checkCleanState();
+            checkCleanState(-1);
         }
     }
 
@@ -179,30 +173,23 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
 
             final CountDownLatch l = new CountDownLatch(1);
 
-            final AtomicBoolean first = new AtomicBoolean();
-
             ignite().scheduler().runLocal(new Runnable() {
                 @Override public void run() {
-                    boolean res = first.compareAndSet(false, true);
-                    if (res)
-                        qry.close();
+                    ClusterNode node = grid(1).localNode();
 
-                    l.countDown();
+                    grid(0).configuration().getDiscoverySpi().failNode(node.id(), "Triggered by grid 0");
                 }
             }, failTimeout, TimeUnit.MILLISECONDS);
 
             try {
-                // Trigger remote execution.
+                // Trigger distributed execution.
                 qry.iterator();
-
-                // Fail if close was already invoked.
-                boolean res = first.compareAndSet(false, true);
-
-                if (!res)
-                    fail();
             }
             catch (CacheException ex) {
                 log().error("Got expected exception", ex);
+
+                // Expecting instance of GridRemoteQueryCancelledException.
+                assertTrue(ex.getCause() instanceof GridRemoteQueryCancelledException);
             }
 
             l.await();
@@ -211,17 +198,19 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
             Thread.sleep(3000);
 
             // Validate nodes query result buffer.
-            checkCleanState();
+            checkCleanState(1);
         }
     }
 
     /**
      *
      */
-    private void checkCleanState() {
+    private void checkCleanState(int excludeIdx) {
         int total = gridCount();
 
         for (int i = 0; i < total; i++) {
+            if (excludeIdx == i) continue;
+
             // Validate everything was cleaned up.
             ConcurrentMap<UUID, ConcurrentMap<Long, ?>> map = U.field(((IgniteH2Indexing)U.field(U.field(
                 grid(i).context(), "qryProc"), "idx")).mapQueryExecutor(), "qryRess");
