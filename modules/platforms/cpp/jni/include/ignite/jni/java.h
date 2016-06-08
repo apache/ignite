@@ -101,6 +101,9 @@ namespace ignite
             typedef void(JNICALL *OnClientDisconnectedHandler)(void* target);
             typedef void(JNICALL *OnClientReconnectedHandler)(void* target, unsigned char clusterRestarted);
 
+            typedef void(JNICALL *LoggerLogHandler)(void* target, int level, const char* messageChars, int messageCharsLen, const char* categoryChars, int categoryCharsLen, long memPtr);
+            typedef void(JNICALL *LoggerIsLevelEnabledHandler)(void* target, int level);
+
             /**
              * JNI handlers holder.
              */
@@ -178,6 +181,9 @@ namespace ignite
 
                 OnClientDisconnectedHandler onClientDisconnected;
                 OnClientReconnectedHandler onClientReconnected;
+
+                LoggerLogHandler loggerLog;
+                LoggerIsLevelEnabledHandler loggerIsLevelEnabled;
             };
 
             /**
@@ -738,6 +744,9 @@ namespace ignite
 
             JNIEXPORT void JNICALL JniOnClientDisconnected(JNIEnv *env, jclass cls, jlong envPtr);
             JNIEXPORT void JNICALL JniOnClientReconnected(JNIEnv *env, jclass cls, jlong envPtr, jboolean clusterRestarted);
+
+            JNIEXPORT void JNICALL JniLoggerLog(JNIEnv *env, jclass cls, jlong envPtr, jint level, jstring message, jstring category, jlong memPtr);
+            JNIEXPORT void JNICALL JniLoggerIsLevelEnabled(JNIEnv *env, jclass cls, jlong envPtr, jint level);
         }
     }
 }

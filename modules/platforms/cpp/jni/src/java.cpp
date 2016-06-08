@@ -2821,6 +2821,20 @@ namespace ignite
             JNIEXPORT void JNICALL JniOnClientReconnected(JNIEnv *env, jclass cls, jlong envPtr, jboolean clusterRestarted) {
                 IGNITE_SAFE_PROC(env, envPtr, OnClientReconnectedHandler, onClientReconnected, clusterRestarted);
             }
+            
+            JNIEXPORT void JNICALL JniLoggerLog(JNIEnv *env, jclass cls, jlong envPtr, jint level, jstring message, jstring category, jlong memPtr) {
+                int messageLen;
+                char* messageChars = StringToChars(env, message, &messageLen);
+                
+                int categoryLen;
+                char* categoryChars = StringToChars(env, category, &categoryLen);
+                
+                IGNITE_SAFE_PROC(env, envPtr, LoggerLogHandler, loggerLog, level, messageChars, messageLen, categoryChars, categoryLen, memPtr);
+            }
+
+            JNIEXPORT void JNICALL JniLoggerIsLevelEnabled(JNIEnv *env, jclass cls, jlong envPtr, jint level) {
+                IGNITE_SAFE_PROC(env, envPtr, LoggerIsLevelEnabledHandler, loggerIsLevelEnabled, level);
+            }
         }
     }
 }
