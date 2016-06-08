@@ -29,7 +29,9 @@ namespace Apache.Ignite.Core.Log
         /// <param name="message">The message.</param>
         public static void LogError(this ILogger logger, string message)
         {
-            logger.Log(LogLevel.Error, null, null, message, null);
+            logger.Log(LogLevel.Error, message, null, null, null, null);
         }
+
+        // TODO: More!
     }
 }
