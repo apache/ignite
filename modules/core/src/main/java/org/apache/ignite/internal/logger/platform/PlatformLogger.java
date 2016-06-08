@@ -142,13 +142,15 @@ public class PlatformLogger implements IgniteLogger {
         // TODO: native
         // TODO: This is going to be called a lot!
         // Prefetch these in the ctor.
-        return true;
+        return gate.loggerIsLevelEnabled(level);
     }
 
     private void log(int level, String msg, @Nullable Throwable e) {
         // TODO: native
         // TODO: Unwrap platform error if possible
         // TODO: pass category
+
+        gate.loggerLog(level, msg, category, 0);
 
         /*if (level > 1)
             System.out.printf("%s: %s\n", cat, msg);*/
