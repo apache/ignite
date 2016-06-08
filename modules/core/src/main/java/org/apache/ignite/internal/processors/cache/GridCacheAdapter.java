@@ -162,6 +162,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** clearLocally() split threshold. */
     public static final int CLEAR_ALL_SPLIT_THRESHOLD = 10000;
 
+    /** Size of keys batch to removeAll. */
+    // TODO GG-11231 (workaround for GG-11231).
+    private static final int REMOVE_ALL_KEYS_BATCH = 10000;
+
     /** Maximum number of retries when topology changes. */
     public static final int MAX_RETRIES = IgniteSystemProperties.getInteger(IGNITE_CACHE_RETRIES_COUNT, 100);
 
@@ -2958,10 +2962,21 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public void removeAll() throws IgniteCheckedException {
         assert ctx.isLocal();
 
-        for (Iterator<CacheDataRow> it = ctx.offheap().iterator(true, true, null); it.hasNext(); )
-            remove((K)it.next().key());
+        // TODO GG-11231 (workaround for GG-11231).
+        if (isEmpty())
+            return;
 
-        removeAll(keySet());
+        List<K> keys = new ArrayList<>(Math.min(REMOVE_ALL_KEYS_BATCH, size()));
+
+        while (!isEmpty()) {
+            for (Iterator<CacheDataRow> it = ctx.offheap().iterator(true, true, null);
+                it.hasNext() && keys.size() < REMOVE_ALL_KEYS_BATCH;)
+                keys.add((K)it.next().key());
+
+            removeAll(keys);
+
+            keys.clear();
+        }
     }
 
     /** {@inheritDoc} */
