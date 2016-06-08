@@ -39,6 +39,7 @@ namespace Apache.Ignite.Core.Log
         /// </summary>
         /// <param name="logger">The logger.</param>
         /// <param name="message">The message.</param>
+        /// <param name="ex">The exception.</param>
         public static void LogError(this ILogger logger, string message, Exception ex)
         {
             logger.Log(LogLevel.Error, message, null, null, null, ex);
