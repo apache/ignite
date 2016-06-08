@@ -5141,14 +5141,46 @@ class ServerImpl extends TcpDiscoveryImpl {
                 throw new IgniteSpiException("Failed to open socket channel", e);
             }
 
+            int reopenTries = 0;
+
             for (port = spi.locPort; port <= lastPort; port++) {
                 try {
-                    srvCh.socket().bind(new InetSocketAddress(spi.locHost, port));
+                    srvCh.bind(new InetSocketAddress(spi.locHost, port));
 
                     if (log.isInfoEnabled())
                         log.info("Successfully bound to TCP port [port=" + port + ", localHost=" + spi.locHost + ']');
 
                     return;
+                }
+                catch (SocketException e) {
+                    // TODO for tests!!
+
+                    if (reopenTries < 3 && e.getMessage().contains("Invalid argument")) {
+                        log.error("Caught SocketException try to reopen channel. " +
+                            "[port=" + port + ", localHost=" + spi.locHost + ']', e);
+
+                        U.close(srvCh, log);
+
+                        try {
+                            srvCh = ServerSocketChannel.open();
+
+                            srvCh.configureBlocking(true);
+
+                            srvCh.setOption(StandardSocketOptions.SO_REUSEADDR, true);
+                        }
+                        catch (IOException ex) {
+                            log.error(ex.getMessage(), ex);
+                        }
+                        finally {
+                            reopenTries++;
+                        }
+                    }
+
+                    log.error("Caught SocketException. No more tries left, do nothing. " +
+                        "[port=" + port + ", localHost=" + spi.locHost + ']', e);
+
+                    onException("Failed to bind to local port. " +
+                        "[port=" + port + ", localHost=" + spi.locHost + ']', e);
                 }
                 catch (AlreadyBoundException | IOException e) {
                     if (log.isDebugEnabled())
