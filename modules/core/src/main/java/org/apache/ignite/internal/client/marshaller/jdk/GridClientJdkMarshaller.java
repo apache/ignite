@@ -25,7 +25,7 @@ import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 import org.apache.ignite.internal.client.marshaller.GridClientMarshaller;
-import org.apache.ignite.internal.util.nio.GridByteArrayOutputStream;
+import org.apache.ignite.internal.util.io.GridByteArrayOutputStream;
 
 /**
  * Simple marshaller that utilize JDK serialization features.

@@ -20,7 +20,7 @@ package org.apache.ignite.marshaller;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.util.GridByteArrayList;
 import org.apache.ignite.internal.util.io.GridByteArrayInputStream;
-import org.apache.ignite.internal.util.nio.GridByteArrayOutputStream;
+import org.apache.ignite.internal.util.io.GridByteArrayOutputStream;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 

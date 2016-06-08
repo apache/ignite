@@ -1,4 +1,4 @@
-package org.apache.ignite.internal.util.io;
+package org.apache.ignite.internal.util.nio;
 
 import java.io.IOException;
 import java.net.InetAddress;
