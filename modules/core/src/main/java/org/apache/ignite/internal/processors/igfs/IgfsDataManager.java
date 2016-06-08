@@ -473,18 +473,18 @@ public class IgfsDataManager extends IgfsManager {
     /**
      * Registers write future in igfs data manager.
      *
-     * @param fileInfo File info of file opened to write.
+     * @param fileId File ID.
      * @return Future that will be completed when all ack messages are received or when write failed.
      */
-    public IgniteInternalFuture<Boolean> writeStart(IgfsEntryInfo fileInfo) {
-        WriteCompletionFuture fut = new WriteCompletionFuture(fileInfo.id());
+    public IgniteInternalFuture<Boolean> writeStart(IgniteUuid fileId) {
+        WriteCompletionFuture fut = new WriteCompletionFuture(fileId);
 
-        WriteCompletionFuture oldFut = pendingWrites.putIfAbsent(fileInfo.id(), fut);
+        WriteCompletionFuture oldFut = pendingWrites.putIfAbsent(fileId, fut);
 
-        assert oldFut == null : "Opened write that is being concurrently written: " + fileInfo;
+        assert oldFut == null : "Opened write that is being concurrently written: " + fileId;
 
         if (log.isDebugEnabled())
-            log.debug("Registered write completion future for file output stream [fileInfo=" + fileInfo +
+            log.debug("Registered write completion future for file output stream [fileId=" + fileId +
                 ", fut=" + fut + ']');
 
         return fut;
@@ -493,17 +493,23 @@ public class IgfsDataManager extends IgfsManager {
     /**
      * Notifies data manager that no further writes will be performed on stream.
      *
-     * @param fileInfo File info being written.
+     * @param fileId File ID.
+     * @param await Await completion.
+     * @throws IgniteCheckedException If failed.
      */
-    public void writeClose(IgfsEntryInfo fileInfo) {
-        WriteCompletionFuture fut = pendingWrites.get(fileInfo.id());
+    public void writeClose(IgniteUuid fileId, boolean await) throws IgniteCheckedException {
+        WriteCompletionFuture fut = pendingWrites.get(fileId);
 
-        if (fut != null)
+        if (fut != null) {
             fut.markWaitingLastAck();
+
+            if (await)
+                fut.get();
+        }
         else {
             if (log.isDebugEnabled())
                 log.debug("Failed to find write completion future for file in pending write map (most likely it was " +
-                    "failed): " + fileInfo);
+                    "failed): " + fileId);
         }
     }
 

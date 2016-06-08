@@ -20,6 +20,7 @@ package org.apache.ignite.configuration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.igfs.IgfsMode;
+import org.apache.ignite.igfs.IgfsOutputStream;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -90,6 +91,9 @@ public class FileSystemConfiguration {
 
     /** Default value of relaxed consistency flag. */
     public static final boolean DFLT_RELAXED_CONSISTENCY = true;
+
+    /** Default value of update file length on flush flag. */
+    public static final boolean DFLT_UPDATE_FILE_LEN_ON_FLUSH = false;
 
     /** IGFS instance name. */
     private String name;
@@ -178,6 +182,9 @@ public class FileSystemConfiguration {
     /** Relaxed consistency flag. */
     private boolean relaxedConsistency = DFLT_RELAXED_CONSISTENCY;
 
+    /** Update file length on flush flag. */
+    private boolean updateFileLenOnFlush = DFLT_UPDATE_FILE_LEN_ON_FLUSH;
+
     /**
      * Constructs default configuration.
      */
@@ -225,6 +232,7 @@ public class FileSystemConfiguration {
         relaxedConsistency = cfg.isRelaxedConsistency();
         seqReadsBeforePrefetch = cfg.getSequentialReadsBeforePrefetch();
         trashPurgeTimeout = cfg.getTrashPurgeTimeout();
+        updateFileLenOnFlush = cfg.isUpdateFileLengthOnFlush();
     }
 
     /**
@@ -920,6 +928,32 @@ public class FileSystemConfiguration {
      */
     public void setRelaxedConsistency(boolean relaxedConsistency) {
         this.relaxedConsistency = relaxedConsistency;
+    }
+
+    /**
+     * Get whether to update file length on flush.
+     * <p>
+     * Controls whether to update file length or not when {@link IgfsOutputStream#flush()} method is invoked. You
+     * may want to set this property to true in case you want to read from a file which is being written at the
+     * same time.
+     * <p>
+     * Defaults to {@link #DFLT_UPDATE_FILE_LEN_ON_FLUSH}.
+     *
+     * @return Whether to update file length on flush.
+     */
+    public boolean isUpdateFileLengthOnFlush() {
+        return updateFileLenOnFlush;
+    }
+
+    /**
+     * Set whether to update file length on flush.
+     * <p>
+     * Set {@link #isUpdateFileLengthOnFlush()} for more information.
+     *
+     * @param updateFileLenOnFlush Whether to update file length on flush.
+     */
+    public void setUpdateFileLengthOnFlush(boolean updateFileLenOnFlush) {
+        this.updateFileLenOnFlush = updateFileLenOnFlush;
     }
 
     /** {@inheritDoc} */
