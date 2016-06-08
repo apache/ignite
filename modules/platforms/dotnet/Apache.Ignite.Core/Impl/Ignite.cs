@@ -43,6 +43,7 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Impl.Transactions;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Lifecycle;
+    using Apache.Ignite.Core.Log;
     using Apache.Ignite.Core.Messaging;
     using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Transactions;
@@ -643,6 +644,12 @@ namespace Apache.Ignite.Core.Impl
 
                 return res;
             }
+        }
+
+        /** <inheritdoc /> */
+        public ILogger Log
+        {
+            get { throw new NotImplementedException(); }
         }
 
         /// <summary>
