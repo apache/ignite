@@ -1135,6 +1135,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
             catch (Exception e)
             {
+                _log.LogError("Failure in Java callback", e);
+
                 UU.ThrowToJava(_ctx.NativeContext, e);
             }
         }
@@ -1151,7 +1153,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
             catch (Exception e)
             {
-                // TODO: Log?
+                _log.LogError("Failure in Java callback", e);
+
                 UU.ThrowToJava(_ctx.NativeContext, e);
 
                 return default(T);

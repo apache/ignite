@@ -17,6 +17,8 @@
 
 namespace Apache.Ignite.Core.Log
 {
+    using System;
+
     /// <summary>
     /// Extension methods for <see cref="ILogger"/>
     /// </summary>
@@ -30,6 +32,16 @@ namespace Apache.Ignite.Core.Log
         public static void LogError(this ILogger logger, string message)
         {
             logger.Log(LogLevel.Error, message, null, null, null, null);
+        }
+
+        /// <summary>
+        /// Logs the error.
+        /// </summary>
+        /// <param name="logger">The logger.</param>
+        /// <param name="message">The message.</param>
+        public static void LogError(this ILogger logger, string message, Exception ex)
+        {
+            logger.Log(LogLevel.Error, message, null, null, null, ex);
         }
 
         /// <summary>
