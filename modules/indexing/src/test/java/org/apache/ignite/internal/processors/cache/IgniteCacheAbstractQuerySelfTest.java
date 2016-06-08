@@ -1005,9 +1005,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
 
         Collection<Cache.Entry<Integer, Integer>> res = q.getAll();
 
-        for(Cache.Entry<Integer, Integer> e : res)
-            System.out.println("E " + e.getKey() + " " + e.getValue());
-
         assertEquals(1, res.size());
 
         for (Cache.Entry<Integer, Integer> e : res) {
