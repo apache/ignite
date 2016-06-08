@@ -31,6 +31,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <param name="args">The arguments.</param>
         public static void LogWarning(string warning, params object[] args)
         {
+            // TODO: Change this to use ILogger
             Console.WriteLine("WARNING: " + string.Format(warning, args));
         }
     }
