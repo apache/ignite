@@ -40,6 +40,8 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Impl.Datastream;
     using Apache.Ignite.Core.Impl.DataStructures;
     using Apache.Ignite.Core.Impl.Handle;
+    using Apache.Ignite.Core.Impl.Log;
+    using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Impl.Transactions;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Lifecycle;
@@ -146,8 +148,9 @@ namespace Apache.Ignite.Core.Impl
             SetCompactFooter();
 
             // Initialize logging
-            _javaLogger = null;  // TODO
-            _userLogger = null;  // TODO
+            _javaLogger = new JavaLogger(_proc);
+            _userLogger = cfg.Logger ?? new ConsoleLogger(LogLevel.Info, LogLevel.Warn, LogLevel.Error);
+            ResourceProcessor.Inject(_userLogger, this);
         }
 
         /// <summary>

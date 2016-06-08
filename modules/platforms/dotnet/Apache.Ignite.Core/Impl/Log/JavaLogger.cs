@@ -18,12 +18,28 @@
 namespace Apache.Ignite.Core.Impl.Log
 {
     using System;
+    using System.Diagnostics;
+    using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Log;
     /// <summary>
     /// Logger that delegates to Java.
     /// </summary>
     internal class JavaLogger : ILogger
     {
+        /** */
+        private readonly IUnmanagedTarget _interopProcessor;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="JavaLogger"/> class.
+        /// </summary>
+        /// <param name="interopProcessor">The interop processor.</param>
+        public JavaLogger(IUnmanagedTarget interopProcessor)
+        {
+            Debug.Assert(interopProcessor != null);
+
+            _interopProcessor = interopProcessor;
+        }
+
         /** <inheritdoc /> */
         public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider, string category, 
             Exception ex)
