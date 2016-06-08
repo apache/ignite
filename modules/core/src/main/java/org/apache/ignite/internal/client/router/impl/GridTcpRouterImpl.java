@@ -56,11 +56,6 @@ import org.jetbrains.annotations.Nullable;
  * Wrapper class for router process.
  */
 public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, LifecycleAware {
-
-
-    private static Pattern IPV4_PATTERN = Pattern.compile("(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])", Pattern.CASE_INSENSITIVE);
-    private static Pattern IPV6_PATTERN = Pattern.compile("([0-9a-f]{1,4}:){7}([0-9a-f]){1,4}", Pattern.CASE_INSENSITIVE);
-
     /** */
     private static final String ENT_NIO_LSNR_CLS = "org.apache.ignite.client.router.impl.GridTcpRouterNioListenerEntImpl";
 
@@ -369,6 +364,4 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
 
         return id.equals(that.id);
     }
-
-
 }
