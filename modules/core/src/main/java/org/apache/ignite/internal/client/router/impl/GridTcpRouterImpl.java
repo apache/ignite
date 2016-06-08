@@ -370,21 +370,5 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
         return id.equals(that.id);
     }
 
-    /**
-     * Check if a given string could be a valid IPv4 or IPv6 address
-     * using pattern matching.
-     *
-     * @param ipAddress A string representing or not an IP address.
-     * @return <code>true</code> if it is a valid IP address,
-     *  <code>false</code> otherwise.
-     */
-    public static boolean isIpAddress(String ipAddress) {
 
-        Matcher m1 = IPV4_PATTERN.matcher(ipAddress);
-        if (m1.matches()) {
-            return true;
-        }
-        Matcher m2 = IPV6_PATTERN.matcher(ipAddress);
-        return m2.matches();
-    }
 }
