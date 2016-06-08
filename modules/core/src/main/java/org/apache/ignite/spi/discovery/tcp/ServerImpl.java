@@ -195,6 +195,11 @@ class ServerImpl extends TcpDiscoveryImpl {
     /** Not fully read message in GridNioSession. */
     private static final int INCOMPLETE_MESSAGE_META = GridNioSessionMetaKey.nextUniqueKey();
 
+    /** Number of tries to reopen ServerSocketChannel on 'SocketException: Invalid argument'.
+     *  <p>This error may happen on simultaneous server nodes startup on the same JVM.</p>
+     */
+    private static final int REOPEN_SERVER_SOCKET_CHANNEL_TRIES = 3;
+
     /** */
     private final ThreadPoolExecutor utilityPool = new ThreadPoolExecutor(0, 1, 2000, TimeUnit.MILLISECONDS,
         new LinkedBlockingQueue<Runnable>());
@@ -5130,16 +5135,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             int lastPort = spi.locPortRange == 0 ? spi.locPort : spi.locPort + spi.locPortRange - 1;
 
-            try {
-                srvCh = ServerSocketChannel.open();
-
-                srvCh.configureBlocking(true);
-
-                srvCh.setOption(StandardSocketOptions.SO_REUSEADDR, true);
-            }
-            catch (IOException e) {
-                throw new IgniteSpiException("Failed to open socket channel", e);
-            }
+            openServerSocketChannel();
 
             int reopenTries = 0;
 
@@ -5152,47 +5148,32 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                     return;
                 }
-                catch (SocketException e) {
-                    // TODO for tests!!
-
-                    if (reopenTries < 3 && e.getMessage().contains("Invalid argument")) {
-                        log.error("Caught SocketException try to reopen channel. " +
-                            "[port=" + port + ", localHost=" + spi.locHost + ']', e);
+                catch (AlreadyBoundException | IOException e) {
+                    // On simultaneous nodes startup on the same JVM ServerSocketChannel.bind()
+                    // may start throwing 'SocketException: Invalid argument' on each invocation,
+                    // even if port is free.
+                    if (e instanceof SocketException && reopenTries < REOPEN_SERVER_SOCKET_CHANNEL_TRIES
+                        && e.getMessage().contains("Invalid argument")) {
+                        if (log.isDebugEnabled())
+                            log.debug("Caught SocketException try to reopen channel. " +
+                                "[port=" + port + ", localHost=" + spi.locHost + ']');
 
                         U.close(srvCh, log);
 
-                        try {
-                            srvCh = ServerSocketChannel.open();
+                        openServerSocketChannel();
 
-                            srvCh.configureBlocking(true);
+                        port = spi.locPort;
 
-                            srvCh.setOption(StandardSocketOptions.SO_REUSEADDR, true);
-                        }
-                        catch (IOException ex) {
-                            throw new IgniteSpiException("Failed to open socket channel", ex);
-                        }
-                        finally {
-                            reopenTries++;
-                        }
+                        reopenTries++;
                     }
+                    else {
+                        if (log.isDebugEnabled())
+                            log.debug("Failed to bind to local port (will try next port within range) " +
+                                "[port=" + port + ", localHost=" + spi.locHost + ']');
 
-                    log.error("Caught SocketException. No more tries left, do nothing. " +
-                        "[port=" + port + ", localHost=" + spi.locHost + ']', e);
-
-                    onException("Failed to bind to local port. " +
-                        "[port=" + port + ", localHost=" + spi.locHost + ']', e);
-                }
-                catch (AlreadyBoundException | IOException e) {
-                    if (log.isDebugEnabled())
-                        log.debug("Failed to bind to local port (will try next port within range) " +
-                            "[port=" + port + ", localHost=" + spi.locHost + ']');
-
-                    onException("Failed to bind to local port. " +
-                        "[port=" + port + ", localHost=" + spi.locHost + ']', e);
-
-                    // TODO temporary for tests!!
-                    log.error("Failed to bind to local port. " +
-                        "[port=" + port + ", localHost=" + spi.locHost + ']', e);
+                        onException("Failed to bind to local port. " +
+                            "[port=" + port + ", localHost=" + spi.locHost + ']', e);
+                    }
                 }
             }
 
@@ -5200,6 +5181,22 @@ class ServerImpl extends TcpDiscoveryImpl {
             throw new IgniteSpiException("Failed to bind TCP server socket (possibly all ports in range " +
                 "are in use) [firstPort=" + spi.locPort + ", lastPort=" + lastPort +
                 ", addr=" + spi.locHost + ']');
+        }
+
+        /**
+         * Open and preset {@link ServerSocketChannel}.
+         */
+        private void openServerSocketChannel() {
+            try {
+                srvCh = ServerSocketChannel.open();
+
+                srvCh.configureBlocking(true);
+
+                srvCh.setOption(StandardSocketOptions.SO_REUSEADDR, true);
+            }
+            catch (IOException e) {
+                throw new IgniteSpiException("Failed to open socket channel", e);
+            }
         }
 
         /** {@inheritDoc} */
