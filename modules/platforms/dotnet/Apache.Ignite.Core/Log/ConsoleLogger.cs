@@ -57,15 +57,10 @@ namespace Apache.Ignite.Core.Log
                 message = string.Format(message, formatProvider, args);
             }
 
-            var oldColor = Console.ForegroundColor;
-            Console.ForegroundColor = GetColor(level);
-
             Console.WriteLine("[{0}] {1}", DateTime.Now.ToString("T", CultureInfo.InvariantCulture), message);
 
             if (ex != null)
                 Console.WriteLine(ex);
-
-            Console.ForegroundColor = oldColor;
         }
 
         /** <inheritdoc /> */
@@ -81,22 +76,5 @@ namespace Apache.Ignite.Core.Log
 
             return false;
         }
-
-        /// <summary>
-        /// Gets the color.
-        /// </summary>
-        private static ConsoleColor GetColor(LogLevel level)
-        {
-            switch (level)
-            {
-                case LogLevel.Warn:
-                    return ConsoleColor.Yellow;
-                case LogLevel.Error:
-                    return ConsoleColor.Red;
-                default:
-                    return ConsoleColor.Gray;
-            }
-        }
-
     }
 }
