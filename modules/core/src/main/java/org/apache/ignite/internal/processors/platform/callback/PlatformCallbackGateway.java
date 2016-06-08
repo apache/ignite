@@ -949,15 +949,8 @@ public class PlatformCallbackGateway {
      * @param memPtr Pointer to optional payload (serialized exception).
      */
     public void loggerLog(int level, String message, String category, long memPtr) {
-        if (!tryEnter())
-            return; // ignore logging during stop
-
-        try {
-            PlatformCallbackUtils.loggerLog(envPtr, level, message, category, memPtr);
-        }
-        finally {
-            leave();
-        }
+        // Do not lock for logger: this should work during shutdown
+        PlatformCallbackUtils.loggerLog(envPtr, level, message, category, memPtr);
     }
 
     /**
@@ -966,15 +959,8 @@ public class PlatformCallbackGateway {
      * @param level Log level.
      */
     public boolean loggerIsLevelEnabled(int level) {
-        if (!tryEnter())
-            return false; // ignore logging during stop
-
-        try {
-            return PlatformCallbackUtils.loggerIsLevelEnabled(envPtr, level);
-        }
-        finally {
-            leave();
-        }
+        // Do not lock for logger: this should work during shutdown
+        return PlatformCallbackUtils.loggerIsLevelEnabled(envPtr, level);
     }
 
     /**
@@ -992,13 +978,6 @@ public class PlatformCallbackGateway {
     protected void enter() {
         if (!lock.enterBusy())
             throw new IgniteException("Failed to execute native callback because grid is stopping.");
-    }
-
-    /**
-     * Trye enter gateway.
-     */
-    protected boolean tryEnter() {
-        return lock.enterBusy();
     }
 
     /**
