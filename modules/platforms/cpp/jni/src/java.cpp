@@ -2832,8 +2832,8 @@ namespace ignite
                 IGNITE_SAFE_PROC(env, envPtr, LoggerLogHandler, loggerLog, level, messageChars, messageLen, categoryChars, categoryLen, memPtr);
             }
 
-            JNIEXPORT void JNICALL JniLoggerIsLevelEnabled(JNIEnv *env, jclass cls, jlong envPtr, jint level) {
-                IGNITE_SAFE_PROC(env, envPtr, LoggerIsLevelEnabledHandler, loggerIsLevelEnabled, level);
+            JNIEXPORT jboolean JNICALL JniLoggerIsLevelEnabled(JNIEnv *env, jclass cls, jlong envPtr, jint level) {
+                IGNITE_SAFE_FUNC(env, envPtr, LoggerIsLevelEnabledHandler, loggerIsLevelEnabled, level);
             }
         }
     }

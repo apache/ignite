@@ -168,7 +168,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void OnClientReconnectedDelegate(void* target, bool clusterRestarted);
 
         private delegate void LoggerLogDelegate(void* target, int level, sbyte* messageChars, int messageCharsLen, sbyte* categoryChars, int categoryCharsLen, long memPtr);
-        private delegate void LoggerIsLevelEnabledDelegate(void* target, int level);
+        private delegate bool LoggerIsLevelEnabledDelegate(void* target, int level);
 
         /// <summary>
         /// constructor.
@@ -1107,12 +1107,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
-        private void LoggerIsLevelEnabled(void* target, int level)
+        private bool LoggerIsLevelEnabled(void* target, int level)
         {
-            SafeCall(() =>
-            {
-                _ignite.UserLog.IsEnabled((LogLevel) level);
-            });
+            return SafeCall(() => _ignite.UserLog.IsEnabled((LogLevel) level));
         }
 
         #endregion
