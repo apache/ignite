@@ -55,7 +55,10 @@ public class PlatformLogger implements IgniteLogger {
      */
     public PlatformLogger(PlatformCallbackGateway gate, Object ctgr) {
         this.gate = gate;
-        this.quiet = Boolean.valueOf(System.getProperty(IGNITE_QUIET, "true"));
+
+        // Default quiet to false so that Java does not write anything to console.
+        // Platform is responsible for console output, we do not want to mix these.
+        quiet = Boolean.valueOf(System.getProperty(IGNITE_QUIET, "false"));
 
         String cat = ctgr instanceof Class ? ((Class)ctgr).getName() : String.valueOf(ctgr);
 
