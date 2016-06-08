@@ -252,7 +252,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 extensionCbInLongLongOutLong = CreateFunctionPointer((ExtensionCallbackInLongLongOutLongDelegate)ExtensionCallbackInLongLongOutLong),
 
                 onClientDisconnected = CreateFunctionPointer((OnClientDisconnectedDelegate)OnClientDisconnected),
-                ocClientReconnected = CreateFunctionPointer((OnClientReconnectedDelegate)OnClientReconnected),
+                onClientReconnected = CreateFunctionPointer((OnClientReconnectedDelegate)OnClientReconnected),
+
+                loggerLog = CreateFunctionPointer((LoggerLogDelegate)LoggerLog),
+                loggerIsLevelEnabled = CreateFunctionPointer((LoggerIsLevelEnabledDelegate)LoggerIsLevelEnabled)
             };
 
             _cbsPtr = Marshal.AllocHGlobal(UU.HandlersSize());
