@@ -23,5 +23,7 @@ namespace Apache.Ignite.Core.Tests.Log
     public class CustomLoggerTest
     {
         // TODO: Online tests with error propagation, categories, etc.
+        // TODO: QueryEntity warnings test
+        // TODO: gcServer warning test?
     }
 }
