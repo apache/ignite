@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.util.io;
+package org.apache.ignite.internal.util.nio;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
