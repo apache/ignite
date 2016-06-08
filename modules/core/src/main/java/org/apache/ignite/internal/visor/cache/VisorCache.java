@@ -18,24 +18,18 @@
 package org.apache.ignite.internal.visor.cache;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
@@ -97,10 +91,10 @@ public class VisorCache implements Serializable {
     /** Number of partitions. */
     private int partitions;
 
-    /** Primary partitions IDs with sizes. */
+    /** @deprecated Needed only for backward compatibility. */
     private Collection<IgnitePair<Integer>> primaryPartitions;
 
-    /** Backup partitions IDs with sizes. */
+    /** @deprecated Needed only for backward compatibility. */
     private Collection<IgnitePair<Integer>> backupPartitions;
 
     /** Cache metrics. */
@@ -162,53 +156,11 @@ public class VisorCache implements Serializable {
 
                     partitionsMap = new GridDhtPartitionMap(map2.nodeId(), map2.updateSequence(), map2.map());
                 }
-
-                List<GridDhtLocalPartition> parts = top.localPartitions();
-
-                primaryPartitions = new ArrayList<>(parts.size());
-                backupPartitions = new ArrayList<>(parts.size());
-
-                for (GridDhtLocalPartition part : parts) {
-                    int p = part.id();
-
-                    int sz = part.size();
-
-                    // Pass -1 as topology version in order not to wait for topology version.
-                    if (part.primary(AffinityTopologyVersion.NONE))
-                        primaryPartitions.add(new IgnitePair<>(p, sz));
-                    else if (part.state() == GridDhtPartitionState.OWNING && part.backup(AffinityTopologyVersion.NONE))
-                        backupPartitions.add(new IgnitePair<>(p, sz));
-                }
-            }
-            else {
-                // Old way of collecting partitions info.
-                ClusterNode node = ignite.cluster().localNode();
-
-                int[] pp = ca.affinity().primaryPartitions(node);
-
-                primaryPartitions= new ArrayList<>(pp.length);
-
-                for (int p : pp) {
-                    Set set = ca.entrySet(p);
-
-                    primaryPartitions.add(new IgnitePair<>(p, set != null ? set.size() : 0));
-                }
-
-                int[] bp = ca.affinity().backupPartitions(node);
-
-                backupPartitions = new ArrayList<>(bp.length);
-
-                for (int p : bp) {
-                    Set set = ca.entrySet(p);
-
-                    backupPartitions.add(new IgnitePair<>(p, set != null ? set.size() : 0));
-                }
             }
         }
 
         size = ca.size();
         nearSize = ca.nearSize();
-
         dynamicDeploymentId = ca.context().dynamicDeploymentId();
         dhtSize = size - nearSize;
         primarySize = ca.primarySize();
@@ -401,14 +353,14 @@ public class VisorCache implements Serializable {
     }
 
     /**
-     * @return Primary partitions IDs with sizes.
+     * @deprecated Needed only for backward compatibility.
      */
     public Collection<IgnitePair<Integer>> primaryPartitions() {
         return primaryPartitions;
     }
 
     /**
-     * @return Backup partitions IDs with sizes.
+     * @deprecated Needed only for backward compatibility.
      */
     public Collection<IgnitePair<Integer>> backupPartitions() {
         return backupPartitions;
