@@ -37,6 +37,8 @@
 #include "ignite/cache/query/query_sql.h"
 #include "ignite/cache/query/query_text.h"
 #include "ignite/cache/query/query_sql_fields.h"
+#include "ignite/cache/query/continuous/continuous_query_handle.h"
+#include "ignite/cache/query/continuous/continuous_query.h"
 #include "ignite/impl/cache/cache_impl.h"
 #include "ignite/impl/operations.h"
 
@@ -1179,6 +1181,22 @@ namespace ignite
                 impl::cache::query::QueryCursorImpl* cursorImpl = impl.Get()->QuerySqlFields(qry, &err);
 
                 return query::QueryFieldsCursor(cursorImpl);
+            }
+
+            /**
+             * Start continuous query execution.
+             *
+             * @param qry Continuous query.
+             * @param err Error.
+             * @return Continuous query handle.
+             */
+            query::continuous::ContinuousQueryHandle<K, V> QueryContinuous(
+                const query::continuous::ContinuousQuery<K, V>& qry, IgniteError& err)
+            {
+                impl::cache::query::continuous::ContinuousQueryHandleImpl* cqImpl;
+                cqImpl = impl.Get()->QueryContinuous(qry, err);
+
+                return query::continuous::ContinuousQueryHandle<K, V>(cqImpl);
             }
 
             /**

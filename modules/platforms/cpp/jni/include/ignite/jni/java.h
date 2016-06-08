@@ -557,7 +557,7 @@ namespace ignite
                 void CacheClear(jobject obj, JniErrorInfo* errInfo = NULL);
                 void CacheRemoveAll(jobject obj, JniErrorInfo* errInfo = NULL);
                 jobject CacheOutOpQueryCursor(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
-                jobject CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr);
+                jobject CacheOutOpContinuousQuery(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 jobject CacheIterator(jobject obj);
                 jobject CacheLocalIterator(jobject obj, int peekModes);
                 void CacheEnterLock(jobject obj, long long id);

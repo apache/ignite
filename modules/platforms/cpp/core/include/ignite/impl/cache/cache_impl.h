@@ -22,7 +22,11 @@
 #include <ignite/cache/query/query_sql.h>
 #include <ignite/cache/query/query_text.h>
 #include <ignite/cache/query/query_sql_fields.h>
+#include <ignite/cache/query/continuous/continuous_query_handle.h>
+#include <ignite/cache/query/continuous/continuous_query.h>
 #include <ignite/impl/cache/query/query_impl.h>
+#include <ignite/impl/cache/query/continuous/continuous_query_handle_impl.h>
+//#include <ignite/impl/cache/query/continuous/continuous_query_impl.h>
 
 #include <ignite/impl/interop/interop_target.h>
 
@@ -326,12 +330,22 @@ namespace ignite
                  * @return Query cursor.
                  */
                 query::QueryCursorImpl* QuerySqlFields(const ignite::cache::query::SqlFieldsQuery& qry, IgniteError* err);
-                
+
+                /**
+                 * Start continuous query execution.
+                 *
+                 * @param qry Continuous query.
+                 * @param err Error.
+                 * @return Continuous query handle.
+                 */
+                query::continuous::ContinuousQueryHandleImpl* QueryContinuous(
+                    const ignite::cache::query::continuous::ContinuousQueryBase &qry, IgniteError& err);
+
             private:
+                IGNITE_NO_COPY_ASSIGNMENT(CacheImpl)
+
                 /** Name. */
                 char* name; 
-                
-                IGNITE_NO_COPY_ASSIGNMENT(CacheImpl)
 
                 /**
                  * Internal cache size routine.
@@ -373,7 +387,7 @@ namespace ignite
                     if (jniErr.code == ignite::java::IGNITE_JNI_ERR_SUCCESS)
                         return new query::QueryCursorImpl(GetEnvironmentPointer(), qryJavaRef);
                     else
-                        return NULL;
+                        return 0;
                 }
             };
         }

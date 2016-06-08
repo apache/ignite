@@ -90,7 +90,7 @@ namespace ignite
 
         JniHandlers IgniteEnvironment::GetJniHandlers(SharedPointer<IgniteEnvironment>* target)
         {
-            JniHandlers hnds = JniHandlers();
+            JniHandlers hnds;
 
             hnds.target = target;
 
@@ -100,6 +100,8 @@ namespace ignite
             hnds.memRealloc = MemoryReallocate;
 
             hnds.error = NULL;
+
+            hnds.contQryLsnrApply = NULL;
 
             return hnds;
         }

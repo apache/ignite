@@ -26,6 +26,7 @@
 #include <stdint.h>
 
 #include <ignite/cache/event/cache_entry_event_listener.h>
+#include <ignite/binary/binary_raw_reader.h>
 
 namespace ignite
 {
@@ -36,72 +37,25 @@ namespace ignite
             namespace continuous
             {
                 /**
-                 * Continuous query.
+                 * Continuous query base.
                  */
-                template<typename K, typename V>
-                class ContinuousQuery
+                class ContinuousQueryBase
                 {
                 public:
-                    enum { DEFAULT_BUFFER_SIZE = 1; };
-                    enum { DEFAULT_TIME_INTERVAL = 0; };
+                    enum { DEFAULT_BUFFER_SIZE = 1 };
+                    enum { DEFAULT_TIME_INTERVAL = 0 };
 
                     /**
                      * Constructor.
                      *
                      * @param lsnr Event listener.
                      */
-                    ContinuousQuery(event::CacheEntryEventListener<K, V>& lsnr) :
-                        lsnr(&lsnr),
-                        local(false),
-                        bufferSize(DEFAULT_BUFFER_SIZE),
-                        timeInterval(DEFAULT_TIME_INTERVAL)
-                    {
-                        // No-op.
-                    }
-
-                    /**
-                     * Constructor.
-                     *
-                     * @param lsnr Event listener.
-                     * @param loc Whether query should be executed locally.
-                     */
-                    ContinuousQuery(event::CacheEntryEventListener<K, V>& lsnr, bool loc) :
-                        lsnr(&lsnr),
+                    ContinuousQueryBase(bool loc) :
                         local(loc),
                         bufferSize(DEFAULT_BUFFER_SIZE),
                         timeInterval(DEFAULT_TIME_INTERVAL)
                     {
                         // No-op.
-                    }
-
-                    /**
-                     * Set cache entry event listener.
-                     *
-                     * @param val Cache entry event listener.
-                     */
-                    void SetListener(event::CacheEntryEventListener<K, V>& val)
-                    {
-                        lsnr = &lsnr;
-                    }
-
-                    /**
-                     * Get cache entry event listener.
-                     *
-                     * @return Cache entry event listener.
-                     */
-                    const event::CacheEntryEventListener<K, V>& GetListener() const
-                    {
-                        return *lsnr;
-                    }
-
-                    /**
-                     * Get cache entry event listener.
-                     *
-                     * @return Cache entry event listener.
-                     */
-                    event::CacheEntryEventListener<K, V>& GetListener()
-                    {
-                        return *lsnr;
                     }
 
                     /**
@@ -153,7 +107,7 @@ namespace ignite
                      *
                      * @param val Time interval.
                      */
-                    void SetTimeInterval(int32_t val)
+                    void SetTimeInterval(int64_t val)
                     {
                         timeInterval = val;
                     }
@@ -163,18 +117,19 @@ namespace ignite
                      *
                      * @return Time interval.
                      */
-                    int32_t GetTimeInterval() const
+                    int64_t GetTimeInterval() const
                     {
                         return timeInterval;
                     }
 
-                private:
                     /**
-                     * Cache entry event listener. Invoked on the node where
-                     * continuous query execution has been started.
+                     * Callback that reads and processes cache events.
+                     *
+                     * @param reader Reader to use.
                      */
-                    event::CacheEntryEventListener<K, V>* lsnr;
+                    virtual void ReadAndProcessEvents(binary::BinaryRawReader& reader) = 0;
 
+                private:
                     /**
                      * Local flag. When set query will be executed only on local
                      * node, so only local entries will be returned as query
@@ -195,16 +150,96 @@ namespace ignite
                     int32_t bufferSize;
 
                     /**
-                     * Time interval. When a cache update happens, entry is
-                     * first put into a buffer. Entries from buffer will be sent
-                     * to the master node only if the buffer is full (its size
-                     * can be provided via bufferSize or time provided via
-                     * GetTimeInterval method is exceeded.
+                     * Time interval in miliseconds. When a cache update
+                     * happens, entry is first put into a buffer. Entries from
+                     * buffer will be sent to the master node only if the buffer
+                     * is full (its size can be provided via GetbufferSize) or
+                     * time provided via GetTimeInterval method is exceeded.
                      *
                      * Default value is 0, which means that time check is disabled and entries will be 
                      * sent only when buffer is full.
                      */
-                    int32_t timeInterval;
+                    int64_t timeInterval;
+                };
+
+                /**
+                 * Continuous query.
+                 */
+                template<typename K, typename V>
+                class ContinuousQuery : public ContinuousQueryBase
+                {
+                public:
+                    /**
+                     * Constructor.
+                     *
+                     * @param lsnr Event listener.
+                     */
+                    ContinuousQuery(event::CacheEntryEventListener<K, V>& lsnr) :
+                        ContinuousQueryBase(false),
+                        lsnr(&lsnr)
+                    {
+                        // No-op.
+                    }
+
+                    /**
+                     * Constructor.
+                     *
+                     * @param lsnr Event listener.
+                     * @param loc Whether query should be executed locally.
+                     */
+                    ContinuousQuery(event::CacheEntryEventListener<K, V>& lsnr, bool loc) :
+                        ContinuousQueryBase(loc),
+                        lsnr(&lsnr)
+                    {
+                        // No-op.
+                    }
+
+                    /**
+                     * Set cache entry event listener.
+                     *
+                     * @param val Cache entry event listener.
+                     */
+                    void SetListener(event::CacheEntryEventListener<K, V>& val)
+                    {
+                        lsnr = &lsnr;
+                    }
+
+                    /**
+                     * Get cache entry event listener.
+                     *
+                     * @return Cache entry event listener.
+                     */
+                    const event::CacheEntryEventListener<K, V>& GetListener() const
+                    {
+                        return *lsnr;
+                    }
+
+                    /**
+                     * Get cache entry event listener.
+                     *
+                     * @return Cache entry event listener.
+                     */
+                    event::CacheEntryEventListener<K, V>& GetListener()
+                    {
+                        return *lsnr;
+                    }
+
+                    /**
+                     * Callback that reads and processes cache events.
+                     *
+                     * @param reader Reader to use.
+                     */
+                    virtual void ReadAndProcessEvents(binary::BinaryRawReader& reader)
+                    {
+                        //TODO
+                    }
+
+                private:
+                    /**
+                     * Cache entry event listener. Invoked on the node where
+                     * continuous query execution has been started.
+                     */
+                    event::CacheEntryEventListener<K, V>* lsnr;
                 };
             }
         }

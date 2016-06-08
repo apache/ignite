@@ -30,9 +30,11 @@ using namespace ignite::java;
 using namespace ignite::common;
 using namespace ignite::cache;
 using namespace ignite::cache::query;
+using namespace ignite::cache::query::continuous;
 using namespace ignite::impl;
 using namespace ignite::impl::binary;
 using namespace ignite::impl::cache::query;
+using namespace ignite::impl::cache::query::continuous;
 using namespace ignite::impl::interop;
 using namespace ignite::binary;
 
@@ -92,6 +94,9 @@ namespace ignite
 
             /** Operation: PutIfAbsent. */
             const int32_t OP_PUT_IF_ABSENT = 28;
+
+            /** Operation: CONTINUOUS query. */
+            const int32_t OP_QRY_CONTINUOUS = 29;
 
             /** Operation: SCAN query. */
             const int32_t OP_QRY_SCAN = 30;
@@ -300,6 +305,45 @@ namespace ignite
             QueryCursorImpl* CacheImpl::QuerySqlFields(const SqlFieldsQuery& qry, IgniteError* err)
             {
                 return QueryInternal(qry, OP_QRY_SQL_FIELDS, err);
+            }
+
+            ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const ContinuousQueryBase& qry, IgniteError& err)
+            {
+                JniErrorInfo jniErr;
+
+                SharedPointer<InteropMemory> mem = GetEnvironment().AllocateMemory();
+                InteropMemory* mem0 = mem.Get();
+                InteropOutputStream out(mem0);
+                BinaryWriterImpl writer(&out, GetEnvironment().GetTypeManager());
+                BinaryRawWriter rawWriter(&writer);
+
+                rawWriter.WriteInt64(reinterpret_cast<int64_t>(&qry));
+                rawWriter.WriteBool(qry.GetLocal());
+
+                // Filters are not supported for now.
+                rawWriter.WriteBool(false);
+                rawWriter.WriteNull();
+
+                rawWriter.WriteInt32(qry.GetBufferSize());
+                rawWriter.WriteInt64(qry.GetTimeInterval());
+
+                // Autounsubscribe is a filter feature.
+                rawWriter.WriteBool(false);
+
+                // No initial query here.
+                rawWriter.WriteInt32(-1);
+
+                out.Synchronize();
+
+                jobject qryJavaRef = GetEnvironment().Context()->CacheOutOpContinuousQuery(GetTarget(),
+                    OP_QRY_CONTINUOUS, mem.Get()->PointerLong(), &jniErr);
+
+                IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+
+                if (jniErr.code == ignite::java::IGNITE_JNI_ERR_SUCCESS)
+                    return new ContinuousQueryHandleImpl(GetEnvironmentPointer(), qryJavaRef);
+                else
+                    return 0;
             }
 
             int CacheImpl::SizeInternal(const int32_t peekModes, const bool loc, IgniteError* err)
