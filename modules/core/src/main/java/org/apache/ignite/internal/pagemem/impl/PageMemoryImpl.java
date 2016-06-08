@@ -447,7 +447,7 @@ public class PageMemoryImpl implements PageMemory {
 
         try {
             if (page.releaseReference())
-                seg.acquiredPages.remove(page.fullId());
+                seg.acquiredPages.remove(page.fullId(), page);
         }
         finally {
             seg.readLock().unlock();
@@ -547,7 +547,9 @@ public class PageMemoryImpl implements PageMemory {
             // Must release active pages outside of segment write lock.
             if (activePages != null) {
                 for (PageImpl page : activePages) {
-                    page.flushCheckpoint(log);
+                    boolean releasedLast = page.flushCheckpoint(log);
+
+                    assert !releasedLast : "Released page that was modified during checkpoint: " + page;
 
                     releasePage(page);
                 }

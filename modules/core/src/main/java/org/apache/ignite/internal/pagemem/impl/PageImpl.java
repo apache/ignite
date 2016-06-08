@@ -138,6 +138,8 @@ public class PageImpl extends AbstractQueuedSynchronizer implements Page {
         pageMem.writeCurrentTimestamp(ptr);
 
         if (cp != null) {
+            assert refCntUpd.get(this) > 0 : this;
+
             assert pageMem.isInCheckpoint(fullId) :
                 "The page has a temporary buffer but is not in the checkpoint set: " + this;
 
@@ -179,6 +181,8 @@ public class PageImpl extends AbstractQueuedSynchronizer implements Page {
 
         pageMem.writeCurrentTimestamp(ptr);
 
+        assert refCntUpd.get(this) > 0 : this;
+
         // Create a buffer copy if the page needs to be checkpointed.
         if (pageMem.isInCheckpoint(fullId)) {
             if (cp == null) {
@@ -214,6 +218,8 @@ public class PageImpl extends AbstractQueuedSynchronizer implements Page {
         setExclusiveOwnerThread(Thread.currentThread());
 
         try {
+            assert refCntUpd.get(this) > 0 : this;
+
             if (cp != null) {
                 ByteBuffer cpBuf = reset(cp.userBuf);
 
