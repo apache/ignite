@@ -496,6 +496,25 @@ public class PlatformCallbackUtils {
     static native void onClientReconnected(long envPtr, boolean clusterRestarted);
 
     /**
+     * Logs to the native logger.
+     *
+     * @param envPtr Environment pointer.
+     * @param level Log level.
+     * @param message Message.
+     * @param category Category.
+     * @param memPtr Pointer to optional payload (serialized exception).
+     */
+    static native void loggerLog(long envPtr, int level, String message, String category, long memPtr);
+
+    /**
+     * Gets a value indicating whether native logger has specified level enabled.
+     *
+     * @param envPtr Environment pointer.
+     * @param level Log level.
+     */
+    static native boolean loggerIsLevelEnabled(long envPtr, int level);
+
+    /**
      * Private constructor.
      */
     private PlatformCallbackUtils() {

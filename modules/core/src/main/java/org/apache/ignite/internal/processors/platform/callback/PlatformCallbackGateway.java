@@ -941,6 +941,41 @@ public class PlatformCallbackGateway {
     }
 
     /**
+     * Notifies platform about client reconnect.
+     *
+     * @param level Log level.
+     * @param message Message.
+     * @param category Category.
+     * @param memPtr Pointer to optional payload (serialized exception).
+     */
+    public void loggerLog(int level, String message, String category, long memPtr) {
+        enter();
+
+        try {
+            PlatformCallbackUtils.loggerLog(envPtr, level, message, category, memPtr);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Gets a value indicating whether native logger has specified level enabled.
+     *
+     * @param level Log level.
+     */
+    public boolean loggerIsLevelEnabled(int level) {
+        enter();
+
+        try {
+            return PlatformCallbackUtils.loggerIsLevelEnabled(envPtr, level);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
      * Kernal stop callback.
      */
     public void onStop() {
