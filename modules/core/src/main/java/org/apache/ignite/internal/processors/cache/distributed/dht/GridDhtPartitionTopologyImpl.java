@@ -1464,37 +1464,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         }
     }
 
-    @Override public boolean ownIfUpToDate(GridDhtLocalPartition part) {
-        ClusterNode loc = cctx.localNode();
-
-        long partCntr = part.updateCounter();
-
-        lock.writeLock().lock();
-
-        try {
-            Long cntr = cntrMap.get(part.id());
-
-            if (cntr == null || partCntr < cntr) {
-                if (part.own()) {
-                    updateLocal(part.id(), loc.id(), part.state(), updateSeq.incrementAndGet());
-
-                    consistencyCheck();
-
-                    return true;
-                }
-
-                consistencyCheck();
-
-                return false;
-            }
-
-            return false;
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public void onEvicted(GridDhtLocalPartition part, boolean updateSeq) {
         lock.writeLock().lock();

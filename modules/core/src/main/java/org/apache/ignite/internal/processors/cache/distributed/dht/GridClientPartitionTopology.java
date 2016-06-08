@@ -837,12 +837,6 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         return false;
     }
 
-    @Override public boolean ownIfUpToDate(GridDhtLocalPartition part) {
-        assert false : "Client topology should never own a partition: " + part;
-
-        return false;
-    }
-
     /** {@inheritDoc} */
     @Override public void onEvicted(GridDhtLocalPartition part, boolean updateSeq) {
         assert updateSeq || lock.isWriteLockedByCurrentThread();
