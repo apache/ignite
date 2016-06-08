@@ -978,7 +978,7 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testEmptyObject() throws Exception {
-        IgniteCache<?, ?> cache = jcache(Integer.class, Integer.class);
+        IgniteCache<?, ?> cache = jcache(ignite(), cacheConfiguration(), "testEmptyObjectCache");
 
         IgniteCache<EmptyObject, EmptyObject> typedCache = (IgniteCache<EmptyObject, EmptyObject>)cache;
 
@@ -997,7 +997,6 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
      */
     public void testPrimitiveType() throws Exception {
         IgniteCache<Integer, Integer> cache = jcache(Integer.class, Integer.class);
-
         cache.put(1, 1);
         cache.put(2, 2);
 
@@ -1005,6 +1004,9 @@ public abstract class IgniteCacheAbstractQuerySelfTest extends GridCommonAbstrac
             cache.query(new SqlQuery<Integer, Integer>(Integer.class, "_val > 1"));
 
         Collection<Cache.Entry<Integer, Integer>> res = q.getAll();
+
+        for(Cache.Entry<Integer, Integer> e : res)
+            System.out.println("E " + e.getKey() + " " + e.getValue());
 
         assertEquals(1, res.size());
 
