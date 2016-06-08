@@ -48,6 +48,9 @@ public class PlatformLogger implements IgniteLogger {
     /** */
     private static final byte LVL_ERROR = 4;
 
+    /** */
+    private final String cat;
+
     /**
      * Ctor.
      *
@@ -60,7 +63,7 @@ public class PlatformLogger implements IgniteLogger {
         // Platform is responsible for console output, we do not want to mix these.
         quiet = Boolean.valueOf(System.getProperty(IGNITE_QUIET, "false"));
 
-        String cat = ctgr instanceof Class ? ((Class)ctgr).getName() : String.valueOf(ctgr);
+        this.cat = ctgr instanceof Class ? ((Class)ctgr).getName() : String.valueOf(ctgr);
 
         // TODO: Initialize instance in platform
     }
@@ -145,5 +148,8 @@ public class PlatformLogger implements IgniteLogger {
     private void log(byte level, String msg, @Nullable Throwable e) {
         // TODO: native
         // TODO: Unwrap platform error if possible
+
+        /*if (level > 1)
+            System.out.printf("%s: %s\n", cat, msg);*/
     }
 }
