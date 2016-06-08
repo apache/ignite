@@ -19,39 +19,32 @@ namespace Apache.Ignite.Core.Log
 {
     using System;
     using System.ComponentModel;
-    using System.Globalization;
 
     /// <summary>
     /// Defines Ignite logging interface.
+    /// <para />
+    /// This interface only provides essential log methods.
+    /// All convenience overloads are in <see cref="LoggerExtensions"/>.
     /// </summary>
     public interface ILogger
     {
-        // TODO: Logger should only have the simplest methods
-        // Convenience overloads go to extension class!
-
         /// <summary>
         /// Logs the specified message.
         /// </summary>
         /// <param name="level">The level.</param>
-        /// <param name="ex">The ex.</param>
-        /// <param name="formatProvider">The format provider.</param>
+        /// <param name="ex">The exception. Can be null.</param>
+        /// <param name="formatProvider">The format provider. Can be null if <paramref name="args"/> is null.</param>
         /// <param name="message">The message.</param>
-        /// <param name="args">The arguments.</param>
+        /// <param name="args">The arguments to format <paramref name="message"/>. 
+        /// Can be null (formatting will not occur).</param>
         void Log(LogLevel level, Exception ex, IFormatProvider formatProvider, [Localizable(false)] string message,
             object[] args);
-    }
 
-    public static class LoggerExtensions
-    {
-        public static void LogError(this ILogger logger, string message)
-        {
-            logger.Log(LogLevel.Error, null, CultureInfo.InvariantCulture, message, null);
-        }
-    }
-
-    // TODO: LogEventInfo?, LogLevel - see NLog
-    public enum LogLevel
-    {
-        Error
+        /// <summary>
+        /// Determines whether the specified log level is enabled.
+        /// </summary>
+        /// <param name="level">The level.</param>
+        /// <returns>Value indicating whether the specified log level is enabled</returns>
+        bool IsEnabled(LogLevel level);
     }
 }
