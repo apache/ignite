@@ -95,6 +95,12 @@ namespace Apache.Ignite.Core.Impl
         private volatile TaskCompletionSource<bool> _clientReconnectTaskCompletionSource = 
             new TaskCompletionSource<bool>();
 
+        /** Logger that delegates to Java. Should be called when logging anything. */
+        private readonly ILogger _javaLogger;
+
+        /** Logger specified by the user: should be ONLY called from Java. */
+        private readonly ILogger _userLogger;
+
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -140,8 +146,8 @@ namespace Apache.Ignite.Core.Impl
             SetCompactFooter();
 
             // Initialize logging
-            // TODO: One logger delegates to Java (when we want to log from .NET)
-            // Another logger does the actual logging and is ONLY called from Java
+            _javaLogger = null;  // TODO
+            _userLogger = null;  // TODO
         }
 
         /// <summary>
