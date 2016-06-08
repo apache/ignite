@@ -5169,7 +5169,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                             srvCh.setOption(StandardSocketOptions.SO_REUSEADDR, true);
                         }
                         catch (IOException ex) {
-                            log.error(ex.getMessage(), ex);
+                            throw new IgniteSpiException("Failed to open socket channel", ex);
                         }
                         finally {
                             reopenTries++;
