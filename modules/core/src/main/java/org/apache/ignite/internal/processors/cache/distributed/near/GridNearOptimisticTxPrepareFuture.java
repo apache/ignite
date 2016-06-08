@@ -319,7 +319,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
             if (!txStateCheck) {
                 if (tx.setRollbackOnly()) {
-                    if (tx.timedOut())
+                    if (tx.remainingTime() == -1)
                         onError(new IgniteTxTimeoutCheckedException("Transaction timed out and " +
                             "was rolled back: " + this));
                     else

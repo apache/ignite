@@ -785,6 +785,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> prepareAsync() {
+        long timeout = remainingTime();
+
         GridNearTxPrepareFutureAdapter fut = (GridNearTxPrepareFutureAdapter)prepFut.get();
 
         if (fut == null) {
@@ -793,29 +795,29 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                 if (serializable())
                     fut = new GridNearOptimisticSerializableTxPrepareFuture(cctx, this);
                 else {
-                    long timeout = remainingTime();
+                    fut = new GridNearOptimisticTxPrepareFuture(cctx, this, timeout);
 
                     if (timeout == -1)
-                        return new GridFinishedFuture<>(timeoutException());
-
-                    fut = new GridNearOptimisticTxPrepareFuture(cctx, this, timeout);
+                        ((GridNearOptimisticTxPrepareFuture)fut).onError(timeoutException());
                 }
             }
             else {
-                long timeout = remainingTime();
+                fut = new GridNearPessimisticTxPrepareFuture(cctx, this);
 
                 if (timeout == -1)
-                    return new GridFinishedFuture<>(timeoutException());
-
-                fut = new GridNearPessimisticTxPrepareFuture(cctx, this);
+                    fut.onDone(this, timeoutException());
             }
 
             if (!prepFut.compareAndSet(null, fut))
                 return prepFut.get();
         }
-        else
+        else {
             // Prepare was called explicitly.
+            if (timeout == -1)
+                fut.onDone(this, timeoutException());
+
             return fut;
+        }
 
         mapExplicitLocks();
 
@@ -969,7 +971,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         boolean last
     ) {
         if (state() != PREPARING) {
-            if (timedOut())
+            if (remainingTime() == -1)
                 return new GridFinishedFuture<>(
                     new IgniteTxTimeoutCheckedException("Transaction timed out: " + this));
 

@@ -19,6 +19,7 @@ package org.apache.ignite.testsuites;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.internal.processors.cache.transactions.DepthFirstSearchTest;
+import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetectionNoHangsTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetectionTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxOptimisticDeadlockDetectionTest;
 import org.apache.ignite.internal.processors.cache.transactions.TxPessimisticDeadlockDetectionCrossCacheTest;
@@ -35,13 +36,12 @@ public class TxDeadlockDetectionTestSuite extends TestSuite {
     public static TestSuite suite() throws Exception {
         TestSuite suite = new TestSuite("Ignite Deadlock Detection Test Suite");
 
-        //suite.addTestSuite(DepthFirstSearchTest.class);
+        suite.addTestSuite(DepthFirstSearchTest.class);
         suite.addTestSuite(TxOptimisticDeadlockDetectionTest.class);
-/*
         suite.addTestSuite(TxPessimisticDeadlockDetectionTest.class);
         suite.addTestSuite(TxPessimisticDeadlockDetectionCrossCacheTest.class);
         suite.addTestSuite(TxDeadlockDetectionTest.class);
-*/
+        suite.addTestSuite(TxDeadlockDetectionNoHangsTest.class);
 
         return suite;
     }

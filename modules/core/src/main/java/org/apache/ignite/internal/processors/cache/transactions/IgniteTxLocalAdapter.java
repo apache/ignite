@@ -551,14 +551,15 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
     @SuppressWarnings({"CatchGenericClass"})
     public void userPrepare() throws IgniteCheckedException {
         if (state() != PREPARING) {
-            if (timedOut())
+            if (remainingTime() == -1)
                 throw new IgniteTxTimeoutCheckedException("Transaction timed out: " + this);
 
             TransactionState state = state();
 
             setRollbackOnly();
 
-            throw new IgniteCheckedException("Invalid transaction state for prepare [state=" + state + ", tx=" + this + ']');
+            throw new IgniteCheckedException("Invalid transaction state for prepare [state=" +
+                state + ", tx=" + this + ']');
         }
 
         checkValid();
@@ -633,7 +634,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
         TransactionState state = state();
 
         if (state != COMMITTING) {
-            if (timedOut())
+            if (remainingTime() == -1)
                 throw new IgniteTxTimeoutCheckedException("Transaction timed out: " + this);
 
             setRollbackOnly();
@@ -3492,7 +3493,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
      */
     protected void checkValid() throws IgniteCheckedException {
         if (isRollbackOnly()) {
-            if (timedOut())
+            if (remainingTime() == -1)
                 throw new IgniteTxTimeoutCheckedException("Cache transaction timed out: " + this);
 
             TransactionState state = state();
@@ -3551,7 +3552,7 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter
 
         TransactionState state = state();
 
-        assert state == TransactionState.ACTIVE || timedOut() :
+        assert state == TransactionState.ACTIVE || remainingTime() == -1 :
             "Invalid tx state for adding entry [op=" + op + ", val=" + val + ", entry=" + entry + ", filter=" +
                 Arrays.toString(filter) + ", txCtx=" + cctx.tm().txContextVersion() + ", tx=" + this + ']';
 

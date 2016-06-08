@@ -169,29 +169,6 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    public void _testDeadlocksLocal() throws Exception {
-        for (CacheWriteSynchronizationMode syncMode : CacheWriteSynchronizationMode.values()) {
-            IgniteCache cache = null;
-
-            try {
-                cache = createCache(LOCAL, syncMode, false);
-
-                awaitPartitionMapExchange();
-
-                doTestDeadlock(2, true, true, false, NO_OP_TRANSFORMER);
-                doTestDeadlock(2, true, true, false, NO_OP_TRANSFORMER);
-                doTestDeadlock(2, true, true, false, WRAPPING_TRANSFORMER);
-            }
-            finally {
-                if (cache != null)
-                    cache.destroy();
-            }
-        }
-    }
-
-    /**
      * @param cacheMode Cache mode.
      * @param syncMode Write sync mode.
      * @param near Near.

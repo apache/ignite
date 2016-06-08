@@ -138,7 +138,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
     @Override public void prepare() {
         if (!tx.state(PREPARING)) {
             if (tx.setRollbackOnly()) {
-                if (tx.timedOut())
+                if (tx.remainingTime() == -1)
                     onDone(new IgniteTxTimeoutCheckedException("Transaction timed out and was rolled back: " + tx));
                 else
                     onDone(new IgniteCheckedException("Invalid transaction state for prepare " +

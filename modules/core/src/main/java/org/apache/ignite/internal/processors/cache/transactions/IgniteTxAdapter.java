@@ -1153,21 +1153,10 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteUuid timeoutId() {
-        return xidVer.asGridUuid();
-    }
-
-    /** {@inheritDoc} */
     @Override public long endTime() {
         long endTime = timeout == 0 ? Long.MAX_VALUE : startTime + timeout;
 
         return endTime > 0 ? endTime : endTime < 0 ? Long.MAX_VALUE : endTime;
-    }
-
-    /** {@inheritDoc} */
-    @Override public void onTimeout() {
-        if (local() && !dht())
-            state(MARKED_ROLLBACK, true);
     }
 
     /** {@inheritDoc} */
@@ -2403,18 +2392,8 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         }
 
         /** {@inheritDoc} */
-        @Override public IgniteUuid timeoutId() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public long endTime() {
             return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void onTimeout() {
-            // No-op.
         }
 
         /** {@inheritDoc} */

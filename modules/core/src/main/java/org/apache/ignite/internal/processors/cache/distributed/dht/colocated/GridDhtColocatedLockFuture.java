@@ -125,6 +125,9 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
     /** Lock timeout. */
     private final long timeout;
 
+    /** Timed out. */
+    private volatile boolean timedOut;
+
     /** Filter. */
     private final CacheEntryPredicate[] filter;
 
@@ -528,7 +531,8 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
             log.debug("Received onDone(..) callback [success=" + success + ", err=" + err + ", fut=" + this + ']');
 
         // Local GridDhtLockFuture
-        if (inTx() && this.err instanceof IgniteTxTimeoutCheckedException && cctx.tm().deadlockDetectionEnabled())
+        if (inTx() && cctx.tm().deadlockDetectionEnabled() &&
+            (this.err instanceof IgniteTxTimeoutCheckedException || timedOut))
             return false;
 
         if (isDone())
@@ -1314,6 +1318,8 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
 
         /** {@inheritDoc} */
         @Override public void onTimeout() {
+            timedOut = true;
+
             if (log.isDebugEnabled())
                 log.debug("Timed out waiting for lock response: " + this);
 
@@ -1435,7 +1441,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                 tx.removeMapping(node.id());
 
             // Primary node left the grid, so fail the future.
-            GridDhtColocatedLockFuture.this.onDone(newTopologyException(e, node.id()));
+            GridDhtColocatedLockFuture.this.onDone(false, newTopologyException(e, node.id()));
 
             onDone(true);
         }
@@ -1452,8 +1458,8 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
             }
 
             if (res.error() != null) {
-                if (inTx() && res.error() instanceof IgniteTxTimeoutCheckedException &&
-                    cctx.tm().deadlockDetectionEnabled())
+                if (inTx() && cctx.tm().deadlockDetectionEnabled() &&
+                    (res.error() instanceof IgniteTxTimeoutCheckedException || timedOut))
                     return;
 
                 if (log.isDebugEnabled())

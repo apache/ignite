@@ -45,10 +45,8 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
-import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
-import org.jsr166.ThreadLocalRandom8;
 
 import static org.apache.ignite.internal.util.typedef.X.hasCause;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
@@ -63,9 +61,6 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
 
     /** Cache. */
     private static final String CACHE = "cache";
-
-    /** Transaction concurrency. */
-    protected TransactionConcurrency transactionConcurrency = PESSIMISTIC;
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
@@ -113,86 +108,6 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testNoHangs() throws Exception {
-        final AtomicBoolean stop = new AtomicBoolean();
-
-        IgniteInternalFuture<Long> restartFut = null;
-
-        try {
-            restartFut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
-                @Override public void run() {
-                    while (!stop.get()) {
-                        try {
-                            U.sleep(500);
-
-                            startGrid(NODES_CNT);
-
-                            awaitPartitionMapExchange();
-
-                            U.sleep(500);
-
-                            stopGrid(NODES_CNT);
-                        }
-                        catch (Exception e) {
-                            // No-op.
-                        }
-                    }
-                }
-            }, 1, "restart-thread");
-
-            long stopTime = System.currentTimeMillis() + 2 * 60_000L;
-
-            for (int i = 0; System.currentTimeMillis() < stopTime; i++) {
-                log.info(">>> Iteration " + i);
-
-                final AtomicInteger threadCnt = new AtomicInteger();
-
-                IgniteInternalFuture<Long> fut = GridTestUtils.runMultiThreadedAsync(new Runnable() {
-                    @Override public void run() {
-                        int threadNum = threadCnt.getAndIncrement();
-
-                        Ignite ignite = ignite(threadNum % NODES_CNT);
-
-                        IgniteCache<Integer, Integer> cache = ignite.cache(CACHE);
-
-                        try (Transaction tx = ignite.transactions().txStart(transactionConcurrency, REPEATABLE_READ, 500, 0)) {
-                            ThreadLocalRandom8 rnd = ThreadLocalRandom8.current();
-
-                            for (int i = 0; i < 50; i++) {
-                                int key = rnd.nextInt(50);
-
-                                if (log.isDebugEnabled()) {
-                                    log.info(">>> Performs put [node=" + ((IgniteKernal)ignite).localNode() +
-                                        ", tx=" + tx + ", key=" + key + ']');
-                                }
-
-                                cache.put(key, 0);
-                            }
-
-                            tx.commit();
-                        }
-                        catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }, NODES_CNT * 3, "tx-thread");
-
-                fut.get();
-            }
-        }
-        finally {
-            stop.set(true);
-
-            if (restartFut != null)
-                restartFut.get();
-
-            checkDetectionFuts();
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testNoDeadlockSimple() throws Exception {
         final AtomicInteger threadCnt = new AtomicInteger();
 
@@ -212,7 +127,7 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
 
                 IgniteCache<Integer, Integer> cache = ignite.cache(CACHE);
 
-                try (Transaction tx = ignite.transactions().txStart(transactionConcurrency, REPEATABLE_READ, timeout, 0)) {
+                try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, timeout, 0)) {
                     int key = 42;
 
                     if (log.isDebugEnabled())
@@ -271,7 +186,7 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
 
                     IgniteCache<Integer, Integer> cache = ignite.cache(CACHE);
 
-                    try (Transaction tx = ignite.transactions().txStart(transactionConcurrency, REPEATABLE_READ, timeout, 0)) {
+                    try (Transaction tx = ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, timeout, 0)) {
                         int key1 = threadNum;
 
                         log.info(">>> Performs put [node=" + ((IgniteKernal)ignite).localNode() +
@@ -359,7 +274,7 @@ public class TxDeadlockDetectionTest extends GridCommonAbstractTest {
                     IgniteCache<Object, Integer> cache = ignite.cache(CACHE);
 
                     try (Transaction tx =
-                             ignite.transactions().txStart(transactionConcurrency, REPEATABLE_READ, num == 0 ? 500 : 1500, 0)
+                             ignite.transactions().txStart(PESSIMISTIC, REPEATABLE_READ, num == 0 ? 500 : 1500, 0)
                     ) {
                         int key1 = primaryKey(ignite((num + 1) % txCnt).cache(CACHE));
 
