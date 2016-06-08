@@ -140,6 +140,7 @@ public class PlatformLogger implements IgniteLogger {
      */
     private boolean isLevelEnabled(byte level) {
         // TODO: native
+        // TODO: This is going to be called a lot!
         return true;
     }
 
