@@ -27,12 +27,6 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
  * Logger that delegates to platform.
  */
 public class PlatformLogger implements IgniteLogger {
-    /** Callbacks. */
-    private final PlatformCallbackGateway gate;
-
-    /** Quiet flag. */
-    private final Boolean quiet;
-
     /** */
     private static final int LVL_TRACE = 0;
 
@@ -48,8 +42,23 @@ public class PlatformLogger implements IgniteLogger {
     /** */
     private static final int LVL_ERROR = 4;
 
-    /** */
+    /** Callbacks. */
+    private final PlatformCallbackGateway gate;
+
+    /** Quiet flag. */
+    private final Boolean quiet;
+
+    /** Category. */
     private final String category;
+
+    /** Trace flag. */
+    private final boolean traceEnabled;
+
+    /** Debug flag. */
+    private final boolean debugEnabled;
+
+    /** Info flag. */
+    private final boolean infoEnabled;
 
     /**
      * Ctor.
@@ -64,11 +73,29 @@ public class PlatformLogger implements IgniteLogger {
         quiet = Boolean.valueOf(System.getProperty(IGNITE_QUIET, "false"));
 
         category = ctgr instanceof Class ? ((Class)ctgr).getName() : String.valueOf(ctgr);
+
+        // Precalculate enabled levels (JNI calls are expensive)
+        traceEnabled = isLevelEnabled(LVL_TRACE);
+        debugEnabled = isLevelEnabled(LVL_DEBUG);
+        infoEnabled = isLevelEnabled(LVL_INFO);
+    }
+
+    /**
+     * Ctor.
+     */
+    private PlatformLogger(PlatformCallbackGateway gate, Boolean quiet, String category, boolean traceEnabled,
+        boolean debugEnabled, boolean infoEnabled) {
+        this.gate = gate;
+        this.quiet = quiet;
+        this.category = category;
+        this.traceEnabled = traceEnabled;
+        this.debugEnabled = debugEnabled;
+        this.infoEnabled = infoEnabled;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteLogger getLogger(Object ctgr) {
-        return new PlatformLogger(gate, ctgr);
+        return new PlatformLogger(gate, quiet, category, traceEnabled, debugEnabled, infoEnabled);
     }
 
     /** {@inheritDoc} */
@@ -108,27 +135,27 @@ public class PlatformLogger implements IgniteLogger {
 
     /** {@inheritDoc} */
     @Override public boolean isTraceEnabled() {
-        return isLevelEnabled(LVL_TRACE);
+        return traceEnabled;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isDebugEnabled() {
-        return isLevelEnabled(LVL_DEBUG);
+        return debugEnabled;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isInfoEnabled() {
-        return isLevelEnabled(LVL_INFO);
+        return infoEnabled;
     }
 
     /** {@inheritDoc} */
     @Override public boolean isQuiet() {
-        // TODO: Do we need this on platform side? Not sure.
         return quiet;
     }
 
     /** {@inheritDoc} */
     @Override public String fileName() {
+        // TODO: Native
         return null;
     }
 
@@ -139,20 +166,14 @@ public class PlatformLogger implements IgniteLogger {
      * @return Whether specified log level is enabled.
      */
     private boolean isLevelEnabled(int level) {
-        // TODO: native
+        // TODO: Native
         // TODO: This is going to be called a lot!
         // Prefetch these in the ctor.
         return gate.loggerIsLevelEnabled(level);
     }
 
     private void log(int level, String msg, @Nullable Throwable e) {
-        // TODO: native
         // TODO: Unwrap platform error if possible
-        // TODO: pass category
-
         gate.loggerLog(level, msg, category, 0);
-
-        /*if (level > 1)
-            System.out.printf("%s: %s\n", cat, msg);*/
     }
 }
