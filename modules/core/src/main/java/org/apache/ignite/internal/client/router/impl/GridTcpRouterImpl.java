@@ -25,6 +25,8 @@ import java.net.UnknownHostException;
 import java.nio.ByteOrder;
 import java.util.Collection;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.management.JMException;
 import javax.management.ObjectName;
 import javax.net.ssl.SSLContext;
@@ -38,6 +40,7 @@ import org.apache.ignite.internal.client.router.GridTcpRouterConfiguration;
 import org.apache.ignite.internal.client.router.GridTcpRouterMBean;
 import org.apache.ignite.internal.client.ssl.GridSslContextFactory;
 import org.apache.ignite.internal.processors.rest.client.message.GridClientMessage;
+import org.apache.ignite.internal.util.io.GridInetAddresses;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
 import org.apache.ignite.internal.util.nio.GridNioFilter;
 import org.apache.ignite.internal.util.nio.GridNioParser;
@@ -53,6 +56,11 @@ import org.jetbrains.annotations.Nullable;
  * Wrapper class for router process.
  */
 public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, LifecycleAware {
+
+
+    private static Pattern IPV4_PATTERN = Pattern.compile("(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])", Pattern.CASE_INSENSITIVE);
+    private static Pattern IPV6_PATTERN = Pattern.compile("([0-9a-f]{1,4}:){7}([0-9a-f]){1,4}", Pattern.CASE_INSENSITIVE);
+
     /** */
     private static final String ENT_NIO_LSNR_CLS = "org.apache.ignite.client.router.impl.GridTcpRouterNioListenerEntImpl";
 
@@ -131,7 +139,11 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
         final InetAddress hostAddr;
 
         try {
-            hostAddr = InetAddress.getByName(cfg.getHost());
+            if(GridInetAddresses.isInetAddress(cfg.getHost())){
+                hostAddr = GridInetAddresses.forString(cfg.getHost());
+            }else {
+                hostAddr = InetAddress.getByName(cfg.getHost());
+            }
         }
         catch (UnknownHostException e) {
             throw new IgniteException("Failed to resolve grid address for configured host: " + cfg.getHost(), e);
@@ -356,5 +368,23 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
         GridTcpRouterImpl that = (GridTcpRouterImpl)o;
 
         return id.equals(that.id);
+    }
+
+    /**
+     * Check if a given string could be a valid IPv4 or IPv6 address
+     * using pattern matching.
+     *
+     * @param ipAddress A string representing or not an IP address.
+     * @return <code>true</code> if it is a valid IP address,
+     *  <code>false</code> otherwise.
+     */
+    public static boolean isIpAddress(String ipAddress) {
+
+        Matcher m1 = IPV4_PATTERN.matcher(ipAddress);
+        if (m1.matches()) {
+            return true;
+        }
+        Matcher m2 = IPV6_PATTERN.matcher(ipAddress);
+        return m2.matches();
     }
 }
