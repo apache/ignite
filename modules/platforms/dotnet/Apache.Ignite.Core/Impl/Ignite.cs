@@ -138,6 +138,10 @@ namespace Apache.Ignite.Core.Impl
             _clientReconnectTaskCompletionSource.SetResult(false);
 
             SetCompactFooter();
+
+            // Initialize logging
+            // TODO: One logger delegates to Java (when we want to log from .NET)
+            // Another logger does the actual logging and is ONLY called from Java
         }
 
         /// <summary>

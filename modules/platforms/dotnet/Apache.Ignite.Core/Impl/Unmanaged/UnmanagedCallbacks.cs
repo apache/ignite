@@ -70,7 +70,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Initialized flag. */
         private readonly ManualResetEventSlim _initEvent = new ManualResetEventSlim(false);
 
-        /** Actions to be called upon Ignite initialisation. */
+        /** Actions to be called upon Ignite initialization. */
         private readonly List<Action<Ignite>> _initActions = new List<Action<Ignite>>();
 
         /** GC handle to UnmanagedCallbacks instance to prevent it from being GCed. */
@@ -89,7 +89,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Error type: attach. */
         private const int ErrJvmAttach = 3;
 
-        /** Opeartion: prepare .Net. */
+        /** Operation: prepare .Net. */
         private const int OpPrepareDotNet = 1;
 
         private delegate long CacheStoreCreateCallbackDelegate(void* target, long memPtr);
@@ -515,7 +515,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         }
 
         /// <summary>
-        /// Get comptue job using it's GC handle pointer.
+        /// Get compute job using it's GC handle pointer.
         /// </summary>
         /// <param name="jobPtr">Job pointer.</param>
         /// <returns>Compute job.</returns>
