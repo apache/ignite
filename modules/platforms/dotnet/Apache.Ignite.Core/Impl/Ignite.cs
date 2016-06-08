@@ -659,7 +659,15 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public ILogger Log
         {
-            get { throw new NotImplementedException(); }
+            get { return _javaLogger; }
+        }
+
+        /// <summary>
+        /// Gets the user log to be invoked from Java callback.
+        /// </summary>
+        internal ILogger UserLog
+        {
+            get { return _userLogger; }
         }
 
         /// <summary>
