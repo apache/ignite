@@ -1059,10 +1059,9 @@ public class IgniteCacheInvokeSendValTest extends GridCommonAbstractTest {
             if (o == null || getClass() != o.getClass())
                 return false;
 
-            TestValue testVal = (TestValue) o;
+            TestValue testVal = (TestValue)o;
 
             return val.equals(testVal.val);
-
         }
 
         /** {@inheritDoc} */

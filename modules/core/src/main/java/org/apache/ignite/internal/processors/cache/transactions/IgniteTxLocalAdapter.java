@@ -2812,31 +2812,47 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
         GridCacheVersion ver) {
         GridCacheContext ctx = txEntry.context();
 
-        Object key0 = null;
-        Object val0 = null;
+        CacheObject val0 = cacheVal;
+        Object res = null;
+        Exception err = null;
 
-        try {
-            Object res = null;
+        boolean modified = false;
 
-            for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
-                CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(txEntry.key(), key0, cacheVal,
-                    val0, ver, txEntry.keepBinary(), txEntry.cached());
+        for (T2<EntryProcessor<Object, Object, Object>, Object[]> t : txEntry.entryProcessors()) {
+            CacheInvokeEntry<Object, Object> invokeEntry = new CacheInvokeEntry<>(txEntry.key(), val0, ver,
+                txEntry.keepBinary(), txEntry.cached());
 
-                EntryProcessor<Object, Object, ?> entryProcessor = t.get1();
+            try {
+                EntryProcessor<Object, Object, Object> processor = t.get1();
 
-                res = entryProcessor.process(invokeEntry, t.get2());
+                res = processor.process(invokeEntry, t.get2());
 
-                val0 = invokeEntry.value();
+                if (invokeEntry.modified())
+                    val0 = ctx.toCacheObject(invokeEntry.getValue(true));
+            }
+            catch (Exception e) {
+                err = e;
 
-                key0 = invokeEntry.key();
+                break;
             }
 
-            if (res != null)
-                ret.addEntryProcessResult(ctx, txEntry.key(), key0, res, null, txEntry.keepBinary());
+            modified |= invokeEntry.modified();
         }
-        catch (Exception e) {
-            ret.addEntryProcessResult(ctx, txEntry.key(), key0, null, e, txEntry.keepBinary());
+
+        GridCacheOperation op = modified ? (val0 == null ? DELETE : UPDATE) : NOOP;
+
+        if (txEntry.sendValueToBackup()) {
+            txEntry.op(op);
+            txEntry.value(val0, true, false);
+            txEntry.entryProcessors(null);
         }
+        else
+            txEntry.entryProcessorCalculatedValue(new T2<>(op, op == NOOP ? null : val0));
+
+        if (err != null || res != null)
+            ret.addEntryProcessResult(txEntry.context(), txEntry.key(), null, res, err, txEntry.keepBinary());
+        else
+            ret.invokeResult(true);
     }
 
     /**
