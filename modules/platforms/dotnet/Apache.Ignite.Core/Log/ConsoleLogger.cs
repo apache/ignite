@@ -19,6 +19,7 @@ using System;
 
 namespace Apache.Ignite.Core.Log
 {
+    using System.Globalization;
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
@@ -56,11 +57,15 @@ namespace Apache.Ignite.Core.Log
                 message = string.Format(message, formatProvider, args);
             }
 
+            var oldColor = Console.ForegroundColor;
             Console.ForegroundColor = GetColor(level);
-            Console.WriteLine("[{0}] {1}", DateTime.Now.ToShortTimeString(), message);
+
+            Console.WriteLine("[{0}] {1}", DateTime.Now.ToString("T", CultureInfo.InvariantCulture), message);
 
             if (ex != null)
                 Console.WriteLine(ex);
+
+            Console.ForegroundColor = oldColor;
         }
 
         /** <inheritdoc /> */
@@ -84,12 +89,10 @@ namespace Apache.Ignite.Core.Log
         {
             switch (level)
             {
-                case LogLevel.Info:
-                    return ConsoleColor.Green;
                 case LogLevel.Warn:
-                    return ConsoleColor.DarkYellow;
+                    return ConsoleColor.Yellow;
                 case LogLevel.Error:
-                    return ConsoleColor.DarkRed;
+                    return ConsoleColor.Red;
                 default:
                     return ConsoleColor.Gray;
             }
