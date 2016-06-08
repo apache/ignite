@@ -8583,7 +8583,7 @@ public abstract class IgniteUtils {
             throw new IgniteCheckedException("Addresses can not be resolved [addr=" + addrs +
                 ", hostNames=" + hostNames + ']');
 
-        return F.viewSetReadOnly(res, F.<InetAddress>identity());
+        return Collections.unmodifiableCollection(res);
     }
 
     /**
@@ -8630,7 +8630,7 @@ public abstract class IgniteUtils {
             res.add(new InetSocketAddress(addr, port));
         }
 
-        return F.viewSetReadOnly(res, F.<InetSocketAddress>identity());
+        return Collections.unmodifiableCollection(res);
     }
 
     /**
