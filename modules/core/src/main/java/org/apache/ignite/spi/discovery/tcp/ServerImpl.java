@@ -5143,7 +5143,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             for (port = spi.locPort; port <= lastPort; port++) {
                 try {
-                    srvCh.bind(new InetSocketAddress(spi.locHost, port));
+                    srvCh.socket().bind(new InetSocketAddress(spi.locHost, port));
 
                     if (log.isInfoEnabled())
                         log.info("Successfully bound to TCP port [port=" + port + ", localHost=" + spi.locHost + ']');
