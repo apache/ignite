@@ -57,19 +57,19 @@ public class IgniteDbSingleNodeWithIndexingPutGetTest extends IgniteDbSingleNode
             cache.put(i, new Abc(i, i % 10, i % 100));
 
         assertEquals(1, querySize(cache, "select count(*) from Abc"));
-        assertEquals(cnt, queryOne(cache, "select count(*) from Abc"));
+        assertEquals(Long.valueOf(cnt), queryOne(cache, "select count(*) from Abc"));
 
-        assertEquals(cnt, querySize(cache, "select count(*) from Abc group by a"));
-        assertEquals(1L, queryOne(cache, "select count(*) from Abc group by a"));
-        assertEquals(1L, queryOne(cache, "select count(*) from Abc where a = 1"));
+        assertEquals((int)cnt, querySize(cache, "select count(*) from Abc group by a"));
+        assertEquals(Long.valueOf(1L), queryOne(cache, "select count(*) from Abc group by a"));
+        assertEquals(Long.valueOf(1L), queryOne(cache, "select count(*) from Abc where a = 1"));
 
         assertEquals(10, querySize(cache, "select count(*) from Abc group by b"));
-        assertEquals(cnt / 10, queryOne(cache, "select count(*) from Abc group by b"));
-        assertEquals(cnt / 10, queryOne(cache, "select count(*) from Abc where b = 1"));
+        assertEquals(Long.valueOf(cnt / 10), queryOne(cache, "select count(*) from Abc group by b"));
+        assertEquals(Long.valueOf(cnt / 10), queryOne(cache, "select count(*) from Abc where b = 1"));
 
         assertEquals(100, querySize(cache, "select count(*) from Abc group by c"));
-        assertEquals(cnt / 100, queryOne(cache, "select count(*) from Abc group by c"));
-        assertEquals(cnt / 100, queryOne(cache, "select count(*) from Abc where c = 1"));
+        assertEquals(Long.valueOf(cnt / 10), queryOne(cache, "select count(*) from Abc group by c"));
+        assertEquals(Long.valueOf(cnt / 10), queryOne(cache, "select count(*) from Abc where c = 1"));
     }
 
     /**
@@ -155,7 +155,7 @@ public class IgniteDbSingleNodeWithIndexingPutGetTest extends IgniteDbSingleNode
             assertEquals(cnt, querySize(cache, qry));
 
             qry = "select count(*) from Abc where " + field + " = " + key;
-            assertEquals(cnt, queryOne(cache, qry));
+            assertEquals(Long.valueOf(cnt), queryOne(cache, qry));
 
             i++;
         }

@@ -44,6 +44,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.GridQueryProcessor;
@@ -97,8 +98,11 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 reuseList = new ReuseList(cctx.cacheId(), dbMgr.pageMemory(), cpus * 2, dbMgr.meta());
                 freeList = new FreeList(cctx, reuseList);
 
-                if (cctx.isLocal())
-                    locCacheDataStore = createCacheDataStore(0, null);
+                if (cctx.isLocal()) {
+                    assert cctx.cache() instanceof GridLocalCache : cctx.cache();
+
+                    locCacheDataStore = createCacheDataStore(0, (GridLocalCache)cctx.cache());
+                }
             }
             finally {
                 cctx.shared().database().checkpointReadUnlock();
@@ -547,12 +551,8 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         return cctx.shared().database().pageMemory().page(new FullPageId(pageId, cctx.cacheId()));
     }
 
-    /**
-     * @return Data store.
-     * @throws IgniteCheckedException If failed.
-     */
-    @Override public final CacheDataStore createCacheDataStore(int p,
-        @Nullable GridDhtLocalPartition part) throws IgniteCheckedException {
+    /** {@inheritDoc} */
+    @Override public final CacheDataStore createCacheDataStore(int p, CacheDataStore.Listener lsnr) throws IgniteCheckedException {
         IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
 
         String idxName = treeName(p);
@@ -570,7 +570,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             rootPage.pageId(),
             rootPage.isAllocated());
 
-        return new CacheDataStoreImpl(rowStore, dataTree, part);
+        return new CacheDataStoreImpl(rowStore, dataTree, lsnr);
     }
 
     /**
@@ -592,19 +592,19 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         private final CacheDataTree dataTree;
 
         /** */
-        private final GridDhtLocalPartition part;
+        private final Listener lsnr;
 
         /**
          * @param rowStore Row store.
          * @param dataTree Data tree.
-         * @param part Partition.
+         * @param lsnr Listener.
          */
         public CacheDataStoreImpl(CacheDataRowStore rowStore,
             CacheDataTree dataTree,
-            @Nullable GridDhtLocalPartition part) {
+            Listener lsnr) {
             this.rowStore = rowStore;
             this.dataTree = dataTree;
-            this.part = part;
+            this.lsnr = lsnr;
         }
 
         /** {@inheritDoc} */
@@ -619,8 +619,8 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
             DataRow old = dataTree.put(dataRow);
 
-            if (old == null && part != null)
-                part.onInsert();
+            if (old == null)
+                lsnr.onInsert();
         }
 
         /** {@inheritDoc} */
@@ -632,8 +632,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
                 rowStore.removeRow(dataRow.link);
 
-                if (part != null)
-                    part.onRemove();
+                lsnr.onRemove();
             }
         }
 

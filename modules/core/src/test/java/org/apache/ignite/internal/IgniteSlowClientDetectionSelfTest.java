@@ -25,6 +25,7 @@ import org.apache.ignite.IgniteState;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.query.ContinuousQuery;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.configuration.DatabaseConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
@@ -77,6 +78,11 @@ public class IgniteSlowClientDetectionSelfTest extends GridCommonAbstractTest {
         commSpi.setIdleConnectionTimeout(300_000);
 
         cfg.setCommunicationSpi(commSpi);
+
+        DatabaseConfiguration dbCfg = new DatabaseConfiguration();
+        dbCfg.setPageSize(11 * 1024);
+
+        cfg.setDatabaseConfiguration(dbCfg);
 
         return cfg;
     }

@@ -163,6 +163,10 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** clearLocally() split threshold. */
     public static final int CLEAR_ALL_SPLIT_THRESHOLD = 10000;
 
+    /** Size of keys batch to removeAll. */
+    // TODO GG-11231 (workaround for GG-11231).
+    private static final int REMOVE_ALL_KEYS_BATCH = 10000;
+
     /** Maximum number of retries when topology changes. */
     public static final int MAX_RETRIES = IgniteSystemProperties.getInteger(IGNITE_CACHE_RETRIES_COUNT, 100);
 
@@ -626,7 +630,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** {@inheritDoc} */
     @Override public boolean isEmpty() {
         try {
-            return localSize(CachePeekModes.ONHEAP_ONLY) == 0;
+            return localSize(null) == 0;
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -2964,10 +2968,21 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     @Override public void removeAll() throws IgniteCheckedException {
         assert ctx.isLocal();
 
-        for (Iterator<CacheDataRow> it = ctx.offheap().iterator(true, true, null); it.hasNext(); )
-            remove((K)it.next().key());
+        // TODO GG-11231 (workaround for GG-11231).
+        if (isEmpty())
+            return;
 
-        removeAll(keySet());
+        List<K> keys = new ArrayList<>(Math.min(REMOVE_ALL_KEYS_BATCH, size()));
+
+        while (!isEmpty()) {
+            for (Iterator<CacheDataRow> it = ctx.offheap().iterator(true, true, null);
+                it.hasNext() && keys.size() < REMOVE_ALL_KEYS_BATCH;)
+                keys.add((K)it.next().key());
+
+            removeAll(keys);
+
+            keys.clear();
+        }
     }
 
     /** {@inheritDoc} */
@@ -3865,37 +3880,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** {@inheritDoc} */
     @Override public int localSize(CachePeekMode[] peekModes) throws IgniteCheckedException {
         return (int)localSizeLong(peekModes);
-    }
-
-    /** {@inheritDoc} */
-    @Override public long localSizeLong(CachePeekMode[] peekModes) throws IgniteCheckedException {
-        PeekModes modes = parsePeekModes(peekModes, true);
-
-        long size = 0;
-
-        if (ctx.isLocal()) {
-            modes.primary = true;
-            modes.backup = true;
-
-            if (modes.heap)
-                size += size();
-        }
-        else {
-            if (modes.near)
-                size += nearSize();
-
-            // Swap and offheap are disabled for near cache.
-            if (modes.primary || modes.backup) {
-                AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
-
-                IgniteCacheOffheapManager offheap = ctx.offheap();
-
-                if (modes.offheap)
-                    size += offheap.entriesCount(modes.primary, modes.backup, topVer);
-            }
-        }
-
-        return size;
     }
 
     /** {@inheritDoc} */
@@ -4965,21 +4949,21 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      *
      */
-    private static class PeekModes {
+    protected static final class PeekModes {
         /** */
-        private boolean near;
+        public boolean near;
 
         /** */
-        private boolean primary;
+        public boolean primary;
 
         /** */
-        private boolean backup;
+        public boolean backup;
 
         /** */
-        private boolean heap;
+        public boolean heap;
 
         /** */
-        private boolean offheap;
+        public boolean offheap;
 
         /** {@inheritDoc} */
         @Override public String toString() {
@@ -4992,7 +4976,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param primary Defines the default behavior if affinity flags are not specified.
      * @return Peek modes flags.
      */
-    private static PeekModes parsePeekModes(CachePeekMode[] peekModes, boolean primary) {
+    protected static final PeekModes parsePeekModes(CachePeekMode[] peekModes, boolean primary) {
         PeekModes modes = new PeekModes();
 
         if (F.isEmpty(peekModes)) {
