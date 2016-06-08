@@ -281,6 +281,6 @@ namespace Apache.Ignite.Core
         /// <para />
         /// See <see cref="IgniteConfiguration.Logger"/> for customization.
         /// </summary>
-        ILogger Log { get; }
+        ILogger Logger { get; }
     }
 }

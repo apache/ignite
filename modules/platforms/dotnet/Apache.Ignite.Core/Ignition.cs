@@ -36,6 +36,7 @@ namespace Apache.Ignite.Core
     using Apache.Ignite.Core.Impl.Memory;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Lifecycle;
+    using Apache.Ignite.Core.Log;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
@@ -163,13 +164,16 @@ namespace Apache.Ignite.Core
 
             lock (SyncRoot)
             {
+                // 0. Init logger
+                var log = cfg.Logger ?? new ConsoleLogger(LogLevel.Info, LogLevel.Warn, LogLevel.Error);
+
                 // 1. Check GC settings.
-                CheckServerGc(cfg);
+                CheckServerGc(cfg, log);
 
                 // 2. Create context.
                 IgniteUtils.LoadDlls(cfg.JvmDllPath);
 
-                var cbs = new UnmanagedCallbacks();
+                var cbs = new UnmanagedCallbacks(log);
 
                 IgniteManager.CreateJvmContext(cfg, cbs);
 
@@ -237,10 +241,11 @@ namespace Apache.Ignite.Core
         /// Check whether GC is set to server mode.
         /// </summary>
         /// <param name="cfg">Configuration.</param>
-        private static void CheckServerGc(IgniteConfiguration cfg)
+        /// <param name="log">Log.</param>
+        private static void CheckServerGc(IgniteConfiguration cfg, ILogger log)
         {
             if (!cfg.SuppressWarnings && !GCSettings.IsServerGC && Interlocked.CompareExchange(ref _gcWarn, 1, 0) == 0)
-                Logger.LogWarning("GC server mode is not enabled, this could lead to less " +
+                log.LogWarning("GC server mode is not enabled, this could lead to less " +
                     "than optimal performance on multi-core machines (to enable see " +
                     "http://msdn.microsoft.com/en-us/library/ms229357(v=vs.110).aspx).");
         }

@@ -40,7 +40,6 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Impl.Datastream;
     using Apache.Ignite.Core.Impl.DataStructures;
     using Apache.Ignite.Core.Impl.Handle;
-    using Apache.Ignite.Core.Impl.Log;
     using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Impl.Transactions;
     using Apache.Ignite.Core.Impl.Unmanaged;
@@ -97,12 +96,6 @@ namespace Apache.Ignite.Core.Impl
         private volatile TaskCompletionSource<bool> _clientReconnectTaskCompletionSource = 
             new TaskCompletionSource<bool>();
 
-        /** Logger that delegates to Java. Should be called when logging anything. */
-        private readonly ILogger _javaLogger;
-
-        /** Logger specified by the user: should be ONLY called from Java. */
-        private readonly ILogger _userLogger;
-
         /// <summary>
         /// Constructor.
         /// </summary>
@@ -146,11 +139,6 @@ namespace Apache.Ignite.Core.Impl
             _clientReconnectTaskCompletionSource.SetResult(false);
 
             SetCompactFooter();
-
-            // Initialize logging
-            _javaLogger = new JavaLogger(_proc);
-            _userLogger = cfg.Logger ?? new ConsoleLogger(LogLevel.Info, LogLevel.Warn, LogLevel.Error);
-            ResourceProcessor.Inject(_userLogger, this);
         }
 
         /// <summary>
@@ -660,17 +648,9 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public ILogger Log
+        public ILogger Logger
         {
-            get { return _javaLogger; }
-        }
-
-        /// <summary>
-        /// Gets the user log to be invoked from Java callback.
-        /// </summary>
-        internal ILogger UserLog
-        {
-            get { return _userLogger; }
+            get { return _cbs.Log; }
         }
 
         /// <summary>

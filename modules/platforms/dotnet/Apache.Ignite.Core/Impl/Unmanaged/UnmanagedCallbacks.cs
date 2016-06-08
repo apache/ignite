@@ -82,6 +82,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [SuppressMessage("Microsoft.Reliability", "CA2006:UseSafeHandleToEncapsulateNativeResources")]
         private readonly IntPtr _cbsPtr;
 
+        /** Log. */
+        private readonly ILogger _log;
+
         /** Error type: generic. */
         private const int ErrGeneric = 1;
 
@@ -171,10 +174,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate bool LoggerIsLevelEnabledDelegate(void* target, int level);
 
         /// <summary>
-        /// constructor.
+        /// Constructor.
         /// </summary>
-        public UnmanagedCallbacks()
+        /// <param name="log">Logger.</param>
+        public UnmanagedCallbacks(ILogger log)
         {
+            Debug.Assert(log != null);
+            _log = log;
+
             var cbs = new UnmanagedCallbackHandlers
             {
                 target = IntPtr.Zero.ToPointer(), // Target is not used in .Net as we rely on dynamic FP creation.
@@ -1103,13 +1110,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 var message = IgniteUtils.Utf8UnmanagedToString(messageChars, messageCharsLen);
                 var category = IgniteUtils.Utf8UnmanagedToString(categoryChars, categoryCharsLen);
 
-                _ignite.UserLog.Log((LogLevel) level, message, null, CultureInfo.InvariantCulture, category, null);
-            });
+                _log.Log((LogLevel) level, message, null, CultureInfo.InvariantCulture, category, null);
+            }, true);
         }
 
         private bool LoggerIsLevelEnabled(void* target, int level)
         {
-            return SafeCall(() => _ignite.UserLog.IsEnabled((LogLevel) level));
+            return SafeCall(() => _log.IsEnabled((LogLevel) level), true);
         }
 
         #endregion
@@ -1144,6 +1151,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
             catch (Exception e)
             {
+                // TODO: Log?
                 UU.ThrowToJava(_ctx.NativeContext, e);
 
                 return default(T);
@@ -1166,6 +1174,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         public UnmanagedContext Context
         {
             get { return _ctx; }
+        }
+
+        /// <summary>
+        /// Gets the log.
+        /// </summary>
+        public ILogger Log
+        {
+            get { return _log; }
         }
 
         /// <summary>

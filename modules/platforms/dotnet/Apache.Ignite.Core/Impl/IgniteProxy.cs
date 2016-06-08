@@ -380,9 +380,9 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public ILogger Log
+        public ILogger Logger
         {
-            get { return _ignite.Log; }
+            get { return _ignite.Logger; }
         }
 
         /** <inheritdoc /> */

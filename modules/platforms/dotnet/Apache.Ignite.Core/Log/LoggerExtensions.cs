@@ -32,6 +32,16 @@ namespace Apache.Ignite.Core.Log
             logger.Log(LogLevel.Error, message, null, null, null, null);
         }
 
+        /// <summary>
+        /// Logs the error.
+        /// </summary>
+        /// <param name="logger">The logger.</param>
+        /// <param name="message">The message.</param>
+        public static void LogWarning(this ILogger logger, string message)
+        {
+            logger.Log(LogLevel.Warn, message, null, null, null, null);
+        }
+
         // TODO: More!
     }
 }
