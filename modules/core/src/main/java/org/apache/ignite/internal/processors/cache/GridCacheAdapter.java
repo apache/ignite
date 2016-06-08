@@ -1493,23 +1493,23 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     throws IgniteCheckedException {
                     T2<V, GridCacheVersion> t = f.get();
 
-                K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false) : key0;
+                    K key = keepBinary ? (K)ctx.unwrapBinaryIfNeeded(key0, true, false) : key0;
 
-                CacheEntry val = t != null ? new CacheEntryImplEx<>(
-                    key,
-                    t.get1(),
-                    t.get2())
-                    : null;
+                    CacheEntry val = t != null ? new CacheEntryImplEx<>(
+                        key,
+                        t.get1(),
+                        t.get2())
+                        : null;
 
-                if (intercept) {
-                    V val0 = (V)ctx.config().getInterceptor().onGet(key, t != null ? val.getValue() : null);
+                    if (intercept) {
+                        V val0 = (V)ctx.config().getInterceptor().onGet(key, t != null ? val.getValue() : null);
 
-                    return val0 != null ? new CacheEntryImplEx(key, val0, t != null ? t.get2() : null) : null;
+                        return val0 != null ? new CacheEntryImplEx(key, val0, t != null ? t.get2() : null) : null;
+                    }
+                    else
+                        return val;
                 }
-                else
-                    return val;
-            }
-        });
+            });
 
         if (statsEnabled)
             fut.listen(new UpdateGetTimeStatClosure<T2<V, GridCacheVersion>>(metrics0(), start));
@@ -3862,37 +3862,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public long localSizeLong(CachePeekMode[] peekModes) throws IgniteCheckedException {
-        PeekModes modes = parsePeekModes(peekModes, true);
-
-        long size = 0;
-
-        if (ctx.isLocal()) {
-            modes.primary = true;
-            modes.backup = true;
-
-            if (modes.heap)
-                size += size();
-        }
-        else {
-            if (modes.near)
-                size += nearSize();
-
-            // Swap and offheap are disabled for near cache.
-            if (modes.primary || modes.backup) {
-                AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
-
-                IgniteCacheOffheapManager offheap = ctx.offheap();
-
-                if (modes.offheap)
-                    size += offheap.entriesCount(modes.primary, modes.backup, topVer);
-            }
-        }
-
-        return size;
-    }
-
-    /** {@inheritDoc} */
     @Override public int size() {
         return map.publicSize();
     }
@@ -4916,21 +4885,21 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /**
      *
      */
-    private static class PeekModes {
+    protected static final class PeekModes {
         /** */
-        private boolean near;
+        public boolean near;
 
         /** */
-        private boolean primary;
+        public boolean primary;
 
         /** */
-        private boolean backup;
+        public boolean backup;
 
         /** */
-        private boolean heap;
+        public boolean heap;
 
         /** */
-        private boolean offheap;
+        public boolean offheap;
 
         /** {@inheritDoc} */
         @Override public String toString() {
@@ -4943,7 +4912,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param primary Defines the default behavior if affinity flags are not specified.
      * @return Peek modes flags.
      */
-    private static PeekModes parsePeekModes(CachePeekMode[] peekModes, boolean primary) {
+    protected static final PeekModes parsePeekModes(CachePeekMode[] peekModes, boolean primary) {
         PeekModes modes = new PeekModes();
 
         if (F.isEmpty(peekModes)) {

@@ -70,7 +70,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 /**
  * Key partition.
  */
-public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>, GridReservable, GridCacheConcurrentMap {
+public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>, GridReservable, GridCacheConcurrentMap,
+    CacheDataStore.Listener {
     /** Maximum size for delete queue. */
     public static final int MAX_DELETE_QUEUE_SIZE = Integer.getInteger(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE,
         200_000);
@@ -302,18 +303,13 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         return (int)storageSize.get();
     }
 
-
-    /**
-     *
-     */
-    public void onInsert() {
+    /** {@inheritDoc} */
+    @Override public void onInsert() {
         storageSize.incrementAndGet();
     }
 
-    /**
-     * 
-     */
-    public void onRemove() {
+    /** {@inheritDoc} */
+    @Override public void onRemove() {
         storageSize.decrementAndGet();
     }
 
