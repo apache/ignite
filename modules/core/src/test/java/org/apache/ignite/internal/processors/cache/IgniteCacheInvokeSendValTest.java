@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
@@ -75,6 +77,9 @@ public class IgniteCacheInvokeSendValTest extends GridCommonAbstractTest {
     /** */
     private static volatile boolean fail;
 
+    /** */
+    private static AtomicInteger cntr = new AtomicInteger();
+
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
@@ -98,6 +103,8 @@ public class IgniteCacheInvokeSendValTest extends GridCommonAbstractTest {
         super.beforeTest();
 
         fail = false;
+
+        cntr.set(0);
     }
 
     /** {@inheritDoc} */
@@ -153,6 +160,17 @@ public class IgniteCacheInvokeSendValTest extends GridCommonAbstractTest {
      */
     public void testTwoBackup() throws Exception {
         doTestInvoke(new CacheConfiguration<Integer, Integer>()
+            .setBackups(2)
+            .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
+            .setAtomicityMode(TRANSACTIONAL)
+        );
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testTwoBackupChainInvoke() throws Exception {
+        doTestInvokeChain(new CacheConfiguration<Integer, Integer>()
             .setBackups(2)
             .setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC)
             .setAtomicityMode(TRANSACTIONAL)
@@ -229,6 +247,43 @@ public class IgniteCacheInvokeSendValTest extends GridCommonAbstractTest {
         }
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestInvokeChain(CacheConfiguration<Integer, Integer> ccfg) throws Exception {
+        IgniteCache<Integer, Integer> cache = grid(0).createCache(ccfg);
+
+        try {
+            invokeChain(cache, null, false, false);
+
+            invokeChain(cache, null, true, false);
+
+            invokeChain(cache, null, false, true);
+
+            invokeChain(cache, PESSIMISTIC, false, false);
+
+            invokeChain(cache, PESSIMISTIC, true, false);
+
+            invokeChain(cache, PESSIMISTIC, false, true);
+
+            invokeChain(cache, OPTIMISTIC, false, false);
+
+            invokeChain(cache, OPTIMISTIC, true, false);
+
+            invokeChain(cache, OPTIMISTIC, false, true);
+        }
+        finally {
+            for (int i = 0; i <= NODES; i++) {
+                Transaction tx = grid(i).transactions().tx();
+
+                if (tx != null)
+                    tx.close();
+            }
+
+            grid(0).destroyCache(ccfg.getName());
+        }
+    }
+
     /** {@inheritDoc} */
     @Override public boolean isDebug() {
         return true;
@@ -253,6 +308,8 @@ public class IgniteCacheInvokeSendValTest extends GridCommonAbstractTest {
         cache = cache.withSendValueToBackup();
 
         for (final Integer key : keys(cache0)) {
+            cntr.set(0);
+
             log.info("Test invoke [key=" + key + ", txMode=" + txMode + ']');
 
             boolean primary0 = ignite.affinity(null).isPrimary(ignite.cluster().localNode(), key);
@@ -269,6 +326,7 @@ public class IgniteCacheInvokeSendValTest extends GridCommonAbstractTest {
                 tx.commit();
 
             assertEquals(-1, (int)res);
+            assertEquals(1, cntr.get());
 
             checkValue(key, 1);
 
@@ -280,6 +338,7 @@ public class IgniteCacheInvokeSendValTest extends GridCommonAbstractTest {
                 tx.commit();
 
             assertEquals(1, (int)res);
+            assertEquals(2, cntr.get());
 
             checkValue(key, 2);
 
@@ -291,6 +350,7 @@ public class IgniteCacheInvokeSendValTest extends GridCommonAbstractTest {
                 tx.commit();
 
             assertEquals(2, (int)res);
+            assertEquals(3, cntr.get());
 
             checkValue(key, 3);
 
@@ -302,6 +362,7 @@ public class IgniteCacheInvokeSendValTest extends GridCommonAbstractTest {
                 tx.commit();
 
             assertEquals(3, (int)res);
+            assertEquals(4, cntr.get());
 
             checkValue(key, 63);
 
@@ -313,6 +374,7 @@ public class IgniteCacheInvokeSendValTest extends GridCommonAbstractTest {
                 tx.commit();
 
             assertEquals("63", strRes);
+            assertEquals(5, cntr.get());
 
             checkValue(key, 63);
 
@@ -324,6 +386,7 @@ public class IgniteCacheInvokeSendValTest extends GridCommonAbstractTest {
                 tx.commit();
 
             assertEquals("63", testVal.value());
+            assertEquals(6, cntr.get());
 
             checkValue(key, 63);
 
@@ -335,6 +398,7 @@ public class IgniteCacheInvokeSendValTest extends GridCommonAbstractTest {
                 tx.commit();
 
             assertEquals(10, testValCol.size());
+            assertEquals(7, cntr.get());
 
             for (TestValue val : testValCol)
                 assertEquals("64", val.value());
@@ -357,6 +421,7 @@ public class IgniteCacheInvokeSendValTest extends GridCommonAbstractTest {
                 tx.commit();
 
             checkValue(key, 63);
+            assertEquals(8, cntr.get());
 
             IgniteCache<Integer, Integer> asyncCache = cache.withAsync();
 
@@ -369,6 +434,7 @@ public class IgniteCacheInvokeSendValTest extends GridCommonAbstractTest {
             assertNotNull(fut);
 
             assertEquals(63, (int)fut.get());
+            assertEquals(9, cntr.get());
 
             checkValue(key, 64);
 
@@ -380,8 +446,58 @@ public class IgniteCacheInvokeSendValTest extends GridCommonAbstractTest {
                 tx.commit();
 
             checkValue(key, null);
+            assertEquals(10, cntr.get());
 
             assertFalse("Entry processor was invoked from backup", fail);
+        }
+    }
+
+    /**
+     * @param cache0 Cache.
+     * @param txMode Not null transaction concurrency mode if explicit transaction should be started.
+     * @param client Operations will be performed from client node.
+     * @throws Exception If failed.
+     */
+    private void invokeChain(IgniteCache<Integer, Integer> cache0, @Nullable TransactionConcurrency txMode,
+        boolean client, boolean primary) throws Exception {
+        IncrementProcessor incProcessor = new IncrementProcessor();
+
+        Ignite ignite = client ? grid(getClientIndex()) :
+            (primary ? cache0.unwrap(Ignite.class) : grid(1));
+
+        IgniteCache<Integer, Integer> cache = ignite.cache(cache0.getName());
+
+        cache = cache.withSendValueToBackup();
+
+        for (final Integer key : keys(cache0)) {
+            cntr.set(0);
+
+            log.info("Test invoke [key=" + key + ", txMode=" + txMode + ']');
+
+            boolean primary0 = ignite.affinity(null).isPrimary(ignite.cluster().localNode(), key);
+
+            assert (primary && primary0) || (!primary && !primary0);
+
+            cache.remove(key);
+
+            Transaction tx = startTx(ignite, txMode);
+
+            Integer res = cache.invoke(key, incProcessor);
+            Integer res1 = cache.invoke(key, incProcessor);
+            Integer res2 = cache.invoke(key, incProcessor);
+
+            if (tx != null)
+                tx.commit();
+
+            assertEquals(-1, (int)res);
+            assertEquals(1, (int)res1);
+            assertEquals(2, (int)res2);
+
+            assertEquals(3, cntr.get());
+
+            checkValue(key, 3);
+
+            assertFalse("Entry processor was invoked from backup.", fail);
         }
     }
 
@@ -1017,11 +1133,14 @@ public class IgniteCacheInvokeSendValTest extends GridCommonAbstractTest {
         @Override public T process(MutableEntry<K, V> entry, Object... arguments) throws EntryProcessorException {
             Ignite ignite = entry.unwrap(Ignite.class);
 
+            cntr.incrementAndGet();
+
             if (!ExceptionUtils.getStackTrace(new Exception("Check stack trace")).contains("addInvokeResult") &&
                 !ignite.affinity(null).isPrimary(ignite.cluster().localNode(), entry.getKey())) {
                 ignite.log().error("Failed. Entry processor invoked on backup node.");
 
-                U.dumpStack();
+                U.dumpStack("Node id: " + ignite.cluster().localNode().id() + ", key: " + entry.getKey()
+                    + ", val: " + entry.getValue());
 
                 fail = true;
             }
