@@ -1107,12 +1107,21 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             SafeCall(() =>
             {
-                // TODO: Unmarshal exception
                 var message = IgniteUtils.Utf8UnmanagedToString(messageChars, messageCharsLen);
                 var category = IgniteUtils.Utf8UnmanagedToString(categoryChars, categoryCharsLen);
                 var nativeError = IgniteUtils.Utf8UnmanagedToString(errorInfoChars, errorInfoCharsLen);
 
-                _log.Log((LogLevel) level, message, null, CultureInfo.InvariantCulture, category, nativeError, null);
+                Exception ex = null;
+
+                if (memPtr != 0 && _ignite != null)
+                {
+                    using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                    {
+                        ex = _ignite.Marshaller.Unmarshal<Exception>(stream);
+                    }
+                }
+
+                _log.Log((LogLevel) level, message, null, CultureInfo.InvariantCulture, category, nativeError, ex);
             }, true);
         }
 
