@@ -2220,16 +2220,16 @@ class ClientImpl extends TcpDiscoveryImpl {
      */
     private static class JoinResult {
         /** */
-        final SocketStream sockStream;
+        private final SocketStream sockStream;
 
         /** */
-        final int receipt;
+        private final int receipt;
 
         /** */
-        final boolean clientAck;
+        private final boolean clientAck;
 
         /** Marks if client must add length to each message. */
-        final boolean asyncMode;
+        private final boolean asyncMode;
 
         /**
          * @param sockStream Socket stream.

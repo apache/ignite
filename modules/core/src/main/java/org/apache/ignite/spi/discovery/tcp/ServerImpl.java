@@ -97,6 +97,7 @@ import org.apache.ignite.internal.util.nio.ssl.BlockingSslHandler;
 import org.apache.ignite.internal.util.nio.ssl.GridNioSslFilter;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.C1;
+import org.apache.ignite.internal.util.typedef.CX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.P1;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -106,6 +107,7 @@ import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteClosure;
 import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
@@ -5509,8 +5511,20 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @param recpt Receipt.
          * @return Send future.
          */
-        public GridNioFuture addReceipt(final int recpt) {
+        public GridNioFuture<?> addReceipt(final int recpt) {
             return ses.send(new byte[]{(byte) recpt});
+        }
+
+        /**
+         * Add receipt and call closure when it will be sent.
+         *
+         * @param receipt Receipt.
+         * @param clos Closure.
+         * @return Future for chaining.
+         */
+        public IgniteInternalFuture<?> addReceipt(final int receipt,
+            final IgniteClosure<? super IgniteInternalFuture<?>, ?> clos) {
+            return addReceipt(receipt).chain(clos);
         }
 
         /** {@inheritDoc} */
@@ -5670,15 +5684,22 @@ class ServerImpl extends TcpDiscoveryImpl {
                     final TcpDiscoverySpiState state = spiStateCopy();
 
                     if (state == CONNECTED) {
-                        clientMsgWrk.addReceipt(RES_OK);
+                        clientMsgWrk.addReceipt(RES_OK, new CX1<IgniteInternalFuture<?>, Object>() {
+                            private static final long serialVersionUID = 0L;
 
-                        req.responded(true);
+                            @Override public Object applyx(
+                                final IgniteInternalFuture<?> fut) throws IgniteCheckedException {
+                                req.responded(true);
 
-                        msgWorker.addMessage(req);
+                                msgWorker.addMessage(req);
 
-                        clientMsgWrk.joined();
+                                clientMsgWrk.joined();
 
-                        clientMsgWrk.sendPendingMessages();
+                                clientMsgWrk.sendPendingMessages();
+
+                                return null;
+                            }
+                        });
 
                         return;
                     }
@@ -5702,18 +5723,27 @@ class ServerImpl extends TcpDiscoveryImpl {
                             // Local node is stopping. Remote node should try next one.
                             res = RES_CONTINUE_JOIN;
 
-                        clientMsgWrk.addReceipt(res);
+                        clientMsgWrk.addReceipt(res, new CX1<IgniteInternalFuture<?>, Object>() {
+                            private static final long serialVersionUID = 0L;
 
-                        if (log.isDebugEnabled())
-                            log.debug("Responded to join request message [msg=" + req + ", res=" + res + ']');
+                            @Override public Object applyx(
+                                final IgniteInternalFuture<?> fut) throws IgniteCheckedException {
+                                if (log.isDebugEnabled())
+                                    log.debug("Responded to join request message [msg=" + req + ", res=" + res + ']');
 
-                        fromAddrs.addAll(req.node().socketAddresses());
+                                fromAddrs.addAll(req.node().socketAddresses());
 
-                        spi.stats.onMessageProcessingFinished(req);
+                                spi.stats.onMessageProcessingFinished(req);
 
-                        clientMsgWrk.nonblockingStop();
+                                clientMsgWrk.nonblockingStop();
 
-                        clientMsgWorkers.remove(clientMsgWrk.clientNodeId());
+                                clientMsgWorkers.remove(clientMsgWrk.clientNodeId());
+
+                                return null;
+                            }
+                        });
+
+                        return;
                     }
 
                 }
@@ -5722,135 +5752,57 @@ class ServerImpl extends TcpDiscoveryImpl {
                 final TcpDiscoverySpiState state = spiStateCopy();
 
                 if (state == CONNECTED) {
-                    clientMsgWrk.addReceipt(RES_OK);
+                    clientMsgWrk.addReceipt(RES_OK, new CX1<IgniteInternalFuture<?>, Object>() {
+                        private static final long serialVersionUID = 0L;
 
-                    msgWorker.addMessage(msg);
+                        @Override public Object applyx(
+                            final IgniteInternalFuture<?> fut) throws IgniteCheckedException {
+                            msgWorker.addMessage(msg);
 
-                    clientMsgWrk.joined();
+                            clientMsgWrk.joined();
 
-                    clientMsgWrk.sendPendingMessages();
+                            clientMsgWrk.sendPendingMessages();
+
+                            return null;
+                        }
+                    });
                 }
                 else {
-                    clientMsgWrk.addReceipt(RES_CONTINUE_JOIN);
+                    clientMsgWrk.addReceipt(RES_CONTINUE_JOIN, new CX1<IgniteInternalFuture<?>, Object>() {
+                        private static final long serialVersionUID = 0L;
 
-                    clientMsgWrk.nonblockingStop();
+                        @Override public Object applyx(
+                            final IgniteInternalFuture<?> fut) throws IgniteCheckedException {
+                            clientMsgWrk.nonblockingStop();
 
-                    clientMsgWorkers.remove(clientMsgWrk.clientNodeId());
+                            clientMsgWorkers.remove(clientMsgWrk.clientNodeId());
+
+                            return null;
+                        }
+                    });
                 }
             }
             else if (msg instanceof TcpDiscoveryDuplicateIdMessage) {
                 // Send receipt back.
-                clientMsgWrk.addReceipt(RES_OK);
-
-                boolean ignored = false;
-
-                TcpDiscoverySpiState state = null;
-
-                synchronized (mux) {
-                    if (spiState == CONNECTING) {
-                        joinRes.set(msg);
-
-                        spiState = DUPLICATE_ID;
-
-                        mux.notifyAll();
-                    }
-                    else {
-                        ignored = true;
-
-                        state = spiState;
-                    }
-                }
-
-                if (ignored && log.isDebugEnabled())
-                    log.debug("Duplicate ID message has been ignored [msg=" + msg +
-                        ", spiState=" + state + ']');
+                clientMsgWrk.addReceipt(RES_OK, createStateChangeClosure(msg, DUPLICATE_ID));
 
                 return;
             }
             else if (msg instanceof TcpDiscoveryAuthFailedMessage) {
                 // Send receipt back.
-                clientMsgWrk.addReceipt(RES_OK);
-
-                boolean ignored = false;
-
-                TcpDiscoverySpiState state = null;
-
-                synchronized (mux) {
-                    if (spiState == CONNECTING) {
-                        joinRes.set(msg);
-
-                        spiState = AUTH_FAILED;
-
-                        mux.notifyAll();
-                    }
-                    else {
-                        ignored = true;
-
-                        state = spiState;
-                    }
-                }
-
-                if (ignored && log.isDebugEnabled())
-                    log.debug("Auth failed message has been ignored [msg=" + msg +
-                        ", spiState=" + state + ']');
+                clientMsgWrk.addReceipt(RES_OK, createStateChangeClosure(msg, AUTH_FAILED));
 
                 return;
             }
             else if (msg instanceof TcpDiscoveryCheckFailedMessage) {
                 // Send receipt back.
-                clientMsgWrk.addReceipt(RES_OK);
-
-                boolean ignored = false;
-
-                TcpDiscoverySpiState state = null;
-
-                synchronized (mux) {
-                    if (spiState == CONNECTING) {
-                        joinRes.set(msg);
-
-                        spiState = CHECK_FAILED;
-
-                        mux.notifyAll();
-                    }
-                    else {
-                        ignored = true;
-
-                        state = spiState;
-                    }
-                }
-
-                if (ignored && log.isDebugEnabled())
-                    log.debug("Check failed message has been ignored [msg=" + msg +
-                        ", spiState=" + state + ']');
+                clientMsgWrk.addReceipt(RES_OK, createStateChangeClosure(msg, CHECK_FAILED));
 
                 return;
             }
             else if (msg instanceof TcpDiscoveryLoopbackProblemMessage) {
                 // Send receipt back.
-                clientMsgWrk.addReceipt(RES_OK);
-
-                boolean ignored = false;
-
-                TcpDiscoverySpiState state = null;
-
-                synchronized (mux) {
-                    if (spiState == CONNECTING) {
-                        joinRes.set(msg);
-
-                        spiState = LOOPBACK_PROBLEM;
-
-                        mux.notifyAll();
-                    }
-                    else {
-                        ignored = true;
-
-                        state = spiState;
-                    }
-                }
-
-                if (ignored && log.isDebugEnabled())
-                    log.debug("Loopback problem message has been ignored [msg=" + msg +
-                        ", spiState=" + state + ']');
+                clientMsgWrk.addReceipt(RES_OK, createStateChangeClosure(msg, LOOPBACK_PROBLEM));
 
                 return;
             }
@@ -5883,6 +5835,46 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             if (heartbeatMsg != null)
                 clientMsgWrk.metrics(heartbeatMsg.metrics());
+        }
+
+        /**
+         * @param msg Discovery message.
+         * @param newState New state.
+         * @return Closure that changes state to new one.
+         */
+        private CX1<IgniteInternalFuture<?>, Object> createStateChangeClosure(final TcpDiscoveryAbstractMessage msg,
+            final TcpDiscoverySpiState newState) {
+            return new CX1<IgniteInternalFuture<?>, Object>() {
+                private static final long serialVersionUID = 0L;
+
+                @Override public Object applyx(
+                    final IgniteInternalFuture<?> fut) throws IgniteCheckedException {
+                    boolean ignored = false;
+
+                    TcpDiscoverySpiState state = null;
+
+                    synchronized (mux) {
+                        if (spiState == CONNECTING) {
+                            joinRes.set(msg);
+
+                            spiState = newState;
+
+                            mux.notifyAll();
+                        }
+                        else {
+                            ignored = true;
+
+                            state = spiState;
+                        }
+                    }
+
+                    if (ignored && log.isDebugEnabled())
+                        log.debug("Duplicate ID message has been ignored [msg=" + msg +
+                            ", spiState=" + state + ']');
+
+                    return null;
+                }
+            };
         }
 
         /** {@inheritDoc} */
