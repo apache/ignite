@@ -536,7 +536,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
      * @throws IgniteCheckedException If failed.
      */
     private Page page(long pageId) throws IgniteCheckedException {
-        return cctx.shared().database().pageMemory().page(new FullPageId(pageId, cctx.cacheId()));
+        return cctx.shared().database().pageMemory().page(cctx.cacheId(), pageId);
     }
 
     /** {@inheritDoc} */

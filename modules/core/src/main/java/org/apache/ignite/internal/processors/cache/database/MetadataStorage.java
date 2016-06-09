@@ -32,6 +32,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  * Metadata storage.
@@ -84,11 +85,11 @@ public class MetadataStorage implements MetaStore {
             final IndexItem row = tree.findOne(new IndexItem(idxNameBytes, 0, cacheId));
 
             if (row == null) {
-                final FullPageId idxRoot = pageMem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_META);
+                final long pageId = pageMem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_META);
 
-                tree.put(new IndexItem(idxNameBytes, idxRoot.pageId(), cacheId));
+                tree.put(new IndexItem(idxNameBytes, pageId, cacheId));
 
-                return new RootPage(idxRoot, true);
+                return new RootPage(new FullPageId(pageId, cacheId), true);
             }
             else {
                 final FullPageId pageId = new FullPageId(row.pageId, cacheId);
@@ -108,7 +109,7 @@ public class MetadataStorage implements MetaStore {
         final IndexItem row = tree.remove(new IndexItem(idxNameBytes, 0, cacheId));
 
         if (row != null) // TODO Have a reuse tree for deallocated pages.
-            pageMem.freePage(new FullPageId(row.pageId, cacheId));
+            pageMem.freePage(cacheId, row.pageId);
 
         return row != null ? new RootPage(new FullPageId(row.pageId, row.cacheId), false) : null;
     }
@@ -132,16 +133,16 @@ public class MetadataStorage implements MetaStore {
                 if (pageId != 0)
                     return new RootPage(new FullPageId(pageId, 0), false);
                 else {
-                    FullPageId fullId = pageMem.allocatePage(0, 0, PageIdAllocator.FLAG_META);
+                    long newPageId = pageMem.allocatePage(0, 0, PageIdAllocator.FLAG_META);
 
-                    assert !fullId.equals(meta.fullId()) : "Duplicate page allocated " +
-                        "[metaId=" + meta.fullId() + ", allocated=" + fullId + ']';
+                    assert newPageId != meta.fullId().pageId() : "Duplicate page allocated " +
+                        "[metaId=" + meta.fullId() + ", allocated=" + U.hexLong(newPageId) + ']';
 
-                    buf.putLong(0, fullId.pageId());
+                    buf.putLong(0, newPageId);
 
                     written = true;
 
-                    return new RootPage(fullId, true);
+                    return new RootPage(new FullPageId(newPageId, 0), true);
                 }
             }
             finally {
@@ -178,7 +179,7 @@ public class MetadataStorage implements MetaStore {
 
         /** {@inheritDoc} */
         @Override protected long allocatePage0() throws IgniteCheckedException {
-            return pageMem.allocatePage(getCacheId(), 0, PageIdAllocator.FLAG_META).pageId();
+            return pageMem.allocatePage(getCacheId(), 0, PageIdAllocator.FLAG_META);
         }
 
         /** {@inheritDoc} */

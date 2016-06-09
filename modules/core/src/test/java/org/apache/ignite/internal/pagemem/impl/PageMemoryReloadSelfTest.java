@@ -70,15 +70,15 @@ public class PageMemoryReloadSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 512; i++)
                 pages.add(allocatePage(mem));
 
-            for (FullPageId pageId : pages) {
-                Page page = mem.page(pageId);
+            for (FullPageId fullId : pages) {
+                Page page = mem.page(fullId.cacheId(), fullId.pageId());
 
                 try {
                     ByteBuffer writeBuf = page.getForWrite();
 
                     try {
                         for (int i = 0; i < 1024; i++)
-                            writeBuf.putLong(pageId.pageId() * 1024 + i);
+                            writeBuf.putLong(fullId.pageId() * 1024 + i);
                     }
                     finally {
                         page.releaseWrite(true);
@@ -89,15 +89,15 @@ public class PageMemoryReloadSelfTest extends GridCommonAbstractTest {
                 }
             }
 
-            for (FullPageId pageId : pages) {
-                Page page = mem.page(pageId);
+            for (FullPageId fullId : pages) {
+                Page page = mem.page(fullId.cacheId(), fullId.pageId());
 
                 try {
                     ByteBuffer readBuf = page.getForRead();
 
                     try {
                         for (int i = 0; i < 1024; i++)
-                            assertEquals(pageId.pageId() * 1024 + i, readBuf.getLong());
+                            assertEquals(fullId.pageId() * 1024 + i, readBuf.getLong());
 
                         assertTrue(page.isDirty());
                     }
@@ -119,15 +119,15 @@ public class PageMemoryReloadSelfTest extends GridCommonAbstractTest {
         mem.start();
 
         try {
-            for (FullPageId pageId : pages) {
-                Page page = mem.page(pageId);
+            for (FullPageId fullId : pages) {
+                Page page = mem.page(fullId.cacheId(), fullId.pageId());
 
                 try {
                     ByteBuffer readBuf = page.getForRead();
 
                     try {
                         for (int i = 0; i < 1024; i++)
-                            assertEquals(pageId.pageId() * 1024 + i, readBuf.getLong());
+                            assertEquals(fullId.pageId() * 1024 + i, readBuf.getLong());
                     }
                     finally {
                         page.releaseRead();
@@ -157,8 +157,8 @@ public class PageMemoryReloadSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < 512; i++)
                 pages.add(allocatePage(mem));
 
-            for (FullPageId pageId : pages)
-                mem.freePage(pageId);
+            for (FullPageId fullId : pages)
+                mem.freePage(fullId.cacheId(), fullId.pageId());
         }
         finally {
             mem.stop();
@@ -177,8 +177,8 @@ public class PageMemoryReloadSelfTest extends GridCommonAbstractTest {
             assertTrue(pages.containsAll(rePages));
             assertTrue(rePages.containsAll(pages));
 
-            for (FullPageId pageId : rePages) {
-                Page page = mem.page(pageId);
+            for (FullPageId fullId : rePages) {
+                Page page = mem.page(fullId.cacheId(), fullId.pageId());
 
                 try {
                     assertFalse(page.isDirty());
@@ -210,13 +210,13 @@ public class PageMemoryReloadSelfTest extends GridCommonAbstractTest {
                 for (int i = 0; i < 512; i++)
                     pages.add(allocatePage(mem));
 
-                for (FullPageId pageId : pages) {
-                    Page page = mem.page(pageId);
+                for (FullPageId fullId : pages) {
+                    Page page = mem.page(fullId.cacheId(), fullId.pageId());
 
                     try {
                         writePage(page, 0, map);
 
-                        map.put(pageId, 0L);
+                        map.put(fullId, 0L);
                     }
                     finally {
                         mem.releasePage(page);
@@ -231,9 +231,9 @@ public class PageMemoryReloadSelfTest extends GridCommonAbstractTest {
                         ThreadLocalRandom8 rnd = ThreadLocalRandom8.current();
 
                         while (!stop.get()) {
-                            FullPageId pageId = pages.get(rnd.nextInt(pages.size()));
+                            FullPageId fullId = pages.get(rnd.nextInt(pages.size()));
 
-                            Page page = mem.page(pageId);
+                            Page page = mem.page(fullId.cacheId(), fullId.pageId());
 
                             try {
                                 if (rnd.nextBoolean()) {
@@ -265,8 +265,8 @@ public class PageMemoryReloadSelfTest extends GridCommonAbstractTest {
 
                 fut.get();
 
-                for (FullPageId pageId : pages) {
-                    Page page = mem.page(pageId);
+                for (FullPageId fullId : pages) {
+                    Page page = mem.page(fullId.cacheId(), fullId.pageId());
 
                     try {
                         readPage(page, map);
@@ -287,8 +287,8 @@ public class PageMemoryReloadSelfTest extends GridCommonAbstractTest {
             mem0.start();
 
             try {
-                for (FullPageId pageId : pages) {
-                    Page page = mem0.page(pageId);
+                for (FullPageId fullId : pages) {
+                    Page page = mem0.page(fullId.cacheId(), fullId.pageId());
 
                     try {
                         readPage(page, map);
@@ -359,7 +359,7 @@ public class PageMemoryReloadSelfTest extends GridCommonAbstractTest {
      * @param mem Memory.
      * @return Page.
      */
-    public static FullPageId allocatePage(PageMemory mem) throws IgniteCheckedException {
-        return mem.allocatePage(0, -1, PageIdAllocator.FLAG_DATA);
+    public static FullPageId allocatePage(PageIdAllocator mem) throws IgniteCheckedException {
+        return new FullPageId(mem.allocatePage(0, -1, PageIdAllocator.FLAG_DATA), 0);
     }
 }

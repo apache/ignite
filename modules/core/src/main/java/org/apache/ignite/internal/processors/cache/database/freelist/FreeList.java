@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.cache.database.freelist;
 
 import java.nio.ByteBuffer;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
@@ -32,7 +31,6 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.internal.processors.cache.database.tree.util.PageHandler.writePage;
@@ -177,7 +175,7 @@ public class FreeList {
 
         FreeTree tree = tree(partId);
 
-        try (Page page = pageMem.page(new FullPageId(pageId, cctx.cacheId()))) {
+        try (Page page = pageMem.page(cctx.cacheId(), pageId)) {
             writePage(pageId, page, removeRow, tree, itemId);
         }
     }
@@ -200,7 +198,7 @@ public class FreeList {
 
         try (Page page = item == null ?
             allocateDataPage(row.partition()) :
-            pageMem.page(item)
+            pageMem.page(item.cacheId(), item.pageId())
         ) {
             if (item == null) {
                 DataPageIO io = DataPageIO.VERSIONS.latest();
@@ -227,8 +225,8 @@ public class FreeList {
      * @throws IgniteCheckedException If failed.
      */
     private Page allocateDataPage(int part) throws IgniteCheckedException {
-        FullPageId pageId = pageMem.allocatePage(cctx.cacheId(), part, PageIdAllocator.FLAG_DATA);
+        long pageId = pageMem.allocatePage(cctx.cacheId(), part, PageIdAllocator.FLAG_DATA);
 
-        return pageMem.page(pageId);
+        return pageMem.page(cctx.cacheId(), pageId);
     }
 }

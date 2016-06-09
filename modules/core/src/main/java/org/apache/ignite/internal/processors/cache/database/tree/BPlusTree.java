@@ -2737,7 +2737,7 @@ public abstract class BPlusTree<L, T extends L> {
         if (PageIdUtils.flag(pageId) == PageIdAllocator.FLAG_IDX)
             pageId = PageIdUtils.maskPartId(pageId);
 
-        return pageMem.page(new FullPageId(pageId, cacheId));
+        return pageMem.page(cacheId, pageId);
     }
 
     /**
@@ -2763,8 +2763,7 @@ public abstract class BPlusTree<L, T extends L> {
      * @throws IgniteCheckedException
      */
     protected long allocatePage0() throws IgniteCheckedException {
-        // TODO make pageMem.allocatePage return long
-        return pageMem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_IDX).pageId();
+        return pageMem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_IDX);
     }
 
     /**
