@@ -20,12 +20,13 @@ namespace Apache.Ignite.Core.Tests.Log
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
+    using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
-    using Apache.Ignite.Core.Services;
     using NUnit.Framework;
 
     /// <summary>
@@ -51,7 +52,7 @@ namespace Apache.Ignite.Core.Tests.Log
         [Test]
         public void TestStartupOutput()
         {
-            using (Ignition.Start(GetConfigWithLogger()))
+            using (Ignition.Start(GetConfigWithLogger(true)))
             {
                 // Check initial message
                 Assert.IsTrue(TestLogger.Entries[0].Message.StartsWith("Starting Ignite.NET"));
@@ -118,7 +119,18 @@ namespace Apache.Ignite.Core.Tests.Log
         [Test]
         public void TestDotNetErrorPropagation()
         {
-            
+            using (var ignite = Ignition.Start(GetConfigWithLogger()))
+            {
+                var compute = ignite.GetCompute();
+
+                Assert.Throws<ArithmeticException>(() => compute.Call(new FailFunc()));
+
+                // Log updates may not arrive immediately
+                TestUtils.WaitForCondition(() => TestLogger.Entries.Any(x => x.NativeErrorInfo != null), 3000);
+
+                var errFromJava = TestLogger.Entries.Single(x => x.NativeErrorInfo != null);
+                Assert.AreEqual("Error in func.", ((ArithmeticException) errFromJava.Exception).Message);
+            }
         }
 
         /// <summary>
@@ -133,9 +145,12 @@ namespace Apache.Ignite.Core.Tests.Log
         /// <summary>
         /// Gets the configuration with logger.
         /// </summary>
-        private static IgniteConfiguration GetConfigWithLogger()
+        private static IgniteConfiguration GetConfigWithLogger(bool verbose = false)
         {
-            return new IgniteConfiguration(TestUtils.GetTestConfiguration()) {Logger = new TestLogger()};
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                Logger = new TestLogger(verbose ? LogLevel.Trace : LogLevel.Info)
+            };
         }
 
         /// <summary>
@@ -167,6 +182,12 @@ namespace Apache.Ignite.Core.Tests.Log
             public static readonly List<LogEntry> Entries = new List<LogEntry>(5000);
 
             private readonly ILogger _console = new ConsoleLogger(AllLevels);
+            private readonly LogLevel _minLevel;
+
+            public TestLogger(LogLevel minLevel)
+            {
+                _minLevel = minLevel;
+            }
 
             public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider, string category,
                 string nativeErrorInfo, Exception ex)
@@ -194,7 +215,7 @@ namespace Apache.Ignite.Core.Tests.Log
 
             public bool IsEnabled(LogLevel level)
             {
-                return true;
+                return level >= _minLevel;
             }
         }
 
@@ -211,28 +232,14 @@ namespace Apache.Ignite.Core.Tests.Log
         }
 
         /// <summary>
-        /// Failing service.
+        /// Failing computation.
         /// </summary>
-        private class FailService : IService
+        [Serializable]
+        private class FailFunc : IComputeFunc<string>
         {
-            public void Init(IServiceContext context)
+            public string Invoke()
             {
-                // No-op.
-            }
-
-            public void Execute(IServiceContext context)
-            {
-                // No-op.
-            }
-
-            public void Cancel(IServiceContext context)
-            {
-                // No-op.
-            }
-
-            public void RunMe()
-            {
-                throw new ArithmeticException("Error in service.");
+                throw new ArithmeticException("Error in func.");
             }
         }
     }
