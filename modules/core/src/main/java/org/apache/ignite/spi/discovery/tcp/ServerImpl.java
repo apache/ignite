@@ -7403,12 +7403,14 @@ class ServerImpl extends TcpDiscoveryImpl {
                 int left = decodedBuf.remaining();
 
                 if (appBuf.hasRemaining()) {
-                    if (!decodedBuf.hasRemaining() && decodedBuf.limit() < decodedBuf.capacity())
-                        decodedBuf.limit(decodedBuf.capacity());
+                    if (!decodedBuf.hasRemaining())
+                        decodedBuf.clear();
 
                     decodedBuf.put(appBuf); // TODO BufferOverflow
 
                     decodedBuf.flip();
+
+                    appBuf.clear();
 
                     left = decodedBuf.remaining();
                 }
@@ -7431,8 +7433,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     buf.flip();
 
                     // Avoid uncontrolled buffer expansion in BlockingSSLHandler.
-                    if (appBuf.remaining() == 0)
-                        appBuf.clear();
+                    appBuf.clear();
 
                     appBuf = sslHnd.decode(buf);
 
