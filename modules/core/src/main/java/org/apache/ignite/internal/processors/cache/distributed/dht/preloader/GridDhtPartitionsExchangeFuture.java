@@ -188,17 +188,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private boolean centralizedAff;
 
     /**
-     * Constructor to create a dummy future to stop exchange worker.
-     */
-    public GridDhtPartitionsExchangeFuture() {
-        dummy = true;
-        forcePreload = false;
-        reassign = false;
-        exchId = null;
-        cctx = null;
-    }
-
-    /**
      * Dummy future created to trigger reassignments if partition
      * topology changed while preloading.
      *
