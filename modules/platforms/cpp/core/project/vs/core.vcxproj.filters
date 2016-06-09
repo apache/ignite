@@ -153,6 +153,9 @@
     <ClInclude Include="..\..\include\ignite\cache\event\cache_entry_event_listener.h">
       <Filter>Code\cache\event</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\event\cache_entry_event.h">
+      <Filter>Code\cache\event</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Code">

@@ -231,7 +231,17 @@ namespace ignite
                      */
                     virtual void ReadAndProcessEvents(binary::BinaryRawReader& reader)
                     {
-                        //TODO
+                        // Number of events.
+                        int32_t cnt = reader.ReadInt32();
+
+                        // Storing events here.
+                        std::vector< CacheEntryEvent<K, V> > events;
+                        events.resize(cnt);
+
+                        for (int32_t i = 0; i < cnt; ++i)
+                            events[i].Read(reader);
+
+                        lsnr->OnEvent(events.data(), cnt);
                     }
 
                 private:

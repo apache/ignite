@@ -25,7 +25,7 @@
 
 #include <stdint.h>
 
-#include <ignite/cache/cache_entry.h>
+#include <ignite/cache/event/cache_entry_event.h>
 
 namespace ignite
 {
@@ -62,7 +62,7 @@ namespace ignite
                  * @param evts Events.
                  * @param num Events number.
                  */
-                virtual void OnEvent(CacheEntry<K, V>* evts, uint32_t num) = 0;
+                virtual void OnEvent(const CacheEntryEvent<K, V>* evts, uint32_t num) = 0;
             };
         }
     }

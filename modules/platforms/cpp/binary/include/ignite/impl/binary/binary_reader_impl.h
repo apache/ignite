@@ -722,6 +722,13 @@ namespace ignite
                 bool HasNextElement(int32_t id) const;
 
                 /**
+                 * Skip next value if it is the null.
+                 *
+                 * @return True if the null value has been detected and skipped.
+                 */
+                bool SkipIfNull();
+
+                /**
                  * Read element.
                  *
                  * @param id Session ID.
@@ -762,7 +769,7 @@ namespace ignite
                     *key = ReadTopObject<K>();
                     *val = ReadTopObject<V>();
                 }
-                
+
                 /**
                  * Read object.
                  *

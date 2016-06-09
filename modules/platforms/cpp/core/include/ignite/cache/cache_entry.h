@@ -45,7 +45,8 @@ namespace ignite
              * Creates instance with both key and value default-constructed.
              */
             CacheEntry() :
-                key(), val()
+                key(),
+                val()
             {
                 // No-op.
             }
@@ -57,7 +58,8 @@ namespace ignite
              * @param val Value.
              */
             CacheEntry(const K& key, const V& val) :
-                key(key), val(val)
+                key(key),
+                val(val)
             {
                 // No-op.
             }
@@ -67,10 +69,19 @@ namespace ignite
              *
              * @param other Other instance.
              */
-            CacheEntry(const CacheEntry& other)
+            CacheEntry(const CacheEntry& other) :
+                key(other.key),
+                val(other.val)
             {
-                key = other.key;
-                val = other.val;
+                // No-op.
+            }
+
+            /**
+             * Destructor.
+             */
+            virtual ~CacheEntry()
+            {
+                // No-op.
             }
 
             /**
@@ -111,7 +122,7 @@ namespace ignite
                 return val;
             }
 
-        private:
+        protected:
             /** Key. */
             K key;
 
@@ -121,4 +132,4 @@ namespace ignite
     }
 }
 
-#endif _IGNITE_CACHE_CACHE_ENTRY
+#endif //_IGNITE_CACHE_CACHE_ENTRY

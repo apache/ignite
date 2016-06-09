@@ -18,6 +18,7 @@
 #include "ignite/impl/interop/interop_external_memory.h"
 #include "ignite/impl/binary/binary_reader_impl.h"
 #include "ignite/impl/ignite_environment.h"
+#include "ignite/cache/query/continuous/continuous_query.h"
 #include "ignite/binary/binary.h"
 
 using namespace ignite::common::concurrent;
@@ -25,6 +26,7 @@ using namespace ignite::jni::java;
 using namespace ignite::impl::interop;
 using namespace ignite::impl::binary;
 using namespace ignite::binary;
+using namespace ignite::cache::query::continuous;
 
 namespace ignite 
 {
@@ -70,6 +72,32 @@ namespace ignite
             SharedPointer<InteropMemory> mem = env->Get()->GetMemory(memPtr);
 
             mem.Get()->Reallocate(cap);
+        }
+
+        /**
+         * Continuous query event listener callback.
+         *
+         * @param target Target environment.
+         * @param lsnrPtr Listener pointer.
+         * @param memPtr Memory pointer.
+         */
+        void IGNITE_CALL ContinuousQueryListenerApply(void* target, long long lsnrPtr, long long memPtr)
+        {
+            assert(lsnrPtr != 0);
+            assert(memPtr != 0);
+            assert(target != 0);
+
+            SharedPointer<IgniteEnvironment>* env = static_cast<SharedPointer<IgniteEnvironment>*>(target);
+
+            SharedPointer<InteropMemory> mem = env->Get()->GetMemory(memPtr);
+
+            ContinuousQueryBase* contQry = reinterpret_cast<ContinuousQueryBase*>(lsnrPtr);
+
+            InteropInputStream stream(mem.Get());
+            BinaryReaderImpl reader(&stream);
+            BinaryRawReader rawReader(&reader);
+
+            contQry->ReadAndProcessEvents(rawReader);
         }
 
         IgniteEnvironment::IgniteEnvironment() : ctx(SharedPointer<JniContext>()), latch(new SingleLatch), name(NULL),
