@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.logger.platform;
 
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
 import org.apache.ignite.internal.util.typedef.X;
 import org.jetbrains.annotations.Nullable;
@@ -158,7 +159,6 @@ public class PlatformLogger implements IgniteLogger {
 
     /** {@inheritDoc} */
     @Override public String fileName() {
-        // TODO: Native
         return null;
     }
 
@@ -170,13 +170,21 @@ public class PlatformLogger implements IgniteLogger {
      * @param e Exception.
      */
     private void log(int level, String msg, @Nullable Throwable e) {
-        // TODO: Unwrap platform error if possible
         String errorInfo = null;
 
         if (e != null)
             errorInfo = X.getFullStackTrace(e);
 
-        gate.loggerLog(level, msg, category, errorInfo, 0);
+        long memPtr = 0;
+
+        PlatformNativeException e0 = X.cause(e, PlatformNativeException.class);
+
+        if (e0 != null) {
+            // TODO: Unwrap platform error if possible
+            //e0.cause()
+        }
+
+        gate.loggerLog(level, msg, category, errorInfo, memPtr);
     }
 
     /**
