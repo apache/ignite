@@ -20,6 +20,7 @@ package org.apache.ignite.yardstick;
 import com.beust.jcommander.Parameter;
 import org.apache.ignite.cache.CacheAtomicWriteOrderMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.configuration.DatabaseConfiguration;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -155,6 +156,10 @@ public class IgniteBenchmarkArguments {
     /** */
     @Parameter(names = {"-ltops", "--allowedLoadTestOperations"}, variableArity = true, description = "List of enabled load test operations")
     private List<String> allowedLoadTestOps = new ArrayList<>();
+
+    /** */
+    @Parameter(names = {"-ps", "--pageSize"}, description = "Page size")
+    private int pageSize = DatabaseConfiguration.DFLT_PAGE_SIZE;
 
     /**
      * @return List of enabled load test operations.
@@ -378,6 +383,13 @@ public class IgniteBenchmarkArguments {
      */
     public boolean keysPerThread() {
         return keysPerThread;
+    }
+
+    /**
+     * @return Page size in bytes.
+     */
+    public int getPageSize() {
+        return pageSize;
     }
 
     /**
