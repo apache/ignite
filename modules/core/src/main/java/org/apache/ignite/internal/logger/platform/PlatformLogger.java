@@ -85,7 +85,7 @@ public class PlatformLogger implements IgniteLogger {
 
         category = null;
 
-        // Precalculate enabled levels (JNI calls are expensive)
+        // Pre-calculate enabled levels (JNI calls are expensive)
         traceEnabled = gate.loggerIsLevelEnabled(LVL_TRACE);
         debugEnabled = gate.loggerIsLevelEnabled(LVL_DEBUG);
         infoEnabled = gate.loggerIsLevelEnabled(LVL_INFO);
