@@ -3,6 +3,8 @@
 import path from 'path';
 import webpack from 'webpack';
 import autoprefixer from 'autoprefixer-core';
+import progressPlugin from './plugins/progress';
+
 //import  Manifest from 'manifest-revision-webpack-plugin';
 import ExtractTextPlugin from 'extract-text-webpack-plugin';
 import {srcDir, destDir, rootDir} from '../paths';
@@ -22,13 +24,14 @@ module.exports = function (_path) {
         // entry points
         entry: {
             polyfill: 'babel-polyfill',
-            app: srcDir + '/index.js',
-            vendor: srcDir + '/vendor.js',
+            app: path.join(srcDir, 'index.js'),
+            vendor: path.join(srcDir, 'vendor.js')
         },
 
-        // // output system
+        // Output system.
         output: {
             path: destDir,
+            publicPath: './',
             filename: '[name].js'
         },
 
@@ -69,15 +72,15 @@ module.exports = function (_path) {
                         'jade-html-loader'
                     ]
                 },
-                // {
-                //     test: /\.js$/,
-                //     loaders: ['baggage-loader?[file].html&[file].css']
-                // },
-                // {
-                //     test: /\.js$/,
-                //     exclude: [NODE_MODULES_PATH],
-                //     loaders: ['ng-annotate-loader']
-                // },
+                {
+                    test: /\.js$/,
+                    loaders: ['baggage-loader?[file].html&[file].css']
+                },
+                {
+                    test: /\.js$/,
+                    exclude: [NODE_MODULES_PATH],
+                    loaders: ['ng-annotate-loader']
+                },
                 {
                     test: /\.js$/,
                     exclude: [NODE_MODULES_PATH],
@@ -105,14 +108,14 @@ module.exports = function (_path) {
                 {
                     test: /\.(jpe?g|png|gif)$/i,
                     loaders: ['url-loader?name=images/[name]_[hash].[ext]']
-                }
-                // {
-                //     test: require.resolve("jquery"),
-                //     loaders: [
-                //         "expose?$",
-                //         "expose?jQuery"
-                //     ]
-                // },
+                },
+                {
+                    test: require.resolve("jquery"),
+                    loaders: [
+                        "expose?$",
+                        "expose?jQuery"
+                    ]
+                },
                 // {
                 //     test: require.resolve("angular"),
                 //     loaders: [
@@ -147,20 +150,10 @@ module.exports = function (_path) {
             //     rootAssetPath: rootAssetPath,
             //     ignorePaths: ['.DS_Store']
             // }),
-            new ExtractTextPlugin('assets/css/[name]' + (IS_DEVELOPMENT ? '' : '.[chunkhash]') + '.css', {allChunks: true})
+            new ExtractTextPlugin('assets/css/[name]' + (IS_DEVELOPMENT ? '' : '.[chunkhash]') + '.css', {allChunks: true}),
+            progressPlugin
         ]
     };
-
-    if (!IS_DEVELOPMENT) {
-        webpackConfig.plugins = webpackConfig.plugins.concat([
-            new webpack.optimize.UglifyJsPlugin({
-                minimize: true,
-                warnings: false,
-                sourceMap: true
-            })
-        ]);
-    }
-
+    
     return webpackConfig;
-
 };

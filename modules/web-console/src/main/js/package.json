@@ -4,7 +4,7 @@
   "description": "Interactive Web console for configuration, executing SQL queries and monitoring of Apache Ignite Cluster",
   "private": true,
   "scripts": {
-    "dev": "cross-env NODE_ENV=development gulp watch",
+    "dev": " NODE_ENV=development node $NODE_DEBUG_OPTION ./node_modules/gulp/bin/gulp.js watch",
     "dist": "cross-env NODE_ENV=production gulp build"
   },
   "author": "",
@@ -113,19 +113,9 @@
     "ws": "^0.8.0"
   },
   "devDependencies": {
-    "gulp": "^3.9.0",
     "gulp-cached": "^1.1.0",
-    "gulp-connect": "^3.2.2",
-    "gulp-environments": "^0.1.1",
-    "gulp-eslint": "^2.0.0",
-    "gulp-html-replace": "^1.5.5",
-    "gulp-ignore": "^2.0.1",
-    "gulp-inject": "^4.0.0",
-    "gulp-jade": "^1.1.0",
     "gulp-rimraf": "^0.2.0",
-    "gulp-sass": "^2.1.0",
-    "gulp-sequence": "^0.4.1",
-    "gulp-util": "^3.0.7",
+    "gulp-sequence": "^0.4.5",
     "http-proxy-middleware": "^0.13.0",
     "json-loader": "^0.5.4",
     "mocha": "~2.4.5",

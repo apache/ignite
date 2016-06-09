@@ -100,7 +100,7 @@ import 'controllers/profile-controller';
 import 'controllers/sql-controller';
 
 // Inject external modules.
-// import 'ignite_modules_temp/index'; // TODO: Modules integration.
+import 'ignite_modules_temp/index'; 
 
 import baseTemplate from '../views/base.jade';
 

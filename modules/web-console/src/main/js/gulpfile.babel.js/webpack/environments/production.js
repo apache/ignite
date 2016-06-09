@@ -14,7 +14,7 @@ module.exports = function (_path) {
         output: {
             publicPath: '/',
             filename: '[name].[chunkhash].js',
-            contentBase: destDir
+            path: destDir
         },
         plugins: [
             new HtmlWebpackPlugin({
@@ -24,7 +24,14 @@ module.exports = function (_path) {
                 },
                 title: 'Ignite Web Console'
             }),
-            new webpack.optimize.DedupePlugin()
+            new webpack.optimize.DedupePlugin(),
+            new webpack.optimize.UglifyJsPlugin({
+                path: destDir,
+                minimize: true,
+                warnings: false,
+                sourceMap: true,
+                mangle: true
+            })
         ]
     };
 };

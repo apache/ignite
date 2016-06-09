@@ -16,32 +16,16 @@
  */
 
 import gulp from 'gulp';
-import util from 'gulp-util';
 import webpack from 'webpack';
 import webpackConfig from '../../webpack.config';
 import WebpackDevServer from 'webpack-dev-server';
 
-import {srcDir, destDir, igniteModulesTemp} from '../paths';
-
-
-// TODO source map
-// const options = {
-//     minify: true
-// };
-//
-// if (util.env.debug)
-//     delete options.minify;
-//
-// if (util.env.debug || util.env.sourcemaps)
-//     options.sourceMaps = true;
-
-gulp.task('bundle', ['bundle:ignite']);
-
-// Package all external dependencies and ignite-console.
-gulp.task('bundle:ignite', (cb) => {
-    const compiler = webpack(webpackConfig, cb);
-
-    if(process.env.NODE_ENV==='development' && webpackConfig.devServer)
-        new WebpackDevServer(compiler, webpackConfig.devServer)
-            .listen(webpackConfig.devServer.port || 9000, 'localhost');
+gulp.task('bundle', (cb) => {
+    if (process.env.NODE_ENV === 'development')
+        // Important! Call webpack and WebpackDevServer must be inline.
+        new WebpackDevServer(webpack(webpackConfig), webpackConfig.devServer)
+            .listen(webpackConfig.devServer.port, 'localhost');
+    else
+        webpack(webpackConfig, cb);
 });
+
