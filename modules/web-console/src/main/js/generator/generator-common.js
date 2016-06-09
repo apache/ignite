@@ -589,12 +589,6 @@ $generatorCommon.loggerConfigured = function(logger) {
         switch (logger.kind) {
             case 'Log4j2': return log && $generatorCommon.isDefinedAndNotEmpty(log.path);
 
-            case 'Java':
-            case 'Null':
-            case 'JCL':
-            case 'SLF4J':
-                return true;
-
             case 'Log4j':
                 if (!log || !log.mode)
                     return false;
@@ -607,9 +601,8 @@ $generatorCommon.loggerConfigured = function(logger) {
             case 'Custom': return log && $generatorCommon.isDefinedAndNotEmpty(log.class);
 
             default:
+                return true;
         }
-
-        return false;
     }
 
     return false;

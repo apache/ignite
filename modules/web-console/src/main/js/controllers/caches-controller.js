@@ -243,6 +243,39 @@ consoleModule.controller('cachesController', [
             return true;
         }
 
+        function checkStoreFactoryBean(storeFactory, beanFieldId) {
+            if (!$common.isValidJavaIdentifier('Data source bean', storeFactory.dataSourceBean, beanFieldId, $scope.ui, 'store'))
+                return false;
+
+            return checkDataSources();
+        }
+
+        function checkStoreFactory(item) {
+            const cacheStoreFactorySelected = item.cacheStoreFactory && item.cacheStoreFactory.kind;
+
+            if (cacheStoreFactorySelected) {
+                const storeFactory = item.cacheStoreFactory[item.cacheStoreFactory.kind];
+
+                if (item.cacheStoreFactory.kind === 'CacheJdbcPojoStoreFactory' && !checkStoreFactoryBean(storeFactory, 'pojoDataSourceBean'))
+                    return false;
+
+                if (item.cacheStoreFactory.kind === 'CacheJdbcBlobStoreFactory' && storeFactory.connectVia !== 'URL'
+                    && !checkStoreFactoryBean(storeFactory, 'blobDataSourceBean'))
+                    return false;
+            }
+
+            if ((item.readThrough || item.writeThrough) && !cacheStoreFactorySelected)
+                return showPopoverMessage($scope.ui, 'store', 'cacheStoreFactory', (item.readThrough ? 'Read' : 'Write') + ' through are enabled but store is not configured!');
+
+            if (item.writeBehindEnabled && !cacheStoreFactorySelected)
+                return showPopoverMessage($scope.ui, 'store', 'cacheStoreFactory', 'Write behind enabled but store is not configured!');
+
+            if (cacheStoreFactorySelected && !item.readThrough && !item.writeThrough)
+                return showPopoverMessage($scope.ui, 'store', 'readThroughTooltip', 'Store is configured but read/write through are not enabled!');
+
+            return true;
+        }
+
         // Check cache logical consistency.
         function validate(item) {
             $common.hidePopover();
@@ -253,103 +286,20 @@ consoleModule.controller('cachesController', [
             if (item.memoryMode === 'ONHEAP_TIERED' && item.offHeapMaxMemory > 0 && !$common.isDefined(item.evictionPolicy.kind))
                 return showPopoverMessage($scope.ui, 'memory', 'evictionPolicyKind', 'Eviction policy should not be configured!');
 
-            const form = $scope.ui.inputForm;
-            const errors = form.$error;
-            const errKeys = Object.keys(errors);
-
-            if (errKeys && errKeys.length > 0) {
-                const firstErrorKey = errKeys[0];
-
-                const firstError = errors[firstErrorKey][0];
-                const actualError = firstError.$error[firstErrorKey][0];
-
-                const errNameFull = actualError.$name;
-                const errNameShort = errNameFull.endsWith('TextInput') ? errNameFull.substring(0, errNameFull.length - 9) : errNameFull;
-
-                const extractErrorMessage = function(errName) {
-                    try {
-                        return errors[firstErrorKey][0].$errorMessages[errName][firstErrorKey];
-                    }
-                    catch (ignored) {
-                        try {
-                            return form[firstError.$name].$errorMessages[errName][firstErrorKey];
-                        }
-                        catch (ignited) {
-                            return false;
-                        }
-                    }
-                };
-
-                const msg = extractErrorMessage(errNameFull) || extractErrorMessage(errNameShort) || 'Invalid value';
-
-                return showPopoverMessage($scope.ui, firstError.$name, errNameFull, msg);
-            }
+            if (!$common.checkFieldValidators($scope.ui))
+                return false;
 
             if (item.memoryMode === 'OFFHEAP_VALUES' && !_.isEmpty(item.domains))
                 return showPopoverMessage($scope.ui, 'memory', 'memoryMode', 'Query indexing could not be enabled while values are stored off-heap!');
 
-            if (item.memoryMode === 'OFFHEAP_TIERED' && !$common.isDefined(item.offHeapMaxMemory))
+            if (item.memoryMode === 'OFFHEAP_TIERED' && (!$common.isDefined(item.offHeapMaxMemory) || item.offHeapMaxMemory < 0))
                 return showPopoverMessage($scope.ui, 'memory', 'offHeapMaxMemory', 'Off-heap max memory should be specified!');
 
-            const cacheStoreFactorySelected = item.cacheStoreFactory && item.cacheStoreFactory.kind;
-
-            if (cacheStoreFactorySelected) {
-                const storeFactory = item.cacheStoreFactory[item.cacheStoreFactory.kind];
-
-                if (item.cacheStoreFactory.kind === 'CacheJdbcPojoStoreFactory') {
-                    if ($common.isEmptyString(storeFactory.dataSourceBean))
-                        return showPopoverMessage($scope.ui, 'store', 'dataSourceBean', 'Data source bean name should not be empty!');
-
-                    if (!$common.isValidJavaIdentifier('Data source bean', storeFactory.dataSourceBean, 'dataSourceBean', $scope.ui, 'store'))
-                        return false;
-
-                    if (!storeFactory.dialect)
-                        return showPopoverMessage($scope.ui, 'store', 'pojoDialect', 'Dialect should not be empty!');
-
-                    if (!checkDataSources())
-                        return false;
-                }
-
-                if (item.cacheStoreFactory.kind === 'CacheJdbcBlobStoreFactory') {
-                    if (storeFactory.connectVia === 'URL') {
-                        if ($common.isEmptyString(storeFactory.connectionUrl))
-                            return showPopoverMessage($scope.ui, 'store', 'connectionUrl', 'Connection URL should not be empty!');
-
-                        if ($common.isEmptyString(storeFactory.user))
-                            return showPopoverMessage($scope.ui, 'store', 'user', 'User should not be empty!');
-                    }
-                    else {
-                        if ($common.isEmptyString(storeFactory.dataSourceBean))
-                            return showPopoverMessage($scope.ui, 'store', 'dataSourceBean', 'Data source bean name should not be empty!');
-
-                        if (!$common.isValidJavaIdentifier('Data source bean', storeFactory.dataSourceBean, 'dataSourceBean', $scope.ui, 'store'))
-                            return false;
-
-                        if (!storeFactory.dialect)
-                            return showPopoverMessage($scope.ui, 'store', 'blobDialect', 'Database should not be empty!');
-
-                        if (!checkDataSources())
-                            return false;
-                    }
-                }
-            }
-
-            if ((item.readThrough || item.writeThrough) && !cacheStoreFactorySelected)
-                return showPopoverMessage($scope.ui, 'store', 'cacheStoreFactory', (item.readThrough ? 'Read' : 'Write') + ' through are enabled but store is not configured!');
-
-            if (item.writeBehindEnabled && !cacheStoreFactorySelected)
-                return showPopoverMessage($scope.ui, 'store', 'cacheStoreFactory', 'Write behind enabled but store is not configured!');
-
-            if (cacheStoreFactorySelected) {
-                if (!item.readThrough && !item.writeThrough)
-                    return showPopoverMessage($scope.ui, 'store', 'readThroughTooltip', 'Store is configured but read/write through are not enabled!');
-            }
+            if (!checkStoreFactory(item))
+                return false;
 
             if (item.writeBehindFlushSize === 0 && item.writeBehindFlushFrequency === 0)
                 return showPopoverMessage($scope.ui, 'store', 'writeBehindFlushSize', 'Both "Flush frequency" and "Flush size" are not allowed as 0!');
-
-            if (item.cacheMode !== 'LOCAL' && item.rebalanceMode !== 'NONE' && item.rebalanceBatchSize === 0)
-                return showPopoverMessage($scope.ui, 'rebalance', 'rebalanceBatchSize', 'Batch size should be more than 0 if rebalance mode is "SYNC" or "ASYNC" !', 10000);
 
             return true;
         }

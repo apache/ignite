@@ -52,16 +52,15 @@ div
                 <li>Custom - custom retry policy implementation</li>\
                 <li>Default - exponential backoff retry policy with configured base sleep time equal to 1000ms and max retry count equal to 10</li>\
             </ul>')
-    .details-row(ng-if='#{model}.retryPolicy.kind')
+    .details-row(ng-show='#{model}.retryPolicy.kind')
         .panel-details
-            div(ng-switch='#{model}.retryPolicy.kind')
-                ignite-configuration-clusters-general-discovery-zookeeper-exponential(ng-switch-when='ExponentialBackoff')
-                ignite-configuration-clusters-general-discovery-zookeeper-bounded-exponential(ng-switch-when='BoundedExponentialBackoff')
-                ignite-configuration-clusters-general-discovery-zookeeper-until-elapsed(ng-switch-when='UntilElapsed')
-                ignite-configuration-clusters-general-discovery-zookeeper-n-times(ng-switch-when='NTimes')
-                ignite-configuration-clusters-general-discovery-zookeeper-one-time(ng-switch-when='OneTime')
-                ignite-configuration-clusters-general-discovery-zookeeper-forever(ng-switch-when='Forever')
-                ignite-configuration-clusters-general-discovery-zookeeper-custom(ng-switch-when='Custom')
+            ignite-configuration-clusters-general-discovery-zookeeper-exponential(ng-show='#{model}.retryPolicy.kind === "ExponentialBackoff"')
+            ignite-configuration-clusters-general-discovery-zookeeper-bounded-exponential(ng-show='#{model}.retryPolicy.kind === "BoundedExponentialBackoff"')
+            ignite-configuration-clusters-general-discovery-zookeeper-until-elapsed(ng-show='#{model}.retryPolicy.kind === "UntilElapsed"')
+            ignite-configuration-clusters-general-discovery-zookeeper-n-times(ng-show='#{model}.retryPolicy.kind === "NTimes"')
+            ignite-configuration-clusters-general-discovery-zookeeper-one-time(ng-show='#{model}.retryPolicy.kind === "OneTime"')
+            ignite-configuration-clusters-general-discovery-zookeeper-forever(ng-show='#{model}.retryPolicy.kind === "Forever"')
+            ignite-configuration-clusters-general-discovery-zookeeper-custom(ng-show='#{model}.retryPolicy.kind === "Custom"')
     .details-row
         +text('Base path:', model + '.basePath', 'basePath', 'false', '/services', 'Base path for service registration')
     .details-row

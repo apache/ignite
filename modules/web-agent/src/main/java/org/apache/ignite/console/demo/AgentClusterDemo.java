@@ -18,10 +18,13 @@
 package org.apache.ignite.console.demo;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -33,7 +36,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -83,14 +85,22 @@ public class AgentClusterDemo {
 
     /** */
     private static final String COUNTRY_CACHE_NAME = "CountryCache";
+
     /** */
     private static final String DEPARTMENT_CACHE_NAME = "DepartmentCache";
+
     /** */
     private static final String EMPLOYEE_CACHE_NAME = "EmployeeCache";
+
     /** */
     private static final String PARKING_CACHE_NAME = "ParkingCache";
+
     /** */
     private static final String CAR_CACHE_NAME = "CarCache";
+
+    /** */
+    private static final Set<String> DEMO_CACHES = new HashSet<>(Arrays.asList(COUNTRY_CACHE_NAME,
+        DEPARTMENT_CACHE_NAME, EMPLOYEE_CACHE_NAME, PARKING_CACHE_NAME, CAR_CACHE_NAME));
 
     /** */
     private static final Random rnd = new Random();
@@ -109,9 +119,6 @@ public class AgentClusterDemo {
 
     /** Departments count */
     private static final int PARK_CNT = 10;
-
-    /** Departments count */
-    private static final int DEFAULT_CNT = 100;
 
     /** Counter for threads in pool. */
     private static final AtomicInteger THREAD_CNT = new AtomicInteger(0);
@@ -317,29 +324,6 @@ public class AgentClusterDemo {
     }
 
     /**
-     * Configure default cache.
-     */
-    private static <K, V> CacheConfiguration<K, V> cacheDefault() {
-        CacheConfiguration<K, V> ccfg = cacheConfiguration(null);
-
-        ccfg.setCacheMode(CacheMode.REPLICATED);
-
-        // Configure default cache types.
-        Collection<QueryEntity> qryEntities = new ArrayList<>();
-
-        QueryEntity type = new QueryEntity();
-
-        qryEntities.add(type);
-
-        type.setKeyType(Integer.class.getName());
-        type.setValueType(String.class.getName());
-
-        ccfg.setQueryEntities(qryEntities);
-
-        return ccfg;
-    }
-
-    /**
      * Configure node.
      * @param gridIdx Grid name index.
      * @param client If {@code true} then start client node.
@@ -374,13 +358,10 @@ public class AgentClusterDemo {
         cfg.setMetricsLogFrequency(0);
         cfg.getConnectorConfiguration().setPort(60700);
 
-        if (client) {
+        if (client)
             cfg.setClientMode(true);
-            cfg.setCacheConfiguration(cacheCountry(), cacheDepartment(), cacheEmployee(), cacheParking(), cacheCar());
-        }
-        else
-            cfg.setCacheConfiguration(cacheDefault(), cacheCountry(), cacheDepartment(), cacheEmployee(),
-                cacheParking(), cacheCar());
+
+        cfg.setCacheConfiguration(cacheCountry(), cacheDepartment(), cacheEmployee(), cacheParking(), cacheCar());
 
         return cfg;
     }
@@ -466,22 +447,6 @@ public class AgentClusterDemo {
     }
 
     /**
-     * @param ignite Ignite.
-     */
-    private static void populateCacheDefault(Ignite ignite) {
-        if (log.isDebugEnabled())
-            log.debug("DEMO: Start default cache population...");
-
-        IgniteCache<Integer, String> cacheDflt = ignite.cache(null);
-
-        for (int i = 0; i < DEFAULT_CNT; i++)
-            cacheDflt.put(i, "default-" + i);
-
-        if (log.isDebugEnabled())
-            log.debug("DEMO: Finished default cache population.");
-    }
-
-    /**
      * Creates a thread pool that can schedule commands to run after a given delay, or to execute periodically.
      *
      * @param corePoolSize Number of threads to keep in the pool, even if they are idle.
@@ -519,25 +484,28 @@ public class AgentClusterDemo {
 
         populateCacheEmployee(ignite, diff);
         populateCacheCar(ignite);
-        populateCacheDefault(ignite);
 
         ScheduledExecutorService cachePool = newScheduledThreadPool(2, "demo-sql-load-cache-tasks");
 
         cachePool.scheduleWithFixedDelay(new Runnable() {
             @Override public void run() {
                 try {
-                    IgniteCache<Integer, String> cacheDflt = ignite.cache(null);
+                    for (String cacheName : ignite.cacheNames()) {
+                        if (!DEMO_CACHES.contains(cacheName)) {
+                            IgniteCache<Integer, String> otherCache = ignite.cache(cacheName);
 
-                    if (cacheDflt != null) {
-                        for (int i = 0, n = 1; i < cnt; i++, n++) {
-                            Integer key = rnd.nextInt(1000);
+                            if (otherCache != null) {
+                                for (int i = 0, n = 1; i < cnt; i++, n++) {
+                                    Integer key = rnd.nextInt(1000);
 
-                            String val = cacheDflt.get(key);
+                                    String val = otherCache.get(key);
 
-                            if (val == null)
-                                cacheDflt.put(key, "default-" + key);
-                            else if (rnd.nextInt(100) < 30)
-                                cacheDflt.remove(key);
+                                    if (val == null)
+                                        otherCache.put(key, "other-" + key);
+                                    else if (rnd.nextInt(100) < 30)
+                                        otherCache.remove(key);
+                                }
+                            }
                         }
                     }
 

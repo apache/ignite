@@ -205,6 +205,36 @@ class GridJettyJsonConfig extends JsonConfig {
     };
 
     /**
+     * Workaround for false cycle detection in Spring exceptions.
+     *
+     * Cycle detection of json-lib is quite primitive.
+     * If some bean has more than one reference to same object false cycle will be detected.
+     */
+    private static JsonValueProcessor RUNTIME_EXCEPTION_PROCESSOR = new AbstractJsonValueProcessor() {
+        /** {@inheritDoc} */
+        protected Object processBean(Object bean, JsonConfig jsonCfg) {
+            if (bean == null)
+                return new JSONObject(true);
+
+            if (bean instanceof RuntimeException &&
+                bean.getClass().getCanonicalName().startsWith("org.springframework.")) {
+                RuntimeException e = (RuntimeException)bean;
+
+                final JSONObject ret = new JSONObject();
+
+                ret.element("message", e.getMessage(), jsonCfg);
+
+                if (e.getCause() != null)
+                    ret.element("cause", e.getCause(), jsonCfg);
+
+                return ret;
+            }
+
+            return JSONObject.fromObject(bean, jsonCfg);
+        }
+    };
+
+    /**
      * Constructs default jetty json config.
      */
     GridJettyJsonConfig(IgniteLogger log) {
@@ -218,6 +248,7 @@ class GridJettyJsonConfig extends JsonConfig {
         registerJsonValueProcessor(Date.class, DATE_PROCESSOR);
         registerJsonValueProcessor(java.sql.Date.class, DATE_PROCESSOR);
         registerJsonValueProcessor(HashMap.class, NULL_MAP_PREPROCESSOR);
+        registerJsonValueProcessor(RuntimeException.class, RUNTIME_EXCEPTION_PROCESSOR);
 
         final LessNamingProcessor lessNamingProcessor = new LessNamingProcessor();
 

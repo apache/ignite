@@ -270,37 +270,8 @@ consoleModule.controller('igfsController', [
             if ($common.isEmptyString(item.name))
                 return showPopoverMessage($scope.ui, 'general', 'igfsName', 'IGFS name should not be empty!');
 
-            const form = $scope.ui.inputForm;
-            const errors = form.$error;
-            const errKeys = Object.keys(errors);
-
-            if (errKeys && errKeys.length > 0) {
-                const firstErrorKey = errKeys[0];
-
-                const firstError = errors[firstErrorKey][0];
-                const actualError = firstError.$error[firstErrorKey][0];
-
-                const errNameFull = actualError.$name;
-                const errNameShort = errNameFull.endsWith('TextInput') ? errNameFull.substring(0, errNameFull.length - 9) : errNameFull;
-
-                const extractErrorMessage = function(errName) {
-                    try {
-                        return errors[firstErrorKey][0].$errorMessages[errName][firstErrorKey];
-                    }
-                    catch (ignored) {
-                        try {
-                            return form[firstError.$name].$errorMessages[errName][firstErrorKey];
-                        }
-                        catch (ignited) {
-                            return false;
-                        }
-                    }
-                };
-
-                const msg = extractErrorMessage(errNameFull) || extractErrorMessage(errNameShort) || 'Invalid value';
-
-                return showPopoverMessage($scope.ui, firstError.$name, errNameFull, msg);
-            }
+            if (!$common.checkFieldValidators($scope.ui))
+                return false;
 
             if (!item.secondaryFileSystemEnabled && (item.defaultMode === 'PROXY'))
                 return showPopoverMessage($scope.ui, 'secondaryFileSystem', 'secondaryFileSystem-title', 'Secondary file system should be configured for "PROXY" IGFS mode!');

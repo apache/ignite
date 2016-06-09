@@ -1345,6 +1345,7 @@ label.required:after {
     position: fixed;
     z-index: 1050;
     margin: 20px;
+    max-width: 700px;
 
     &.top-right {
         top: 60px;
@@ -2124,4 +2125,12 @@ html,body,.splash-screen {
 
 .nvd3 .nv-axis .nv-axisMaxMin text {
     font-weight: normal; /* Here the text can be modified*/
+}
+
+[ng-hide].ng-hide-add.ng-hide-animate {
+    display: none;
+}
+
+[ng-show].ng-hide-add.ng-hide-animate {
+    display: none;
 }

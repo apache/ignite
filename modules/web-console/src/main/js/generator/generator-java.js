@@ -270,14 +270,36 @@ $generatorJava.listProperty = function(res, varName, obj, propName, dataType, se
 
         res.importClass('java.util.Arrays');
 
-        res.line(varName + '.' + $generatorJava.setterName(propName, setterName) +
-            '(Arrays.asList(' +
-                _.map(val, function(v) {
-                    return $generatorJava.toJavaCode(v, dataType);
-                }).join(', ') +
-            '));');
+        $generatorJava.fxVarArgs(res, varName + '.' + $generatorJava.setterName(propName, setterName), false,
+            _.map(val, (v) => $generatorJava.toJavaCode(v, dataType)), '(Arrays.asList(', '))');
 
         res.needEmptyLine = true;
+    }
+};
+
+/**
+ * Add function with varargs arguments.
+ *
+ * @param res Resulting output with generated code.
+ * @param fx Function name.
+ * @param quote Whether to quote arguments.
+ * @param args Array with arguments.
+ * @param startBlock Optional start block string.
+ * @param endBlock Optional end block string.
+ */
+$generatorJava.fxVarArgs = function(res, fx, quote, args, startBlock = '(', endBlock = ')') {
+    const quoteArg = (arg) => quote ? '"' + arg + '"' : arg;
+
+    if (args.length === 1)
+        res.append(fx + startBlock + quoteArg(args[0]) + endBlock + ';');
+    else {
+        res.startBlock(fx + startBlock);
+
+        const len = args.length - 1;
+
+        _.forEach(args, (arg, ix) => res.line(quoteArg(arg) + (ix < len ? ', ' : '')));
+
+        res.endBlock(endBlock + ';');
     }
 };
 
@@ -296,11 +318,8 @@ $generatorJava.arrayProperty = function(res, varName, obj, propName, setterName)
     if (val && val.length > 0) {
         res.emptyLineIfNeeded();
 
-        res.line(varName + '.' + $generatorJava.setterName(propName, setterName) + '({ ' +
-            _.map(val, function(v) {
-                return 'new ' + res.importClass(v) + '()';
-            }).join(', ') +
-        ' });');
+        $generatorJava.fxVarArgs(res, varName + '.' + $generatorJava.setterName(propName, setterName), false,
+            _.map(val, (v) => 'new ' + res.importClass(v) + '()'), '({ ', ' });');
 
         res.needEmptyLine = true;
     }
@@ -320,15 +339,8 @@ $generatorJava.multiparamProperty = function(res, varName, obj, propName, dataTy
     const val = obj[propName];
 
     if (val && val.length > 0) {
-        res.emptyLineIfNeeded();
-
-        res.startBlock(varName + '.' + $generatorJava.setterName(propName, setterName) + '(');
-
-        _.forEach(val, function(v, ix) {
-            res.append($generatorJava.toJavaCode(v, dataType) + (ix < val.length - 1 ? ', ' : ''));
-        });
-
-        res.endBlock(');');
+        $generatorJava.fxVarArgs(res, varName + '.' + $generatorJava.setterName(propName, setterName), false,
+            _.map(val, (v) => $generatorJava.toJavaCode(dataType === 'class' ? res.importClass(v) : v, dataType)));
     }
 };
 
@@ -1867,13 +1879,8 @@ $generatorJava.domainModelGeneral = function(domain, res) {
                 else
                     types.push('???');
 
-                if ($generatorCommon.isDefinedAndNotEmpty(types)) {
-                    res.startBlock('cache.setIndexedTypes(');
-
-                    res.line(types.join(', '));
-
-                    res.endBlock(');');
-                }
+                if ($generatorCommon.isDefinedAndNotEmpty(types))
+                    $generatorJava.fxVarArgs(res, 'cache.setIndexedTypes', false, types);
             }
 
             break;

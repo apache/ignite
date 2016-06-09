@@ -32,7 +32,9 @@ export default ['$cleanup', () => {
                     dist[key] = attr;
                 }
             });
-        } else if ((_.isString(original) && original.length) || _.isNumber(original) || _.isBoolean(original))
+        } else if (_.isBoolean(original) && original === true)
+            dist = original;
+        else if ((_.isString(original) && original.length) || _.isNumber(original))
             dist = original;
         else if (_.isArray(original) && original.length)
             dist = _.map(original, (value) => cleanup(value, {}));
