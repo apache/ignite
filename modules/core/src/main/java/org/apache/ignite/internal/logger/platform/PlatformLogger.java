@@ -67,6 +67,8 @@ public class PlatformLogger implements IgniteLogger {
      * @param gate Callback gateway.
      */
     public PlatformLogger(PlatformCallbackGateway gate, Object ctgr) {
+        assert gate != null;
+
         this.gate = gate;
 
         // Default quiet to false so that Java does not write anything to console.
@@ -76,9 +78,9 @@ public class PlatformLogger implements IgniteLogger {
         category = getCategoryString(ctgr);
 
         // Precalculate enabled levels (JNI calls are expensive)
-        traceEnabled = isLevelEnabled(LVL_TRACE);
-        debugEnabled = isLevelEnabled(LVL_DEBUG);
-        infoEnabled = isLevelEnabled(LVL_INFO);
+        traceEnabled = gate.loggerIsLevelEnabled(LVL_TRACE);
+        debugEnabled = gate.loggerIsLevelEnabled(LVL_DEBUG);
+        infoEnabled = gate.loggerIsLevelEnabled(LVL_INFO);
     }
 
     /**
@@ -158,16 +160,6 @@ public class PlatformLogger implements IgniteLogger {
     @Override public String fileName() {
         // TODO: Native
         return null;
-    }
-
-    /**
-     * Returns a value indicating whether specified log level is enabled.
-     *
-     * @param level Log level.
-     * @return Whether specified log level is enabled.
-     */
-    private boolean isLevelEnabled(int level) {
-        return gate.loggerIsLevelEnabled(level);
     }
 
     /**
