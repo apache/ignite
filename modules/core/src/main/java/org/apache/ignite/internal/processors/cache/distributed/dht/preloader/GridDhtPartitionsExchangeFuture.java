@@ -682,7 +682,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             centralizedAff = cctx.affinity().onServerLeft(this);
         }
         else {
-            assert discoEvt.type() == EVT_NODE_JOINED || discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT : discoEvt;
+            assert discoEvt.type() == EVT_NODE_JOINED || (discoEvt.type() == EVT_DISCOVERY_CUSTOM_EVT &&
+                ((DiscoveryCustomEvent)discoEvt).customMessage() instanceof NodeActivatedMessage) : discoEvt;
 
             cctx.affinity().onServerJoin(this, crd);
         }

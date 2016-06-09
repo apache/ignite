@@ -71,6 +71,7 @@ import org.apache.ignite.internal.IgniteTransactionsEx;
 import org.apache.ignite.internal.binary.BinaryContext;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.events.DiscoveryCustomEvent;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.internal.pagemem.store.IgnitePageStoreManager;
 import org.apache.ignite.internal.pagemem.wal.IgniteWriteAheadLogManager;
@@ -2516,8 +2517,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      * @param type Event type.
      * @param node Event node.
      * @param topVer Topology version.
+     * @param customMsg Custom message if event is {@link DiscoveryCustomEvent}.
      */
-    public void onDiscoveryEvent(int type, ClusterNode node, AffinityTopologyVersion topVer) {
+    public void onDiscoveryEvent(int type, ClusterNode node, AffinityTopologyVersion topVer, @Nullable DiscoveryCustomMessage customMsg) {
         if (type == EVT_NODE_JOINED) {
             for (DynamicCacheDescriptor cacheDesc : registeredCaches.values()) {
                 if (node.id().equals(cacheDesc.receivedFrom()))
@@ -2525,7 +2527,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
         }
 
-        sharedCtx.affinity().onDiscoveryEvent(type, node, topVer);
+        sharedCtx.affinity().onDiscoveryEvent(type, node, topVer, customMsg);
     }
 
     /**
