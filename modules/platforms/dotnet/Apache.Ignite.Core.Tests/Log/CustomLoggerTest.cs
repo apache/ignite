@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.Log
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
+    using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
     using NUnit.Framework;
 
@@ -98,6 +99,15 @@ namespace Apache.Ignite.Core.Tests.Log
         public void TestStartupDotNetError()
         {
             // TODO: Startup failure test with .NET error (exception in cache store? lifecycle bean?)
+            // Invalid bean
+            Assert.Throws<IgniteException>(() =>
+                Ignition.Start(new IgniteConfiguration(GetConfigWithLogger())
+                {
+                    LifecycleBeans = new[] {new FailBean()}
+                }));
+
+            var err = TestLogger.Entries.First(x => x.Level == LogLevel.Error);
+            Assert.IsTrue(err.NativeErrorInfo.Contains("SPI parameter failed condition check: idleConnTimeout > 0"));
         }
 
         /// <summary>
@@ -129,6 +139,13 @@ namespace Apache.Ignite.Core.Tests.Log
             public string Category;
             public string NativeErrorInfo;
             public Exception Exception;
+
+            public override string ToString()
+            {
+                return string.Format("Level: {0}, Message: {1}, Args: {2}, FormatProvider: {3}, Category: {4}, " +
+                                     "NativeErrorInfo: {5}, Exception: {6}", Level, Message, Args, FormatProvider, 
+                                     Category, NativeErrorInfo, Exception);
+            }
         }
 
         /// <summary>
@@ -167,6 +184,18 @@ namespace Apache.Ignite.Core.Tests.Log
             public bool IsEnabled(LogLevel level)
             {
                 return true;
+            }
+        }
+
+
+        /// <summary>
+        /// Failing lifecycle bean.
+        /// </summary>
+        private class FailBean : ILifecycleBean
+        {
+            public void OnLifecycleEvent(LifecycleEventType evt)
+            {
+                throw new ArithmeticException("Failure in bean");
             }
         }
     }

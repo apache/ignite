@@ -73,7 +73,9 @@ public class PlatformLogger implements IgniteLogger {
         // Platform is responsible for console output, we do not want to mix these.
         quiet = Boolean.valueOf(System.getProperty(IGNITE_QUIET, "false"));
 
-        category = ctgr instanceof Class ? ((Class)ctgr).getName() : String.valueOf(ctgr);
+        category = ctgr instanceof Class
+            ? ((Class)ctgr).getName()
+            : (ctgr == null ? null : String.valueOf(ctgr));
 
         // Precalculate enabled levels (JNI calls are expensive)
         traceEnabled = isLevelEnabled(LVL_TRACE);
