@@ -21,6 +21,8 @@ namespace Apache.Ignite.Core.Tests.Log
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
+    using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.Log;
     using NUnit.Framework;
 
@@ -69,14 +71,18 @@ namespace Apache.Ignite.Core.Tests.Log
         [Test]
         public void TestStartupJavaError()
         {
-            // TODO: Startup failure with damned "GridManagerAdapter"
-            // Invalid config?
+            // Invalid config
+            Assert.Throws<IgniteException>(() =>
+                Ignition.Start(new IgniteConfiguration(GetConfigWithLogger())
+                {
+                    CommunicationSpi = new TcpCommunicationSpi
+                    {
+                        IdleConnectionTimeout = TimeSpan.MinValue
+                    }
+                }));
 
-            // Invalid home
-            Ignition.Start(new IgniteConfiguration(GetConfigWithLogger())
-            {
-                IgniteHome = Path.GetTempPath()
-            });
+            var err = TestLogger.Entries.Single(x => x.Level == LogLevel.Error);
+            Assert.IsTrue(err.NativeErrorInfo.Contains("SPI parameter failed condition check: idleConnTimeout > 0"));
         }
 
         [Test]

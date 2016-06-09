@@ -399,6 +399,7 @@
             Assemblies = cfg.Assemblies;
             SuppressWarnings = cfg.SuppressWarnings;
             LifecycleBeans = cfg.LifecycleBeans;
+            Logger = cfg.Logger;
         }
 
         /// <summary>
