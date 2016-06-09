@@ -762,12 +762,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 }
             }
 
-            try {
-                ctx.cache().context().database().beforeExchange(ctx.discovery().localJoinEvent());
-            }
-            catch (IgniteCheckedException e) {
-                assert false : e;
-            }
+            ctx.cache().context().database().beforeExchange(ctx.discovery().localJoinEvent());
         }
         finally {
             cacheStartedLatch.countDown();

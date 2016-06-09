@@ -244,7 +244,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @return {@code True} if partition is empty.
      */
     public boolean isEmpty() {
-        return size() <= 0; // TODO: replace with == after size consistency is fixed.
+        return size() == 0;
     }
 
     /**
