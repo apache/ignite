@@ -101,7 +101,7 @@ namespace ignite
             typedef void(JNICALL *OnClientDisconnectedHandler)(void* target);
             typedef void(JNICALL *OnClientReconnectedHandler)(void* target, unsigned char clusterRestarted);
 
-            typedef void(JNICALL *LoggerLogHandler)(void* target, int level, const char* messageChars, int messageCharsLen, const char* categoryChars, int categoryCharsLen, const char* errorInfoChars, int errorInfoCharsLen, long memPtr);
+            typedef void(JNICALL *LoggerLogHandler)(void* target, int level, const char* messageChars, int messageCharsLen, const char* categoryChars, int categoryCharsLen, const char* errorInfoChars, int errorInfoCharsLen, long long memPtr);
             typedef bool(JNICALL *LoggerIsLevelEnabledHandler)(void* target, int level);
 
             /**
