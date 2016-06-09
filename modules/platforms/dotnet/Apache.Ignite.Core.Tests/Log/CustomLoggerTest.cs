@@ -19,9 +19,7 @@ namespace Apache.Ignite.Core.Tests.Log
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Linq;
-    using System.Threading;
     using Apache.Ignite.Core.Log;
     using NUnit.Framework;
 
