@@ -101,7 +101,6 @@ namespace Apache.Ignite.Core.Tests.Log
         [Test]
         public void TestStartupDotNetError()
         {
-            // TODO: Startup failure test with .NET error (exception in cache store? lifecycle bean?)
             // Invalid bean
             Assert.Throws<IgniteException>(() =>
                 Ignition.Start(new IgniteConfiguration(GetConfigWithLogger())
@@ -110,7 +109,7 @@ namespace Apache.Ignite.Core.Tests.Log
                 }));
 
             var err = TestLogger.Entries.First(x => x.Level == LogLevel.Error);
-            Assert.IsTrue(err.NativeErrorInfo.Contains("SPI parameter failed condition check: idleConnTimeout > 0"));
+            Assert.IsInstanceOf<ArithmeticException>(err.Exception);
         }
 
         /// <summary>
