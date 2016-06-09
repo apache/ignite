@@ -17,15 +17,8 @@
 
 namespace Apache.Ignite.Core.Tests.Log
 {
-    /// <summary>
-    /// Tests that user-defined logger receives Ignite events.
-    /// </summary>
-    public class CustomLoggerTest
+    public class EventLogLoggerTest
     {
-        // TODO: Online tests with error propagation, categories, etc.
-        // TODO: QueryEntity warnings test
-        // TODO: gcServer warning test?
-        // TODO: Startup failure test with .NET error (exception in cache store? lifecycle bean?)
-        // TODO: Startup failure with damned "GridManagerAdapter"
+        // TODO
     }
 }

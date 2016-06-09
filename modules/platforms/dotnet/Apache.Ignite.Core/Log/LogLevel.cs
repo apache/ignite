@@ -17,9 +17,12 @@
 
 namespace Apache.Ignite.Core.Log
 {
+    using System;
+
     /// <summary>
     /// Defines log levels.
     /// </summary>
+    [Serializable]
     public enum LogLevel
     {
         /// <summary>
