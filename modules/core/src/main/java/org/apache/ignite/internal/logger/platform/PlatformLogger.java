@@ -94,9 +94,10 @@ public class PlatformLogger implements IgniteLogger {
     /**
      * Ctor.
      */
-    private PlatformLogger(PlatformCallbackGateway gate, Boolean quiet, String category, boolean traceEnabled,
-        boolean debugEnabled, boolean infoEnabled) {
+    private PlatformLogger(PlatformCallbackGateway gate, PlatformContext ctx, Boolean quiet, String category,
+        boolean traceEnabled, boolean debugEnabled, boolean infoEnabled) {
         this.gate = gate;
+        this.ctx = ctx;
         this.quiet = quiet;
         this.category = category;
         this.traceEnabled = traceEnabled;
@@ -106,7 +107,7 @@ public class PlatformLogger implements IgniteLogger {
 
     /** {@inheritDoc} */
     @Override public IgniteLogger getLogger(Object ctgr) {
-        return new PlatformLogger(gate, quiet, getCategoryString(ctgr), traceEnabled, debugEnabled, infoEnabled);
+        return new PlatformLogger(gate, ctx, quiet, getCategoryString(ctgr), traceEnabled, debugEnabled, infoEnabled);
     }
 
     /** {@inheritDoc} */
