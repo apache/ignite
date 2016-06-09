@@ -119,17 +119,19 @@ namespace Apache.Ignite.Core.Tests.Log
         [Test]
         public void TestDotNetErrorPropagation()
         {
+            // Start 2 nodes: PlatformNativeException does not occur in local scenario
             using (var ignite = Ignition.Start(GetConfigWithLogger()))
+            using (Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration()) {GridName = "1"}))
             {
-                var compute = ignite.GetCompute();
+                var compute = ignite.GetCluster().ForRemotes().GetCompute();
 
                 Assert.Throws<ArithmeticException>(() => compute.Call(new FailFunc()));
 
                 // Log updates may not arrive immediately
-                TestUtils.WaitForCondition(() => TestLogger.Entries.Any(x => x.NativeErrorInfo != null), 3000);
+                TestUtils.WaitForCondition(() => TestLogger.Entries.Any(x => x.Exception != null), 3000);
 
-                var errFromJava = TestLogger.Entries.Single(x => x.NativeErrorInfo != null);
-                Assert.AreEqual("Error in func.", ((ArithmeticException) errFromJava.Exception).Message);
+                var errFromJava = TestLogger.Entries.Single(x => x.Exception != null);
+                Assert.AreEqual("Error in func.", ((ArithmeticException) errFromJava.Exception.InnerException).Message);
             }
         }
 
