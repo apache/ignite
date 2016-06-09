@@ -39,11 +39,9 @@ gulp.task('bundle', ['bundle:ignite']);
 
 // Package all external dependencies and ignite-console.
 gulp.task('bundle:ignite', (cb) => {
-    const bundler = webpack(webpackConfig, (err) => {
-            // if(err) throw new gutil.PluginError("webpack", err);
-            cb();
-    });
+    const compiler = webpack(webpackConfig, cb);
 
-    if(process.env.NODE_ENV==='development')
-        new WebpackDevServer(bundler).listen(webpackConfig.devServer.port, 'localhost', cb);
+    if(process.env.NODE_ENV==='development' && webpackConfig.devServer)
+        new WebpackDevServer(compiler, webpackConfig.devServer)
+            .listen(webpackConfig.devServer.port || 9000, 'localhost');
 });

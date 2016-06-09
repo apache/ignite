@@ -17,11 +17,12 @@
 
 import path from 'path';
 
-const srcDir = './app';
-const destDir = './dist';
+const rootDir = path.resolve('./');
+const srcDir = path.resolve('app');
+const destDir = path.resolve('dist');
 
 const igniteModulesDir = process.env.IGNITE_MODULES ? path.normalize(process.env.IGNITE_MODULES) : './ignite_modules';
-const igniteModulesTemp = './ignite_modules_temp';
+const igniteModulesTemp = path.resolve('ignite_modules_temp');
 
 const sassPaths = [
     './public/stylesheets/*.scss'
@@ -80,6 +81,7 @@ const appModulePaths = [
 ];
 
 export {
+    rootDir,
     srcDir,
     destDir,
     igniteModulesDir,

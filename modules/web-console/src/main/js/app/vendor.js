@@ -15,7 +15,6 @@ import 'angular-nvd3';
 import 'angular-tree-control';
 import 'angular-gridster';
 import 'bootstrap-sass/assets/javascripts/bootstrap/carousel';
-import 'nvd3';
 import 'brace';
 import 'brace/mode/xml';
 import 'brace/mode/sql';
@@ -26,9 +25,12 @@ import 'font-awesome-webpack';
 import 'file-saver';
 import 'jszip';
 import 'query-command-supported';
-
 import 'angular-gridster/dist/angular-gridster.min.css';
 import 'angular-tree-control/css/tree-control-attribute.css';
 import 'angular-tree-control/css/tree-control.css';
 import 'angular-ui-grid/ui-grid.css';
 import 'angular-motion/dist/angular-motion.css';
+
+// import pdfMake from 'pdfmake';
+
+// window.pdfMake = pdfMake;

@@ -14,18 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import _ from 'lodash';
-import angular from 'angular';
-import pdfMake from 'pdfmake';
-
-window._ = _;
-window.pdfMake = pdfMake;
-
-
 import '../public/stylesheets/style.scss';
-
-
 
 import './decorator/select';
 import './decorator/tooltip';
@@ -149,7 +138,7 @@ angular
     'ignite-console.version',
     'ignite-console.loading',
     // Ignite legacy module.
-    'ignite-console.legacy',
+    'ignite-console.legacy'
     // Ignite modules.
     // 'ignite-console.modules'
 ])

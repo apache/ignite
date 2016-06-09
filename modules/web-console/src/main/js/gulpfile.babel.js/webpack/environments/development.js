@@ -1,24 +1,38 @@
 'use strict';
-var webpack = require('webpack');
-var ProgressPlugin = require('webpack/lib/ProgressPlugin');
-var HtmlWebpackPlugin = require("html-webpack-plugin");
-var path = require('path');
-var jade = require('jade');
 
-module.exports = function (_path) {
-    var chars = 0,
+import webpack from 'webpack';
+import ProgressPlugin from 'webpack/lib/ProgressPlugin';
+import HtmlWebpackPlugin from 'html-webpack-plugin';
+import {destDir, rootDir} from '../../paths';
+import jade from 'jade';
+import path from 'path';
+
+module.exports = function () {
+    let chars = 0,
         lastState, lastStateTime;
 
-    var plugins = [
+    const _goToLineStart = (nextMessage) => {
+        var str = "";
+        for (; chars > nextMessage.length; chars--) {
+            str += "\b \b";
+        }
+        chars = nextMessage.length;
+        for (var i = 0; i < chars; i++) {
+            str += "\b";
+        }
+        if (str) process.stderr.write(str);
+    };
+
+    let plugins = [
         new webpack.HotModuleReplacementPlugin(),
         new HtmlWebpackPlugin({
             filename: 'index.html',
             templateContent: function () {
-                return jade.renderFile(path.join(_path, 'views', 'index.jade'));
+                return jade.renderFile(path.join(rootDir, 'views', 'index.jade'));
             },
             title: 'DEBUG:Ignite Web Console'
         }),
-        new ProgressPlugin(function (percentage, msg) {
+        new ProgressPlugin((percentage, msg) => {
             var state = msg;
             if (percentage < 1) {
                 percentage = Math.floor(percentage * 100);
@@ -38,41 +52,31 @@ module.exports = function (_path) {
                 var now = +new Date();
                 if (lastState) {
                     var stateMsg = (now - lastStateTime) + "ms " + lastState;
-                    goToLineStart(stateMsg);
+                    _goToLineStart(stateMsg);
                     process.stderr.write(stateMsg + "\n");
                     chars = 0;
                 }
                 lastState = state;
                 lastStateTime = now;
             }
-            goToLineStart(msg);
+            _goToLineStart(msg);
             process.stderr.write(msg);
         })
     ];
 
-    function goToLineStart(nextMessage) {
-        var str = "";
-        for (; chars > nextMessage.length; chars--) {
-            str += "\b \b";
-        }
-        chars = nextMessage.length;
-        for (var i = 0; i < chars; i++) {
-            str += "\b";
-        }
-        if (str) process.stderr.write(str);
-    }
 
     return {
-        context: _path,
+        context: rootDir,
         debug: true,
-        devtool: 'cheap-source-map',
+        devtool: 'eval',
         devServer: {
             historyApiFallback: true,
-            publicPath: '/',
-            contentBase: './dist',
-            info: true,
-            hot: true,
-            inline: false,
+            // publicPath: '/',
+            contentBase: destDir,
+            // info: true,
+            // hot: true,
+            // inline: true,
+            // quiet: false,
             proxy: {
                 '/socket.io': {
                     target: 'http://localhost:3000',
