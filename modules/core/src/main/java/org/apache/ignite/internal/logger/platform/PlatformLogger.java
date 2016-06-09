@@ -73,9 +73,7 @@ public class PlatformLogger implements IgniteLogger {
         // Platform is responsible for console output, we do not want to mix these.
         quiet = Boolean.valueOf(System.getProperty(IGNITE_QUIET, "false"));
 
-        category = ctgr instanceof Class
-            ? ((Class)ctgr).getName()
-            : (ctgr == null ? null : String.valueOf(ctgr));
+        category = getCategoryString(ctgr);
 
         // Precalculate enabled levels (JNI calls are expensive)
         traceEnabled = isLevelEnabled(LVL_TRACE);
@@ -98,7 +96,7 @@ public class PlatformLogger implements IgniteLogger {
 
     /** {@inheritDoc} */
     @Override public IgniteLogger getLogger(Object ctgr) {
-        return new PlatformLogger(gate, quiet, category, traceEnabled, debugEnabled, infoEnabled);
+        return new PlatformLogger(gate, quiet, getCategoryString(ctgr), traceEnabled, debugEnabled, infoEnabled);
     }
 
     /** {@inheritDoc} */
@@ -172,6 +170,13 @@ public class PlatformLogger implements IgniteLogger {
         return gate.loggerIsLevelEnabled(level);
     }
 
+    /**
+     * Logs the message.
+     *
+     * @param level Log level.
+     * @param msg Message.
+     * @param e Exception.
+     */
     private void log(int level, String msg, @Nullable Throwable e) {
         // TODO: Unwrap platform error if possible
         String errorInfo = null;
@@ -180,5 +185,17 @@ public class PlatformLogger implements IgniteLogger {
             errorInfo = X.getFullStackTrace(e);
 
         gate.loggerLog(level, msg, category, errorInfo, 0);
+    }
+
+    /**
+     * Gets the category string.
+     *
+     * @param ctgr Category object.
+     * @return Category string.
+     */
+    private static String getCategoryString(Object ctgr) {
+        return ctgr instanceof Class
+            ? ((Class)ctgr).getName()
+            : (ctgr == null ? null : String.valueOf(ctgr));
     }
 }
