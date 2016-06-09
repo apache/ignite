@@ -1682,21 +1682,13 @@ public class IgnitionEx {
                 new LinkedBlockingQueue<Runnable>());
 
             // Note that we do not pre-start threads here as igfs pool may not be needed.
-            IgniteThreadPoolExecutor igfsEx = new IgniteThreadPoolExecutor(
+            igfsExecSvc = new IgniteThreadPoolExecutor(
                 "igfs-exec-svc",
                 cfg.getGridName(),
                 cfg.getIgfsThreadPoolSize(),
                 cfg.getIgfsThreadPoolSize(),
                 0,
                 new LinkedBlockingQueue<Runnable>());
-
-            if (IgniteComponentType.HADOOP.inClassPath()) {
-                int c = igfsEx.prestartAllCoreThreads();
-
-                assert c == cfg.getIgfsThreadPoolSize();
-            }
-
-            igfsExecSvc = igfsEx;
 
             // Note that we do not pre-start threads here as this pool may not be needed.
             callbackExecSvc = new IgniteStripedThreadPoolExecutor(
