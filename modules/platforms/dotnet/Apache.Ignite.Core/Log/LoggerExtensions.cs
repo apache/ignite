@@ -18,12 +18,34 @@
 namespace Apache.Ignite.Core.Log
 {
     using System;
+    using System.Globalization;
 
     /// <summary>
     /// Extension methods for <see cref="ILogger"/>
     /// </summary>
     public static class LoggerExtensions
     {
+        /// <summary>
+        /// Logs the debug message.
+        /// </summary>
+        /// <param name="logger">The logger.</param>
+        /// <param name="message">The message.</param>
+        public static void LogDebug(this ILogger logger, string message)
+        {
+            logger.Log(LogLevel.Debug, message, null, null, null, null, null);
+        }
+
+        /// <summary>
+        /// Logs the debug message.
+        /// </summary>
+        /// <param name="logger">The logger.</param>
+        /// <param name="message">The message.</param>
+        /// <param name="args">The arguments.</param>
+        public static void LogDebug(this ILogger logger, string message, params object[] args)
+        {
+            logger.Log(LogLevel.Debug, message, args, CultureInfo.InvariantCulture, null, null, null);
+        }
+
         /// <summary>
         /// Logs the error.
         /// </summary>

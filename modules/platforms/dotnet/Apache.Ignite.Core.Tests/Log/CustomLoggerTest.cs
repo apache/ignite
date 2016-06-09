@@ -19,7 +19,9 @@ namespace Apache.Ignite.Core.Tests.Log
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
+    using System.Threading;
     using Apache.Ignite.Core.Log;
     using NUnit.Framework;
 
@@ -38,8 +40,18 @@ namespace Apache.Ignite.Core.Tests.Log
         [Test]
         public void TestStartupOutput()
         {
-            Ignition.Start(GetConfigWithLogger());
-            Ignition.StopAll(true);
+            using (Ignition.Start(GetConfigWithLogger()))
+            {
+                // Test topology message
+                Assert.IsTrue(
+                    TestUtils.WaitForCondition(() =>
+                    {
+                        lock (TestLogger.Entries)
+                        {
+                            return TestLogger.Entries.Any(x => x.Message.Contains("Topology snapshot"));
+                        }
+                    }, 9000), "No topology snapshot");
+            }
 
             // Test that all levels are present
             foreach (var level in _allLevels.Where(x => x != LogLevel.Error))
@@ -73,7 +85,7 @@ namespace Apache.Ignite.Core.Tests.Log
 
         private class TestLogger : ILogger
         {
-            public static readonly List<LogEntry> Entries = new List<LogEntry>();
+            public static readonly List<LogEntry> Entries = new List<LogEntry>(5000);
 
             private readonly ILogger _console = new ConsoleLogger(_allLevels);
 

@@ -167,15 +167,18 @@ namespace Apache.Ignite.Core
                 // 0. Init logger
                 var log = cfg.Logger ?? new ConsoleLogger(LogLevel.Info, LogLevel.Warn, LogLevel.Error);
 
+                log.LogDebug("Starting Ignite.NET " + Assembly.GetExecutingAssembly().GetName().Version);
+
                 // 1. Check GC settings.
                 CheckServerGc(cfg, log);
 
                 // 2. Create context.
-                IgniteUtils.LoadDlls(cfg.JvmDllPath);
+                IgniteUtils.LoadDlls(cfg.JvmDllPath, log);
 
                 var cbs = new UnmanagedCallbacks(log);
 
                 IgniteManager.CreateJvmContext(cfg, cbs, log);
+                log.LogDebug("JVM started.");
 
                 var gridName = cfg.GridName;
 
