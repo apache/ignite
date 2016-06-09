@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Log
 {
     using System;
     using System.Collections.Generic;
+    using System.IO;
     using System.Linq;
     using Apache.Ignite.Core.Log;
     using NUnit.Framework;
@@ -28,19 +29,27 @@ namespace Apache.Ignite.Core.Tests.Log
     /// </summary>
     public class CustomLoggerTest
     {
-        private static LogLevel[] _allLevels = Enum.GetValues(typeof (LogLevel)).OfType<LogLevel>().ToArray();
+        /** */
+        private static readonly LogLevel[] AllLevels = Enum.GetValues(typeof (LogLevel)).OfType<LogLevel>().ToArray();
 
         // TODO: Online tests with error propagation, categories, etc.
         // TODO: QueryEntity warnings test
-        // TODO: gcServer warning test?
-        // TODO: Startup failure test with .NET error (exception in cache store? lifecycle bean?)
+
+        [SetUp]
+        public void TestSetUp()
+        {
+            TestLogger.Entries.Clear();
+        }
 
         [Test]
         public void TestStartupOutput()
         {
             using (Ignition.Start(GetConfigWithLogger()))
             {
-                // Test topology message
+                // Check initial message
+                Assert.IsTrue(TestLogger.Entries[0].Message.StartsWith("Starting Ignite.NET"));
+
+                // Check topology message
                 Assert.IsTrue(
                     TestUtils.WaitForCondition(() =>
                     {
@@ -52,20 +61,31 @@ namespace Apache.Ignite.Core.Tests.Log
             }
 
             // Test that all levels are present
-            foreach (var level in _allLevels.Where(x => x != LogLevel.Error))
+            foreach (var level in AllLevels.Where(x => x != LogLevel.Error))
                 Assert.IsTrue(TestLogger.Entries.Any(x => x.Level == level), "No messages with level " + level);
         }
 
 
         [Test]
-        public void TestStartupErrors()
+        public void TestStartupJavaError()
         {
             // TODO: Startup failure with damned "GridManagerAdapter"
             // Invalid config?
 
+            // Invalid home
+            Ignition.Start(new IgniteConfiguration(GetConfigWithLogger())
+            {
+                IgniteHome = Path.GetTempPath()
+            });
         }
 
-        private IgniteConfiguration GetConfigWithLogger()
+        [Test]
+        public void TestStartupDotNetError()
+        {
+            // TODO: Startup failure test with .NET error (exception in cache store? lifecycle bean?)
+        }
+
+        private static IgniteConfiguration GetConfigWithLogger()
         {
             return new IgniteConfiguration(TestUtils.GetTestConfiguration()) {Logger = new TestLogger()};
         }
@@ -85,7 +105,7 @@ namespace Apache.Ignite.Core.Tests.Log
         {
             public static readonly List<LogEntry> Entries = new List<LogEntry>(5000);
 
-            private readonly ILogger _console = new ConsoleLogger(_allLevels);
+            private readonly ILogger _console = new ConsoleLogger(AllLevels);
 
             public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider, string category,
                 string nativeErrorInfo, Exception ex)
