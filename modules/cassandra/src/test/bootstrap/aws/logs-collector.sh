@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 #
 # Licensed to the Apache Software Foundation (ASF) under one or more
@@ -45,7 +45,7 @@ echo "--------------------------------------------------------------------"
 TRIGGER_STATE=
 
 while true; do
-    sleep 1m
+    sleep 30s
 
     STATE=$(aws s3 ls $3)
 
