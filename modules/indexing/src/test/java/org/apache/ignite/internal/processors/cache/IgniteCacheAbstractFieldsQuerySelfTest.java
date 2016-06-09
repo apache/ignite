@@ -78,7 +78,7 @@ public abstract class IgniteCacheAbstractFieldsQuerySelfTest extends GridCommonA
     private static IgniteCache<String, String> strCache;
 
     /** */
-    private static IgniteCache<Integer, Integer> intCache;
+    protected static IgniteCache<Integer, Integer> intCache;
 
     /** Flag indicating if starting node should have cache. */
     protected boolean hasCache;
