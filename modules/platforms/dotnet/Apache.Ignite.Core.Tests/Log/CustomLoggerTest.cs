@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Tests.Log
     using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Services;
     using NUnit.Framework;
 
     /// <summary>
@@ -113,6 +114,15 @@ namespace Apache.Ignite.Core.Tests.Log
         }
 
         /// <summary>
+        /// Tests that .NET exception propagates through Java to the log.
+        /// </summary>
+        [Test]
+        public void TestDotNetErrorPropagation()
+        {
+            
+        }
+
+        /// <summary>
         /// Tests the <see cref="QueryEntity"/> validation.
         /// </summary>
         [Test]
@@ -198,6 +208,32 @@ namespace Apache.Ignite.Core.Tests.Log
             public void OnLifecycleEvent(LifecycleEventType evt)
             {
                 throw new ArithmeticException("Failure in bean");
+            }
+        }
+
+        /// <summary>
+        /// Failing service.
+        /// </summary>
+        private class FailService : IService
+        {
+            public void Init(IServiceContext context)
+            {
+                // No-op.
+            }
+
+            public void Execute(IServiceContext context)
+            {
+                // No-op.
+            }
+
+            public void Cancel(IServiceContext context)
+            {
+                // No-op.
+            }
+
+            public void RunMe()
+            {
+                throw new ArithmeticException("Error in service.");
             }
         }
     }
