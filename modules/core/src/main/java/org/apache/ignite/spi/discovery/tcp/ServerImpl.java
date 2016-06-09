@@ -5979,16 +5979,15 @@ class ServerImpl extends TcpDiscoveryImpl {
          * @return Message length.
          */
         private int getMessageLength(final ByteBuffer buf) {
-            // read length independently of byte order
-            byte[] lenArr = new byte[4]; // TODO optimize
+            final ByteOrder curOrder = buf.order();
 
-            buf.get(lenArr);
+            buf.order(ByteOrder.BIG_ENDIAN);
 
-            final ByteBuffer lenBuf = ByteBuffer.wrap(lenArr);
+            final int len = buf.getInt();
 
-            lenBuf.order(ByteOrder.BIG_ENDIAN);
+            buf.order(curOrder);
 
-            return lenBuf.getInt();
+            return len;
         }
 
         /** {@inheritDoc} */

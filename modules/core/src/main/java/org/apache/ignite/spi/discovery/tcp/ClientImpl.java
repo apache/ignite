@@ -57,6 +57,7 @@ import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.IgniteNodeAttributes;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.io.GridByteArrayOutputStream;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -126,6 +127,9 @@ class ClientImpl extends TcpDiscoveryImpl {
 
     /** */
     private static final Object SPI_RECONNECT_FAILED = "SPI_RECONNECT_FAILED";
+
+    /** */
+    private static int DEFAULT_BYTE_ARRAY_STREAM_SIZE = 512;
 
     /** Remote nodes. */
     private final ConcurrentMap<UUID, TcpDiscoveryNode> rmtNodes = new ConcurrentHashMap8<>();
@@ -691,15 +695,17 @@ class ClientImpl extends TcpDiscoveryImpl {
      */
     private void writeToSocketWithLength(final TcpDiscoveryAbstractMessage msg,
         final Socket sock, final long sockTimeout) throws IgniteCheckedException, IOException {
-        final byte[] data = spi.marsh.marshal(msg);
+        final GridByteArrayOutputStream bout =
+            new GridByteArrayOutputStream(DEFAULT_BYTE_ARRAY_STREAM_SIZE, MESSAGE_LEN_BYTES);
 
-        final ByteBuffer buf = ByteBuffer.allocate(data.length + 4);
+        spi.marsh.marshal(msg, bout);
 
-        buf.order(ByteOrder.BIG_ENDIAN);
-        buf.putInt(data.length);
-        buf.put(data);
+        final byte[] data = bout.toByteArray();
 
-        spi.writeToSocket(sock, msg, buf.array(), sockTimeout);
+        // Write message length in leading bytes.
+        ByteBuffer.wrap(data).order(ByteOrder.BIG_ENDIAN).putInt(data.length - MESSAGE_LEN_BYTES);
+
+        spi.writeToSocket(sock, msg, data, sockTimeout);
     }
 
 

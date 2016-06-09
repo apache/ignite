@@ -53,6 +53,9 @@ abstract class TcpDiscoveryImpl {
     /** Response WAIT. */
     protected static final int RES_WAIT = 200;
 
+    /** Number of bytes that keeps message length. */
+    protected static final int MESSAGE_LEN_BYTES = 4;
+
     /** */
     protected final TcpDiscoverySpi spi;
 
