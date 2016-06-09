@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Log
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using Apache.Ignite.Core.Log;
     using NUnit.Framework;
 
@@ -27,6 +28,8 @@ namespace Apache.Ignite.Core.Tests.Log
     /// </summary>
     public class CustomLoggerTest
     {
+        private static LogLevel[] _allLevels = Enum.GetValues(typeof (LogLevel)).OfType<LogLevel>().ToArray();
+
         // TODO: Online tests with error propagation, categories, etc.
         // TODO: QueryEntity warnings test
         // TODO: gcServer warning test?
@@ -38,7 +41,9 @@ namespace Apache.Ignite.Core.Tests.Log
             Ignition.Start(GetConfigWithLogger());
             Ignition.StopAll(true);
 
-            Assert.IsTrue(TestLogger.Entries.Count > 10);
+            // Test that all levels are present
+            foreach (var level in _allLevels.Where(x => x != LogLevel.Error))
+                Assert.IsTrue(TestLogger.Entries.Any(x => x.Level == level), "No messages with level " + level);
         }
 
 
@@ -70,9 +75,14 @@ namespace Apache.Ignite.Core.Tests.Log
         {
             public static readonly List<LogEntry> Entries = new List<LogEntry>();
 
+            private readonly ILogger _console = new ConsoleLogger(_allLevels);
+
             public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider, string category,
                 string nativeErrorInfo, Exception ex)
             {
+                if (!IsEnabled(level))
+                    return;
+
                 lock (Entries)
                 {
                     Entries.Add(new LogEntry
@@ -86,11 +96,14 @@ namespace Apache.Ignite.Core.Tests.Log
                         Exception = ex
                     });
                 }
+
+                if (level > LogLevel.Debug)
+                    _console.Log(level, message, args, formatProvider, category, nativeErrorInfo, ex);
             }
 
             public bool IsEnabled(LogLevel level)
             {
-                return level > LogLevel.Debug;
+                return true;
             }
         }
     }
