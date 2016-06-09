@@ -17,6 +17,11 @@
 
 namespace Apache.Ignite.Core.Tests.Log
 {
+    using System;
+    using System.Collections.Generic;
+    using Apache.Ignite.Core.Log;
+    using NUnit.Framework;
+
     /// <summary>
     /// Tests that user-defined logger receives Ignite events.
     /// </summary>
@@ -26,6 +31,67 @@ namespace Apache.Ignite.Core.Tests.Log
         // TODO: QueryEntity warnings test
         // TODO: gcServer warning test?
         // TODO: Startup failure test with .NET error (exception in cache store? lifecycle bean?)
-        // TODO: Startup failure with damned "GridManagerAdapter"
+
+        [Test]
+        public void TestStartupOutput()
+        {
+            Ignition.Start(GetConfigWithLogger());
+            Ignition.StopAll(true);
+
+            Assert.IsTrue(TestLogger.Entries.Count > 10);
+        }
+
+
+        [Test]
+        public void TestStartupErrors()
+        {
+            // TODO: Startup failure with damned "GridManagerAdapter"
+            // Invalid config?
+
+        }
+
+        private IgniteConfiguration GetConfigWithLogger()
+        {
+            return new IgniteConfiguration(TestUtils.GetTestConfiguration()) {Logger = new TestLogger()};
+        }
+
+        private class LogEntry
+        {
+            public LogLevel Level;
+            public string Message;
+            public object[] Args;
+            public IFormatProvider FormatProvider;
+            public string Category;
+            public string NativeErrorInfo;
+            public Exception Exception;
+        }
+
+        private class TestLogger : ILogger
+        {
+            public static readonly List<LogEntry> Entries = new List<LogEntry>();
+
+            public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider, string category,
+                string nativeErrorInfo, Exception ex)
+            {
+                lock (Entries)
+                {
+                    Entries.Add(new LogEntry
+                    {
+                        Level = level,
+                        Message = message,
+                        Args = args,
+                        FormatProvider = formatProvider,
+                        Category = category,
+                        NativeErrorInfo = nativeErrorInfo,
+                        Exception = ex
+                    });
+                }
+            }
+
+            public bool IsEnabled(LogLevel level)
+            {
+                return level > LogLevel.Debug;
+            }
+        }
     }
 }
