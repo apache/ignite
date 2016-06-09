@@ -5706,7 +5706,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     else {
                         spi.stats.onMessageProcessingStarted(req);
 
-                        Integer res;
+                        final Integer res;
 
                         final SocketAddress rmtAddr = clientMsgWrk.sock.getRemoteSocketAddress();
 
