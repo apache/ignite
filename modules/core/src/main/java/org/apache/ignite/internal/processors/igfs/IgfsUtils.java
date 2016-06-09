@@ -23,6 +23,7 @@ import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -30,6 +31,7 @@ import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.IgfsEvent;
 import org.apache.ignite.igfs.IgfsException;
+import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryUtils;
@@ -56,6 +58,7 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_RETRIES_COUNT;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGFS;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -182,7 +185,7 @@ public class IgfsUtils {
      * @return Converted IGFS exception.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    public static IgfsException toIgfsException(Exception err) {
+    public static IgfsException toIgfsException(Throwable err) {
         IgfsException err0 = err instanceof IgfsException ? (IgfsException)err : null;
 
         IgfsException igfsErr = X.cause(err, IgfsException.class);
@@ -356,7 +359,11 @@ public class IgfsUtils {
             for (FileSystemConfiguration igfsCfg : igfsCfgs) {
                 if (igfsCfg != null) {
                     if (F.eq(ccfg.getName(), igfsCfg.getMetaCacheName())) {
+                        // No copy-on-read.
                         ccfg.setCopyOnRead(false);
+
+                        // Always full-sync to maintain consistency.
+                        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
 
                         // Set co-located affinity mapper if needed.
                         if (igfsCfg.isColocateMetadata() && ccfg.getCacheMode() == CacheMode.REPLICATED &&
@@ -367,7 +374,15 @@ public class IgfsUtils {
                     }
 
                     if (F.eq(ccfg.getName(), igfsCfg.getDataCacheName())) {
+                        // No copy-on-read.
                         ccfg.setCopyOnRead(false);
+
+                        // Always full-sync to maintain consistency.
+                        ccfg.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+
+                        // Set affinity mapper if needed.
+                        if (ccfg.getAffinityMapper() == null)
+                            ccfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper());
 
                         return;
                     }
@@ -687,6 +702,40 @@ public class IgfsUtils {
     }
 
     /**
+     * Write IGFS path.
+     *
+     * @param writer Writer.
+     * @param path Path.
+     */
+    public static void writePath(BinaryRawWriter writer, @Nullable IgfsPath path) {
+        if (path != null) {
+            writer.writeBoolean(true);
+
+            path.writeRawBinary(writer);
+        }
+        else
+            writer.writeBoolean(false);
+    }
+
+    /**
+     * Read IGFS path.
+     *
+     * @param reader Reader.
+     * @return Path.
+     */
+    @Nullable public static IgfsPath readPath(BinaryRawReader reader) {
+        if (reader.readBoolean()) {
+            IgfsPath path = new IgfsPath();
+
+            path.readRawBinary(reader);
+
+            return path;
+        }
+        else
+            return null;
+    }
+
+    /**
      * Parses the TRASH file name to extract the original path.
      *
      * @param name The TRASH short (entry) name.
@@ -714,5 +763,25 @@ public class IgfsUtils {
      */
     static String composeNameForTrash(IgfsPath path, IgniteUuid id) {
         return id.toString() + TRASH_NAME_SEPARATOR + path.toString();
+    }
+
+    /**
+     * Check whether provided node contains IGFS with the given name.
+     *
+     * @param node Node.
+     * @param igfsName IGFS name.
+     * @return {@code True} if it contains IGFS.
+     */
+    public static boolean isIgfsNode(ClusterNode node, String igfsName) {
+        assert node != null;
+
+        IgfsAttributes[] igfs = node.attribute(ATTR_IGFS);
+
+        if (igfs != null)
+            for (IgfsAttributes attrs : igfs)
+                if (F.eq(igfsName, attrs.igfsName()))
+                    return true;
+
+        return false;
     }
 }

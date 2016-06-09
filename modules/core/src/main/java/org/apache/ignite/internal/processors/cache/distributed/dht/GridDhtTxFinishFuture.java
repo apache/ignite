@@ -218,7 +218,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 if (finishErr == null)
                     finishErr = this.tx.commitError();
 
-                if (tx.syncMode() != PRIMARY_SYNC)
+                if (this.tx.syncMode() != PRIMARY_SYNC)
                     this.tx.sendFinishReply(commit, finishErr);
 
                 // Don't forget to clean up.

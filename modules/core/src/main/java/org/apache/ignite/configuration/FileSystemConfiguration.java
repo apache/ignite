@@ -20,6 +20,7 @@ package org.apache.ignite.configuration;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
 import org.apache.ignite.igfs.IgfsMode;
+import org.apache.ignite.igfs.IgfsOutputStream;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -59,10 +60,10 @@ public class FileSystemConfiguration {
     public static final String DFLT_IGFS_LOG_DIR = "work/igfs/log";
 
     /** Default per node buffer size. */
-    public static final int DFLT_PER_NODE_BATCH_SIZE = 100;
+    public static final int DFLT_PER_NODE_BATCH_SIZE = 512;
 
     /** Default number of per node parallel operations. */
-    public static final int DFLT_PER_NODE_PARALLEL_BATCH_CNT = 8;
+    public static final int DFLT_PER_NODE_PARALLEL_BATCH_CNT = 16;
 
     /** Default IGFS mode. */
     public static final IgfsMode DFLT_MODE = IgfsMode.DUAL_ASYNC;
@@ -83,13 +84,16 @@ public class FileSystemConfiguration {
     public static final boolean DFLT_IPC_ENDPOINT_ENABLED = true;
 
     /** Default value of whether to initialize default path modes. */
-    public static final boolean DFLT_INIT_DFLT_PATH_MODES = true;
+    public static final boolean DFLT_INIT_DFLT_PATH_MODES = false;
 
     /** Default value of metadata co-location flag. */
     public static final boolean DFLT_COLOCATE_META = true;
 
     /** Default value of relaxed consistency flag. */
     public static final boolean DFLT_RELAXED_CONSISTENCY = true;
+
+    /** Default value of update file length on flush flag. */
+    public static final boolean DFLT_UPDATE_FILE_LEN_ON_FLUSH = false;
 
     /** IGFS instance name. */
     private String name;
@@ -178,6 +182,9 @@ public class FileSystemConfiguration {
     /** Relaxed consistency flag. */
     private boolean relaxedConsistency = DFLT_RELAXED_CONSISTENCY;
 
+    /** Update file length on flush flag. */
+    private boolean updateFileLenOnFlush = DFLT_UPDATE_FILE_LEN_ON_FLUSH;
+
     /**
      * Constructs default configuration.
      */
@@ -225,6 +232,7 @@ public class FileSystemConfiguration {
         relaxedConsistency = cfg.isRelaxedConsistency();
         seqReadsBeforePrefetch = cfg.getSequentialReadsBeforePrefetch();
         trashPurgeTimeout = cfg.getTrashPurgeTimeout();
+        updateFileLenOnFlush = cfg.isUpdateFileLengthOnFlush();
     }
 
     /**
@@ -920,6 +928,32 @@ public class FileSystemConfiguration {
      */
     public void setRelaxedConsistency(boolean relaxedConsistency) {
         this.relaxedConsistency = relaxedConsistency;
+    }
+
+    /**
+     * Get whether to update file length on flush.
+     * <p>
+     * Controls whether to update file length or not when {@link IgfsOutputStream#flush()} method is invoked. You
+     * may want to set this property to true in case you want to read from a file which is being written at the
+     * same time.
+     * <p>
+     * Defaults to {@link #DFLT_UPDATE_FILE_LEN_ON_FLUSH}.
+     *
+     * @return Whether to update file length on flush.
+     */
+    public boolean isUpdateFileLengthOnFlush() {
+        return updateFileLenOnFlush;
+    }
+
+    /**
+     * Set whether to update file length on flush.
+     * <p>
+     * Set {@link #isUpdateFileLengthOnFlush()} for more information.
+     *
+     * @param updateFileLenOnFlush Whether to update file length on flush.
+     */
+    public void setUpdateFileLengthOnFlush(boolean updateFileLenOnFlush) {
+        this.updateFileLenOnFlush = updateFileLenOnFlush;
     }
 
     /** {@inheritDoc} */

@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.binary;
 
-import java.io.Externalizable;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -99,8 +98,8 @@ import org.jsr166.ConcurrentHashMap8;
  * Binary context.
  */
 public class BinaryContext {
-    /** */
-    private static final ClassLoader dfltLdr = U.gridClassLoader();
+    /** System loader.*/
+    private static final ClassLoader sysLdr = U.gridClassLoader();
 
     /** */
     private static final BinaryInternalMapper DFLT_MAPPER =
@@ -154,9 +153,6 @@ public class BinaryContext {
     /** */
     private final ConcurrentMap<Class<?>, BinaryClassDescriptor> descByCls = new ConcurrentHashMap8<>();
 
-    /** Holds classes loaded by default class loader only. */
-    private final ConcurrentMap<Integer, BinaryClassDescriptor> userTypes = new ConcurrentHashMap8<>();
-
     /** */
     private final Map<Integer, BinaryClassDescriptor> predefinedTypes = new HashMap<>();
 
@@ -201,13 +197,6 @@ public class BinaryContext {
 
     /** Object schemas. */
     private volatile Map<Integer, BinarySchemaRegistry> schemas;
-
-    /**
-     * For {@link Externalizable}.
-     */
-    public BinaryContext() {
-        // No-op.
-    }
 
     /**
      * @param metaHnd Meta data handler.
@@ -570,8 +559,13 @@ public class BinaryContext {
 
         BinaryClassDescriptor desc = descByCls.get(cls);
 
-        if (desc == null || !desc.registered())
+        if (desc == null)
             desc = registerClassDescriptor(cls, deserialize);
+        else if (!desc.registered()) {
+            assert desc.userType();
+
+            desc = registerUserClassDescriptor(desc);
+        }
 
         return desc;
     }
@@ -597,16 +591,7 @@ public class BinaryContext {
             return desc;
 
         if (ldr == null)
-            ldr = dfltLdr;
-
-        // If the type hasn't been loaded by default class loader then we mustn't return the descriptor from here
-        // giving a chance to a custom class loader to reload type's class.
-        if (userType && ldr.equals(dfltLdr)) {
-            desc = userTypes.get(typeId);
-
-            if (desc != null)
-                return desc;
-        }
+            ldr = sysLdr;
 
         Class cls;
 
@@ -617,14 +602,14 @@ public class BinaryContext {
         }
         catch (ClassNotFoundException e) {
             // Class might have been loaded by default class loader.
-            if (userType && !ldr.equals(dfltLdr) && (desc = descriptorForTypeId(true, typeId, dfltLdr, deserialize)) != null)
+            if (userType && !ldr.equals(sysLdr) && (desc = descriptorForTypeId(true, typeId, sysLdr, deserialize)) != null)
                 return desc;
 
             throw new BinaryInvalidTypeException(e);
         }
         catch (IgniteCheckedException e) {
             // Class might have been loaded by default class loader.
-            if (userType && !ldr.equals(dfltLdr) && (desc = descriptorForTypeId(true, typeId, dfltLdr, deserialize)) != null)
+            if (userType && !ldr.equals(sysLdr) && (desc = descriptorForTypeId(true, typeId, sysLdr, deserialize)) != null)
                 return desc;
 
             throw new BinaryObjectException("Failed resolve class for ID: " + typeId, e);
@@ -727,14 +712,50 @@ public class BinaryContext {
                 new BinaryMetadata(typeId, typeName, desc.fieldsMeta(), affFieldName, schemas, desc.isEnum()).wrap(this));
         }
 
-        // perform put() instead of putIfAbsent() because "registered" flag might have been changed or class loader
-        // might have reloaded described class.
-        if (IgniteUtils.detectClassLoader(cls).equals(dfltLdr))
-            userTypes.put(typeId, desc);
-
         descByCls.put(cls, desc);
 
         typeId2Mapper.putIfAbsent(typeId, mapper);
+
+        return desc;
+    }
+
+    /**
+     * Creates and registers {@link BinaryClassDescriptor} for the given user {@code class}.
+     *
+     * @param desc Old descriptor that should be re-registered.
+     * @return Class descriptor.
+     */
+    private BinaryClassDescriptor registerUserClassDescriptor(BinaryClassDescriptor desc) {
+        boolean registered;
+
+        try {
+            registered = marshCtx.registerClass(desc.typeId(), desc.describedClass());
+        }
+        catch (IgniteCheckedException e) {
+            throw new BinaryObjectException("Failed to register class.", e);
+        }
+
+        if (registered) {
+            BinarySerializer serializer = desc.initialSerializer();
+
+            if (serializer == null)
+                serializer = serializerForClass(desc.describedClass());
+
+            desc = new BinaryClassDescriptor(
+                this,
+                desc.describedClass(),
+                true,
+                desc.typeId(),
+                desc.typeName(),
+                desc.affFieldKeyName(),
+                desc.mapper(),
+                serializer,
+                true,
+                true
+            );
+
+            descByCls.put(desc.describedClass(), desc);
+        }
 
         return desc;
     }
@@ -996,7 +1017,7 @@ public class BinaryContext {
         Class<?> cls = null;
 
         try {
-            cls = Class.forName(clsName);
+            cls = U.resolveClassLoader(configuration()).loadClass(clsName);
         }
         catch (ClassNotFoundException | NoClassDefFoundError ignored) {
             // No-op.
@@ -1042,14 +1063,11 @@ public class BinaryContext {
                 mapper,
                 serializer,
                 true,
-                true /* registered */
+                false
             );
 
             fieldsMeta = desc.fieldsMeta();
             schemas = desc.schema() != null ? Collections.singleton(desc.schema()) : null;
-
-            if (IgniteUtils.detectClassLoader(cls).equals(dfltLdr))
-                userTypes.put(id, desc);
 
             descByCls.put(cls, desc);
         }

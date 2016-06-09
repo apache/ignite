@@ -161,6 +161,9 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             }
         };
 
+    /** */
+    public static final int CNT = 20;
+
     /** {@inheritDoc} */
     @Override protected long getTestTimeout() {
         return TEST_TIMEOUT;
@@ -2474,31 +2477,50 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     /**
      * @throws Exception If failed.
      */
+    @SuppressWarnings("serial")
     public void testGetAndRemoveObject() throws Exception {
-        IgniteCache<String, SerializableObject> cache = ignite(0).cache(cacheName());
+        runInAllDataModes(new TestRunnable() {
+            @Override public void run() throws Exception {
+                IgniteCache<String, Object> cache = ignite(0).cache(cacheName());
 
-        SerializableObject val1 = new SerializableObject(1);
-        SerializableObject val2 = new SerializableObject(2);
+                Map<String, Object> map = new HashMap<String, Object>() {{
+                    for (int i = 0; i < CNT; i++)
+                        put("key" + i, value(i));
+                }};
 
-        cache.put("key1", val1);
-        cache.put("key2", val2);
+                for (Map.Entry<String, Object> e : map.entrySet()) {
+                    final String key = e.getKey();
+                    final Object val = e.getValue();
 
-        assert !cache.remove("key1", new SerializableObject(0));
+                    cache.put(key, val);
 
-        SerializableObject oldVal = cache.get("key1");
+                    assertFalse(cache.remove(key, new SerializableObject(-1)));
 
-        assert oldVal != null && F.eq(val1, oldVal);
+                    Object oldVal = cache.get(key);
 
-        assert cache.remove("key1");
+                    assertNotNull(oldVal);
+                    assertEquals(val, oldVal);
 
-        assert cache.get("key1") == null;
+                    assertTrue(cache.remove(key));
 
-        SerializableObject oldVal2 = cache.getAndRemove("key2");
+                    assertNull(cache.get(key));
+                }
 
-        assert F.eq(val2, oldVal2);
+                for (Map.Entry<String, Object> e : map.entrySet()) {
+                    final String key = e.getKey();
+                    final Object val = e.getValue();
 
-        assert cache.get("key2") == null;
-        assert cache.getAndRemove("key2") == null;
+                    cache.put(key, val);
+
+                    Object oldVal = cache.getAndRemove(key);
+
+                    assertEquals(val, oldVal);
+
+                    assertNull(cache.get(key));
+                    assertNull(cache.getAndRemove(key));
+                }
+            }
+        });
     }
 
     /**

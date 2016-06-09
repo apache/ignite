@@ -292,9 +292,9 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
             Iterator<Map.Entry<Integer, String>> offheapIt;
 
             if (internalCache.context().isNear())
-                offheapIt = internalCache.context().near().dht().context().swap().lazyOffHeapIterator();
+                offheapIt = internalCache.context().near().dht().context().swap().lazyOffHeapIterator(false);
             else
-                offheapIt = internalCache.context().swap().lazyOffHeapIterator();
+                offheapIt = internalCache.context().swap().lazyOffHeapIterator(false);
 
             while (offheapIt.hasNext()) {
                 Map.Entry<Integer, String> e = offheapIt.next();
@@ -704,9 +704,9 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
         Iterator<Map.Entry<Integer, String>> offheapIt;
 
         if (internalCache.context().isNear())
-            offheapIt = internalCache.context().near().dht().context().swap().lazyOffHeapIterator();
+            offheapIt = internalCache.context().near().dht().context().swap().lazyOffHeapIterator(false);
         else
-            offheapIt = internalCache.context().swap().lazyOffHeapIterator();
+            offheapIt = internalCache.context().swap().lazyOffHeapIterator(false);
 
         Affinity aff = ignite(nodeIdx).affinity(null);
 

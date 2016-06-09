@@ -24,20 +24,28 @@
 
 namespace ignite
 {
-    namespace examples 
+    namespace examples
     {
-        struct Organization 
+        struct Organization
         {
-            Organization() : name(), addr()
+            Organization() :
+                name(), addr()
             {
                 // No-op.
             }
-            
-            Organization(std::string name, Address addr) : name(name), addr(addr) 
+
+            Organization(const std::string& name) :
+                name(name), addr()
             {
                 // No-op.
             }
-            
+
+            Organization(const std::string& name, Address addr) :
+                name(name), addr(addr)
+            {
+                // No-op.
+            }
+
             std::string ToString() 
             {
                 std::ostringstream oss;

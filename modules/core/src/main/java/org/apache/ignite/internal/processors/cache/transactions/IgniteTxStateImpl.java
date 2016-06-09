@@ -50,8 +50,8 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
 public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** Active cache IDs. */
     private GridLongList activeCacheIds = new GridLongList();
-    /** Per-transaction read map. */
 
+    /** Per-transaction read map. */
     @GridToStringInclude
     protected Map<IgniteTxKey, IgniteTxEntry> txMap;
 
@@ -71,6 +71,18 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     @Nullable @Override public Integer firstCacheId() {
         return activeCacheIds.isEmpty() ? null : (int)activeCacheIds.get(0);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unwindEvicts(GridCacheSharedContext cctx) {
+        for (int i = 0; i < activeCacheIds.size(); i++) {
+            int cacheId = (int) activeCacheIds.get(i);
+
+            GridCacheContext ctx = cctx.cacheContext(cacheId);
+
+            if (ctx != null)
+                CU.unwindEvicts(ctx);
+        }
     }
 
     /** {@inheritDoc} */

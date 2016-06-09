@@ -31,13 +31,19 @@
     </parent>
 
     <artifactId>ignite-schema-import</artifactId>
-    <version>1.6.0-SNAPSHOT</version>
+    <version>1.7.0-SNAPSHOT</version>
     <url>http://ignite.apache.org</url>
 
     <dependencies>
         <dependency>
             <groupId>org.apache.ignite</groupId>
             <artifactId>ignite-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.ignite</groupId>
+            <artifactId>ignite-schema-import-db</artifactId>
             <version>${project.version}</version>
         </dependency>
 
