@@ -691,7 +691,7 @@ class ClientImpl extends TcpDiscoveryImpl {
      */
     private void writeToSocketWithLength(final TcpDiscoveryAbstractMessage msg,
         final Socket sock, final long sockTimeout) throws IgniteCheckedException, IOException {
-        final byte[] data = spi.marsh.marshal(msg); // TODO maybe optimize
+        final byte[] data = spi.marsh.marshal(msg);
 
         final ByteBuffer buf = ByteBuffer.allocate(data.length + 4);
 
