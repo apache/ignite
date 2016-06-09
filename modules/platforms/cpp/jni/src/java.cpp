@@ -2839,6 +2839,15 @@ namespace ignite
                 char* errorInfoChars = StringToChars(env, errorInfo, &errorInfoLen);
                 
                 IGNITE_SAFE_PROC(env, envPtr, LoggerLogHandler, loggerLog, level, messageChars, messageLen, categoryChars, categoryLen, errorInfoChars, errorInfoLen, memPtr);
+
+                if (messageChars)
+                    delete[] messageChars;
+
+                if (categoryChars)
+                    delete[] categoryChars;
+
+                if (errorInfoChars)
+                    delete[] errorInfoChars;
             }
 
             JNIEXPORT jboolean JNICALL JniLoggerIsLevelEnabled(JNIEnv *env, jclass cls, jlong envPtr, jint level) {
