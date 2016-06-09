@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.dotnet;
 
+import org.apache.ignite.internal.logger.platform.PlatformLogger;
 import org.apache.ignite.internal.processors.platform.PlatformConfigurationEx;
 import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManagerImpl;
@@ -35,6 +36,9 @@ public class PlatformDotNetConfigurationEx extends PlatformDotNetConfiguration i
     /** Memory manager. */
     private final PlatformMemoryManagerImpl memMgr;
 
+    /** Logger. */
+    private final PlatformLogger logger;
+
     /** Warnings */
     private Collection<String> warnings;
 
@@ -46,11 +50,12 @@ public class PlatformDotNetConfigurationEx extends PlatformDotNetConfiguration i
      * @param memMgr Memory manager.
      */
     public PlatformDotNetConfigurationEx(PlatformDotNetConfiguration cfg, PlatformCallbackGateway gate,
-        PlatformMemoryManagerImpl memMgr) {
+        PlatformMemoryManagerImpl memMgr, PlatformLogger logger) {
         super(cfg);
 
         this.gate = gate;
         this.memMgr = memMgr;
+        this.logger = logger;
     }
 
     /** {@inheritDoc} */
@@ -71,6 +76,11 @@ public class PlatformDotNetConfigurationEx extends PlatformDotNetConfiguration i
     /** {@inheritDoc} */
     @Override public Collection<String> warnings() {
         return warnings;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformLogger logger() {
+        return logger;
     }
 
     /**

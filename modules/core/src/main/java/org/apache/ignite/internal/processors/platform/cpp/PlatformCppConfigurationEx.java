@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.cpp;
 
+import org.apache.ignite.internal.logger.platform.PlatformLogger;
 import org.apache.ignite.internal.processors.platform.PlatformConfigurationEx;
 import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManagerImpl;
@@ -71,6 +72,11 @@ public class PlatformCppConfigurationEx extends PlatformCppConfiguration impleme
     /** {@inheritDoc} */
     @Override public Collection<String> warnings() {
         return warns;
+    }
+
+    /** {@inheritDoc} */
+    @Override public PlatformLogger logger() {
+        return null;
     }
 
     /**

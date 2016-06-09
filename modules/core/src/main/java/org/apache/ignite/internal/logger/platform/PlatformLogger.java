@@ -18,8 +18,12 @@
 package org.apache.ignite.internal.logger.platform;
 
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
+import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
+import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.util.typedef.X;
 import org.jetbrains.annotations.Nullable;
 
@@ -62,12 +66,15 @@ public class PlatformLogger implements IgniteLogger {
     /** Info flag. */
     private final boolean infoEnabled;
 
+    /** Context. */
+    private volatile PlatformContext ctx;
+
     /**
      * Ctor.
      *
      * @param gate Callback gateway.
      */
-    public PlatformLogger(PlatformCallbackGateway gate, Object ctgr) {
+    public PlatformLogger(PlatformCallbackGateway gate) {
         assert gate != null;
 
         this.gate = gate;
@@ -76,7 +83,7 @@ public class PlatformLogger implements IgniteLogger {
         // Platform is responsible for console output, we do not want to mix these.
         quiet = Boolean.valueOf(System.getProperty(IGNITE_QUIET, "false"));
 
-        category = getCategoryString(ctgr);
+        category = null;
 
         // Precalculate enabled levels (JNI calls are expensive)
         traceEnabled = gate.loggerIsLevelEnabled(LVL_TRACE);
@@ -163,6 +170,17 @@ public class PlatformLogger implements IgniteLogger {
     }
 
     /**
+     * Sets the context.
+     *
+     * @param ctx Platform context.
+     */
+    public void setContext(PlatformContext ctx) {
+        assert ctx != null;
+
+        this.ctx = ctx;
+    }
+
+    /**
      * Logs the message.
      *
      * @param level Log level.
@@ -175,16 +193,20 @@ public class PlatformLogger implements IgniteLogger {
         if (e != null)
             errorInfo = X.getFullStackTrace(e);
 
-        long memPtr = 0;
-
         PlatformNativeException e0 = X.cause(e, PlatformNativeException.class);
+        if (ctx != null && e0 != null) {
+            try (PlatformMemory mem = ctx.memory().allocate()) {
+                PlatformOutputStream out = mem.output();
+                BinaryRawWriterEx writer = ctx.writer(out);
+                writer.writeObject(e0.cause());
+                out.synchronize();
 
-        if (e0 != null) {
-            // TODO: Unwrap platform error if possible
-            //e0.cause()
+                gate.loggerLog(level, msg, category, errorInfo, mem.pointer());
+            }
         }
-
-        gate.loggerLog(level, msg, category, errorInfo, memPtr);
+        else {
+            gate.loggerLog(level, msg, category, errorInfo, 0);
+        }
     }
 
     /**

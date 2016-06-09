@@ -88,7 +88,8 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
         memMgr = new PlatformMemoryManagerImpl(gate, 1024);
 
-        PlatformDotNetConfigurationEx dotNetCfg0 = new PlatformDotNetConfigurationEx(dotNetCfg, gate, memMgr);
+        PlatformDotNetConfigurationEx dotNetCfg0 = new PlatformDotNetConfigurationEx(dotNetCfg, gate, memMgr,
+            new PlatformLogger(gate));
 
         igniteCfg.setPlatformConfiguration(dotNetCfg0);
 
@@ -158,8 +159,6 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
             throw U.convertException(e);
         }
 
-        // Set logger
-
         // 4. Callback to .Net.
         prepare(igniteCfg, dotNetCfg0);
     }
@@ -197,7 +196,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
                 gate.extensionCallbackInLongLongOutLong(
                     PlatformUtils.OP_PREPARE_DOT_NET, outMem.pointer(), inMem.pointer());
 
-                processPrepareResult(marshaller.reader(inMem.input()));
+                processPrepareResult(marshaller.reader(inMem.input()), interopCfg.logger());
             }
         }
     }
@@ -206,8 +205,9 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
      * Process prepare result.
      *
      * @param in Input stream.
+     * @param logger
      */
-    private void processPrepareResult(BinaryReaderExImpl in) {
+    private void processPrepareResult(BinaryReaderExImpl in, PlatformLogger logger) {
         assert cfg != null;
 
         PlatformConfigurationUtils.readIgniteConfiguration(in, cfg);
@@ -246,7 +246,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
         // Set up platform logger
         if (cfg.getGridLogger() == null)
-            cfg.setGridLogger(new PlatformLogger(gate, null));
+            cfg.setGridLogger(logger);
     }
 
     /**
