@@ -19,8 +19,8 @@ namespace Apache.Ignite.Core.Tests.Log
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
     using System.Linq;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.Log;
@@ -34,15 +34,18 @@ namespace Apache.Ignite.Core.Tests.Log
         /** */
         private static readonly LogLevel[] AllLevels = Enum.GetValues(typeof (LogLevel)).OfType<LogLevel>().ToArray();
 
-        // TODO: Online tests with error propagation, categories, etc.
-        // TODO: QueryEntity warnings test
-
+        /// <summary>
+        /// Test setup.
+        /// </summary>
         [SetUp]
         public void TestSetUp()
         {
             TestLogger.Entries.Clear();
         }
 
+        /// <summary>
+        /// Tests the startup output.
+        /// </summary>
         [Test]
         public void TestStartupOutput()
         {
@@ -68,6 +71,9 @@ namespace Apache.Ignite.Core.Tests.Log
         }
 
 
+        /// <summary>
+        /// Tests startup error in Java.
+        /// </summary>
         [Test]
         public void TestStartupJavaError()
         {
@@ -85,17 +91,35 @@ namespace Apache.Ignite.Core.Tests.Log
             Assert.IsTrue(err.NativeErrorInfo.Contains("SPI parameter failed condition check: idleConnTimeout > 0"));
         }
 
+        /// <summary>
+        /// Tests startup error in .NET.
+        /// </summary>
         [Test]
         public void TestStartupDotNetError()
         {
             // TODO: Startup failure test with .NET error (exception in cache store? lifecycle bean?)
         }
 
+        /// <summary>
+        /// Tests the <see cref="QueryEntity"/> validation.
+        /// </summary>
+        [Test]
+        public void TestQueryEntityValidation()
+        {
+            // TODO: QueryEntity warnings test
+        }
+
+        /// <summary>
+        /// Gets the configuration with logger.
+        /// </summary>
         private static IgniteConfiguration GetConfigWithLogger()
         {
             return new IgniteConfiguration(TestUtils.GetTestConfiguration()) {Logger = new TestLogger()};
         }
 
+        /// <summary>
+        /// Test log entry.
+        /// </summary>
         private class LogEntry
         {
             public LogLevel Level;
@@ -107,6 +131,9 @@ namespace Apache.Ignite.Core.Tests.Log
             public Exception Exception;
         }
 
+        /// <summary>
+        /// Test logger.
+        /// </summary>
         private class TestLogger : ILogger
         {
             public static readonly List<LogEntry> Entries = new List<LogEntry>(5000);
