@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Tests.Log
                     }
                 }));
 
-            var err = TestLogger.Entries.Single(x => x.Level == LogLevel.Error);
+            var err = TestLogger.Entries.First(x => x.Level == LogLevel.Error);
             Assert.IsTrue(err.NativeErrorInfo.Contains("SPI parameter failed condition check: idleConnTimeout > 0"));
         }
 
