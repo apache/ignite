@@ -62,6 +62,9 @@ public class DataPageIO extends PageIO {
     /** */
     private static final int VER_SIZE = 24;
 
+    /** */
+    private static final int EXPIRE_TIME_SIZE = 8;
+
     /**
      * @param ver Page format version.
      */
@@ -107,7 +110,7 @@ public class DataPageIO extends PageIO {
      * @return Entry size including item.
      */
     private static int getEntrySize(int keySize, int valSize) {
-        return ITEM_SIZE + KV_LEN_SIZE + keySize + valSize + VER_SIZE;
+        return ITEM_SIZE + KV_LEN_SIZE + keySize + valSize + VER_SIZE + EXPIRE_TIME_SIZE;
     }
 
     /**
@@ -589,6 +592,7 @@ public class DataPageIO extends PageIO {
         CacheObject key,
         CacheObject val,
         GridCacheVersion ver,
+        long expireTime,
         int entrySizeWithItem
     ) throws IgniteCheckedException {
         if (entrySizeWithItem > buf.capacity() - ITEMS_OFF) // TODO span multiple data pages with a single large entry
@@ -609,7 +613,7 @@ public class DataPageIO extends PageIO {
         // Write data right before the first entry.
         dataOff -= entrySizeWithItem - ITEM_SIZE;
 
-        writeRowData(coctx, buf, dataOff, entrySizeWithItem, key, val, ver);
+        writeRowData(coctx, buf, dataOff, entrySizeWithItem, key, val, ver, expireTime);
 
         setFirstEntryOffset(buf, dataOff);
 
@@ -765,7 +769,8 @@ public class DataPageIO extends PageIO {
         int entrySize,
         CacheObject key,
         CacheObject val,
-        GridCacheVersion ver
+        GridCacheVersion ver,
+        long expireTime
     ) throws IgniteCheckedException {
         try {
             buf.position(dataOff);
@@ -784,6 +789,7 @@ public class DataPageIO extends PageIO {
             buf.putInt(ver.nodeOrderAndDrIdRaw());
             buf.putLong(ver.globalTime());
             buf.putLong(ver.order());
+            buf.putLong(expireTime);
         }
         finally {
             buf.position(0);

@@ -59,7 +59,8 @@ public class FreeList {
             throws IgniteCheckedException {
             DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
 
-            int idx = io.addRow(cctx.cacheObjectContext(), buf, row.key(), row.value(), row.version(), entrySize);
+            int idx = io.addRow(cctx.cacheObjectContext(), buf, row.key(), row.value(), row.version(),
+                row.expireTime(), entrySize);
 
             assert idx >= 0 : idx;
 

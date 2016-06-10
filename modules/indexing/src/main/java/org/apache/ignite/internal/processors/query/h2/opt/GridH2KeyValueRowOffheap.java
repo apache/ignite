@@ -93,7 +93,7 @@ public class GridH2KeyValueRowOffheap extends GridH2AbstractKeyValueRow {
     }
 
     /** {@inheritDoc} */
-    @Override public long expirationTime() {
+    @Override public long expireTime() {
         if (expirationTime == 0) {
             long p = ptr;
 

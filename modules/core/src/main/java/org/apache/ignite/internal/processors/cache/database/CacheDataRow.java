@@ -36,4 +36,6 @@ public interface CacheDataRow {
     public long link();
 
     public void link(long link);
+
+    public long expireTime();
 }

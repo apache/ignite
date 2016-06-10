@@ -38,7 +38,7 @@ public class GridCacheTtlEntryExtras extends GridCacheEntryExtrasAdapter {
      * @param expireTime Expire time.
      */
     public GridCacheTtlEntryExtras(long ttl, long expireTime) {
-        assert ttl != 0;
+        assert expireTime != 0;
 
         this.ttl = ttl;
         this.expireTime = expireTime;
@@ -66,7 +66,7 @@ public class GridCacheTtlEntryExtras extends GridCacheEntryExtrasAdapter {
 
     /** {@inheritDoc} */
     @Override public GridCacheEntryExtras ttlAndExpireTime(long ttl, long expireTime) {
-        if (ttl != 0) {
+        if (expireTime != 0) {
             this.ttl = ttl;
             this.expireTime = expireTime;
 
