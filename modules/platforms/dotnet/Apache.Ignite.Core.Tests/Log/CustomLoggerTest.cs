@@ -142,6 +142,7 @@ namespace Apache.Ignite.Core.Tests.Log
         public void TestQueryEntityValidation()
         {
             // TODO: test static and dynamic cache start
+            // TODO: Move this test somewhere else?
 
             var cfg = new IgniteConfiguration(GetConfigWithLogger())
             {
