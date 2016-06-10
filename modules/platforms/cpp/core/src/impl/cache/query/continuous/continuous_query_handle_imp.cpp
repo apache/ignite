@@ -35,9 +35,11 @@ namespace ignite
             {
                 namespace continuous
                 {
-                    ContinuousQueryHandleImpl::ContinuousQueryHandleImpl(SharedPointer<IgniteEnvironment> env, jobject javaRef) :
+                    ContinuousQueryHandleImpl::ContinuousQueryHandleImpl(
+                        SharedPointer<IgniteEnvironment> env, jobject javaRef) :
                         env(env),
-                        javaRef(javaRef)
+                        javaRef(javaRef),
+                        extracted(false)
                     {
                         // No-op.
                     }
@@ -45,6 +47,30 @@ namespace ignite
                     ContinuousQueryHandleImpl::~ContinuousQueryHandleImpl()
                     {
                         JniContext::Release(javaRef);
+                    }
+
+                    QueryCursorImpl* ContinuousQueryHandleImpl::GetInitialQueryCursor(IgniteError& err)
+                    {
+                        if (extracted)
+                        {
+                            err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                                "GetInitialQueryCursor() can be called only once.");
+
+                            return 0;
+                        }
+
+                        JniErrorInfo jniErr;
+
+                        jobject res = env.Get()->Context()->ContinuousQueryGetInitialQueryCursor(javaRef, &jniErr);
+
+                        IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+
+                        if (jniErr.code != IGNITE_JNI_ERR_SUCCESS)
+                            return 0;
+
+                        extracted = true;
+
+                        return new QueryCursorImpl(env, res);
                     }
                 }
             }

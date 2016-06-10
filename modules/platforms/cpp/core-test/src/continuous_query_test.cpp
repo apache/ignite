@@ -32,6 +32,7 @@
 using namespace ignite;
 using namespace ignite::cache;
 using namespace ignite::cache::event;
+using namespace ignite::cache::query;
 using namespace ignite::cache::query::continuous;
 using namespace boost::unit_test;
 
@@ -124,8 +125,6 @@ public:
      */
     virtual void OnEvent(const CacheEntryEvent<int, int>* evts, uint32_t num)
     {
-        std::cout << "Received " << num << " events" << std::endl;
-
         for (uint32_t i = 0; i < num; ++i)
             eventQueue.Push(evts[i]);
     }
@@ -240,7 +239,7 @@ BOOST_AUTO_TEST_CASE(TestBasic)
 
     ContinuousQuery<int, int> qry(lsnr);
 
-    ContinuousQueryHandle<int, int> handle = cache.QueryContinuous(qry);
+    cache.QueryContinuous(qry);
 
     cache.Put(1, 10);
     lsnr.CheckNextEvent(1, boost::none, 10);
@@ -255,28 +254,45 @@ BOOST_AUTO_TEST_CASE(TestBasic)
     lsnr.CheckNextEvent(1, 20, boost::none);
 }
 
-BOOST_AUTO_TEST_CASE(TestBufferSize)
+BOOST_AUTO_TEST_CASE(TestInitialQueryScan)
 {
     Listener lsnr;
 
     ContinuousQuery<int, int> qry(lsnr);
-    qry.SetBufferSize(2);
 
-    ContinuousQueryHandle<int, int> handle = cache.QueryContinuous(qry);
+    cache.Put(11, 111);
+    cache.Put(22, 222);
+    cache.Put(33, 333);
+
+    ContinuousQueryHandle<int, int> handle = cache.QueryContinuous(qry, ScanQuery());
+
+    std::vector< CacheEntry<int, int> > vals;
+
+    handle.GetInitialQueryCursor().GetAll(vals);
+
+    BOOST_CHECK_THROW(handle.GetInitialQueryCursor(), IgniteError);
+
+    BOOST_REQUIRE_EQUAL(vals.size(), 3);
+
+    BOOST_CHECK_EQUAL(vals[0].GetKey(), 11);
+    BOOST_CHECK_EQUAL(vals[1].GetKey(), 22);
+    BOOST_CHECK_EQUAL(vals[2].GetKey(), 33);
+
+    BOOST_CHECK_EQUAL(vals[0].GetValue(), 111);
+    BOOST_CHECK_EQUAL(vals[1].GetValue(), 222);
+    BOOST_CHECK_EQUAL(vals[2].GetValue(), 333);
 
     cache.Put(1, 10);
-    lsnr.CheckNoEvent(boost::chrono::milliseconds(100));
+    lsnr.CheckNextEvent(1, boost::none, 10);
 
     cache.Put(1, 20);
-    lsnr.CheckNextEvent(1, boost::none, 10);
     lsnr.CheckNextEvent(1, 10, 20);
 
-    cache.Remove(1);
-    lsnr.CheckNoEvent(boost::chrono::milliseconds(100));
+    cache.Put(2, 20);
+    lsnr.CheckNextEvent(2, boost::none, 20);
 
-    cache.Put(1, 100);
+    cache.Remove(1);
     lsnr.CheckNextEvent(1, 20, boost::none);
-    lsnr.CheckNextEvent(1, boost::none, 100);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

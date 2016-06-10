@@ -73,7 +73,35 @@ namespace ignite
                      */
                     QueryCursor<K, V> GetInitialQueryCursor()
                     {
-                        return QueryCursor<K, V>();
+                        IgniteError err;
+
+                        QueryCursor<K, V> res = GetInitialQueryCursor(err);
+
+                        IgniteError::ThrowIfNeeded(err);
+
+                        return res;
+                    }
+
+                    /**
+                     * Gets the cursor for initial query.
+                     * Can be called only once, throws exception on consequent calls.
+                     *
+                     * @param err Error.
+                     * @return Initial query cursor.
+                     */
+                    QueryCursor<K, V> GetInitialQueryCursor(IgniteError& err)
+                    {
+                        impl::cache::query::continuous::ContinuousQueryHandleImpl* impl0 = impl.Get();
+
+                        if (impl0)
+                            return QueryCursor<K, V>(impl0->GetInitialQueryCursor(err));
+                        else
+                        {
+                            err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                                "Instance is not usable (did you check for error?).");
+
+                            return QueryCursor<K, V>();
+                        }
                     }
 
                     /**

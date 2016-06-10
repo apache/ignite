@@ -574,7 +574,7 @@ namespace ignite
                 void* ComputeExecuteNative(jobject obj, long long taskPtr, long long topVer);
 
                 void ContinuousQueryClose(jobject obj);
-                jobject ContinuousQueryGetInitialQueryCursor(jobject obj);
+                jobject ContinuousQueryGetInitialQueryCursor(jobject obj, JniErrorInfo* errInfo = NULL);
 
                 void DataStreamerListenTopology(jobject obj, long long ptr);
                 bool DataStreamerAllowOverwriteGet(jobject obj);

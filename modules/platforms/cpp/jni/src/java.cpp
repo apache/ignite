@@ -1794,13 +1794,13 @@ namespace ignite
                 ExceptionCheck(env);
             }
 
-            jobject JniContext::ContinuousQueryGetInitialQueryCursor(jobject obj) {
+            jobject JniContext::ContinuousQueryGetInitialQueryCursor(jobject obj, JniErrorInfo* errInfo) {
                 JNIEnv* env = Attach();
 
                 jobject res = env->CallObjectMethod(obj,
                     jvm->GetMembers().m_PlatformContinuousQuery_getInitialQueryCursor);
 
-                ExceptionCheck(env);
+                ExceptionCheck(env, errInfo);
 
                 return LocalToGlobal(env,  res);
             }

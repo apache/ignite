@@ -27,7 +27,6 @@
 #include <string>
 
 #include "ignite/cache/query/query_cursor.h"
-#include "ignite/cache/query/query_fields_cursor.h"
 
 namespace ignite
 {
@@ -58,12 +57,24 @@ namespace ignite
                          */
                         ~ContinuousQueryHandleImpl();
 
+                        /**
+                         * Gets the cursor for initial query.
+                         * Can be called only once, throws exception on consequent calls.
+                         *
+                         * @param err Error.
+                         * @return Initial query cursor.
+                         */
+                        QueryCursorImpl* GetInitialQueryCursor(IgniteError& err);
+
                     private:
                         /** Environment. */
                         ignite::common::concurrent::SharedPointer<impl::IgniteEnvironment> env;
 
                         /** Handle to Java object. */
                         jobject javaRef;
+
+                        /** Cursor extracted. */
+                        bool extracted;
                     };
                 }
             }

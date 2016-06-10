@@ -1218,6 +1218,46 @@ namespace ignite
             }
 
             /**
+             * Start continuous query execution with the initial query.
+             *
+             * @param qry Continuous query.
+             * @param initialQry Initial query to be executed.
+             * @return Continuous query handle.
+             */
+            template<typename Q>
+            query::continuous::ContinuousQueryHandle<K, V> QueryContinuous(
+                const query::continuous::ContinuousQuery<K, V>& qry,
+                const Q& initialQry)
+            {
+                IgniteError err;
+
+                query::continuous::ContinuousQueryHandle<K, V> res = QueryContinuous(qry, initialQry, err);
+
+                IgniteError::ThrowIfNeeded(err);
+
+                return res;
+            }
+
+            /**
+             * Start continuous query execution with the initial query.
+             *
+             * @param qry Continuous query.
+             * @param initialQry Initial query to be executed.
+             * @param err Error.
+             * @return Continuous query handle.
+             */
+            template<typename Q>
+            query::continuous::ContinuousQueryHandle<K, V> QueryContinuous(
+                const query::continuous::ContinuousQuery<K, V>& qry,
+                const Q& initialQry, IgniteError& err)
+            {
+                impl::cache::query::continuous::ContinuousQueryHandleImpl* cqImpl;
+                cqImpl = impl.Get()->QueryContinuous(qry, initialQry, err);
+
+                return query::continuous::ContinuousQueryHandle<K, V>(cqImpl);
+            }
+
+            /**
              * Check if the instance is valid.
              *
              * Invalid instance can be returned if some of the previous
