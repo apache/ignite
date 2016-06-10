@@ -19,64 +19,45 @@ namespace Apache.Ignite.Core.Log
 {
     using System;
     using System.Globalization;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
     /// Extension methods for <see cref="ILogger"/>
     /// </summary>
     public static class LoggerExtensions
     {
-        /// <summary>
-        /// Logs the debug message.
-        /// </summary>
-        /// <param name="logger">The logger.</param>
-        /// <param name="message">The message.</param>
-        public static void LogDebug(this ILogger logger, string message)
+        public static void Log(this ILogger logger, LogLevel level, string message)
         {
-            logger.Log(LogLevel.Debug, message, null, null, null, null, null);
+            IgniteArgumentCheck.NotNull(logger, "logger");
+
+            logger.Log(level, message, null, null, null, null, null);
+        }
+
+        public static void Log(this ILogger logger, LogLevel level, string message, params object[] args)
+        {
+            IgniteArgumentCheck.NotNull(logger, "logger");
+
+            logger.Log(level, message, args, CultureInfo.InvariantCulture, null, null, null);
+        }
+
+        public static void Log(this ILogger logger, LogLevel level, Exception ex, string message, params object[] args)
+        {
+            IgniteArgumentCheck.NotNull(logger, "logger");
+
+            logger.Log(level, message, args, CultureInfo.InvariantCulture, null, null, ex);
         }
 
         /// <summary>
-        /// Logs the debug message.
+        /// Gets the <see cref="CategoryLogger"/> with a specified category that wraps provided logger.
         /// </summary>
         /// <param name="logger">The logger.</param>
-        /// <param name="message">The message.</param>
-        /// <param name="args">The arguments.</param>
-        public static void LogDebug(this ILogger logger, string message, params object[] args)
+        /// <param name="category">The category.</param>
+        /// <returns>Logger that always uses specified category.</returns>
+        public static ILogger GetLogger(this ILogger logger, string category)
         {
-            logger.Log(LogLevel.Debug, message, args, CultureInfo.InvariantCulture, null, null, null);
-        }
+            IgniteArgumentCheck.NotNull(logger, "logger");
 
-        /// <summary>
-        /// Logs the error.
-        /// </summary>
-        /// <param name="logger">The logger.</param>
-        /// <param name="message">The message.</param>
-        public static void LogError(this ILogger logger, string message)
-        {
-            logger.Log(LogLevel.Error, message, null, null, null, null, null);
+            return new CategoryLogger(logger, category);
         }
-
-        /// <summary>
-        /// Logs the error.
-        /// </summary>
-        /// <param name="logger">The logger.</param>
-        /// <param name="message">The message.</param>
-        /// <param name="ex">The exception.</param>
-        public static void LogError(this ILogger logger, string message, Exception ex)
-        {
-            logger.Log(LogLevel.Error, message, null, null, null, null, ex);
-        }
-
-        /// <summary>
-        /// Logs the error.
-        /// </summary>
-        /// <param name="logger">The logger.</param>
-        /// <param name="message">The message.</param>
-        public static void LogWarning(this ILogger logger, string message)
-        {
-            logger.Log(LogLevel.Warn, message, null, null, null, null, null);
-        }
-
-        // TODO: More!
     }
 }
