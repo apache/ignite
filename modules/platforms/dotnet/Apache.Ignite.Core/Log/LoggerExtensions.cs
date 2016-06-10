@@ -22,112 +22,238 @@ namespace Apache.Ignite.Core.Log
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
-    /// Extension methods for <see cref="ILogger"/>
+    /// Extension methods for <see cref="ILogger" />
     /// </summary>
     public static class LoggerExtensions
     {
         // 4 overloads per level (message, message+args, ex+message, ex+message+args)
 
+        /// <summary>
+        /// Logs the message with <see cref="LogLevel.Trace"/> level.
+        /// </summary>
+        /// <param name="logger">The logger.</param>
+        /// <param name="message">The message.</param>
         public static void Trace(this ILogger logger, string message)
         {
             Log(logger, LogLevel.Trace, message);
         }
 
+        /// <summary>
+        /// Logs the message with <see cref="LogLevel.Trace"/> level.
+        /// </summary>
+        /// <param name="logger">The logger.</param>
+        /// <param name="message">The message.</param>
+        /// <param name="args">The arguments.</param>
         public static void Trace(this ILogger logger, string message, params object[] args)
         {
             Log(logger, LogLevel.Trace, message, args);
         }
 
+        /// <summary>
+        /// Logs the message with <see cref="LogLevel.Trace"/> level.
+        /// </summary>
+        /// <param name="logger">The logger.</param>
+        /// <param name="ex">The ex.</param>
+        /// <param name="message">The message.</param>
         public static void Trace(this ILogger logger, Exception ex, string message)
         {
             Log(logger, LogLevel.Trace, ex, message);
         }
 
+        /// <summary>
+        /// Logs the message with <see cref="LogLevel.Trace"/> level.
+        /// </summary>
+        /// <param name="logger">The logger.</param>
+        /// <param name="ex">The ex.</param>
+        /// <param name="message">The message.</param>
+        /// <param name="args">The arguments.</param>
         public static void Trace(this ILogger logger, Exception ex, string message, object[] args)
         {
             Log(logger, LogLevel.Trace, ex, message, args);
         }
 
+        /// <summary>
+        /// Logs the message with <see cref="LogLevel.Debug"/> level.
+        /// </summary>
+        /// <param name="logger">The logger.</param>
+        /// <param name="message">The message.</param>
         public static void Debug(this ILogger logger, string message)
         {
             Log(logger, LogLevel.Debug, message);
         }
 
+        /// <summary>
+        /// Logs the message with <see cref="LogLevel.Debug"/> level.
+        /// </summary>
+        /// <param name="logger">The logger.</param>
+        /// <param name="message">The message.</param>
+        /// <param name="args">The arguments.</param>
         public static void Debug(this ILogger logger, string message, params object[] args)
         {
             Log(logger, LogLevel.Debug, message, args);
         }
 
+        /// <summary>
+        /// Logs the message with <see cref="LogLevel.Debug"/> level.
+        /// </summary>
+        /// <param name="logger">The logger.</param>
+        /// <param name="ex">The ex.</param>
+        /// <param name="message">The message.</param>
         public static void Debug(this ILogger logger, Exception ex, string message)
         {
             Log(logger, LogLevel.Debug, ex, message);
         }
 
+        /// <summary>
+        /// Logs the message with <see cref="LogLevel.Debug"/> level.
+        /// </summary>
+        /// <param name="logger">The logger.</param>
+        /// <param name="ex">The ex.</param>
+        /// <param name="message">The message.</param>
+        /// <param name="args">The arguments.</param>
         public static void Debug(this ILogger logger, Exception ex, string message, object[] args)
         {
             Log(logger, LogLevel.Debug, ex, message, args);
         }
 
+        /// <summary>
+        /// Logs the message with <see cref="LogLevel.Info"/> level.
+        /// </summary>
+        /// <param name="logger">The logger.</param>
+        /// <param name="message">The message.</param>
         public static void Info(this ILogger logger, string message)
         {
             Log(logger, LogLevel.Info, message);
         }
 
+        /// <summary>
+        /// Logs the message with <see cref="LogLevel.Info"/> level.
+        /// </summary>
+        /// <param name="logger">The logger.</param>
+        /// <param name="message">The message.</param>
+        /// <param name="args">The arguments.</param>
         public static void Info(this ILogger logger, string message, params object[] args)
         {
             Log(logger, LogLevel.Info, message, args);
         }
 
+        /// <summary>
+        /// Logs the message with <see cref="LogLevel.Info"/> level.
+        /// </summary>
+        /// <param name="logger">The logger.</param>
+        /// <param name="ex">The ex.</param>
+        /// <param name="message">The message.</param>
         public static void Info(this ILogger logger, Exception ex, string message)
         {
             Log(logger, LogLevel.Info, ex, message);
         }
 
+        /// <summary>
+        /// Logs the message with <see cref="LogLevel.Info"/> level.
+        /// </summary>
+        /// <param name="logger">The logger.</param>
+        /// <param name="ex">The ex.</param>
+        /// <param name="message">The message.</param>
+        /// <param name="args">The arguments.</param>
         public static void Info(this ILogger logger, Exception ex, string message, object[] args)
         {
             Log(logger, LogLevel.Info, ex, message, args);
         }
 
+        /// <summary>
+        /// Logs the message with <see cref="LogLevel.Warn"/> level.
+        /// </summary>
+        /// <param name="logger">The logger.</param>
+        /// <param name="message">The message.</param>
         public static void Warn(this ILogger logger, string message)
         {
             Log(logger, LogLevel.Warn, message);
         }
 
+        /// <summary>
+        /// Logs the message with <see cref="LogLevel.Warn"/> level.
+        /// </summary>
+        /// <param name="logger">The logger.</param>
+        /// <param name="message">The message.</param>
+        /// <param name="args">The arguments.</param>
         public static void Warn(this ILogger logger, string message, params object[] args)
         {
             Log(logger, LogLevel.Warn, message, args);
         }
 
+        /// <summary>
+        /// Logs the message with <see cref="LogLevel.Warn"/> level.
+        /// </summary>
+        /// <param name="logger">The logger.</param>
+        /// <param name="ex">The ex.</param>
+        /// <param name="message">The message.</param>
         public static void Warn(this ILogger logger, Exception ex, string message)
         {
             Log(logger, LogLevel.Warn, ex, message);
         }
 
+        /// <summary>
+        /// Logs the message with <see cref="LogLevel.Warn"/> level.
+        /// </summary>
+        /// <param name="logger">The logger.</param>
+        /// <param name="ex">The ex.</param>
+        /// <param name="message">The message.</param>
+        /// <param name="args">The arguments.</param>
         public static void Warn(this ILogger logger, Exception ex, string message, object[] args)
         {
             Log(logger, LogLevel.Warn, ex, message, args);
         }
 
+        /// <summary>
+        /// Logs the message with <see cref="LogLevel.Error"/> level.
+        /// </summary>
+        /// <param name="logger">The logger.</param>
+        /// <param name="message">The message.</param>
         public static void Error(this ILogger logger, string message)
         {
             Log(logger, LogLevel.Error, message);
         }
 
+        /// <summary>
+        /// Logs the message with <see cref="LogLevel.Error"/> level.
+        /// </summary>
+        /// <param name="logger">The logger.</param>
+        /// <param name="message">The message.</param>
+        /// <param name="args">The arguments.</param>
         public static void Error(this ILogger logger, string message, params object[] args)
         {
             Log(logger, LogLevel.Error, message, args);
         }
 
+        /// <summary>
+        /// Logs the message with <see cref="LogLevel.Error"/> level.
+        /// </summary>
+        /// <param name="logger">The logger.</param>
+        /// <param name="ex">The ex.</param>
+        /// <param name="message">The message.</param>
         public static void Error(this ILogger logger, Exception ex, string message)
         {
             Log(logger, LogLevel.Error, ex, message);
         }
 
+        /// <summary>
+        /// Logs the message with <see cref="LogLevel.Error"/> level.
+        /// </summary>
+        /// <param name="logger">The logger.</param>
+        /// <param name="ex">The ex.</param>
+        /// <param name="message">The message.</param>
+        /// <param name="args">The arguments.</param>
         public static void Error(this ILogger logger, Exception ex, string message, object[] args)
         {
             Log(logger, LogLevel.Error, ex, message, args);
         }
 
+        /// <summary>
+        /// Logs the message.
+        /// </summary>
+        /// <param name="logger">The logger.</param>
+        /// <param name="level">The level.</param>
+        /// <param name="message">The message.</param>
         public static void Log(this ILogger logger, LogLevel level, string message)
         {
             IgniteArgumentCheck.NotNull(logger, "logger");
@@ -135,6 +261,13 @@ namespace Apache.Ignite.Core.Log
             logger.Log(level, message, null, null, null, null, null);
         }
 
+        /// <summary>
+        /// Logs the message.
+        /// </summary>
+        /// <param name="logger">The logger.</param>
+        /// <param name="level">The level.</param>
+        /// <param name="message">The message.</param>
+        /// <param name="args">The arguments.</param>
         public static void Log(this ILogger logger, LogLevel level, string message, params object[] args)
         {
             IgniteArgumentCheck.NotNull(logger, "logger");
@@ -142,6 +275,13 @@ namespace Apache.Ignite.Core.Log
             logger.Log(level, message, args, CultureInfo.InvariantCulture, null, null, null);
         }
 
+        /// <summary>
+        /// Logs the message.
+        /// </summary>
+        /// <param name="logger">The logger.</param>
+        /// <param name="level">The level.</param>
+        /// <param name="ex">The ex.</param>
+        /// <param name="message">The message.</param>
         public static void Log(this ILogger logger, LogLevel level, Exception ex, string message)
         {
             IgniteArgumentCheck.NotNull(logger, "logger");
@@ -149,6 +289,14 @@ namespace Apache.Ignite.Core.Log
             logger.Log(level, message, null, null, null, null, ex);
         }
 
+        /// <summary>
+        /// Logs the message.
+        /// </summary>
+        /// <param name="logger">The logger.</param>
+        /// <param name="level">The level.</param>
+        /// <param name="ex">The ex.</param>
+        /// <param name="message">The message.</param>
+        /// <param name="args">The arguments.</param>
         public static void Log(this ILogger logger, LogLevel level, Exception ex, string message, params object[] args)
         {
             IgniteArgumentCheck.NotNull(logger, "logger");
