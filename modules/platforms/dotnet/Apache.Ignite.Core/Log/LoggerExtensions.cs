@@ -26,6 +26,8 @@ namespace Apache.Ignite.Core.Log
     /// </summary>
     public static class LoggerExtensions
     {
+        // TODO: 4 overloads per level (message, message+args, ex+message, ex+message+args)
+
         public static void Debug(this ILogger logger, string message)
         {
             Log(logger, LogLevel.Debug, message);
@@ -34,6 +36,16 @@ namespace Apache.Ignite.Core.Log
         public static void Debug(this ILogger logger, string message, params object[] args)
         {
             Log(logger, LogLevel.Debug, message, args);
+        }
+
+        public static void Debug(this ILogger logger, Exception ex, string message)
+        {
+            Log(logger, LogLevel.Debug, ex, message);
+        }
+
+        public static void Debug(this ILogger logger, Exception ex, string message, object[] args)
+        {
+            Log(logger, LogLevel.Debug, ex, message, args);
         }
 
         public static void Warn(this ILogger logger, string message)
@@ -63,6 +75,13 @@ namespace Apache.Ignite.Core.Log
             IgniteArgumentCheck.NotNull(logger, "logger");
 
             logger.Log(level, message, args, CultureInfo.InvariantCulture, null, null, null);
+        }
+
+        public static void Log(this ILogger logger, LogLevel level, Exception ex, string message)
+        {
+            IgniteArgumentCheck.NotNull(logger, "logger");
+
+            logger.Log(level, message, null, null, null, null, ex);
         }
 
         public static void Log(this ILogger logger, LogLevel level, Exception ex, string message, params object[] args)
