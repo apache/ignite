@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.cache.store.cassandra.bean;
+package org.apache.ignite.tests.utils;
 
 import org.apache.cassandra.service.CassandraDaemon;
 import org.apache.ignite.IgniteLogger;
