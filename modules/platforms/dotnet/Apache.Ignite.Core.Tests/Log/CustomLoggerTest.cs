@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Tests.Log
     using System.Collections.Generic;
     using System.Globalization;
     using System.Linq;
-    using System.Threading;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
@@ -142,7 +141,26 @@ namespace Apache.Ignite.Core.Tests.Log
         [Test]
         public void TestQueryEntityValidation()
         {
-            // TODO: QueryEntity warnings test
+            // TODO: test static and dynamic cache start
+
+            var cfg = new IgniteConfiguration(GetConfigWithLogger())
+            {
+                CacheConfiguration = new[]
+                {
+                    new CacheConfiguration("cache1", new QueryEntity(typeof(uint), typeof(ulong))
+                    {
+                        Fields = new[]
+                        {
+                            new QueryField("myField", typeof(ushort))
+                        }
+                    })
+                }
+            };
+
+            using (var ignite = Ignition.Start(cfg))
+            {
+                
+            }
         }
 
         /// <summary>
