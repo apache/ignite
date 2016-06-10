@@ -21,7 +21,6 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc;
  */
 
 public class DefaultDiscoveryJdbcDialect implements DiscoveryJdbcDialect {
-	private final String tableName;
 	private final String metadataTableName;
 
 	/**
@@ -54,53 +53,67 @@ public class DefaultDiscoveryJdbcDialect implements DiscoveryJdbcDialect {
 	}
 
 	public DefaultDiscoveryJdbcDialect(String tableName, String metadataTableName, String quoteSequence) {
-		this.tableName = quotedTableName(quoteSequence, tableName);
+		String nameToUse = quotedTableName(quoteSequence, tableName);
 		this.metadataTableName = quotedTableName( quoteSequence, metadataTableName);
-		getAddrsQry = "select hostname, port from " + this.tableName;
-		regAddrQry = "insert into " + this.tableName + " values (?, ?)";
-		unregAddrQry = "delete from " + this.tableName + " where hostname = ? and port = ?";
-		createAddrsTableQry = "create table " + this.tableName + " (hostname VARCHAR(1024), port INT)";
-		chkQry = "select count(*) from " + this.tableName;
+		getAddrsQry = "select hostname, port from " + nameToUse;
+		regAddrQry = "insert into " + nameToUse + " values (?, ?)";
+		unregAddrQry = "delete from " + nameToUse + " where hostname = ? and port = ?";
+		createAddrsTableQry = "create table " + nameToUse + " (hostname VARCHAR(1024), port INT)";
+		chkQry = "select count(*) from " + nameToUse;
 	}
 
+	/** {@inheritDoc} */
 	@Override public String loadAddressesQuery() {
 		return getAddrsQry;
 	}
 
+	/** {@inheritDoc} */
 	@Override public String unregisterAddressQuery() {
 		return unregAddrQry;
 	}
 
+	/** {@inheritDoc} */
 	@Override public String registerAddressQuery() {
 		return regAddrQry;
 	}
 
+	/** {@inheritDoc} */
 	@Override public String createTableQuery() {
 		return createAddrsTableQry;
 	}
 
-	@Override public String getTableName() {
-		return tableName;
-	}
-
+	/** {@inheritDoc} */
 	@Override public String getTableNameForMetadata() {
 		return metadataTableName;
 	}
 
+	/** {@inheritDoc} */
 	@Override public String checkTableExistsQuery() {
 		return chkQry;
 	}
 
 
+	/**
+	 * A generic dialect that does not use quoting
+	 * @return the generic dialect
+	 */
 	public static DiscoveryJdbcDialect generic() {
 		return new DefaultDiscoveryJdbcDialect("tbl_addrs", "tbl_addrs", null);
 	}
 
+	/**
+	 * A dialect that works well with mysql
+	 * @return the mysql dialect
+	 */
 	public static DiscoveryJdbcDialect mysql() {
 		// case sensitive if underlying file system is case sensitive
 		return new DefaultDiscoveryJdbcDialect("tbl_addrs", "tbl_addrs", null);
 	}
 
+	/**
+	 * A dialect that works well with oracle
+	 * @return the oracledialect
+	 */
 	public static DiscoveryJdbcDialect oracle() {
 		return new DefaultDiscoveryJdbcDialect("TBL_ADDRS", "TBL_ADDRS", "\"");
 	}

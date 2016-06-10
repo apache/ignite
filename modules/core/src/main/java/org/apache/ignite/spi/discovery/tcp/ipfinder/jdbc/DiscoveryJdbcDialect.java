@@ -20,17 +20,40 @@ package org.apache.ignite.spi.discovery.tcp.ipfinder.jdbc;
  * Sql statements used to manage the discovery database
  */
 public interface DiscoveryJdbcDialect {
+	/**
+	 * The sql query to load all addresses
+	 * @return the query
+	 */
+
 	String loadAddressesQuery();
 
+	/**
+	 * The sql query to unregister an addresses
+	 * @return the query
+	 */
 	String unregisterAddressQuery();
 
+	/**
+	 * The sql query to register an addresses
+	 * @return the query
+	 */
 	String registerAddressQuery();
 
+	/**
+	 * The sql query to create the table
+	 * @return the query
+	 */
 	String createTableQuery();
 
-	String getTableName();
-
+	/**
+	 * The table name, quoted for metadata lookup
+	 * @return the table name
+	 */
 	String getTableNameForMetadata();
 
+	/**
+	 * The sql query the check that the table exists
+	 * @return the query
+	 */
 	String checkTableExistsQuery();
 }

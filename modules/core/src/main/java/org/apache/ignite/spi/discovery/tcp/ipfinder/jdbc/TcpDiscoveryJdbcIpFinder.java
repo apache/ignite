@@ -297,7 +297,7 @@ public class TcpDiscoveryJdbcIpFinder extends TcpDiscoveryIpFinderAdapter {
                 // in the create statement which will check and create atomically.
                 // However not all databases support it, for example Oracle,
                 // so we do not use it.
-                try (ResultSet tables = dbm.getTables(null, null, jdbcDialect.getTableName(), null)) {
+                try (ResultSet tables = dbm.getTables(null, null, jdbcDialect.getTableNameForMetadata(), null)) {
                     if (!tables.next()) {
                         // Table does not exist
                         // Create tbl_addrs.
