@@ -133,7 +133,6 @@
     <Compile Include="Log\CompositeLoggerTest.cs" />
     <Compile Include="Log\ConsoleLoggerTest.cs" />
     <Compile Include="Log\CustomLoggerTest.cs" />
-    <Compile Include="Log\EventLogLoggerTest.cs" />
     <Compile Include="MarshallerTest.cs" />
     <Compile Include="MessagingTest.cs" />
     <Compile Include="BinaryConfigurationTest.cs" />

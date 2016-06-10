@@ -17,6 +17,9 @@
 
 namespace Apache.Ignite.Core.Tests.Log
 {
+    /// <summary>
+    /// CompositeLogger tests.
+    /// </summary>
     public class CompositeLoggerTest
     {
         // TODO
