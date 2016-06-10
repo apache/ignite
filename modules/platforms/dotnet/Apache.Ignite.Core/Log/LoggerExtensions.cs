@@ -26,7 +26,27 @@ namespace Apache.Ignite.Core.Log
     /// </summary>
     public static class LoggerExtensions
     {
-        // TODO: 4 overloads per level (message, message+args, ex+message, ex+message+args)
+        // 4 overloads per level (message, message+args, ex+message, ex+message+args)
+
+        public static void Trace(this ILogger logger, string message)
+        {
+            Log(logger, LogLevel.Trace, message);
+        }
+
+        public static void Trace(this ILogger logger, string message, params object[] args)
+        {
+            Log(logger, LogLevel.Trace, message, args);
+        }
+
+        public static void Trace(this ILogger logger, Exception ex, string message)
+        {
+            Log(logger, LogLevel.Trace, ex, message);
+        }
+
+        public static void Trace(this ILogger logger, Exception ex, string message, object[] args)
+        {
+            Log(logger, LogLevel.Trace, ex, message, args);
+        }
 
         public static void Debug(this ILogger logger, string message)
         {
@@ -48,9 +68,44 @@ namespace Apache.Ignite.Core.Log
             Log(logger, LogLevel.Debug, ex, message, args);
         }
 
+        public static void Info(this ILogger logger, string message)
+        {
+            Log(logger, LogLevel.Info, message);
+        }
+
+        public static void Info(this ILogger logger, string message, params object[] args)
+        {
+            Log(logger, LogLevel.Info, message, args);
+        }
+
+        public static void Info(this ILogger logger, Exception ex, string message)
+        {
+            Log(logger, LogLevel.Info, ex, message);
+        }
+
+        public static void Info(this ILogger logger, Exception ex, string message, object[] args)
+        {
+            Log(logger, LogLevel.Info, ex, message, args);
+        }
+
         public static void Warn(this ILogger logger, string message)
         {
             Log(logger, LogLevel.Warn, message);
+        }
+
+        public static void Warn(this ILogger logger, string message, params object[] args)
+        {
+            Log(logger, LogLevel.Warn, message, args);
+        }
+
+        public static void Warn(this ILogger logger, Exception ex, string message)
+        {
+            Log(logger, LogLevel.Warn, ex, message);
+        }
+
+        public static void Warn(this ILogger logger, Exception ex, string message, object[] args)
+        {
+            Log(logger, LogLevel.Warn, ex, message, args);
         }
 
         public static void Error(this ILogger logger, string message)
@@ -58,9 +113,19 @@ namespace Apache.Ignite.Core.Log
             Log(logger, LogLevel.Error, message);
         }
 
-        public static void Error(this ILogger logger, Exception e, string message)
+        public static void Error(this ILogger logger, string message, params object[] args)
         {
-            Log(logger, LogLevel.Error, e, message);
+            Log(logger, LogLevel.Error, message, args);
+        }
+
+        public static void Error(this ILogger logger, Exception ex, string message)
+        {
+            Log(logger, LogLevel.Error, ex, message);
+        }
+
+        public static void Error(this ILogger logger, Exception ex, string message, object[] args)
+        {
+            Log(logger, LogLevel.Error, ex, message, args);
         }
 
         public static void Log(this ILogger logger, LogLevel level, string message)
