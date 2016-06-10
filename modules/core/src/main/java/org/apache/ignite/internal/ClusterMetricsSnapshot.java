@@ -20,12 +20,15 @@ package org.apache.ignite.internal;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 import java.util.Map;
+
+import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
 import org.jetbrains.annotations.Nullable;
 
 import static java.lang.Math.max;
@@ -380,7 +383,7 @@ public class ClusterMetricsSnapshot implements ClusterMetrics {
 
             nonHeapCommitted += m.getNonHeapMemoryCommitted();
 
-            nonHeapUsed += m.getNonHeapMemoryUsed();
+            nonHeapUsed += node.metrics().getNonHeapMemoryUsed();
 
             nonHeapMax = max(nonHeapMax, m.getNonHeapMemoryMaximum());
 
