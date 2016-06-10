@@ -1150,153 +1150,129 @@ public class IgfsMetaManager extends IgfsManager {
      *
      * @param path Path.
      * @param recursive Recursive flag.
+     * @param secondaryFs Secondary file system (optional).
      * @return ID of an entry located directly under the trash directory.
      * @throws IgniteCheckedException If failed.
      */
-    IgniteUuid softDelete(final IgfsPath path, final boolean recursive) throws IgniteCheckedException {
-        if (busyLock.enterBusy()) {
-            try {
-                validTxState(false);
+    IgfsDeleteResult softDelete(final IgfsPath path, final boolean recursive, @Nullable IgfsSecondaryFileSystem secondaryFs)
+        throws IgniteCheckedException {
+        while (true) {
+            if (busyLock.enterBusy()) {
+                try {
+                    validTxState(false);
 
-                IgfsPathIds pathIds = pathIds(path);
+                    IgfsPathIds pathIds = pathIds(path);
 
-                // Continue only if the whole path present.
-                if (!pathIds.allExists())
-                    return null; // A fragment of the path no longer exists.
+                    boolean relaxed0 = relaxed;
 
-                IgniteUuid victimId = pathIds.lastId();
-                String victimName = pathIds.lastPart();
+                    if (!pathIds.allExists()) {
+                        if (secondaryFs == null)
+                            // Return early if target path doesn't exist and we do not have secondary file system.
+                            return new IgfsDeleteResult(false, null);
+                        else
+                            // If path is missing partially, we need more serious locking for DUAL mode.
+                            relaxed0 = false;
+                    }
 
-                if (IgfsUtils.isRootId(victimId))
-                    throw new IgfsException("Cannot remove root directory");
+                    IgniteUuid victimId = pathIds.lastId();
+                    String victimName = pathIds.lastPart();
 
-                // Prepare IDs to lock.
-                SortedSet<IgniteUuid> allIds = new TreeSet<>(PATH_ID_SORTING_COMPARATOR);
+                    if (IgfsUtils.isRootId(victimId))
+                        throw new IgfsException("Cannot remove root directory");
 
-                pathIds.addExistingIds(allIds, relaxed);
+                    // Prepare IDs to lock.
+                    SortedSet<IgniteUuid> allIds = new TreeSet<>(PATH_ID_SORTING_COMPARATOR);
 
-                IgniteUuid trashId = IgfsUtils.randomTrashId();
+                    pathIds.addExistingIds(allIds, relaxed0);
 
-                allIds.add(trashId);
+                    IgniteUuid trashId = IgfsUtils.randomTrashId();
 
-                try (IgniteInternalTx tx = startTx()) {
-                    // Lock participants.
-                    Map<IgniteUuid, IgfsEntryInfo> lockInfos = lockIds(allIds);
+                    allIds.add(trashId);
 
-                    // Ensure that all participants are still in place.
-                    if (!pathIds.verifyIntegrity(lockInfos, relaxed))
-                        return null;
+                    try (IgniteInternalTx tx = startTx()) {
+                        // Lock participants.
+                        Map<IgniteUuid, IgfsEntryInfo> lockInfos = lockIds(allIds);
 
-                    IgfsEntryInfo victimInfo = lockInfos.get(victimId);
+                        if (!pathIds.allExists()) {
+                            // We need to ensure that the last locked info is not linked with expected child.
+                            // Otherwise there was some ocncurrent file system update and we have to re-try.
+                            assert secondaryFs != null;
 
-                    // Cannot delete non-empty directory if recursive flag is not set.
-                    if (!recursive && victimInfo.hasChildren())
-                        throw new IgfsDirectoryNotEmptyException("Failed to remove directory (directory is not " +
-                            "empty and recursive flag is not set).");
+                            // Find the last locked index
+                            IgfsEntryInfo lastLockedInfo = null;
+                            int lastLockedIdx = -1;
 
-                    // Prepare trash data.
-                    IgfsEntryInfo trashInfo = lockInfos.get(trashId);
-                    final String trashName = victimId.toString();
+                            while (lastLockedIdx < pathIds.lastExistingIndex()) {
+                                IgfsEntryInfo nextInfo = lockInfos.get(pathIds.id(lastLockedIdx + 1));
 
-                    assert !trashInfo.hasChild(trashName) : "Failed to add file name into the " +
-                        "destination directory (file already exists) [destName=" + trashName + ']';
+                                if (nextInfo != null) {
+                                    lastLockedInfo = nextInfo;
+                                    lastLockedIdx++;
+                                }
+                                else
+                                    break;
+                            }
 
-                    IgniteUuid parentId = pathIds.lastParentId();
-                    IgfsEntryInfo parentInfo = lockInfos.get(parentId);
+                            assert lastLockedIdx < pathIds.count();
 
-                    transferEntry(parentInfo.listing().get(victimName), parentId, victimName, trashId, trashName);
+                            if (lastLockedInfo != null) {
+                                String part = pathIds.part(lastLockedIdx + 1);
 
-                    tx.commit();
+                                if (lastLockedInfo.listing().containsKey(part))
+                                    continue;
+                            }
+                        }
 
-                    signalDeleteWorker();
+                        // Ensure that all participants are still in place.
+                        if (!pathIds.allExists() || !pathIds.verifyIntegrity(lockInfos, relaxed0)) {
+                            // For DUAL mode we will try to update the underlying FS still. Note we do that inside TX.
+                            if (secondaryFs != null) {
+                                boolean res = secondaryFs.delete(path, recursive);
 
-                    return victimId;
+                                return new IgfsDeleteResult(res, null);
+                            }
+                            else
+                                return new IgfsDeleteResult(false, null);
+                        }
+
+                        IgfsEntryInfo victimInfo = lockInfos.get(victimId);
+
+                        // Cannot delete non-empty directory if recursive flag is not set.
+                        if (!recursive && victimInfo.hasChildren())
+                            throw new IgfsDirectoryNotEmptyException("Failed to remove directory (directory is not " +
+                                "empty and recursive flag is not set).");
+
+                        // Prepare trash data.
+                        IgfsEntryInfo trashInfo = lockInfos.get(trashId);
+                        final String trashName = victimId.toString();
+
+                        assert !trashInfo.hasChild(trashName) : "Failed to add file name into the " +
+                            "destination directory (file already exists) [destName=" + trashName + ']';
+
+                        IgniteUuid parentId = pathIds.lastParentId();
+                        IgfsEntryInfo parentInfo = lockInfos.get(parentId);
+
+                        // Propagate call to the secondary file system.
+                        if (secondaryFs != null && !secondaryFs.delete(path, recursive))
+                            return new IgfsDeleteResult(false, null);
+
+                        transferEntry(parentInfo.listing().get(victimName), parentId, victimName, trashId, trashName);
+
+                        tx.commit();
+
+                        signalDeleteWorker();
+
+                        return new IgfsDeleteResult(true, victimInfo);
+                    }
+                }
+                finally {
+                    busyLock.leaveBusy();
                 }
             }
-            finally {
-                busyLock.leaveBusy();
-            }
-        }
-        else
-            throw new IllegalStateException("Failed to perform soft delete because Grid is " +
-                "stopping [path=" + path + ']');
-    }
-
-    /**
-     * Move path to the trash directory in existing transaction.
-     *
-     * @param parentId Parent ID.
-     * @param name Path name.
-     * @param id Path ID.
-     * @param trashId Trash ID.
-     * @return ID of an entry located directly under the trash directory.
-     * @throws IgniteCheckedException If failed.
-     */
-    @SuppressWarnings("RedundantCast")
-    @Nullable private IgniteUuid softDeleteNonTx(@Nullable IgniteUuid parentId, @Nullable String name, IgniteUuid id,
-        IgniteUuid trashId) throws IgniteCheckedException {
-        validTxState(true);
-
-        IgniteUuid resId;
-
-        if (parentId == null) {
-            // Handle special case when we deleting root directory.
-            assert IgfsUtils.ROOT_ID.equals(id);
-
-            IgfsEntryInfo rootInfo = getInfo(IgfsUtils.ROOT_ID);
-
-            if (rootInfo == null)
-                return null; // Root was never created.
-
-            // Ensure trash directory existence.
-            createSystemDirectoryIfAbsent(trashId);
-
-            Map<String, IgfsListingEntry> rootListing = rootInfo.listing();
-
-            if (!rootListing.isEmpty()) {
-                IgniteUuid[] lockIds = new IgniteUuid[rootInfo.listing().size()];
-
-                int i = 0;
-
-                for (IgfsListingEntry entry : rootInfo.listing().values())
-                    lockIds[i++] = entry.fileId();
-
-                // Lock children IDs in correct order.
-                lockIds(lockIds);
-
-                // Construct new info and move locked entries from root to it.
-                Map<String, IgfsListingEntry> transferListing = new HashMap<>();
-
-                transferListing.putAll(rootListing);
-
-                IgfsEntryInfo newInfo = IgfsUtils.createDirectory(
-                    IgniteUuid.randomUuid(),
-                    transferListing,
-                    (Map<String,String>)null
-                );
-
-                createNewEntry(newInfo, trashId, newInfo.id().toString());
-
-                // Remove listing entries from root.
-                for (Map.Entry<String, IgfsListingEntry> entry : transferListing.entrySet())
-                    id2InfoPrj.invoke(IgfsUtils.ROOT_ID,
-                        new IgfsMetaDirectoryListingRemoveProcessor(entry.getKey(), entry.getValue().fileId()));
-
-                resId = newInfo.id();
-            }
             else
-                resId = null;
+                throw new IllegalStateException("Failed to perform soft delete because Grid is " +
+                    "stopping [path=" + path + ']');
         }
-        else {
-            // Ensure trash directory existence.
-            createSystemDirectoryIfAbsent(trashId);
-
-            moveNonTx(id, name, parentId, id.toString(), trashId);
-
-            resId = id;
-        }
-
-        return resId;
     }
 
     /**
@@ -2270,71 +2246,6 @@ public class IgfsMetaManager extends IgfsManager {
         else
             throw new IllegalStateException("Failed to rename in DUAL mode because Grid is stopping [src=" + src +
                 ", dest=" + dest + ']');
-    }
-
-    /**
-     * Delete path in DUAL mode.
-     *
-     * @param fs Secondary file system.
-     * @param path Path to update.
-     * @param recursive Recursive flag.
-     * @return Operation result.
-     * @throws IgniteCheckedException If delete failed.
-     */
-    public boolean deleteDual(final IgfsSecondaryFileSystem fs, final IgfsPath path, final boolean recursive)
-        throws IgniteCheckedException {
-        if (busyLock.enterBusy()) {
-            try {
-                assert fs != null;
-                assert path != null;
-
-                final IgniteUuid trashId = IgfsUtils.randomTrashId();
-
-                SynchronizationTask<Boolean> task = new SynchronizationTask<Boolean>() {
-                    @Override public Boolean onSuccess(Map<IgfsPath, IgfsEntryInfo> infos) throws Exception {
-                        IgfsEntryInfo info = infos.get(path);
-
-                        if (info == null)
-                            return false; // File doesn't exist in the secondary file system.
-
-                        if (!fs.delete(path, recursive))
-                            return false; // Delete failed remotely.
-
-                        if (path.parent() != null) {
-                            assert infos.containsKey(path.parent());
-
-                            softDeleteNonTx(infos.get(path.parent()).id(), path.name(), info.id(), trashId);
-                        }
-                        else {
-                            assert IgfsUtils.ROOT_ID.equals(info.id());
-
-                            softDeleteNonTx(null, path.name(), info.id(), trashId);
-                        }
-
-                        return true; // No additional handling is required.
-                    }
-
-                    @Override public Boolean onFailure(@Nullable Exception err) throws IgniteCheckedException {
-                        U.error(log, "Path delete in DUAL mode failed [path=" + path + ", recursive=" + recursive + ']',
-                            err);
-
-                        throw new IgniteCheckedException("Failed to delete the path due to secondary file system " +
-                            "exception: ", err);
-                    }
-                };
-
-                Boolean res = synchronizeAndExecute(task, fs, false, Collections.singleton(trashId), path);
-
-                signalDeleteWorker();
-
-                return res;
-            }
-            finally {
-                busyLock.leaveBusy();
-            }
-        }
-        else
-            throw new IllegalStateException("Failed to delete in DUAL mode because Grid is stopping: " + path);
     }
 
     /**
