@@ -17,7 +17,11 @@
 
 namespace Apache.Ignite.Core.Tests.Log
 {
+    using System;
+    using System.IO;
+    using System.Text;
     using Apache.Ignite.Core.Log;
+    using NUnit.Framework;
 
     /// <summary>
     /// Tests the <see cref="ConsoleLogger"/> class.
@@ -25,5 +29,31 @@ namespace Apache.Ignite.Core.Tests.Log
     public class ConsoleLoggerTest
     {
         // TODO: Offline logic tests
+
+
+        [Test]
+        public void Test()
+        {
+            var sb = new StringBuilder();
+            var writer = new StringWriter(sb);
+            Console.SetOut(writer);
+
+            var log = new ConsoleLogger(LogLevel.Debug);
+
+            log.LogDebug("test");
+            writer.Flush();
+
+            Assert.AreEqual("test", ExtractMessage(sb));
+        }
+
+        private static string ExtractMessage(StringBuilder log)
+        {
+            return ExtractMessage(log.ToString());
+        }
+
+        private static string ExtractMessage(string log)
+        {
+            return log.Substring(11, log.Length - 13);
+        }
     }
 }
