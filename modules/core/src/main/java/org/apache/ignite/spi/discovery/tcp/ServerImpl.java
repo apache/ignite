@@ -509,8 +509,6 @@ class ServerImpl extends TcpDiscoveryImpl {
         U.interrupt(tcpSrvr);
         U.join(tcpSrvr, log);
 
-        clientNioSrv.stop();
-
         Collection<SocketReader> tmp;
 
         synchronized (mux) {
@@ -528,6 +526,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         for (ClientMessageProcessor clientWorker : clientMsgWorkers.values())
             stopClientProcessor(clientWorker);
+
+        clientNioSrv.stop();
 
         clientMsgWorkers.clear();
 
@@ -1630,6 +1630,8 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         for (ClientMessageProcessor msgWorker : clientMsgWorkers.values())
             stopClientProcessor(msgWorker);
+
+        clientNioSrv.stop();
 
         U.interrupt(statsPrinter);
         U.join(statsPrinter, log);
@@ -6012,13 +6014,13 @@ class ServerImpl extends TcpDiscoveryImpl {
      */
     private class SocketReader extends IgniteSpiThread {
         /** Socket to read data from. */
-        private Socket sock;
+        private final Socket sock;
 
         /** */
         private volatile UUID nodeId;
 
         /** Flag indicating that client is processed by NIO server. */
-        private boolean nioClient;
+        private volatile boolean nioClient;
 
         /**
          * Constructor.
