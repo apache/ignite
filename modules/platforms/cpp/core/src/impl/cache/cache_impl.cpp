@@ -324,6 +324,9 @@ namespace ignite
                 rawWriter.WriteBool(false);
                 rawWriter.WriteNull();
 
+                std::cout << qry.GetBufferSize() << std::endl;
+                std::cout << qry.GetTimeInterval() << std::endl;
+
                 rawWriter.WriteInt32(qry.GetBufferSize());
                 rawWriter.WriteInt64(qry.GetTimeInterval());
 

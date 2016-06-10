@@ -35,7 +35,6 @@ using namespace ignite::cache::event;
 using namespace ignite::cache::query::continuous;
 using namespace boost::unit_test;
 
-
 /**
  * Very simple concurrent queue implementation.
  */
@@ -125,6 +124,8 @@ public:
      */
     virtual void OnEvent(const CacheEntryEvent<int, int>* evts, uint32_t num)
     {
+        std::cout << "Received " << num << " events" << std::endl;
+
         for (uint32_t i = 0; i < num; ++i)
             eventQueue.Push(evts[i]);
     }
@@ -152,6 +153,20 @@ public:
 
         if (val && event.HasValue())
             BOOST_CHECK_EQUAL(event.GetValue(), *val);
+    }
+
+    /*
+     * Check that there is no event for the specified ammount of time.
+     *
+     * @param timeout Timeout.
+     */
+    template <typename Rep, typename Period>
+    void CheckNoEvent(const boost::chrono::duration<Rep, Period>& timeout)
+    {
+        CacheEntryEvent<int, int> event;
+        bool success = eventQueue.Pull(event, timeout);
+
+        BOOST_REQUIRE(!success);
     }
 
 private:
@@ -219,7 +234,7 @@ struct ContinuousQueryTestSuiteFixture
 
 BOOST_FIXTURE_TEST_SUITE(ContinuousQueryTestSuite, ContinuousQueryTestSuiteFixture)
 
-BOOST_AUTO_TEST_CASE(MultipleClose)
+BOOST_AUTO_TEST_CASE(TestBasic)
 {
     Listener lsnr;
 
@@ -238,6 +253,30 @@ BOOST_AUTO_TEST_CASE(MultipleClose)
 
     cache.Remove(1);
     lsnr.CheckNextEvent(1, 20, boost::none);
+}
+
+BOOST_AUTO_TEST_CASE(TestBufferSize)
+{
+    Listener lsnr;
+
+    ContinuousQuery<int, int> qry(lsnr);
+    qry.SetBufferSize(2);
+
+    ContinuousQueryHandle<int, int> handle = cache.QueryContinuous(qry);
+
+    cache.Put(1, 10);
+    lsnr.CheckNoEvent(boost::chrono::milliseconds(100));
+
+    cache.Put(1, 20);
+    lsnr.CheckNextEvent(1, boost::none, 10);
+    lsnr.CheckNextEvent(1, 10, 20);
+
+    cache.Remove(1);
+    lsnr.CheckNoEvent(boost::chrono::milliseconds(100));
+
+    cache.Put(1, 100);
+    lsnr.CheckNextEvent(1, 20, boost::none);
+    lsnr.CheckNextEvent(1, boost::none, 100);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

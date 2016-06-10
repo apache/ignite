@@ -153,8 +153,8 @@ namespace ignite
                      * Time interval in miliseconds. When a cache update
                      * happens, entry is first put into a buffer. Entries from
                      * buffer will be sent to the master node only if the buffer
-                     * is full (its size can be provided via GetbufferSize) or
-                     * time provided via GetTimeInterval method is exceeded.
+                     * is full (its size can be changed via SetBufferSize) or
+                     * time provided via SetTimeInterval method is exceeded.
                      *
                      * Default value is 0, which means that time check is disabled and entries will be 
                      * sent only when buffer is full.
