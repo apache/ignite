@@ -40,7 +40,6 @@ namespace Apache.Ignite.Core.Impl
     using Apache.Ignite.Core.Impl.Datastream;
     using Apache.Ignite.Core.Impl.DataStructures;
     using Apache.Ignite.Core.Impl.Handle;
-    using Apache.Ignite.Core.Impl.Resource;
     using Apache.Ignite.Core.Impl.Transactions;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using Apache.Ignite.Core.Lifecycle;
@@ -383,6 +382,7 @@ namespace Apache.Ignite.Core.Impl
             NearCacheConfiguration nearConfiguration)
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
+            configuration.Validate(Logger);
 
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {
@@ -421,6 +421,7 @@ namespace Apache.Ignite.Core.Impl
             NearCacheConfiguration nearConfiguration)
         {
             IgniteArgumentCheck.NotNull(configuration, "configuration");
+            configuration.Validate(Logger);
 
             using (var stream = IgniteManager.Memory.Allocate().GetStream())
             {

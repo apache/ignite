@@ -31,6 +31,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Log;
 
     /// <summary>
     /// Defines grid cache configuration.
@@ -344,6 +345,19 @@ namespace Apache.Ignite.Core.Cache.Configuration
                 writer.WriteBoolean(false);
 
             EvictionPolicyBase.Write(writer, EvictionPolicy);
+        }
+
+        /// <summary>
+        /// Validates this instance and outputs information to the log, if necessary.
+        /// </summary>
+        internal void Validate(ILogger log)
+        {
+            var entities = QueryEntities;
+            if (entities != null)
+            {
+                foreach (var entity in entities)
+                    entity.Validate(log);
+            }
         }
 
         /// <summary>

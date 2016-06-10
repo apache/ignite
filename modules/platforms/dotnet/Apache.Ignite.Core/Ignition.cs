@@ -259,14 +259,15 @@ namespace Apache.Ignite.Core
         /// <param name="inStream">Intput stream with data.</param>
         /// <param name="outStream">Output stream.</param>
         /// <param name="handleRegistry">Handle registry.</param>
+        /// <param name="log">Log.</param>
         internal static void OnPrepare(PlatformMemoryStream inStream, PlatformMemoryStream outStream, 
-            HandleRegistry handleRegistry)
+            HandleRegistry handleRegistry, ILogger log)
         {
             try
             {
                 BinaryReader reader = BinaryUtils.Marshaller.StartUnmarshal(inStream);
 
-                PrepareConfiguration(reader, outStream);
+                PrepareConfiguration(reader, outStream, log);
 
                 PrepareLifecycleBeans(reader, outStream, handleRegistry);
             }
@@ -283,7 +284,8 @@ namespace Apache.Ignite.Core
         /// </summary>
         /// <param name="reader">Reader.</param>
         /// <param name="outStream">Response stream.</param>
-        private static void PrepareConfiguration(BinaryReader reader, PlatformMemoryStream outStream)
+        /// <param name="log">Log.</param>
+        private static void PrepareConfiguration(BinaryReader reader, PlatformMemoryStream outStream, ILogger log)
         {
             // 1. Load assemblies.
             IgniteConfiguration cfg = _startup.Configuration;
@@ -304,6 +306,7 @@ namespace Apache.Ignite.Core
             _startup.Marshaller = new Marshaller(cfg.BinaryConfiguration);
 
             // 3. Send configuration details to Java
+            cfg.Validate(log);
             cfg.Write(_startup.Marshaller.StartMarshal(outStream));
         }
 

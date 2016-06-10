@@ -861,7 +861,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                         using (var inStream = IgniteManager.Memory.Get(arg1).GetStream())
                         using (var outStream = IgniteManager.Memory.Get(arg2).GetStream())
                         {
-                            Ignition.OnPrepare(inStream, outStream, _handleRegistry);
+                            Ignition.OnPrepare(inStream, outStream, _handleRegistry, _log);
 
                             return 0;
                         }

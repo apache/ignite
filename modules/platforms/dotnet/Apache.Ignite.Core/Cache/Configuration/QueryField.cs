@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using System;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Log;
 
     /// <summary>
     /// Represents a queryable field.
@@ -87,7 +88,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             {
                 FieldTypeName = value == null
                     ? null
-                    : (JavaTypes.GetJavaTypeNameAndLogWarning(value) ?? BinaryUtils.GetTypeName(value));
+                    : (JavaTypes.GetJavaTypeName(value) ?? BinaryUtils.GetTypeName(value));
 
                 _type = value;
             }
@@ -104,6 +105,14 @@ namespace Apache.Ignite.Core.Cache.Configuration
                 _fieldTypeName = value;
                 _type = null;
             }
+        }
+
+        /// <summary>
+        /// Validates this instance and outputs information to the log, if necessary.
+        /// </summary>
+        internal void Validate(ILogger log)
+        {
+            JavaTypes.LogIndirectMappingWarning(_type, log);
         }
     }
 }

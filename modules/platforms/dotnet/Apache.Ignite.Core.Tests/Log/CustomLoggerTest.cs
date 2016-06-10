@@ -159,7 +159,8 @@ namespace Apache.Ignite.Core.Tests.Log
 
             using (var ignite = Ignition.Start(cfg))
             {
-                
+                // TODO: Check warnings
+                // TODO: Use special category for validation?
             }
         }
 

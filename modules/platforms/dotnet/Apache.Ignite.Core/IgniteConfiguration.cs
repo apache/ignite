@@ -293,6 +293,19 @@
         }
 
         /// <summary>
+        /// Validates this instance and outputs information to the log, if necessary.
+        /// </summary>
+        internal void Validate(ILogger log)
+        {
+            var ccfg = CacheConfiguration;
+            if (ccfg != null)
+            {
+                foreach (var cfg in ccfg)
+                    cfg.Validate(log);
+            }
+        }
+
+        /// <summary>
         /// Reads data from specified reader into current instance.
         /// </summary>
         /// <param name="r">The binary reader.</param>
