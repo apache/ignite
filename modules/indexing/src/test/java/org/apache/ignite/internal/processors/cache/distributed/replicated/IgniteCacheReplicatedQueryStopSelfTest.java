@@ -51,6 +51,10 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
         return PARTITIONED;
     }
 
+    @Override protected void afterTest() throws Exception {
+        super.afterTest();
+    }
+
     /**
      * Tests stopping two-step long query while result set is being generated on remote nodes.
      */
@@ -226,7 +230,7 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
                 // Trigger distributed execution.
                 qry.iterator();
             }
-            catch (CacheException ex) {
+            catch (Exception ex) {
                 log().error("Got expected exception", ex);
             }
 
