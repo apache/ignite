@@ -42,7 +42,7 @@ namespace ignite
                     /**
                      * Continuous query handle implementation.
                      */
-                    class ContinuousQueryHandleImpl
+                    class IGNITE_IMPORT_EXPORT ContinuousQueryHandleImpl
                     {
                     public:
                         /**

@@ -1187,6 +1187,24 @@ namespace ignite
              * Start continuous query execution.
              *
              * @param qry Continuous query.
+             * @return Continuous query handle.
+             */
+            query::continuous::ContinuousQueryHandle<K, V> QueryContinuous(
+                const query::continuous::ContinuousQuery<K, V>& qry)
+            {
+                IgniteError err;
+
+                query::continuous::ContinuousQueryHandle<K, V> res = QueryContinuous(qry, err);
+
+                IgniteError::ThrowIfNeeded(err);
+
+                return res;
+            }
+
+            /**
+             * Start continuous query execution.
+             *
+             * @param qry Continuous query.
              * @param err Error.
              * @return Continuous query handle.
              */

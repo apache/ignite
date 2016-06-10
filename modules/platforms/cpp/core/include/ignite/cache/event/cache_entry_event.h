@@ -122,7 +122,7 @@ namespace ignite
              */
             bool HasOldValue() const
             {
-                return hasValue;
+                return hasOldValue;
             }
 
             /**
@@ -134,8 +134,8 @@ namespace ignite
             {
                 key = reader.ReadObject<K>();
 
-                hasValue = reader.TryReadObject(val);
                 hasOldValue = reader.TryReadObject(oldVal);
+                hasValue = reader.TryReadObject(val);
             }
 
         private:
@@ -146,7 +146,7 @@ namespace ignite
             bool hasValue;
 
             /** Indicates whether old value exists */
-            bool hasOldvalue;
+            bool hasOldValue;
         };
     }
 }

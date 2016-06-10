@@ -127,9 +127,9 @@ namespace ignite
 
             hnds.memRealloc = MemoryReallocate;
 
-            hnds.error = NULL;
+            hnds.contQryLsnrApply = ContinuousQueryListenerApply;
 
-            hnds.contQryLsnrApply = NULL;
+            hnds.error = NULL;
 
             return hnds;
         }
