@@ -45,13 +45,20 @@ namespace Apache.Ignite.Core.Tests.Log
             }
         }
 
+        /// <summary>
+        /// Tests the formatting.
+        /// </summary>
         [Test]
         public void TestFormatting()
         {
             Test(l => l.Warn("testWarn"), "testWarn");
+            Test(l => l.Warn("Hello, {0} : {1}", "World", 1), "Hello, World : 1");
 
         }
 
+        /// <summary>
+        /// Tests the specified log action.
+        /// </summary>
         private static void Test(Action<ConsoleLogger> logAction, string expected, LogLevel[] levels = null)
         {
             var sb = new StringBuilder();
@@ -66,16 +73,14 @@ namespace Apache.Ignite.Core.Tests.Log
             writer.Flush();
 
             if (expected != null)
-                Assert.AreEqual(expected, ExtractMessage(sb));
+                Assert.AreEqual(expected, ExtractMessage(sb.ToString()));
             else
                 Assert.AreEqual(0, sb.Length);
         }
 
-        private static string ExtractMessage(StringBuilder log)
-        {
-            return ExtractMessage(log.ToString());
-        }
-
+        /// <summary>
+        /// Extracts the message text from the log, removing timestamp and line breaks.
+        /// </summary>
         private static string ExtractMessage(string log)
         {
             return log.Substring(11, log.Length - 13);

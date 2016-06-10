@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Log
             {
                 IgniteArgumentCheck.NotNull(formatProvider, "formatProvider");
 
-                sb.AppendFormat(message, formatProvider, args);
+                sb.AppendFormat(formatProvider, message, args);
             }
             else
             {
