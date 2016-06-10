@@ -220,8 +220,32 @@ namespace Apache.Ignite.Core.Tests.Log
             CheckLastMessage(LogLevel.Warn, "msg {0}", new object[] { 1 }, CultureInfo.InvariantCulture, e: ex);
 
             // Error
+            log.Error("test");
+            CheckLastMessage(LogLevel.Error, "test");
+
+            log.Error("msg {0} {1}", 1, "2");
+            CheckLastMessage(LogLevel.Error, "msg {0} {1}", new object[] { 1, "2" }, CultureInfo.InvariantCulture);
+
+            log.Error(ex, "msg");
+            CheckLastMessage(LogLevel.Error, "msg", e: ex);
+
+            log.Error(ex, "msg {0}", 1);
+            CheckLastMessage(LogLevel.Error, "msg {0}", new object[] { 1 }, CultureInfo.InvariantCulture, e: ex);
 
             // GetLogger
+            var catLog = log.GetLogger("myCategory");
+            catLog.Info("info");
+            CheckLastMessage(LogLevel.Info, "info", category: "myCategory");
+
+            catLog.Log(LogLevel.Info, "info", null, null, "explicitCat", null, null);
+            CheckLastMessage(LogLevel.Info, "info", category: "explicitCat");
+
+            catLog = catLog.GetLogger("newCat");
+            catLog.Info("info");
+            CheckLastMessage(LogLevel.Info, "info", category: "newCat");
+
+            catLog.Log(LogLevel.Info, "info", null, null, "explicitCat", null, null);
+            CheckLastMessage(LogLevel.Info, "info", category: "explicitCat");
         }
 
         /// <summary>

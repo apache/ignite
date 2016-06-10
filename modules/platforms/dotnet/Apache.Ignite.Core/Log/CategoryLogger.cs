@@ -22,6 +22,9 @@ namespace Apache.Ignite.Core.Log
 
     /// <summary>
     /// Wrapping logger with a predefined category.
+    /// <para />
+    /// When <see cref="Log"/> method is called, and <c>category</c> parameter is null, predefined category 
+    /// will be used.
     /// </summary>
     public class CategoryLogger : ILogger
     {
@@ -40,7 +43,10 @@ namespace Apache.Ignite.Core.Log
         {
             IgniteArgumentCheck.NotNull(logger, "log");
 
-            _logger = logger;
+            // If logger is already a CategoryLogger, get underlying logger instead to avoid unnecessary nesting.
+            var catLogger = logger as CategoryLogger;
+            _logger = catLogger != null ? catLogger._logger : logger;
+
             _category = category;
         }
 
@@ -48,7 +54,7 @@ namespace Apache.Ignite.Core.Log
         public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider, string category,
             string nativeErrorInfo, Exception ex)
         {
-            _logger.Log(level, message, args, formatProvider, _category, nativeErrorInfo, ex);
+            _logger.Log(level, message, args, formatProvider, category ?? _category, nativeErrorInfo, ex);
         }
 
         /** <inheritdoc /> */
