@@ -207,6 +207,10 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
             else
                 throw new NoSuchElementException();
         }
+
+        @Override public void remove() {
+            throw new UnsupportedOperationException("remove");
+        }
     }
 
     private abstract class PartitionedSet<T> extends AbstractSet<T> {
