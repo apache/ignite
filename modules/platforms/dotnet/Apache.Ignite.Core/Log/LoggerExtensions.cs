@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Log
         /// <param name="ex">The exception.</param>
         /// <param name="message">The message.</param>
         /// <param name="args">The arguments.</param>
-        public static void Trace(this ILogger logger, Exception ex, string message, object[] args)
+        public static void Trace(this ILogger logger, Exception ex, string message, params object[] args)
         {
             Log(logger, LogLevel.Trace, ex, message, args);
         }
@@ -111,7 +111,7 @@ namespace Apache.Ignite.Core.Log
         /// <param name="ex">The exception.</param>
         /// <param name="message">The message.</param>
         /// <param name="args">The arguments.</param>
-        public static void Debug(this ILogger logger, Exception ex, string message, object[] args)
+        public static void Debug(this ILogger logger, Exception ex, string message, params object[] args)
         {
             Log(logger, LogLevel.Debug, ex, message, args);
         }
@@ -155,7 +155,7 @@ namespace Apache.Ignite.Core.Log
         /// <param name="ex">The exception.</param>
         /// <param name="message">The message.</param>
         /// <param name="args">The arguments.</param>
-        public static void Info(this ILogger logger, Exception ex, string message, object[] args)
+        public static void Info(this ILogger logger, Exception ex, string message, params object[] args)
         {
             Log(logger, LogLevel.Info, ex, message, args);
         }
@@ -199,7 +199,7 @@ namespace Apache.Ignite.Core.Log
         /// <param name="ex">The exception.</param>
         /// <param name="message">The message.</param>
         /// <param name="args">The arguments.</param>
-        public static void Warn(this ILogger logger, Exception ex, string message, object[] args)
+        public static void Warn(this ILogger logger, Exception ex, string message, params object[] args)
         {
             Log(logger, LogLevel.Warn, ex, message, args);
         }
@@ -243,7 +243,7 @@ namespace Apache.Ignite.Core.Log
         /// <param name="ex">The exception.</param>
         /// <param name="message">The message.</param>
         /// <param name="args">The arguments.</param>
-        public static void Error(this ILogger logger, Exception ex, string message, object[] args)
+        public static void Error(this ILogger logger, Exception ex, string message, params object[] args)
         {
             Log(logger, LogLevel.Error, ex, message, args);
         }

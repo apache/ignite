@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Tests.Log
         {
             Test(l => l.Warn("testWarn"), "testWarn");
             Test(l => l.Warn("Hello, {0} : {1}", "World", 1), "Hello, World : 1");
-
+            Test(l => l.Warn(new Exception("error"), "Hello, {0} : {1}", "World", 1), "Hello, World : 1\nException: System.Exception: error");
         }
 
         /// <summary>
