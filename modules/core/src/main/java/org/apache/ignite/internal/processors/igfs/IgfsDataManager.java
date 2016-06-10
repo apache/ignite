@@ -475,9 +475,10 @@ public class IgfsDataManager extends IgfsManager {
     }
 
     /**
+     * Stores the given block in data cache.
      *
-     * @param key
-     * @param data
+     * @param key The data cache key of the block.
+     * @param data The new value of the block.
      */
     private void putBlock(IgfsEntryInfo info, IgfsBlockKey key, byte[] data) throws IgniteCheckedException {
         long len = info.length();
@@ -497,88 +498,101 @@ public class IgfsDataManager extends IgfsManager {
         }
     }
 
+    /**
+     * Entry processor to set or replace block byte value.
+     */
     public static class PutLargerOnlyEntryProcessor implements EntryProcessor<IgfsBlockKey, byte[], Void>,
             Externalizable, Binarylizable {
         /** */
         private static final long serialVersionUID = 0L;
 
-        /** */
-        private int expectedBlockLength;
-
-        /** */
-        private byte[] newValue;
+        /**
+         * The expected current block length.
+         */
+        private int expBlockLen;
 
         /**
+         * The new value.
          */
-        PutLargerOnlyEntryProcessor(int expectedBlockLength, byte[] newValue) {
-            assert newValue != null;
-            assert newValue.length > expectedBlockLength;
+        private byte[] newVal;
 
-            this.expectedBlockLength = expectedBlockLength;
-            this.newValue = newValue;
+        /**
+         * Non-arg constructor required by externalizable.
+         */
+        public PutLargerOnlyEntryProcessor() {
+            // no-op
         }
 
         /**
+         * Constructor.
          *
-         * @param entry
-         * @param args
-         * @return
-         * @throws EntryProcessorException
+         * @param expBlockLen Expected length of the current value.
+         * @param newVal The new value.
          */
+        public PutLargerOnlyEntryProcessor(int expBlockLen, byte[] newVal) {
+            assert newVal != null;
+            assert newVal.length >= expBlockLen : "new val length = " + newVal.length + ", expected block len = " + expBlockLen;
+
+            this.expBlockLen = expBlockLen;
+            this.newVal = newVal;
+        }
+
+        /** {@inheritDoc} */
         public Void process(MutableEntry<IgfsBlockKey, byte[]> entry, Object... args)
             throws EntryProcessorException {
             byte[] curVal = entry.getValue();
 
             if (doReplaceValue(curVal))
-                entry.setValue(newValue);
+                entry.setValue(newVal);
 
             return null;
         }
 
         /**
+         * Answers if to replace the current value with the new one.
          *
-         * @param curVal
-         * @return
+         * @param curVal The current value.
+         * @return 'true' if to replace the current value.
          */
         boolean doReplaceValue(byte[] curVal) {
             if (curVal == null)
                 return true;
 
-            // TODO: clarify this condition and what to do.
-            if (expectedBlockLength >= 0
-                && curVal.length != expectedBlockLength)
-                throw new IllegalStateException("Expected length " + expectedBlockLength
+            if (expBlockLen >= 0 && curVal.length != expBlockLen)
+                throw new IllegalStateException("Expected length " + expBlockLen
                     + " does not match actual length " + curVal.length);
 
-            return newValue.length > curVal.length;
+            return newVal.length > curVal.length;
         }
 
         /** {@inheritDoc} */
         @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            expectedBlockLength = in.readInt();
+            expBlockLen = in.readInt();
 
-            newValue = U.readByteArray(in);
+            newVal = U.readByteArray(in);
         }
 
         /** {@inheritDoc} */
         @Override public void writeExternal(ObjectOutput out) throws IOException {
-            out.writeInt(expectedBlockLength);
+            out.writeInt(expBlockLen);
 
-            U.writeByteArray(out, newValue);
+            U.writeByteArray(out, newVal);
         }
 
+        /** {@inheritDoc} */
         @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
             BinaryRawReader in = reader.rawReader();
 
-            expectedBlockLength = in.readInt();
-            newValue = in.readByteArray();
+            expBlockLen = in.readInt();
+            newVal = in.readByteArray();
         }
 
+        /** {@inheritDoc} */
         @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
             BinaryRawWriter out = writer.rawWriter();
 
-            out.writeInt(expectedBlockLength);
-            out.writeByteArray(newValue);
+            out.writeInt(expBlockLen);
+            out.writeByteArray(newVal);
         }
 
         /** {@inheritDoc} */
