@@ -150,7 +150,28 @@ namespace Apache.Ignite.Core.Tests.Log
         [Test]
         public void TestExtensions()
         {
-            // TODO
+            var log = new TestLogger(LogLevel.Trace);
+
+            // TODO: 20 level overloads, 4 log overloads, GetLogger
+            log.Log(LogLevel.Trace, "trace");
+            CheckLastMessage(LogLevel.Trace, "trace");
+        }
+
+        /// <summary>
+        /// Checks the last message.
+        /// </summary>
+        private static void CheckLastMessage(LogLevel level, string message, object[] args = null, 
+            IFormatProvider formatProvider = null, string category = null, string nativeErr = null, Exception e = null)
+        {
+            var msg = TestLogger.Entries.Last();
+
+            Assert.AreEqual(msg.Level, level);
+            Assert.AreEqual(msg.Message, message);
+            Assert.AreEqual(msg.Args, args);
+            Assert.AreEqual(msg.FormatProvider, formatProvider);
+            Assert.AreEqual(msg.Category, category);
+            Assert.AreEqual(msg.NativeErrorInfo, nativeErr);
+            Assert.AreEqual(msg.Exception, e);
         }
 
         /// <summary>
