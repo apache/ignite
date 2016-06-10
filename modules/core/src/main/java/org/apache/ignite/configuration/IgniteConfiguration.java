@@ -252,10 +252,10 @@ public class IgniteConfiguration {
     private int p2pPoolSize = DFLT_P2P_THREAD_CNT;
 
     /** Ignite installation folder. */
-    private String ggHome;
+    private String igniteHome;
 
     /** Ignite work folder. */
-    private String ggWork;
+    private String igniteWorkDir;
 
     /** MBean server. */
     private MBeanServer mbeanSrv;
@@ -501,12 +501,12 @@ public class IgniteConfiguration {
         deployMode = cfg.getDeploymentMode();
         discoStartupDelay = cfg.getDiscoveryStartupDelay();
         failureDetectionTimeout = cfg.getFailureDetectionTimeout();
-        ggHome = cfg.getIgniteHome();
-        ggWork = cfg.getWorkDirectory();
         gridName = cfg.getGridName();
+        hadoopCfg = cfg.getHadoopConfiguration();
         igfsCfg = cfg.getFileSystemConfiguration();
         igfsPoolSize = cfg.getIgfsThreadPoolSize();
-        hadoopCfg = cfg.getHadoopConfiguration();
+        igniteHome = cfg.getIgniteHome();
+        igniteWorkDir = cfg.getWorkDirectory();
         inclEvtTypes = cfg.getIncludeEventTypes();
         includeProps = cfg.getIncludeProperties();
         lateAffAssignment = cfg.isLateAffinityAssignment();
@@ -982,47 +982,47 @@ public class IgniteConfiguration {
      * @see IgniteSystemProperties#IGNITE_HOME
      */
     public String getIgniteHome() {
-        return ggHome;
+        return igniteHome;
     }
 
     /**
      * Sets Ignite installation folder.
      *
-     * @param ggHome {@code Ignition} installation folder.
+     * @param igniteHome {@code Ignition} installation folder.
      * @see IgniteConfiguration#getIgniteHome()
      * @see IgniteSystemProperties#IGNITE_HOME
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setIgniteHome(String ggHome) {
-        this.ggHome = ggHome;
+    public IgniteConfiguration setIgniteHome(String igniteHome) {
+        this.igniteHome = igniteHome;
 
         return this;
     }
 
     /**
-     * Gets Ignite work folder. If not provided, the method will use work folder under
+     * Gets Ignite work directory. If not provided, the method will use work directory under
      * {@code IGNITE_HOME} specified by {@link IgniteConfiguration#setIgniteHome(String)} or
      * {@code IGNITE_HOME} environment variable or system property.
      * <p>
-     * If {@code IGNITE_HOME} is not provided, then system temp folder is used.
+     * If {@code IGNITE_HOME} is not provided, then system temp directory is used.
      *
-     * @return Ignite work folder or {@code null} to make the system attempt to infer it automatically.
+     * @return Ignite work directory or {@code null} to make the system attempt to infer it automatically.
      * @see IgniteConfiguration#getIgniteHome()
      * @see IgniteSystemProperties#IGNITE_HOME
      */
     public String getWorkDirectory() {
-        return ggWork;
+        return igniteWorkDir;
     }
 
     /**
      * Sets Ignite work folder.
      *
-     * @param ggWork {@code Ignite} work folder.
+     * @param igniteWorkDir {@code Ignite} work directory.
      * @see IgniteConfiguration#getWorkDirectory()
      * @return {@code this} for chaining.
      */
-    public IgniteConfiguration setWorkDirectory(String ggWork) {
-        this.ggWork = ggWork;
+    public IgniteConfiguration setWorkDirectory(String igniteWorkDir) {
+        this.igniteWorkDir = igniteWorkDir;
 
         return this;
     }
@@ -1821,9 +1821,12 @@ public class IgniteConfiguration {
      * considering a remote connection failed.
      *
      * @param failureDetectionTimeout Failure detection timeout in milliseconds.
+     * @return {@code this} for chaining.
      */
-    public void setFailureDetectionTimeout(long failureDetectionTimeout) {
+    public IgniteConfiguration setFailureDetectionTimeout(long failureDetectionTimeout) {
         this.failureDetectionTimeout = failureDetectionTimeout;
+
+        return this;
     }
 
     /**
@@ -2558,9 +2561,12 @@ public class IgniteConfiguration {
      * Sets platform configuration.
      *
      * @param platformCfg Platform configuration.
+     * @return  {@code this} for chaining.
      */
-    public void setPlatformConfiguration(PlatformConfiguration platformCfg) {
+    public IgniteConfiguration setPlatformConfiguration(PlatformConfiguration platformCfg) {
         this.platformCfg = platformCfg;
+
+        return this;
     }
 
     /**
