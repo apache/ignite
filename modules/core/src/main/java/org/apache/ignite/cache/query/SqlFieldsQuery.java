@@ -58,7 +58,7 @@ public final class SqlFieldsQuery extends Query<List<?>> {
     private boolean collocated;
 
     /** Query timeout in millis. */
-    private long timeout;
+    private int timeout;
 
     /**
      * Constructs SQL fields query.
@@ -161,18 +161,18 @@ public final class SqlFieldsQuery extends Query<List<?>> {
     }
 
     /**
-     * Sets the query execution timeout in seconds. Query will be automatically cancelled if timeout is exceeded.
+     * Sets the query execution timeout in secinds. Query will be automatically cancelled if timeout is exceeded.
+     * Zero value means no timeout.
      * @param timeout Timeout.
-     * @param timeUnit Time unit.
      */
-    public void setTimeout(long timeout, TimeUnit timeUnit) {
-        this.timeout = timeUnit.convert(timeout, TimeUnit.MILLISECONDS);
+    public void timeout(int timeout) {
+        this.timeout = timeout;
     }
 
     /**
      * Gets the query execution timeout.
      */
-    public long getTimeout() {
+    public int timeout() {
         return timeout;
     }
 }

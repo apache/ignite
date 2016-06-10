@@ -37,6 +37,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -72,7 +73,6 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryRequest;
-import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridFilteredIterator;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -451,12 +451,14 @@ public class GridReduceQueryExecutor {
     }
 
     /**
+     *
+     * @param cnctx Cancellation context.
      * @param cctx Cache context.
      * @param qry Query.
      * @param keepBinary Keep binary.
      * @return Cursor.
      */
-    public Iterator<List<?>> query(final long qryReqId, GridCacheContext<?,?> cctx, GridCacheTwoStepQuery qry, boolean keepBinary) {
+    public Iterator<List<?>> query(CancellationCtx cnctx, GridCacheContext<?,?> cctx, GridCacheTwoStepQuery qry, boolean keepBinary) {
         for (int attempt = 0;; attempt++) {
             if (attempt != 0) {
                 try {
@@ -468,6 +470,8 @@ public class GridReduceQueryExecutor {
                     throw new CacheException("Query was interrupted.", e);
                 }
             }
+
+            final long qryReqId = reqIdGen.incrementAndGet();
 
             final QueryRun r = new QueryRun();
 
@@ -506,7 +510,7 @@ public class GridReduceQueryExecutor {
             assert !nodes.isEmpty();
 
             if (cctx.isReplicated() || qry.explain()) {
-                assert qry.explain() || !nodes.contains(ctx.discovery().localNode()) :
+                assert qry.explain() || !nodes.contains(this.ctx.discovery().localNode()) :
                     "We must be on a client node.";
 
                 // Select random data node to run query on a replicated data or get EXPLAIN PLAN from a single node.
@@ -561,7 +565,7 @@ public class GridReduceQueryExecutor {
                     fakeTable(r.conn, tblIdx++).setInnerTable(tbl);
                 }
                 else
-                    idx = GridMergeIndexUnsorted.createDummy(ctx);
+                    idx = GridMergeIndexUnsorted.createDummy(this.ctx);
 
                 for (ClusterNode node : nodes)
                     idx.addSource(node.id());
@@ -573,10 +577,16 @@ public class GridReduceQueryExecutor {
 
             runs.put(qryReqId, r);
 
+            // Skip next run if the query was cancelled.
+            if (cnctx.cancelled.get())
+                throw new CacheException("Query was cancelled by user", new GridRemoteQueryCancelledException());
+
+            cnctx.run = r;
+
             try {
-                if (ctx.clientDisconnected()) {
+                if (this.ctx.clientDisconnected()) {
                     throw new CacheException("Query was cancelled, client node disconnected.",
-                        new IgniteClientDisconnectedException(ctx.cluster().clientReconnectFuture(),
+                        new IgniteClientDisconnectedException(this.ctx.cluster().clientReconnectFuture(),
                         "Client node disconnected."));
                 }
 
@@ -590,7 +600,7 @@ public class GridReduceQueryExecutor {
                 }
 
                 if (nodes.size() != 1 || !F.first(nodes).isLocal()) { // Marshall params for remotes.
-                    Marshaller m = ctx.config().getMarshaller();
+                    Marshaller m = this.ctx.config().getMarshaller();
 
                     for (GridCacheSqlQuery mapQry : mapQrys)
                         mapQry.marshallParams(m);
@@ -599,7 +609,7 @@ public class GridReduceQueryExecutor {
                 boolean retry = false;
 
                 if (send(nodes.iterator(),
-                    new GridQueryRequest(qryReqId, r.pageSize, space, mapQrys, topVer, extraSpaces, null), partsMap)) {
+                    new GridQueryRequest(qryReqId, r.pageSize, space, mapQrys, topVer, extraSpaces, null, qry.timeout()), partsMap)) {
                     awaitAllReplies(r, nodes);
 
                     Object state = r.state.get();
@@ -677,10 +687,6 @@ public class GridReduceQueryExecutor {
                     }
                 }
 
-                // Prevent further execution.
-                if (r.cancelled)
-                    throw (CacheException) r.state.get();
-
                 for (GridMergeIndex idx : r.idxs) {
                     if (!idx.fetchedAll()) {
                         // We have to explicitly cancel queries on remote nodes.
@@ -718,6 +724,8 @@ public class GridReduceQueryExecutor {
                 throw new CacheException("Failed to run reduce query locally.", cause);
             }
             finally {
+                cnctx.run = null;
+
                 if (!runs.remove(qryReqId, r))
                     U.warn(log, "Query run was already removed: " + qryReqId);
 
@@ -747,6 +755,17 @@ public class GridReduceQueryExecutor {
                 }
             }
         }
+    }
+
+    /**
+     *
+     */
+    public static class CancellationCtx {
+        /** Current run. */
+        public volatile GridReduceQueryExecutor.QueryRun run;
+
+        /** Cancelled flag. */
+        public volatile AtomicBoolean cancelled = new AtomicBoolean();
     }
 
     /**
@@ -1211,11 +1230,15 @@ public class GridReduceQueryExecutor {
     }
 
     /**
-     * Cancels a query by id.
-     * @param qryId Query id.
+     * Cancels a query.
+     * @param ctx context.
      */
-    public void cancel(long qryId) {
-        QueryRun run = runs.get(qryId);
+    public void cancel(CancellationCtx ctx) {
+        // Do nothing if already cancelled.
+        if (!ctx.cancelled.compareAndSet(false, true))
+            return;
+
+        QueryRun run = ctx.run;
 
         if ( run == null ) return;
 
@@ -1228,7 +1251,7 @@ public class GridReduceQueryExecutor {
     /**
      *
      */
-    private static class QueryRun {
+    public static class QueryRun {
         /** */
         private List<GridMergeIndex> idxs;
 
@@ -1249,9 +1272,6 @@ public class GridReduceQueryExecutor {
 
         /** */
         public volatile PreparedStatement rdcPrepStmt;
-
-        /** */
-        public volatile boolean cancelled;
 
         /**
          * @param o Fail state object.
@@ -1280,9 +1300,6 @@ public class GridReduceQueryExecutor {
         void failed(CacheException e) {
             if (!state.compareAndSet(null, e))
                 return;
-
-            if ( e.getCause() instanceof GridRemoteQueryCancelledException)
-                this.cancelled = true;
 
             rmtCancellationClo.apply(null); // Stop active executions.
 
@@ -1317,12 +1334,5 @@ public class GridReduceQueryExecutor {
 
             return res;
         }
-    }
-
-    /**
-     * Generates next query id.
-     */
-    public long nextQryId() {
-        return reqIdGen.incrementAndGet();
     }
 }

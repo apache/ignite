@@ -463,6 +463,8 @@ public class GridMapQueryExecutor {
                     F.asList(qry.parameters()),
                     true);
 
+                res.prepStmt.setQueryTimeout(req.timeout());
+
                 res.rs(rs);
 
                 if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {

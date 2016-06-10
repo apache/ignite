@@ -102,7 +102,6 @@ import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
-import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T3;
 import org.apache.ignite.internal.util.typedef.internal.LT;
@@ -982,23 +981,25 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     @Override public Iterable<List<?>> queryTwoStep(final GridCacheContext<?,?> cctx, final GridCacheTwoStepQuery qry,
         final boolean keepCacheObj) {
 
-        return new IterableWithQueryId<List<?>>(rdcQryExec.nextQryId()) {
+        GridReduceQueryExecutor.CancellationCtx ctx = new GridReduceQueryExecutor.CancellationCtx();
+
+        return new CtxIterable<List<?>>(ctx) {
             @Override public Iterator<List<?>> iterator() {
-                return rdcQryExec.query(id, cctx, qry, keepCacheObj);
+                return rdcQryExec.query(ctx, cctx, qry, keepCacheObj);
             }
         };
     }
 
     /** */
-    private static abstract class IterableWithQueryId<T> implements Iterable<T> {
+    private static abstract class CtxIterable<T> implements Iterable<T> {
         /** */
-        long id;
+        final GridReduceQueryExecutor.CancellationCtx ctx;
 
         /**
-         * @param id Query id.
+         * @param ctx Manager.
          */
-        public IterableWithQueryId(long id) {
-            this.id = id;
+        public CtxIterable(GridReduceQueryExecutor.CancellationCtx ctx) {
+            this.ctx = ctx;
         }
     }
 
@@ -1133,10 +1134,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         twoStepQry.pageSize(qry.getPageSize());
 
-        final IterableWithQueryId<List<?>> iterable = (IterableWithQueryId<List<?>>)queryTwoStep(cctx, twoStepQry, cctx.keepBinary());
+        twoStepQry.timeout(qry.timeout());
+
+        final CtxIterable<List<?>> iterable = (CtxIterable<List<?>>)queryTwoStep(cctx, twoStepQry, cctx.keepBinary());
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<List<?>>(iterable) {
             @Override public void close() {
-                rdcQryExec.cancel(iterable.id);
+                rdcQryExec.cancel(iterable.ctx);
+
+                super.close();
             }
         };
 
