@@ -152,20 +152,76 @@ namespace Apache.Ignite.Core.Tests.Log
         public void TestExtensions()
         {
             var log = new TestLogger(LogLevel.Trace);
+            var ex = new FieldAccessException("abc");
 
-            // TODO: 20 level overloads, 4 log overloads, GetLogger
+            // Log
             log.Log(LogLevel.Trace, "trace");
             CheckLastMessage(LogLevel.Trace, "trace");
 
             log.Log(LogLevel.Debug, "msg {0} {1}", 1, "2");
             CheckLastMessage(LogLevel.Debug, "msg {0} {1}", new object[] { 1, "2" }, CultureInfo.InvariantCulture);
 
-            var ex = new FieldAccessException("abc");
             log.Log(LogLevel.Info, ex, "msg");
             CheckLastMessage(LogLevel.Info, "msg", e: ex);
 
             log.Log(LogLevel.Warn, ex, "msg {0}", 1);
             CheckLastMessage(LogLevel.Warn, "msg {0}", new object[] {1}, CultureInfo.InvariantCulture, e: ex);
+
+            // Trace
+            log.Trace("trace");
+            CheckLastMessage(LogLevel.Trace, "trace");
+
+            log.Trace("msg {0} {1}", 1, "2");
+            CheckLastMessage(LogLevel.Trace, "msg {0} {1}", new object[] { 1, "2" }, CultureInfo.InvariantCulture);
+
+            log.Trace(ex, "msg");
+            CheckLastMessage(LogLevel.Trace, "msg", e: ex);
+
+            log.Trace(ex, "msg {0}", 1);
+            CheckLastMessage(LogLevel.Trace, "msg {0}", new object[] { 1 }, CultureInfo.InvariantCulture, e: ex);
+
+            // Debug
+            log.Debug("test");
+            CheckLastMessage(LogLevel.Debug, "test");
+
+            log.Debug("msg {0} {1}", 1, "2");
+            CheckLastMessage(LogLevel.Debug, "msg {0} {1}", new object[] { 1, "2" }, CultureInfo.InvariantCulture);
+
+            log.Debug(ex, "msg");
+            CheckLastMessage(LogLevel.Debug, "msg", e: ex);
+
+            log.Debug(ex, "msg {0}", 1);
+            CheckLastMessage(LogLevel.Debug, "msg {0}", new object[] { 1 }, CultureInfo.InvariantCulture, e: ex);
+
+            // Info
+            log.Info("test");
+            CheckLastMessage(LogLevel.Info, "test");
+
+            log.Info("msg {0} {1}", 1, "2");
+            CheckLastMessage(LogLevel.Info, "msg {0} {1}", new object[] { 1, "2" }, CultureInfo.InvariantCulture);
+
+            log.Info(ex, "msg");
+            CheckLastMessage(LogLevel.Info, "msg", e: ex);
+
+            log.Info(ex, "msg {0}", 1);
+            CheckLastMessage(LogLevel.Info, "msg {0}", new object[] { 1 }, CultureInfo.InvariantCulture, e: ex);
+
+            // Warn
+            log.Warn("test");
+            CheckLastMessage(LogLevel.Warn, "test");
+
+            log.Warn("msg {0} {1}", 1, "2");
+            CheckLastMessage(LogLevel.Warn, "msg {0} {1}", new object[] { 1, "2" }, CultureInfo.InvariantCulture);
+
+            log.Warn(ex, "msg");
+            CheckLastMessage(LogLevel.Warn, "msg", e: ex);
+
+            log.Warn(ex, "msg {0}", 1);
+            CheckLastMessage(LogLevel.Warn, "msg {0}", new object[] { 1 }, CultureInfo.InvariantCulture, e: ex);
+
+            // Error
+
+            // GetLogger
         }
 
         /// <summary>
