@@ -18,10 +18,10 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.AbstractSet;
+import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -31,7 +31,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.util.PartitionedReadOnlySet;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -137,25 +136,23 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
     }
 
     /** {@inheritDoc} */
-    @Override public Set<KeyCacheObject> keySet(CacheEntryPredicate... filter) {
-        Collection<Set<KeyCacheObject>> sets = new ArrayList<>();
-
-        for (GridDhtLocalPartition partition : ctx.topology().localPartitions())
-            sets.add(partition.keySet(filter));
-
-        return new PartitionedReadOnlySet<>(sets);
+    @Override public Set<KeyCacheObject> keySet(final CacheEntryPredicate... filter) {
+        return new PartitionedSet<KeyCacheObject>() {
+            @Override protected Set<KeyCacheObject> set(GridDhtLocalPartition part) {
+                return part.keySet(filter);
+            }
+        };
     }
 
     /** {@inheritDoc} */
     @Override public Iterable<GridCacheMapEntry> entries(final CacheEntryPredicate... filter) {
         return new Iterable<GridCacheMapEntry>() {
             @Override public Iterator<GridCacheMapEntry> iterator() {
-                List<Iterator<GridCacheMapEntry>> iterators = new ArrayList<>();
-
-                for (GridDhtLocalPartition partition : ctx.topology().localPartitions())
-                    iterators.add(partition.entries(filter).iterator());
-
-                return F.flatIterators(iterators);
+                return new PartitionedIterator<GridCacheMapEntry>() {
+                    @Override protected Iterator<GridCacheMapEntry> iterator(GridDhtLocalPartition part) {
+                        return part.entries(filter).iterator();
+                    }
+                };
             }
         };
     }
@@ -164,24 +161,77 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
     @Override public Iterable<GridCacheMapEntry> allEntries(final CacheEntryPredicate... filter) {
         return new Iterable<GridCacheMapEntry>() {
             @Override public Iterator<GridCacheMapEntry> iterator() {
-                List<Iterator<GridCacheMapEntry>> iterators = new ArrayList<>();
-
-                for (GridDhtLocalPartition partition : ctx.topology().localPartitions())
-                    iterators.add(partition.allEntries(filter).iterator());
-
-                return F.flatIterators(iterators);
+                return new PartitionedIterator<GridCacheMapEntry>() {
+                    @Override protected Iterator<GridCacheMapEntry> iterator(GridDhtLocalPartition part) {
+                        return part.allEntries(filter).iterator();
+                    }
+                };
             }
         };
     }
 
     /** {@inheritDoc} */
-    @Override public Set<GridCacheMapEntry> entrySet(CacheEntryPredicate... filter) {
-        Collection<Set<GridCacheMapEntry>> sets = new ArrayList<>();
+    @Override public Set<GridCacheMapEntry> entrySet(final CacheEntryPredicate... filter) {
+        return new PartitionedSet<GridCacheMapEntry>() {
+            @Override protected Set<GridCacheMapEntry> set(GridDhtLocalPartition part) {
+                return part.entrySet(filter);
+            }
+        };
+    }
 
-        for (GridDhtLocalPartition partition : ctx.topology().localPartitions())
-            sets.add(partition.entrySet(filter));
+    private abstract class PartitionedIterator<T> implements Iterator<T> {
+        private Iterator<GridDhtLocalPartition> partsIterator = ctx.topology().currentLocalPartitions().iterator();
 
-        return new PartitionedReadOnlySet<>(sets);
+        private Iterator<T> currentIterator = partsIterator.hasNext() ? iterator(partsIterator.next()) :
+            Collections.<T>emptyIterator();
+
+        protected abstract Iterator<T> iterator(GridDhtLocalPartition part);
+
+        @Override public boolean hasNext() {
+            if (currentIterator.hasNext())
+                return true;
+
+            while (partsIterator.hasNext()) {
+                currentIterator = iterator(partsIterator.next());
+
+                if (currentIterator.hasNext())
+                    return true;
+            }
+
+            return false;
+        }
+
+        @Override public T next() {
+            if (hasNext())
+                return currentIterator.next();
+            else
+                throw new NoSuchElementException();
+        }
+    }
+
+    private abstract class PartitionedSet<T> extends AbstractSet<T> {
+        protected abstract Set<T> set(GridDhtLocalPartition part);
+
+        @Override public Iterator<T> iterator() {
+            return new PartitionedIterator<T>() {
+                @Override protected Iterator<T> iterator(GridDhtLocalPartition part) {
+                    return set(part).iterator();
+                }
+            };
+        }
+
+        @Override public int size() {
+            return F.size(iterator());
+        }
+
+        @Override public boolean contains(Object o) {
+            for (GridDhtLocalPartition part : ctx.topology().currentLocalPartitions()) {
+                if (set(part).contains(o))
+                    return true;
+            }
+
+            return false;
+        }
     }
 
     /** {@inheritDoc} */
