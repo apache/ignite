@@ -2548,9 +2548,11 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     }
 
     /**
+     * TODO: GG-11241.
+     *
      * @throws Exception If failed.
      */
-    public void testDeletedEntriesFlag() throws Exception {
+    public void _testDeletedEntriesFlag() throws Exception {
         if (cacheMode() != LOCAL && cacheMode() != REPLICATED && memoryMode() != OFFHEAP_TIERED) {
             final int cnt = 3;
 
