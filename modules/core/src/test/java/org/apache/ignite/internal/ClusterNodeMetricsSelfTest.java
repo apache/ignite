@@ -19,9 +19,7 @@ package org.apache.ignite.internal;
 
 import java.io.Serializable;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.ignite.GridTestTask;
 import org.apache.ignite.Ignite;
@@ -33,7 +31,6 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.processors.task.GridInternal;
-import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.messaging.MessagingListenActor;
@@ -60,12 +57,11 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
     /** Number of messages. */
     private static final int MSG_CNT = 3;
 
-    /** */
-    private static final int VAL_SIZE = 512 * 1024; // bytes
+    /** Size of value in bytes. */
+    private static final int VAL_SIZE = 512 * 1024;
 
-    /** */
-    private static final int MAX_VALS_AMOUNT = 100;
-    public static final int DEFAUTL_HEARTBEAT = 2_000;
+    /** Amount of cache entries. */
+    private static final int MAX_VALS_AMOUNT = 400;
 
     /** With OFFHEAP_VALUES policy. */
     private final String OFF_HEAP_VALUE_NAME = "offHeapValuesCfg";
@@ -118,7 +114,7 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
     public void testAllocatedMemory() throws Exception {
         Ignite ignite = grid();
@@ -134,46 +130,50 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
 
         long prevClusterNonHeapMemoryUsed = ignite.cluster().metrics().getNonHeapMemoryUsed();
 
-        fillCache(onHeapCache, getTestTimeout());
+        fillCache(onHeapCache);
 
         assertTrue(onHeapCache.metrics().getOffHeapAllocatedSize() > (MAX_VALS_AMOUNT - 5) * VAL_SIZE + prevTieredOffHeapSize);
         assertEquals(0, offHeapCache.metrics().getOffHeapAllocatedSize());
-
-        // prevClusterNonHeapMemoryUsed = 69_277_368
-        // (MAX_VALS_AMOUNT - 5) * VAL_SIZE = 49_807_360
-        // tiered.metrics().getOffHeapAllocatedSize() = 51_012_531
 
         assertTrue(prevClusterNonHeapMemoryUsed < ignite.cluster().metrics().getNonHeapMemoryUsed());
 
         prevClusterNonHeapMemoryUsed = ignite.cluster().metrics().getNonHeapMemoryUsed();
         prevTieredOffHeapSize = onHeapCache.metrics().getOffHeapAllocatedSize();
 
-        fillCache(offHeapCache, getTestTimeout());
+        fillCache(offHeapCache);
 
         assertTrue(offHeapCache.metrics().getOffHeapAllocatedSize() > (MAX_VALS_AMOUNT - 5) * VAL_SIZE);
         assertEquals(prevTieredOffHeapSize, onHeapCache.metrics().getOffHeapAllocatedSize());
         assertTrue((MAX_VALS_AMOUNT - 5) * VAL_SIZE + prevClusterNonHeapMemoryUsed < ignite.cluster().metrics().getNonHeapMemoryUsed());
     }
 
-    /** Fill cache with values. */
-    private static void fillCache(final IgniteCache<Integer, Object> cache, long timeout) throws Exception{
-        final int THREAD_COUNT = 4;
+    /**
+     * Fill cache with values.
+     * @param cache Ignite cache.
+     * @throws Exception If failed.
+     */
+    private void fillCache(final IgniteCache<Integer, Object> cache) throws Exception{
         final byte[] val = new byte[VAL_SIZE];
-        final AtomicInteger keyStart = new AtomicInteger(0);
 
-        GridTestUtils.runMultiThreaded(new Callable<Void>() {
-            @Override public Void call() throws Exception {
-                final int start = keyStart.addAndGet(MAX_VALS_AMOUNT);
+        for (int i = 0; i < MAX_VALS_AMOUNT * 4; i++)
+            cache.put(i, val);
 
-                for (int i = start; i < start + MAX_VALS_AMOUNT; i++)
-                    cache.put(i, val);
+        // Let metrics update twice.
+        final CountDownLatch latch = new CountDownLatch(2);
 
+        grid().events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                assert evt.type() == EVT_NODE_METRICS_UPDATED;
 
-                return null;
+                latch.countDown();
+
+                return true;
             }
-        }, THREAD_COUNT, "test");
+        }, EVT_NODE_METRICS_UPDATED);
 
-        IgniteUtils.sleep(2*DEFAUTL_HEARTBEAT);
+        // Wait for metrics update.
+        latch.await();
+
     }
 
     /**
@@ -365,7 +365,6 @@ public class ClusterNodeMetricsSelfTest extends GridCommonAbstractTest {
 
         assert metrics0.getHeapMemoryUsed() > 0;
         assert metrics0.getHeapMemoryTotal() > 0;
-//        assert metrics0.getNonHeapMemoryMaximum() > 0;
     }
 
     /**
