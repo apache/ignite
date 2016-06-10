@@ -28,22 +28,37 @@ namespace Apache.Ignite.Core.Tests.Log
     /// </summary>
     public class ConsoleLoggerTest
     {
-        // TODO: Offline logic tests
-
+        [Test]
+        public void TestLevels()
+        {
+            Test(l => l.LogDebug("debug"), "debug", new[] {LogLevel.Debug});
+            Test(l => l.LogDebug("debug"), null, new[] {LogLevel.Trace});
+        }
 
         [Test]
-        public void Test()
+        public void TestFormatting()
+        {
+            Test(l => l.LogWarning("testWarn"), "testWarn");
+
+        }
+
+        private static void Test(Action<ConsoleLogger> logAction, string expected, LogLevel[] levels = null)
         {
             var sb = new StringBuilder();
             var writer = new StringWriter(sb);
             Console.SetOut(writer);
 
-            var log = new ConsoleLogger(LogLevel.Debug);
+            var log = new ConsoleLogger(
+                levels ?? new[] {LogLevel.Trace, LogLevel.Info, LogLevel.Debug, LogLevel.Warn, LogLevel.Error});
 
-            log.LogDebug("test");
+            logAction(log);
+
             writer.Flush();
 
-            Assert.AreEqual("test", ExtractMessage(sb));
+            if (expected != null)
+                Assert.AreEqual(expected, ExtractMessage(sb));
+            else
+                Assert.AreEqual(0, sb.Length);
         }
 
         private static string ExtractMessage(StringBuilder log)

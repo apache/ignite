@@ -145,6 +145,15 @@ namespace Apache.Ignite.Core.Tests.Log
         }
 
         /// <summary>
+        /// Tests the <see cref="LoggerExtensions"/> methods.
+        /// </summary>
+        [Test]
+        public void TestExtensions()
+        {
+            // TODO
+        }
+
+        /// <summary>
         /// Gets the configuration with logger.
         /// </summary>
         private static IgniteConfiguration GetConfigWithLogger(bool verbose = false)

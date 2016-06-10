@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Log
 {
     using System.Globalization;
     using System.Text;
-    using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
