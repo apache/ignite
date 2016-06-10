@@ -167,7 +167,7 @@ namespace Apache.Ignite.Core
                 // 0. Init logger
                 var log = cfg.Logger ?? new ConsoleLogger(LogLevel.Info, LogLevel.Warn, LogLevel.Error);
 
-                log.LogDebug("Starting Ignite.NET " + Assembly.GetExecutingAssembly().GetName().Version);
+                log.Debug("Starting Ignite.NET " + Assembly.GetExecutingAssembly().GetName().Version);
 
                 // 1. Check GC settings.
                 CheckServerGc(cfg, log);
@@ -178,7 +178,7 @@ namespace Apache.Ignite.Core
                 var cbs = new UnmanagedCallbacks(log);
 
                 IgniteManager.CreateJvmContext(cfg, cbs, log);
-                log.LogDebug("JVM started.");
+                log.Debug("JVM started.");
 
                 var gridName = cfg.GridName;
 
@@ -248,7 +248,7 @@ namespace Apache.Ignite.Core
         private static void CheckServerGc(IgniteConfiguration cfg, ILogger log)
         {
             if (!cfg.SuppressWarnings && !GCSettings.IsServerGC && Interlocked.CompareExchange(ref _gcWarn, 1, 0) == 0)
-                log.LogWarning("GC server mode is not enabled, this could lead to less " +
+                log.Warn("GC server mode is not enabled, this could lead to less " +
                     "than optimal performance on multi-core machines (to enable see " +
                     "http://msdn.microsoft.com/en-us/library/ms229357(v=vs.110).aspx).");
         }

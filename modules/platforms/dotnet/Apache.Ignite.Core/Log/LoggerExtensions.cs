@@ -26,6 +26,31 @@ namespace Apache.Ignite.Core.Log
     /// </summary>
     public static class LoggerExtensions
     {
+        public static void Debug(this ILogger logger, string message)
+        {
+            Log(logger, LogLevel.Debug, message);
+        }
+
+        public static void Debug(this ILogger logger, string message, params object[] args)
+        {
+            Log(logger, LogLevel.Debug, message, args);
+        }
+
+        public static void Warn(this ILogger logger, string message)
+        {
+            Log(logger, LogLevel.Warn, message);
+        }
+
+        public static void Error(this ILogger logger, string message)
+        {
+            Log(logger, LogLevel.Error, message);
+        }
+
+        public static void Error(this ILogger logger, Exception e, string message)
+        {
+            Log(logger, LogLevel.Error, e, message);
+        }
+
         public static void Log(this ILogger logger, LogLevel level, string message)
         {
             IgniteArgumentCheck.NotNull(logger, "logger");

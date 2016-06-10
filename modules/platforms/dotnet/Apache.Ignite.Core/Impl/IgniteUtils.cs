@@ -128,7 +128,7 @@ namespace Apache.Ignite.Core.Impl
         {
             if (_loaded)
             {
-                log.LogDebug("JNI dll is already loaded.");
+                log.Debug("JNI dll is already loaded.");
                 return;
             }
 
@@ -193,12 +193,12 @@ namespace Apache.Ignite.Core.Impl
             var messages = new List<string>();
             foreach (var dllPath in GetJvmDllPaths(configJvmDllPath))
             {
-                log.LogDebug("Trying to load JVM dll from [option={0}, path={1}]...", dllPath.Key, dllPath.Value);
+                log.Debug("Trying to load JVM dll from [option={0}, path={1}]...", dllPath.Key, dllPath.Value);
 
                 var errCode = LoadDll(dllPath.Value, FileJvmDll);
                 if (errCode == 0)
                 {
-                    log.LogDebug("jvm.dll successfully loaded from [option={0}, path={1}]", dllPath.Key, dllPath.Value);
+                    log.Debug("jvm.dll successfully loaded from [option={0}, path={1}]", dllPath.Key, dllPath.Value);
                     return;
                 }
 
@@ -206,7 +206,7 @@ namespace Apache.Ignite.Core.Impl
                     dllPath.Key, dllPath.Value, errCode);
                 messages.Add(message);
 
-                log.LogDebug("Failed to load jvm.dll: " + message);
+                log.Debug("Failed to load jvm.dll: " + message);
 
                 if (dllPath.Value == configJvmDllPath)
                     break;  // if configJvmDllPath is specified and is invalid - do not try other options

@@ -31,14 +31,14 @@ namespace Apache.Ignite.Core.Tests.Log
         [Test]
         public void TestLevels()
         {
-            Test(l => l.LogDebug("debug"), "debug", new[] {LogLevel.Debug});
-            Test(l => l.LogDebug("debug"), null, new[] {LogLevel.Trace});
+            Test(l => l.Debug("debug"), "debug", new[] {LogLevel.Debug});
+            Test(l => l.Debug("debug"), null, new[] {LogLevel.Trace});
         }
 
         [Test]
         public void TestFormatting()
         {
-            Test(l => l.LogWarning("testWarn"), "testWarn");
+            Test(l => l.Warn("testWarn"), "testWarn");
 
         }
 
