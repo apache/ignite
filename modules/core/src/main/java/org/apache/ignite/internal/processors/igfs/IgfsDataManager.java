@@ -17,18 +17,11 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import javax.cache.processor.EntryProcessorException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.FileSystemConfiguration;
@@ -88,6 +81,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -377,6 +371,8 @@ public class IgfsDataManager extends IgfsManager {
     @Nullable public IgniteInternalFuture<byte[]> dataBlock(final IgfsEntryInfo fileInfo, final IgfsPath path,
         final long blockIdx, @Nullable final IgfsSecondaryFileSystemPositionedReadable secReader)
         throws IgniteCheckedException {
+        //assert validTxState(any); // Allow this method call for any transaction state.
+
         assert fileInfo != null;
         assert blockIdx >= 0;
 
@@ -439,7 +435,7 @@ public class IgfsDataManager extends IgfsManager {
 
                                 rmtReadFut.onDone(res);
 
-                                putBlock(fileInfo.blockSize(), key, res);
+                                putSafe(key, res);
 
                                 metrics.addReadBlocks(1, 1);
                             }
@@ -473,97 +469,6 @@ public class IgfsDataManager extends IgfsManager {
 
         return fut;
     }
-
-    /**
-     * Stores the given block in data cache.
-     *
-     * @param key The data cache key of the block.
-     * @param data The new value of the block.
-     */
-    private void putBlock(int blockSize, IgfsBlockKey key, byte[] data) throws IgniteCheckedException {
-        if (data.length < blockSize)
-            // partial (incomplete) block:
-            dataCachePrj.invoke(key, new PutLargerOnlyEntryProcessor(data));
-        else {
-            // whole block:
-            assert data.length == blockSize;
-
-            dataCachePrj.put(key, data);
-        }
-    }
-
-    /**
-     * Entry processor to set or replace block byte value.
-     */
-    public static class PutLargerOnlyEntryProcessor implements EntryProcessor<IgfsBlockKey, byte[], Void>,
-            Externalizable, Binarylizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         * The new value.
-         */
-        private byte[] newVal;
-
-        /**
-         * Non-arg constructor required by externalizable.
-         */
-        public PutLargerOnlyEntryProcessor() {
-            // no-op
-        }
-
-        /**
-         * Constructor.
-         *
-         * @param newVal The new value.
-         */
-        public PutLargerOnlyEntryProcessor(byte[] newVal) {
-            assert newVal != null;
-
-            this.newVal = newVal;
-        }
-
-        /** {@inheritDoc} */
-        public Void process(MutableEntry<IgfsBlockKey, byte[]> entry, Object... args)
-            throws EntryProcessorException {
-            byte[] curVal = entry.getValue();
-
-            if (curVal == null || newVal.length > curVal.length)
-                entry.setValue(newVal);
-
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            newVal = U.readByteArray(in);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeByteArray(out, newVal);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
-            BinaryRawReader in = reader.rawReader();
-
-            newVal = in.readByteArray();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-            BinaryRawWriter out = writer.rawWriter();
-
-            out.writeByteArray(newVal);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(PutLargerOnlyEntryProcessor.class, this);
-        }
-    }
-
 
     /**
      * Registers write future in igfs data manager.
@@ -775,7 +680,7 @@ public class IgfsDataManager extends IgfsManager {
                                 byte[] val = vals.get(colocatedKey);
 
                                 if (val != null) {
-                                    putBlock(fileInfo.blockSize(), key, val);
+                                    dataCachePrj.put(key, val);
 
                                     tx.commit();
                                 }
@@ -1154,7 +1059,7 @@ public class IgfsDataManager extends IgfsManager {
      * @throws IgniteCheckedException If update failed.
      */
     private void processPartialBlockWrite(IgniteUuid fileId, IgfsBlockKey colocatedKey, int startOff,
-        byte[] data, int blockSize) throws IgniteCheckedException {
+        byte[] data) throws IgniteCheckedException {
         if (dataCachePrj.igfsDataSpaceUsed() >= dataCachePrj.igfsDataSpaceMax()) {
             final WriteCompletionFuture completionFut = pendingWrites.get(fileId);
 
@@ -1185,7 +1090,7 @@ public class IgfsDataManager extends IgfsManager {
 
         // If writing from block beginning, just put and return.
         if (startOff == 0) {
-            putBlock(blockSize, colocatedKey, data);
+            dataCachePrj.put(colocatedKey, data);
 
             return;
         }
@@ -1242,6 +1147,67 @@ public class IgfsDataManager extends IgfsManager {
             catch (Exception e) {
                 log.warning("Failed to execute IGFS callable: " + c, e);
             }
+        }
+    }
+
+    /**
+     * Put data block read from the secondary file system to the cache.
+     *
+     * @param key Key.
+     * @param data Data.
+     * @throws IgniteCheckedException If failed.
+     */
+    private void putSafe(final IgfsBlockKey key, final byte[] data) throws IgniteCheckedException {
+        assert key != null;
+        assert data != null;
+
+        if (maxPendingPuts > 0) {
+            pendingPutsLock.lock();
+
+            try {
+                while (curPendingPuts > maxPendingPuts)
+                    pendingPutsCond.await(2000, TimeUnit.MILLISECONDS);
+
+                curPendingPuts += data.length;
+            }
+            catch (InterruptedException ignore) {
+                throw new IgniteCheckedException("Failed to put IGFS data block into cache due to interruption: " + key);
+            }
+            finally {
+                pendingPutsLock.unlock();
+            }
+        }
+
+        Runnable task = new Runnable() {
+            @Override public void run() {
+                try {
+                    dataCachePrj.put(key, data);
+                }
+                catch (IgniteCheckedException e) {
+                    U.warn(log, "Failed to put IGFS data block into cache [key=" + key + ", err=" + e + ']');
+                }
+                finally {
+                    if (maxPendingPuts > 0) {
+                        pendingPutsLock.lock();
+
+                        try {
+                            curPendingPuts -= data.length;
+
+                            pendingPutsCond.signalAll();
+                        }
+                        finally {
+                            pendingPutsLock.unlock();
+                        }
+                    }
+                }
+            }
+        };
+
+        try {
+            putExecSvc.submit(task);
+        }
+        catch (RejectedExecutionException ignore) {
+            task.run();
         }
     }
 
@@ -1490,7 +1456,7 @@ public class IgfsDataManager extends IgfsManager {
 
                 if (size != blockSize) {
                     // Partial writes must be always synchronous.
-                    processPartialBlockWrite(id, key, block == first ? off : 0, portion, blockSize);
+                    processPartialBlockWrite(id, key, block == first ? off : 0, portion);
 
                     writtenTotal++;
                 }

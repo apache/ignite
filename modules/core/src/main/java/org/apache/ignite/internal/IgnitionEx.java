@@ -1835,8 +1835,6 @@ public class IgnitionEx {
             // Initialize factory's log.
             log = cfgLog.getLogger(G.class);
 
-            assert log != null;
-
             myCfg.setGridLogger(cfgLog);
 
             // Check Ignite home folder (after log is available).
@@ -2277,9 +2275,9 @@ public class IgnitionEx {
 
                 grid = null;
 
-                assert log != null;
-
                 stopExecutors(log);
+
+                log = null;
             }
         }
 
