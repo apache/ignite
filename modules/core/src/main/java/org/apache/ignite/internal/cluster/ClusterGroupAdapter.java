@@ -109,8 +109,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
      */
     protected ClusterGroupAdapter(@Nullable GridKernalContext ctx,
         @Nullable UUID subjId,
-        @Nullable IgnitePredicate<ClusterNode> p)
-    {
+        @Nullable IgnitePredicate<ClusterNode> p) {
         if (ctx != null)
             setKernalContext(ctx);
 
@@ -127,8 +126,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
      */
     protected ClusterGroupAdapter(@Nullable GridKernalContext ctx,
         @Nullable UUID subjId,
-        Set<UUID> ids)
-    {
+        Set<UUID> ids) {
         if (ctx != null)
             setKernalContext(ctx);
 
@@ -149,8 +147,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     private ClusterGroupAdapter(@Nullable GridKernalContext ctx,
         @Nullable UUID subjId,
         @Nullable IgnitePredicate<ClusterNode> p,
-        Set<UUID> ids)
-    {
+        Set<UUID> ids) {
         if (ctx != null)
             setKernalContext(ctx);
 
@@ -311,7 +308,12 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
                 }
             }
             else {
-                Collection<ClusterNode> all = ctx.discovery().allNodes();
+                Collection<ClusterNode> all;
+
+                if (p instanceof DaemonFilter)
+                    all = F.concat(false, ctx.discovery().daemonNodes(), ctx.discovery().allNodes());
+                else
+                    all = ctx.discovery().allNodes();
 
                 return p != null ? F.view(all, p) : all;
             }
