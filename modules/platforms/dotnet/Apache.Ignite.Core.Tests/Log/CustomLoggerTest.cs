@@ -157,8 +157,15 @@ namespace Apache.Ignite.Core.Tests.Log
             log.Log(LogLevel.Trace, "trace");
             CheckLastMessage(LogLevel.Trace, "trace");
 
-            log.Log(LogLevel.Debug, "msg {1} {2}", 1, "2");
-            CheckLastMessage(LogLevel.Debug, "msg {1} {2}", new object[] { 1, "2" }, CultureInfo.InvariantCulture);
+            log.Log(LogLevel.Debug, "msg {0} {1}", 1, "2");
+            CheckLastMessage(LogLevel.Debug, "msg {0} {1}", new object[] { 1, "2" }, CultureInfo.InvariantCulture);
+
+            var ex = new FieldAccessException("abc");
+            log.Log(LogLevel.Info, ex, "msg");
+            CheckLastMessage(LogLevel.Info, "msg", e: ex);
+
+            log.Log(LogLevel.Warn, ex, "msg {0}", 1);
+            CheckLastMessage(LogLevel.Warn, "msg {0}", new object[] {1}, CultureInfo.InvariantCulture, e: ex);
         }
 
         /// <summary>
