@@ -53,7 +53,7 @@ namespace Apache.Ignite.Core.Log
         /// Logs the message with <see cref="LogLevel.Trace"/> level.
         /// </summary>
         /// <param name="logger">The logger.</param>
-        /// <param name="ex">The ex.</param>
+        /// <param name="ex">The exception.</param>
         /// <param name="message">The message.</param>
         public static void Trace(this ILogger logger, Exception ex, string message)
         {
@@ -64,7 +64,7 @@ namespace Apache.Ignite.Core.Log
         /// Logs the message with <see cref="LogLevel.Trace"/> level.
         /// </summary>
         /// <param name="logger">The logger.</param>
-        /// <param name="ex">The ex.</param>
+        /// <param name="ex">The exception.</param>
         /// <param name="message">The message.</param>
         /// <param name="args">The arguments.</param>
         public static void Trace(this ILogger logger, Exception ex, string message, object[] args)
@@ -97,7 +97,7 @@ namespace Apache.Ignite.Core.Log
         /// Logs the message with <see cref="LogLevel.Debug"/> level.
         /// </summary>
         /// <param name="logger">The logger.</param>
-        /// <param name="ex">The ex.</param>
+        /// <param name="ex">The exception.</param>
         /// <param name="message">The message.</param>
         public static void Debug(this ILogger logger, Exception ex, string message)
         {
@@ -108,7 +108,7 @@ namespace Apache.Ignite.Core.Log
         /// Logs the message with <see cref="LogLevel.Debug"/> level.
         /// </summary>
         /// <param name="logger">The logger.</param>
-        /// <param name="ex">The ex.</param>
+        /// <param name="ex">The exception.</param>
         /// <param name="message">The message.</param>
         /// <param name="args">The arguments.</param>
         public static void Debug(this ILogger logger, Exception ex, string message, object[] args)
@@ -141,7 +141,7 @@ namespace Apache.Ignite.Core.Log
         /// Logs the message with <see cref="LogLevel.Info"/> level.
         /// </summary>
         /// <param name="logger">The logger.</param>
-        /// <param name="ex">The ex.</param>
+        /// <param name="ex">The exception.</param>
         /// <param name="message">The message.</param>
         public static void Info(this ILogger logger, Exception ex, string message)
         {
@@ -152,7 +152,7 @@ namespace Apache.Ignite.Core.Log
         /// Logs the message with <see cref="LogLevel.Info"/> level.
         /// </summary>
         /// <param name="logger">The logger.</param>
-        /// <param name="ex">The ex.</param>
+        /// <param name="ex">The exception.</param>
         /// <param name="message">The message.</param>
         /// <param name="args">The arguments.</param>
         public static void Info(this ILogger logger, Exception ex, string message, object[] args)
@@ -185,7 +185,7 @@ namespace Apache.Ignite.Core.Log
         /// Logs the message with <see cref="LogLevel.Warn"/> level.
         /// </summary>
         /// <param name="logger">The logger.</param>
-        /// <param name="ex">The ex.</param>
+        /// <param name="ex">The exception.</param>
         /// <param name="message">The message.</param>
         public static void Warn(this ILogger logger, Exception ex, string message)
         {
@@ -196,7 +196,7 @@ namespace Apache.Ignite.Core.Log
         /// Logs the message with <see cref="LogLevel.Warn"/> level.
         /// </summary>
         /// <param name="logger">The logger.</param>
-        /// <param name="ex">The ex.</param>
+        /// <param name="ex">The exception.</param>
         /// <param name="message">The message.</param>
         /// <param name="args">The arguments.</param>
         public static void Warn(this ILogger logger, Exception ex, string message, object[] args)
@@ -229,7 +229,7 @@ namespace Apache.Ignite.Core.Log
         /// Logs the message with <see cref="LogLevel.Error"/> level.
         /// </summary>
         /// <param name="logger">The logger.</param>
-        /// <param name="ex">The ex.</param>
+        /// <param name="ex">The exception.</param>
         /// <param name="message">The message.</param>
         public static void Error(this ILogger logger, Exception ex, string message)
         {
@@ -240,7 +240,7 @@ namespace Apache.Ignite.Core.Log
         /// Logs the message with <see cref="LogLevel.Error"/> level.
         /// </summary>
         /// <param name="logger">The logger.</param>
-        /// <param name="ex">The ex.</param>
+        /// <param name="ex">The exception.</param>
         /// <param name="message">The message.</param>
         /// <param name="args">The arguments.</param>
         public static void Error(this ILogger logger, Exception ex, string message, object[] args)
@@ -280,7 +280,7 @@ namespace Apache.Ignite.Core.Log
         /// </summary>
         /// <param name="logger">The logger.</param>
         /// <param name="level">The level.</param>
-        /// <param name="ex">The ex.</param>
+        /// <param name="ex">The exception.</param>
         /// <param name="message">The message.</param>
         public static void Log(this ILogger logger, LogLevel level, Exception ex, string message)
         {
@@ -294,7 +294,7 @@ namespace Apache.Ignite.Core.Log
         /// </summary>
         /// <param name="logger">The logger.</param>
         /// <param name="level">The level.</param>
-        /// <param name="ex">The ex.</param>
+        /// <param name="ex">The exception.</param>
         /// <param name="message">The message.</param>
         /// <param name="args">The arguments.</param>
         public static void Log(this ILogger logger, LogLevel level, Exception ex, string message, params object[] args)

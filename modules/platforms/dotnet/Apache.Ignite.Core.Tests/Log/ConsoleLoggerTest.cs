@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Log
 {
     using System;
     using System.IO;
+    using System.Linq;
     using System.Text;
     using Apache.Ignite.Core.Log;
     using NUnit.Framework;
@@ -28,11 +29,20 @@ namespace Apache.Ignite.Core.Tests.Log
     /// </summary>
     public class ConsoleLoggerTest
     {
+        /** */
+        private static readonly LogLevel[] AllLevels = Enum.GetValues(typeof(LogLevel)).OfType<LogLevel>().ToArray();
+
+        /// <summary>
+        /// Tests the logging levels.
+        /// </summary>
         [Test]
-        public void TestLevels()
+        public void TestLogLevels()
         {
-            Test(l => l.Debug("debug"), "debug", new[] {LogLevel.Debug});
-            Test(l => l.Debug("debug"), null, new[] {LogLevel.Trace});
+            foreach (var level in AllLevels)
+            {
+                Test(l => l.Log(level, "test msg"), "test msg", new[] { level });
+                Test(l => l.Log(level, "test msg"), null, new LogLevel[0]);
+            }
         }
 
         [Test]
