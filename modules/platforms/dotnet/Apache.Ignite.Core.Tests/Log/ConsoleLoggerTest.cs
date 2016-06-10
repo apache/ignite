@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Log
 {
     using System;
+    using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Text;
@@ -56,6 +57,9 @@ namespace Apache.Ignite.Core.Tests.Log
             Test(l => l.Warn(new Exception("error"), "Hello"), "Hello\nException: System.Exception: error");
             Test(l => l.Warn(new Exception("error"), "Hello, {0} : {1}", "World", 1), 
                 "Hello, World : 1\nException: System.Exception: error");
+            Test(l => l.Log(LogLevel.Info, "{0} msg {0}", new object[] {"|"}, CultureInfo.InvariantCulture, "cat",
+                "nativeErr", new Exception("dotNetErr")), 
+                "| msg |\nNative error: nativeErr\nException: System.Exception: dotNetErr");
         }
 
         /// <summary>
