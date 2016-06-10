@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Log
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.Linq;
     using System.Threading;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -155,6 +156,9 @@ namespace Apache.Ignite.Core.Tests.Log
             // TODO: 20 level overloads, 4 log overloads, GetLogger
             log.Log(LogLevel.Trace, "trace");
             CheckLastMessage(LogLevel.Trace, "trace");
+
+            log.Log(LogLevel.Debug, "msg {1} {2}", 1, "2");
+            CheckLastMessage(LogLevel.Debug, "msg {1} {2}", new object[] { 1, "2" }, CultureInfo.InvariantCulture);
         }
 
         /// <summary>
