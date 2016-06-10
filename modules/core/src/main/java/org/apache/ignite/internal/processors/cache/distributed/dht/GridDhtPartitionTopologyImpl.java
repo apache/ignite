@@ -18,19 +18,16 @@
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -54,7 +51,6 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-import org.jsr166.ConcurrentHashMap8;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
@@ -752,18 +748,24 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
     @Override public GridDhtPartitionMap2 localPartitionMap() {
         Map<Integer, GridDhtPartitionState> map = new HashMap<>();
 
-        for (int i = 0; i < locParts.length(); i++) {
-            GridDhtLocalPartition part = locParts.get(i);
+        lock.readLock().lock();
 
-            if (part == null)
-                continue;
+        try {
+            for (int i = 0; i < locParts.length(); i++) {
+                GridDhtLocalPartition part = locParts.get(i);
 
-            map.put(i, part.state());
+                if (part == null)
+                    continue;
+
+                map.put(i, part.state());
+            }
+
+            return new GridDhtPartitionMap2(cctx.nodeId(), updateSeq.get(), topVer,
+                Collections.unmodifiableMap(map), true);
         }
-
-        return new GridDhtPartitionMap2(cctx.nodeId(), updateSeq.get(), topVer,
-            Collections.unmodifiableMap(map), true);
-
+        finally {
+            lock.readLock().unlock();
+        }
     }
 
     /** {@inheritDoc} */
