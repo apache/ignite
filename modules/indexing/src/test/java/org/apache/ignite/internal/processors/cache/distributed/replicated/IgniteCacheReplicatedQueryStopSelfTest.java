@@ -29,13 +29,10 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractQuerySelfTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridRemoteQueryCancelledException;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.spi.communication.CommunicationSpi;
-import org.apache.ignite.spi.discovery.DiscoverySpi;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CachePeekMode.ALL;
@@ -62,14 +59,14 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
     }
 
     /**
-     *
+     * Tests stopping two-step long query while result set is being generated on remote nodes.
      */
     public void testRemoteQueryExecutionStop2() throws Exception {
         testQueryStop(10_000, 4, "select a._key, b._key from String a, String b", 1000);
     }
 
     /**
-     *
+     * Tests stopping two-step long query while result set is being generated on remote nodes.
      */
     public void testRemoteQueryExecutionStop3() throws Exception {
         testQueryStop(10_000, 4, "select a._key, b._key from String a, String b", 3000);
@@ -78,14 +75,42 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
     /**
      * Tests stopping two step query while reducing.
      */
-    public void testRemoteQueryReducingStop() throws Exception {
-        testQueryStop(100_000, 4, "select a._key, count(*) from String a group by a._key", 3000);
+    public void testRemoteQueryReducingStop1() throws Exception {
+        testQueryStop(100_000, 4, "select a._key, count(*) from String a group by a._key", 500);
+    }
+
+    /**
+     * Tests stopping two step query while reducing.
+     */
+    public void testRemoteQueryReducingStop2() throws Exception {
+        testQueryStop(100_000, 4, "select a._key, count(*) from String a group by a._key", 1_500);
+    }
+
+    /**
+     * Tests stopping two step query while reducing.
+     */
+    public void testRemoteQueryReducingStop3() throws Exception {
+        testQueryStop(100_000, 4, "select a._key, count(*) from String a group by a._key", 3_000);
     }
 
     /**
      * Tests stopping two step query while fetching data from remote nodes.
      */
-    public void testRemoteQueryFetchngStop() throws Exception {
+    public void testRemoteQueryFetchngStop1() throws Exception {
+        testQueryStop(100_000, 512, "select a._val, b._val from String a, String b", 500);
+    }
+
+    /**
+     * Tests stopping two step query while fetching data from remote nodes.
+     */
+    public void testRemoteQueryFetchngStop2() throws Exception {
+        testQueryStop(100_000, 512, "select a._val, b._val from String a, String b", 1_500);
+    }
+
+    /**
+     * Tests stopping two step query while fetching data from remote nodes.
+     */
+    public void testRemoteQueryFetchngStop3() throws Exception {
         testQueryStop(100_000, 512, "select a._val, b._val from String a, String b", 3000);
     }
 
@@ -97,10 +122,17 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
     }
 
     /**
-     * Tests stopping two-step long query while result set is being generated on remote nodes.
+     * Tests stopping two-step query on initiator node fail.
      */
-    public void testRemoteQueryExecutionStopNodeFail1() throws Exception {
-        testQueryStopOnNodeFail(10_000, 4, "select a._key, b._key from String a, String b", 2000);
+    public void testRemoteQueryExecutionStopClientNodeFail1() throws Exception {
+        testQueryStopOnClientNodeFail(10_000, 4, "select a._key, b._key from String a, String b", 500);
+    }
+
+    /**
+     * Tests stopping two-step query on initiator node fail.
+     */
+    public void testRemoteQueryExecutionStopClientNodeFail2() throws Exception {
+        testQueryStopOnClientNodeFail(10_000, 4, "select a._key, b._key from String a, String b", 3_000);
     }
 
     /**
@@ -158,7 +190,7 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
     /**
      * Tests stopping two step query while fetching result set from remote nodes.
      */
-    private void testQueryStopOnNodeFail(int keyCnt, int valSize, String sql, long failTimeout) throws Exception {
+    private void testQueryStopOnClientNodeFail(int keyCnt, int valSize, String sql, long failTimeout) throws Exception {
         try (final Ignite client = startGrid("client")) {
 
             IgniteCache<Object, Object> cache = client.cache(null);
@@ -185,6 +217,8 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
                     catch (Exception e) {
                         log().error("Cannot fail node", e);
                     }
+
+                    l.countDown();
                 }
             }, failTimeout, TimeUnit.MILLISECONDS);
 
@@ -194,7 +228,6 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
             }
             catch (CacheException ex) {
                 log().error("Got expected exception", ex);
-
             }
 
             l.await();
@@ -218,9 +251,11 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
             ConcurrentMap<UUID, ConcurrentMap<Long, ?>> map = U.field(((IgniteH2Indexing)U.field(U.field(
                 grid(i).context(), "qryProc"), "idx")).mapQueryExecutor(), "qryRess");
 
-            assertEquals(1, map.size());
+            if (map.size() == 1)
+                assertEquals(0, map.entrySet().iterator().next().getValue().size());
+            else
+                assertEquals(0, map.size());
 
-            assertEquals(0, map.entrySet().iterator().next().getValue().size());
         }
     }
 

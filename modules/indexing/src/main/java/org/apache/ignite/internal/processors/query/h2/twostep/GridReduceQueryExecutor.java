@@ -58,7 +58,6 @@ import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheUtils;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
 import org.apache.ignite.internal.processors.cache.query.GridCacheSqlQuery;
@@ -73,6 +72,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageRequest;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryRequest;
+import org.apache.ignite.internal.util.GridEmptyIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.lang.GridFilteredIterator;
 import org.apache.ignite.internal.util.typedef.CI1;
@@ -677,6 +677,10 @@ public class GridReduceQueryExecutor {
                     }
                 }
 
+                // Prevent further execution.
+                if (r.cancelled)
+                    throw (CacheException) r.state.get();
+
                 for (GridMergeIndex idx : r.idxs) {
                     if (!idx.fetchedAll()) {
                         // We have to explicitly cancel queries on remote nodes.
@@ -1246,6 +1250,9 @@ public class GridReduceQueryExecutor {
         /** */
         public volatile PreparedStatement rdcPrepStmt;
 
+        /** */
+        public volatile boolean cancelled;
+
         /**
          * @param o Fail state object.
          * @param nodeId Node ID.
@@ -1257,9 +1264,8 @@ public class GridReduceQueryExecutor {
             if (!state.compareAndSet(null, o))
                 return;
 
-            // Cancel other queries.
             if (o instanceof CacheException )
-                rmtCancellationClo.apply(nodeId); // Stop active executions.
+                rmtCancellationClo.apply(nodeId); // Stop active executions except failed node.
 
             while (latch.getCount() != 0) // We don't need to wait for all nodes to reply.
                 latch.countDown();
@@ -1274,6 +1280,9 @@ public class GridReduceQueryExecutor {
         void failed(CacheException e) {
             if (!state.compareAndSet(null, e))
                 return;
+
+            if ( e.getCause() instanceof GridRemoteQueryCancelledException)
+                this.cancelled = true;
 
             rmtCancellationClo.apply(null); // Stop active executions.
 
