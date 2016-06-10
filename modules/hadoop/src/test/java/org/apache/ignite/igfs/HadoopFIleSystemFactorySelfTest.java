@@ -226,6 +226,7 @@ public class HadoopFIleSystemFactorySelfTest extends IgfsCommonAbstractTest {
         igfsCfg.setDefaultMode(dfltMode);
         igfsCfg.setIpcEndpointConfiguration(endpointCfg);
         igfsCfg.setSecondaryFileSystem(secondaryFs);
+        igfsCfg.setInitializeDefaultPathModes(true);
 
         CacheConfiguration dataCacheCfg = defaultCacheConfiguration();
 
