@@ -1674,11 +1674,18 @@ class ClientImpl extends TcpDiscoveryImpl {
                     else {
                         if (log.isDebugEnabled())
                             log.debug("Discarding node added message with empty topology: " + msg);
+
+                        log.error("== Discarding node added message with empty topology: " + msg);
                     }
                 }
-                else if (log.isDebugEnabled())
-                    log.debug("Discarding node added message (this message has already been processed) " +
+                else {
+                    log.error("== Discarding node added message (this message has already been processed) " +
                         "[msg=" + msg + ", locNode=" + locNode + ']');
+
+                    if (log.isDebugEnabled())
+                        log.debug("Discarding node added message (this message has already been processed) " +
+                            "[msg=" + msg + ", locNode=" + locNode + ']');
+                }
             }
             else {
                 if (nodeAdded()) {
