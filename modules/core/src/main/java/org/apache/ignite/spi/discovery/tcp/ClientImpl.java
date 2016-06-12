@@ -1378,6 +1378,8 @@ class ClientImpl extends TcpDiscoveryImpl {
                 while (true) {
                     Object msg = queue.take();
 
+                    log.info("== Took message from queue: " + msg);
+
                     if (msg == JOIN_TIMEOUT) {
                         if (state == STARTING) {
                             joinError(new IgniteSpiException("Join process timed out, did not receive response for " +
