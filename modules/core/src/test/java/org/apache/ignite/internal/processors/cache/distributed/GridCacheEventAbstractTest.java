@@ -76,7 +76,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
     @Override protected void beforeTestsStarted() throws Exception {
         super.beforeTestsStarted();
 
-        gridCnt = gridCount();
+        gridCnt = instanceCount();
 
         for (int i = 0; i < gridCnt; i++)
             grid(i).events().localListen(new TestEventListener(partitioned()), EVTS_CACHE);
@@ -164,7 +164,7 @@ public abstract class GridCacheEventAbstractTest extends GridCacheAbstractSelfTe
      */
     @SuppressWarnings({"CaughtExceptionImmediatelyRethrown"})
     private void runTest(TestCacheRunnable run, IgniteBiTuple<Integer, Integer>... evtCnts) throws Exception {
-        for (int i = 0; i < gridCount(); i++) {
+        for (int i = 0; i < instanceCount(); i++) {
             info(">>> Running test for grid [idx=" + i + ", grid=" + grid(i).name() +
                 ", id=" + grid(i).localNode().id() + ']');
 

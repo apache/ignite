@@ -68,7 +68,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
     }
 
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
+    @Override protected int instanceCount() {
         return 3;
     }
 
@@ -114,7 +114,7 @@ public abstract class GridCacheAbstractFailoverSelfTest extends GridCacheAbstrac
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        startGridsMultiThreaded(gridCount());
+        startGridsMultiThreaded(instanceCount());
 
         super.beforeTest();
     }

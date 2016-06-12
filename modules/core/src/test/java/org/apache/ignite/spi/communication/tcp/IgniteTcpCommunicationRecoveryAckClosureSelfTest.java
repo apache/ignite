@@ -437,7 +437,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
 
             nodes.add(node);
 
-            spi.spiStart(getTestGridName() + (i + 1));
+            spi.spiStart(getTestInstanceName() + (i + 1));
 
             spis.add(spi);
 

@@ -107,12 +107,12 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
     /**
      * Enhances the default configuration with the {#TcpDiscoveryZookeeperIpFinder}.
      *
-     * @param gridName Grid name.
+     * @param instanceName Instance name.
      * @return Ignite configuration.
      * @throws Exception If failed.
      */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration configuration = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration configuration = super.getConfiguration(instanceName);
 
         TcpDiscoverySpi tcpDisco = (TcpDiscoverySpi)configuration.getDiscoverySpi();
         TcpDiscoveryZookeeperIpFinder zkIpFinder = new TcpDiscoveryZookeeperIpFinder();
@@ -120,10 +120,10 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
 
         // first node => configure with zkUrl; second node => configure with CuratorFramework; third and subsequent
         // shall be configured through system property
-        if (gridName.equals(getTestGridName(0)))
+        if (instanceName.equals(getTestInstanceName(0)))
             zkIpFinder.setZkConnectionString(zkCluster.getConnectString());
 
-        else if (gridName.equals(getTestGridName(1))) {
+        else if (instanceName.equals(getTestInstanceName(1))) {
             zkIpFinder.setCurator(CuratorFrameworkFactory.newClient(zkCluster.getConnectString(),
                 new ExponentialBackoffRetry(100, 5)));
         }

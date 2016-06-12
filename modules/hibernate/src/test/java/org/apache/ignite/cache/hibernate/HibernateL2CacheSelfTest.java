@@ -1905,9 +1905,9 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
      * @param accessType Cache access type.
      */
     private void createSessionFactories(AccessType accessType) {
-        sesFactory1 = startHibernate(accessType, getTestGridName(0));
+        sesFactory1 = startHibernate(accessType, getTestInstanceName(0));
 
-        sesFactory2 = startHibernate(accessType, getTestGridName(1));
+        sesFactory2 = startHibernate(accessType, getTestInstanceName(1));
     }
 
     /**

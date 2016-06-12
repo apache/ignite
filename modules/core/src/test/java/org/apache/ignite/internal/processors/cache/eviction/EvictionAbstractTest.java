@@ -97,14 +97,14 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
     protected boolean syncCommit;
 
     /** */
-    protected int gridCnt = 2;
+    protected int instanceCnt = 2;
 
     /** */
     protected EvictionFilter<?, ?> filter;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(instanceName);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -669,7 +669,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         plcMax = 10;
         syncCommit = true;
 
-        gridCnt = 2;
+        instanceCnt = 2;
 
         checkPartitioned();
     }
@@ -682,7 +682,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         plcBatchSize = 2;
         syncCommit = true;
 
-        gridCnt = 2;
+        instanceCnt = 2;
 
         checkPartitioned();
     }
@@ -695,7 +695,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         plcMaxMemSize = 100;
         syncCommit = true;
 
-        gridCnt = 2;
+        instanceCnt = 2;
 
         checkPartitioned();
     }
@@ -709,7 +709,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         evictNearSync = true;
         syncCommit = true;
 
-        gridCnt = 2;
+        instanceCnt = 2;
 
         checkPartitioned(); // Near size is 0 because of backups present.
     }
@@ -721,7 +721,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         plcMax = 100;
         evictSync = false;
 
-        gridCnt = 2;
+        instanceCnt = 2;
 
         checkPartitionedMultiThreaded();
     }
@@ -733,7 +733,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         plcMax = 100;
         evictSync = true;
 
-        gridCnt = 2;
+        instanceCnt = 2;
 
         checkPartitionedMultiThreaded();
     }
@@ -745,7 +745,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         plcMax = 10;
         evictSync = false;
 
-        gridCnt = 2;
+        instanceCnt = 2;
 
         checkPartitionedMultiThreaded();
     }
@@ -757,7 +757,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
         plcMax = 10;
         evictSync = true;
 
-        gridCnt = 2;
+        instanceCnt = 2;
 
         checkPartitionedMultiThreaded();
     }
@@ -771,7 +771,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
 
         int endPlcSize = nearEnabled ? 0 : plcMax;
 
-        startGridsMultiThreaded(gridCnt);
+        startGridsMultiThreaded(instanceCnt);
 
         try {
             Random rand = new Random();
@@ -791,7 +791,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
             }
 
             if (nearEnabled) {
-                for (int i = 0; i < gridCnt; i++)
+                for (int i = 0; i < instanceCnt; i++)
                     assertEquals(endSize, near(i).nearSize());
 
                 if (endPlcSize >= 0)
@@ -799,7 +799,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
             }
             else {
                 if (plcMaxMemSize > 0) {
-                    for (int i = 0; i < gridCnt; i++) {
+                    for (int i = 0; i < instanceCnt; i++) {
                         GridDhtColocatedCache<Object, Object> cache = colocated(i);
 
                         int memSize = 0;
@@ -814,7 +814,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
                 }
 
                 if (plcMax > 0) {
-                    for (int i = 0; i < gridCnt; i++) {
+                    for (int i = 0; i < instanceCnt; i++) {
                         int actual = colocated(i).size();
 
                         assertTrue("Cache size is greater then policy size [expected=" + endSize + ", actual=" + actual + ']',
@@ -835,7 +835,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
      */
     protected void checkPartitionedMultiThreaded() throws Exception {
         try {
-            startGridsMultiThreaded(gridCnt);
+            startGridsMultiThreaded(instanceCnt);
 
             final Random rand = new Random();
 
@@ -895,7 +895,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
      * @param nearMax Near max.
      */
     protected void checkNearPolicies(int nearMax) {
-        for (int i = 0; i < gridCnt; i++) {
+        for (int i = 0; i < instanceCnt; i++) {
 
             EvictionPolicyProxy proxy = proxy(nearPolicy(i));
 
@@ -908,7 +908,7 @@ public abstract class EvictionAbstractTest<T extends EvictionPolicy<?, ?>>
      * Performs after-test policy check.
      */
     protected void checkPolicies() {
-        for (int i = 0; i < gridCnt; i++) {
+        for (int i = 0; i < instanceCnt; i++) {
             if (plcMaxMemSize > 0) {
                 int size = 0;
 

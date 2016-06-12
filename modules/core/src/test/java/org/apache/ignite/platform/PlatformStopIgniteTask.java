@@ -56,20 +56,20 @@ public class PlatformStopIgniteTask extends ComputeTaskAdapter<String, Boolean> 
      */
     private static class PlatformStopIgniteJob extends ComputeJobAdapter {
         /** */
-        private final String gridName;
+        private final String instanceName;
 
         /**
          * Ctor.
          *
-         * @param gridName Name.
+         * @param instanceName Name.
          */
-        private PlatformStopIgniteJob(String gridName) {
-            this.gridName = gridName;
+        private PlatformStopIgniteJob(String instanceName) {
+            this.instanceName = instanceName;
         }
 
         /** {@inheritDoc} */
         @Override public Object execute() throws IgniteException {
-            return Ignition.stop(gridName, true);
+            return Ignition.stop(instanceName, true);
         }
     }
 }

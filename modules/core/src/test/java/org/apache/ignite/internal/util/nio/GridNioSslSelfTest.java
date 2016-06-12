@@ -62,7 +62,7 @@ public class GridNioSslSelfTest extends GridNioSelfTest {
             .listener(lsnr)
             .logger(log)
             .selectorCount(2)
-            .gridName("nio-test-grid")
+            .instanceName("nio-test-grid")
             .tcpNoDelay(false)
             .directBuffer(true)
             .byteOrder(ByteOrder.nativeOrder())

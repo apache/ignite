@@ -41,7 +41,7 @@ public class GridClosureProcessorRemoteTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override public String getTestGridName() {
+    @Override public String getTestInstanceName() {
         return null;
     }
 

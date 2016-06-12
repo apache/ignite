@@ -1096,7 +1096,7 @@ public class GridTaskProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> Task processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Task processor memory stats [instance=" + ctx.instanceName() + ']');
         X.println(">>>  tasksSize: " + tasks.size());
     }
 

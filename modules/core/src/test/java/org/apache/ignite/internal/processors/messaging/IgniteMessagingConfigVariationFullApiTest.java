@@ -46,10 +46,10 @@ public class IgniteMessagingConfigVariationFullApiTest extends IgniteConfigVaria
     public static CountDownLatch LATCH;
 
     /** {@inheritDoc} */
-    @Override protected boolean expectedClient(String testGridName) {
-        return getTestGridName(CLIENT_NODE_IDX).equals(testGridName)
-            || getTestGridName(3).equals(testGridName)
-            || getTestGridName(5).equals(testGridName);
+    @Override protected boolean expectedClient(String testInstanceName) {
+        return getTestInstanceName(CLIENT_NODE_IDX).equals(testInstanceName)
+            || getTestInstanceName(3).equals(testInstanceName)
+            || getTestInstanceName(5).equals(testInstanceName);
     }
 
     /**

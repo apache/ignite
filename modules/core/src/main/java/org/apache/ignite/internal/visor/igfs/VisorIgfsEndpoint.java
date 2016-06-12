@@ -35,6 +35,9 @@ public class VisorIgfsEndpoint implements Serializable, LessNamingBean {
     /** Grid name. */
     private final String gridName;
 
+    /** Instance name. */
+    private final String instanceName;
+
     /** Host address / name. */
     private final String hostName;
 
@@ -45,13 +48,14 @@ public class VisorIgfsEndpoint implements Serializable, LessNamingBean {
      * Create IGFS endpoint descriptor with given parameters.
      *
      * @param igfsName IGFS name.
-     * @param gridName Grid name.
+     * @param instanceName Instance name.
      * @param hostName Host address / name.
      * @param port Port number.
      */
-    public VisorIgfsEndpoint(@Nullable String igfsName, String gridName, @Nullable String hostName, int port) {
+    public VisorIgfsEndpoint(@Nullable String igfsName, String instanceName, @Nullable String hostName, int port) {
         this.igfsName = igfsName;
-        this.gridName = gridName;
+        this.gridName = instanceName;
+        this.instanceName = instanceName;
         this.hostName = hostName;
         this.port = port;
     }
@@ -90,14 +94,14 @@ public class VisorIgfsEndpoint implements Serializable, LessNamingBean {
     public String authority() {
         String addr = hostName + ":" + port;
 
-        if (igfsName == null && gridName == null)
+        if (igfsName == null && instanceName == null)
             return addr;
         else if (igfsName == null)
-            return gridName + "@" + addr;
-        else if (gridName == null)
+            return instanceName + "@" + addr;
+        else if (instanceName == null)
             return igfsName + "@" + addr;
         else
-            return igfsName + ":" + gridName + "@" + addr;
+            return igfsName + ":" + instanceName + "@" + addr;
     }
 
     /** {@inheritDoc} */

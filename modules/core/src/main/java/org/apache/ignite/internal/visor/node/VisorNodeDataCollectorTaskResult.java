@@ -41,8 +41,11 @@ public class VisorNodeDataCollectorTaskResult implements Serializable, LessNamin
     /** Unhandled exceptions from nodes. */
     private final Map<UUID, VisorExceptionWrapper> unhandledEx = new HashMap<>();
 
-    /** Nodes grid names. */
+    /** Nodes grid names. Use {@link #instanceNames}  instead. */
     private final Map<UUID, String> gridNames = new HashMap<>();
+
+    /** Nodes instance names. */
+    private final Map<UUID, String> instanceNames = new HashMap<>();
 
     /** Nodes topology versions. */
     private final Map<UUID, Long> topVersions = new HashMap<>();
@@ -79,7 +82,8 @@ public class VisorNodeDataCollectorTaskResult implements Serializable, LessNamin
      */
     public boolean isEmpty() {
         return
-            gridNames.isEmpty() &&
+            (instanceNames.isEmpty() ||
+             gridNames.isEmpty()) &&
             topVersions.isEmpty() &&
             unhandledEx.isEmpty() &&
             taskMonitoringEnabled.isEmpty() &&
@@ -104,6 +108,10 @@ public class VisorNodeDataCollectorTaskResult implements Serializable, LessNamin
      */
     public Map<UUID, String> gridNames() {
         return gridNames;
+    }
+
+    public Map<UUID, String> instanceNames() {
+        return instanceNames;
     }
 
     /**

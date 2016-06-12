@@ -272,7 +272,7 @@ public class GridLifecycleBeanSelfTest extends GridCommonAbstractTest {
             try {
                 stopAllGrids();
 
-                assertEquals(IgniteState.STOPPED, G.state(getTestGridName()));
+                assertEquals(IgniteState.STOPPED, G.state(getTestInstanceName()));
             }
             catch (Exception ignore) {
                 assertTrue(false);

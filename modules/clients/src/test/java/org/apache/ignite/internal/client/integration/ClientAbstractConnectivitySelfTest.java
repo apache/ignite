@@ -123,7 +123,7 @@ public abstract class ClientAbstractConnectivitySelfTest extends GridCommonAbstr
      * @throws Exception If failed.
      */
     public void testOneNodeDefaultHostAndPort() throws Exception {
-        startRestNode("grid1", null, null);
+        startRestNode("instance1", null, null);
 
         checkConnectivityByIp(LOOPBACK_IP, getAllIps());
 
@@ -152,7 +152,7 @@ public abstract class ClientAbstractConnectivitySelfTest extends GridCommonAbstr
      * @throws Exception If error occurs.
      */
     public void testOneNodeLoopbackHost() throws Exception {
-        startRestNode("grid1", LOOPBACK_IP, defaultRestPort());
+        startRestNode("instance1", LOOPBACK_IP, defaultRestPort());
 
         checkConnectivityByIp(LOOPBACK_IP, F.t((Collection<String>)Collections.singleton(LOOPBACK_IP),
             (Collection<String>)Collections.<String>emptySet()));
@@ -165,7 +165,7 @@ public abstract class ClientAbstractConnectivitySelfTest extends GridCommonAbstr
      * @throws Exception If error occurs.
      */
     public void testOneNodeZeroIpv4Address() throws Exception {
-        startRestNode("grid1", WILDCARD_IP, defaultRestPort());
+        startRestNode("instance1", WILDCARD_IP, defaultRestPort());
 
         Collection<String> addrs = new LinkedList<>();
 
@@ -209,8 +209,8 @@ public abstract class ClientAbstractConnectivitySelfTest extends GridCommonAbstr
      * @throws Exception If error occurs.
      */
     public void testTwoNodesDefaultHostAndPort() throws Exception {
-        startRestNode("grid1", null, null);
-        startRestNode("grid2", null, null);
+        startRestNode("instance1", null, null);
+        startRestNode("instance2", null, null);
 
         GridClient cli = startClient(LOOPBACK_IP, defaultRestPort());
 
@@ -257,8 +257,8 @@ public abstract class ClientAbstractConnectivitySelfTest extends GridCommonAbstr
      * @throws Exception If error occurs.
      */
     public void testRefreshTopologyOnNodeLeft() throws Exception {
-        startRestNode("grid1", null, null);
-        startRestNode("grid2", null, null);
+        startRestNode("instance1", null, null);
+        startRestNode("instance2", null, null);
 
         GridClient cli = startClient(LOOPBACK_IP, defaultRestPort());
 
@@ -266,19 +266,19 @@ public abstract class ClientAbstractConnectivitySelfTest extends GridCommonAbstr
 
         assertEquals(2, nodes.size());
 
-        stopGrid("grid1");
+        stopGrid("instance1");
 
         nodes = cli.compute().refreshTopology(true, false);
 
         assertEquals(1, nodes.size());
 
-        startRestNode("grid3", null, null);
+        startRestNode("instance3", null, null);
 
         nodes = cli.compute().refreshTopology(true, false);
 
         assertEquals(2, nodes.size());
 
-        stopGrid("grid2");
+        stopGrid("instance2");
 
         nodes = cli.compute().refreshTopology(true, false);
 

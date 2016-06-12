@@ -321,7 +321,7 @@ public abstract class IgniteHadoopFileSystemAbstractSelfTest extends IgfsCommonA
     protected abstract IgfsIpcEndpointConfiguration primaryIpcEndpointConfiguration(String gridName);
 
     /** {@inheritDoc} */
-    @Override public String getTestGridName() {
+    @Override public String getTestInstanceName() {
         return "grid";
     }
 

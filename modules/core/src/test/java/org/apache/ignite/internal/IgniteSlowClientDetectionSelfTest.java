@@ -67,7 +67,7 @@ public class IgniteSlowClientDetectionSelfTest extends GridCommonAbstractTest {
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder);
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setClientReconnectDisabled(true);
 
-        if (getTestInstanceName(nodeCount() - 1).equals(instanceName) || getTestInstanceName(nodeCount() - 2).equals(gridName))
+        if (getTestInstanceName(nodeCount() - 1).equals(instanceName) || getTestInstanceName(nodeCount() - 2).equals(instanceName))
             cfg.setClientMode(true);
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();

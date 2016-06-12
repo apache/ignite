@@ -56,8 +56,8 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
     private final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setMarshaller(new OptimizedMarshaller(false));
 
@@ -65,7 +65,7 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration();
 
-        if (gridName.equals(getTestGridName(0)))
+        if (instanceName.equals(getTestInstanceName(0)))
             cfg.setClientMode(true);
 
         return cfg;
@@ -89,7 +89,7 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
         Set<String> srvNames = new HashSet<>(NODES_CNT - 1);
 
         for (int i = 1; i < NODES_CNT; ++i)
-            srvNames.add(getTestGridName(i));
+            srvNames.add(getTestInstanceName(i));
 
         for (int i = 0 ; i < NODES_CNT; i++) {
             log.info("Iteration: " + i);
@@ -137,7 +137,7 @@ public class ClosureServiceClientsNodesTest extends GridCommonAbstractTest {
 
             assertEquals(1, res.size());
 
-            assertEquals(getTestGridName(0), F.first(res));
+            assertEquals(getTestInstanceName(0), F.first(res));
         }
     }
 

@@ -38,8 +38,15 @@ public abstract class GridWorker implements Runnable {
     /** Thread name. */
     private final String name;
 
-    /** */
+    /** Grid name.
+     *
+     *  @deprecated  Use {@link #instanceName} instead.
+     */
+    @Deprecated
     private final String gridName;
+
+    /** Instance name. */
+    private final String instanceName;
 
     /** */
     private final GridWorkerListener lsnr;
@@ -59,18 +66,19 @@ public abstract class GridWorker implements Runnable {
     /**
      * Creates new grid worker with given parameters.
      *
-     * @param gridName Name of grid this runnable is used in.
+     * @param instanceName Name of grid this runnable is used in.
      * @param name Worker name. Note that in general thread name and worker (runnable) name are two
      *      different things. The same worker can be executed by multiple threads and therefore
      *      for logging and debugging purposes we separate the two.
      * @param log Grid logger to be used.
      * @param lsnr Listener for life-cycle events.
      */
-    protected GridWorker(String gridName, String name, IgniteLogger log, @Nullable GridWorkerListener lsnr) {
+    protected GridWorker(String instanceName, String name, IgniteLogger log, @Nullable GridWorkerListener lsnr) {
         assert name != null;
         assert log != null;
 
-        this.gridName = gridName;
+        this.gridName = instanceName;
+        this.instanceName = instanceName;
         this.name = name;
         this.lsnr = lsnr;
         this.log = log;
@@ -79,14 +87,14 @@ public abstract class GridWorker implements Runnable {
     /**
      * Creates new grid worker with given parameters.
      *
-     * @param gridName Name of grid this runnable is used in.
+     * @param instanceName Name of instance this runnable is used in.
      * @param name Worker name. Note that in general thread name and worker (runnable) name are two
      *      different things. The same worker can be executed by multiple threads and therefore
      *      for logging and debugging purposes we separate the two.
      * @param log Grid logger to be used.
      */
-    protected GridWorker(@Nullable String gridName, String name, IgniteLogger log) {
-        this(gridName, name, log, null);
+    protected GridWorker(@Nullable String instanceName, String name, IgniteLogger log) {
+        this(instanceName, name, log, null);
     }
 
     /** {@inheritDoc} */
@@ -185,9 +193,15 @@ public abstract class GridWorker implements Runnable {
      * Gets name of the grid this runnable belongs to.
      *
      * @return Name of the grid this runnable belongs to.
+     * @deprecated  use {@link #instanceName} instead.
      */
+    @Deprecated
     public String gridName() {
         return gridName;
+    }
+
+    public String instanceName() {
+        return instanceName;
     }
 
     /**

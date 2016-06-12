@@ -70,8 +70,8 @@ public class GridSpringTransactionManagerSelfTest extends GridCommonAbstractTest
      * {@inheritDoc}
      */
     @Override
-    public String getTestGridName() {
-        return "testGrid";
+    public String getTestInstanceName() {
+        return "testInstance";
     }
 
     /**

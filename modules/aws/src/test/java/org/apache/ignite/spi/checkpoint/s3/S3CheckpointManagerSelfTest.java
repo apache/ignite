@@ -29,7 +29,7 @@ import org.apache.ignite.testsuites.IgniteS3TestSuite;
 public class S3CheckpointManagerSelfTest extends GridCheckpointManagerAbstractSelfTest {
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
-        assertTrue("Unexpected grid name: " + instanceName, instanceName.contains("s3"));
+        assertTrue("Unexpected instance name: " + instanceName, instanceName.contains("s3"));
 
         IgniteConfiguration cfg = super.getConfiguration(instanceName);
 

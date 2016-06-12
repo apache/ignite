@@ -1692,7 +1692,7 @@ public abstract class GridAbstractTest extends TestCase {
     @Override protected void runTest() throws Throwable {
         final AtomicReference<Throwable> ex = new AtomicReference<>();
 
-        Thread runner = new IgniteThread(getTestGridName(), "test-runner", new Runnable() {
+        Thread runner = new IgniteThread(getTestInstanceName(), "test-runner", new Runnable() {
             @Override public void run() {
                 try {
                     runTestInternal();

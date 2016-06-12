@@ -1749,7 +1749,7 @@ public final class DataStructuresProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>> ");
-        X.println(">>> Data structure processor memory stats [grid=" + ctx.gridName() +
+        X.println(">>> Data structure processor memory stats [grid=" + ctx.instanceName() +
             ", cache=" + (dsCacheCtx != null ? dsCacheCtx.name() : null) + ']');
         X.println(">>>   dsMapSize: " + dsMap.size());
     }

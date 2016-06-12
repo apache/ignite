@@ -33,8 +33,8 @@ public class GridReplicatedTxPreloadTest extends IgniteTxPreloadAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        return super.getConfiguration(gridName).setMarshaller(null);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        return super.getConfiguration(instanceName).setMarshaller(null);
     }
 
     /** {@inheritDoc} */

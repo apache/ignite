@@ -53,8 +53,8 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
     private static IgniteCache<Integer, Object> cacheOffheap;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(instanceName);
 
         c.getTransactionConfiguration().setTxSerializableEnabled(true);
 

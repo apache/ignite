@@ -1461,7 +1461,7 @@ public class GridJobProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> Job processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Job processor memory stats [grid=" + ctx.instanceName() + ']');
         X.println(">>>   activeJobsSize: " + activeJobs.size());
         X.println(">>>   passiveJobsSize: " + (jobAlwaysActivate ? "n/a" : passiveJobs.size()));
         X.println(">>>   cancelledJobsSize: " + cancelledJobs.size());

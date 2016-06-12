@@ -34,20 +34,28 @@ public class GridNioAsyncNotifyFilter extends GridNioFilterAdapter {
     /** Worker pool. */
     private GridWorkerPool workerPool;
 
-    /** Grid name. */
+    /** Grid name.
+     *
+     *  @deprecated  Use {@link #instanceName} instead.
+     */
+    @Deprecated
     private String gridName;
+
+    /** Instance name.*/
+    private String instanceName;
 
     /**
      * Assigns filter name to a filter.
      *
-     * @param gridName Grid name.
+     * @param instanceName Instance name.
      * @param exec Executor.
      * @param log Logger.
      */
-    public GridNioAsyncNotifyFilter(String gridName, Executor exec, IgniteLogger log) {
+    public GridNioAsyncNotifyFilter(String instanceName, Executor exec, IgniteLogger log) {
         super(GridNioAsyncNotifyFilter.class.getSimpleName());
 
-        this.gridName = gridName;
+        this.instanceName = instanceName;
+        this.gridName = instanceName;
         this.log = log;
 
         workerPool = new GridWorkerPool(exec, log);
@@ -74,7 +82,7 @@ public class GridNioAsyncNotifyFilter extends GridNioFilterAdapter {
 
     /** {@inheritDoc} */
     @Override public void onSessionClosed(final GridNioSession ses) throws IgniteCheckedException {
-        workerPool.execute(new GridWorker(gridName, "session-closed-notify", log) {
+        workerPool.execute(new GridWorker(instanceName, "session-closed-notify", log) {
             @Override protected void body() {
                 try {
                     proceedSessionClosed(ses);
@@ -89,7 +97,7 @@ public class GridNioAsyncNotifyFilter extends GridNioFilterAdapter {
 
     /** {@inheritDoc} */
     @Override public void onMessageReceived(final GridNioSession ses, final Object msg) throws IgniteCheckedException {
-        workerPool.execute(new GridWorker(gridName, "message-received-notify", log) {
+        workerPool.execute(new GridWorker(instanceName, "message-received-notify", log) {
             @Override protected void body() {
                 try {
                     proceedMessageReceived(ses, msg);

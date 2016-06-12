@@ -212,7 +212,7 @@ public class GridJobMetricsProcessor extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> Job metrics processor processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Job metrics processor processor memory stats [instance=" + ctx.instanceName() + ']');
     }
 
     /**

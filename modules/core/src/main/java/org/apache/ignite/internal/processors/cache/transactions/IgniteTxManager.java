@@ -354,7 +354,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     @Override public void printMemoryStats() {
         X.println(">>> ");
-        X.println(">>> Transaction manager memory stats [grid=" + cctx.gridName() + ']');
+        X.println(">>> Transaction manager memory stats [grid=" + cctx.instanceName() + ']');
         X.println(">>>   threadMapSize: " + threadMap.size());
         X.println(">>>   idMap [size=" + idMap.size() + ']');
         X.println(">>>   completedVersSortedSize: " + completedVersSorted.size());

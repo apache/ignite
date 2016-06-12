@@ -256,7 +256,7 @@ public class GridTcpRestProtocol extends GridRestProtocolAdapter {
                 .listener(lsnr)
                 .logger(log)
                 .selectorCount(cfg.getSelectorCount())
-                .gridName(ctx.gridName())
+                .instanceName(ctx.instanceName())
                 .tcpNoDelay(cfg.isNoDelay())
                 .directBuffer(cfg.isDirectBuffer())
                 .byteOrder(ByteOrder.nativeOrder())

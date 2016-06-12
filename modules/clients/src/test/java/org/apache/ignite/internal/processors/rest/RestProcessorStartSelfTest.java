@@ -112,7 +112,7 @@ public class RestProcessorStartSelfTest extends GridCommonAbstractTest {
                     startGrid();
                 }
                 catch (Exception e) {
-                    log().error("Grid start failed", e);
+                    log().error("Instance start failed", e);
 
                     fail();
                 }
@@ -162,7 +162,7 @@ public class RestProcessorStartSelfTest extends GridCommonAbstractTest {
                 throw new IgniteSpiException("Failed to await start signal.", e);
             }
 
-            super.spiStart(gridName);
+            super.spiStart(instanceName);
         }
     }
 }

@@ -97,8 +97,8 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
     /** Maximum batch size for put and remove operations */
     private int batchSize = CacheConfiguration.DFLT_WRITE_BEHIND_BATCH_SIZE;
 
-    /** Grid name. */
-    private String gridName;
+    /** Instance name. */
+    private String instanceName;
 
     /** Cache name. */
     private String cacheName;
@@ -140,19 +140,19 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      * Creates a write-behind cache store for the given store.
      *
      * @param storeMgr Store manager.
-     * @param gridName Grid name.
+     * @param instanceName Instance name.
      * @param cacheName Cache name.
      * @param log Grid logger.
      * @param store {@code GridCacheStore} that need to be wrapped.
      */
     public GridCacheWriteBehindStore(
         CacheStoreManager storeMgr,
-        String gridName,
+        String instanceName,
         String cacheName,
         IgniteLogger log,
         CacheStore<K, V> store) {
         this.storeMgr = storeMgr;
-        this.gridName = gridName;
+        this.instanceName = instanceName;
         this.cacheName = cacheName;
         this.log = log;
         this.store = store;
@@ -297,7 +297,7 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
             writeCache = new ConcurrentLinkedHashMap<>(initCap, 0.75f, concurLvl);
 
             for (int i = 0; i < flushThreads.length; i++) {
-                flushThreads[i] = new Flusher(gridName, "flusher-" + i, log);
+                flushThreads[i] = new Flusher(instanceName, "flusher-" + i, log);
 
                 new IgniteThread(flushThreads[i]).start();
             }
@@ -742,8 +742,8 @@ public class GridCacheWriteBehindStore<K, V> implements CacheStore<K, V>, Lifecy
      */
     private class Flusher extends GridWorker {
         /** {@inheritDoc */
-        protected Flusher(String gridName, String name, IgniteLogger log) {
-            super(gridName, name, log);
+        protected Flusher(String instanceName, String name, IgniteLogger log) {
+            super(instanceName, name, log);
         }
 
         /** {@inheritDoc} */

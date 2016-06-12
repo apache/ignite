@@ -231,7 +231,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     }
 
     /** {@inheritDoc} */
-    @Override public String getTestGridName() {
+    @Override public String getTestInstanceName() {
         return "grid";
     }
 

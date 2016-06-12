@@ -137,7 +137,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName("grid-primary");
+        cfg.setInstanceName("instance-primary");
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -193,7 +193,7 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName("grid-secondary");
+        cfg.setInstanceName("instance-secondary");
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 

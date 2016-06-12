@@ -127,7 +127,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
 
             BinaryRawWriterEx writer = platformCtx.writer(out);
 
-            writer.writeString(ctx.gridName());
+            writer.writeString(ctx.instanceName());
 
             out.synchronize();
 

@@ -42,8 +42,14 @@ public class IgniteThread extends Thread {
     /** Number of all grid threads in the system. */
     private static final AtomicLong cntr = new AtomicLong();
 
-    /** The name of the lcoal instance this thread belongs to. */
-    protected final String localInstanceName;
+    /** The name of the instance this thread belongs to. */
+    protected final String instanceName;
+
+    /** The name of the grid this thread belongs to.
+     *  @deprecated Use {@link #instanceName} instead.
+     */
+    @Deprecated
+    protected final String gridName;
 
     /** Group index. */
     private final int grpIdx;
@@ -85,27 +91,29 @@ public class IgniteThread extends Thread {
      * thread group.
      *
      * @param grp Thread group.
-     * @param localInstanceName Name of grid this thread is created for.
+     * @param instanceName Name of grid this thread is created for.
      * @param threadName Name of thread.
      * @param r Runnable to execute.
      * @param grpIdx Thread index within a group.
      */
-    public IgniteThread(ThreadGroup grp, String localInstanceName, String threadName, Runnable r, int grpIdx) {
-        super(grp, r, createName(cntr.incrementAndGet(), threadName, localInstanceName));
+    public IgniteThread(ThreadGroup grp, String instanceName, String threadName, Runnable r, int grpIdx) {
+        super(grp, r, createName(cntr.incrementAndGet(), threadName, instanceName));
 
-        this.localInstanceName = localInstanceName;
+        this.instanceName = instanceName;
+        this.gridName = instanceName;
         this.grpIdx = grpIdx;
     }
 
     /**
-     * @param localInstanceName Name of grid this thread is created for.
+     * @param instanceName Name of grid this thread is created for.
      * @param threadGrp Thread group.
      * @param threadName Name of thread.
      */
-    protected IgniteThread(String localInstanceName, ThreadGroup threadGrp, String threadName) {
+    protected IgniteThread(String instanceName, ThreadGroup threadGrp, String threadName) {
         super(threadGrp, threadName);
 
-        this.localInstanceName = localInstanceName;
+        this.instanceName = instanceName;
+        this.gridName = instanceName;
         this.grpIdx = GRP_IDX_UNASSIGNED;
     }
 
@@ -113,14 +121,15 @@ public class IgniteThread extends Thread {
      * Gets name of the grid this thread belongs to.
      *
      * @return Name of the grid this thread belongs to.
+     * @deprecated use
      */
     @Deprecated
     public String getGridName() {
-        return localInstanceName;
+        return instanceName;
     }
 
-    public String getLocalInstanceName() {
-        return localInstanceName;
+    public String getInstanceName() {
+        return instanceName;
     }
 
     /**
@@ -135,11 +144,11 @@ public class IgniteThread extends Thread {
      *
      * @param num Thread number.
      * @param threadName Thread name.
-     * @param gridName Grid name.
+     * @param instanceName Instance name.
      * @return New thread name.
      */
-    protected static String createName(long num, String threadName, String gridName) {
-        return threadName + "-#" + num + '%' + gridName + '%';
+    protected static String createName(long num, String threadName, String instanceName) {
+        return threadName + "-#" + num + '%' + instanceName + '%';
     }
 
     /** {@inheritDoc} */

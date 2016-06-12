@@ -564,7 +564,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
         final GridWorkerFuture<?> fut = new GridWorkerFuture<Void>();
 
-        GridWorker w = new GridWorker(ctx.gridName(), "index-rebuild-worker", log) {
+        GridWorker w = new GridWorker(ctx.instanceName(), "index-rebuild-worker", log) {
             @Override protected void body() {
                 try {
                     idx.rebuildIndexes(space, desc);

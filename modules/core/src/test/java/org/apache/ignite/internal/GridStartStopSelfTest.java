@@ -77,7 +77,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
 
         cfg.setConnectorConfiguration(null);
 
-        cfg.setGridName(getTestInstanceName(0));
+        cfg.setInstanceName(getTestInstanceName(0));
 
         CacheConfiguration cc = new CacheConfiguration();
 
@@ -89,7 +89,7 @@ public class GridStartStopSelfTest extends GridCommonAbstractTest {
 
         cfg = new IgniteConfiguration();
 
-        cfg.setGridName(getTestInstanceName(1));
+        cfg.setInstanceName(getTestInstanceName(1));
 
         cc = new CacheConfiguration();
 

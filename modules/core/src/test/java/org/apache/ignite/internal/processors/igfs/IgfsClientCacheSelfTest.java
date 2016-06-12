@@ -17,51 +17,88 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.util.Collection;
-import java.util.concurrent.Callable;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
-import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
-import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.igfs.IgfsMode;
+import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
+import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
-import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
- * Tests ensuring that IGFS data and meta caches are not "visible" through public API.
+ * Test for igfs with nodes in client mode (see {@link IgniteConfiguration#setClientMode(boolean)}.
  */
-public class IgfsCacheSelfTest extends IgfsCommonAbstractTest {
+public class IgfsClientCacheSelfTest extends IgfsAbstractSelfTest {
+    /** */
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
     /** Meta-information cache name. */
     private static final String META_CACHE_NAME = "meta";
 
     /** Data cache name. */
     private static final String DATA_CACHE_NAME = null;
 
-    /** Regular cache name. */
-    private static final String CACHE_NAME = "cache";
+    /**
+     * Constructor.
+     */
+    public IgfsClientCacheSelfTest() {
+        super(IgfsMode.PRIMARY);
+    }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+    @Override protected void beforeTestsStarted() throws Exception {
+        igfsSecondaryFileSystem = createSecondaryFileSystemStack();
+
+        Ignite ignitePrimary = G.start(getConfiguration(getTestInstanceName(1)));
+
+        igfs = (IgfsImpl) ignitePrimary.fileSystem("igfs");
+    }
+
+    /**{@inheritDoc} */
+    protected IgfsSecondaryFileSystem createSecondaryFileSystemStack() throws Exception {
+        Ignite igniteSecondary = G.start(getConfiguration(getTestInstanceName(0)));
+
+        IgfsEx secondaryIgfsImpl = (IgfsEx)igniteSecondary.fileSystem("igfs");
+
+        igfsSecondary = new IgfsExUniversalFileSystemAdapter(secondaryIgfsImpl);
+
+        return secondaryIgfsImpl.asSecondary();
+    }
+
+    /**
+     *
+     * @param instanceName Instance name.
+     * @return Ignite configuration.
+     * @throws Exception If failed.
+     */
+    protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
-        cfg.setCacheConfiguration(cacheConfiguration(META_CACHE_NAME), cacheConfiguration(DATA_CACHE_NAME),
-            cacheConfiguration(CACHE_NAME));
+        cfg.setCacheConfiguration(
+            cacheConfiguration(META_CACHE_NAME),
+            cacheConfiguration(DATA_CACHE_NAME)
+        );
 
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
+        TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
-        discoSpi.setIpFinder(new TcpDiscoveryVmIpFinder(true));
+        disco.setIpFinder(IP_FINDER);
 
-        cfg.setDiscoverySpi(discoSpi);
+        if (!instanceName.equals(getTestInstanceName(0))) {
+            cfg.setClientMode(true);
+
+            disco.setForceServerMode(true);
+        }
+
+        cfg.setDiscoverySpi(disco);
 
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
@@ -74,17 +111,21 @@ public class IgfsCacheSelfTest extends IgfsCommonAbstractTest {
         return cfg;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * @param cacheName Cache name.
+     * @return Cache configuration.
+     */
     protected CacheConfiguration cacheConfiguration(String cacheName) {
-        CacheConfiguration cacheCfg = defaultCacheConfiguration();
+        CacheConfiguration<?,?> cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setName(cacheName);
+
+        cacheCfg.setNearConfiguration(null);
 
         if (META_CACHE_NAME.equals(cacheName))
             cacheCfg.setCacheMode(REPLICATED);
         else {
             cacheCfg.setCacheMode(PARTITIONED);
-            cacheCfg.setNearConfiguration(null);
 
             cacheCfg.setBackups(0);
             cacheCfg.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(128));
@@ -94,54 +135,5 @@ public class IgfsCacheSelfTest extends IgfsCommonAbstractTest {
         cacheCfg.setAtomicityMode(TRANSACTIONAL);
 
         return cacheCfg;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        startGrid();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void afterTestsStopped() throws Exception {
-        stopAllGrids();
-    }
-
-    /**
-     * Test cache.
-     *
-     * @throws Exception If failed.
-     */
-    public void testCache() throws Exception {
-        final Ignite g = grid();
-
-        Collection<IgniteCacheProxy<?, ?>> caches = ((IgniteKernal)g).caches();
-
-        info("Caches: " + F.viewReadOnly(caches, new C1<IgniteCacheProxy<?, ?>, Object>() {
-            @Override public Object apply(IgniteCacheProxy<?, ?> c) {
-                return c.getName();
-            }
-        }));
-
-        assertEquals(1, caches.size());
-
-        assert CACHE_NAME.equals(caches.iterator().next().getName());
-
-        GridTestUtils.assertThrows(log(), new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                g.cache(META_CACHE_NAME);
-
-                return null;
-            }
-        }, IllegalStateException.class, null);
-
-        GridTestUtils.assertThrows(log(), new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                g.cache(DATA_CACHE_NAME);
-
-                return null;
-            }
-        }, IllegalStateException.class, null);
-
-        assert g.cache(CACHE_NAME) != null;
     }
 }

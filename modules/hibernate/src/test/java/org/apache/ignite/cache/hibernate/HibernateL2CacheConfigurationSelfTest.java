@@ -194,7 +194,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
      */
     @SuppressWarnings("unchecked")
     private void testCacheUsage(int expCache1, int expCache2, int expCache3, int expCacheE3, int expCacheE4) {
-        SessionFactory sesFactory = startHibernate(getTestGridName(0));
+        SessionFactory sesFactory = startHibernate(getTestInstanceName(0));
 
         try {
             Session ses = sesFactory.openSession();

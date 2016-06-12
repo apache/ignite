@@ -62,7 +62,7 @@ public class ClientPreferDirectSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        info("Stopping grids.");
+        info("Stopping instances.");
 
         stopAllGrids();
     }

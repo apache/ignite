@@ -43,8 +43,8 @@ public class GridServiceSerializationSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER));
 
@@ -133,7 +133,7 @@ public class GridServiceSerializationSelfTest extends GridCommonAbstractTest {
         private boolean clientThread() {
             assert Thread.currentThread() instanceof IgniteThread;
 
-            return ((IgniteThread)Thread.currentThread()).getGridName().contains("client");
+            return ((IgniteThread)Thread.currentThread()).getLocalInstanceName().contains("client");
         }
 
         /** {@inheritDoc} */

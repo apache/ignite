@@ -122,8 +122,8 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     private boolean cacheOn;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(instanceName);
 
         c.getTransactionConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
         c.getTransactionConfiguration().setDefaultTxIsolation(REPEATABLE_READ);

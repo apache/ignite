@@ -61,7 +61,7 @@ public class GridSessionLoadTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("unchecked")
     public void testSessionLoad() throws Exception {
-        final Ignite ignite = G.ignite(getTestGridName());
+        final Ignite ignite = G.ignite(getTestInstanceName());
 
         assert ignite != null;
 

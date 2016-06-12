@@ -61,7 +61,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
     /** Test nodes count. */
     private static final int NODES_CNT = 3;
 
-    /** IP finder for the grid with the primary file system. */
+    /** IP finder for the instance with the primary file system. */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Primary IGFS instances. */
@@ -95,7 +95,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Start a grid with the primary file system.
+     * Start a instance with the primary file system.
      *
      * @throws Exception If failed.
      */
@@ -110,7 +110,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Get configuration for a grid with the primary file system.
+     * Get configuration for a instance with the primary file system.
      *
      * @param idx Node index.
      * @return Configuration.
@@ -152,7 +152,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName("grid-" + idx);
+        cfg.setInstanceName("instance-" + idx);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -168,7 +168,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Start a grid with the secondary file system.
+     * Start a instance with the secondary file system.
      *
      * @throws Exception If failed.
      */
@@ -202,7 +202,7 @@ public class IgfsMetricsSelfTest extends IgfsCommonAbstractTest {
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName("grid-secondary");
+        cfg.setInstanceName("instance-secondary");
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 

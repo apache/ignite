@@ -124,7 +124,7 @@ public abstract class IgfsServerManagerIpcEndpointRegistrationAbstractSelfTest e
      * @throws Exception In case of any error.
      */
     protected IgniteConfiguration gridConfiguration() throws Exception {
-        IgniteConfiguration cfg = getConfiguration(getTestGridName());
+        IgniteConfiguration cfg = getConfiguration(getTestInstanceName());
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
         discoSpi.setIpFinder(IP_FINDER);

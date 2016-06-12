@@ -181,12 +181,12 @@ public class GridJobLoadTest implements Runnable {
     /**
      * Starts new grid node.
      *
-     * @param gridName name of new node.
+     * @param instanceName name of new node.
      * @param springCfg file with spring configuration to use for this node.
      * @return a grid instance local to new node {@link org.apache.ignite.Ignition#start(org.apache.ignite.configuration.IgniteConfiguration)}.
      * @throws Exception if node run failed.
      */
-    protected Ignite startNode(String gridName, File springCfg) throws Exception {
+    protected Ignite startNode(String instanceName, File springCfg) throws Exception {
         assert springCfg != null;
 
         ListableBeanFactory springCtx = new FileSystemXmlApplicationContext(
@@ -199,7 +199,7 @@ public class GridJobLoadTest implements Runnable {
 
         IgniteConfiguration cfg = (IgniteConfiguration)cfgMap.values().iterator().next();
 
-        cfg.setGridName(gridName + "-" + getNextNodeNum());
+        cfg.setInstanceName(instanceName + "-" + getNextNodeNum());
 
         return G.start(cfg);
     }

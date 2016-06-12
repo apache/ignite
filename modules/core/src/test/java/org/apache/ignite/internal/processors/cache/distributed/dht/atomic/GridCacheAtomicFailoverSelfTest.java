@@ -33,7 +33,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 public class GridCacheAtomicFailoverSelfTest extends GridCacheAbstractFailoverSelfTest {
     /** {@inheritDoc} */
     @Override protected CacheConfiguration cacheConfiguration(String instanceName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(instanceName`);
+        CacheConfiguration ccfg = super.cacheConfiguration(instanceName);
 
         ccfg.setAtomicWriteOrderMode(CLOCK);
 

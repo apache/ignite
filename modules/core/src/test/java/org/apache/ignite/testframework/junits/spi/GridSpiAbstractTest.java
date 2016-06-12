@@ -432,7 +432,7 @@ public abstract class GridSpiAbstractTest<T extends IgniteSpi> extends GridAbstr
         U.setWorkDirectory(null, U.getIgniteHome());
 
         // Start SPI with unique grid name.
-        spi.spiStart(getTestGridName());
+        spi.spiStart(getTestInstanceName());
 
         info("SPI started [spi=" + spi.getClass() + ']');
     }

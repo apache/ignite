@@ -76,7 +76,7 @@ public class GridMultiSplitsRedeployLoadTest extends GridCommonAbstractTest {
      * @throws Exception If task execution failed.
      */
     public void testLoad() throws Exception {
-        final Ignite ignite = G.ignite(getTestGridName());
+        final Ignite ignite = G.ignite(getTestInstanceName());
 
         deployTask(ignite);
 

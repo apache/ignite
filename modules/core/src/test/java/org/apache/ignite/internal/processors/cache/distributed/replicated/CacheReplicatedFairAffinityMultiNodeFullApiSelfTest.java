@@ -25,8 +25,8 @@ import org.apache.ignite.configuration.CacheConfiguration;
  */
 public class CacheReplicatedFairAffinityMultiNodeFullApiSelfTest extends GridCacheReplicatedMultiNodeFullApiSelfTest {
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String instanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(instanceName);
 
         cfg.setAffinity(new FairAffinityFunction(false));
 

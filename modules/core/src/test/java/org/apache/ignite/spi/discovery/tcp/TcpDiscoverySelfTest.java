@@ -2266,7 +2266,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
      * @throws Exception If anything failed.
      */
     private Ignite startGridNoOptimize(int idx) throws Exception {
-        return startGridNoOptimize(getTestGridName(idx));
+        return startGridNoOptimize(getTestInstanceName(idx));
     }
 
     /**

@@ -37,8 +37,8 @@ public class GridCacheReplicatedTxTimeoutSelfTest extends IgniteTxTimeoutAbstrac
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(instanceName);
 
         c.getTransactionConfiguration().setDefaultTxTimeout(TIMEOUT);
         c.getTransactionConfiguration().setTxSerializableEnabled(true);

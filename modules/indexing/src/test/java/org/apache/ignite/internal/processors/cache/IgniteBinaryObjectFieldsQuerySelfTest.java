@@ -76,7 +76,7 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
 
         cfg.setMarshaller(null);
 
-        if (getTestGridName(3).equals(gridName)) {
+        if (getTestInstanceName(3).equals(gridName)) {
             cfg.setClientMode(true);
             cfg.setClassLoader(extClassLoader);
         }

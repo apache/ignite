@@ -68,8 +68,8 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         assert cfg.getCacheConfiguration().length == 1;
 
@@ -84,7 +84,7 @@ public abstract class IgniteCacheStoreSessionWriteBehindAbstractTest extends Ign
 
         ccfg0.setCacheStoreFactory(singletonFactory(new TestStore()));
 
-        CacheConfiguration ccfg1 = cacheConfiguration(gridName);
+        CacheConfiguration ccfg1 = cacheConfiguration(instanceName);
 
         ccfg1.setReadThrough(true);
         ccfg1.setWriteThrough(true);

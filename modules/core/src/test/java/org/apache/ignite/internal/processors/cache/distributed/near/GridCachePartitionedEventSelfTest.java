@@ -31,7 +31,7 @@ import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
  */
 public class GridCachePartitionedEventSelfTest extends GridCacheEventAbstractTest {
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
+    @Override protected CacheConfiguration cacheConfiguration(String instanceName) throws Exception {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         cfg.setCacheMode(PARTITIONED);

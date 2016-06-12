@@ -89,7 +89,7 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
                 Ignition.stopAll(true);
 
                 for (int i = 0; i < cnt; i++) {
-                    String gridName = getTestGridName(i);
+                    String gridName = getTestInstanceName(i);
 
                     IgniteConfiguration cfg = optimize(getConfiguration(gridName));
 
@@ -170,8 +170,8 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
 
     /** {@inheritDoc} */
     @Override protected boolean expectedClient(String testGridName) {
-        return getTestGridName(CLIENT_NODE_IDX).equals(testGridName)
-            || getTestGridName(CLIENT_NEAR_ONLY_IDX).equals(testGridName);
+        return getTestInstanceName(CLIENT_NODE_IDX).equals(testGridName)
+            || getTestInstanceName(CLIENT_NEAR_ONLY_IDX).equals(testGridName);
     }
 
     /** {@inheritDoc} */
@@ -475,7 +475,7 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
      * @return Cache configuration.
      */
     protected CacheConfiguration cacheConfiguration() {
-        return testsCfg.configurationFactory().cacheConfiguration(getTestGridName(testedNodeIdx));
+        return testsCfg.configurationFactory().cacheConfiguration(getTestInstanceName(testedNodeIdx));
     }
 
     /**

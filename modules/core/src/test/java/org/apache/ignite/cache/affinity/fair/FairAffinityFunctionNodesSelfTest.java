@@ -195,7 +195,7 @@ public class FairAffinityFunctionNodesSelfTest extends GridCommonAbstractTest {
 
                 topVer++;
 
-                info("Grid 0: " + grid(0).localNode().id());
+                info("Instance 0: " + grid(0).localNode().id());
 
                 ((IgniteKernal)grid(0)).internalCache().context().affinity().affinityReadyFuture(topVer).get();
 
@@ -205,7 +205,7 @@ public class FairAffinityFunctionNodesSelfTest extends GridCommonAbstractTest {
 
                         ((IgniteKernal)grid).internalCache().context().affinity().affinityReadyFuture(topVer).get();
 
-                        info("Grid " + i + ": " + grid.localNode().id());
+                        info("Instance " + i + ": " + grid.localNode().id());
 
                         for (int part = 0; part < parts; part++) {
                             List<ClusterNode> firstNodes = (List<ClusterNode>)grid(0).affinity(null)

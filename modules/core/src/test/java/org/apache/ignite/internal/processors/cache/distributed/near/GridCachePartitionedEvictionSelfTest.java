@@ -54,7 +54,7 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
     private static final boolean TEST_INFO = true;
 
     /** */
-    private static final int GRID_CNT = 2;
+    private static final int INSTANCE_CNT = 2;
 
     /** */
     private static final int EVICT_CACHE_SIZE = 1;
@@ -66,13 +66,13 @@ public class GridCachePartitionedEvictionSelfTest extends GridCacheAbstractSelfT
     private TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return GRID_CNT;
+    @Override protected int instanceCount() {
+        return INSTANCE_CNT;
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(instanceName);
 
         c.getTransactionConfiguration().setTxSerializableEnabled(true);
 

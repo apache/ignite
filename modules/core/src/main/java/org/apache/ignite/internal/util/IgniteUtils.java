@@ -4252,13 +4252,13 @@ public abstract class IgniteUtils {
      * Constructs JMX object name with given properties.
      * Map with ordered {@code groups} used for proper object name construction.
      *
-     * @param gridName Grid name.
+     * @param instanceName Instance name.
      * @param grp Name of the group.
      * @param name Name of mbean.
      * @return JMX object name.
      * @throws MalformedObjectNameException Thrown in case of any errors.
      */
-    public static ObjectName makeMBeanName(@Nullable String gridName, @Nullable String grp, String name)
+    public static ObjectName makeMBeanName(@Nullable String instanceName, @Nullable String grp, String name)
         throws MalformedObjectNameException {
         SB sb = new SB(JMX_DOMAIN + ':');
 
@@ -4266,8 +4266,8 @@ public abstract class IgniteUtils {
 
         appendJvmId(sb);
 
-        if (gridName != null && !gridName.isEmpty())
-            sb.a("grid=").a(gridName).a(',');
+        if (instanceName != null && !instanceName.isEmpty())
+            sb.a("instance=").a(instanceName).a(',');
 
         if (grp != null)
             sb.a("group=").a(grp).a(',');
@@ -4313,13 +4313,13 @@ public abstract class IgniteUtils {
      * Constructs JMX object name with given properties.
      * Map with ordered {@code groups} used for proper object name construction.
      *
-     * @param gridName Grid name.
+     * @param instanceName Instance name.
      * @param cacheName Name of the cache.
      * @param name Name of mbean.
      * @return JMX object name.
      * @throws MalformedObjectNameException Thrown in case of any errors.
      */
-    public static ObjectName makeCacheMBeanName(@Nullable String gridName, @Nullable String cacheName, String name)
+    public static ObjectName makeCacheMBeanName(@Nullable String instanceName, @Nullable String cacheName, String name)
         throws MalformedObjectNameException {
         SB sb = new SB(JMX_DOMAIN + ':');
 
@@ -4327,8 +4327,8 @@ public abstract class IgniteUtils {
 
         appendJvmId(sb);
 
-        if (gridName != null && !gridName.isEmpty())
-            sb.a("grid=").a(gridName).a(',');
+        if (instanceName != null && !instanceName.isEmpty())
+            sb.a("instance=").a(instanceName).a(',');
 
         cacheName = maskName(cacheName);
 
@@ -4347,7 +4347,7 @@ public abstract class IgniteUtils {
      *
      * @param <T> Type of mbean.
      * @param mbeanSrv MBean server.
-     * @param gridName Grid name.
+     * @param instanceName Instance name.
      * @param grp Name of the group.
      * @param name Name of mbean.
      * @param impl MBean implementation.
@@ -4355,7 +4355,7 @@ public abstract class IgniteUtils {
      * @return JMX object name.
      * @throws JMException If MBean creation failed.
      */
-    public static <T> ObjectName registerMBean(MBeanServer mbeanSrv, @Nullable String gridName, @Nullable String grp,
+    public static <T> ObjectName registerMBean(MBeanServer mbeanSrv, @Nullable String instanceName, @Nullable String grp,
         String name, T impl, @Nullable Class<T> itf) throws JMException {
         assert mbeanSrv != null;
         assert name != null;
@@ -4365,7 +4365,7 @@ public abstract class IgniteUtils {
 
         mbean.getMBeanInfo();
 
-        return mbeanSrv.registerMBean(mbean, makeMBeanName(gridName, grp, name)).getObjectName();
+        return mbeanSrv.registerMBean(mbean, makeMBeanName(instanceName, grp, name)).getObjectName();
     }
 
     /**
@@ -4397,7 +4397,7 @@ public abstract class IgniteUtils {
      *
      * @param <T> Type of mbean.
      * @param mbeanSrv MBean server.
-     * @param gridName Grid name.
+     * @param instanceName Instance name.
      * @param cacheName Name of the cache.
      * @param name Name of mbean.
      * @param impl MBean implementation.
@@ -4405,7 +4405,7 @@ public abstract class IgniteUtils {
      * @return JMX object name.
      * @throws JMException If MBean creation failed.
      */
-    public static <T> ObjectName registerCacheMBean(MBeanServer mbeanSrv, @Nullable String gridName,
+    public static <T> ObjectName registerCacheMBean(MBeanServer mbeanSrv, @Nullable String instanceName,
         @Nullable String cacheName, String name, T impl, Class<T> itf) throws JMException {
         assert mbeanSrv != null;
         assert name != null;
@@ -4415,7 +4415,7 @@ public abstract class IgniteUtils {
 
         mbean.getMBeanInfo();
 
-        return mbeanSrv.registerMBean(mbean, makeCacheMBeanName(gridName, cacheName, name)).getObjectName();
+        return mbeanSrv.registerMBean(mbean, makeCacheMBeanName(instanceName, cacheName, name)).getObjectName();
     }
 
     /**

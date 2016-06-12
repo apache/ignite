@@ -47,11 +47,11 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** */
-    public static final int GRID_CNT = 4;
+    public static final int INSTANCE_CNT = 4;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(instanceName);
 
         c.getTransactionConfiguration().setTxSerializableEnabled(true);
 
@@ -65,7 +65,7 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
 
         cc.setCacheMode(PARTITIONED);
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
-        cc.setBackups(GRID_CNT - 1);
+        cc.setBackups(INSTANCE_CNT - 1);
         cc.setAtomicityMode(TRANSACTIONAL);
         cc.setNearConfiguration(new NearCacheConfiguration());
 
@@ -84,7 +84,7 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
     /** @throws Exception If check failed. */
     @SuppressWarnings("ErrorNotRethrown")
     public void testLockFromNearOrBackup() throws Exception {
-        startGrids(GRID_CNT);
+        startGrids(INSTANCE_CNT);
 
         int idx = 0;
 
@@ -107,7 +107,7 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
 
         assert lock.tryLock();
 
-        for (int checkIdx = 1; checkIdx < GRID_CNT; checkIdx++) {
+        for (int checkIdx = 1; checkIdx < INSTANCE_CNT; checkIdx++) {
             info("Check grid index: " + checkIdx);
 
             IgniteCache<Integer, String> checkCache = jcache(checkIdx);
@@ -117,7 +117,7 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
 
         Collection<IgniteFuture<?>> futs = new LinkedList<>();
 
-        for (int i = 1; i < GRID_CNT; i++) {
+        for (int i = 1; i < INSTANCE_CNT; i++) {
             futs.add(
                 waitForLocalEvent(grid(i).events(), new P1<Event>() {
                     @Override public boolean apply(Event e) {
@@ -135,7 +135,7 @@ public class GridCachePartitionedExplicitLockNodeFailureSelfTest extends GridCom
 
         for (int i = 0; i < 3; i++) {
             try {
-                for (int checkIdx = 1; checkIdx < GRID_CNT; checkIdx++) {
+                for (int checkIdx = 1; checkIdx < INSTANCE_CNT; checkIdx++) {
                     info("Check grid index: " + checkIdx);
 
                     IgniteCache<Integer, String> checkCache = jcache(checkIdx);

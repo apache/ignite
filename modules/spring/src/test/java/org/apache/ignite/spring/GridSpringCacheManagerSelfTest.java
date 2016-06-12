@@ -66,7 +66,7 @@ public class GridSpringCacheManagerSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override public String getTestGridName() {
+    @Override public String getTestInstanceName() {
         return "testGrid";
     }
 

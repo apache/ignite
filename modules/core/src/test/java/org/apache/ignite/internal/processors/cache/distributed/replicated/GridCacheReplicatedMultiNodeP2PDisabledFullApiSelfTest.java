@@ -25,8 +25,8 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 public class GridCacheReplicatedMultiNodeP2PDisabledFullApiSelfTest
     extends GridCacheReplicatedMultiNodeFullApiSelfTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(instanceName);
 
         c.setPeerClassLoadingEnabled(false);
 

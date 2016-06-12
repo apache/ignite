@@ -71,7 +71,7 @@ public class ClientStartNodeTask extends TaskSingleJobSplitAdapter<String, Integ
 
     /** {@inheritDoc} */
     @Override protected Object executeJob(int gridSize, String type) {
-        log.info(">>> Starting new grid node [currGridSize=" + gridSize + ", arg=" + type + "]");
+        log.info(">>> Starting new instance node [currGridSize=" + gridSize + ", arg=" + type + "]");
 
         if (type == null)
             throw new IllegalArgumentException("Node type to start should be specified.");

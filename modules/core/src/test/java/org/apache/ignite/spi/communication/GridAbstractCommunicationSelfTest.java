@@ -328,7 +328,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
 
             nodes.add(node);
 
-            spi.spiStart(getTestGridName() + (i + 1));
+            spi.spiStart(getTestInstanceName() + (i + 1));
 
             spis.put(rsrcs.getNodeId(), spi);
 

@@ -109,7 +109,7 @@ public class VisorNodeDataCollectorTask extends VisorMultiNodeTask<VisorNodeData
      */
     protected void reduceJobResult(VisorNodeDataCollectorTaskResult taskRes,
         VisorNodeDataCollectorJobResult jobRes, UUID nid) {
-        taskRes.gridNames().put(nid, jobRes.gridName());
+        taskRes.gridNames().put(nid, jobRes.instanceName());
 
         taskRes.topologyVersions().put(nid, jobRes.topologyVersion());
 

@@ -78,13 +78,13 @@ public class GridTcpSpiForwardingSelfTest extends GridCommonAbstractTest {
         final int commExtPort;
         final int commLocPort;
 
-        if (getTestGridName(0).equals(gridName)) {
+        if (getTestInstanceName(0).equals(gridName)) {
             locPort = locPort1;
             extPort = extPort1;
             commLocPort = commLocPort1;
             commExtPort = commExtPort1;
         }
-        else if (getTestGridName(1).equals(gridName)) {
+        else if (getTestInstanceName(1).equals(gridName)) {
             locPort = locPort2;
             extPort = extPort2;
             commLocPort = commLocPort2;

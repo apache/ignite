@@ -93,7 +93,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
         marshErrBytes = marsh.marshal(new IgniteCheckedException("Failed to marshal response error, " +
             "see node log for details."));
 
-        flusher = new IgniteThread(new GridWorker(ctx.gridName(), "grid-data-loader-flusher", log) {
+        flusher = new IgniteThread(new GridWorker(ctx.instanceName(), "grid-data-loader-flusher", log) {
             @Override protected void body() throws InterruptedException {
                 while (!isCancelled()) {
                     DataStreamerImpl<K, V> ldr = flushQ.take();
@@ -358,7 +358,7 @@ public class DataStreamProcessor<K, V> extends GridProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> Data streamer processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Data streamer processor memory stats [grid=" + ctx.instanceName() + ']');
         X.println(">>>   ldrsSize: " + ldrs.size());
     }
 }

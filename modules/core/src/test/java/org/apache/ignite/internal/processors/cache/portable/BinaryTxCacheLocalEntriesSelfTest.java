@@ -33,13 +33,13 @@ public class BinaryTxCacheLocalEntriesSelfTest extends GridCacheAbstractSelfTest
     private static final String FIELD = "user-name";
 
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
+    @Override protected int instanceCount() {
         return 2;
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String instanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(instanceName);
 
         ccfg.setStoreKeepBinary(true);
 
@@ -47,8 +47,8 @@ public class BinaryTxCacheLocalEntriesSelfTest extends GridCacheAbstractSelfTest
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setMarshaller(new BinaryMarshaller());
 
@@ -68,7 +68,7 @@ public class BinaryTxCacheLocalEntriesSelfTest extends GridCacheAbstractSelfTest
 
         assertEquals(ENTRY_CNT, cache.localSize(CachePeekMode.ALL));
 
-        for (int i = 0; i < gridCount(); i++)
+        for (int i = 0; i < instanceCount(); i++)
             jcache(i).withKeepBinary().localEntries();
 
         cache.removeAll();

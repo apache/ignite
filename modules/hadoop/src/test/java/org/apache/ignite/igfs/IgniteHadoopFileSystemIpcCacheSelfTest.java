@@ -158,7 +158,7 @@ public class IgniteHadoopFileSystemIpcCacheSelfTest extends IgfsCommonAbstractTe
 
         cache.clear(); // avoid influence of previous tests in the same process.
 
-        String name = "igfs:" + getTestGridName(0) + "@";
+        String name = "igfs:" + getTestInstanceName(0) + "@";
 
         Configuration cfg = new Configuration();
 

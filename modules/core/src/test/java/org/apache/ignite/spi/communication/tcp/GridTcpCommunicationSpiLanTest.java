@@ -236,7 +236,7 @@ public class GridTcpCommunicationSpiLanTest extends GridSpiAbstractTest<TcpCommu
 
         locNode.setAttributes(attrs);
 
-        spi.spiStart(getTestGridName());
+        spi.spiStart(getTestInstanceName());
 
         spi.onContextInitialized(ctx);
 

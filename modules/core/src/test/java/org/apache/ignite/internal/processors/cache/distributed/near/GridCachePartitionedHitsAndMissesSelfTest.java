@@ -44,7 +44,7 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  */
 public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstractTest {
     /** Amount of grids to start. */
-    private static final int GRID_CNT = 3;
+    private static final int INSTANCE_CNT = 3;
 
     /** Count of total numbers to generate. */
     private static final int CNT = 2000;
@@ -53,8 +53,8 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         // DiscoverySpi.
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
@@ -100,7 +100,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
      * @throws Exception If failed.
      */
     public void testHitsAndMisses() throws Exception {
-        startGrids(GRID_CNT);
+        startGrids(INSTANCE_CNT);
 
         awaitPartitionMapExchange();
 
@@ -113,7 +113,7 @@ public class GridCachePartitionedHitsAndMissesSelfTest extends GridCommonAbstrac
             long hits = 0;
             long misses = 0;
 
-            for (int i = 0; i < GRID_CNT; i++) {
+            for (int i = 0; i < INSTANCE_CNT; i++) {
                 CacheMetrics m = grid(i).cache(null).localMetrics();
 
                 hits += m.getCacheHits();

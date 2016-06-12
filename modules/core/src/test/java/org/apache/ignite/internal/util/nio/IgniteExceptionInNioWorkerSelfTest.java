@@ -34,14 +34,14 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class IgniteExceptionInNioWorkerSelfTest extends GridCommonAbstractTest {
     /** */
-    private static final int GRID_CNT = 4;
+    private static final int INSTANCE_CNT = 4;
 
     /** */
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         CacheConfiguration ccfg = new CacheConfiguration("cache");
 
@@ -66,7 +66,7 @@ public class IgniteExceptionInNioWorkerSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testBrokenMessage() throws Exception {
-        startGrids(GRID_CNT);
+        startGrids(INSTANCE_CNT);
 
         try {
             IgniteKernal kernal = (IgniteKernal)ignite(0);

@@ -188,7 +188,28 @@ public class IgfsDataManager extends IgfsManager {
 
         igfsSvc = igfsCtx.kernalContext().getIgfsExecutorService();
 
+<<<<<<< HEAD
         delWorker = new AsyncDeleteWorker(igfsCtx.kernalContext().gridName(),
+=======
+        trashPurgeTimeout = igfsCtx.configuration().getTrashPurgeTimeout();
+
+        putExecSvc = igfsCtx.configuration().getDualModePutExecutorService();
+
+        if (putExecSvc != null)
+            putExecSvcShutdown = igfsCtx.configuration().getDualModePutExecutorServiceShutdown();
+        else {
+            int coresCnt = Runtime.getRuntime().availableProcessors();
+
+            // Note that we do not pre-start threads here as IGFS pool may not be needed.
+            putExecSvc = new IgniteThreadPoolExecutor(coresCnt, coresCnt, 0, new LinkedBlockingDeque<Runnable>());
+
+            putExecSvcShutdown = true;
+        }
+
+        maxPendingPuts = igfsCtx.configuration().getDualModeMaxPendingPutsSize();
+
+        delWorker = new AsyncDeleteWorker(igfsCtx.kernalContext().instanceName(),
+>>>>>>> commit
             "igfs-" + igfsName + "-delete-worker", log);
     }
 
@@ -1497,12 +1518,12 @@ public class IgfsDataManager extends IgfsManager {
             new LinkedBlockingQueue<>();
 
         /**
-         * @param gridName Grid name.
+         * @param instanceName Instance name.
          * @param name Worker name.
          * @param log Log.
          */
-        protected AsyncDeleteWorker(@Nullable String gridName, String name, IgniteLogger log) {
-            super(gridName, name, log);
+        protected AsyncDeleteWorker(@Nullable String instanceName, String name, IgniteLogger log) {
+            super(instanceName, name, log);
 
             stopInfo = IgfsUtils.createDirectory(IgniteUuid.randomUuid());
         }

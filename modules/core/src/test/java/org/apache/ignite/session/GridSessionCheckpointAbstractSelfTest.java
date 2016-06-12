@@ -167,7 +167,7 @@ public abstract class GridSessionCheckpointAbstractSelfTest extends GridCommonAb
                 checkFinishedState("reduce:session:key:" + i, "reduce:global:key:" + i, "reduce:global:testval:" + i);
         }
         finally {
-            G.stop(getTestGridName(), false);
+            G.stop(getTestInstanceName(), false);
         }
     }
 

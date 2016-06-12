@@ -195,7 +195,7 @@ public class ClientFailedInitSelfTest extends GridCommonAbstractTest {
             try {
                 c.compute().nodes();
 
-                fail("Nodes list should fail while grid is stopped.");
+                fail("Nodes list should fail while instance is stopped.");
             }
             catch (GridClientDisconnectedException e) {
                 assertTrue(X.hasCause(e, GridClientException.class));

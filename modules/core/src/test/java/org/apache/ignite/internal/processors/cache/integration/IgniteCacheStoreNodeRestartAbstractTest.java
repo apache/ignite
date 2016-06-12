@@ -32,8 +32,8 @@ public abstract class IgniteCacheStoreNodeRestartAbstractTest extends IgniteCach
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         CacheStore store = getStore(); // Use the same store instance for both caches.
 
@@ -46,7 +46,7 @@ public abstract class IgniteCacheStoreNodeRestartAbstractTest extends IgniteCach
 
         ccfg0.setCacheStoreFactory(singletonFactory(store));
 
-        CacheConfiguration ccfg1 = cacheConfiguration(gridName);
+        CacheConfiguration ccfg1 = cacheConfiguration(instanceName);
 
         ccfg1.setReadThrough(true);
         ccfg1.setWriteThrough(true);

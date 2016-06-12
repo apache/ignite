@@ -697,14 +697,14 @@ public class GridNioServer<T> {
 
         /**
          * @param idx Index of this worker in server's array.
-         * @param gridName Grid name.
+         * @param instanceName Instance name.
          * @param name Worker name.
          * @param log Logger.
          * @throws IgniteCheckedException If selector could not be created.
          */
-        protected ByteBufferNioClientWorker(int idx, @Nullable String gridName, String name, IgniteLogger log)
+        protected ByteBufferNioClientWorker(int idx, @Nullable String instanceName, String name, IgniteLogger log)
             throws IgniteCheckedException {
-            super(idx, gridName, name, log);
+            super(idx, instanceName, name, log);
 
             readBuf = directBuf ? ByteBuffer.allocateDirect(8 << 10) : ByteBuffer.allocate(8 << 10);
 
@@ -853,14 +853,14 @@ public class GridNioServer<T> {
     private class DirectNioClientWorker extends AbstractNioClientWorker {
         /**
          * @param idx Index of this worker in server's array.
-         * @param gridName Grid name.
+         * @param instanceName Instance name.
          * @param name Worker name.
          * @param log Logger.
          * @throws IgniteCheckedException If selector could not be created.
          */
-        protected DirectNioClientWorker(int idx, @Nullable String gridName, String name, IgniteLogger log)
+        protected DirectNioClientWorker(int idx, @Nullable String instanceName, String name, IgniteLogger log)
             throws IgniteCheckedException {
-            super(idx, gridName, name, log);
+            super(idx, instanceName, name, log);
         }
 
         /**
@@ -1262,14 +1262,14 @@ public class GridNioServer<T> {
 
         /**
          * @param idx Index of this worker in server's array.
-         * @param gridName Grid name.
+         * @param instanceName Instance name.
          * @param name Worker name.
          * @param log Logger.
          * @throws IgniteCheckedException If selector could not be created.
          */
-        protected AbstractNioClientWorker(int idx, @Nullable String gridName, String name, IgniteLogger log)
+        protected AbstractNioClientWorker(int idx, @Nullable String instanceName, String name, IgniteLogger log)
             throws IgniteCheckedException {
-            super(gridName, name, log);
+            super(instanceName, name, log);
 
             createSelector();
 
@@ -2355,7 +2355,11 @@ public class GridNioServer<T> {
         /** Selector count. */
         private int selectorCnt;
 
-        /** Grid name. */
+        /** Grid name.
+         *
+         *  @deprecated  Use {@link #instanceName} instead.
+         */
+        @Deprecated
         private String gridName;
 
         /** Instance name. */
@@ -2421,7 +2425,7 @@ public class GridNioServer<T> {
                 port,
                 log,
                 selectorCnt,
-                gridName,
+                instanceName,
                 tcpNoDelay,
                 directBuf,
                 byteOrder,
@@ -2495,12 +2499,14 @@ public class GridNioServer<T> {
          */
         public Builder<T> gridName(@Nullable String gridName) {
             this.gridName = gridName;
+            this.instanceName = gridName;
 
             return this;
         }
 
         public Builder<T> instanceName(@Nullable String instanceName) {
             this.instanceName = instanceName;
+            this.gridName = instanceName;
 
             return this;
         }

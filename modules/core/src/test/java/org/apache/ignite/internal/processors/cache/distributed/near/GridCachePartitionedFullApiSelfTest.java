@@ -39,8 +39,8 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
 
@@ -48,8 +48,8 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String instanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(instanceName);
 
         cfg.setEvictSynchronized(false);
 
@@ -81,7 +81,7 @@ public class GridCachePartitionedFullApiSelfTest extends GridCacheAbstractFullAp
      * @throws Exception If failed.
      */
     public void testUpdate() throws Exception {
-        if (gridCount() > 1) {
+        if (instanceCount() > 1) {
             IgniteCache<Object, Object> cache = grid(0).cache(null);
 
             Integer key = nearKey(cache);

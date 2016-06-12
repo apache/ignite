@@ -47,12 +47,15 @@ public class VisorBasicConfiguration implements Serializable, LessNamingBean {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Grid name. */
+    /** Grid name.
+     *
+     * @deprecated  Use {@link #instanceName} instead.
+     */
     @Deprecated
     private String gridName;
 
-    /** Local instance name*/
-    private String localInstanceName;
+    /** Instance name*/
+    private String instanceName;
 
     /** IGNITE_HOME determined at startup. */
     private String ggHome;

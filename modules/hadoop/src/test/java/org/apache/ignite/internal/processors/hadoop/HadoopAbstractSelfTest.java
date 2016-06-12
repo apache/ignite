@@ -234,6 +234,6 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
      * @return IGFS scheme for test.
      */
     protected String igfsScheme() {
-        return "igfs://:" + getTestGridName(0) + "@/";
+        return "igfs://:" + getTestInstanceName(0) + "@/";
     }
 }

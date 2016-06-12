@@ -117,8 +117,15 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
     /** Local node ID. */
     private UUID locNodeId;
 
-    /** Grid name. */
+    /** Grid name.
+     *
+     *  @deprecated Use {@link #instanceName} instead.
+     */
+    @Deprecated
     private String gridName;
+
+    /** Instance name. */
+    private String instanceName;
 
     /** Flag allowing not to print out of resources warning. */
     private boolean omitOutOfResourcesWarn;
@@ -149,12 +156,13 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
      *
      * @param log Log.
      * @param locNodeId Node id.
-     * @param gridName Grid name.
+     * @param instanceName Instance name.
      */
-    public IpcSharedMemoryServerEndpoint(IgniteLogger log, UUID locNodeId, String gridName) {
+    public IpcSharedMemoryServerEndpoint(IgniteLogger log, UUID locNodeId, String instanceName) {
         this.log = log;
         this.locNodeId = locNodeId;
-        this.gridName = gridName;
+        this.instanceName = instanceName;
+        this.gridName = instanceName;
     }
 
     /** @param omitOutOfResourcesWarn If {@code true}, out of resources warning will not be printed by server. */
@@ -348,11 +356,13 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
     private void injectResources(Ignite ignite){
         if (ignite != null) {
             // Inject resources.
+            instanceName = ignite.name();
             gridName = ignite.name();
             locNodeId = ignite.configuration().getNodeId();
         }
         else {
             // Cleanup resources.
+            instanceName = null;
             gridName = null;
             locNodeId = null;
         }
@@ -530,12 +540,12 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
      */
     private class GcWorker extends GridWorker {
         /**
-         * @param gridName Grid name.
+         * @param instanceName Instance name.
          * @param name Name.
          * @param log Log.
          */
-        protected GcWorker(@Nullable String gridName, String name, IgniteLogger log) {
-            super(gridName, name, log);
+        protected GcWorker(@Nullable String instanceName, String name, IgniteLogger log) {
+            super(instanceName, name, log);
         }
 
         /** {@inheritDoc} */

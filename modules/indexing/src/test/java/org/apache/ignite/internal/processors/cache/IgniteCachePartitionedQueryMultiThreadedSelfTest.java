@@ -57,7 +57,7 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
     private static final boolean TEST_INFO = true;
 
     /** Number of test grids (nodes). Should not be less than 2. */
-    private static final int GRID_CNT = 3;
+    private static final int INSTANCE_CNT = 3;
 
     /** */
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
@@ -97,9 +97,9 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        assert GRID_CNT >= 2 : "Constant GRID_CNT must be greater than or equal to 2.";
+        assert INSTANCE_CNT >= 2 : "Constant INSTANCE_CNT must be greater than or equal to 2.";
 
-        startGridsMultiThreaded(GRID_CNT);
+        startGridsMultiThreaded(INSTANCE_CNT);
     }
 
     /** {@inheritDoc} */
@@ -112,7 +112,7 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
         super.afterTest();
 
         // Clean up all caches.
-        for (int i = 0; i < GRID_CNT; i++)
+        for (int i = 0; i < INSTANCE_CNT; i++)
             grid(i).cache(null).removeAll();
     }
 
@@ -149,7 +149,7 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
 
         assertEquals(4, cache0.localSize(CachePeekMode.ALL));
 
-        assert grid(0).cluster().nodes().size() == GRID_CNT;
+        assert grid(0).cluster().nodes().size() == INSTANCE_CNT;
 
         final AtomicBoolean done = new AtomicBoolean();
 

@@ -36,8 +36,8 @@ public class IgfsCommonAbstractTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
         cfg.setLocalHost("127.0.0.1");
@@ -46,8 +46,8 @@ public class IgfsCommonAbstractTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName, IgniteTestResources rsrcs) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName, rsrcs);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName, IgniteTestResources rsrcs) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName, rsrcs);
 
         cfg.setPeerClassLoadingEnabled(false);
         cfg.setLocalHost("127.0.0.1");

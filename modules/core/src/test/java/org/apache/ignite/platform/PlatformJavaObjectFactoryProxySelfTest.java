@@ -124,7 +124,7 @@ public class PlatformJavaObjectFactoryProxySelfTest extends GridCommonAbstractTe
         assertEquals(expVal, val);
 
         assertNotNull(val.node);
-        assertEquals(val.node.name(), ctx.gridName());
+        assertEquals(val.node.name(), ctx.instanceName());
     }
 
     /**

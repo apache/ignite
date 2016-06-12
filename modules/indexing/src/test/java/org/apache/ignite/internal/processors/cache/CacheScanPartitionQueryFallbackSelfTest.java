@@ -216,7 +216,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
 
                             Thread.sleep(3000);
 
-                            info("Will stop grid: " + getTestGridName(id));
+                            info("Will stop instance: " + getTestInstanceName(id));
 
                             stopGrid(id);
 

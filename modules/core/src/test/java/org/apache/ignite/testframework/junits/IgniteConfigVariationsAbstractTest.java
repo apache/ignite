@@ -96,7 +96,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
 
         if (testsCfg.withClients()) {
             for (int i = 0; i < gridCount(); i++)
-                assertEquals("i: " + i, expectedClient(getTestGridName(i)),
+                assertEquals("i: " + i, expectedClient(getTestInstanceName(i)),
                     (boolean)grid(i).configuration().isClientMode());
         }
     }
@@ -106,7 +106,7 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
      * @return {@code True} if node is client should be client.
      */
     protected boolean expectedClient(String testGridName) {
-        return getTestGridName(CLIENT_NODE_IDX).equals(testGridName);
+        return getTestInstanceName(CLIENT_NODE_IDX).equals(testGridName);
     }
 
     /** {@inheritDoc} */

@@ -102,8 +102,8 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -220,9 +220,9 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
     /**
      * @param nodeIds Node IDs.
-     * @return Grid names.
+     * @return Instance names.
      */
-    private Collection<String> gridNames(Collection<UUID> nodeIds) {
+    private Collection<String> instanceNames(Collection<UUID> nodeIds) {
         Collection<String> names = new ArrayList<>(nodeIds.size());
 
         for (UUID nodeId : nodeIds)
@@ -232,13 +232,13 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
     }
 
     /**
-     * @param gridCnt Grid count.
+     * @param instanceCnt Grid count.
      * @param priThreads Primary threads.
      * @param nearThreads Near threads.
      * @throws Exception If failed.
      */
-    private void checkNearAndPrimary(int gridCnt, int priThreads, int nearThreads) throws Exception {
-        assert gridCnt > 0;
+    private void checkNearAndPrimary(int instanceCnt, int priThreads, int nearThreads) throws Exception {
+        assert instanceCnt > 0;
         assert priThreads >= 0;
         assert nearThreads >= 0;
 
@@ -250,7 +250,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
         Collection<ClusterNode> affNodes = aff.mapKeyToPrimaryAndBackups(CNTR_KEY);
 
         X.println("*** Affinity nodes [key=" + CNTR_KEY + ", nodes=" + U.nodeIds(affNodes) + ", gridNames=" +
-            gridNames(U.nodeIds(affNodes)) + ']');
+            instanceNames(U.nodeIds(affNodes)) + ']');
 
         assertEquals(1 + backups, affNodes.size());
 
@@ -260,7 +260,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
         final Ignite pri = G.ignite(first.id());
 
-        List<Ignite> nears = grids(gridCnt, pri);
+        List<Ignite> nears = grids(instanceCnt, pri);
 
         final UUID priId = pri.cluster().localNode().id();
 
@@ -280,7 +280,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
         Collection<Thread> threads = new LinkedList<>();
 
-        final CountDownLatch startLatch = new CountDownLatch(gridCnt);
+        final CountDownLatch startLatch = new CountDownLatch(instanceCnt);
 
         final AtomicBoolean locked = new AtomicBoolean(false);
 
@@ -486,7 +486,7 @@ public class GridCachePartitionedMultiNodeCounterSelfTest extends GridCommonAbst
 
         Map<String, Integer> cntrs = new HashMap<>();
 
-        for (int i = 0; i < gridCnt; i++) {
+        for (int i = 0; i < instanceCnt; i++) {
             Ignite g = grid(i);
 
             dht(g).context().tm().printMemoryStats();

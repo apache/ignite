@@ -311,13 +311,13 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
         IgfsIpcEndpointConfiguration cfg = new IgfsIpcEndpointConfiguration();
 
         cfg.setType(IgfsIpcEndpointType.TCP);
-        cfg.setPort(DFLT_IPC_PORT + getTestGridIndex(gridName));
+        cfg.setPort(DFLT_IPC_PORT + getTestInstanceIndex(gridName));
 
         return cfg;
     }
 
     /** {@inheritDoc} */
-    @Override public String getTestGridName() {
+    @Override public String getTestInstanceName() {
         return "grid";
     }
 
