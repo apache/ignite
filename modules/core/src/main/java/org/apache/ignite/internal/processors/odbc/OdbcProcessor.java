@@ -24,6 +24,7 @@ import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
 import org.apache.ignite.internal.util.HostAndPortRange;
+import org.apache.ignite.internal.util.nio.GridInetAddresses;
 import org.apache.ignite.internal.util.nio.GridNioCodecFilter;
 import org.apache.ignite.internal.util.nio.GridNioServer;
 import org.apache.ignite.internal.util.typedef.F;
@@ -93,7 +94,11 @@ public class OdbcProcessor extends GridProcessorAdapter {
                 InetAddress host;
 
                 try {
-                    host = InetAddress.getByName(hostPort.host());
+                    if(GridInetAddresses.isInetAddress(hostPort.host())){
+                        host = GridInetAddresses.forString(hostPort.host());
+                    }else {
+                        host = InetAddress.getByName(hostPort.host());
+                    }
                 }
                 catch (Exception e) {
                     throw new IgniteCheckedException("Failed to resolve ODBC host: " + hostPort.host(), e);

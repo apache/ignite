@@ -26,6 +26,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.nio.GridInetAddresses;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
@@ -79,8 +80,13 @@ public class GridClockServer {
                     U.warn(log, "Failed to get local host address, will use loopback address: " + locHost);
                 }
             }
-            else
-                locHost = InetAddress.getByName(ctx.config().getLocalHost());
+            else {
+                if(GridInetAddresses.isInetAddress(ctx.config().getLocalHost())){
+                    locHost = GridInetAddresses.forString(ctx.config().getLocalHost());
+                }else {
+                    locHost = InetAddress.getByName(ctx.config().getLocalHost());
+                }
+            }
 
             for (int p = startPort; p <= endPort; p++) {
                 try {

@@ -117,6 +117,8 @@ public class GridInetAddresses {
         int i = 0;
         try {
             String []elements=ipString.split(".");
+            if (elements.length!=IPV4_PART_COUNT)
+                return null;
             for (i=0;i<IPV4_PART_COUNT;i++) {
                 String octet=elements[i];
                 bytes[i] = parseOctet(octet);

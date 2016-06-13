@@ -33,6 +33,7 @@ import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.nio.GridInetAddresses;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
@@ -321,7 +322,9 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
         boolean clientMode = discoveryClientMode();
 
         try {
-            mcastAddr = InetAddress.getByName(mcastGrp);
+            mcastAddr = (GridInetAddresses.isInetAddress(mcastGrp))?
+                    GridInetAddresses.forString(mcastGrp):
+                    InetAddress.getByName(mcastGrp);
         }
         catch (UnknownHostException e) {
             throw new IgniteSpiException("Unknown multicast group: " + mcastGrp, e);
@@ -349,7 +352,9 @@ public class TcpDiscoveryMulticastIpFinder extends TcpDiscoveryVmIpFinder {
             InetAddress addr;
 
             try {
-                addr = InetAddress.getByName(locAddr);
+                addr = (GridInetAddresses.isInetAddress(locAddr))?
+                        GridInetAddresses.forString(locAddr):
+                        InetAddress.getByName(locAddr);
             }
             catch (UnknownHostException e) {
                 if (log.isDebugEnabled())
