@@ -54,7 +54,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.thread.IgniteThreadPoolExecutor;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -79,7 +78,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
@@ -98,9 +96,6 @@ import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_REA
  * Cache based file's data container.
  */
 public class IgfsDataManager extends IgfsManager {
-    /** IGFS. */
-    private IgfsEx igfs;
-
     /** Data internal cache. */
     private IgniteInternalCache<IgfsBlockKey, byte[]> dataCachePrj;
 
@@ -143,30 +138,9 @@ public class IgfsDataManager extends IgfsManager {
     /** Async file delete worker. */
     private AsyncDeleteWorker delWorker;
 
-    /** Trash purge timeout. */
-    private long trashPurgeTimeout;
-
     /** On-going remote reads futures. */
     private final ConcurrentHashMap8<IgfsBlockKey, IgniteInternalFuture<byte[]>> rmtReadFuts =
         new ConcurrentHashMap8<>();
-
-    /** Executor service for puts in dual mode */
-    private volatile ExecutorService putExecSvc;
-
-    /** Executor service for puts in dual mode shutdown flag. */
-    private volatile boolean putExecSvcShutdown;
-
-    /** Maximum amount of data in pending puts. */
-    private volatile long maxPendingPuts;
-
-    /** Current amount of data in pending puts. */
-    private long curPendingPuts;
-
-    /** Lock for pending puts. */
-    private final Lock pendingPutsLock = new ReentrantLock();
-
-    /** Condition for pending puts. */
-    private final Condition pendingPutsCond = pendingPutsLock.newCondition();
 
     /**
      *
@@ -182,8 +156,6 @@ public class IgfsDataManager extends IgfsManager {
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
-        igfs = igfsCtx.igfs();
-
         dataCacheStartLatch = new CountDownLatch(1);
 
         String igfsName = igfsCtx.configuration().getName();
@@ -215,23 +187,6 @@ public class IgfsDataManager extends IgfsManager {
         }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
         igfsSvc = igfsCtx.kernalContext().getIgfsExecutorService();
-
-        trashPurgeTimeout = igfsCtx.configuration().getTrashPurgeTimeout();
-
-        putExecSvc = igfsCtx.configuration().getDualModePutExecutorService();
-
-        if (putExecSvc != null)
-            putExecSvcShutdown = igfsCtx.configuration().getDualModePutExecutorServiceShutdown();
-        else {
-            int coresCnt = Runtime.getRuntime().availableProcessors();
-
-            // Note that we do not pre-start threads here as IGFS pool may not be needed.
-            putExecSvc = new IgniteThreadPoolExecutor(coresCnt, coresCnt, 0, new LinkedBlockingDeque<Runnable>());
-
-            putExecSvcShutdown = true;
-        }
-
-        maxPendingPuts = igfsCtx.configuration().getDualModeMaxPendingPutsSize();
 
         delWorker = new AsyncDeleteWorker(igfsCtx.kernalContext().gridName(),
             "igfs-" + igfsName + "-delete-worker", log);
@@ -282,9 +237,6 @@ public class IgfsDataManager extends IgfsManager {
         catch (IgniteInterruptedCheckedException e) {
             log.warning("Got interrupter while waiting for delete worker to stop (will continue stopping).", e);
         }
-
-        if (putExecSvcShutdown)
-            U.shutdownNow(getClass(), putExecSvc, log);
     }
 
     /**
@@ -308,6 +260,7 @@ public class IgfsDataManager extends IgfsManager {
      * @param prevAffKey Affinity key of previous block.
      * @return Affinity key.
      */
+    @SuppressWarnings("ConstantConditions")
     public IgniteUuid nextAffinityKey(@Nullable IgniteUuid prevAffKey) {
         // Do not generate affinity key for non-affinity nodes.
         if (!dataCache.context().affinityNode())
@@ -762,7 +715,6 @@ public class IgfsDataManager extends IgfsManager {
      */
     public Collection<IgfsBlockLocation> affinity(IgfsEntryInfo info, long start, long len, long maxLen)
         throws IgniteCheckedException {
-        assert validTxState(false);
         assert info.isFile() : "Failed to get affinity (not a file): " + info;
         assert start >= 0 : "Start position should not be negative: " + start;
         assert len >= 0 : "Part length should not be negative: " + len;
@@ -992,21 +944,6 @@ public class IgfsDataManager extends IgfsManager {
     }
 
     /**
-     * Check transaction is (not) started.
-     *
-     * @param inTx Expected transaction state.
-     * @return Transaction state is correct.
-     */
-    private boolean validTxState(boolean inTx) {
-        boolean txState = inTx == (dataCachePrj.tx() != null);
-
-        assert txState : (inTx ? "Method cannot be called outside transaction: " :
-            "Method cannot be called in transaction: ") + dataCachePrj.tx();
-
-        return txState;
-    }
-
-    /**
      * @param fileId File ID.
      * @param node Node to process blocks on.
      * @param blocks Blocks to put in cache.
@@ -1219,6 +1156,7 @@ public class IgfsDataManager extends IgfsManager {
      * @param nodeId Node ID.
      * @param ackMsg Write acknowledgement message.
      */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void processAckMessage(UUID nodeId, IgfsAckMessage ackMsg) {
         try {
             ackMsg.finishUnmarshal(igfsCtx.kernalContext().config().getMarshaller(), null);
@@ -1301,6 +1239,7 @@ public class IgfsDataManager extends IgfsManager {
          * @throws IgniteCheckedException If failed.
          * @return Data remainder if {@code flush} flag is {@code false}.
          */
+        @SuppressWarnings("ConstantConditions")
         @Nullable public byte[] storeDataBlocks(
             IgfsEntryInfo fileInfo,
             long reservedLen,
@@ -1575,8 +1514,6 @@ public class IgfsDataManager extends IgfsManager {
         protected AsyncDeleteWorker(@Nullable String gridName, String name, IgniteLogger log) {
             super(gridName, name, log);
 
-            long time = System.currentTimeMillis();
-
             stopInfo = IgfsUtils.createDirectory(IgniteUuid.randomUuid());
         }
 
@@ -1600,6 +1537,7 @@ public class IgfsDataManager extends IgfsManager {
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("ConstantConditions")
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             try {
                 while (!isCancelled()) {
