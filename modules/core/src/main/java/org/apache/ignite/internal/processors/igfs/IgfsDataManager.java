@@ -41,7 +41,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerCacheUpdaters;
-import org.apache.ignite.internal.processors.igfs.data.IgfsPutLargerOnlyEntryProcessor;
+import org.apache.ignite.internal.processors.igfs.data.IgfsDataPutProcessor;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -478,7 +478,7 @@ public class IgfsDataManager extends IgfsManager {
     private void putBlock(int blockSize, IgfsBlockKey key, byte[] data) throws IgniteCheckedException {
         if (data.length < blockSize)
             // partial (incomplete) block:
-            dataCachePrj.invoke(key, new IgfsPutLargerOnlyEntryProcessor(data));
+            dataCachePrj.invoke(key, new IgfsDataPutProcessor(data));
         else {
             // whole block:
             assert data.length == blockSize;
