@@ -17,7 +17,6 @@
 
 package org.apache.ignite.internal.processors.continuous;
 
-import com.mchange.v2.c3p0.util.TestUtils;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
