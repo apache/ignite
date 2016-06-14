@@ -61,12 +61,15 @@ import org.apache.ignite.internal.GridJobSiblingImpl;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTaskSessionImpl;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.compute.ComputeTaskTimeoutCheckedException;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.closure.AffinityTask;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObject;
+import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.typedef.CO;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.X;
@@ -76,6 +79,8 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.visor.util.VisorClusterGroupEmptyException;
+import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.resources.TaskContinuousMapperResource;
@@ -847,8 +852,25 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                         }
 
                         case FAILOVER: {
-                            if (!failover(res, jobRes, getTaskTopology()))
-                                plc = null;
+                            IgniteInternalFuture<Boolean> fut = failover(res, jobRes, getTaskTopology());
+
+                            final GridJobResultImpl jobRes0 = jobRes;
+
+                            fut.listen(new IgniteInClosure<IgniteInternalFuture<Boolean>>() {
+                                @Override public void apply(IgniteInternalFuture<Boolean> fut0) {
+                                    try {
+                                        Boolean res = fut0.get();
+
+                                        if (res)
+                                            sendFailoverRequest(jobRes0);
+                                    }
+                                    catch (IgniteCheckedException e) {
+                                        U.error(log, "Failed to failover task [ses=" + ses + ", err=" + e + ']', e);
+
+                                        finishTask(null, e);
+                                    }
+                                }
+                            });
 
                             break;
                         }
@@ -856,16 +878,11 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
                 }
 
                 // Outside of synchronization.
-                if (plc != null) {
-                    // Handle failover.
-                    if (plc == FAILOVER)
-                        sendFailoverRequest(jobRes);
-                    else {
-                        evtLsnr.onJobFinished(this, jobRes.getSibling());
+                if (plc != null && plc != FAILOVER) {
+                    evtLsnr.onJobFinished(this, jobRes.getSibling());
 
-                        if (plc == ComputeJobResultPolicy.REDUCE)
-                            reduce(results);
-                    }
+                    if (plc == ComputeJobResultPolicy.REDUCE)
+                        reduce(results);
                 }
             }
             catch (IgniteCheckedException e) {
@@ -1039,59 +1056,74 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
      * @param top Topology.
      * @return {@code True} if fail-over SPI returned a new node.
      */
-    private boolean failover(GridJobExecuteResponse res, GridJobResultImpl jobRes, Collection<? extends ClusterNode> top) {
-        assert Thread.holdsLock(mux);
+    private IgniteInternalFuture<Boolean> failover(
+        final GridJobExecuteResponse res,
+        final GridJobResultImpl jobRes,
+        final Collection<? extends ClusterNode> top
+    ) {
+        IgniteInternalFuture<?> affFut = null;
 
-        try {
-            ctx.resource().invokeAnnotated(dep, jobRes.getJob(), ComputeJobBeforeFailover.class);
+        if (affKey != null) {
+            Long topVer = ctx.discovery().topologyVersion();
 
-            // Map to a new node.
-            ClusterNode node = ctx.failover().failover(ses, jobRes, new ArrayList<>(top), affKey, affCache);
+            affFut = ctx.cache().context().exchange().affinityReadyFuture(new AffinityTopologyVersion(topVer));
+        }
 
-            if (node == null) {
-                String msg = "Failed to failover a job to another node (failover SPI returned null) [job=" +
-                    jobRes.getJob() + ", node=" + jobRes.getNode() + ']';
+        if (affFut == null)
+            affFut = new GridFinishedFuture();
 
-                if (log.isDebugEnabled())
-                    log.debug(msg);
-
-                Throwable e = new ClusterTopologyCheckedException(msg, jobRes.getException());
-
-                finishTask(null, e);
-
-                return false;
-            }
-
-            if (log.isDebugEnabled())
-                log.debug("Resolved job failover [newNode=" + node + ", oldNode=" + jobRes.getNode() +
-                    ", job=" + jobRes.getJob() + ", resMsg=" + res + ']');
-
-            jobRes.setNode(node);
-            jobRes.resetResponse();
-
-            if (!resCache) {
+        return affFut.chain(new IgniteClosure<IgniteInternalFuture<?>, Boolean>() {
+            @Override public Boolean apply(IgniteInternalFuture<?> fut0) {
                 synchronized (mux) {
-                    // Store result back in map before sending.
-                    this.jobRes.put(res.getJobId(), jobRes);
+                    try {
+                        ctx.resource().invokeAnnotated(dep, jobRes.getJob(), ComputeJobBeforeFailover.class);
+
+                        // Map to a new node.
+                        ClusterNode node = ctx.failover().failover(ses, jobRes, new ArrayList<>(top), affKey, affCache);
+
+                        if (node == null) {
+                            String msg = "Failed to failover a job to another node (failover SPI returned null) [job=" +
+                                jobRes.getJob() + ", node=" + jobRes.getNode() + ']';
+
+                            if (log.isDebugEnabled())
+                                log.debug(msg);
+
+                            Throwable e = new ClusterTopologyCheckedException(msg, jobRes.getException());
+
+                            finishTask(null, e);
+
+                            return false;
+                        }
+
+                        if (log.isDebugEnabled())
+                            log.debug("Resolved job failover [newNode=" + node + ", oldNode=" + jobRes.getNode() +
+                                ", job=" + jobRes.getJob() + ", resMsg=" + res + ']');
+
+                        jobRes.setNode(node);
+                        jobRes.resetResponse();
+
+                        if (!resCache) // Store result back in map before sending.
+                            GridTaskWorker.this.jobRes.put(res.getJobId(), jobRes);
+
+                        return true;
+                    }
+                    // Catch Throwable to protect against bad user code.
+                    catch (Throwable e) {
+                        String errMsg = "Failed to failover job due to undeclared user exception [job=" +
+                            jobRes.getJob() + ", err=" + e + ']';
+
+                        U.error(log, errMsg, e);
+
+                        finishTask(null, new ComputeUserUndeclaredException(errMsg, e));
+
+                        if (e instanceof Error)
+                            throw (Error)e;
+
+                        return false;
+                    }
                 }
             }
-
-            return true;
-        }
-        // Catch Throwable to protect against bad user code.
-        catch (Throwable e) {
-            String errMsg = "Failed to failover job due to undeclared user exception [job=" +
-                jobRes.getJob() + ", err=" + e + ']';
-
-            U.error(log, errMsg, e);
-
-            finishTask(null, new ComputeUserUndeclaredException(errMsg, e));
-
-            if (e instanceof Error)
-                throw (Error)e;
-
-            return false;
-        }
+        });
     }
 
     /**
