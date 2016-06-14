@@ -436,7 +436,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                 .build();
         }
         catch (Exception e) {
-            throw new IgniteSpiException(e);
+            throw new IgniteSpiException("Unable create NIO server.", e);
         }
 
         return srv;
@@ -593,6 +593,9 @@ class ServerImpl extends TcpDiscoveryImpl {
      * @throws IgniteSpiException
      */
     private void stopClientProcessor(final ClientMessageProcessor proc) throws IgniteSpiException {
+        if (proc == null)
+            return;
+
         try {
             if (proc instanceof ClientMessageWorker) {
                 final ClientMessageWorker wrk = (ClientMessageWorker) proc;
@@ -5174,10 +5177,10 @@ class ServerImpl extends TcpDiscoveryImpl {
                         if (log.isDebugEnabled())
                             log.debug("Failed to bind to local port (will try next port within range) " +
                                 "[port=" + port + ", localHost=" + spi.locHost + ']');
-
-                        onException("Failed to bind to local port. " +
-                            "[port=" + port + ", localHost=" + spi.locHost + ']', e);
                     }
+
+                    onException("Failed to bind to local port. " +
+                        "[port=" + port + ", localHost=" + spi.locHost + ']', e);
                 }
             }
 
@@ -5808,7 +5811,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 return;
             }
-            if (msg instanceof TcpDiscoveryPingResponse) {
+            else if (msg instanceof TcpDiscoveryPingResponse) {
                 assert msg.client() : msg;
 
                 final ClientMessageProcessor clientWorker = clientMsgWorkers.get(msg.creatorNodeId());
@@ -7144,7 +7147,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         @Override public InputStream getInputStream() throws IOException {
             if (sslIn == null) {
                 synchronized (this) {
-                    sslIn = new SSLInputStream(delegate.getInputStream(), ch, hnd);
+                    if (sslIn == null)
+                        sslIn = new SSLInputStream(delegate.getInputStream(), ch, hnd);
                 }
             }
 
@@ -7155,7 +7159,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         @Override public OutputStream getOutputStream() throws IOException {
             if (sslOut == null) {
                 synchronized (this) {
-                    sslOut = new SSLOutputStream(delegate.getOutputStream(), ch, hnd);
+                    if (sslOut == null)
+                        sslOut = new SSLOutputStream(delegate.getOutputStream(), ch, hnd);
                 }
             }
 
@@ -7504,8 +7509,8 @@ class ServerImpl extends TcpDiscoveryImpl {
     }
 
     /**
-     * Stream decorator that does data encryption and write to genuine output
-     * stream.
+     * Stream decorator that does data encryption and writes to genuine socket
+     * channel.
      */
     private static class SSLOutputStream extends OutputStream {
         /** Genuine output stream. */
