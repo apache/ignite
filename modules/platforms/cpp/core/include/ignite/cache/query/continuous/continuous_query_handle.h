@@ -23,9 +23,6 @@
 #ifndef _IGNITE_CACHE_QUERY_CONTINUOUS_CONTINUOUS_QUERY_HANDLE
 #define _IGNITE_CACHE_QUERY_CONTINUOUS_CONTINUOUS_QUERY_HANDLE
 
-#include <stdint.h>
-#include <string>
-
 #include <ignite/impl/cache/query/continuous/continuous_query_handle_impl.h>
 
 namespace ignite
@@ -67,7 +64,8 @@ namespace ignite
 
                     /**
                      * Gets the cursor for initial query.
-                     * Can be called only once, throws exception on consequent calls.
+                     * Can be called only once, throws IgniteError on consequent
+                     * calls.
                      *
                      * @return Initial query cursor.
                      */
@@ -84,7 +82,8 @@ namespace ignite
 
                     /**
                      * Gets the cursor for initial query.
-                     * Can be called only once, throws exception on consequent calls.
+                     * Can be called only once, results in error on consequent
+                     * calls.
                      *
                      * @param err Error.
                      * @return Initial query cursor.

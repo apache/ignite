@@ -37,18 +37,36 @@ namespace ignite
             namespace continuous
             {
                 /**
-                 * Continuous query base.
+                 * Continuous query base class.
+                 *
+                 * Continuous queries allow to register a remote and a listener
+                 * for cache update events. On any update to the related cache
+                 * an event is sent to the node that has executed the query and
+                 * listener is notified on that node.
+                 *
+                 * Continuous query can either be executed on the whole topology
+                 * or only on local node.
+                 *
+                 * To execute the query over the cache use method
+                 * ignite::cache::Cache::QueryContinuous().
                  */
                 class ContinuousQueryBase
                 {
                 public:
+                    /**
+                     * Default value for the buffer size.
+                     */
                     enum { DEFAULT_BUFFER_SIZE = 1 };
+
+                    /**
+                     * Default value for the time interval.
+                     */
                     enum { DEFAULT_TIME_INTERVAL = 0 };
 
                     /**
                      * Constructor.
                      *
-                     * @param lsnr Event listener.
+                     * @param loc Whether query should be executed locally.
                      */
                     ContinuousQueryBase(bool loc) :
                         local(loc),
@@ -85,6 +103,11 @@ namespace ignite
                     /**
                      * Set buffer size.
                      *
+                     * When a cache update happens, entry is first
+                     * put into a buffer. Entries from buffer will be sent to
+                     * the master node only if the buffer is full or time
+                     * provided via timeInterval is exceeded.
+                     *
                      * @param val Buffer size.
                      */
                     void SetBufferSize(int32_t val)
@@ -94,6 +117,11 @@ namespace ignite
 
                     /**
                      * Get buffer size.
+                     *
+                     * When a cache update happens, entry is first
+                     * put into a buffer. Entries from buffer will be sent to
+                     * the master node only if the buffer is full or time
+                     * provided via timeInterval is exceeded.
                      *
                      * @return Buffer size.
                      */
@@ -105,7 +133,17 @@ namespace ignite
                     /**
                      * Set time interval.
                      *
-                     * @param val Time interval.
+                     * When a cache update happens, entry is first put into
+                     * a buffer. Entries from buffer are sent to the master node
+                     * only if the buffer is full (its size can be changed via
+                     * SetBufferSize) or time provided via this method is
+                     * exceeded.
+                     *
+                     * Default value is DEFAULT_TIME_INTERVAL, i.e. 0, which
+                     * means that time check is disabled and entries will be
+                     * sent only when buffer is full.
+                     *
+                     * @param val Time interval in miliseconds.
                      */
                     void SetTimeInterval(int64_t val)
                     {
@@ -114,6 +152,16 @@ namespace ignite
 
                     /**
                      * Get time interval.
+                     *
+                     * When a cache update happens, entry is first put into
+                     * a buffer. Entries from buffer are sent to the master node
+                     * only if the buffer is full (its size can be changed via
+                     * SetBufferSize) or time provided via SetTimeInterval
+                     * method is exceeded.
+                     *
+                     * Default value is DEFAULT_TIME_INTERVAL, i.e. 0, which
+                     * means that time check is disabled and entries will be
+                     * sent only when buffer is full.
                      *
                      * @return Time interval.
                      */
@@ -156,7 +204,8 @@ namespace ignite
                      * is full (its size can be changed via SetBufferSize) or
                      * time provided via SetTimeInterval method is exceeded.
                      *
-                     * Default value is 0, which means that time check is disabled and entries will be 
+                     * Default value is DEFAULT_TIME_INTERVAL, i.e. 0, which
+                     * means that time check is disabled and entries will be
                      * sent only when buffer is full.
                      */
                     int64_t timeInterval;
@@ -164,6 +213,17 @@ namespace ignite
 
                 /**
                  * Continuous query.
+                 *
+                 * Continuous queries allow to register a remote and a listener
+                 * for cache update events. On any update to the related cache
+                 * an event is sent to the node that has executed the query and
+                 * listener is notified on that node.
+                 *
+                 * Continuous query can either be executed on the whole topology
+                 * or only on local node.
+                 *
+                 * To execute the query over the cache use method
+                 * ignite::cache::Cache::QueryContinuous().
                  */
                 template<typename K, typename V>
                 class ContinuousQuery : public ContinuousQueryBase
@@ -172,7 +232,8 @@ namespace ignite
                     /**
                      * Constructor.
                      *
-                     * @param lsnr Event listener.
+                     * @param lsnr Event listener. Invoked on the node where
+                     *     continuous query execution has been started.
                      */
                     ContinuousQuery(event::CacheEntryEventListener<K, V>& lsnr) :
                         ContinuousQueryBase(false),
@@ -184,7 +245,8 @@ namespace ignite
                     /**
                      * Constructor.
                      *
-                     * @param lsnr Event listener.
+                     * @param lsnr Event listener Invoked on the node where
+                     *     continuous query execution has been started.
                      * @param loc Whether query should be executed locally.
                      */
                     ContinuousQuery(event::CacheEntryEventListener<K, V>& lsnr, bool loc) :
@@ -197,7 +259,9 @@ namespace ignite
                     /**
                      * Set cache entry event listener.
                      *
-                     * @param val Cache entry event listener.
+                     * @param val Cache entry event listener. Invoked on the
+                     *     node where continuous query execution has been
+                     *     started.
                      */
                     void SetListener(event::CacheEntryEventListener<K, V>& val)
                     {

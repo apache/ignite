@@ -23,9 +23,6 @@
 #ifndef _IGNITE_IMPL_CACHE_QUERY_CONTINUOUS_CONTINUOUS_QUERY_HANDLE_IMPL
 #define _IGNITE_IMPL_CACHE_QUERY_CONTINUOUS_CONTINUOUS_QUERY_HANDLE_IMPL
 
-#include <stdint.h>
-#include <string>
-
 #include "ignite/cache/query/query_cursor.h"
 
 namespace ignite

@@ -80,6 +80,7 @@ namespace ignite
              * Assignment operator.
              *
              * @param other Other instance.
+             * @return *this.
              */
             CacheEntryEvent& operator=(const CacheEntryEvent<K, V>& other)
             {
@@ -96,11 +97,11 @@ namespace ignite
             }
 
             /**
-             * Get value.
+             * Get old value.
              *
-             * @return Value.
+             * @return Old value.
              */
-            V GetOldValue() const
+            const V& GetOldValue() const
             {
                 return oldVal;
             }
@@ -126,7 +127,7 @@ namespace ignite
             }
 
             /**
-             * Reads cache event.
+             * Reads cache event using provided raw reader.
              *
              * @param reader Reader to use.
              */

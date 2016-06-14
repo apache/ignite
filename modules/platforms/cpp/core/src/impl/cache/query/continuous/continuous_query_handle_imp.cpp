@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-#include <stdint.h>
-
 #include "ignite/impl/cache/query/continuous/continuous_query_handle_impl.h"
 
 using namespace ignite::common::concurrent;

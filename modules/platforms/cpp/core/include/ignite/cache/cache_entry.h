@@ -107,7 +107,7 @@ namespace ignite
              *
              * @return Key.
              */
-            K GetKey() const
+            const K& GetKey() const
             {
                 return key;
             }
@@ -117,7 +117,7 @@ namespace ignite
              *
              * @return Value.
              */
-            V GetValue() const
+            const V& GetValue() const
             {
                 return val;
             }
