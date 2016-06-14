@@ -673,11 +673,11 @@ public class GridReduceQueryExecutor {
 
                         // Statement caching is prohibited here because we can't guarantee correct merge index reuse.
                         ResultSet res = h2.executeSqlQueryWithTimer(new IgniteInClosure<PreparedStatement>() {
-                                                                        @Override
-                                                                        public void apply(PreparedStatement statement) {
+                                                                        @Override public void apply(PreparedStatement statement) {
                                                                             r.rdcPrepStmt = statement;
                                                                         }
-                                                                    }, space,
+                                                                    },
+                            space,
                             r.conn,
                             rdc.query(),
                             F.asList(rdc.parameters()),
@@ -687,16 +687,25 @@ public class GridReduceQueryExecutor {
                     }
                 }
 
+                boolean cancelled = false;
+
                 for (GridMergeIndex idx : r.idxs) {
                     if (!idx.fetchedAll()) {
                         // We have to explicitly cancel queries on remote nodes.
                         send(nodes.iterator(), new GridQueryCancelRequest(qryReqId), null);
+
+                        cancelled = true;
 
                         break;
                     }
                 }
 
                 if (retry) {
+                    /** Make sure remote executions are cancelled in case {@link #send(Iterator, Message, Map)}
+                     * was not successful. */
+                    if (!cancelled)
+                        send(nodes.iterator(), new GridQueryCancelRequest(qryReqId), null);
+
                     if (Thread.currentThread().isInterrupted())
                         throw new IgniteInterruptedCheckedException("Query was interrupted.");
 
@@ -1284,8 +1293,7 @@ public class GridReduceQueryExecutor {
             if (!state.compareAndSet(null, o))
                 return;
 
-            if (o instanceof CacheException )
-                rmtCancellationClo.apply(nodeId); // Stop active executions except failed node.
+            rmtCancellationClo.apply(nodeId); // Explicitly cancel query execution on remote nodes.
 
             while (latch.getCount() != 0) // We don't need to wait for all nodes to reply.
                 latch.countDown();

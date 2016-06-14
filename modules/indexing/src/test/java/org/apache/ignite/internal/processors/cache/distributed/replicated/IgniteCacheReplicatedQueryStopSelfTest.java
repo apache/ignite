@@ -29,6 +29,8 @@ import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractQuerySelfTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
 import org.apache.ignite.internal.processors.query.h2.twostep.GridRemoteQueryCancelledException;
@@ -43,7 +45,7 @@ import static org.apache.ignite.cache.CachePeekMode.ALL;
 public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQuerySelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
-        return 2;
+        return 3;
     }
 
     /** {@inheritDoc} */
@@ -129,14 +131,28 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
      * Tests stopping two-step query on initiator node fail.
      */
     public void testRemoteQueryExecutionStopClientNodeFail1() throws Exception {
-        testQueryStopOnClientNodeFail(10_000, 4, "select a._key, b._key from String a, String b", 500);
+        testQueryStopOnNodeFail(10_000, 4, "select a._key, b._key from String a, String b", 500, -1);
     }
 
     /**
      * Tests stopping two-step query on initiator node fail.
      */
     public void testRemoteQueryExecutionStopClientNodeFail2() throws Exception {
-        testQueryStopOnClientNodeFail(10_000, 4, "select a._key, b._key from String a, String b", 3_000);
+        testQueryStopOnNodeFail(10_000, 4, "select a._key, b._key from String a, String b", 3_000, -1);
+    }
+
+    /**
+     * Tests stopping two-step query on initiator node fail.
+     */
+    public void testRemoteQueryExecutionStopServerNodeFail1() throws Exception {
+        testQueryStopOnNodeFail(10_000, 4, "select a._key, b._key from String a, String b", 3_000, 1);
+    }
+
+    /**
+     * Tests stopping two-step query on initiator node fail.
+     */
+    public void testRemoteQueryExecutionStopServerNodeFail2() throws Exception {
+        testQueryStopOnNodeFail(10_000, 4, "select a._key, b._key from String a, String b", 3_000, 2);
     }
 
     /**
@@ -187,14 +203,14 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
             Thread.sleep(3000);
 
             // Validate nodes query result buffer.
-            checkCleanState();
+            checkCleanState(-1);
         }
     }
 
     /**
-     * Tests stopping two step query while fetching result set from remote nodes.
+     * Tests stopping two step query when client or server node fails.
      */
-    private void testQueryStopOnClientNodeFail(int keyCnt, int valSize, String sql, long failTimeout) throws Exception {
+    private void testQueryStopOnNodeFail(int keyCnt, int valSize, String sql, final long failTimeout, final int failGridIdx) throws Exception {
         try (final Ignite client = startGrid("client")) {
 
             IgniteCache<Object, Object> cache = client.cache(null);
@@ -216,13 +232,28 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
             ignite().scheduler().runLocal(new Runnable() {
                 @Override public void run() {
                     try {
-                        failNode(client);
+                        failNode(failGridIdx == -1 ? client : grid(failGridIdx));
                     }
                     catch (Exception e) {
                         log().error("Cannot fail node", e);
                     }
 
-                    l.countDown();
+                    if (failGridIdx != -1) {
+                        // After node failure query must be restarted excluding failing node.
+                        ignite().scheduler().runLocal(new Runnable() {
+                            @Override public void run() {
+                                try {
+                                    qry.close();
+                                }
+                                catch (Exception e) {
+                                    log().error("Cannot fail node", e);
+                                }
+
+                                l.countDown();
+                            }
+                        }, failTimeout, TimeUnit.MILLISECONDS);
+                    } else
+                        l.countDown();
                 }
             }, failTimeout, TimeUnit.MILLISECONDS);
 
@@ -240,26 +271,30 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
             Thread.sleep(3000);
 
             // Validate nodes query result buffer.
-            checkCleanState();
+            checkCleanState(failGridIdx);
         }
     }
 
     /**
-     *
+     * Validates clean state on all participating nodes after query execution stopping.
      */
-    private void checkCleanState() {
+    private void checkCleanState(int idx) {
         int total = gridCount();
 
         for (int i = 0; i < total; i++) {
+            // Skip failed server node instance check.
+            if (i == idx) continue;
+
+            IgniteEx grid = grid(i);
+
             // Validate everything was cleaned up.
             ConcurrentMap<UUID, ConcurrentMap<Long, ?>> map = U.field(((IgniteH2Indexing)U.field(U.field(
-                grid(i).context(), "qryProc"), "idx")).mapQueryExecutor(), "qryRess");
+                grid.context(), "qryProc"), "idx")).mapQueryExecutor(), "qryRess");
 
             if (map.size() == 1)
                 assertEquals(0, map.entrySet().iterator().next().getValue().size());
             else
                 assertEquals(0, map.size());
-
         }
     }
 
