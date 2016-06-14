@@ -289,16 +289,8 @@ struct ContinuousQueryTestSuiteFixture
     }
 };
 
-BOOST_FIXTURE_TEST_SUITE(ContinuousQueryTestSuite, ContinuousQueryTestSuiteFixture)
-
-BOOST_AUTO_TEST_CASE(TestBasic)
+void CheckEvents(Cache<int, TestEntry>& cache, Listener<int, TestEntry>& lsnr)
 {
-    Listener<int, TestEntry> lsnr;
-
-    ContinuousQuery<int, TestEntry> qry(lsnr);
-
-    cache.QueryContinuous(qry);
-
     cache.Put(1, TestEntry(10));
     lsnr.CheckNextEvent(1, boost::none, TestEntry(10));
 
@@ -310,6 +302,19 @@ BOOST_AUTO_TEST_CASE(TestBasic)
 
     cache.Remove(1);
     lsnr.CheckNextEvent(1, TestEntry(20), boost::none);
+}
+
+BOOST_FIXTURE_TEST_SUITE(ContinuousQueryTestSuite, ContinuousQueryTestSuiteFixture)
+
+BOOST_AUTO_TEST_CASE(TestBasic)
+{
+    Listener<int, TestEntry> lsnr;
+
+    ContinuousQuery<int, TestEntry> qry(lsnr);
+
+    cache.QueryContinuous(qry);
+
+    CheckEvents(cache, lsnr);
 }
 
 BOOST_AUTO_TEST_CASE(TestInitialQueryScan)
@@ -340,17 +345,7 @@ BOOST_AUTO_TEST_CASE(TestInitialQueryScan)
     BOOST_CHECK_EQUAL(vals[1].GetValue().value, 222);
     BOOST_CHECK_EQUAL(vals[2].GetValue().value, 333);
 
-    cache.Put(1, TestEntry(10));
-    lsnr.CheckNextEvent(1, boost::none, TestEntry(10));
-
-    cache.Put(1, TestEntry(20));
-    lsnr.CheckNextEvent(1, TestEntry(10), TestEntry(20));
-
-    cache.Put(2, TestEntry(20));
-    lsnr.CheckNextEvent(2, boost::none, TestEntry(20));
-
-    cache.Remove(1);
-    lsnr.CheckNextEvent(1, TestEntry(20), boost::none);
+    CheckEvents(cache, lsnr);
 }
 
 BOOST_AUTO_TEST_CASE(TestInitialQuerySql)
@@ -379,17 +374,7 @@ BOOST_AUTO_TEST_CASE(TestInitialQuerySql)
     BOOST_CHECK_EQUAL(vals[0].GetValue().value, 222);
     BOOST_CHECK_EQUAL(vals[1].GetValue().value, 333);
 
-    cache.Put(1, TestEntry(10));
-    lsnr.CheckNextEvent(1, boost::none, TestEntry(10));
-
-    cache.Put(1, TestEntry(20));
-    lsnr.CheckNextEvent(1, TestEntry(10), TestEntry(20));
-
-    cache.Put(2, TestEntry(20));
-    lsnr.CheckNextEvent(2, boost::none, TestEntry(20));
-
-    cache.Remove(1);
-    lsnr.CheckNextEvent(1, TestEntry(20), boost::none);
+    CheckEvents(cache, lsnr);
 }
 
 BOOST_AUTO_TEST_CASE(TestInitialQueryText)
@@ -416,17 +401,7 @@ BOOST_AUTO_TEST_CASE(TestInitialQueryText)
 
     BOOST_CHECK_EQUAL(vals[0].GetValue().value, 222);
 
-    cache.Put(1, TestEntry(10));
-    lsnr.CheckNextEvent(1, boost::none, TestEntry(10));
-
-    cache.Put(1, TestEntry(20));
-    lsnr.CheckNextEvent(1, TestEntry(10), TestEntry(20));
-
-    cache.Put(2, TestEntry(20));
-    lsnr.CheckNextEvent(2, boost::none, TestEntry(20));
-
-    cache.Remove(1);
-    lsnr.CheckNextEvent(1, TestEntry(20), boost::none);
+    CheckEvents(cache, lsnr);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
