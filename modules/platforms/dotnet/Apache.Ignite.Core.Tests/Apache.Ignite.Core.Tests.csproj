@@ -130,7 +130,6 @@
     <Compile Include="LifecycleTest.cs" />
     <Compile Include="LoadDllTest.cs" />
     <Compile Include="IgniteManagerTest.cs" />
-    <Compile Include="Log\CompositeLoggerTest.cs" />
     <Compile Include="Log\ConsoleLoggerTest.cs" />
     <Compile Include="Log\CustomLoggerTest.cs" />
     <Compile Include="MarshallerTest.cs" />
