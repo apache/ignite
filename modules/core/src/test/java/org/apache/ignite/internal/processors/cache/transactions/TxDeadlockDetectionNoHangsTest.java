@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -93,8 +94,9 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
 
     /**
      * @param concurrency Concurrency.
+     * @throws IgniteCheckedException If failed.
      */
-    private void doTest(final TransactionConcurrency concurrency) throws org.apache.ignite.IgniteCheckedException {
+    private void doTest(final TransactionConcurrency concurrency) throws IgniteCheckedException {
         final AtomicBoolean stop = new AtomicBoolean();
 
         IgniteInternalFuture<Long> restartFut = null;
@@ -167,14 +169,14 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
             if (restartFut != null)
                 restartFut.get();
 
-            checkDetectionFuts();
+            checkDetectionFutures();
         }
     }
 
     /**
      *
      */
-    private void checkDetectionFuts() {
+    private void checkDetectionFutures() {
         for (int i = 0; i < NODES_CNT ; i++) {
             Ignite ignite = ignite(i);
 

@@ -33,7 +33,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
@@ -67,7 +66,6 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionDeadlockException;
 import org.apache.ignite.transactions.TransactionTimeoutException;
 
-import static org.apache.ignite.cache.CacheMode.LOCAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion.NONE;
@@ -172,6 +170,7 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
      * @param cacheMode Cache mode.
      * @param syncMode Write sync mode.
      * @param near Near.
+     * @return Created cache.
      */
     @SuppressWarnings("unchecked")
     private IgniteCache createCache(CacheMode cacheMode, CacheWriteSynchronizationMode syncMode, boolean near) {
@@ -187,6 +186,8 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param cache Cache.
+     * @param transformer Transformer closure.
      * @throws Exception If failed.
      */
     private void doTestDeadlocks(IgniteCache cache, IgniteClosure<Integer, Object> transformer) throws Exception {
