@@ -128,6 +128,52 @@ public class IgniteCacheContinuousQueryImmutableEntryTest extends GridCommonAbst
     /**
      *
      */
+    public void testCacheContinuousQueryEntrySerialization() {
+        CacheContinuousQueryEntry e0 = new CacheContinuousQueryEntry(
+            1,
+            EventType.UPDATED,
+            new KeyCacheObjectImpl(1, new byte[] {0, 0, 0, 1}),
+            new CacheObjectImpl(2, new byte[] {0, 0, 0, 2}),
+            new CacheObjectImpl(2, new byte[] {0, 0, 0, 3}),
+            true,
+            1,
+            1L,
+            new AffinityTopologyVersion(1L));
+
+        e0.filteredEvents(new GridLongList(new long[]{1L, 2L}));
+        e0.markFiltered();
+
+        ByteBuffer buf = ByteBuffer.allocate(4096);
+        DirectMessageWriter writer = new DirectMessageWriter((byte)1);
+
+        // Skip write class header.
+        writer.onHeaderWritten();
+        e0.writeTo(buf, writer);
+
+        CacheContinuousQueryEntry e1 = new CacheContinuousQueryEntry();
+        e1.readFrom(ByteBuffer.wrap(buf.array()), new DirectMessageReader(new GridIoMessageFactory(null), (byte)1));
+
+        assertEquals(e0.cacheId(), e1.cacheId());
+        assertEquals(e0.eventType(), e1.eventType());
+        assertEquals(e0.isFiltered(), e1.isFiltered());
+        assertEquals(GridLongList.asList(e0.filteredEvents()), GridLongList.asList(e1.filteredEvents()));
+        assertEquals(e0.isBackup(), e1.isBackup());
+        assertEquals(e0.isKeepBinary(), e1.isKeepBinary());
+        assertEquals(e0.partition(), e1.partition());
+        assertEquals(e0.updateCounter(), e1.updateCounter());
+
+        // Key and value shouldn't be serialized in case an event is filtered.
+        assertNull(e1.key());
+        assertNotNull(e0.key());
+        assertNull(e1.oldValue());
+        assertNotNull(e0.oldValue());
+        assertNull(e1.value());
+        assertNotNull(e0.value());
+    }
+
+    /**
+     *
+     */
     private static class FilterFactory implements Factory<CacheEntryEventFilter<Object, Object>> {
         /** {@inheritDoc} */
         @Override public CacheEntryEventFilter<Object, Object> create() {

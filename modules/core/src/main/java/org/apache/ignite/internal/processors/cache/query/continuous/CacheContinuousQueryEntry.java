@@ -62,18 +62,26 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     }
 
     /** */
+    @GridCodegenConverter(
+        type = byte.class,
+        get = "evtType != null ? (byte)evtType.ordinal() : -1",
+        set = "eventTypeFromOrdinal($val$)"
+    )
     private EventType evtType;
 
     /** Key. */
     @GridToStringInclude
+    @GridCodegenConverter(get = "isFiltered() ? null : key")
     private KeyCacheObject key;
 
     /** New value. */
     @GridToStringInclude
+    @GridCodegenConverter(get = "isFiltered() ? null : newVal")
     private CacheObject newVal;
 
     /** Old value. */
     @GridToStringInclude
+    @GridCodegenConverter(get = "isFiltered() ? null : oldVal")
     private CacheObject oldVal;
 
     /** Cache name. */
@@ -359,19 +367,19 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeMessage("key", key))
+                if (!writer.writeMessage("key", isFiltered() ? null : key))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeMessage("newVal", newVal))
+                if (!writer.writeMessage("newVal", isFiltered() ? null : newVal))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeMessage("oldVal", oldVal))
+                if (!writer.writeMessage("oldVal", isFiltered() ? null : oldVal))
                     return false;
 
                 writer.incrementState();
