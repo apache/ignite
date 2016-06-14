@@ -23,6 +23,9 @@ import java.io.InvalidObjectException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.io.ObjectStreamException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -90,6 +93,9 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
 
     /** Initialization latch. */
     private final CountDownLatch initLatch = new CountDownLatch(1);
+
+    /** List of update counter before initialize internal latch. */
+    private List<Integer> storageForUpdate = Collections.synchronizedList(new ArrayList<Integer>());
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -236,8 +242,18 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
     @Override public void onUpdate(int cnt) {
         assert cnt >= 0;
 
-        while (internalLatch != null && internalLatch.getCount() > cnt)
-            internalLatch.countDown();
+        if (!initGuard.get())
+            return;
+
+        CountDownLatch latch0 = internalLatch;
+
+        if (latch0 == null)
+            storageForUpdate.add(cnt);
+
+        else
+            while (latch0.getCount() > cnt)
+                latch0.countDown();
+
     }
 
     /**
@@ -249,24 +265,23 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
                 internalLatch = CU.outTx(
                     retryTopologySafe(new Callable<CountDownLatch>() {
                         @Override public CountDownLatch call() throws Exception {
-                            try (IgniteInternalTx tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ)) {
-                                GridCacheCountDownLatchValue val = latchView.get(key);
+                            GridCacheCountDownLatchValue val = latchView.get(key);
 
-                                if (val == null) {
-                                    if (log.isDebugEnabled())
-                                        log.debug("Failed to find count down latch with given name: " + name);
+                            if (val == null) {
+                                if (log.isDebugEnabled())
+                                    log.debug("Failed to find count down latch with given name: " + name);
 
-                                    return new CountDownLatch(0);
-                                }
-
-                                tx.commit();
-
-                                return new CountDownLatch(val.get());
+                                return new CountDownLatch(0);
                             }
+
+                            return new CountDownLatch(val.get());
                         }
                     }),
                     ctx
                 );
+
+                for (Integer cnt: storageForUpdate)
+                    onUpdate(cnt);
 
                 if (log.isDebugEnabled())
                     log.debug("Initialized internal latch: " + internalLatch);
