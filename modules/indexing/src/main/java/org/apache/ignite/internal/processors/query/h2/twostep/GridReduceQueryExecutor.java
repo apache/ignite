@@ -458,7 +458,7 @@ public class GridReduceQueryExecutor {
      * @param keepBinary Keep binary.
      * @return Cursor.
      */
-    public Iterator<List<?>> query(CancellationCtx cnctx, GridCacheContext<?,?> cctx, GridCacheTwoStepQuery qry, boolean keepBinary) {
+    public Iterator<List<?>> query(CancellationCtx cnctx, GridCacheContext<?,?> cctx, final GridCacheTwoStepQuery qry, boolean keepBinary) {
         for (int attempt = 0;; attempt++) {
             if (attempt != 0) {
                 try {
@@ -674,6 +674,13 @@ public class GridReduceQueryExecutor {
                         // Statement caching is prohibited here because we can't guarantee correct merge index reuse.
                         ResultSet res = h2.executeSqlQueryWithTimer(new IgniteInClosure<PreparedStatement>() {
                                                                         @Override public void apply(PreparedStatement statement) {
+                                                                            try {
+                                                                                statement.setQueryTimeout(qry.timeout());
+                                                                            }
+                                                                            catch (SQLException e) {
+                                                                                log.error("Cannot set query timeout", e);
+                                                                            }
+
                                                                             r.rdcPrepStmt = statement;
                                                                         }
                                                                     },

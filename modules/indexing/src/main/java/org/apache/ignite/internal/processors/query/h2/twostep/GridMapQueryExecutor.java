@@ -393,7 +393,7 @@ public class GridMapQueryExecutor {
      * @param node Node.
      * @param req Query request.
      */
-    private void onQueryRequest(ClusterNode node, GridQueryRequest req) {
+    private void onQueryRequest(ClusterNode node, final GridQueryRequest req) {
         ConcurrentMap<Long,QueryResults> nodeRess = resultsForNode(node.id());
 
         QueryResults qr = null;
@@ -455,6 +455,13 @@ public class GridMapQueryExecutor {
 
                 ResultSet rs = h2.executeSqlQueryWithTimer(new CI1<PreparedStatement>() {
                                                                @Override public void apply(PreparedStatement statement) {
+                                                                   try {
+                                                                       statement.setQueryTimeout(req.timeout());
+                                                                   }
+                                                                   catch (SQLException e) {
+                                                                       log.error("Cannot set query timeout", e);
+                                                                   }
+
                                                                    res.prepStmt = statement;
                                                                }
                                                            }, req.space(),
@@ -462,8 +469,6 @@ public class GridMapQueryExecutor {
                     qry.query(),
                     F.asList(qry.parameters()),
                     true);
-
-                res.prepStmt.setQueryTimeout(req.timeout());
 
                 res.rs(rs);
 

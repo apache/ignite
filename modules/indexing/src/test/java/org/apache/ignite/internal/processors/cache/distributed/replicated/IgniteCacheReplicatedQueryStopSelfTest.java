@@ -65,6 +65,14 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
     }
 
     /**
+     * Tests stopping two-step long query on timeout.
+     */
+    public void testRemoteQueryExecutionTimeout1() throws Exception {
+        testQueryTimeout(10_000, 4, "select a._key, b._key from String a, String b", 3);
+    }
+
+
+    /**
      * Tests stopping two-step long query while result set is being generated on remote nodes.
      */
     public void testRemoteQueryExecutionStop2() throws Exception {
@@ -201,6 +209,42 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
 
             // Give some time to clean up after query cancellation.
             Thread.sleep(3000);
+
+            // Validate nodes query result buffer.
+            checkCleanState(-1);
+        }
+    }
+
+    /**
+     * Tests stopping two step query on timeout.
+     */
+    private void testQueryTimeout(int keyCnt, int valSize, String sql, int qryTimeoutSecs) throws Exception {
+        try (Ignite client = startGrid("client")) {
+
+            IgniteCache<Object, Object> cache = client.cache(null);
+
+            assertEquals(0, cache.localSize());
+
+            for (int i = 0; i < keyCnt; i++) {
+                char[] tmp = new char[valSize];
+                Arrays.fill(tmp, ' ');
+                cache.put(i, new String(tmp));
+            }
+
+            assertEquals(0, cache.localSize(ALL));
+
+            SqlFieldsQuery sqlQry = new SqlFieldsQuery(sql);
+            sqlQry.timeout(qryTimeoutSecs);
+
+            final QueryCursor<List<?>> qry = cache.query(sqlQry);
+
+            try {
+                // Trigger distributed execution.
+                qry.iterator();
+            }
+            catch (CacheException ex) {
+                log().error("Got expected exception", ex);
+            }
 
             // Validate nodes query result buffer.
             checkCleanState(-1);
