@@ -22,7 +22,9 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -225,8 +227,8 @@ public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
         initFolder();
 
         try {
-            for (InetSocketAddress addr : addrs) {
-                File file = new File(folder, name(addr));
+            for (String name : distinctNames(addrs)) {
+                File file = new File(folder, name);
 
                 file.createNewFile();
             }
@@ -243,8 +245,8 @@ public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
         initFolder();
 
         try {
-            for (InetSocketAddress addr : addrs) {
-                File file = new File(folder, name(addr));
+            for (String name : distinctNames(addrs)) {
+                File file = new File(folder, name);
 
                 if (!file.delete())
                     throw new IgniteSpiException("Failed to delete file " + file.getName());
@@ -253,6 +255,14 @@ public class TcpDiscoverySharedFsIpFinder extends TcpDiscoveryIpFinderAdapter {
         catch (SecurityException e) {
             throw new IgniteSpiException("Failed to delete file.", e);
         }
+    }
+
+    private Iterable<String> distinctNames(Iterable<InetSocketAddress> addresses ){
+        Set<String> result = new HashSet<>();
+        for (InetSocketAddress address : addresses) {
+            result.add(name(address));
+        }
+        return result;
     }
 
     /**
