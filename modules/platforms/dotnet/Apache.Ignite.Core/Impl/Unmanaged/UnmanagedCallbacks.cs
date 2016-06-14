@@ -1235,6 +1235,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             }
 
             _initEvent.Set();
+
+            ResourceProcessor.Inject(_log, grid);
         }
 
         /// <summary>

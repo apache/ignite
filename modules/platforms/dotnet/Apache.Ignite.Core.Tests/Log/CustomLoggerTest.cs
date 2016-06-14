@@ -25,8 +25,10 @@ namespace Apache.Ignite.Core.Tests.Log
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Log;
+    using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
     /// <summary>
@@ -52,8 +54,12 @@ namespace Apache.Ignite.Core.Tests.Log
         [Test]
         public void TestStartupOutput()
         {
-            using (Ignition.Start(GetConfigWithLogger(true)))
+            var cfg = GetConfigWithLogger(true);
+            using (var ignite = Ignition.Start(cfg))
             {
+                // Check injection
+                Assert.AreEqual(((Ignite) ignite).Proxy, ((TestLogger) cfg.Logger).Ignite);
+
                 // Check initial message
                 Assert.IsTrue(TestLogger.Entries[0].Message.StartsWith("Starting Ignite.NET"));
 
@@ -395,6 +401,10 @@ namespace Apache.Ignite.Core.Tests.Log
             {
                 return level >= _minLevel;
             }
+
+            [InstanceResource]
+            // ReSharper disable once UnusedAutoPropertyAccessor.Local
+            public IIgnite Ignite { get; set; }
         }
 
 
