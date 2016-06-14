@@ -106,7 +106,8 @@ private:
  * Test listener class. Stores events it has been notified about in concurrent
  * queue so they can be checked later.
  */
-class Listener : public CacheEntryEventListener<int, int>
+template<typename K, typename V>
+class Listener : public CacheEntryEventListener<K, V>
 {
 public:
     /*
@@ -123,7 +124,7 @@ public:
      * @param evts Events.
      * @param num Events number.
      */
-    virtual void OnEvent(const CacheEntryEvent<int, int>* evts, uint32_t num)
+    virtual void OnEvent(const CacheEntryEvent<K, V>* evts, uint32_t num)
     {
         for (uint32_t i = 0; i < num; ++i)
             eventQueue.Push(evts[i]);
@@ -136,9 +137,9 @@ public:
      * @param oldVal Old value.
      * @param val Current value.
      */
-    void CheckNextEvent(int key, boost::optional<int> oldVal, boost::optional<int> val)
+    void CheckNextEvent(const K& key, boost::optional<V> oldVal, boost::optional<V> val)
     {
-        CacheEntryEvent<int, int> event;
+        CacheEntryEvent<K, V> event;
         bool success = eventQueue.Pull(event, boost::chrono::seconds(1));
 
         BOOST_REQUIRE(success);
@@ -148,10 +149,10 @@ public:
         BOOST_CHECK_EQUAL(event.HasValue(), val.is_initialized());
 
         if (oldVal && event.HasOldValue())
-            BOOST_CHECK_EQUAL(event.GetOldValue(), *oldVal);
+            BOOST_CHECK_EQUAL(event.GetOldValue().value, oldVal->value);
 
         if (val && event.HasValue())
-            BOOST_CHECK_EQUAL(event.GetValue(), *val);
+            BOOST_CHECK_EQUAL(event.GetValue().value, val->value);
     }
 
     /*
@@ -162,7 +163,7 @@ public:
     template <typename Rep, typename Period>
     void CheckNoEvent(const boost::chrono::duration<Rep, Period>& timeout)
     {
-        CacheEntryEvent<int, int> event;
+        CacheEntryEvent<K, V> event;
         bool success = eventQueue.Pull(event, timeout);
 
         BOOST_REQUIRE(!success);
@@ -170,8 +171,65 @@ public:
 
 private:
     // Events queue.
-    ConcurrentQueue< CacheEntryEvent<int, int> > eventQueue;
+    ConcurrentQueue< CacheEntryEvent<K, V> > eventQueue;
 };
+
+/*
+ * Test entry.
+ */
+struct TestEntry
+{
+    /*
+     * Default constructor.
+     */
+    TestEntry() : value(0)
+    {
+        // No-op.
+    }
+
+    /*
+     * Constructor.
+     */
+    TestEntry(int32_t val) : value(val)
+    {
+        // No-op.
+    }
+
+    /* Value */
+    int32_t value;
+};
+
+namespace ignite
+{
+    namespace binary
+    {
+        /**
+        * Binary type definition.
+        */
+        IGNITE_BINARY_TYPE_START(TestEntry)
+            IGNITE_BINARY_GET_TYPE_ID_AS_HASH(TestEntry)
+            IGNITE_BINARY_GET_TYPE_NAME_AS_IS(TestEntry)
+            IGNITE_BINARY_GET_FIELD_ID_AS_HASH
+            IGNITE_BINARY_GET_HASH_CODE_ZERO(TestEntry)
+            IGNITE_BINARY_IS_NULL_FALSE(TestEntry)
+            IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(TestEntry)
+
+            void Write(BinaryWriter& writer, const TestEntry& obj)
+            {
+                writer.WriteInt32("value", obj.value);
+            }
+
+            TestEntry Read(BinaryReader& reader)
+            {
+                TestEntry res;
+                res.value = reader.ReadInt32("value");
+
+                return res;
+            }
+
+        IGNITE_BINARY_TYPE_END
+    }
+}
 
 /*
  * Test setup fixture.
@@ -180,7 +238,7 @@ struct ContinuousQueryTestSuiteFixture
 {
     Ignite grid;
 
-    Cache<int, int> cache;
+    Cache<int, TestEntry> cache;
 
     /*
      * Get configuration for nodes.
@@ -215,7 +273,7 @@ struct ContinuousQueryTestSuiteFixture
      */
     ContinuousQueryTestSuiteFixture() :
         grid(Ignition::Start(GetConfiguration(), "node-01")),
-        cache(grid.GetCache<int, int>("transactional_no_backup"))
+        cache(grid.GetCache<int, TestEntry>("transactional_no_backup"))
     {
         // No-op.
     }
@@ -235,38 +293,38 @@ BOOST_FIXTURE_TEST_SUITE(ContinuousQueryTestSuite, ContinuousQueryTestSuiteFixtu
 
 BOOST_AUTO_TEST_CASE(TestBasic)
 {
-    Listener lsnr;
+    Listener<int, TestEntry> lsnr;
 
-    ContinuousQuery<int, int> qry(lsnr);
+    ContinuousQuery<int, TestEntry> qry(lsnr);
 
     cache.QueryContinuous(qry);
 
-    cache.Put(1, 10);
-    lsnr.CheckNextEvent(1, boost::none, 10);
+    cache.Put(1, TestEntry(10));
+    lsnr.CheckNextEvent(1, boost::none, TestEntry(10));
 
-    cache.Put(1, 20);
-    lsnr.CheckNextEvent(1, 10, 20);
+    cache.Put(1, TestEntry(20));
+    lsnr.CheckNextEvent(1, TestEntry(10), TestEntry(20));
 
-    cache.Put(2, 20);
-    lsnr.CheckNextEvent(2, boost::none, 20);
+    cache.Put(2, TestEntry(20));
+    lsnr.CheckNextEvent(2, boost::none, TestEntry(20));
 
     cache.Remove(1);
-    lsnr.CheckNextEvent(1, 20, boost::none);
+    lsnr.CheckNextEvent(1, TestEntry(20), boost::none);
 }
 
 BOOST_AUTO_TEST_CASE(TestInitialQueryScan)
 {
-    Listener lsnr;
+    Listener<int, TestEntry> lsnr;
 
-    ContinuousQuery<int, int> qry(lsnr);
+    ContinuousQuery<int, TestEntry> qry(lsnr);
 
-    cache.Put(11, 111);
-    cache.Put(22, 222);
-    cache.Put(33, 333);
+    cache.Put(11, TestEntry(111));
+    cache.Put(22, TestEntry(222));
+    cache.Put(33, TestEntry(333));
 
-    ContinuousQueryHandle<int, int> handle = cache.QueryContinuous(qry, ScanQuery());
+    ContinuousQueryHandle<int, TestEntry> handle = cache.QueryContinuous(qry, ScanQuery());
 
-    std::vector< CacheEntry<int, int> > vals;
+    std::vector< CacheEntry<int, TestEntry> > vals;
 
     handle.GetInitialQueryCursor().GetAll(vals);
 
@@ -278,21 +336,97 @@ BOOST_AUTO_TEST_CASE(TestInitialQueryScan)
     BOOST_CHECK_EQUAL(vals[1].GetKey(), 22);
     BOOST_CHECK_EQUAL(vals[2].GetKey(), 33);
 
-    BOOST_CHECK_EQUAL(vals[0].GetValue(), 111);
-    BOOST_CHECK_EQUAL(vals[1].GetValue(), 222);
-    BOOST_CHECK_EQUAL(vals[2].GetValue(), 333);
+    BOOST_CHECK_EQUAL(vals[0].GetValue().value, 111);
+    BOOST_CHECK_EQUAL(vals[1].GetValue().value, 222);
+    BOOST_CHECK_EQUAL(vals[2].GetValue().value, 333);
 
-    cache.Put(1, 10);
-    lsnr.CheckNextEvent(1, boost::none, 10);
+    cache.Put(1, TestEntry(10));
+    lsnr.CheckNextEvent(1, boost::none, TestEntry(10));
 
-    cache.Put(1, 20);
-    lsnr.CheckNextEvent(1, 10, 20);
+    cache.Put(1, TestEntry(20));
+    lsnr.CheckNextEvent(1, TestEntry(10), TestEntry(20));
 
-    cache.Put(2, 20);
-    lsnr.CheckNextEvent(2, boost::none, 20);
+    cache.Put(2, TestEntry(20));
+    lsnr.CheckNextEvent(2, boost::none, TestEntry(20));
 
     cache.Remove(1);
-    lsnr.CheckNextEvent(1, 20, boost::none);
+    lsnr.CheckNextEvent(1, TestEntry(20), boost::none);
+}
+
+BOOST_AUTO_TEST_CASE(TestInitialQuerySql)
+{
+    Listener<int, TestEntry> lsnr;
+
+    ContinuousQuery<int, TestEntry> qry(lsnr);
+
+    cache.Put(11, TestEntry(111));
+    cache.Put(22, TestEntry(222));
+    cache.Put(33, TestEntry(333));
+
+    ContinuousQueryHandle<int, TestEntry> handle = cache.QueryContinuous(qry, SqlQuery("TestEntry", "value > 200"));
+
+    std::vector< CacheEntry<int, TestEntry> > vals;
+
+    handle.GetInitialQueryCursor().GetAll(vals);
+
+    BOOST_CHECK_THROW(handle.GetInitialQueryCursor(), IgniteError);
+
+    BOOST_REQUIRE_EQUAL(vals.size(), 2);
+
+    BOOST_CHECK_EQUAL(vals[0].GetKey(), 22);
+    BOOST_CHECK_EQUAL(vals[1].GetKey(), 33);
+
+    BOOST_CHECK_EQUAL(vals[0].GetValue().value, 222);
+    BOOST_CHECK_EQUAL(vals[1].GetValue().value, 333);
+
+    cache.Put(1, TestEntry(10));
+    lsnr.CheckNextEvent(1, boost::none, TestEntry(10));
+
+    cache.Put(1, TestEntry(20));
+    lsnr.CheckNextEvent(1, TestEntry(10), TestEntry(20));
+
+    cache.Put(2, TestEntry(20));
+    lsnr.CheckNextEvent(2, boost::none, TestEntry(20));
+
+    cache.Remove(1);
+    lsnr.CheckNextEvent(1, TestEntry(20), boost::none);
+}
+
+BOOST_AUTO_TEST_CASE(TestInitialQueryText)
+{
+    Listener<int, TestEntry> lsnr;
+
+    ContinuousQuery<int, TestEntry> qry(lsnr);
+
+    cache.Put(11, TestEntry(111));
+    cache.Put(22, TestEntry(222));
+    cache.Put(33, TestEntry(333));
+
+    ContinuousQueryHandle<int, TestEntry> handle = cache.QueryContinuous(qry, TextQuery("TestEntry", "222"));
+
+    std::vector< CacheEntry<int, TestEntry> > vals;
+
+    handle.GetInitialQueryCursor().GetAll(vals);
+
+    BOOST_CHECK_THROW(handle.GetInitialQueryCursor(), IgniteError);
+
+    BOOST_REQUIRE_EQUAL(vals.size(), 1);
+
+    BOOST_CHECK_EQUAL(vals[0].GetKey(), 22);
+
+    BOOST_CHECK_EQUAL(vals[0].GetValue().value, 222);
+
+    cache.Put(1, TestEntry(10));
+    lsnr.CheckNextEvent(1, boost::none, TestEntry(10));
+
+    cache.Put(1, TestEntry(20));
+    lsnr.CheckNextEvent(1, TestEntry(10), TestEntry(20));
+
+    cache.Put(2, TestEntry(20));
+    lsnr.CheckNextEvent(2, boost::none, TestEntry(20));
+
+    cache.Remove(1);
+    lsnr.CheckNextEvent(1, TestEntry(20), boost::none);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
