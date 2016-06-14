@@ -245,6 +245,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         internal void Validate(ILogger log, string logInfo)
         {
+            Debug.Assert(log != null);
+            Debug.Assert(logInfo != null);
+
             logInfo += string.Format(", QueryEntity '{0}:{1}'", _keyTypeName ?? "", _valueTypeName ?? "");
 
             JavaTypes.LogIndirectMappingWarning(_keyType, log, logInfo);
