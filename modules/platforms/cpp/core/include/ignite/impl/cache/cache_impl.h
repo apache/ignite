@@ -436,7 +436,7 @@ namespace ignite
                 template<typename T>
                 query::continuous::ContinuousQueryHandleImpl* QueryContinuous(
                     const ignite::cache::query::continuous::ContinuousQueryBase &qry,
-                    const T& initialQry, int32_t typ, IgniteError& err)
+                    const T& initialQry, int32_t typ, int32_t cmd, IgniteError& err)
                 {
                     ignite::jni::java::JniErrorInfo jniErr;
 
@@ -467,7 +467,7 @@ namespace ignite
                     out.Synchronize();
 
                     jobject qryJavaRef = GetEnvironment().Context()->CacheOutOpContinuousQuery(GetTarget(),
-                        OP_QRY_CONTINUOUS, mem.Get()->PointerLong(), &jniErr);
+                        cmd, mem.Get()->PointerLong(), &jniErr);
 
                     IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
 

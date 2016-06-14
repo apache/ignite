@@ -310,26 +310,26 @@ namespace ignite
             ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const ContinuousQueryBase& qry,
                 const SqlQuery& initialQry, IgniteError& err)
             {
-                return QueryContinuous(qry, initialQry, OP_QRY_SQL, err);
+                return QueryContinuous(qry, initialQry, OP_QRY_SQL, OP_QRY_CONTINUOUS, err);
             }
 
             ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const ContinuousQueryBase& qry,
                 const TextQuery& initialQry, IgniteError& err)
             {
-                return QueryContinuous(qry, initialQry, OP_QRY_TEXT, err);
+                return QueryContinuous(qry, initialQry, OP_QRY_TEXT, OP_QRY_CONTINUOUS, err);
             }
 
             ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const ContinuousQueryBase& qry,
                 const ScanQuery& initialQry, IgniteError& err)
             {
-                return QueryContinuous(qry, initialQry, OP_QRY_SCAN, err);
+                return QueryContinuous(qry, initialQry, OP_QRY_SCAN, OP_QRY_CONTINUOUS, err);
             }
 
             ContinuousQueryHandleImpl* CacheImpl::QueryContinuous(const ContinuousQueryBase& qry, IgniteError& err)
             {
                 struct { void Write(BinaryRawWriter&) const { }} dummy;
 
-                return QueryContinuous(qry, dummy, -1, err);
+                return QueryContinuous(qry, dummy, -1, OP_QRY_CONTINUOUS, err);
             }
 
             int CacheImpl::SizeInternal(const int32_t peekModes, const bool loc, IgniteError* err)
