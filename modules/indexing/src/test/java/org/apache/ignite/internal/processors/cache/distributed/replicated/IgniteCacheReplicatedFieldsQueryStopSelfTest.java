@@ -54,8 +54,11 @@ public class IgniteCacheReplicatedFieldsQueryStopSelfTest extends IgniteCacheAbs
         return PARTITIONED;
     }
 
-    @Override protected void afterTest() throws Exception {
-        super.afterTest();
+    /**
+     * Tests stopping two-step long query on timeout.
+     */
+    public void testRemoteQueryExecutionTimeout() throws Exception {
+        testQueryTimeout(10_000, 4, "select a._key, b._key from String a, String b", 3);
     }
 
     /**
@@ -63,13 +66,6 @@ public class IgniteCacheReplicatedFieldsQueryStopSelfTest extends IgniteCacheAbs
      */
     public void testRemoteQueryExecutionStop1() throws Exception {
         testQueryStop(10_000, 4, "select a._key, b._key from String a, String b", 500);
-    }
-
-    /**
-     * Tests stopping two-step long query on timeout.
-     */
-    public void testRemoteQueryExecutionTimeout() throws Exception {
-        testQueryTimeout(10_000, 4, "select a._key, b._key from String a, String b", 3);
     }
 
     /**
