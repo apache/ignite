@@ -5180,7 +5180,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                     for (IgniteInClosure<Socket> connLsnr : spi.incomeConnLsnrs)
                         connLsnr.apply(sock);
 
-                    in = new BufferedInputStream(sock.getInputStream());
+                    int rcvBufSize = sock.getReceiveBufferSize();
+
+                    in = new BufferedInputStream(sock.getInputStream(), rcvBufSize > 0 ? rcvBufSize : 8192);
 
                     byte[] buf = new byte[4];
                     int read = 0;
