@@ -32,8 +32,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * Entry processor to set or replace block byte value.
  */
-public class IgfsDataPutProcessor implements EntryProcessor<IgfsBlockKey, byte[], Void>,
-    Externalizable, Binarylizable {
+public class IgfsDataPutProcessor implements EntryProcessor<IgfsBlockKey, byte[], Void>, Externalizable, Binarylizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -81,16 +80,12 @@ public class IgfsDataPutProcessor implements EntryProcessor<IgfsBlockKey, byte[]
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
-        BinaryRawReader in = reader.rawReader();
-
-        newVal = in.readByteArray();
+        newVal = reader.rawReader().readByteArray();
     }
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-        BinaryRawWriter out = writer.rawWriter();
-
-        out.writeByteArray(newVal);
+        writer.rawWriter().writeByteArray(newVal);
     }
 
     /** {@inheritDoc} */
