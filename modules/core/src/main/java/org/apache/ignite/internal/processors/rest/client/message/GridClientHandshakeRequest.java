@@ -66,7 +66,7 @@ public class GridClientHandshakeRequest extends GridClientAbstractMessage {
      * @param marshId Marshaller ID.
      */
     public void marshallerId(byte marshId) {
-        assert marshId >= 0 && marshId <= 2;
+        assert marshId >= 0 && marshId <= 3;
 
         this.marshId = marshId;
     }

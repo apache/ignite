@@ -24,8 +24,11 @@ import org.apache.ignite.binary.BinaryReader;
 import org.apache.ignite.binary.BinaryWriter;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.processors.igfs.IgfsEntryInfo;
+import org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange;
+import org.apache.ignite.internal.processors.igfs.IgfsFileMap;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
@@ -46,6 +49,15 @@ public class IgfsMetaFileUnlockProcessor implements EntryProcessor<IgniteUuid, I
     /** Modification time. */
     private long modificationTime;
 
+    /** Whether to update space. */
+    private boolean updateSpace;
+
+    /** Space. */
+    private long space;
+
+    /** Affinity range. */
+    private IgfsFileAffinityRange affRange;
+
     /**
      * Default constructor.
      */
@@ -57,17 +69,36 @@ public class IgfsMetaFileUnlockProcessor implements EntryProcessor<IgniteUuid, I
      * Constructor.
      *
      * @param modificationTime Modification time.
+     * @param updateSpace Whether to update space.
+     * @param space Space.
+     * @param affRange Affinity range.
      */
-    public IgfsMetaFileUnlockProcessor(long modificationTime) {
+    public IgfsMetaFileUnlockProcessor(long modificationTime, boolean updateSpace, long space,
+        @Nullable IgfsFileAffinityRange affRange) {
         this.modificationTime = modificationTime;
+        this.updateSpace = updateSpace;
+        this.space = space;
+        this.affRange = affRange;
     }
 
     /** {@inheritDoc} */
     @Override public Void process(MutableEntry<IgniteUuid, IgfsEntryInfo> entry, Object... args)
         throws EntryProcessorException {
-        IgfsEntryInfo old = entry.getValue();
+        IgfsEntryInfo oldInfo = entry.getValue();
 
-        entry.setValue(old.unlock(modificationTime));
+        assert oldInfo != null;
+
+        IgfsEntryInfo newInfo = oldInfo.unlock(modificationTime);
+
+        if (updateSpace) {
+            IgfsFileMap newMap = new IgfsFileMap(newInfo.fileMap());
+
+            newMap.addRange(affRange);
+
+            newInfo = newInfo.length(newInfo.length() + space).fileMap(newMap);
+        }
+
+        entry.setValue(newInfo);
 
         return null;
     }
@@ -75,11 +106,27 @@ public class IgfsMetaFileUnlockProcessor implements EntryProcessor<IgniteUuid, I
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeLong(modificationTime);
+
+        if (updateSpace) {
+            out.writeBoolean(true);
+            out.writeLong(space);
+            out.writeObject(affRange);
+        }
+        else
+            out.writeBoolean(false);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         modificationTime = in.readLong();
+
+        if (in.readBoolean()) {
+            updateSpace = true;
+            space = in.readLong();
+            affRange = (IgfsFileAffinityRange)in.readObject();
+        }
+        else
+            updateSpace = false;
     }
 
     /** {@inheritDoc} */
@@ -87,6 +134,14 @@ public class IgfsMetaFileUnlockProcessor implements EntryProcessor<IgniteUuid, I
         BinaryRawWriter out = writer.rawWriter();
 
         out.writeLong(modificationTime);
+
+        if (updateSpace) {
+            out.writeBoolean(true);
+            out.writeLong(space);
+            out.writeObject(affRange);
+        }
+        else
+            out.writeBoolean(false);
     }
 
     /** {@inheritDoc} */
@@ -94,6 +149,14 @@ public class IgfsMetaFileUnlockProcessor implements EntryProcessor<IgniteUuid, I
         BinaryRawReader in = reader.rawReader();
 
         modificationTime = in.readLong();
+
+        if (in.readBoolean()) {
+            updateSpace = true;
+            space = in.readLong();
+            affRange = in.readObject();
+        }
+        else
+            updateSpace = false;
     }
 
     /** {@inheritDoc} */
