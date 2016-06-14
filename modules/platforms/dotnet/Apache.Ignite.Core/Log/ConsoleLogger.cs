@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Log
             if (ex != null)
                 sb.AppendFormat("\nException: {0}", ex);
 
-            Console.WriteLine(sb);
+            Console.WriteLine(sb.ToString());
 
         }
 
