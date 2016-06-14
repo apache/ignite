@@ -268,16 +268,32 @@ public final class IgfsPath implements Comparable<IgfsPath>, Externalizable, Bin
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-        BinaryRawWriter out = writer.rawWriter();
-
-        out.writeString(path);
+        writeRawBinary(writer.rawWriter());
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
-        BinaryRawReader in = reader.rawReader();
+        readRawBinary(reader.rawReader());
+    }
 
-        path = in.readString();
+    /**
+     * Write raw binary.
+     *
+     * @param writer Raw writer.
+     * @throws BinaryObjectException If failed.
+     */
+    public void writeRawBinary(BinaryRawWriter writer) throws BinaryObjectException {
+        writer.writeString(path);
+    }
+
+    /**
+     * Read raw binary.
+     *
+     * @param reader Raw reader.
+     * @throws BinaryObjectException If failed.
+     */
+    public void readRawBinary(BinaryRawReader reader) throws BinaryObjectException {
+        path = reader.readString();
     }
 
     /** {@inheritDoc} */

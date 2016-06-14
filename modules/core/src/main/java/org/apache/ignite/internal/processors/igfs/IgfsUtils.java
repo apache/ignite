@@ -56,6 +56,7 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_RETRIES_COUNT;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGFS;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
@@ -179,7 +180,7 @@ public class IgfsUtils {
      * @return Converted IGFS exception.
      */
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-    public static IgfsException toIgfsException(Exception err) {
+    public static IgfsException toIgfsException(Throwable err) {
         IgfsException err0 = err instanceof IgfsException ? (IgfsException)err : null;
 
         IgfsException igfsErr = X.cause(err, IgfsException.class);
@@ -680,5 +681,59 @@ public class IgfsUtils {
         }
         else
             return null;
+    }
+
+    /**
+     * Write IGFS path.
+     *
+     * @param writer Writer.
+     * @param path Path.
+     */
+    public static void writePath(BinaryRawWriter writer, @Nullable IgfsPath path) {
+        if (path != null) {
+            writer.writeBoolean(true);
+
+            path.writeRawBinary(writer);
+        }
+        else
+            writer.writeBoolean(false);
+    }
+
+    /**
+     * Read IGFS path.
+     *
+     * @param reader Reader.
+     * @return Path.
+     */
+    @Nullable public static IgfsPath readPath(BinaryRawReader reader) {
+        if (reader.readBoolean()) {
+            IgfsPath path = new IgfsPath();
+
+            path.readRawBinary(reader);
+
+            return path;
+        }
+        else
+            return null;
+    }
+
+    /**
+     * Check whether provided node contains IGFS with the given name.
+     *
+     * @param node Node.
+     * @param igfsName IGFS name.
+     * @return {@code True} if it contains IGFS.
+     */
+    public static boolean isIgfsNode(ClusterNode node, String igfsName) {
+        assert node != null;
+
+        IgfsAttributes[] igfs = node.attribute(ATTR_IGFS);
+
+        if (igfs != null)
+            for (IgfsAttributes attrs : igfs)
+                if (F.eq(igfsName, attrs.igfsName()))
+                    return true;
+
+        return false;
     }
 }

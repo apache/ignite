@@ -33,7 +33,6 @@ import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
 import org.apache.ignite.igfs.IgfsOutOfSpaceException;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystemPositionedReadable;
-import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
@@ -474,18 +473,18 @@ public class IgfsDataManager extends IgfsManager {
     /**
      * Registers write future in igfs data manager.
      *
-     * @param fileInfo File info of file opened to write.
+     * @param fileId File ID.
      * @return Future that will be completed when all ack messages are received or when write failed.
      */
-    public IgniteInternalFuture<Boolean> writeStart(IgfsEntryInfo fileInfo) {
-        WriteCompletionFuture fut = new WriteCompletionFuture(fileInfo.id());
+    public IgniteInternalFuture<Boolean> writeStart(IgniteUuid fileId) {
+        WriteCompletionFuture fut = new WriteCompletionFuture(fileId);
 
-        WriteCompletionFuture oldFut = pendingWrites.putIfAbsent(fileInfo.id(), fut);
+        WriteCompletionFuture oldFut = pendingWrites.putIfAbsent(fileId, fut);
 
-        assert oldFut == null : "Opened write that is being concurrently written: " + fileInfo;
+        assert oldFut == null : "Opened write that is being concurrently written: " + fileId;
 
         if (log.isDebugEnabled())
-            log.debug("Registered write completion future for file output stream [fileInfo=" + fileInfo +
+            log.debug("Registered write completion future for file output stream [fileId=" + fileId +
                 ", fut=" + fut + ']');
 
         return fut;
@@ -494,17 +493,23 @@ public class IgfsDataManager extends IgfsManager {
     /**
      * Notifies data manager that no further writes will be performed on stream.
      *
-     * @param fileInfo File info being written.
+     * @param fileId File ID.
+     * @param await Await completion.
+     * @throws IgniteCheckedException If failed.
      */
-    public void writeClose(IgfsEntryInfo fileInfo) {
-        WriteCompletionFuture fut = pendingWrites.get(fileInfo.id());
+    public void writeClose(IgniteUuid fileId, boolean await) throws IgniteCheckedException {
+        WriteCompletionFuture fut = pendingWrites.get(fileId);
 
-        if (fut != null)
+        if (fut != null) {
             fut.markWaitingLastAck();
+
+            if (await)
+                fut.get();
+        }
         else {
             if (log.isDebugEnabled())
                 log.debug("Failed to find write completion future for file in pending write map (most likely it was " +
-                    "failed): " + fileInfo);
+                    "failed): " + fileId);
         }
     }
 
@@ -1056,34 +1061,24 @@ public class IgfsDataManager extends IgfsManager {
     private void processPartialBlockWrite(IgniteUuid fileId, IgfsBlockKey colocatedKey, int startOff,
         byte[] data) throws IgniteCheckedException {
         if (dataCachePrj.igfsDataSpaceUsed() >= dataCachePrj.igfsDataSpaceMax()) {
-            try {
-                igfs.awaitDeletesAsync().get(trashPurgeTimeout);
-            }
-            catch (IgniteFutureTimeoutCheckedException ignore) {
-                // Ignore.
-            }
+            final WriteCompletionFuture completionFut = pendingWrites.get(fileId);
 
-            // Additional size check.
-            if (dataCachePrj.igfsDataSpaceUsed() >= dataCachePrj.igfsDataSpaceMax()) {
-                final WriteCompletionFuture completionFut = pendingWrites.get(fileId);
-
-                if (completionFut == null) {
-                    if (log.isDebugEnabled())
-                        log.debug("Missing completion future for file write request (most likely exception occurred " +
-                            "which will be thrown upon stream close) [fileId=" + fileId + ']');
-
-                    return;
-                }
-
-                IgfsOutOfSpaceException e = new IgfsOutOfSpaceException("Failed to write data block " +
-                    "(IGFS maximum data size exceeded) [used=" + dataCachePrj.igfsDataSpaceUsed() +
-                    ", allowed=" + dataCachePrj.igfsDataSpaceMax() + ']');
-
-                completionFut.onDone(new IgniteCheckedException("Failed to write data (not enough space on node): " +
-                    igfsCtx.kernalContext().localNodeId(), e));
+            if (completionFut == null) {
+                if (log.isDebugEnabled())
+                    log.debug("Missing completion future for file write request (most likely exception occurred " +
+                        "which will be thrown upon stream close) [fileId=" + fileId + ']');
 
                 return;
             }
+
+            IgfsOutOfSpaceException e = new IgfsOutOfSpaceException("Failed to write data block " +
+                "(IGFS maximum data size exceeded) [used=" + dataCachePrj.igfsDataSpaceUsed() +
+                ", allowed=" + dataCachePrj.igfsDataSpaceMax() + ']');
+
+            completionFut.onDone(new IgniteCheckedException("Failed to write data (not enough space on node): " +
+                igfsCtx.kernalContext().localNodeId(), e));
+
+            return;
         }
 
         // No affinity key present, just concat and return.
@@ -1225,26 +1220,10 @@ public class IgfsDataManager extends IgfsManager {
         assert !blocks.isEmpty();
 
         if (dataCachePrj.igfsDataSpaceUsed() >= dataCachePrj.igfsDataSpaceMax()) {
-            try {
-                try {
-                    igfs.awaitDeletesAsync().get(trashPurgeTimeout);
-                }
-                catch (IgniteFutureTimeoutCheckedException ignore) {
-                    // Ignore.
-                }
-
-                // Additional size check.
-                if (dataCachePrj.igfsDataSpaceUsed() >= dataCachePrj.igfsDataSpaceMax())
-                    return new GridFinishedFuture<Object>(
-                        new IgfsOutOfSpaceException("Failed to write data block (IGFS maximum data size " +
-                            "exceeded) [used=" + dataCachePrj.igfsDataSpaceUsed() +
-                            ", allowed=" + dataCachePrj.igfsDataSpaceMax() + ']'));
-
-            }
-            catch (IgniteCheckedException e) {
-                return new GridFinishedFuture<>(new IgniteCheckedException("Failed to store data " +
-                    "block due to unexpected exception.", e));
-            }
+            return new GridFinishedFuture<Object>(
+                new IgfsOutOfSpaceException("Failed to write data block (IGFS maximum data size " +
+                    "exceeded) [used=" + dataCachePrj.igfsDataSpaceUsed() +
+                    ", allowed=" + dataCachePrj.igfsDataSpaceMax() + ']'));
         }
 
         return dataCachePrj.putAllAsync(blocks);
