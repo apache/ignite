@@ -472,7 +472,7 @@ namespace ignite
                     IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
 
                     if (jniErr.code == ignite::java::IGNITE_JNI_ERR_SUCCESS)
-                        return new ContinuousQueryHandleImpl(GetEnvironmentPointer(), qryJavaRef);
+                        return new query::continuous::ContinuousQueryHandleImpl(GetEnvironmentPointer(), qryJavaRef);
                     else
                         return 0;
                 }

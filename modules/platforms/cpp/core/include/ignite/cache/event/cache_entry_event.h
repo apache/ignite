@@ -46,7 +46,7 @@ namespace ignite
              * Creates instance with all fields default-constructed.
              */
             CacheEntryEvent() :
-                CacheEntry(),
+                CacheEntry<K, V>(),
                 oldVal(),
                 hasValue(false),
                 hasOldValue(false)
@@ -60,7 +60,7 @@ namespace ignite
              * @param other Other instance.
              */
             CacheEntryEvent(const CacheEntryEvent<K, V>& other) :
-                CacheEntry(other),
+                CacheEntry<K, V>(other),
                 oldVal(other.oldVal),
                 hasValue(other.hasValue),
                 hasOldValue(other.hasOldValue)
@@ -133,10 +133,10 @@ namespace ignite
              */
             void Read(binary::BinaryRawReader& reader)
             {
-                key = reader.ReadObject<K>();
+                this->key = reader.ReadObject<K>();
 
-                hasOldValue = reader.TryReadObject(oldVal);
-                hasValue = reader.TryReadObject(val);
+                this->hasOldValue = reader.TryReadObject(this->oldVal);
+                this->hasValue = reader.TryReadObject(this->val);
             }
 
         private:
