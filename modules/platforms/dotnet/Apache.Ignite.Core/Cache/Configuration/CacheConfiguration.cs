@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using System;
     using System.Collections.Generic;
     using System.ComponentModel;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
@@ -352,11 +353,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// </summary>
         internal void Validate(ILogger log)
         {
+            Debug.Assert(log != null);
+
             var entities = QueryEntities;
             if (entities != null)
             {
                 foreach (var entity in entities)
-                    entity.Validate(log);
+                    entity.Validate(log, string.Format("Validating cache configuration '{0}'", Name ?? ""));
             }
         }
 

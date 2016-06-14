@@ -297,6 +297,8 @@
         /// </summary>
         internal void Validate(ILogger log)
         {
+            Debug.Assert(log != null);
+
             var ccfg = CacheConfiguration;
             if (ccfg != null)
             {

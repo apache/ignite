@@ -20,6 +20,7 @@
 namespace Apache.Ignite.Core.Cache.Configuration
 {
     using System;
+    using System.Diagnostics;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Log;
@@ -72,7 +73,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         }
 
         /// <summary>
-        /// Gets the field name.
+        /// Gets or sets the field name.
         /// </summary>
         public string Name { get; set; }
 
@@ -110,9 +111,14 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Validates this instance and outputs information to the log, if necessary.
         /// </summary>
-        internal void Validate(ILogger log)
+        internal void Validate(ILogger log, string logInfo)
         {
-            JavaTypes.LogIndirectMappingWarning(_type, log);
+            Debug.Assert(log != null);
+            Debug.Assert(logInfo != null);
+
+            logInfo += string.Format(", QueryField '{0}'", Name);
+
+            JavaTypes.LogIndirectMappingWarning(_type, log, logInfo);
         }
     }
 }

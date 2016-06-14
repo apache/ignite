@@ -82,7 +82,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Logs a warning for indirectly mapped types.
         /// </summary>
-        public static void LogIndirectMappingWarning(Type type, ILogger log)
+        public static void LogIndirectMappingWarning(Type type, ILogger log, string logInfo)
         {
             if (type == null)
                 return;
@@ -91,10 +91,10 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (!IndirectMappingTypes.TryGetValue(type, out directType))
                 return;
 
-            // TODO: Log more info?
-            log.Warn("Type '{0}' maps to Java type '{1}' using unchecked conversion. " +
+            log.Warn("{0}: Type '{1}' maps to Java type '{2}' using unchecked conversion. " +
                      "This may cause issues in SQL queries. " +
-                     "You can use '{2}' instead to achieve direct mapping.", type, NetToJava[type], directType);
+                     "You can use '{3}' instead to achieve direct mapping.",
+                logInfo, type, NetToJava[type], directType);
         }
 
         /// <summary>

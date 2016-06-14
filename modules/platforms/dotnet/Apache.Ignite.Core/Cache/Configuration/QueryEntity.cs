@@ -243,16 +243,18 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Validates this instance and outputs information to the log, if necessary.
         /// </summary>
-        internal void Validate(ILogger log)
+        internal void Validate(ILogger log, string logInfo)
         {
-            JavaTypes.LogIndirectMappingWarning(_keyType, log);
-            JavaTypes.LogIndirectMappingWarning(_valueType, log);
+            logInfo += string.Format(", QueryEntity '{0}:{1}'", _keyTypeName ?? "", _valueTypeName ?? "");
+
+            JavaTypes.LogIndirectMappingWarning(_keyType, log, logInfo);
+            JavaTypes.LogIndirectMappingWarning(_valueType, log, logInfo);
 
             var fields = Fields;
             if (fields != null)
             {
                 foreach (var field in fields)
-                    field.Validate(log);
+                    field.Validate(log, logInfo);
             }
         }
 
