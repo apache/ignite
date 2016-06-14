@@ -229,9 +229,6 @@ public class IgniteCacheReplicatedFieldsQueryStopSelfTest extends IgniteCacheAbs
                 char[] tmp = new char[valSize];
                 Arrays.fill(tmp, ' ');
                 cache.put(i, new String(tmp));
-
-                if (i % 1_000 == 0)
-                    log().info("Processed " + i);
             }
 
             assertEquals(0, cache.localSize(ALL));
