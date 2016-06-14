@@ -1716,6 +1716,10 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
                 data0.put(entry.getKey(), compData);
             }
             catch (IgniteCheckedException e) {
+                if (isClientMode())
+                    U.warn(log, "Exceptions absence of RemoteFilter or RemoteFilterFactory classes" +
+                        " are not critical in the ClientMode.");
+
                 U.error(log, "Failed to unmarshal discovery data for component: "  + entry.getKey(), e);
             }
         }
