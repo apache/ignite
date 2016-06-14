@@ -397,8 +397,6 @@ public class GridPartitionedSingleGetFuture extends GridFutureAdapter<Object> im
                             null,
                             /*swap*/true,
                             /*read-through*/false,
-                            /*fail-fast*/true,
-                            /*unmarshal*/true,
                             /**update-metrics*/false,
                             /*event*/!skipVals,
                             /*temporary*/false,
