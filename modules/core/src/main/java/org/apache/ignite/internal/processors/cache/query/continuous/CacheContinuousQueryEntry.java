@@ -62,26 +62,18 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     }
 
     /** */
-    @GridCodegenConverter(
-        type = byte.class,
-        get = "evtType != null ? (byte)evtType.ordinal() : -1",
-        set = "eventTypeFromOrdinal($val$)"
-    )
     private EventType evtType;
 
     /** Key. */
     @GridToStringInclude
-    @GridCodegenConverter(get = "isFiltered() ? null : key")
     private KeyCacheObject key;
 
     /** New value. */
     @GridToStringInclude
-    @GridCodegenConverter(get = "isFiltered() ? null : newVal")
     private CacheObject newVal;
 
     /** Old value. */
     @GridToStringInclude
-    @GridCodegenConverter(get = "isFiltered() ? null : oldVal")
     private CacheObject oldVal;
 
     /** Cache name. */
@@ -197,6 +189,22 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     void markFiltered() {
         flags |= FILTERED_ENTRY;
         depInfo = null;
+    }
+
+    /**
+     * @return If entry filtered then will return light-weight <i><b>new entry</b></i> without values and key
+     * (avoid to huge memory consumption), otherwise {@code this}.
+     */
+    CacheContinuousQueryEntry forBackupQueue() {
+        if (!isFiltered())
+            return this;
+
+        CacheContinuousQueryEntry e =
+            new CacheContinuousQueryEntry(cacheId, evtType, null, null, null, keepBinary, part, updateCntr, topVer);
+
+        e.flags = flags;
+
+        return e;
     }
 
     /**
@@ -351,19 +359,19 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
                 writer.incrementState();
 
             case 5:
-                if (!writer.writeMessage("key", isFiltered() ? null : key))
+                if (!writer.writeMessage("key", key))
                     return false;
 
                 writer.incrementState();
 
             case 6:
-                if (!writer.writeMessage("newVal", isFiltered() ? null : newVal))
+                if (!writer.writeMessage("newVal", newVal))
                     return false;
 
                 writer.incrementState();
 
             case 7:
-                if (!writer.writeMessage("oldVal", isFiltered() ? null : oldVal))
+                if (!writer.writeMessage("oldVal", oldVal))
                     return false;
 
                 writer.incrementState();
