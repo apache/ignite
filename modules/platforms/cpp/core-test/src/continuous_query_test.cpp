@@ -404,4 +404,118 @@ BOOST_AUTO_TEST_CASE(TestInitialQueryText)
     CheckEvents(cache, lsnr);
 }
 
+BOOST_AUTO_TEST_CASE(TestBasicNoExcept)
+{
+    Listener<int, TestEntry> lsnr;
+
+    ContinuousQuery<int, TestEntry> qry(lsnr);
+
+    IgniteError err;
+
+    cache.QueryContinuous(qry, err);
+
+    BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+    CheckEvents(cache, lsnr);
+}
+
+BOOST_AUTO_TEST_CASE(TestInitialQueryScanNoExcept)
+{
+    Listener<int, TestEntry> lsnr;
+
+    ContinuousQuery<int, TestEntry> qry(lsnr);
+
+    cache.Put(11, TestEntry(111));
+    cache.Put(22, TestEntry(222));
+    cache.Put(33, TestEntry(333));
+
+    IgniteError err;
+
+    ContinuousQueryHandle<int, TestEntry> handle = cache.QueryContinuous(qry, ScanQuery(), err);
+
+    BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+    std::vector< CacheEntry<int, TestEntry> > vals;
+
+    handle.GetInitialQueryCursor().GetAll(vals);
+
+    BOOST_CHECK_THROW(handle.GetInitialQueryCursor(), IgniteError);
+
+    BOOST_REQUIRE_EQUAL(vals.size(), 3);
+
+    BOOST_CHECK_EQUAL(vals[0].GetKey(), 11);
+    BOOST_CHECK_EQUAL(vals[1].GetKey(), 22);
+    BOOST_CHECK_EQUAL(vals[2].GetKey(), 33);
+
+    BOOST_CHECK_EQUAL(vals[0].GetValue().value, 111);
+    BOOST_CHECK_EQUAL(vals[1].GetValue().value, 222);
+    BOOST_CHECK_EQUAL(vals[2].GetValue().value, 333);
+
+    CheckEvents(cache, lsnr);
+}
+
+BOOST_AUTO_TEST_CASE(TestInitialQuerySqlNoExcept)
+{
+    Listener<int, TestEntry> lsnr;
+
+    ContinuousQuery<int, TestEntry> qry(lsnr);
+
+    cache.Put(11, TestEntry(111));
+    cache.Put(22, TestEntry(222));
+    cache.Put(33, TestEntry(333));
+
+    IgniteError err;
+
+    ContinuousQueryHandle<int, TestEntry> handle = cache.QueryContinuous(qry, SqlQuery("TestEntry", "value > 200"), err);
+
+    BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+    std::vector< CacheEntry<int, TestEntry> > vals;
+
+    handle.GetInitialQueryCursor().GetAll(vals);
+
+    BOOST_CHECK_THROW(handle.GetInitialQueryCursor(), IgniteError);
+
+    BOOST_REQUIRE_EQUAL(vals.size(), 2);
+
+    BOOST_CHECK_EQUAL(vals[0].GetKey(), 22);
+    BOOST_CHECK_EQUAL(vals[1].GetKey(), 33);
+
+    BOOST_CHECK_EQUAL(vals[0].GetValue().value, 222);
+    BOOST_CHECK_EQUAL(vals[1].GetValue().value, 333);
+
+    CheckEvents(cache, lsnr);
+}
+
+BOOST_AUTO_TEST_CASE(TestInitialQueryTextNoExcept)
+{
+    Listener<int, TestEntry> lsnr;
+
+    ContinuousQuery<int, TestEntry> qry(lsnr);
+
+    cache.Put(11, TestEntry(111));
+    cache.Put(22, TestEntry(222));
+    cache.Put(33, TestEntry(333));
+
+    IgniteError err;
+
+    ContinuousQueryHandle<int, TestEntry> handle = cache.QueryContinuous(qry, TextQuery("TestEntry", "222"), err);
+
+    BOOST_REQUIRE(err.GetCode() == IgniteError::IGNITE_SUCCESS);
+
+    std::vector< CacheEntry<int, TestEntry> > vals;
+
+    handle.GetInitialQueryCursor().GetAll(vals);
+
+    BOOST_CHECK_THROW(handle.GetInitialQueryCursor(), IgniteError);
+
+    BOOST_REQUIRE_EQUAL(vals.size(), 1);
+
+    BOOST_CHECK_EQUAL(vals[0].GetKey(), 22);
+
+    BOOST_CHECK_EQUAL(vals[0].GetValue().value, 222);
+
+    CheckEvents(cache, lsnr);
+}
+
 BOOST_AUTO_TEST_SUITE_END()
