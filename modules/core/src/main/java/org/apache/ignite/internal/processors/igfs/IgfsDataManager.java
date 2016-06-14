@@ -17,18 +17,11 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import javax.cache.processor.EntryProcessorException;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteDataStreamer;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.binary.BinaryObjectException;
-import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.binary.BinaryReader;
-import org.apache.ignite.binary.BinaryWriter;
-import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.cache.affinity.AffinityKeyMapper;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.FileSystemConfiguration;
@@ -48,6 +41,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerCacheUpdaters;
+import org.apache.ignite.internal.processors.igfs.data.PutLargerOnlyEntryProcessor;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -489,78 +483,6 @@ public class IgfsDataManager extends IgfsManager {
             assert data.length == blockSize;
 
             dataCachePrj.put(key, data);
-        }
-    }
-
-    /**
-     * Entry processor to set or replace block byte value.
-     */
-    public static class PutLargerOnlyEntryProcessor implements EntryProcessor<IgfsBlockKey, byte[], Void>,
-            Externalizable, Binarylizable {
-        /** */
-        private static final long serialVersionUID = 0L;
-
-        /**
-         * The new value.
-         */
-        private byte[] newVal;
-
-        /**
-         * Non-arg constructor required by externalizable.
-         */
-        public PutLargerOnlyEntryProcessor() {
-            // no-op
-        }
-
-        /**
-         * Constructor.
-         *
-         * @param newVal The new value.
-         */
-        public PutLargerOnlyEntryProcessor(byte[] newVal) {
-            assert newVal != null;
-
-            this.newVal = newVal;
-        }
-
-        /** {@inheritDoc} */
-        public Void process(MutableEntry<IgfsBlockKey, byte[]> entry, Object... args)
-            throws EntryProcessorException {
-            byte[] curVal = entry.getValue();
-
-            if (curVal == null || newVal.length > curVal.length)
-                entry.setValue(newVal);
-
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            newVal = U.readByteArray(in);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeByteArray(out, newVal);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
-            BinaryRawReader in = reader.rawReader();
-
-            newVal = in.readByteArray();
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
-            BinaryRawWriter out = writer.rawWriter();
-
-            out.writeByteArray(newVal);
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(PutLargerOnlyEntryProcessor.class, this);
         }
     }
 
