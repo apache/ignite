@@ -27,8 +27,6 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStrea
 import org.apache.ignite.internal.util.typedef.X;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_QUIET;
-
 /**
  * Logger that delegates to platform.
  */
@@ -50,9 +48,6 @@ public class PlatformLogger implements IgniteLogger {
 
     /** Callbacks. */
     private final PlatformCallbackGateway gate;
-
-    /** Quiet flag. */
-    private final Boolean quiet;
 
     /** Category. */
     private final String category;
@@ -79,10 +74,6 @@ public class PlatformLogger implements IgniteLogger {
 
         this.gate = gate;
 
-        // Default quiet to false so that Java does not write anything to console.
-        // Platform is responsible for console output, we do not want to mix these.
-        quiet = Boolean.valueOf(System.getProperty(IGNITE_QUIET, "false"));
-
         category = null;
 
         // Pre-calculate enabled levels (JNI calls are expensive)
@@ -94,11 +85,10 @@ public class PlatformLogger implements IgniteLogger {
     /**
      * Ctor.
      */
-    private PlatformLogger(PlatformCallbackGateway gate, PlatformContext ctx, Boolean quiet, String category,
+    private PlatformLogger(PlatformCallbackGateway gate, PlatformContext ctx, String category,
         boolean traceEnabled, boolean debugEnabled, boolean infoEnabled) {
         this.gate = gate;
         this.ctx = ctx;
-        this.quiet = quiet;
         this.category = category;
         this.traceEnabled = traceEnabled;
         this.debugEnabled = debugEnabled;
@@ -107,7 +97,7 @@ public class PlatformLogger implements IgniteLogger {
 
     /** {@inheritDoc} */
     @Override public IgniteLogger getLogger(Object ctgr) {
-        return new PlatformLogger(gate, ctx, quiet, getCategoryString(ctgr), traceEnabled, debugEnabled, infoEnabled);
+        return new PlatformLogger(gate, ctx, getCategoryString(ctgr), traceEnabled, debugEnabled, infoEnabled);
     }
 
     /** {@inheritDoc} */
@@ -162,7 +152,9 @@ public class PlatformLogger implements IgniteLogger {
 
     /** {@inheritDoc} */
     @Override public boolean isQuiet() {
-        return quiet;
+        // Return false so that Java does not write anything to console.
+        // Platform is responsible for console output, we do not want to mix these.
+        return false;
     }
 
     /** {@inheritDoc} */
