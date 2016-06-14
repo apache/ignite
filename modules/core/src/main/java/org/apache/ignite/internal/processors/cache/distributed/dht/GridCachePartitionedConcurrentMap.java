@@ -179,14 +179,29 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
         };
     }
 
+    /**
+     * Combined iterator over current local partitions.
+     * @param <T> Iterator entry type.
+     */
     private abstract class PartitionedIterator<T> implements Iterator<T> {
+        /**
+         * Partitions iterator.
+         */
         private Iterator<GridDhtLocalPartition> partsIterator = ctx.topology().currentLocalPartitions().iterator();
 
+        /**
+         * Current partition iterator.
+         */
         private Iterator<T> currentIterator = partsIterator.hasNext() ? iterator(partsIterator.next()) :
             Collections.<T>emptyIterator();
 
+        /**
+         * @param part Partition.
+         * @return Iterator over entries of given partition.
+         */
         protected abstract Iterator<T> iterator(GridDhtLocalPartition part);
 
+        /** {@inheritDoc} */
         @Override public boolean hasNext() {
             if (currentIterator.hasNext())
                 return true;
@@ -201,6 +216,7 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
             return false;
         }
 
+        /** {@inheritDoc} */
         @Override public T next() {
             if (hasNext())
                 return currentIterator.next();
@@ -208,14 +224,24 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
                 throw new NoSuchElementException();
         }
 
+        /** {@inheritDoc} */
         @Override public void remove() {
             throw new UnsupportedOperationException("remove");
         }
     }
 
+    /**
+     * Read-only partitioned set.
+     * @param <T> Set entry type.
+     */
     private abstract class PartitionedSet<T> extends AbstractSet<T> {
+        /**
+         * @param part Partition.
+         * @return Set of entries from given partition.
+         */
         protected abstract Set<T> set(GridDhtLocalPartition part);
 
+        /** {@inheritDoc} */
         @Override public Iterator<T> iterator() {
             return new PartitionedIterator<T>() {
                 @Override protected Iterator<T> iterator(GridDhtLocalPartition part) {
@@ -224,10 +250,12 @@ public class GridCachePartitionedConcurrentMap implements GridCacheConcurrentMap
             };
         }
 
+        /** {@inheritDoc} */
         @Override public int size() {
             return F.size(iterator());
         }
 
+        /** {@inheritDoc} */
         @Override public boolean contains(Object o) {
             for (GridDhtLocalPartition part : ctx.topology().currentLocalPartitions()) {
                 if (set(part).contains(o))
