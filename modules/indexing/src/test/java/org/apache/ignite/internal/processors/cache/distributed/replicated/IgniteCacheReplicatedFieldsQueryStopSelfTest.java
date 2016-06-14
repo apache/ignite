@@ -41,9 +41,9 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CachePeekMode.ALL;
 
 /**
- * Tests distributed query cancellation.
+ * Tests distributed fields query resources cleanup on cancellation by various reasons.
  */
-public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQuerySelfTest {
+public class IgniteCacheReplicatedFieldsQueryStopSelfTest extends IgniteCacheAbstractQuerySelfTest {
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 3;
@@ -68,7 +68,7 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
     /**
      * Tests stopping two-step long query on timeout.
      */
-    public void testRemoteQueryExecutionTimeout1() throws Exception {
+    public void testRemoteQueryExecutionTimeout() throws Exception {
         testQueryTimeout(10_000, 4, "select a._key, b._key from String a, String b", 3);
     }
 
