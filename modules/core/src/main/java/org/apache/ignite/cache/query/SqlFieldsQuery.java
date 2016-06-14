@@ -125,6 +125,21 @@ public final class SqlFieldsQuery extends Query<List<?>> {
     }
 
     /**
+     * Gets the query execution timeout.
+     */
+    public int getTimeout() {
+        return timeout;
+    }
+
+    /**
+     * Sets the query execution timeout in seconds. Query will be automatically cancelled if the timeout is exceeded.
+     * @param timeout Timeout value or 0 to disable.
+     */
+    public void setTimeout(int timeout) {
+        this.timeout = timeout;
+    }
+
+    /**
      * Checks if this query is collocated.
      *
      * @return {@code true} If the query is collocated.
@@ -158,21 +173,5 @@ public final class SqlFieldsQuery extends Query<List<?>> {
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(SqlFieldsQuery.class, this);
-    }
-
-    /**
-     * Sets the query execution timeout in secinds. Query will be automatically cancelled if timeout is exceeded.
-     * Zero value means no timeout.
-     * @param timeout Timeout.
-     */
-    public void timeout(int timeout) {
-        this.timeout = timeout;
-    }
-
-    /**
-     * Gets the query execution timeout.
-     */
-    public int timeout() {
-        return timeout;
     }
 }

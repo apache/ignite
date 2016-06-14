@@ -27,9 +27,10 @@ import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractQuerySelfTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
@@ -70,7 +71,6 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
     public void testRemoteQueryExecutionTimeout1() throws Exception {
         testQueryTimeout(10_000, 4, "select a._key, b._key from String a, String b", 3);
     }
-
 
     /**
      * Tests stopping two-step long query while result set is being generated on remote nodes.
@@ -181,13 +181,13 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
 
             assertEquals(0, cache.localSize(ALL));
 
-            final QueryCursor<List<?>> qry = cache.query(new SqlFieldsQuery(sql));
+            final QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery(sql));
 
             final CountDownLatch l = new CountDownLatch(1);
 
             ignite().scheduler().runLocal(new Runnable() {
                 @Override public void run() {
-                    qry.close();
+                    cursor.close();
 
                     l.countDown();
 
@@ -196,7 +196,7 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
 
             try {
                 // Trigger distributed execution.
-                qry.iterator();
+                cursor.iterator();
             }
             catch (CacheException ex) {
                 log().error("Got expected exception", ex);
@@ -229,18 +229,21 @@ public class IgniteCacheReplicatedQueryStopSelfTest extends IgniteCacheAbstractQ
                 char[] tmp = new char[valSize];
                 Arrays.fill(tmp, ' ');
                 cache.put(i, new String(tmp));
+
+                if (i % 1_000 == 0)
+                    log().info("Processed " + i);
             }
 
             assertEquals(0, cache.localSize(ALL));
 
-            SqlFieldsQuery sqlQry = new SqlFieldsQuery(sql);
-            sqlQry.timeout(qryTimeoutSecs);
+            SqlFieldsQuery sqlFldQry = new SqlFieldsQuery(sql);
+            sqlFldQry.setTimeout(qryTimeoutSecs);
 
-            final QueryCursor<List<?>> qry = cache.query(sqlQry);
+            final QueryCursor<?> cursor = cache.query(sqlFldQry);
 
             try {
                 // Trigger distributed execution.
-                qry.iterator();
+                cursor.iterator();
             }
             catch (CacheException ex) {
                 log().error("Got expected exception", ex);

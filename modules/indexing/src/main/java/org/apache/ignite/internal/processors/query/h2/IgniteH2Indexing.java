@@ -1027,6 +1027,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         fqry.setArgs(qry.getArgs());
         fqry.setPageSize(qry.getPageSize());
+        fqry.setTimeout(qry.getTimeout());
 
         final QueryCursor<List<?>> res = queryTwoStep(cctx, fqry);
 
@@ -1133,8 +1134,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             log.debug("Parsed query: `" + sqlQry + "` into two step query: " + twoStepQry);
 
         twoStepQry.pageSize(qry.getPageSize());
-
-        twoStepQry.timeout(qry.timeout());
+        twoStepQry.timeout(qry.getTimeout());
 
         final CtxIterable<List<?>> iterable = (CtxIterable<List<?>>)queryTwoStep(cctx, twoStepQry, cctx.keepBinary());
         QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<List<?>>(iterable) {

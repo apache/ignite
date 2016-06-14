@@ -43,6 +43,9 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
     @GridToStringInclude
     private Object[] args;
 
+    /** Timeout in seconds. */
+    private int timeout;
+
     /**
      * Constructs query for the given type name and SQL query.
      *
@@ -128,6 +131,21 @@ public final class SqlQuery<K, V> extends Query<Cache.Entry<K, V>> {
         this.type = type;
 
         return this;
+    }
+
+    /**
+     * Gets the query execution timeout.
+     */
+    public int getTimeout() {
+        return timeout;
+    }
+
+    /**
+     * Sets the query execution timeout in seconds. Query will be automatically cancelled if the timeout is exceeded.
+     * @param timeout Timeout value or 0 to disable.
+     */
+    public void setTimeout(int timeout) {
+        this.timeout = timeout;
     }
 
     /** {@inheritDoc} */
