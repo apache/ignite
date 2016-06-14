@@ -41,7 +41,7 @@ import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerCacheUpdaters;
-import org.apache.ignite.internal.processors.igfs.data.PutLargerOnlyEntryProcessor;
+import org.apache.ignite.internal.processors.igfs.data.IgfsPutLargerOnlyEntryProcessor;
 import org.apache.ignite.internal.processors.task.GridInternal;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -471,13 +471,14 @@ public class IgfsDataManager extends IgfsManager {
     /**
      * Stores the given block in data cache.
      *
+     * @param blockSize The size of the block.
      * @param key The data cache key of the block.
      * @param data The new value of the block.
      */
     private void putBlock(int blockSize, IgfsBlockKey key, byte[] data) throws IgniteCheckedException {
         if (data.length < blockSize)
             // partial (incomplete) block:
-            dataCachePrj.invoke(key, new PutLargerOnlyEntryProcessor(data));
+            dataCachePrj.invoke(key, new IgfsPutLargerOnlyEntryProcessor(data));
         else {
             // whole block:
             assert data.length == blockSize;
@@ -1073,6 +1074,7 @@ public class IgfsDataManager extends IgfsManager {
      * @param colocatedKey Block key.
      * @param startOff Data start offset within block.
      * @param data Data to write.
+     * @param blockSize The block size.
      * @throws IgniteCheckedException If update failed.
      */
     private void processPartialBlockWrite(IgniteUuid fileId, IgfsBlockKey colocatedKey, int startOff,

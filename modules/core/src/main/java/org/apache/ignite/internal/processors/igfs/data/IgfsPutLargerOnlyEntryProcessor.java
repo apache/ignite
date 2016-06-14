@@ -32,20 +32,18 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 /**
  * Entry processor to set or replace block byte value.
  */
-public class PutLargerOnlyEntryProcessor implements EntryProcessor<IgfsBlockKey, byte[], Void>,
-        Externalizable, Binarylizable {
+public class IgfsPutLargerOnlyEntryProcessor implements EntryProcessor<IgfsBlockKey, byte[], Void>,
+    Externalizable, Binarylizable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /**
-     * The new value.
-     */
+    /** The new value. */
     private byte[] newVal;
 
     /**
      * Non-arg constructor required by externalizable.
      */
-    public PutLargerOnlyEntryProcessor() {
+    public IgfsPutLargerOnlyEntryProcessor() {
         // no-op
     }
 
@@ -54,7 +52,7 @@ public class PutLargerOnlyEntryProcessor implements EntryProcessor<IgfsBlockKey,
      *
      * @param newVal The new value.
      */
-    public PutLargerOnlyEntryProcessor(byte[] newVal) {
+    public IgfsPutLargerOnlyEntryProcessor(byte[] newVal) {
         assert newVal != null;
 
         this.newVal = newVal;
@@ -97,6 +95,6 @@ public class PutLargerOnlyEntryProcessor implements EntryProcessor<IgfsBlockKey,
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(PutLargerOnlyEntryProcessor.class, this);
+        return S.toString(IgfsPutLargerOnlyEntryProcessor.class, this);
     }
 }
