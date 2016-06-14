@@ -365,7 +365,7 @@ namespace Apache.Ignite.Core.Tests.Log
         {
             public static readonly List<LogEntry> Entries = new List<LogEntry>(5000);
 
-            private readonly ILogger _console = new ConsoleLogger(AllLevels);
+            private readonly ILogger _console = new ConsoleLogger(LogLevel.Trace);
             private readonly LogLevel _minLevel;
 
             public TestLogger(LogLevel minLevel)
@@ -373,8 +373,8 @@ namespace Apache.Ignite.Core.Tests.Log
                 _minLevel = minLevel;
             }
 
-            public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider, string category,
-                string nativeErrorInfo, Exception ex)
+            public void Log(LogLevel level, string message, object[] args, IFormatProvider formatProvider, 
+                string category, string nativeErrorInfo, Exception ex)
             {
                 if (!IsEnabled(level))
                     return;

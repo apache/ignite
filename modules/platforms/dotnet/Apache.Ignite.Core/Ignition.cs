@@ -165,7 +165,7 @@ namespace Apache.Ignite.Core
             lock (SyncRoot)
             {
                 // 0. Init logger
-                var log = cfg.Logger ?? new ConsoleLogger(LogLevel.Info, LogLevel.Warn, LogLevel.Error);
+                var log = cfg.Logger ?? new ConsoleLogger(LogLevel.Info);
 
                 log.Debug("Starting Ignite.NET " + Assembly.GetExecutingAssembly().GetName().Version);
 

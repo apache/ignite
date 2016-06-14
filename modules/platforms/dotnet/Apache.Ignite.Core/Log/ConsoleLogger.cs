@@ -29,17 +29,15 @@ namespace Apache.Ignite.Core.Log
     public class ConsoleLogger : ILogger
     {
         /** */
-        private readonly LogLevel[] _enabledLevels;
+        private readonly LogLevel _minLevel;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConsoleLogger"/> class.
         /// </summary>
-        /// <param name="enabledLevels">The enabled levels.</param>
-        public ConsoleLogger(params LogLevel[] enabledLevels)
+        /// <param name="minLevel">The minimum log level to enable.</param>
+        public ConsoleLogger(LogLevel minLevel)
         {
-            IgniteArgumentCheck.NotNull(enabledLevels, "enabledLevels");
-
-            _enabledLevels = enabledLevels;
+            _minLevel = minLevel;
         }
 
         /** <inheritdoc /> */
@@ -79,15 +77,7 @@ namespace Apache.Ignite.Core.Log
         /** <inheritdoc /> */
         public bool IsEnabled(LogLevel level)
         {
-            // ReSharper disable once ForCanBeConvertedToForeach (performance)
-            // ReSharper disable once LoopCanBeConvertedToQuery (performance)
-            for (var i = 0; i < _enabledLevels.Length; i++)
-            {
-                if (_enabledLevels[i] == level)
-                    return true;
-            }
-
-            return false;
+            return level >= _minLevel;
         }
     }
 }

@@ -41,8 +41,8 @@ namespace Apache.Ignite.Core.Tests.Log
         {
             foreach (var level in AllLevels)
             {
-                Test(l => l.Log(level, "test msg"), "test msg", new[] { level });
-                Test(l => l.Log(level, "test msg"), null, new LogLevel[0]);
+                Test(l => l.Log(level, "test msg"), "test msg", level);
+                Test(l => l.Log(level, "test msg"), null, level + 1);
             }
         }
 
@@ -65,14 +65,13 @@ namespace Apache.Ignite.Core.Tests.Log
         /// <summary>
         /// Tests the specified log action.
         /// </summary>
-        private static void Test(Action<ConsoleLogger> logAction, string expected, LogLevel[] levels = null)
+        private static void Test(Action<ConsoleLogger> logAction, string expected, LogLevel minLevel = LogLevel.Trace)
         {
             var sb = new StringBuilder();
             var writer = new StringWriter(sb);
             Console.SetOut(writer);
 
-            var log = new ConsoleLogger(
-                levels ?? new[] {LogLevel.Trace, LogLevel.Info, LogLevel.Debug, LogLevel.Warn, LogLevel.Error});
+            var log = new ConsoleLogger(minLevel);
 
             logAction(log);
 
