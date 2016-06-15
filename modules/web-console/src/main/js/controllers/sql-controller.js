@@ -786,7 +786,7 @@ consoleModule.controller('sqlController', [
 
         QueryNotebooks.read($state.params.noteId)
             .then(loadNotebook)
-            .catch(function() {
+            .catch(() => {
                 $scope.notebookLoadFailed = true;
 
                 $loading.finish('sqlLoading');
@@ -797,6 +797,8 @@ consoleModule.controller('sqlController', [
                 return;
 
             if ($scope.notebook.name !== name) {
+                const prevName = $scope.notebook.name;
+
                 $scope.notebook.name = name;
 
                 QueryNotebooks.save($scope.notebook)
@@ -813,7 +815,11 @@ consoleModule.controller('sqlController', [
 
                         $scope.notebook.edit = false;
                     })
-                    .catch(_handleException);
+                    .catch((err) => {
+                        $scope.notebook.name = prevName;
+
+                        _handleException(err);
+                    });
             }
             else
                 $scope.notebook.edit = false;
@@ -1192,9 +1198,7 @@ consoleModule.controller('sqlController', [
                 .then(() => _closeOldQuery(paragraph))
                 .then(() => agentMonitor.query(args.cacheName, args.pageSize, args.query))
                 .then(_processQueryResult.bind(this, paragraph))
-                .catch((err) => {
-                    paragraph.errMsg = err.message;
-                });
+                .catch((err) => paragraph.errMsg = err.message);
         };
 
         const _tryStartRefresh = function(paragraph) {
@@ -1241,9 +1245,7 @@ consoleModule.controller('sqlController', [
 
                     $scope.stopRefresh(paragraph);
                 })
-                .finally(function() {
-                    paragraph.ace.focus();
-                });
+                .finally(() => paragraph.ace.focus());
         };
 
         $scope.queryExecuted = function(paragraph) {
@@ -1286,9 +1288,7 @@ consoleModule.controller('sqlController', [
 
                     _showLoading(paragraph, false);
                 })
-                .finally(function() {
-                    paragraph.ace.focus();
-                });
+                .finally(() => paragraph.ace.focus());
         };
 
         $scope.scan = function(paragraph) {
@@ -1314,9 +1314,7 @@ consoleModule.controller('sqlController', [
 
                     _showLoading(paragraph, false);
                 })
-                .finally(function() {
-                    paragraph.ace.focus();
-                });
+                .finally(() => paragraph.ace.focus());
         };
 
         function _updatePieChartsWithData(paragraph, newDatum) {
@@ -1370,9 +1368,7 @@ consoleModule.controller('sqlController', [
 
                     _showLoading(paragraph, false);
                 })
-                .finally(function() {
-                    paragraph.ace.focus();
-                });
+                .finally(() => paragraph.ace.focus());
         };
 
         const _export = (fileName, columnFilter, meta, rows) => {
@@ -1541,10 +1537,8 @@ consoleModule.controller('sqlController', [
                         return cache;
                     }), 'name');
                 })
-                .catch((err) => _handleException(err))
-                .finally(function() {
-                    $loading.finish('loadingCacheMetadata');
-                });
+                .catch(_handleException)
+                .finally(() => $loading.finish('loadingCacheMetadata'));
         };
 
         $scope.showResultQuery = function(paragraph) {
