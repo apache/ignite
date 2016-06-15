@@ -32,6 +32,7 @@ import org.apache.spark.sql._
 import org.apache.spark._
 
 import scala.collection.JavaConversions._
+import scala.reflect.macros.whitebox
 
 /**
  * Ignite RDD. Represents Ignite cache as Spark RDD abstraction.
@@ -293,6 +294,12 @@ class IgniteRDD[K, V] (
         ensureCache().removeAll()
     }
 
+    /**
+     * Returns `IgniteRDD` that will operate with binary objects. This method
+     * behaves similar to [[org.apache.ignite.IgniteCache#withKeepBinary]].
+     *
+     * @return New `IgniteRDD` instance for binary objects.
+     */
     def withKeepBinary[K1, V1](): IgniteRDD[K1, V1] = {
         new IgniteRDD[K1, V1](
             ic.asInstanceOf[IgniteContext[K1, V1]],
