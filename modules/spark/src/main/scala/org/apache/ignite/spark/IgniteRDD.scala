@@ -32,7 +32,6 @@ import org.apache.spark.sql._
 import org.apache.spark._
 
 import scala.collection.JavaConversions._
-import scala.reflect.macros.whitebox
 
 /**
  * Ignite RDD. Represents Ignite cache as Spark RDD abstraction.
