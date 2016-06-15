@@ -110,6 +110,9 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Apache.Ignite.Core.Tests.NuGet.sln.DotSettings" />
+    <None Include="IgniteConfigurationSection.xsd">
+      <SubType>Designer</SubType>
+    </None>
     <None Include="install-package.ps1" />
     <None Include="NuGet.config" />
     <None Include="packages.config">
