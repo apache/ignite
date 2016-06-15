@@ -13,7 +13,7 @@ rmdir pkg -Force -Recurse
 mkdir nupkg
 mkdir pkg
 
-# Find all nuspec files and run 'nuget pack' on corresponding csproj files
+# Find all nuspec files and run 'nuget pack' either directly, or on corresponding csproj files (if present).
 ls ..\*.nuspec -Recurse  `
     | % { If (Test-Path ([io.path]::ChangeExtension($_.FullName, ".csproj"))){[io.path]::ChangeExtension($_.FullName, ".csproj")} Else {$_.FullName}  } `
     | % { & $ng pack $_ -Prop Configuration=$cfg -Version $ver -Prop Platform=AnyCPU -OutputDirectory nupkg }
@@ -26,3 +26,9 @@ ls ..\*.nuspec -Recurse  `
 (Get-Content Apache.Ignite.Core.Tests.NuGet.csproj) `
     -replace 'packages\\Apache.Ignite(.*?)\.\d.*?\\', ('packages\Apache.Ignite$1.' + "$ver\") `
     | Out-File Apache.Ignite.Core.Tests.NuGet.csproj  -Encoding utf8
+
+# restore packages
+& $ng restore
+
+# refresh content files
+ls packages\*\content | % {copy ($_.FullName + "\*.*") .\ }
