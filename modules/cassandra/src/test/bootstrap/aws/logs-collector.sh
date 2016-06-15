@@ -17,6 +17,16 @@
 # limitations under the License.
 #
 
+# -----------------------------------------------------------------------------------------------
+# Logs collector daemon
+# -----------------------------------------------------------------------------------------------
+# Script is launched in background by all EC2 nodes of all clusters (Cassandra, Ignite, Tests) and
+# periodically (each 30 seconds) checks if specific S3 trigger file (specified by $3)
+# was created or its timestamp was changed. Such an event serve as a trigger for the script
+# to collect EC2 instance logs (from folder specified by $1) and upload them into specific
+# S3 folder (specified by $2).
+# -----------------------------------------------------------------------------------------------
+
 echo "[INFO] Running Logs collector service"
 
 if [ -z "$1" ]; then

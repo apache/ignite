@@ -17,12 +17,20 @@
 # limitations under the License.
 #
 
+# -----------------------------------------------------------------------------------------------
+# Tests report builder
+# -----------------------------------------------------------------------------------------------
+# Script is used to analyze load tests logs collected from all 'Tests' cluster nodes and build
+# summary report
+# -----------------------------------------------------------------------------------------------
+
 #profile=/home/ignite/.bash_profile
 profile=/root/.bash_profile
 
 . $profile
 . /opt/ignite-cassandra-tests/bootstrap/aws/common.sh "test"
 
+# Building tests summary report
 reportTestsSummary()
 {
     echo "[INFO] Preparing tests results summary"
@@ -112,6 +120,7 @@ reportTestsSummary()
     rm -f $HOME/tests-summary.zip
 }
 
+# Creates report for succeed tests
 reportSucceedTestsStatistics()
 {
     writeMsg="0"
@@ -459,6 +468,7 @@ reportSucceedTestsStatistics()
     rm -f $tmpFile
 }
 
+# Creates report for failed tests
 reportFailedTestsDetailes()
 {
     for dir in $2/*

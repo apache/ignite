@@ -17,6 +17,14 @@
 # limitations under the License.
 #
 
+# -----------------------------------------------------------------------------------------------
+# Bootstrap script to spin up Ganglia agent on EC2 node
+# -----------------------------------------------------------------------------------------------
+# The script is used by other bootstrap scripts (cassandra-bootstrap.sh, ignite-bootstrap.sh,
+# tests-bootstrap.sh) to setup and start Ganglia agent on cluster EC2 nodes
+# -----------------------------------------------------------------------------------------------
+
+# Installs and run Ganglia agent ('gmond' daemon)
 bootstrapGangliaAgent()
 {
     echo "[INFO]-----------------------------------------------------------------"

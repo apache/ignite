@@ -17,12 +17,20 @@
 # limitations under the License.
 #
 
+# -----------------------------------------------------------------------------------------------
+# Bootstrap script to spin up Ganglia master
+# -----------------------------------------------------------------------------------------------
+
+# URL to download AWS CLI tools
 AWS_CLI_DOWNLOAD_URL=https://s3.amazonaws.com/aws-cli/awscli-bundle.zip
 
+# URL to download JDK
 JDK_DOWNLOAD_URL=http://download.oracle.com/otn-pub/java/jdk/8u77-b03/jdk-8u77-linux-x64.tar.gz
 
-TESTS_PACKAGE_DONLOAD_URL=s3://bucket/folder/ignite-cassandra-tests-1.6.0-SNAPSHOT.zip
+# URL to download Ignite-Cassandra tests package - you should previously package and upload it to this place
+TESTS_PACKAGE_DONLOAD_URL=s3://<bucket>/<folder>/ignite-cassandra-tests-<version>.zip
 
+# Terminates script execution and upload logs to S3
 terminate()
 {
     SUCCESS_URL=$S3_GANGLIA_BOOTSTRAP_SUCCESS
@@ -86,6 +94,7 @@ terminate()
     exit 0
 }
 
+# Downloads specified package
 downloadPackage()
 {
     echo "[INFO] Downloading $3 package from $1 into $2"
@@ -112,6 +121,7 @@ downloadPackage()
     terminate "All 10 attempts to download $3 package from $1 are failed"
 }
 
+# Downloads and setup JDK
 setupJava()
 {
     rm -Rf /opt/java /opt/jdk.tar.gz
@@ -136,6 +146,7 @@ setupJava()
     fi
 }
 
+# Downloads and setup AWS CLI
 setupAWSCLI()
 {
     echo "[INFO] Installing 'awscli'"
@@ -167,6 +178,7 @@ setupAWSCLI()
     echo "[INFO] Successfully installed awscli from zip archive"
 }
 
+# Setup all the pre-requisites (packages, settings and etc.)
 setupPreRequisites()
 {
     echo "[INFO] Installing 'wget' package"
@@ -202,6 +214,7 @@ setupPreRequisites()
     fi
 }
 
+# Downloads and setup tests package
 setupTestsPackage()
 {
     downloadPackage "$TESTS_PACKAGE_DONLOAD_URL" "/opt/ignite-cassandra-tests.zip" "Tests"
@@ -230,6 +243,7 @@ setupTestsPackage()
     tagInstance
 }
 
+# Creates config file for 'gmond' damon working in receiver mode
 createGmondReceiverConfig()
 {
     /usr/local/sbin/gmond --default_config > /opt/gmond-default.conf
@@ -251,6 +265,7 @@ createGmondReceiverConfig()
     rm -f /opt/gmond-default.conf
 }
 
+# Creates config file for 'gmond' damon working in sender-receiver mode
 createGmondSenderReceiverConfig()
 {
     /usr/local/sbin/gmond --default_config > /opt/gmond-default.conf
@@ -271,6 +286,7 @@ createGmondSenderReceiverConfig()
     rm -f /opt/gmond-default.conf
 }
 
+# Downloads and setup Ganglia (and dependency) packages
 setupGangliaPackages()
 {
     echo "[INFO] Installing Ganglia master required packages"
@@ -437,6 +453,7 @@ setupGangliaPackages()
     createGmondSenderReceiverConfig ganglia 8644
 }
 
+# Starts 'gmond' receiver damon
 startGmondReceiver()
 {
     configFile=/opt/gmond-${1}.conf
@@ -465,6 +482,7 @@ startGmondReceiver()
     fi
 }
 
+# Starts 'gmetad' daemon
 startGmetadCollector()
 {
     echo "[INFO] Starting gmetad daemon"
@@ -490,6 +508,7 @@ startGmetadCollector()
     fi
 }
 
+# Starts Apache 'httpd' service
 startHttpdService()
 {
     echo "[INFO] Starting httpd service"

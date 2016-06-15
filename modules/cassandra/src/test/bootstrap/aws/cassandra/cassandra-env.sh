@@ -15,6 +15,10 @@
 # limitations under the License.
 #
 
+# -----------------------------------------------------------------------------------------------
+# Environment setup script from Cassandra distribution
+# -----------------------------------------------------------------------------------------------
+
 calculate_heap_sizes()
 {
     case "`uname`" in

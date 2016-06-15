@@ -17,6 +17,11 @@
 # limitations under the License.
 #
 
+# -----------------------------------------------------------------------------------------------
+# Common purpose functions used by bootstrap scripts
+# -----------------------------------------------------------------------------------------------
+
+# Validates values of the main environment variables specified in env.sh
 validate()
 {
     if [ -n "$TESTS_TYPE" ] && [ "$TESTS_TYPE" != "ignite" ] && [ "$TESTS_TYPE" != "cassandra" ]; then
@@ -152,6 +157,7 @@ validate()
     fi
 }
 
+# Prints EC2 instance info
 printInstanceInfo()
 {
     if [ "$NODE_TYPE" == "cassandra" ]; then
@@ -230,6 +236,7 @@ printInstanceInfo()
     fi
 }
 
+# Applies specified tag to EC2 instance
 createTag()
 {
     for i in 0 9;
@@ -246,6 +253,7 @@ createTag()
     terminate "All 10 attempts to tag EC2 instance $1 with $2=$3 are failed"
 }
 
+# Applies 'owner', 'project' and 'Name' tags to EC2 instance
 tagInstance()
 {
     export EC2_HOME=/opt/aws/apitools/ec2
@@ -283,6 +291,7 @@ tagInstance()
     fi
 }
 
+# Sets NODE_TYPE env variable
 setNodeType()
 {
     if [ -n "$1" ]; then
@@ -293,6 +302,7 @@ setNodeType()
     fi
 }
 
+# Reverts NODE_TYPE env variable to previous value
 revertNodeType()
 {
     if [ -n "$NEW_NODE_TYPE" ]; then
@@ -301,6 +311,7 @@ revertNodeType()
     fi
 }
 
+# Returns logs folder for the node (Cassandra, Ignite, Tests)
 getLocalLogsFolder()
 {
     setNodeType $1
@@ -318,6 +329,7 @@ getLocalLogsFolder()
     revertNodeType
 }
 
+# Returns S3 URL to discover this node
 getDiscoveryUrl()
 {
     setNodeType $1
@@ -335,6 +347,7 @@ getDiscoveryUrl()
     revertNodeType
 }
 
+# Returns S3 URL used as a join lock, used by nodes to join cluster sequentially
 getJoinLockUrl()
 {
     setNodeType $1
@@ -348,6 +361,8 @@ getJoinLockUrl()
     revertNodeType
 }
 
+# Returns S3 URL used to select first node for the cluster. The first node is responsible
+# for doing all routine work (clean S3 logs/test results from previous execution) on cluster startup
 getFirstNodeLockUrl()
 {
     setNodeType $1
@@ -363,6 +378,7 @@ getFirstNodeLockUrl()
     revertNodeType
 }
 
+# Returns S3 success URL for the node - folder created in S3 in case node successfully started and containing node logs
 getSucessUrl()
 {
     setNodeType $1
@@ -380,6 +396,7 @@ getSucessUrl()
     revertNodeType
 }
 
+# Returns S3 failure URL for the node - folder created in S3 in case node failed to start and containing node logs
 getFailureUrl()
 {
     setNodeType $1
@@ -397,6 +414,7 @@ getFailureUrl()
     revertNodeType
 }
 
+# Terminates script execution, unregisters node and removes all the locks (join lock, first node lock) created by it
 terminate()
 {
     SUCCESS_URL=$(getSucessUrl)
@@ -472,6 +490,7 @@ terminate()
     exit 0
 }
 
+# Registers node by creating a file having node hostname inside specific folder in S3
 registerNode()
 {
     DISCOVERY_URL=$(getDiscoveryUrl)
@@ -487,6 +506,7 @@ registerNode()
     echo "[INFO] $NODE_TYPE node successfully registered"
 }
 
+# Unregisters node by removing a file having node hostname inside specific folder in S3
 unregisterNode()
 {
     DISCOVERY_URL=$(getDiscoveryUrl)
@@ -509,6 +529,8 @@ unregisterNode()
     fi
 }
 
+# Cleans up all nodes metadata for particular cluster (Cassandra, Ignite, Tests). Performed only by the node acquired
+# first node lock.
 cleanupMetadata()
 {
     DISCOVERY_URL=$(getDiscoveryUrl)
@@ -526,6 +548,8 @@ cleanupMetadata()
     echo "[INFO] Metadata cleanup completed"
 }
 
+# Tries to get first node lock for the node. Only one (first) node can have such lock and it will be responsible for
+# cleanup process when starting cluster
 tryToGetFirstNodeLock()
 {
     if [ "$FIRST_NODE_LOCK" == "true" ]; then
@@ -572,6 +596,7 @@ tryToGetFirstNodeLock()
     return 0
 }
 
+# Checks if first node lock already exists in S3
 checkFirstNodeLockExist()
 {
     echo "[INFO] Checking for the first node lock: $1"
@@ -587,6 +612,7 @@ checkFirstNodeLockExist()
     return 0
 }
 
+# Creates first node lock in S3
 createFirstNodeLock()
 {
     aws s3 cp --sse AES256 /opt/ignite-cassandra-tests/bootstrap/first-node-lock $1
@@ -598,6 +624,7 @@ createFirstNodeLock()
     echo "[INFO] Created first node lock: $1"
 }
 
+# Removes first node lock from S3
 removeFirstNodeLock()
 {
     if [ "$FIRST_NODE_LOCK" != "true" ]; then
@@ -619,6 +646,7 @@ removeFirstNodeLock()
     FIRST_NODE_LOCK="false"
 }
 
+# Tries to get cluster join lock. Nodes use this lock to join a cluster sequentially.
 tryToGetClusterJoinLock()
 {
     if [ "$JOIN_LOCK" == "true" ]; then
@@ -663,6 +691,7 @@ tryToGetClusterJoinLock()
     return 0
 }
 
+# Checks if join lock already exists in S3
 checkClusterJoinLockExist()
 {
     echo "[INFO] Checking for the cluster join lock: $1"
@@ -688,6 +717,7 @@ checkClusterJoinLockExist()
     echo "[INFO] Cluster join lock doesn't exist"
 }
 
+# Creates join lock in S3
 createClusterJoinLock()
 {
     aws s3 cp --sse AES256 /opt/ignite-cassandra-tests/bootstrap/join-lock $1
@@ -699,6 +729,7 @@ createClusterJoinLock()
     echo "[INFO] Created cluster join lock: $1"
 }
 
+# Removes join lock
 removeClusterJoinLock()
 {
     if [ "$JOIN_LOCK" != "true" ]; then
@@ -720,6 +751,8 @@ removeClusterJoinLock()
     echo "[INFO] Removed cluster join lock: $JOIN_LOCK_URL"
 }
 
+# Waits for the node to join cluster, periodically trying to acquire cluster join lock and exiting only when node
+# successfully acquired the lock. Such mechanism used by nodes to join cluster sequentially (limitation of Cassandra).
 waitToJoinCluster()
 {
     echo "[INFO] Waiting to join $NODE_TYPE cluster"
@@ -739,6 +772,8 @@ waitToJoinCluster()
     done
 }
 
+# Wait for the cluster to register at least one node in S3, so that all other nodes will use already existing nodes
+# to send them info about them and join the cluster
 setupClusterSeeds()
 {
     if [ "$1" != "cassandra" ] && [ "$1" != "ignite" ] && [ "$1" != "test" ]; then
@@ -803,6 +838,7 @@ setupClusterSeeds()
     done
 }
 
+# Wait until first cluster node registered in S3
 waitFirstClusterNodeRegistered()
 {
     DISCOVERY_URL=$(getDiscoveryUrl)
@@ -835,6 +871,8 @@ waitFirstClusterNodeRegistered()
     echo "[INFO] First $type node registered"
 }
 
+# Waits until all cluster nodes successfully bootstrapped. In case of Tests cluster also waits until all nodes
+# switch to waiting state
 waitAllClusterNodesReady()
 {
     if [ "$1" == "cassandra" ]; then
@@ -878,6 +916,7 @@ waitAllClusterNodesReady()
     echo "[INFO] Congratulation, all $NODES_COUNT $1 nodes are ready"
 }
 
+# Wait untill all Tests cluster nodes completed their tests execution
 waitAllTestNodesCompletedTests()
 {
     HOST_NAME=$(hostname -f | tr '[:upper:]' '[:lower:]')
@@ -900,13 +939,17 @@ waitAllTestNodesCompletedTests()
     echo "[INFO] Congratulation, all $TEST_NODES_COUNT test nodes have completed their tests"
 }
 
+# Attaches environment configuration settings
 . $( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/env.sh
 
+# Validates environment settings
 validate
 
+# Validates node type of EC2 instance
 if [ "$1" != "cassandra" ] && [ "$1" != "ignite" ] && [ "$1" != "test" ] && [ "$1" != "ganglia" ]; then
     echo "[ERROR] Unsupported node type specified: $1"
     exit 1
 fi
 
+# Sets node type of EC2 instance
 export NODE_TYPE=$1

@@ -17,12 +17,18 @@
 # limitations under the License.
 #
 
+# -----------------------------------------------------------------------------------------------
+# Script to start Ignite daemon (used by ignite-bootstrap.sh)
+# -----------------------------------------------------------------------------------------------
+
 #profile=/home/ignite/.bash_profile
 profile=/root/.bash_profile
 
 . $profile
 . /opt/ignite-cassandra-tests/bootstrap/aws/common.sh "ignite"
 
+# Setups Cassandra seeds for this Ignite node being able to connect to Cassandra.
+# Looks for the information in S3 about already up and running Cassandra cluster nodes.
 setupCassandraSeeds()
 {
     setupClusterSeeds "cassandra" "true"
@@ -41,6 +47,7 @@ setupCassandraSeeds()
     cat /opt/ignite/config/ignite-cassandra-server-template.xml | sed -r "s/\\\$\{CASSANDRA_SEEDS\}/$CASSANDRA_SEEDS/g" > /opt/ignite/config/ignite-cassandra-server.xml
 }
 
+# Setups Ignite nodes which this EC2 Ignite node will use to send its metadata and join Ignite cluster
 setupIgniteSeeds()
 {
     if [ "$FIRST_NODE_LOCK" == "true" ]; then
@@ -73,6 +80,7 @@ setupIgniteSeeds()
     mv -f /opt/ignite/config/ignite-cassandra-server1.xml /opt/ignite/config/ignite-cassandra-server.xml
 }
 
+# Checks status of Ignite daemon
 checkIgniteStatus()
 {
     proc=$(ps -ef | grep java | grep "org.apache.ignite.startup.cmdline.CommandLineStartup")
@@ -101,6 +109,7 @@ checkIgniteStatus()
     return 1
 }
 
+# Gracefully starts Ignite daemon and waits until it joins Ignite cluster
 startIgnite()
 {
     echo "[INFO]-------------------------------------------------------------"
@@ -143,8 +152,10 @@ startIgnite()
 
 START_ATTEMPT=0
 
+# Cleans all the previous metadata about this EC2 node
 unregisterNode
 
+# Tries to get first-node lock
 tryToGetFirstNodeLock
 
 echo "[INFO]-----------------------------------------------------------------"
@@ -165,15 +176,18 @@ else
     cleanupMetadata
 fi
 
+# Applies Ignite environment settings from ignite-env.sh
 envScript=$(readlink -m $( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/ignite-env.sh)
 if [ -f "$envScript" ]; then
     . $envScript
 fi
 
+# Start Ignite daemon
 startIgnite
 
 startTime=$(date +%s)
 
+# Trying multiple attempts to start Ignite daemon
 while true; do
     proc=$(ps -ef | grep java | grep "org.apache.ignite.startup.cmdline.CommandLineStartup")
 
@@ -187,6 +201,8 @@ while true; do
         echo $proc
         echo "[INFO]-----------------------------------------------------"
 
+        # Once node joined the cluster we need to remove cluster-join lock
+        # to allow other EC2 nodes to acquire it and join cluster sequentially
         removeClusterJoinLock
 
         break
@@ -198,29 +214,44 @@ while true; do
 
     if [ $duration -gt $SERVICE_STARTUP_TIME ]; then
         if [ "$FIRST_NODE_LOCK" == "true" ]; then
+            # If the first node of Ignite cluster failed to start Ignite daemon in SERVICE_STARTUP_TIME min,
+            # we will not try any other attempts and just terminate with error. Terminate function itself, will
+            # take care about removing all the locks holding by this node.
             terminate "${SERVICE_STARTUP_TIME}min timeout expired, but first Ignite daemon is still not up and running"
         else
+            # If node isn't the first node of Ignite cluster and it failed to start we need to
+            # remove cluster-join lock to allow other EC2 nodes to acquire it
             removeClusterJoinLock
 
+            # If node failed all SERVICE_START_ATTEMPTS attempts to start Ignite daemon we will not
+            # try anymore and terminate with error
             if [ $START_ATTEMPT -gt $SERVICE_START_ATTEMPTS ]; then
                 terminate "${SERVICE_START_ATTEMPTS} attempts exceed, but Ignite daemon is still not up and running"
             fi
 
+            # New attempt to start Ignite daemon
             startIgnite
         fi
 
         continue
     fi
 
+    # Handling situation when Ignite daemon process abnormally terminated
     if [ -z "$proc" ]; then
+        # If this is the first node of Ignite cluster just terminating with error
         if [ "$FIRST_NODE_LOCK" == "true" ]; then
             terminate "Failed to start Ignite daemon"
         fi
 
+        # Remove cluster-join lock to allow other EC2 nodes to acquire it
         removeClusterJoinLock
+
         echo "[WARN] Failed to start Ignite daemon. Sleeping for extra 30sec"
         sleep 30s
+
+        # New attempt to start Ignite daemon
         startIgnite
+
         continue
     fi
 
@@ -228,6 +259,8 @@ while true; do
     sleep 30s
 done
 
+# Once Ignite daemon successfully started we registering new Ignite node in S3
 registerNode
 
+# Terminating script with zero exit code
 terminate

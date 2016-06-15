@@ -17,12 +17,22 @@
 # limitations under the License.
 #
 
+# -----------------------------------------------------------------------------------------------
+# Tests manager daemon
+# -----------------------------------------------------------------------------------------------
+# Script is launched in background by all nodes of Tests cluster and
+# periodically (each 30 seconds) checks if specific S3 trigger file was created or
+# its timestamp was changed. Such an event serve as a trigger for the script to start
+# preparing to run load tests.
+# -----------------------------------------------------------------------------------------------
+
 #profile=/home/ignite/.bash_profile
 profile=/root/.bash_profile
 
 . $profile
 . /opt/ignite-cassandra-tests/bootstrap/aws/common.sh "test"
 
+# Switch test node to IDLE state
 switchToIdleState()
 {
     if [ "$NODE_STATE" != "IDLE" ]; then
@@ -34,6 +44,7 @@ switchToIdleState()
     fi
 }
 
+# Switch test node to PREPARING state
 switchToPreparingState()
 {
     if [ "$NODE_STATE" != "PREPARING" ]; then
@@ -45,6 +56,7 @@ switchToPreparingState()
     fi
 }
 
+# Switch test node to WAITING state
 switchToWaitingState()
 {
     if [ "$NODE_STATE" != "WAITING" ]; then
@@ -56,6 +68,7 @@ switchToWaitingState()
     fi
 }
 
+# Switch test node to RUNNING state
 switchToRunningState()
 {
     if [ "$NODE_STATE" != "RUNNING" ]; then
@@ -67,6 +80,7 @@ switchToRunningState()
     fi
 }
 
+# Creates appropriate state flag for the node in S3
 createStateFlag()
 {
     HOST_NAME=$(hostname -f | tr '[:upper:]' '[:lower:]')
@@ -77,6 +91,7 @@ createStateFlag()
     fi
 }
 
+# Drops appropriate state flag for the node in S3
 dropStateFlag()
 {
     HOST_NAME=$(hostname -f | tr '[:upper:]' '[:lower:]')
@@ -93,6 +108,7 @@ dropStateFlag()
     done
 }
 
+# Removes tests summary report from S3
 dropTestsSummary()
 {
     exists=$(aws s3 ls $S3_TESTS_SUMMARY)
@@ -106,6 +122,7 @@ dropTestsSummary()
     fi
 }
 
+# Recreate all the necessary Cassandra artifacts before running Load tests
 recreateCassandraArtifacts()
 {
     /opt/ignite-cassandra-tests/recreate-cassandra-artifacts.sh
@@ -114,6 +131,8 @@ recreateCassandraArtifacts()
     fi
 }
 
+# Setups Cassandra seeds for this Tests node being able to connect to Cassandra.
+# Looks for the information in S3 about already up and running Cassandra cluster nodes.
 setupCassandraSeeds()
 {
     if [ $CASSANDRA_NODES_COUNT -eq 0 ]; then
@@ -141,6 +160,8 @@ setupCassandraSeeds()
     cat /opt/ignite-cassandra-tests/bootstrap/aws/tests/ignite-cassandra-client-template.xml | sed -r "s/\\\$\{CASSANDRA_SEEDS\}/$CASSANDRA_SEEDS2/g" > /opt/ignite-cassandra-tests/bootstrap/aws/tests/ignite-cassandra-client-template1.xml
 }
 
+# Setups Ignite nodes for this Tests node being able to connect to Ignite.
+# Looks for the information in S3 about already up and running Cassandra cluster nodes.
 setupIgniteSeeds()
 {
     if [ $IGNITE_NODES_COUNT -eq 0 ]; then
@@ -166,6 +187,7 @@ setupIgniteSeeds()
     rm -f /opt/ignite-cassandra-tests/bootstrap/aws/tests/ignite-cassandra-client-template1.xml
 }
 
+# Setups Cassandra credentials to connect to Cassandra cluster
 setupCassandraCredentials()
 {
     echo "admin.user=cassandra" > /opt/ignite-cassandra-tests/settings/org/apache/ignite/tests/cassandra/credentials.properties
@@ -174,6 +196,7 @@ setupCassandraCredentials()
     echo "regular.password=cassandra" >> /opt/ignite-cassandra-tests/settings/org/apache/ignite/tests/cassandra/credentials.properties
 }
 
+# Triggering first time tests execution for all nodes in the Tests cluster
 triggerFirstTimeTestsExecution()
 {
     if [ -z "$TESTS_TYPE" ]; then
@@ -204,6 +227,7 @@ triggerFirstTimeTestsExecution()
     fi
 }
 
+# Cleans previously created logs from S3
 cleanPreviousLogs()
 {
 	for logFile in /opt/ignite-cassandra-tests/logs/*
@@ -220,6 +244,7 @@ cleanPreviousLogs()
 	aws s3 rm --recursive ${S3_TESTS_SUCCESS}${HOST_NAME}
 }
 
+# Uploads tests logs to S3
 uploadTestsLogs()
 {
     HOST_NAME=$(hostname -f | tr '[:upper:]' '[:lower:]')
@@ -243,6 +268,7 @@ uploadTestsLogs()
     fi
 }
 
+# Runs tests-report.sh to prepare tests summary report
 buildTestsSummaryReport()
 {
     reportScript=$(readlink -m $( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/tests-report.sh)
@@ -256,7 +282,7 @@ buildTestsSummaryReport()
     fi
 }
 
-
+# Running load tests
 runLoadTests()
 {
     cd /opt/ignite-cassandra-tests

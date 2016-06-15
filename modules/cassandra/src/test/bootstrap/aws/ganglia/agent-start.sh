@@ -17,10 +17,15 @@
 # limitations under the License.
 #
 
+# -----------------------------------------------------------------------------------------------
+# Script to start Ganglia agent on EC2 node (used by agent-bootstrap.sh)
+# -----------------------------------------------------------------------------------------------
+
 . /opt/ignite-cassandra-tests/bootstrap/aws/common.sh "ganglia"
 
 echo "[INFO] Running Ganglia agent discovery daemon for '$1' cluster using $2 port"
 
+# Waiting for the Ganglia master node up and running
 waitFirstClusterNodeRegistered
 
 DISCOVERY_URL=$(getDiscoveryUrl)
