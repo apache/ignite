@@ -15,20 +15,29 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spark.impl
+package org.apache.ignite.tests.load;
 
-import org.apache.ignite.IgniteCache
-import org.apache.ignite.spark.IgniteRDD
-import org.apache.spark.api.java.{JavaPairRDD, JavaRDDLike}
+import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
+import org.apache.ignite.tests.pojos.Person;
 
-abstract class JavaIgniteAbstractRDD[K, V](val rdd: IgniteRDD[K, V])
-    extends JavaRDDLike[(K, V), JavaPairRDD[K, V]] {
+/**
+ * Implementation of {@link Generator} generating {@link Person} instance.
+ */
+public class PersonGenerator implements Generator {
+    /** */
+    private static final Date DATE = new Date();
 
-    protected def ensureCache(): IgniteCache[K, V] = {
-        // Make sure to deploy the cache
-        if (rdd.cacheCfg != null)
-            rdd.ic.ignite().getOrCreateCache(rdd.cacheCfg)
-        else
-            rdd.ic.ignite().getOrCreateCache(rdd.cacheName)
+    /** */
+    private static final List<String> PHONES = new LinkedList<String>(){{
+        add("1234567");
+        add("7654321");
+        add("1289054");
+    }};
+
+    /** {@inheritDoc} */
+    @Override public Object generate(long i) {
+        return new Person(Long.toString(i), Long.toString(i), (int)(i % 100), i % 2 == 0, i, i, DATE, PHONES);
     }
 }

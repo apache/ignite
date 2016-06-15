@@ -107,7 +107,7 @@ class IgniteContext[K, V](
      * @return `IgniteRDD` instance.
      */
     def fromCache(cacheName: String): IgniteRDD[K, V] = {
-        new IgniteRDD[K, V](this, cacheName, null)
+        new IgniteRDD[K, V](this, cacheName, null, false)
     }
 
     /**
@@ -118,7 +118,7 @@ class IgniteContext[K, V](
      * @return `IgniteRDD` instance.
      */
     def fromCache(cacheCfg: CacheConfiguration[K, V]) = {
-        new IgniteRDD[K, V](this, cacheCfg.getName, cacheCfg)
+        new IgniteRDD[K, V](this, cacheCfg.getName, cacheCfg, false)
     }
 
     /**
