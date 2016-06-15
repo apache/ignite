@@ -63,9 +63,6 @@ public class GridCachePlainVersionedEntry<K, V> implements GridCacheVersionedEnt
      */
     public GridCachePlainVersionedEntry(K key, V val, long ttl, long expireTime, GridCacheVersion ver,
         boolean isStartVer) {
-        assert ver != null;
-        assert key != null;
-
         this.key = key;
         this.val = val;
         this.ttl = ttl;
