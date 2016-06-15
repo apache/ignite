@@ -3531,8 +3531,14 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         GridCacheEntryEx entry = entryEx(key, false);
 
         try {
-            entry.initialValue(cacheVal, ver, ttl, CU.EXPIRE_TIME_CALCULATE, false, topVer,
-                replicate ? DR_LOAD : DR_NONE);
+            entry.initialValue(cacheVal,
+                ver,
+                ttl,
+                CU.EXPIRE_TIME_CALCULATE,
+                false,
+                topVer,
+                replicate ? DR_LOAD : DR_NONE,
+                true);
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException("Failed to put cache value: " + entry, e);
@@ -4008,8 +4014,18 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
     /**
      * @return Distributed ignite cache iterator.
+     * @throws IgniteCheckedException If failed.
      */
     public Iterator<Cache.Entry<K, V>> igniteIterator() throws IgniteCheckedException {
+        return igniteIterator(ctx.keepBinary());
+    }
+
+    /**
+     * @param keepBinary
+     * @return Distributed ignite cache iterator.
+     * @throws IgniteCheckedException If failed.
+     */
+    public Iterator<Cache.Entry<K, V>> igniteIterator(boolean keepBinary) throws IgniteCheckedException {
         GridCacheContext ctx0 = ctx.isNear() ? ctx.near().dht().context() : ctx;
 
         final CacheOperationContext opCtx = ctx.operationContextPerCall();
@@ -4017,7 +4033,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         if (!ctx0.isSwapOrOffheapEnabled() && ctx0.kernalContext().discovery().size() == 1)
             return localIteratorHonorExpirePolicy(opCtx);
 
-        final GridCloseableIterator<Map.Entry<K, V>> iter = ctx0.queries().createScanQuery(null, null, ctx.keepBinary())
+        final GridCloseableIterator<Map.Entry<K, V>> iter = ctx0.queries().createScanQuery(null, null, keepBinary)
             .keepAll(false)
             .executeScanQuery();
 
@@ -4908,19 +4924,17 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         boolean deserializeBinary)
         throws IgniteCheckedException, GridCacheEntryRemovedException {
         CacheObject val = entry.innerGet(
-            null,
-            null,
-            false,
-            false,
-            false,
-            true,
-            false,
-            false,
-            false,
-            null,
-            null,
-            null,
-            null,
+            /*ver*/null,
+            /*tx*/null,
+            /*swap*/false,
+            /*readThrough*/false,
+            /*metrics*/false,
+            /*evt*/false,
+            /*tmp*/false,
+            /*subjId*/null,
+            /*transformClo*/null,
+            /*taskName*/null,
+            /*expiryPlc*/null,
             !deserializeBinary);
 
         if (val == null)
