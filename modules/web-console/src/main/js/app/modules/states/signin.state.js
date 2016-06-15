@@ -16,7 +16,7 @@
  */
 
 import angular from 'angular';
-import signinTemplateUrl from 'views/signin.jade';
+import templateUrl from 'views/signin.jade';
 
 angular
 .module('ignite-console.states.login', [
@@ -29,7 +29,7 @@ angular
     $stateProvider
     .state('signin', {
         url: '/',
-        templateUrl: signinTemplateUrl,
+        templateUrl,
         metaTags: {
         }
     });

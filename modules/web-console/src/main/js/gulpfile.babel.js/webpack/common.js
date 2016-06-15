@@ -22,10 +22,12 @@ import progressPlugin from './plugins/progress';
 
 //import  Manifest from 'manifest-revision-webpack-plugin';
 import ExtractTextPlugin from 'extract-text-webpack-plugin';
+
 import {srcDir, destDir, rootDir} from '../paths';
 
 const NODE_ENV = process.env.NODE_ENV || 'production';
 const IS_DEVELOPMENT = NODE_ENV === 'development';
+
 const stylesLoader = 'css-loader?sourceMap!postcss-loader!sass-loader?outputStyle=expanded&sourceMap=true&sourceMapContents=true';
 
 export default () => {
@@ -35,29 +37,28 @@ export default () => {
         node: {
             fs: 'empty'
         },
+        
         // Entry points.
         entry: {
             polyfill: 'babel-polyfill',
             app: path.join(srcDir, 'index.js'),
             vendor: path.join(srcDir, 'vendor.js')
         },
-
+        
         // Output system.
         output: {
             path: destDir,
             publicPath: './',
             filename: '[name].js'
         },
-
+        
         // Resolves modules.
         resolve: {
             extensions: ['', '.js'],
             root: [rootDir],
             modulesDirectories: [NODE_MODULES_PATH, './'],
-            alias: {
-            }
         },
-
+        
         // Modules resolvers.
         module: {
             noParse: [],

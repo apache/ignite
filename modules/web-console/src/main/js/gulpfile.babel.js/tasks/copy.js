@@ -23,6 +23,7 @@ import { destDir, rootDir, jsModulePaths, resourcePaths, resourceModulePaths, ig
 
 gulp.task('copy', (cb) => {
     const tasks = ['copy:resource', 'copy:ignite_modules:resource', 'copy:ignite_modules:js'];
+    
     return sequence(tasks, cb);
 });
 

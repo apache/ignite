@@ -22,7 +22,7 @@ import { jadePaths, jadeModulePaths, resourcePaths, resourceModulePaths, appPath
 
 gulp.task('watch:ignite-modules', (cb) => sequence('clean:ignite-modules-temp', 'ignite:modules', 'copy:ignite_modules:js', cb));
 
-// Build + connect + watch task.
+// Build + watch task.
 gulp.task('watch', ['build'], () => {
     gulp.watch(jadePaths.concat(jadeModulePaths), ['jade']);
     gulp.watch(resourcePaths, ['copy:resource']);

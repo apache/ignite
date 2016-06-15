@@ -20,16 +20,13 @@ import commonConfig from './common';
 import devConfig from './environments/development';
 import prodConfig from './environments/production';
 
-const ENV = process.env.NODE_ENV ? process.env.NODE_ENV : 'production';
+const env = process.env.NODE_ENV || 'production';
 
+// Config by environments.
 const configs = {
-    // Common config section.
-    common: commonConfig,
-
-    // Config by environments.
     production: prodConfig,
     development: devConfig
 };
 
 // Load config file by environment
-export default _.merge(configs.common(), configs[ENV]());
+export default _.merge(commonConfig(), configs[env]());

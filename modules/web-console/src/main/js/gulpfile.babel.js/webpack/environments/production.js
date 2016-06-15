@@ -23,7 +23,6 @@ import jade from 'jade';
 import {destDir, rootDir} from '../../paths';
 
 export default () => {
-
     const plugins = [
         new HtmlWebpackPlugin({
             filename: 'index.html',
@@ -54,5 +53,4 @@ export default () => {
         },
         plugins
     };
-
 };

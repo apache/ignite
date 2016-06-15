@@ -549,7 +549,7 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
          */
         attach(srv) {
             if (this._server)
-                throw 'Agent server already started';
+                throw 'Agent server already started!';
 
             this._server = srv;
 

@@ -22,7 +22,6 @@ import jade from 'jade';
 import path from 'path';
 
 export default () => {
-
     let plugins = [
         new webpack.HotModuleReplacementPlugin(),
         new HtmlWebpackPlugin({
@@ -33,7 +32,6 @@ export default () => {
             title: 'DEBUG:Ignite Web Console'
         })
     ];
-
 
     return {
         context: rootDir,
