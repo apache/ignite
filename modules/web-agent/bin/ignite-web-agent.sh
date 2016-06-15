@@ -84,4 +84,4 @@ if [ -z "$JVM_OPTS" ] ; then
     JVM_OPTS="-Xms1g -Xmx1g -server -XX:+AggressiveOpts -XX:MaxPermSize=256m"
 fi
 
-"$JAVA" ${JVM_OPTS} -cp ignite-web-agent-${version}.jar org.apache.ignite.console.agent.AgentLauncher "$@"
+"$JAVA" ${JVM_OPTS} -cp "*" org.apache.ignite.console.agent.AgentLauncher "$@"
