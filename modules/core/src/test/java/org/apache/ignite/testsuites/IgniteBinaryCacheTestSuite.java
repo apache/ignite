@@ -79,7 +79,8 @@ public class IgniteBinaryCacheTestSuite extends TestSuite {
 
         suite.addTest(IgniteCacheTestSuite.suite(ignoredTests));
 
-        suite.addTestSuite(GridCacheMemoryModeBinarySelfTest.class);
+        // TODO GG-11148
+        // suite.addTestSuite(GridCacheMemoryModeBinarySelfTest.class);
         suite.addTestSuite(GridCacheOffHeapTieredEvictionAtomicBinarySelfTest.class);
         suite.addTestSuite(GridCacheOffHeapTieredEvictionBinarySelfTest.class);
 

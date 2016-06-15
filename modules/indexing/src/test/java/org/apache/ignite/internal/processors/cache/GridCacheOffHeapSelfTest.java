@@ -499,7 +499,7 @@ public class GridCacheOffHeapSelfTest extends GridCommonAbstractTest {
         for (int i = lowerBound; i < upperBound; i++) {
             assert cache.localPeek(i, CachePeekMode.ONHEAP) == null;
 
-            CacheValue val = cache.localPeek(i, CachePeekMode.SWAP, CachePeekMode.OFFHEAP);
+            CacheValue val = cache.localPeek(i, CachePeekMode.OFFHEAP);
 
             assert val != null;
             assert val.value() == i;

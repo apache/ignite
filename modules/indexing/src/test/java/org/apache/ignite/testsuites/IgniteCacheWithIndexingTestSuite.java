@@ -26,7 +26,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheOffHeapAndSwapSelfTe
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffheapIndexEntryEvictTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffheapIndexGetSelfTest;
-import org.apache.ignite.internal.processors.cache.GridCacheSwapSelfTest;
 import org.apache.ignite.internal.processors.cache.GridIndexingWithNoopSwapSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheConfigurationPrimitiveTypesSelfTest;
 import org.apache.ignite.internal.processors.cache.IgniteCacheStarvationOnRebalanceTest;
@@ -53,7 +52,6 @@ public class IgniteCacheWithIndexingTestSuite extends TestSuite {
 
         suite.addTestSuite(GridCacheOffHeapAndSwapSelfTest.class);
         suite.addTestSuite(GridIndexingWithNoopSwapSelfTest.class);
-        suite.addTestSuite(GridCacheSwapSelfTest.class);
         suite.addTestSuite(GridCacheOffHeapSelfTest.class);
 
         suite.addTestSuite(CacheTtlOffheapAtomicLocalSelfTest.class);

@@ -121,7 +121,7 @@ public class PlatformConfigurationUtils {
         ccfg.setCacheMode(CacheMode.fromOrdinal(in.readInt()));
         ccfg.setCopyOnRead(in.readBoolean());
         ccfg.setEagerTtl(in.readBoolean());
-        // TODO GG-10884.
+        // TODO GG-11148.
         //ccfg.setSwapEnabled(in.readBoolean());
         ccfg.setEvictSynchronized(in.readBoolean());
         ccfg.setEvictSynchronizedConcurrencyLevel(in.readInt());
@@ -134,7 +134,7 @@ public class PlatformConfigurationUtils {
         ccfg.setLongQueryWarningTimeout(in.readLong());
         ccfg.setMaxConcurrentAsyncOperations(in.readInt());
         ccfg.setEvictMaxOverflowRatio(in.readFloat());
-        // TODO GG-10884.
+        // TODO GG-11148.
         //ccfg.setMemoryMode(CacheMemoryMode.values()[in.readInt()]);
         ccfg.setName(in.readString());
         ccfg.setOffHeapMaxMemory(in.readLong());
@@ -566,7 +566,7 @@ public class PlatformConfigurationUtils {
             CacheConfiguration.DFLT_CACHE_MODE.ordinal() : ccfg.getCacheMode().ordinal());
         writer.writeBoolean(ccfg.isCopyOnRead());
         writer.writeBoolean(ccfg.isEagerTtl());
-        // TODO GG-10884.
+        // TODO GG-11148.
 //        writer.writeBoolean(ccfg.isSwapEnabled());
         writer.writeBoolean(ccfg.isEvictSynchronized());
         writer.writeInt(ccfg.getEvictSynchronizedConcurrencyLevel());
@@ -579,7 +579,7 @@ public class PlatformConfigurationUtils {
         writer.writeLong(ccfg.getLongQueryWarningTimeout());
         writer.writeInt(ccfg.getMaxConcurrentAsyncOperations());
         writer.writeFloat(ccfg.getEvictMaxOverflowRatio());
-        // TODO GG-10884.
+        // TODO GG-11148.
 //        writer.writeInt(ccfg.getMemoryMode() == null ?
 //            CacheConfiguration.DFLT_MEMORY_MODE.ordinal() : ccfg.getMemoryMode().ordinal());
         writer.writeString(ccfg.getName());
