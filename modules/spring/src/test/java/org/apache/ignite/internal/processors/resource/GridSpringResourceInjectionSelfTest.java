@@ -22,8 +22,11 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteSpring;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.SpringResource;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+import java.util.concurrent.Callable;
 
 /**
  * Tests for injected resource.
@@ -49,9 +52,25 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
     /**
      * @throws Exception If failed.
      */
-    public void testClosureField() throws Exception {
+    public void testClosureFieldByResourceName() throws Exception {
         grid.compute().call(new IgniteCallable<Object>() {
             @SpringResource(resourceName = DUMMY_BEAN)
+            private transient DummyResourceBean dummyResourceBean;
+
+            @Override public Object call() throws Exception {
+                assertNotNull(dummyResourceBean);
+
+                return null;
+            }
+        });
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClosureFieldByResourceClass() throws Exception {
+        grid.compute().call(new IgniteCallable<Object>() {
+            @SpringResource(resourceClass = DummyResourceBean.class)
             private transient DummyResourceBean dummyResourceBean;
 
             @Override public Object call() throws Exception {
@@ -66,30 +85,71 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
      * Resource injection with non-existing resource name.
      */
     public void testClosureFieldWithWrongResourceName() throws Exception {
-        try {
-            grid.compute().call(new IgniteCallable<Object>() {
-                @SpringResource(resourceName = "")
-                private transient DummyResourceBean dummyResourceBean;
+        assertError(new IgniteCallable<Object>() {
+            @SpringResource(resourceName = "nonExistentResource")
+            private transient DummyResourceBean dummyResourceBean;
 
-                @Override public Object call() throws Exception {
-                    assertNull(dummyResourceBean);
+            @Override public Object call() throws Exception {
+                assertNull(dummyResourceBean);
 
-                    return null;
-                }
-            });
-        }
-        catch (IgniteException e) {
-            if (e.getMessage().contains("No bean named '' is defined"))
-                return;
-        }
+                return null;
+            }
+        }, "No bean named 'nonExistentResource' is defined");
+    }
 
-        fail();
+    /**
+     * Resource injection with non-existing resource class.
+     */
+    public void testClosureFieldWithWrongResourceClass() throws Exception {
+        assertError(new IgniteCallable<Object>() {
+            @SpringResource(resourceClass = AnotherDummyResourceBean.class)
+            private transient AnotherDummyResourceBean dummyResourceBean;
+
+            @Override public Object call() throws Exception {
+                assertNull(dummyResourceBean);
+
+                return null;
+            }
+        }, "No qualifying bean of type [org.apache.ignite.internal.processors.resource." +
+            "GridSpringResourceInjectionSelfTest$AnotherDummyResourceBean] is defined");
+    }
+
+    /**
+     * Resource injection with both resource and class set (ambiguity).
+     */
+    public void testClosureFieldByResourceClassAndName() throws Exception {
+        assertError(new IgniteCallable<Object>() {
+            @SpringResource(resourceClass = DummyResourceBean.class, resourceName = DUMMY_BEAN)
+            private transient DummyResourceBean dummyResourceBean;
+
+            @Override public Object call() throws Exception {
+                assertNull(dummyResourceBean);
+
+                return null;
+            }
+        }, "Either bean name or its class must be specified in @SpringResource, but not both");
+    }
+
+    /**
+     * Resource injection with no name and class set.
+     */
+    public void testClosureFieldWithNoParams() throws Exception {
+        assertError(new IgniteCallable<Object>() {
+            @SpringResource
+            private transient DummyResourceBean dummyResourceBean;
+
+            @Override public Object call() throws Exception {
+                assertNull(dummyResourceBean);
+
+                return null;
+            }
+        }, "Either bean name or its class must be specified in @SpringResource, but not both");
     }
 
     /**
      * @throws Exception If failed.
      */
-    public void testClosureMethod() throws Exception {
+    public void testClosureMethodWithResourceName() throws Exception {
         grid.compute().call(new IgniteCallable<Object>() {
             private DummyResourceBean dummyResourceBean;
 
@@ -107,30 +167,109 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testClosureMethodWithResourceClass() throws Exception {
+        grid.compute().call(new IgniteCallable<Object>() {
+            private DummyResourceBean dummyResourceBean;
+
+            @SpringResource(resourceClass = DummyResourceBean.class)
+            private void setDummyResourceBean(DummyResourceBean dummyResourceBean) {
+                assertNotNull(dummyResourceBean);
+
+                this.dummyResourceBean = dummyResourceBean;
+            }
+
+            @Override public Object call() throws Exception {
+                return null;
+            }
+        });
+    }
+
+    /**
      * Resource injection with non-existing resource name.
      */
     public void testClosureMethodWithWrongResourceName() throws Exception {
-        try {
-            grid.compute().call(new IgniteCallable<Object>() {
-                private DummyResourceBean dummyResourceBean;
+        assertError(new IgniteCallable<Object>() {
+            private DummyResourceBean dummyResourceBean;
 
-                @SpringResource(resourceName = "")
-                private void setDummyResourceBean(DummyResourceBean dummyResourceBean) {
-                }
+            @SpringResource(resourceName = "nonExistentResource")
+            private void setDummyResourceBean(DummyResourceBean dummyResourceBean) {
+            }
 
-                @Override public Object call() throws Exception {
-                    assertNull(dummyResourceBean);
+            @Override public Object call() throws Exception {
+                assertNull(dummyResourceBean);
 
-                    return null;
-                }
-            });
-        }
-        catch (IgniteException e) {
-            if (e.getMessage().contains("No bean named '' is defined"))
-                return;
-        }
+                return null;
+            }
+        }, "No bean named 'nonExistentResource' is defined");
+    }
 
-        fail();
+    /**
+     * Resource injection with non-existing resource class.
+     */
+    public void testClosureMethodWithWrongResourceClass() throws Exception {
+        assertError(new IgniteCallable<Object>() {
+            private AnotherDummyResourceBean dummyResourceBean;
+
+            @SpringResource(resourceClass = AnotherDummyResourceBean.class)
+            private void setDummyResourceBean(AnotherDummyResourceBean dummyResourceBean) {
+            }
+
+            @Override public Object call() throws Exception {
+                assertNull(dummyResourceBean);
+
+                return null;
+            }
+        }, "No qualifying bean of type [org.apache.ignite.internal.processors.resource" +
+                ".GridSpringResourceInjectionSelfTest$AnotherDummyResourceBean] is defined");
+    }
+
+    /**
+     * Resource injection with both resource and class set (ambiguity).
+     */
+    public void testClosureMethodByResourceClassAndName() throws Exception {
+        assertError(new IgniteCallable<Object>() {
+            @SpringResource(resourceClass = DummyResourceBean.class, resourceName = DUMMY_BEAN)
+            private transient DummyResourceBean dummyResourceBean;
+
+            @Override public Object call() throws Exception {
+                assertNull(dummyResourceBean);
+
+                return null;
+            }
+        }, "Either bean name or its class must be specified in @SpringResource, but not both");
+    }
+
+    /**
+     * Resource injection with no params.
+     */
+    public void testClosureMethodWithNoParams() throws Exception {
+        assertError(new IgniteCallable<Object>() {
+            @SpringResource
+            private transient DummyResourceBean dummyResourceBean;
+
+            @Override public Object call() throws Exception {
+                assertNull(dummyResourceBean);
+
+                return null;
+            }
+        }, "Either bean name or its class must be specified in @SpringResource, but not both");
+    }
+
+    /**
+     * @param job {@link IgniteCallable} to be run
+     * @param expectedExceptionMessage Message that {@link Throwable} thrown from <tt>job</tt> should bear
+     */
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+    private void assertError(IgniteCallable<?> job,
+                             String expectedExceptionMessage) {
+        GridTestUtils.assertThrows(null, new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                grid.compute().call(job);
+                return null;
+            }
+        }, IgniteException.class, expectedExceptionMessage);
     }
 
     /**
@@ -138,6 +277,14 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
      */
     public static class DummyResourceBean {
         public DummyResourceBean() {
+        }
+    }
+
+    /**
+     * Another dummy resource bean.
+     */
+    private static class AnotherDummyResourceBean {
+        public AnotherDummyResourceBean() {
         }
     }
 }
