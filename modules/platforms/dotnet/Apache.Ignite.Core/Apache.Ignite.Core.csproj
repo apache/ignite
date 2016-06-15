@@ -484,6 +484,7 @@
   <ItemGroup>
     <None Include="Apache.Ignite.Core.ruleset" />
     <None Include="Apache.Ignite.Core.nuspec" />
+    <None Include="Apache.Ignite.Core.Schema.nuspec" />
     <None Include="build-common.ps1" />
     <None Include="NuGet\Uninstall.ps1" />
     <None Include="NuGet\PostBuild.ps1" />
