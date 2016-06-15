@@ -27,10 +27,8 @@ import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.query.Query;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractQuerySelfTest;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
@@ -44,6 +42,18 @@ import static org.apache.ignite.cache.CachePeekMode.ALL;
  * Tests distributed fields query resources cleanup on cancellation by various reasons.
  */
 public class IgniteCacheReplicatedFieldsQueryStopSelfTest extends IgniteCacheAbstractQuerySelfTest {
+    /** Huge resultset query. */
+    private static final String CROSS_KEY_JOIN_QRY = "select a._key, b._key from String a, String b";
+
+    /** Reduce query. */
+    private static final String GROUP_QRY = "select a._key, count(*) from String a group by a._key";
+
+    /** Large value size query. */
+    private static final String CROSS_VAL_JOIN_QRY = "select a._val, b._val from String a, String b";
+
+    /** Simple query. */
+    private static final String SIMPLE_QRY = "select a._key from String a";
+
     /** {@inheritDoc} */
     @Override protected int gridCount() {
         return 3;
@@ -58,105 +68,77 @@ public class IgniteCacheReplicatedFieldsQueryStopSelfTest extends IgniteCacheAbs
      * Tests stopping two-step long query on timeout.
      */
     public void testRemoteQueryExecutionTimeout() throws Exception {
-        testQueryTimeout(10_000, 4, "select a._key, b._key from String a, String b", 3);
+        testQueryTimeout(10_000, 4, CROSS_KEY_JOIN_QRY, 3);
     }
 
     /**
      * Tests stopping two-step long query while result set is being generated on remote nodes.
      */
     public void testRemoteQueryExecutionStop1() throws Exception {
-        testQueryStop(10_000, 4, "select a._key, b._key from String a, String b", 500);
+        testQueryStop(10_000, 4, CROSS_KEY_JOIN_QRY, 500);
     }
 
     /**
      * Tests stopping two-step long query while result set is being generated on remote nodes.
      */
     public void testRemoteQueryExecutionStop2() throws Exception {
-        testQueryStop(10_000, 4, "select a._key, b._key from String a, String b", 1000);
+        testQueryStop(10_000, 4, CROSS_KEY_JOIN_QRY, 1000);
     }
 
     /**
      * Tests stopping two-step long query while result set is being generated on remote nodes.
      */
     public void testRemoteQueryExecutionStop3() throws Exception {
-        testQueryStop(10_000, 4, "select a._key, b._key from String a, String b", 3000);
+        testQueryStop(10_000, 4, CROSS_KEY_JOIN_QRY, 3000);
     }
 
     /**
      * Tests stopping two step query while reducing.
      */
     public void testRemoteQueryReducingStop1() throws Exception {
-        testQueryStop(100_000, 4, "select a._key, count(*) from String a group by a._key", 500);
+        testQueryStop(100_000, 4, GROUP_QRY, 500);
     }
 
     /**
      * Tests stopping two step query while reducing.
      */
     public void testRemoteQueryReducingStop2() throws Exception {
-        testQueryStop(100_000, 4, "select a._key, count(*) from String a group by a._key", 1_500);
+        testQueryStop(100_000, 4, GROUP_QRY, 1_500);
     }
 
     /**
      * Tests stopping two step query while reducing.
      */
     public void testRemoteQueryReducingStop3() throws Exception {
-        testQueryStop(100_000, 4, "select a._key, count(*) from String a group by a._key", 3_000);
+        testQueryStop(100_000, 4, GROUP_QRY, 3_000);
     }
 
     /**
      * Tests stopping two step query while fetching data from remote nodes.
      */
     public void testRemoteQueryFetchngStop1() throws Exception {
-        testQueryStop(100_000, 512, "select a._val, b._val from String a, String b", 500);
+        testQueryStop(100_000, 512, CROSS_VAL_JOIN_QRY, 500);
     }
 
     /**
      * Tests stopping two step query while fetching data from remote nodes.
      */
     public void testRemoteQueryFetchngStop2() throws Exception {
-        testQueryStop(100_000, 512, "select a._val, b._val from String a, String b", 1_500);
+        testQueryStop(100_000, 512, CROSS_VAL_JOIN_QRY, 1_500);
     }
 
     /**
      * Tests stopping two step query while fetching data from remote nodes.
      */
     public void testRemoteQueryFetchngStop3() throws Exception {
-        testQueryStop(100_000, 512, "select a._val, b._val from String a, String b", 3000);
+        testQueryStop(100_000, 512, CROSS_VAL_JOIN_QRY, 3000);
     }
 
     /**
      * Tests stopping two step query after it was finished.
      */
     public void testRemoteQueryAlreadyFinishedStop() throws Exception {
-        testQueryStop(100, 4, "select a._key from String a", 3000);
-    }
-
-    /**
-     * Tests stopping two-step query on initiator node fail.
-     */
-    public void testRemoteQueryExecutionStopClientNodeFail1() throws Exception {
-        testQueryStopOnNodeFail(10_000, 4, "select a._key, b._key from String a, String b", 500, -1);
-    }
-
-    /**
-     * Tests stopping two-step query on initiator node fail.
-     */
-    public void testRemoteQueryExecutionStopClientNodeFail2() throws Exception {
-        testQueryStopOnNodeFail(10_000, 4, "select a._key, b._key from String a, String b", 3_000, -1);
-    }
-
-    /**
-     * Tests stopping two-step query on initiator node fail.
-     */
-    public void testRemoteQueryExecutionStopServerNodeFail1() throws Exception {
-        testQueryStopOnNodeFail(10_000, 4, "select a._key, b._key from String a, String b", 3_000, 1);
-    }
-
-    /**
-     * Tests stopping two-step query on initiator node fail.
-     */
-    public void testRemoteQueryExecutionStopServerNodeFail2() throws Exception {
-        testQueryStopOnNodeFail(10_000, 4, "select a._key, b._key from String a, String b", 3_000, 2);
+        testQueryStop(100, 4, SIMPLE_QRY, 3000);
     }
 
     /**
@@ -175,7 +157,7 @@ public class IgniteCacheReplicatedFieldsQueryStopSelfTest extends IgniteCacheAbs
                 cache.put(i, new String(tmp));
             }
 
-            assertEquals(0, cache.localSize(ALL));
+            assertEquals(0, cache.localSize());
 
             final QueryCursor<List<?>> cursor = cache.query(new SqlFieldsQuery(sql));
 
@@ -207,7 +189,7 @@ public class IgniteCacheReplicatedFieldsQueryStopSelfTest extends IgniteCacheAbs
             Thread.sleep(3000);
 
             // Validate nodes query result buffer.
-            checkCleanState(-1);
+            checkCleanState();
         }
     }
 
@@ -243,88 +225,17 @@ public class IgniteCacheReplicatedFieldsQueryStopSelfTest extends IgniteCacheAbs
             }
 
             // Validate nodes query result buffer.
-            checkCleanState(-1);
-        }
-    }
-
-    /**
-     * Tests stopping two step query when client or server node fails.
-     */
-    private void testQueryStopOnNodeFail(int keyCnt, int valSize, String sql, final long failTimeout, final int failGridIdx) throws Exception {
-        try (final Ignite client = startGrid("client")) {
-
-            IgniteCache<Object, Object> cache = client.cache(null);
-
-            assertEquals(0, cache.localSize());
-
-            for (int i = 0; i < keyCnt; i++) {
-                char[] tmp = new char[valSize];
-                Arrays.fill(tmp, ' ');
-                cache.put(i, new String(tmp));
-            }
-
-            assertEquals(0, cache.localSize(ALL));
-
-            final QueryCursor<List<?>> qry = cache.query(new SqlFieldsQuery(sql));
-
-            final CountDownLatch l = new CountDownLatch(1);
-
-            ignite().scheduler().runLocal(new Runnable() {
-                @Override public void run() {
-                    try {
-                        failNode(failGridIdx == -1 ? client : grid(failGridIdx));
-                    }
-                    catch (Exception e) {
-                        log().error("Cannot fail node", e);
-                    }
-
-                    if (failGridIdx != -1) {
-                        // After node failure query must be restarted excluding failing node.
-                        ignite().scheduler().runLocal(new Runnable() {
-                            @Override public void run() {
-                                try {
-                                    qry.close();
-                                }
-                                catch (Exception e) {
-                                    log().error("Cannot fail node", e);
-                                }
-
-                                l.countDown();
-                            }
-                        }, failTimeout, TimeUnit.MILLISECONDS);
-                    } else
-                        l.countDown();
-                }
-            }, failTimeout, TimeUnit.MILLISECONDS);
-
-            try {
-                // Trigger distributed execution.
-                qry.iterator();
-            }
-            catch (Exception ex) {
-                log().error("Got expected exception", ex);
-            }
-
-            l.await();
-
-            // Give some time to clean up after query cancellation.
-            Thread.sleep(3000);
-
-            // Validate nodes query result buffer.
-            checkCleanState(failGridIdx);
+            checkCleanState();
         }
     }
 
     /**
      * Validates clean state on all participating nodes after query execution stopping.
      */
-    private void checkCleanState(int idx) {
+    private void checkCleanState() {
         int total = gridCount();
 
         for (int i = 0; i < total; i++) {
-            // Skip failed server node instance check.
-            if (i == idx) continue;
-
             IgniteEx grid = grid(i);
 
             // Validate everything was cleaned up.
@@ -336,13 +247,5 @@ public class IgniteCacheReplicatedFieldsQueryStopSelfTest extends IgniteCacheAbs
             else
                 assertEquals(0, map.size());
         }
-    }
-
-    /**
-     * @param ignite Ignite.
-     * @throws Exception In case of error.
-     */
-    private void failNode(Ignite ignite) throws Exception {
-        grid(0).configuration().getDiscoverySpi().failNode(ignite.cluster().localNode().id(), "Kicked by grid 0");
     }
 }
