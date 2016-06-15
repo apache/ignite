@@ -248,7 +248,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
         if (latch0 == null) {
             U.awaitQuiet(initLatch);
 
-            latch0 = initLatch;
+            latch0 = internalLatch;
         }
 
         assert latch0 != null;
