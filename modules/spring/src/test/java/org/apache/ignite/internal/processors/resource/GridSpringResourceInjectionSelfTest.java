@@ -31,6 +31,7 @@ import java.util.concurrent.Callable;
 /**
  * Tests for injected resource.
  */
+@SuppressWarnings("unused")
 public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest {
     /** Bean name. */
     private static final String DUMMY_BEAN = "dummyResourceBean";

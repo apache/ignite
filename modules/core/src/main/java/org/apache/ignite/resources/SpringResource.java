@@ -17,14 +17,8 @@
 
 package org.apache.ignite.resources;
 
-import org.jetbrains.annotations.Nullable;
-
 import java.io.Serializable;
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.*;
 
 /**
  * Annotates a field or a setter method for injection of resource
