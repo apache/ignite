@@ -1,4 +1,19 @@
-'use strict';
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 
 import path from 'path';
 import webpack from 'webpack';
@@ -13,15 +28,14 @@ const NODE_ENV = process.env.NODE_ENV || 'production';
 const IS_DEVELOPMENT = NODE_ENV === 'development';
 const stylesLoader = 'css-loader?sourceMap!postcss-loader!sass-loader?outputStyle=expanded&sourceMap=true&sourceMapContents=true';
 
-
-module.exports = function (_path) {
-
+export default () => {
     const NODE_MODULES_PATH = path.resolve('node_modules');
+
     const webpackConfig = {
         node: {
             fs: 'empty'
         },
-        // entry points
+        // Entry points.
         entry: {
             polyfill: 'babel-polyfill',
             app: path.join(srcDir, 'index.js'),
@@ -35,30 +49,25 @@ module.exports = function (_path) {
             filename: '[name].js'
         },
 
-        // resolves modules
+        // Resolves modules.
         resolve: {
             extensions: ['', '.js'],
-            root : rootDir,
+            root: [rootDir],
             modulesDirectories: [NODE_MODULES_PATH, './'],
             alias: {
-                // _appRoot: path.join(_path, 'app'),
-                // _images: path.join(_path, 'app', 'assets', 'images'),
-                // _stylesheets: path.join(_path, 'app', 'assets', 'styles'),
-                // _scripts: path.join(_path, 'app', 'assets', 'js'),
-                // ace: path.join(_path, 'node_modules', 'ace-builds', 'src')
             }
         },
 
-        // modules resolvers
+        // Modules resolvers.
         module: {
             noParse: [],
-            // preLoaders: [
-            //     {
-            //         test: /\.js$/,
-            //         exclude: [NODE_MODULES_PATH],
-            //         loader: 'eslint-loader'
-            //     }
-            // ],
+            preLoaders: [
+                {
+                    test: /\.js$/,
+                    exclude: [NODE_MODULES_PATH],
+                    loader: 'eslint-loader'
+                }
+            ],
             loaders: [
                 {
                     test: /\.json$/,
@@ -67,9 +76,9 @@ module.exports = function (_path) {
                 {
                     test: /\.jade$/,
                     loaders: [
-                        'ngtemplate-loader?relativeTo=' + _path,
+                        `ngtemplate-loader?relativeTo=${rootDir}`,
                         'html-loader?attrs[]=img:src&attrs[]=img:data-src',
-                        'jade-html-loader'
+                        `jade-html-loader`
                     ]
                 },
                 {
@@ -88,7 +97,8 @@ module.exports = function (_path) {
                     query: {
                         cacheDirectory: true,
                         plugins: ['transform-runtime', 'add-module-exports'],
-                        presets: ['angular', 'es2017']
+                        presets: ['angular']
+
                     }
                 },
                 {
@@ -97,7 +107,7 @@ module.exports = function (_path) {
                 },
                 {
                     test: /\.(scss|sass)$/,
-                    loader: IS_DEVELOPMENT ? ('style-loader!' + stylesLoader) : ExtractTextPlugin.extract('style-loader', stylesLoader)
+                    loader: IS_DEVELOPMENT ? `style-loader!${stylesLoader}` : ExtractTextPlugin.extract('style-loader', stylesLoader)
                 },
                 {
                     test: /\.(woff2|woff|ttf|eot|svg)?(\?v=[0-9]\.[0-9]\.[0-9])?$/,
@@ -112,23 +122,29 @@ module.exports = function (_path) {
                 {
                     test: require.resolve("jquery"),
                     loaders: [
-                        "expose?$",
-                        "expose?jQuery"
+                        "expose-loader?$",
+                        "expose-loader?jQuery"
                     ]
                 },
-                // {
-                //     test: require.resolve("angular"),
-                //     loaders: [
-                //         "expose?angular"
-                //     ]
-                // }
+                {
+                    test: require.resolve("nvd3"),
+                    loaders: [
+                        "expose-loader?nv"
+                    ]
+                }
             ]
         },
 
-        // post css
+        // Postcss configuration.
         postcss: [autoprefixer({browsers: ['last 2 versions']})],
 
-        // load plugins
+        // ESLint loader configuration.
+        eslint: {
+            failOnWarning: false,
+            failOnError: false
+        },
+
+        // Load plugins.
         plugins: [
             new webpack.ProvidePlugin({
                 $: 'jquery',
@@ -137,7 +153,7 @@ module.exports = function (_path) {
                 nv: 'nvd3'
             }),
             new webpack.DefinePlugin({'NODE_ENV': JSON.stringify(NODE_ENV)}),
-            new webpack.NoErrorsPlugin(),
+            // new webpack.NoErrorsPlugin(),
             new webpack.optimize.AggressiveMergingPlugin({moveToParents: true}),
             new webpack.optimize.CommonsChunkPlugin({
                 name: 'common',
@@ -145,7 +161,6 @@ module.exports = function (_path) {
                 children: true,
                 minChunks: Infinity
             }),
-
             // new Manifest(path.join(_path + '/config', 'manifest.json'), {
             //     rootAssetPath: rootAssetPath,
             //     ignorePaths: ['.DS_Store']
@@ -154,6 +169,6 @@ module.exports = function (_path) {
             progressPlugin
         ]
     };
-    
+
     return webpackConfig;
 };

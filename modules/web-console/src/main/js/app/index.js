@@ -100,7 +100,8 @@ import 'controllers/profile-controller';
 import 'controllers/sql-controller';
 
 // Inject external modules.
-import 'ignite_modules_temp/index'; 
+import 'ignite_modules_temp/index';
+
 
 import baseTemplate from '../views/base.jade';
 
@@ -138,9 +139,9 @@ angular
     'ignite-console.version',
     'ignite-console.loading',
     // Ignite legacy module.
-    'ignite-console.legacy'
+    'ignite-console.legacy',
     // Ignite modules.
-    // 'ignite-console.modules'
+    'ignite-console.modules'
 ])
 // Directives.
 .directive(...igniteHideOnStateChange)

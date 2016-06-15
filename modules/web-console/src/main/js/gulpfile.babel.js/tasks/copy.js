@@ -19,7 +19,7 @@ import gulp from 'gulp';
 import cache from 'gulp-cached';
 import sequence from 'gulp-sequence';
 
-import { destDir, jsModulePaths, resourcePaths, resourceModulePaths, igniteModulesTemp } from '../paths';
+import { destDir, rootDir, jsModulePaths, resourcePaths, resourceModulePaths, igniteModulesTemp } from '../paths';
 
 gulp.task('copy', (cb) => {
     const tasks = ['copy:resource', 'copy:ignite_modules:resource', 'copy:ignite_modules:js'];
@@ -30,7 +30,7 @@ gulp.task('copy', (cb) => {
 gulp.task('copy:ignite_modules:js', () =>
     gulp.src(jsModulePaths)
         .pipe(cache('copy:ignite_modules:js'))
-        .pipe(gulp.dest(`${destDir}/${igniteModulesTemp}`))
+        .pipe(gulp.dest(`${rootDir}/${igniteModulesTemp}`))
 );
 
 gulp.task('copy:resource', () =>

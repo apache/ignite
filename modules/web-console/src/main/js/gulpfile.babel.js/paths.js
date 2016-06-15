@@ -19,7 +19,7 @@ import path from 'path';
 
 const rootDir = path.resolve('./');
 const srcDir = path.resolve('app');
-const destDir = path.resolve('dist');
+const destDir = path.resolve('build');
 
 const igniteModulesDir = process.env.IGNITE_MODULES ? path.normalize(process.env.IGNITE_MODULES) : './ignite_modules';
 const igniteModulesTemp = path.resolve('ignite_modules_temp');

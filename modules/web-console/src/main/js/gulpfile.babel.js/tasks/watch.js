@@ -20,8 +20,7 @@ import sequence from 'gulp-sequence';
 
 import { jadePaths, jadeModulePaths, resourcePaths, resourceModulePaths, appPaths, appModulePaths } from '../paths';
 
-//TODO Webpack stream || webpack autoload
-gulp.task('watch:ignite-modules', (cb) => sequence('clean:ignite-modules-temp', 'ignite:modules', ['copy:ignite_modules:js'], cb));
+gulp.task('watch:ignite-modules', (cb) => sequence('clean:ignite-modules-temp', 'ignite:modules', 'copy:ignite_modules:js', cb));
 
 // Build + connect + watch task.
 gulp.task('watch', ['build'], () => {

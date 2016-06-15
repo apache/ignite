@@ -1,4 +1,20 @@
-'use strict';
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import webpack from 'webpack';
 import path from 'path';
@@ -6,9 +22,29 @@ import jade from 'jade';
 
 import {destDir, rootDir} from '../../paths';
 
-module.exports = function (_path) {
+export default () => {
+
+    const plugins = [
+        new HtmlWebpackPlugin({
+            filename: 'index.html',
+            templateContent: () => {
+                return jade.renderFile(path.join(rootDir, 'views', 'index.jade'));
+            },
+            title: 'Ignite Web Console'
+        }),
+        new webpack.optimize.DedupePlugin(),
+        new webpack.optimize.UglifyJsPlugin({
+            path: destDir,
+            minimize: true,
+            warnings: false,
+            sourceMap: true,
+            mangle: true
+        })
+    ];
+
     return {
         context: rootDir,
+        bail: true, // Cancel build on error.
         debug: false,
         devtool: 'cheap-source-map',
         output: {
@@ -16,22 +52,7 @@ module.exports = function (_path) {
             filename: '[name].[chunkhash].js',
             path: destDir
         },
-        plugins: [
-            new HtmlWebpackPlugin({
-                filename: 'index.html',
-                templateContent: () => {
-                    return jade.renderFile(path.join(_path, 'views', 'index.jade'));
-                },
-                title: 'Ignite Web Console'
-            }),
-            new webpack.optimize.DedupePlugin(),
-            new webpack.optimize.UglifyJsPlugin({
-                path: destDir,
-                minimize: true,
-                warnings: false,
-                sourceMap: true,
-                mangle: true
-            })
-        ]
+        plugins
     };
+
 };

@@ -1,22 +1,45 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import ProgressPlugin from 'webpack/lib/ProgressPlugin';
 
 let chars = 0,
     lastState, lastStateTime;
 
+const outputStream = process.stdout;
+
 const _goToLineStart = (nextMessage) => {
-    var str = "";
+    let str = "";
     for (; chars > nextMessage.length; chars--) {
         str += "\b \b";
     }
+
     chars = nextMessage.length;
+
     for (var i = 0; i < chars; i++) {
         str += "\b";
     }
-    if (str) process.stderr.write(str);
+    if (str)
+        outputStream.write(str);
 };
 
 export default new ProgressPlugin((percentage, msg) => {
-    var state = msg;
+    let state = msg;
+
     if (percentage < 1) {
         percentage = Math.floor(percentage * 100);
         msg = percentage + "% " + msg;
@@ -27,21 +50,27 @@ export default new ProgressPlugin((percentage, msg) => {
             msg = " " + msg;
         }
     }
+
     state = state.replace(/^\d+\/\d+\s+/, "");
+
     if (percentage === 0) {
         lastState = null;
         lastStateTime = +new Date();
-    } else if (state !== lastState || percentage === 1) {
-        var now = +new Date();
+    }
+    else if (state !== lastState || percentage === 1) {
+        let now = +new Date();
+
         if (lastState) {
             var stateMsg = (now - lastStateTime) + "ms " + lastState;
             _goToLineStart(stateMsg);
-            process.stderr.write(stateMsg + "\n");
+            outputStream.write(stateMsg + "\n");
             chars = 0;
         }
+
         lastState = state;
         lastStateTime = now;
     }
+
     _goToLineStart(msg);
-    process.stderr.write(msg);
+    outputStream.write(msg);
 });

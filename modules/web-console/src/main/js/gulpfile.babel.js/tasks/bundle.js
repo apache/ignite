@@ -17,14 +17,14 @@
 
 import gulp from 'gulp';
 import webpack from 'webpack';
-import webpackConfig from '../../webpack.config';
+import webpackConfig from '../webpack';
 import WebpackDevServer from 'webpack-dev-server';
 
 gulp.task('bundle', (cb) => {
     if (process.env.NODE_ENV === 'development')
         // Important! Call webpack and WebpackDevServer must be inline.
         new WebpackDevServer(webpack(webpackConfig), webpackConfig.devServer)
-            .listen(webpackConfig.devServer.port, 'localhost');
+            .listen(webpackConfig.devServer.port, 'localhost', cb);
     else
         webpack(webpackConfig, cb);
 });
