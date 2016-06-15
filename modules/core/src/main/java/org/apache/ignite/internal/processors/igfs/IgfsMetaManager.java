@@ -67,6 +67,7 @@ import org.apache.ignite.internal.util.lang.GridClosureException;
 import org.apache.ignite.internal.util.lang.IgniteOutClosureX;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.T1;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -2754,7 +2755,7 @@ public class IgfsMetaManager extends IgfsManager {
                         else {
                             // Create file and parent folders.
                             IgfsPathsCreateResult res = createFile(pathIds, lockInfos, dirProps, fileProps, blockSize,
-                                affKey, evictExclude, null);
+                                affKey, evictExclude, null, null);
 
                             if (res == null)
                                 continue;
@@ -2918,11 +2919,21 @@ public class IgfsMetaManager extends IgfsManager {
                         }
                         else {
                             // Create file and parent folders.
-                            if (secondaryCtx != null)
-                                secondaryOut = secondaryCtx.create();
+                            T1<OutputStream> secondaryOutHolder = null;
 
-                            IgfsPathsCreateResult res = createFile(pathIds, lockInfos, dirProps, fileProps, blockSize,
-                                affKey, evictExclude, secondaryCtx);
+                            if (secondaryCtx != null)
+                                secondaryOutHolder = new T1<>();
+
+                            IgfsPathsCreateResult res;
+
+                            try {
+                                res = createFile(pathIds, lockInfos, dirProps, fileProps, blockSize,
+                                    affKey, evictExclude, secondaryCtx, secondaryOutHolder);
+                            }
+                            finally {
+                                if (secondaryOutHolder != null)
+                                    secondaryOut =  secondaryOutHolder.get();
+                            }
 
                             if (res == null)
                                 continue;
@@ -2972,7 +2983,7 @@ public class IgfsMetaManager extends IgfsManager {
             throw new IgfsParentNotDirectoryException("Failed to create directory (parent " +
                 "element is not a directory)");
 
-        return createFileOrDirectory(true, pathIds, lockInfos, dirProps, null, 0, null, false, null);
+        return createFileOrDirectory(true, pathIds, lockInfos, dirProps, null, 0, null, false, null, null);
     }
 
     /**
@@ -2986,12 +2997,14 @@ public class IgfsMetaManager extends IgfsManager {
      * @param affKey Affinity key (optional)
      * @param evictExclude Evict exclude flag.
      * @param secondaryCtx Secondary file system create context.
+     * @param secondaryOutHolder Holder for the secondary output stream.
      * @return Result or {@code} if the first parent already contained child with the same name.
      * @throws IgniteCheckedException If failed.
      */
     @Nullable private IgfsPathsCreateResult createFile(IgfsPathIds pathIds, Map<IgniteUuid, IgfsEntryInfo> lockInfos,
         Map<String, String> dirProps, Map<String, String> fileProps, int blockSize, @Nullable IgniteUuid affKey,
-        boolean evictExclude, @Nullable IgfsSecondaryFileSystemCreateContext secondaryCtx)
+        boolean evictExclude, @Nullable IgfsSecondaryFileSystemCreateContext secondaryCtx,
+        @Nullable T1<OutputStream> secondaryOutHolder)
         throws IgniteCheckedException{
         // Check if entry we are going to write to is directory.
         if (lockInfos.get(pathIds.lastExistingId()).isFile())
@@ -2999,7 +3012,7 @@ public class IgfsMetaManager extends IgfsManager {
                 "(parent element is not a directory): " + pathIds.path());
 
         return createFileOrDirectory(false, pathIds, lockInfos, dirProps, fileProps, blockSize, affKey, evictExclude,
-            secondaryCtx);
+            secondaryCtx, secondaryOutHolder);
     }
 
     /**
@@ -3014,6 +3027,7 @@ public class IgfsMetaManager extends IgfsManager {
      * @param affKey Affinity key.
      * @param evictExclude Evict exclude flag.
      * @param secondaryCtx Secondary file system create context.
+     * @param secondaryOutHolder Secondary output stream holder.
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
@@ -3021,7 +3035,8 @@ public class IgfsMetaManager extends IgfsManager {
     private IgfsPathsCreateResult createFileOrDirectory(boolean dir, IgfsPathIds pathIds,
         Map<IgniteUuid, IgfsEntryInfo> lockInfos, Map<String, String> dirProps, Map<String, String> fileProps,
         int blockSize, @Nullable IgniteUuid affKey, boolean evictExclude,
-        @Nullable IgfsSecondaryFileSystemCreateContext secondaryCtx) throws IgniteCheckedException {
+        @Nullable IgfsSecondaryFileSystemCreateContext secondaryCtx, @Nullable T1<OutputStream> secondaryOutHolder)
+        throws IgniteCheckedException {
         // This is our starting point.
         int lastExistingIdx = pathIds.lastExistingIndex();
         IgfsEntryInfo lastExistingInfo = lockInfos.get(pathIds.lastExistingId());
@@ -3036,6 +3051,13 @@ public class IgfsMetaManager extends IgfsManager {
 
         if (lastExistingInfo.hasChild(curPart))
             return null;
+
+        // Create entry in the secondary file system if needed.
+        if (secondaryCtx != null) {
+            assert secondaryOutHolder != null;
+
+            secondaryOutHolder.set(secondaryCtx.create());
+        }
 
         Map<IgniteUuid, EntryProcessor> procMap = new HashMap<>();
 
@@ -3068,7 +3090,7 @@ public class IgfsMetaManager extends IgfsManager {
 
                 if (secondaryInfo == null)
                     throw new IgfsException("Failed to perform operation because secondary file system path was " +
-                        "modified concurrnetly: " + lastCreatedPath);
+                        "modified concurrently: " + lastCreatedPath);
                 else if (secondaryInfo.isFile())
                     throw new IgfsException("Failed to perform operation because secondary file system entity is " +
                         "not directory: " + lastCreatedPath);
