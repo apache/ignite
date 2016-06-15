@@ -38,7 +38,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  */
 public class IgniteCacheStarvationOnRebalanceTest extends GridCacheAbstractSelfTest {
     /** Grid count. */
-    private static final int GRID_CNT = 4;
+    private static final int INSTANCE_CNT = 4;
 
     /** Test timeout. */
     private static final long TEST_TIMEOUT = 3 * 60 * 1000;
@@ -52,8 +52,8 @@ public class IgniteCacheStarvationOnRebalanceTest extends GridCacheAbstractSelfT
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         // Use small system thread pool to reproduce the issue.
         cfg.setSystemThreadPoolSize(IGNITE_THREAD_POOL_SIZE);
@@ -74,8 +74,8 @@ public class IgniteCacheStarvationOnRebalanceTest extends GridCacheAbstractSelfT
     }
 
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return GRID_CNT;
+    @Override protected int instanceCount() {
+        return INSTANCE_CNT;
     }
 
     /** {@inheritDoc} */
@@ -119,7 +119,7 @@ public class IgniteCacheStarvationOnRebalanceTest extends GridCacheAbstractSelfT
 
                 info("Starting new node...");
 
-                startGrid(GRID_CNT + 1);
+                startGrid(INSTANCE_CNT + 1);
 
                 info("New node is started.");
 
@@ -132,7 +132,7 @@ public class IgniteCacheStarvationOnRebalanceTest extends GridCacheAbstractSelfT
             // Wait for put tasks. If put() is blocked the test is timed out.
             fut.get();
 
-            stopGrid(GRID_CNT + 1);
+            stopGrid(INSTANCE_CNT + 1);
         }
     }
 

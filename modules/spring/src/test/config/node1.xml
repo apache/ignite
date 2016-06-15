@@ -25,7 +25,7 @@
     <bean id="simpleDataSource" class="org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStoreFactorySelfTest$DummyDataSource"/>
 
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-        <property name="gridName" value="ignite1"/>
+        <property name="instanceName" value="ignite1"/>
 
         <!-- Explicitly configure TCP discovery SPI to provide list of initial nodes. -->
         <property name="discoverySpi">

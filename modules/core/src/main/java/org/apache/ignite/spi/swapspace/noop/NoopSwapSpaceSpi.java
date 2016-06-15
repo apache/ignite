@@ -52,7 +52,7 @@ public class NoopSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceSpi {
     private IgniteLogger log;
 
     /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+    @Override public void spiStart(@Nullable String instanceName) throws IgniteSpiException {
         U.warn(log, "Swap space is disabled. To enable use FileSwapSpaceSpi.");
     }
 

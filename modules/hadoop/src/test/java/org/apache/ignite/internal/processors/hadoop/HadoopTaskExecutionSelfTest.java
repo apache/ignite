@@ -119,8 +119,8 @@ public class HadoopTaskExecutionSelfTest extends HadoopAbstractSelfTest {
     }
 
     /** {@inheritDoc} */
-    @Override public HadoopConfiguration hadoopConfiguration(String gridName) {
-        HadoopConfiguration cfg = super.hadoopConfiguration(gridName);
+    @Override public HadoopConfiguration hadoopConfiguration(String instanceName) {
+        HadoopConfiguration cfg = super.hadoopConfiguration(instanceName);
 
         cfg.setMaxParallelTasks(5);
 

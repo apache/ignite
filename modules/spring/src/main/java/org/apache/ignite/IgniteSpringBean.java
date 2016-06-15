@@ -57,7 +57,7 @@ import org.springframework.context.ApplicationContextAware;
  * &lt;bean id="mySpringBean" class="org.apache.ignite.GridSpringBean"&gt;
  *     &lt;property name="configuration"&gt;
  *         &lt;bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"&gt;
- *             &lt;property name="gridName" value="mySpringGrid"/&gt;
+ *             &lt;property name="instanceName" value="mySpringInstance"/&gt;
  *         &lt;/bean&gt;
  *     &lt;/property&gt;
  * &lt;/bean&gt;

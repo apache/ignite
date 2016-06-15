@@ -53,7 +53,7 @@ public class HadoopEmbeddedTaskExecutor extends HadoopTaskExecutorAdapter {
 
         jobTracker = ctx.jobTracker();
 
-        exec = new HadoopExecutorService(log, ctx.kernalContext().gridName(),
+        exec = new HadoopExecutorService(log, ctx.kernalContext().instanceName(),
             ctx.configuration().getMaxParallelTasks(), ctx.configuration().getMaxTaskQueueSize());
     }
 

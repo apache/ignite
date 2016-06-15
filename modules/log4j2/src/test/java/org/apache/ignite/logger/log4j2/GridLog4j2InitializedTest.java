@@ -45,7 +45,7 @@ public class GridLog4j2InitializedTest extends TestCase {
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName("grid" + 1);
+        cfg.setInstanceName("instance" + 1);
         cfg.setNodeId(new UUID(1, 1));
         // cfg.setIgniteHome("/home/glutters/Documenti/apache-ignite/ignite-master/ignite/");
 

@@ -386,7 +386,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
                             if (stop.get())
                                 return null;
 
-                            log.info("Killing node [gridName=" + instanceName + ']');
+                            log.info("Killing node [instanceName=" + instanceName + ']');
 
                             stopGrid(instanceName);
 
@@ -395,7 +395,7 @@ public class GridCacheMultithreadedFailoverAbstractTest extends GridCommonAbstra
                             if (stop.get())
                                 return null;
 
-                            log.info("Restarting node [gridName=" + instanceName + ']');
+                            log.info("Restarting node [instanceName=" + instanceName + ']');
 
                             G.start(configuration(idx));
                         }

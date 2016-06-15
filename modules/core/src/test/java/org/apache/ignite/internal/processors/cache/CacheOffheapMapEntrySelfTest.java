@@ -70,7 +70,7 @@ public class CacheOffheapMapEntrySelfTest extends GridCacheAbstractSelfTest {
     }
 
     /**
-     * @param gridName Grid name.
+     * @param instanceName Grid instance name.
      * @param memoryMode Memory mode.
      * @param atomicityMode Atomicity mode.
      * @param cacheMode Cache mode.

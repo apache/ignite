@@ -27,7 +27,7 @@
 
         <property name="clientMode" value="true"/>
 
-        <property name="gridName" value="grid3"/>
+        <property name="instanceName" value="instance3"/>
 
         <property name="metricsUpdateFrequency" value="1000"/>
         <property name="metricsLogFrequency" value="0"/>

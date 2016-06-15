@@ -150,15 +150,15 @@ public class IgniteThreadPoolExecutor extends ThreadPoolExecutor {
      * </tr>
      * </table>
      *
-     * @param gridName Name of the grid.
+     * @param instanceName Name of the grid instance.
      */
-    public IgniteThreadPoolExecutor(String gridName) {
+    public IgniteThreadPoolExecutor(String instanceName) {
         this(
             DFLT_CORE_POOL_SIZE,
             DFLT_CORE_POOL_SIZE,
             0,
             new LinkedBlockingDeque<Runnable>(),
-            new IgniteThreadFactory(gridName),
+            new IgniteThreadFactory(instanceName),
             null
         );
     }
@@ -167,7 +167,7 @@ public class IgniteThreadPoolExecutor extends ThreadPoolExecutor {
      * Creates a new service with the given initial parameters.
      *
      * @param threadNamePrefix Will be added at the beginning of all created threads.
-     * @param gridName Must be the name of the grid.
+     * @param instanceName Must be the name of the grid instance.
      * @param corePoolSize The number of threads to keep in the pool, even if they are idle.
      * @param maxPoolSize The maximum number of threads to allow in the pool.
      * @param keepAliveTime When the number of threads is greater than the core, this is the maximum time
@@ -177,7 +177,7 @@ public class IgniteThreadPoolExecutor extends ThreadPoolExecutor {
      */
     public IgniteThreadPoolExecutor(
         String threadNamePrefix,
-        String gridName,
+        String instanceName,
         int corePoolSize,
         int maxPoolSize,
         long keepAliveTime,
@@ -188,7 +188,7 @@ public class IgniteThreadPoolExecutor extends ThreadPoolExecutor {
             keepAliveTime,
             TimeUnit.MILLISECONDS,
             workQ,
-            new IgniteThreadFactory(gridName, threadNamePrefix)
+            new IgniteThreadFactory(instanceName, threadNamePrefix)
         );
     }
 

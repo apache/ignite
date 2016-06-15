@@ -57,7 +57,7 @@ public class GridTestSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceS
     private ConcurrentMap<String, Space> spaces = new ConcurrentHashMap8<>();
 
     /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+    @Override public void spiStart(@Nullable String instanceName) throws IgniteSpiException {
         // No-op.
     }
 

@@ -96,8 +96,8 @@ public class ServletContextListenerStartup implements ServletContextListener {
     /** Configuration file path parameter name. */
     public static final String IGNITE_CFG_FILE_PATH_PARAM = "IgniteConfigurationFilePath";
 
-    /** Names of started grids. */
-    private final Collection<String> gridNames = new ArrayList<>();
+    /** Names of started instances. */
+    private final Collection<String> instanceNames = new ArrayList<>();
 
     /** {@inheritDoc} */
     @Override public void contextInitialized(ServletContextEvent evt) {
@@ -163,12 +163,12 @@ public class ServletContextListenerStartup implements ServletContextListener {
 
                 // Check if grid is not null - started properly.
                 if (ignite != null)
-                    gridNames.add(ignite.name());
+                    instanceNames.add(ignite.name());
             }
         }
         catch (IgniteCheckedException e) {
             // Stop started grids only.
-            for (String name : gridNames)
+            for (String name : instanceNames)
                 G.stop(name, true);
 
             throw new IgniteException("Failed to start Ignite.", e);
@@ -178,7 +178,7 @@ public class ServletContextListenerStartup implements ServletContextListener {
     /** {@inheritDoc} */
     @Override public void contextDestroyed(ServletContextEvent evt) {
         // Stop started grids only.
-        for (String name: gridNames)
+        for (String name: instanceNames)
             G.stop(name, true);
     }
 

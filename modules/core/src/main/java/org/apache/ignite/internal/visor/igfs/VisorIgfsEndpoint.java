@@ -32,9 +32,6 @@ public class VisorIgfsEndpoint implements Serializable, LessNamingBean {
     /** IGFS name. */
     private final String igfsName;
 
-    /** Grid name. */
-    private final String gridName;
-
     /** Instance name. */
     private final String instanceName;
 
@@ -54,7 +51,6 @@ public class VisorIgfsEndpoint implements Serializable, LessNamingBean {
      */
     public VisorIgfsEndpoint(@Nullable String igfsName, String instanceName, @Nullable String hostName, int port) {
         this.igfsName = igfsName;
-        this.gridName = instanceName;
         this.instanceName = instanceName;
         this.hostName = hostName;
         this.port = port;
@@ -69,9 +65,18 @@ public class VisorIgfsEndpoint implements Serializable, LessNamingBean {
 
     /**
      * @return Grid name.
+     * @deprecated Use {@link #instanceName()} instead.
      */
+    @Deprecated
     public String gridName() {
-        return gridName;
+        return instanceName;
+    }
+
+    /**
+     * @return Instance name.
+     */
+    public String instanceName() {
+        return instanceName;
     }
 
     /**

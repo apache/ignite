@@ -117,7 +117,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  *            http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd"&gt;
  *     &lt;-- Provide Grid name. --&gt;
  *     &lt;bean id="transactionManager" class="org.apache.ignite.transactions.spring.SpringTransactionManager"&gt;
- *         &lt;property name="gridName" value="myGrid"/&gt;
+ *         &lt;property name="instanceName" value="myGrid"/&gt;
  *     &lt;/bean>
  *
  *     &lt;-- Use annotation-driven transaction configuration. --&gt;
@@ -130,7 +130,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  *
  * If neither {@link #setConfigurationPath(String) configurationPath},
  * {@link #setConfiguration(IgniteConfiguration) configuration}, nor
- * {@link #setGridName(String) gridName} are provided, transaction manager
+ * {@link #setInstanceName(String) instanceName} are provided, transaction manager
  * will try to use default Grid instance (the one with the {@code null}
  * name). If it doesn't exist, exception will be thrown.
  *
@@ -146,7 +146,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  *            http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd"&gt;
  *     &lt;-- Provide Grid name. --&gt;
  *     &lt;bean id="transactionManager" class="org.apache.ignite.transactions.spring.SpringTransactionManager"&gt;
- *         &lt;property name="gridName" value="myGrid"/&gt;
+ *         &lt;property name="instanceName" value="myGrid"/&gt;
  *         &lt;property name="transactionConcurrency" value="OPTIMISTIC"/&gt;
  *     &lt;/bean>
  *
@@ -165,12 +165,12 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
  *            http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
  *            http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd"&gt;
  *     &lt;bean id="optimisticTransactionManager" class="org.apache.ignite.transactions.spring.SpringTransactionManager"&gt;
- *         &lt;property name="gridName" value="myGrid"/&gt;
+ *         &lt;property name="instanceName" value="myGrid"/&gt;
  *         &lt;property name="transactionConcurrency" value="OPTIMISTIC"/&gt;
  *     &lt;/bean>
  *
  *     &lt;bean id="pessimisticTransactionManager" class="org.apache.ignite.transactions.spring.SpringTransactionManager"&gt;
- *         &lt;property name="gridName" value="myGrid"/&gt;
+ *         &lt;property name="instanceName" value="myGrid"/&gt;
  *         &lt;property name="transactionConcurrency" value="PESSIMISTIC"/&gt;
  *     &lt;/bean>
  *
@@ -218,7 +218,7 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
     /**
      * Grid name.
      */
-    private String gridName;
+    private String instanceName;
 
     /**
      * Ignite instance.
@@ -291,18 +291,34 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
      * Gets grid name.
      *
      * @return Grid name.
+     * @deprecated Use {@link #getInstanceName()} instead.
      */
+    @Deprecated
     public String getGridName() {
-        return gridName;
+        return instanceName;
     }
 
     /**
      * Sets grid name.
      *
-     * @param gridName Grid name.
+     * @param instanceName Grid name.
+     * @deprecated Use {@link #setInstanceName(String)} instead.
      */
-    public void setGridName(String gridName) {
-        this.gridName = gridName;
+    @Deprecated
+    public void setGridName(String instanceName) {
+        this.instanceName = instanceName;
+    }
+
+    /**
+     * Gets grid name.
+     * @return instanceName Grid instance name
+     */
+    public String getInstanceName() {
+        return instanceName;
+    }
+
+    public void setInstanceName(String instanceName) {
+        this.instanceName = instanceName;
     }
 
     /**
@@ -315,7 +331,7 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
             throw new IllegalArgumentException("Both 'configurationPath' and 'configuration' are " +
                     "provided. Set only one of these properties if you need to start a Ignite node inside of " +
                     "SpringCacheManager. If you already have a node running, omit both of them and set" +
-                    "'gridName' property.");
+                    "'instanceName' property.");
         }
 
         if (cfgPath != null)
@@ -323,7 +339,7 @@ public class SpringTransactionManager extends AbstractPlatformTransactionManager
         else if (cfg != null)
             ignite = Ignition.start(cfg);
         else
-            ignite = Ignition.ignite(gridName);
+            ignite = Ignition.ignite(instanceName);
 
         if (transactionConcurrency == null)
             transactionConcurrency = ignite.configuration().getTransactionConfiguration().getDefaultTxConcurrency();

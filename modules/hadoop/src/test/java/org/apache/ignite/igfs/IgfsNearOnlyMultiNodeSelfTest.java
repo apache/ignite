@@ -78,8 +78,8 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER).setForceServerMode(true));
 
@@ -100,7 +100,7 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
 
         cfg.setFileSystemConfiguration(igfsCfg);
 
-        cfg.setCacheConfiguration(cacheConfiguration(gridName, "data"), cacheConfiguration(gridName, "meta"));
+        cfg.setCacheConfiguration(cacheConfiguration(instanceName, "data"), cacheConfiguration(instanceName, "meta"));
 
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
 
@@ -120,10 +120,10 @@ public class IgfsNearOnlyMultiNodeSelfTest extends GridCommonAbstractTest {
     /**
      * Gets cache configuration.
      *
-     * @param gridName Grid name.
+     * @param instanceName Grid instance name.
      * @return Cache configuration.
      */
-    protected CacheConfiguration cacheConfiguration(String gridName, String cacheName) {
+    protected CacheConfiguration cacheConfiguration(String instanceName, String cacheName) {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setName(cacheName);

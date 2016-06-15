@@ -117,13 +117,6 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
     /** Local node ID. */
     private UUID locNodeId;
 
-    /** Grid name.
-     *
-     *  @deprecated Use {@link #instanceName} instead.
-     */
-    @Deprecated
-    private String gridName;
-
     /** Instance name. */
     private String instanceName;
 
@@ -162,7 +155,6 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
         this.log = log;
         this.locNodeId = locNodeId;
         this.instanceName = instanceName;
-        this.gridName = instanceName;
     }
 
     /** @param omitOutOfResourcesWarn If {@code true}, out of resources warning will not be printed by server. */
@@ -208,7 +200,7 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
                 "in use?): " + port, e);
         }
 
-        gcWorker = new GcWorker(gridName, "ipc-shmem-gc", log);
+        gcWorker = new GcWorker(instanceName, "ipc-shmem-gc", log);
 
         new IgniteThread(gcWorker).start();
 
@@ -357,13 +349,11 @@ public class IpcSharedMemoryServerEndpoint implements IpcServerEndpoint {
         if (ignite != null) {
             // Inject resources.
             instanceName = ignite.name();
-            gridName = ignite.name();
             locNodeId = ignite.configuration().getNodeId();
         }
         else {
             // Cleanup resources.
             instanceName = null;
-            gridName = null;
             locNodeId = null;
         }
     }

@@ -42,11 +42,11 @@ public class HadoopIgfs20FileSystemLoopbackPrimarySelfTest extends HadoopIgfs20F
     }
 
     /** {@inheritDoc} */
-    @Override protected IgfsIpcEndpointConfiguration primaryIpcEndpointConfiguration(final String gridName) {
+    @Override protected IgfsIpcEndpointConfiguration primaryIpcEndpointConfiguration(final String instanceName) {
         IgfsIpcEndpointConfiguration cfg = new IgfsIpcEndpointConfiguration();
 
         cfg.setType(IgfsIpcEndpointType.TCP);
-        cfg.setPort(DFLT_IPC_PORT + getTestGridIndex(gridName));
+        cfg.setPort(DFLT_IPC_PORT + getTestInstanceIndex(instanceName));
 
         return cfg;
     }

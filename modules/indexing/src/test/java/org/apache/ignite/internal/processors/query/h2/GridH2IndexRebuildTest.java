@@ -83,8 +83,8 @@ public class GridH2IndexRebuildTest extends GridCacheAbstractSelfTest {
     private static SleepingH2Indexing spi;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         GridQueryProcessor.idxCls = SleepingH2Indexing.class;
 

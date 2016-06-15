@@ -428,7 +428,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws IgniteSpiException {
+    @Override public void spiStart(String instanceName) throws IgniteSpiException {
         assertParameter(activeJobsThreshold >= 0, "activeJobsThreshold >= 0");
         assertParameter(waitJobsThreshold >= 0, "waitJobsThreshold >= 0");
         assertParameter(msgExpireTime > 0, "messageExpireTime > 0");
@@ -445,7 +445,7 @@ public class JobStealingCollisionSpi extends IgniteSpiAdapter implements Collisi
             log.debug(configInfo("maxStealingAttempts", maxStealingAttempts));
         }
 
-        registerMBean(gridName, this, JobStealingCollisionSpiMBean.class);
+        registerMBean(instanceName, this, JobStealingCollisionSpiMBean.class);
 
         // Ack start.
         if (log.isDebugEnabled())

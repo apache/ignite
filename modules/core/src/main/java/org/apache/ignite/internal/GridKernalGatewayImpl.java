@@ -188,7 +188,7 @@ public class GridKernalGatewayImpl implements GridKernalGateway, Serializable {
      */
     private IllegalStateException illegalState() {
         return new IllegalStateException("Grid is in invalid state to perform this operation. " +
-            "It either not started yet or has already being or have stopped [gridName=" + instanceName +
+            "It either not started yet or has already being or have stopped [instanceName=" + instanceName +
             ", state=" + state + ']');
     }
 

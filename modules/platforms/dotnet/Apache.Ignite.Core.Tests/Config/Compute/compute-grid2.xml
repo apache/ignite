@@ -25,7 +25,7 @@
       <property name="localHost" value="127.0.0.1"/>
       <property name="connectorConfiguration"><null/></property>
 
-      <property name="gridName" value="grid2"/>
+      <property name="instanceName" value="instance2"/>
 
       <property name="metricsUpdateFrequency" value="1000"/>
         <property name="metricsLogFrequency" value="0"/>

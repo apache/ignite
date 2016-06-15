@@ -25,7 +25,7 @@
         <property name="localHost" value="127.0.0.1"/>
         <property name="connectorConfiguration"><null/></property>
 
-        <property name="gridName" value="grid1"/>
+        <property name="instanceName" value="instance1"/>
 
         <property name="cacheConfiguration">
             <list>

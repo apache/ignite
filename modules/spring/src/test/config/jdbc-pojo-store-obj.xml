@@ -25,7 +25,7 @@
                            http://www.springframework.org/schema/util
                            http://www.springframework.org/schema/util/spring-util.xsd">
     <bean class="org.apache.ignite.configuration.IgniteConfiguration">
-        <property name="gridName" value="test-cluster"/>
+        <property name="instanceName" value="test-cluster"/>
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">

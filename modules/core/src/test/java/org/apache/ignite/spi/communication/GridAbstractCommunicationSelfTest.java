@@ -294,7 +294,7 @@ public abstract class GridAbstractCommunicationSelfTest<T extends CommunicationS
         for (int i = 0; i < getSpiCount(); i++) {
             CommunicationSpi<Message> spi = getSpi(i);
 
-            GridTestUtils.setFieldValue(spi, IgniteSpiAdapter.class, "gridName", "grid-" + i);
+            GridTestUtils.setFieldValue(spi, IgniteSpiAdapter.class, "instanceName", "instance-" + i);
 
             IgniteTestResources rsrcs = new IgniteTestResources();
 

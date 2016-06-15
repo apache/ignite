@@ -285,7 +285,7 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName("grid_secondary");
+        cfg.setInstanceName("instance_secondary");
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -304,14 +304,14 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
     /**
      * Get primary IPC endpoint configuration.
      *
-     * @param gridName Grid name.
+     * @param instanceName Grid name.
      * @return IPC primary endpoint configuration.
      */
-    protected IgfsIpcEndpointConfiguration primaryIpcEndpointConfiguration(final String gridName) {
+    protected IgfsIpcEndpointConfiguration primaryIpcEndpointConfiguration(final String instanceName) {
         IgfsIpcEndpointConfiguration cfg = new IgfsIpcEndpointConfiguration();
 
         cfg.setType(IgfsIpcEndpointType.TCP);
-        cfg.setPort(DFLT_IPC_PORT + getTestInstanceIndex(gridName));
+        cfg.setPort(DFLT_IPC_PORT + getTestInstanceIndex(instanceName));
 
         return cfg;
     }
@@ -322,8 +322,8 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -331,7 +331,7 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
 
         cfg.setDiscoverySpi(discoSpi);
         cfg.setCacheConfiguration(cacheConfiguration());
-        cfg.setFileSystemConfiguration(fsConfiguration(gridName));
+        cfg.setFileSystemConfiguration(fsConfiguration(instanceName));
         cfg.setIncludeEventTypes(EVT_TASK_FAILED, EVT_TASK_FINISHED, EVT_JOB_MAPPED);
         cfg.setCommunicationSpi(communicationSpi());
 
@@ -367,10 +367,10 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
     /**
      * Gets IGFS configuration.
      *
-     * @param gridName Grid name.
+     * @param instanceName Grid instance name.
      * @return IGFS configuration.
      */
-    protected FileSystemConfiguration fsConfiguration(String gridName) throws IgniteCheckedException {
+    protected FileSystemConfiguration fsConfiguration(String instanceName) throws IgniteCheckedException {
         FileSystemConfiguration cfg = new FileSystemConfiguration();
 
         cfg.setDataCacheName("partitioned");
@@ -383,7 +383,7 @@ public class HadoopSecondaryFileSystemConfigurationTest extends IgfsCommonAbstra
             cfg.setSecondaryFileSystem(
                 new IgniteHadoopIgfsSecondaryFileSystem(secondaryFsUriStr, secondaryConfFullPath));
 
-        cfg.setIpcEndpointConfiguration(primaryIpcEndpointConfiguration(gridName));
+        cfg.setIpcEndpointConfiguration(primaryIpcEndpointConfiguration(instanceName));
 
         cfg.setManagementPort(-1);
         cfg.setBlockSize(512 * 1024); // Together with group blocks mapper will yield 64M per node groups.

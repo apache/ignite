@@ -54,7 +54,7 @@ public final class GridVmNodesStarter {
     private static final String IGNITE_PROG_NAME = "IGNITE_PROG_NAME";
 
     /** */
-    private static final String GRID_NAME_PREF = "gg-vm-grid-";
+    private static final String INSTANCE_NAME_PREF = "gg-vm-instance-";
 
     /** */
     private static final int DFLT_NODES_COUNT = 20;
@@ -66,7 +66,7 @@ public final class GridVmNodesStarter {
     private static final String OPTION_N = "n";
 
     /** */
-    private static final AtomicInteger gridCnt = new AtomicInteger();
+    private static final AtomicInteger instanceCnt = new AtomicInteger();
 
     /**
      * Enforces singleton.
@@ -243,7 +243,7 @@ public final class GridVmNodesStarter {
         for (IgniteConfiguration cfg : (Collection<IgniteConfiguration>)cfgMap.values()) {
             res.add(cfg);
 
-            cfg.setGridName(GRID_NAME_PREF + gridCnt.incrementAndGet());
+            cfg.setInstanceName(INSTANCE_NAME_PREF + instanceCnt.incrementAndGet());
         }
 
         return res;

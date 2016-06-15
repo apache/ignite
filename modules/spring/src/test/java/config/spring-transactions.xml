@@ -31,6 +31,6 @@
 
     <bean id="transactionManager" class="org.apache.ignite.transactions.spring.SpringTransactionManager">
         <property name="transactionConcurrency" value="OPTIMISTIC"/>
-        <property name="gridName" value="testGrid"/>
+        <property name="instanceName" value="testInstance"/>
     </bean>
 </beans>

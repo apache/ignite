@@ -71,7 +71,7 @@ public class GridSpringBeanSerializationSelfTest extends GridCommonAbstractTest 
 
         cfg.setConnectorConfiguration(null);
 
-        cfg.setGridName(getTestInstanceName());
+        cfg.setInstanceName(getTestInstanceName());
 
         return cfg;
     }

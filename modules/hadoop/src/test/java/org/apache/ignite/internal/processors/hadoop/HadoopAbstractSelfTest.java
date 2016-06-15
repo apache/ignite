@@ -106,10 +106,10 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
-        cfg.setHadoopConfiguration(hadoopConfiguration(gridName));
+        cfg.setHadoopConfiguration(hadoopConfiguration(instanceName));
 
         TcpCommunicationSpi commSpi = new TcpCommunicationSpi();
 
@@ -142,10 +142,10 @@ public abstract class HadoopAbstractSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param gridName Grid name.
+     * @param instanceName Grid instance name.
      * @return Hadoop configuration.
      */
-    public HadoopConfiguration hadoopConfiguration(String gridName) {
+    public HadoopConfiguration hadoopConfiguration(String instanceName) {
         HadoopConfiguration cfg = new HadoopConfiguration();
 
         cfg.setMaxParallelTasks(3);

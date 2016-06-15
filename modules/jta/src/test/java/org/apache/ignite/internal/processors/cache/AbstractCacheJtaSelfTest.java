@@ -65,14 +65,14 @@ public abstract class AbstractCacheJtaSelfTest extends GridCacheAbstractSelfTest
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         configureJta(cfg);
 
-        CacheConfiguration cfg1 = cacheConfiguration(gridName);
+        CacheConfiguration cfg1 = cacheConfiguration(instanceName);
 
-        CacheConfiguration cfg2 = cacheConfiguration(gridName);
+        CacheConfiguration cfg2 = cacheConfiguration(instanceName);
 
         cfg2.setName("cache-2");
 

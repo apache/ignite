@@ -118,7 +118,7 @@ public class HadoopExternalTaskExecutor extends HadoopTaskExecutorAdapter {
             ctx.kernalContext().config().getMarshaller(),
             log,
             ctx.kernalContext().getSystemExecutorService(),
-            ctx.kernalContext().gridName());
+            ctx.kernalContext().instanceName());
 
         comm.setListener(new MessageListener());
 

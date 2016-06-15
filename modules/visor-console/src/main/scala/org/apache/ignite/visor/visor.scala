@@ -1491,20 +1491,20 @@ object visor extends VisorTag {
     /**
      * Connects Visor console to configuration with path.
      *
-     * @param gridName Name of grid instance.
+     * @param instanceName Name of grid instance.
      * @param cfgPath Configuration path.
      */
-    def open(gridName: String, cfgPath: String) {
+    def open(instanceName: String, cfgPath: String) {
         this.cfgPath = cfgPath
 
         ignite =
             try
-                Ignition.ignite(gridName).asInstanceOf[IgniteEx]
+                Ignition.ignite(instanceName).asInstanceOf[IgniteEx]
             catch {
                 case _: IllegalStateException =>
                     this.cfgPath = null
 
-                    throw new IgniteException("Named grid unavailable: " + gridName)
+                    throw new IgniteException("Named grid unavailable: " + instanceName)
             }
 
         assert(cfgPath != null)

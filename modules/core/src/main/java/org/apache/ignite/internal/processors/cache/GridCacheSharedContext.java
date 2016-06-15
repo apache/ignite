@@ -321,7 +321,7 @@ public class GridCacheSharedContext<K, V> {
      */
     @Deprecated
     public String gridName() {
-        return kernalCtx.gridName();
+        return kernalCtx.instanceName();
     }
 
     /**

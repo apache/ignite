@@ -60,8 +60,8 @@ public class GridCacheReduceQueryMultithreadedSelfTest extends GridCacheAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -73,8 +73,8 @@ public class GridCacheReduceQueryMultithreadedSelfTest extends GridCacheAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration<?,?> cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String instanceName) throws Exception {
+        CacheConfiguration<?,?> cfg = super.cacheConfiguration(instanceName);
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setBackups(1);

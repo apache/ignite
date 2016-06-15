@@ -121,7 +121,7 @@ public abstract class IgfsEventsAbstractSelfTest extends GridCommonAbstractTest 
     }
 
     /**
-     * The same as getConfiguration(String gridName) but it sets custom IGFS configuration
+     * The same as getConfiguration(String instanceName) but it sets custom IGFS configuration
      *
      * @param instanceName Grid name.
      * @param igfsCfg IGFS configuration.

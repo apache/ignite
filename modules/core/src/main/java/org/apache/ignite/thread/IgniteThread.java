@@ -45,12 +45,6 @@ public class IgniteThread extends Thread {
     /** The name of the instance this thread belongs to. */
     protected final String instanceName;
 
-    /** The name of the grid this thread belongs to.
-     *  @deprecated Use {@link #instanceName} instead.
-     */
-    @Deprecated
-    protected final String gridName;
-
     /** Group index. */
     private final int grpIdx;
 
@@ -60,7 +54,7 @@ public class IgniteThread extends Thread {
      * @param worker Runnable to create thread with.
      */
     public IgniteThread(GridWorker worker) {
-        this(DFLT_GRP, worker.gridName(), worker.name(), worker, GRP_IDX_UNASSIGNED);
+        this(DFLT_GRP, worker.instanceName(), worker.name(), worker, GRP_IDX_UNASSIGNED);
     }
 
     /**
@@ -100,7 +94,6 @@ public class IgniteThread extends Thread {
         super(grp, r, createName(cntr.incrementAndGet(), threadName, instanceName));
 
         this.instanceName = instanceName;
-        this.gridName = instanceName;
         this.grpIdx = grpIdx;
     }
 
@@ -113,7 +106,6 @@ public class IgniteThread extends Thread {
         super(threadGrp, threadName);
 
         this.instanceName = instanceName;
-        this.gridName = instanceName;
         this.grpIdx = GRP_IDX_UNASSIGNED;
     }
 

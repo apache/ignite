@@ -129,7 +129,7 @@ public class IgniteHadoopFileSystemSecondaryModeSelfTest extends IgfsCommonAbstr
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName("igfs-grid");
+        cfg.setInstanceName("igfs-instance");
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -192,7 +192,7 @@ public class IgniteHadoopFileSystemSecondaryModeSelfTest extends IgfsCommonAbstr
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName("igfs-grid-secondary");
+        cfg.setInstanceName("igfs-instance-secondary");
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 

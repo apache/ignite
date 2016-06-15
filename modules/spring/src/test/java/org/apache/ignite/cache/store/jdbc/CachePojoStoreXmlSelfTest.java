@@ -29,7 +29,7 @@ import org.apache.ignite.marshaller.Marshaller;
  */
 public class CachePojoStoreXmlSelfTest extends CacheJdbcPojoStoreAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
         String path = builtinKeys ?  "modules/spring/src/test/config/jdbc-pojo-store-builtin.xml" :
             "modules/spring/src/test/config/jdbc-pojo-store-obj.xml";
 
@@ -39,7 +39,7 @@ public class CachePojoStoreXmlSelfTest extends CacheJdbcPojoStoreAbstractSelfTes
 
         IgniteConfiguration cfg = spring.loadConfigurations(url).get1().iterator().next();
 
-        cfg.setGridName(gridName);
+        cfg.setInstanceName(instanceName);
 
         return cfg;
     }

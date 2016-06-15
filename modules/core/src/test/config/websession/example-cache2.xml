@@ -25,7 +25,7 @@
     <import resource="example-cache-base.xml"/>
 
     <bean parent="ignite.cfg">
-        <property name="gridName" value="grid2"/>
+        <property name="instanceName" value="grid2"/>
     </bean>
 
 </beans>

@@ -112,7 +112,7 @@ public class IgniteHadoopFileSystemLoggerStateSelfTest extends IgfsCommonAbstrac
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName("igfs-grid");
+        cfg.setInstanceName("igfs-instance");
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 

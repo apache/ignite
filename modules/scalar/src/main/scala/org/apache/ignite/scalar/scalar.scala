@@ -302,11 +302,11 @@ object scalar extends ScalarConversions {
     /**
      * Gets named cache from specified grid.
      *
-     * @param gridName Name of the grid.
+     * @param instanceName Name of the instance.
      * @param cacheName Name of the cache to get.
      */
-    @inline def cache$[K, V](@Nullable gridName: String, @Nullable cacheName: String): Option[IgniteCache[K, V]] =
-        ignite$(gridName) match {
+    @inline def cache$[K, V](@Nullable instanceName: String, @Nullable cacheName: String): Option[IgniteCache[K, V]] =
+        ignite$(instanceName) match {
             case Some(g) => Option(g.cache(cacheName))
             case None => None
         }

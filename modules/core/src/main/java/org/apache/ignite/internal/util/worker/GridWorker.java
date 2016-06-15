@@ -38,13 +38,6 @@ public abstract class GridWorker implements Runnable {
     /** Thread name. */
     private final String name;
 
-    /** Grid name.
-     *
-     *  @deprecated  Use {@link #instanceName} instead.
-     */
-    @Deprecated
-    private final String gridName;
-
     /** Instance name. */
     private final String instanceName;
 
@@ -77,7 +70,6 @@ public abstract class GridWorker implements Runnable {
         assert name != null;
         assert log != null;
 
-        this.gridName = instanceName;
         this.instanceName = instanceName;
         this.name = name;
         this.lsnr = lsnr;
@@ -197,7 +189,7 @@ public abstract class GridWorker implements Runnable {
      */
     @Deprecated
     public String gridName() {
-        return gridName;
+        return instanceName;
     }
 
     public String instanceName() {

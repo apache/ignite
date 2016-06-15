@@ -55,7 +55,7 @@ class ScalarProjectionSpec extends FunSpec with ShouldMatchers with BeforeAndAft
 
     /**
      *
-     * @param name Grid name.
+     * @param name Grid instance name.
      * @param shown Shown flag.
      */
     private def gridConfig(name: String, shown: Boolean): IgniteConfiguration = {
@@ -63,7 +63,7 @@ class ScalarProjectionSpec extends FunSpec with ShouldMatchers with BeforeAndAft
 
         val cfg = new IgniteConfiguration
 
-        cfg.setGridName(name)
+        cfg.setInstanceName(name)
         cfg.setUserAttributes(attrs)
 
         cfg

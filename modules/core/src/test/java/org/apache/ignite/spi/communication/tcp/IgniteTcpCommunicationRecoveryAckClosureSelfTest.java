@@ -417,7 +417,7 @@ public class IgniteTcpCommunicationRecoveryAckClosureSelfTest<T extends Communic
         for (int i = 0; i < SPI_CNT; i++) {
             TcpCommunicationSpi spi = getSpi(ackCnt, idleTimeout, queueLimit);
 
-            GridTestUtils.setFieldValue(spi, IgniteSpiAdapter.class, "gridName", "grid-" + i);
+            GridTestUtils.setFieldValue(spi, IgniteSpiAdapter.class, "instanceName", "instance-" + i);
 
             IgniteTestResources rsrcs = new IgniteTestResources();
 

@@ -67,9 +67,9 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
     /** */
     private static final P1<ClusterNode> DATA_NODES_FILTER = new P1<ClusterNode>() {
             @Override public boolean apply(ClusterNode clusterNode) {
-                String gridName = clusterNode.attribute(IgniteNodeAttributes.ATTR_GRID_NAME);
+                String instanceName = clusterNode.attribute(IgniteNodeAttributes.ATTR_GRID_NAME);
 
-                return !gridName.endsWith(String.valueOf(GRID_CNT - 1)); // The last one is client only.
+                return !instanceName.endsWith(String.valueOf(GRID_CNT - 1)); // The last one is client only.
             }
         };
 
@@ -95,10 +95,10 @@ public class IgniteCacheClientQueryReplicatedNodeRestartSelfTest extends GridCom
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        X.println("grid name: " + gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        X.println("instance name: " + instanceName);
 
-        IgniteConfiguration c = super.getConfiguration(gridName);
+        IgniteConfiguration c = super.getConfiguration(instanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 

@@ -121,7 +121,7 @@ public class ServletStartup extends HttpServlet {
     private static final String cfgFilePathParam = "cfgFilePath";
 
     /** */
-    private Collection<String> gridNames = new ArrayList<>();
+    private Collection<String> instanceNames = new ArrayList<>();
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
@@ -159,12 +159,12 @@ public class ServletStartup extends HttpServlet {
 
                 // Test if grid is not null - started properly.
                 if (ignite != null)
-                    gridNames.add(ignite.name());
+                    instanceNames.add(ignite.name());
             }
         }
         catch (IgniteCheckedException e) {
             // Stop started grids only.
-            for (String name: gridNames)
+            for (String name: instanceNames)
                 G.stop(name, true);
 
             throw new ServletException("Failed to start Ignite.", e);
@@ -175,8 +175,8 @@ public class ServletStartup extends HttpServlet {
 
     /** {@inheritDoc} */
     @Override public void destroy() {
-        // Stop started grids only.
-        for (String name: gridNames)
+        // Stop started instances only.
+        for (String name: instanceNames)
             G.stop(name, true);
 
         loaded = false;

@@ -83,13 +83,13 @@ class VisorTasksCommandSpec extends FunSpec with Matchers with BeforeAndAfterAll
     /**
      * Creates grid configuration for provided grid host.
      *
-     * @param name Grid name.
+     * @param name Grid instance name.
      * @return Grid configuration.
      */
     private def config(name: String): IgniteConfiguration = {
         val cfg = new IgniteConfiguration
 
-        cfg.setGridName(name)
+        cfg.setInstanceName(name)
         cfg.setIncludeEventTypes(EVTS_ALL: _*)
 
         cfg

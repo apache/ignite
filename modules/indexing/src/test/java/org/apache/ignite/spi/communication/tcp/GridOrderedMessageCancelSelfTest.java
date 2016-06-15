@@ -68,8 +68,8 @@ public class GridOrderedMessageCancelSelfTest extends GridCommonAbstractTest {
     private static CountDownLatch finishLatch;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         CacheConfiguration cache = defaultCacheConfiguration();
 

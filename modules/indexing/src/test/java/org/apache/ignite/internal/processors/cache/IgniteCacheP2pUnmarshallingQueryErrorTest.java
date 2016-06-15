@@ -31,8 +31,8 @@ import org.apache.ignite.lang.IgniteBiPredicate;
  */
 public class IgniteCacheP2pUnmarshallingQueryErrorTest extends IgniteCacheP2pUnmarshallingErrorTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         if (cfg.getCacheConfiguration().length > 0)
             cfg.getCacheConfiguration()[0].setIndexedTypes(TestKey.class, String.class);

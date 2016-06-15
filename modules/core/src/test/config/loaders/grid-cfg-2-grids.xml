@@ -29,7 +29,7 @@
         Grid configuration.
     -->
     <bean id="grid.cfg.1" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true">
-        <property name="gridName" value="grid-factory-test-1"/>
+        <property name="instanceName" value="instance-factory-test-1"/>
 
         <property name="connectorConfiguration"><null/></property>
 
@@ -46,7 +46,7 @@
     </bean>
 
     <bean id="grid.cfg.2" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true">
-        <property name="gridName" value="grid-factory-test-2"/>
+        <property name="instanceName" value="instance-factory-test-2"/>
 
         <property name="connectorConfiguration"><null/></property>
 

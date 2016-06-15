@@ -131,7 +131,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
         return cfg;
     }
     /**
-     * @param gridName Grid name.
+     * @param instanceName Grid instance name.
      * @return Hibernate configuration.
      */
     protected Configuration hibernateConfiguration(String instanceName) {
@@ -280,7 +280,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
     }
 
     /**
-     * @param gridName Name of the grid providing caches.
+     * @param instanceName Name of the grid instance providing caches.
      * @return Session factory.
      */
     private SessionFactory startHibernate(String instanceName) {

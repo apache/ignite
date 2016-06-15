@@ -98,9 +98,9 @@ public interface GridKernalContext extends Iterable<GridComponent> {
     public String gridName();
 
     /**
-     * Gets lcoal instance name.
+     * Gets instance name.
      *
-     * @return Local instance name.
+     * @return Instance name.
      */
     public String instanceName();
 

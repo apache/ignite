@@ -929,16 +929,16 @@ public final class GridTestUtils {
      * Silent stop grid.
      * Method doesn't throw any exception.
      *
-     * @param gridName Grid name.
+     * @param instanceName Grid instance name.
      * @param log Logger.
      */
     @SuppressWarnings({"CatchGenericClass"})
-    public static void stopGrid(String gridName, IgniteLogger log) {
+    public static void stopGrid(String instanceName, IgniteLogger log) {
         try {
-            G.stop(gridName, false);
+            G.stop(instanceName, false);
         }
         catch (Throwable e) {
-            U.error(log, "Failed to stop grid: " + gridName, e);
+            U.error(log, "Failed to stop grid: " + instanceName, e);
         }
     }
 

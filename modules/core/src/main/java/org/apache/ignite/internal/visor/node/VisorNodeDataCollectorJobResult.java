@@ -32,13 +32,7 @@ public class VisorNodeDataCollectorJobResult implements Serializable {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Grid name.
-     *
-     *  @deprecated  Use {@link #instanceName(String)} instead.
-     */
-    @Deprecated
-    private String gridName;
-
+    /** Grid instance name. */
     private String instanceName;
 
     /** Node topology version. */
@@ -78,7 +72,7 @@ public class VisorNodeDataCollectorJobResult implements Serializable {
      */
     @Deprecated
     public String gridName() {
-        return gridName;
+        return instanceName;
     }
 
     /**
@@ -88,7 +82,7 @@ public class VisorNodeDataCollectorJobResult implements Serializable {
      */
     @Deprecated
     public void gridName(String gridName) {
-        this.gridName = gridName;
+        this.instanceName = gridName;
     }
 
     /**

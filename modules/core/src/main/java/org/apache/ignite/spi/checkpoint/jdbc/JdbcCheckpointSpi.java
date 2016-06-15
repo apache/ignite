@@ -442,7 +442,7 @@ public class JdbcCheckpointSpi extends IgniteSpiAdapter implements CheckpointSpi
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws IgniteSpiException {
+    @Override public void spiStart(String instanceName) throws IgniteSpiException {
         // Start SPI start stopwatch.
         startStopwatch();
 

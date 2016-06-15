@@ -476,7 +476,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param accessType Hibernate L2 cache access type.
-     * @param gridName Grid name.
+     * @param instanceName Grid instance name.
      * @return Hibernate configuration.
      */
     protected Configuration hibernateConfiguration(org.hibernate.cache.spi.access.AccessType accessType,
@@ -1914,7 +1914,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
      * Starts Hibernate.
      *
      * @param accessType Cache access type.
-     * @param gridName Grid name.
+     * @param instanceName Grid instance name.
      * @return Session factory.
      */
     private SessionFactory startHibernate(org.hibernate.cache.spi.access.AccessType accessType, String instanceName) {

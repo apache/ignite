@@ -157,7 +157,7 @@ public class FifoQueueCollisionSpi extends IgniteSpiAdapter implements Collision
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws IgniteSpiException {
+    @Override public void spiStart(String instanceName) throws IgniteSpiException {
         assertParameter(parallelJobsNum > 0, "parallelJobsNum > 0");
         assertParameter(waitJobsNum >= 0, "waitingJobsNum >= 0");
 
@@ -168,7 +168,7 @@ public class FifoQueueCollisionSpi extends IgniteSpiAdapter implements Collision
         if (log.isDebugEnabled())
             log.debug(configInfo("parallelJobsNum", parallelJobsNum));
 
-        registerMBean(gridName, this, FifoQueueCollisionSpiMBean.class);
+        registerMBean(instanceName, this, FifoQueueCollisionSpiMBean.class);
 
         // Ack start.
         if (log.isDebugEnabled())

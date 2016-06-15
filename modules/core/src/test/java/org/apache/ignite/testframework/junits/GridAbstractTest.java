@@ -736,37 +736,37 @@ public abstract class GridAbstractTest extends TestCase {
     /**
      * Starts new grid with given name.
      *
-     * @param gridName Grid name.
+     * @param instanceName Grid instance name.
      * @return Started grid.
      * @throws Exception If failed.
      */
-    protected Ignite startGrid(String gridName) throws Exception {
-        return startGrid(gridName, (GridSpringResourceContext)null);
+    protected Ignite startGrid(String instanceName) throws Exception {
+        return startGrid(instanceName, (GridSpringResourceContext)null);
     }
 
     /**
      * Starts new grid with given name.
      *
-     * @param gridName Grid name.
+     * @param instanceName Grid name.
      * @param ctx Spring context.
      * @return Started grid.
      * @throws Exception If failed.
      */
-    protected Ignite startGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
-        return startGrid(gridName, optimize(getConfiguration(gridName)), ctx);
+    protected Ignite startGrid(String instanceName, GridSpringResourceContext ctx) throws Exception {
+        return startGrid(instanceName, optimize(getConfiguration(instanceName)), ctx);
     }
     /**
      * Starts new grid with given name.
      *
-     * @param gridName Grid name.
+     * @param instanceName Grid name.
      * @param ctx Spring context.
      * @return Started grid.
      * @throws Exception If failed.
      */
-    protected Ignite startGrid(String gridName, IgniteConfiguration cfg, GridSpringResourceContext ctx)
+    protected Ignite startGrid(String instanceName, IgniteConfiguration cfg, GridSpringResourceContext ctx)
         throws Exception {
-        if (!isRemoteJvm(gridName)) {
-            startingGrid.set(gridName);
+        if (!isRemoteJvm(instanceName)) {
+            startingGrid.set(instanceName);
 
             try {
                 Ignite node = IgnitionEx.start(cfg, ctx);
@@ -785,24 +785,24 @@ public abstract class GridAbstractTest extends TestCase {
             }
         }
         else
-            return startRemoteGrid(gridName, null, ctx);
+            return startRemoteGrid(instanceName, null, ctx);
     }
 
     /**
      * Starts new grid at another JVM with given name.
      *
-     * @param gridName Grid name.
+     * @param instanceName Grid name.
      * @param ctx Spring context.
      * @return Started grid.
      * @throws Exception If failed.
      */
-    protected Ignite startRemoteGrid(String gridName, IgniteConfiguration cfg, GridSpringResourceContext ctx)
+    protected Ignite startRemoteGrid(String instanceName, IgniteConfiguration cfg, GridSpringResourceContext ctx)
         throws Exception {
         if (ctx != null)
             throw new UnsupportedOperationException("Starting of grid at another jvm by context doesn't supported.");
 
         if (cfg == null)
-            cfg = optimize(getConfiguration(gridName));
+            cfg = optimize(getConfiguration(instanceName));
 
         return new IgniteProcessProxy(cfg, log, grid(0));
     }
@@ -834,36 +834,36 @@ public abstract class GridAbstractTest extends TestCase {
     }
 
     /**
-     * @param gridName Grid name.
+     * @param instanceName Grid name.
      */
-    protected void stopGrid(@Nullable String gridName) {
-        stopGrid(gridName, true);
+    protected void stopGrid(@Nullable String instanceName) {
+        stopGrid(instanceName, true);
     }
 
     /**
-     * @param gridName Grid name.
+     * @param instanceName Grid name.
      * @param cancel Cancel flag.
      */
     @SuppressWarnings({"deprecation"})
-    protected void stopGrid(@Nullable String gridName, boolean cancel) {
+    protected void stopGrid(@Nullable String instanceName, boolean cancel) {
         try {
-            Ignite ignite = grid(gridName);
+            Ignite ignite = grid(instanceName);
 
-            assert ignite != null : "Ignite returned null grid for name: " + gridName;
+            assert ignite != null : "Ignite returned null grid for name: " + instanceName;
 
             info(">>> Stopping grid [name=" + ignite.name() + ", id=" +
                 ((IgniteKernal)ignite).context().localNodeId() + ']');
 
-            if (!isRemoteJvm(gridName))
-                G.stop(gridName, cancel);
+            if (!isRemoteJvm(instanceName))
+                G.stop(instanceName, cancel);
             else
-                IgniteProcessProxy.stop(gridName, cancel);
+                IgniteProcessProxy.stop(instanceName, cancel);
         }
         catch (IllegalStateException ignored) {
             // Ignore error if grid already stopped.
         }
         catch (Throwable e) {
-            error("Failed to stop grid [gridName=" + gridName + ", cancel=" + cancel + ']', e);
+            error("Failed to stop grid [instanceName=" + instanceName + ", cancel=" + cancel + ']', e);
 
             stopGridErr = true;
         }
@@ -945,7 +945,7 @@ public abstract class GridAbstractTest extends TestCase {
                 Thread.sleep(100);
             }
             catch (InterruptedException ignored) {
-                throw new IgniteCheckedException("Interrupted while waiting for remote nodes [gridName=" + ignite.name() +
+                throw new IgniteCheckedException("Interrupted while waiting for remote nodes [instanceName=" + ignite.name() +
                     ", count=" + cnt + ']');
             }
         }
@@ -1033,13 +1033,13 @@ public abstract class GridAbstractTest extends TestCase {
      * <p>
      * Note that grids started this way should be stopped with {@code G.stop(..)} methods.
      *
-     * @param gridName Grid name.
+     * @param instanceName Grid name.
      * @param springCfgPath Path to config file.
      * @return Grid Started grid.
      * @throws Exception If failed.
      */
-    protected Ignite startGrid(String gridName, String springCfgPath) throws Exception {
-        return startGrid(gridName, loadConfiguration(springCfgPath));
+    protected Ignite startGrid(String instanceName, String springCfgPath) throws Exception {
+        return startGrid(instanceName, loadConfiguration(springCfgPath));
     }
 
     /**
@@ -1047,18 +1047,18 @@ public abstract class GridAbstractTest extends TestCase {
      * <p>
      * Note that grids started this way should be stopped with {@code G.stop(..)} methods.
      *
-     * @param gridName Grid name.
+     * @param instanceName Grid name.
      * @param cfg Config.
      * @return Grid Started grid.
      * @throws Exception If failed.
      */
-    protected Ignite startGrid(String gridName, IgniteConfiguration cfg) throws Exception {
-        cfg.setGridName(gridName);
+    protected Ignite startGrid(String instanceName, IgniteConfiguration cfg) throws Exception {
+        cfg.setinstanceName(instanceName);
 
-        if (!isRemoteJvm(gridName))
+        if (!isRemoteJvm(instanceName))
             return G.start(cfg);
         else
-            return startRemoteGrid(gridName, cfg, null);
+            return startRemoteGrid(instanceName, cfg, null);
     }
 
     /**
@@ -1125,22 +1125,22 @@ public abstract class GridAbstractTest extends TestCase {
      */
     @SuppressWarnings("deprecation")
     protected void stopGrid(int idx, boolean cancel) {
-        String gridName = getTestInstanceName(idx);
+        String instanceName = getTestInstanceName(idx);
 
         try {
-            Ignite ignite = G.ignite(gridName);
+            Ignite ignite = G.ignite(instanceName);
 
-            assert ignite != null : "Ignite returned null grid for name: " + gridName;
+            assert ignite != null : "Ignite returned null grid for name: " + instanceName;
 
             info(">>> Stopping grid [name=" + ignite.name() + ", id=" + ignite.cluster().localNode().id() + ']');
 
-            G.stop(gridName, cancel);
+            G.stop(instanceName, cancel);
         }
         catch (IllegalStateException ignored) {
             // Ignore error if grid already stopped.
         }
         catch (Throwable e) {
-            error("Failed to stop grid [gridName=" + gridName + ", cancel=" + cancel + ']', e);
+            error("Failed to stop grid [instanceName=" + instanceName + ", cancel=" + cancel + ']', e);
 
             stopGridErr = true;
         }

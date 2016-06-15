@@ -62,7 +62,7 @@ public class ConfigVariationsFactory implements ConfigFactory {
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override public IgniteConfiguration getConfiguration(String gridName, IgniteConfiguration srcCfg) {
+    @Override public IgniteConfiguration getConfiguration(String instanceName, IgniteConfiguration srcCfg) {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         if (srcCfg != null)
@@ -136,7 +136,7 @@ public class ConfigVariationsFactory implements ConfigFactory {
     }
 
     /** {@inheritDoc} */
-    @Override public CacheConfiguration cacheConfiguration(String gridName) {
+    @Override public CacheConfiguration cacheConfiguration(String instanceName) {
         if (cacheParams == null || cacheCfgVariation == null)
             throw new IllegalStateException("Failed to configure cache [cacheParams=" + Arrays.deepToString(cacheParams)
                 + ", cacheCfgVariation=" + Arrays.toString(cacheCfgVariation) + "]");

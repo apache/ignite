@@ -119,21 +119,21 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
         TcpDiscoverySpi spi = nodeSpi.get();
 
         if (spi == null) {
-            spi = gridName.contains("testPingInterruptedOnNodeFailedFailingNode") ?
+            spi = instanceName.contains("testPingInterruptedOnNodeFailedFailingNode") ?
                 new TestTcpDiscoverySpi() : new TcpDiscoverySpi();
         }
         else
             nodeSpi.set(null);
 
-        discoMap.put(gridName, spi);
+        discoMap.put(instanceName, spi);
 
         spi.setIpFinder(ipFinder);
 
@@ -155,10 +155,10 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
 
         cfg.setIncludeProperties();
 
-        if (!gridName.contains("LoopbackProblemTest"))
+        if (!instanceName.contains("LoopbackProblemTest"))
             cfg.setLocalHost("127.0.0.1");
 
-        if (gridName.contains("testFailureDetectionOnNodePing")) {
+        if (instanceName.contains("testFailureDetectionOnNodePing")) {
             spi.setReconnectCount(1); // To make test faster: on Windows 1 connect takes 1 second.
             spi.setHeartbeatFrequency(40000);
         }
@@ -168,14 +168,14 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         if (nodeId != null)
             cfg.setNodeId(nodeId);
 
-        if (gridName.contains("NonSharedIpFinder")) {
+        if (instanceName.contains("NonSharedIpFinder")) {
             TcpDiscoveryVmIpFinder finder = new TcpDiscoveryVmIpFinder();
 
             finder.setAddresses(Arrays.asList("127.0.0.1:47501"));
 
             spi.setIpFinder(finder);
         }
-        else if (gridName.contains("MulticastIpFinder")) {
+        else if (instanceName.contains("MulticastIpFinder")) {
             TcpDiscoveryMulticastIpFinder finder = new TcpDiscoveryMulticastIpFinder();
 
             finder.setAddressRequestAttempts(10);
@@ -189,17 +189,17 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
             if (U.isMacOs())
                 spi.setLocalAddress(F.first(U.allLocalIps()));
         }
-        else if (gridName.contains("testPingInterruptedOnNodeFailedPingingNode"))
+        else if (instanceName.contains("testPingInterruptedOnNodeFailedPingingNode"))
             cfg.setFailureDetectionTimeout(30_000);
-        else if (gridName.contains("testNoRingMessageWorkerAbnormalFailureNormalNode")) {
+        else if (instanceName.contains("testNoRingMessageWorkerAbnormalFailureNormalNode")) {
             cfg.setFailureDetectionTimeout(3_000);
         }
-        else if (gridName.contains("testNoRingMessageWorkerAbnormalFailureSegmentedNode")) {
+        else if (instanceName.contains("testNoRingMessageWorkerAbnormalFailureSegmentedNode")) {
             cfg.setFailureDetectionTimeout(6_000);
 
             cfg.setGridLogger(strLogger = new GridStringLogger());
         }
-        else if (gridName.contains("testNodeShutdownOnRingMessageWorkerFailureFailedNode"))
+        else if (instanceName.contains("testNodeShutdownOnRingMessageWorkerFailureFailedNode"))
             cfg.setGridLogger(strLogger = new GridStringLogger());
 
         return cfg;
@@ -283,11 +283,11 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
         try {
             Ignite g1 = startGrid(1);
 
-            final AtomicInteger gridNameIdx = new AtomicInteger(1);
+            final AtomicInteger instanceNameIdx = new AtomicInteger(1);
 
             GridTestUtils.runMultiThreaded(new Callable<Object>() {
                 @Nullable @Override public Object call() throws Exception {
-                    startGrid(gridNameIdx.incrementAndGet());
+                    startGrid(instanceNameIdx.incrementAndGet());
 
                     return null;
                 }
@@ -2272,11 +2272,11 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     /**
      * Starts new grid with given name. Method optimize is not invoked.
      *
-     * @param gridName Grid name.
+     * @param instanceName Grid instance name.
      * @return Started grid.
      * @throws Exception If failed.
      */
-    private Ignite startGridNoOptimize(String gridName) throws Exception {
-        return G.start(getConfiguration(gridName));
+    private Ignite startGridNoOptimize(String instanceName) throws Exception {
+        return G.start(getConfiguration(instanceName));
     }
 }

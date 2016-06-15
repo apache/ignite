@@ -110,7 +110,7 @@ import org.springframework.cache.CacheManager;
  *         http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache.xsd"&gt;
  *     &lt;-- Provide Grid name. --&gt;
  *     &lt;bean id="cacheManager" class="org.apache.ignite.cache.spring.SpringCacheManager"&gt;
- *         &lt;property name="gridName" value="myGrid"/&gt;
+ *         &lt;property name="instanceName" value="myGrid"/&gt;
  *     &lt;/bean>
  *
  *     &lt;-- Use annotation-driven caching configuration. --&gt;
@@ -123,7 +123,7 @@ import org.springframework.cache.CacheManager;
  * <p>
  * If neither {@link #setConfigurationPath(String) configurationPath},
  * {@link #setConfiguration(IgniteConfiguration) configuration}, nor
- * {@link #setGridName(String) gridName} are provided, cache manager
+ * {@link #setInstanceName(String) instanceName} are provided, cache manager
  * will try to use default Grid instance (the one with the {@code null}
  * name). If it doesn't exist, exception will be thrown.
  * <h1>Starting Remote Nodes</h1>
@@ -143,8 +143,8 @@ public class SpringCacheManager implements CacheManager, InitializingBean {
     /** Ignite configuration. */
     private IgniteConfiguration cfg;
 
-    /** Grid name. */
-    private String gridName;
+    /** Grid instance name. */
+    private String instanceName;
 
     /** Dynamic cache configuration template. */
     private CacheConfiguration<Object, Object> dynamicCacheCfg;
@@ -195,18 +195,38 @@ public class SpringCacheManager implements CacheManager, InitializingBean {
      * Gets grid name.
      *
      * @return Grid name.
+     * @deprecated  Use {@link #instanceName} instead.
      */
+    @Deprecated
     public String getGridName() {
-        return gridName;
+        return instanceName;
     }
 
     /**
      * Sets grid name.
      *
      * @param gridName Grid name.
+     * @deprecated Use {@link #setInstanceName(String)} instead.
      */
+    @Deprecated
     public void setGridName(String gridName) {
-        this.gridName = gridName;
+        this.instanceName = gridName;
+    }
+
+    /**
+     *  Gets instance name
+     * @return
+     */
+    public String getInstanceName() {
+        return instanceName;
+    }
+
+    /**
+     * Sets instance name.
+     * @param instanceName
+     */
+    public void setInstanceName(String instanceName) {
+        this.instanceName = instanceName;
     }
 
     /**
@@ -253,7 +273,7 @@ public class SpringCacheManager implements CacheManager, InitializingBean {
             throw new IllegalArgumentException("Both 'configurationPath' and 'configuration' are " +
                 "provided. Set only one of these properties if you need to start a Ignite node inside of " +
                 "SpringCacheManager. If you already have a node running, omit both of them and set" +
-                "'gridName' property.");
+                "'instanceName' property.");
         }
 
         if (cfgPath != null)
@@ -261,7 +281,7 @@ public class SpringCacheManager implements CacheManager, InitializingBean {
         else if (cfg != null)
             ignite = Ignition.start(cfg);
         else
-            ignite = Ignition.ignite(gridName);
+            ignite = Ignition.ignite(instanceName);
     }
 
     /** {@inheritDoc} */

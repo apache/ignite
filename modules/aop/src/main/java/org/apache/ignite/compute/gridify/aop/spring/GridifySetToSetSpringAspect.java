@@ -66,8 +66,8 @@ public class GridifySetToSetSpringAspect extends GridifySetToSetAbstractAspect i
         // Since annotations in Java don't allow 'null' as default value
         // we have accept an empty string and convert it here.
         // NOTE: there's unintended behavior when user specifies an empty
-        // string as intended grid name.
-        // NOTE: the 'ann.gridName() == null' check is added to mitigate
+        // string as intended grid instance name.
+        // NOTE: the 'ann.instanceName() == null' check is added to mitigate
         // annotation bugs in some scripting languages (e.g. Groovy).
         String instanceName = F.isEmpty(ann.instanceName()) ? null : ann.instanceName();
 

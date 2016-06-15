@@ -199,30 +199,30 @@ public class IgniteProcessProxy implements IgniteEx {
     }
 
     /**
-     * @param gridName Grid name.
+     * @param instanceName Grid instance name.
      * @return Instance by name or exception wiil be thrown.
      */
-    public static IgniteProcessProxy ignite(String gridName) {
-        IgniteProcessProxy res = gridProxies.get(gridName);
+    public static IgniteProcessProxy ignite(String instanceName) {
+        IgniteProcessProxy res = gridProxies.get(instanceName);
 
         if (res == null)
             throw new IgniteIllegalStateException("Grid instance was not properly started " +
-                "or was already stopped: " + gridName + ". All known grid instances: " + gridProxies.keySet());
+                "or was already stopped: " + instanceName + ". All known grid instances: " + gridProxies.keySet());
 
         return res;
     }
 
     /**
-     * @param gridName Grid name.
+     * @param instanceName Grid name.
      * @param cancel Cacnel flag.
      */
-    public static void stop(String gridName, boolean cancel) {
-        IgniteProcessProxy proxy = gridProxies.get(gridName);
+    public static void stop(String instanceName, boolean cancel) {
+        IgniteProcessProxy proxy = gridProxies.get(instanceName);
 
         if (proxy != null) {
-            proxy.remoteCompute().run(new StopGridTask(gridName, cancel));
+            proxy.remoteCompute().run(new StopGridTask(instanceName, cancel));
 
-            gridProxies.remove(gridName, proxy);
+            gridProxies.remove(instanceName, proxy);
         }
     }
 
@@ -634,23 +634,23 @@ public class IgniteProcessProxy implements IgniteEx {
      */
     private static class StopGridTask implements IgniteRunnable {
         /** Grid name. */
-        private final String gridName;
+        private final String instanceName;
 
         /** Cancel. */
         private final boolean cancel;
 
         /**
-         * @param gridName Grid name.
+         * @param instanceName Grid name.
          * @param cancel Cancel.
          */
-        public StopGridTask(String gridName, boolean cancel) {
-            this.gridName = gridName;
+        public StopGridTask(String instanceName, boolean cancel) {
+            this.instanceName = instanceName;
             this.cancel = cancel;
         }
 
         /** {@inheritDoc} */
         @Override public void run() {
-            G.stop(gridName, cancel);
+            G.stop(instanceName, cancel);
         }
     }
 

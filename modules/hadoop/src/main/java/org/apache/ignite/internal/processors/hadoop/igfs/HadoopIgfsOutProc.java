@@ -102,8 +102,8 @@ public class HadoopIgfsOutProc implements HadoopIgfsEx, HadoopIgfsIpcIoListener 
     private static final IgniteClosure<IgniteInternalFuture<IgfsMessage>,
         Collection<IgfsBlockLocation>> BLOCK_LOCATION_COL_RES = createClosure();
 
-    /** Grid name. */
-    private final String grid;
+    /** Instance name. */
+    private final String instanceName;
 
     /** IGFS name. */
     private final String igfs;
@@ -125,13 +125,13 @@ public class HadoopIgfsOutProc implements HadoopIgfsEx, HadoopIgfsIpcIoListener 
      *
      * @param host Host.
      * @param port Port.
-     * @param grid Grid name.
+     * @param instanceName Grid instance name.
      * @param igfs IGFS name.
      * @param log Client logger.
      * @throws IOException If failed.
      */
-    public HadoopIgfsOutProc(String host, int port, String grid, String igfs, Log log, String user) throws IOException {
-        this(host, port, grid, igfs, false, log, user);
+    public HadoopIgfsOutProc(String host, int port, String instanceName, String igfs, Log log, String user) throws IOException {
+        this(host, port, instanceName, igfs, false, log, user);
     }
 
     /**
@@ -152,20 +152,20 @@ public class HadoopIgfsOutProc implements HadoopIgfsEx, HadoopIgfsIpcIoListener 
      *
      * @param host Host.
      * @param port Port.
-     * @param grid Grid name.
+     * @param instanceName Grid instance name.
      * @param igfs IGFS name.
      * @param shmem Shared memory flag.
      * @param log Client logger.
      * @throws IOException If failed.
      */
-    private HadoopIgfsOutProc(String host, int port, String grid, String igfs, boolean shmem, Log log, String user)
+    private HadoopIgfsOutProc(String host, int port, String instanceName, String igfs, boolean shmem, Log log, String user)
         throws IOException {
         assert host != null && !shmem || host == null && shmem :
             "Invalid arguments [host=" + host + ", port=" + port + ", shmem=" + shmem + ']';
 
         String endpoint = host != null ? host + ":" + port : "shmem:" + port;
 
-        this.grid = grid;
+        this.instanceName = instanceName;
         this.igfs = igfs;
         this.log = log;
         this.userName = IgfsUtils.fixUserName(user);
@@ -179,7 +179,7 @@ public class HadoopIgfsOutProc implements HadoopIgfsEx, HadoopIgfsIpcIoListener 
     @Override public IgfsHandshakeResponse handshake(String logDir) throws IgniteCheckedException {
         final IgfsHandshakeRequest req = new IgfsHandshakeRequest();
 
-        req.gridName(grid);
+        req.instanceName(instanceName);
         req.igfsName(igfs);
         req.logDirectory(logDir);
 

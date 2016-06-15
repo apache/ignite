@@ -268,7 +268,7 @@ $generatorXml.clusterGeneral = function(cluster, res) {
     if (!res)
         res = $generatorCommon.builder();
 
-    $generatorXml.property(res, cluster, 'name', 'gridName');
+    $generatorXml.property(res, cluster, 'name', 'instanceName');
     $generatorXml.property(res, cluster, 'localHost');
 
     if (cluster.discovery) {

@@ -209,7 +209,7 @@ public class GridNioServer<T> {
      * @param port Port.
      * @param log Log.
      * @param selectorCnt Count of selectors and selecting threads.
-     * @param gridName Grid name.
+     * @param instanceName Grid instance name.
      * @param tcpNoDelay If TCP_NODELAY option should be set to accepted sockets.
      * @param directBuf Direct buffer flag.
      * @param order Byte order.
@@ -231,7 +231,7 @@ public class GridNioServer<T> {
         int port,
         IgniteLogger log,
         int selectorCnt,
-        @Nullable String gridName,
+        @Nullable String instanceName,
         boolean tcpNoDelay,
         boolean directBuf,
         ByteOrder order,
@@ -288,7 +288,7 @@ public class GridNioServer<T> {
             // This method will throw exception if address already in use.
             Selector acceptSelector = createSelector(locAddr);
 
-            acceptThread = new IgniteThread(new GridNioAcceptWorker(gridName, "nio-acceptor", log, acceptSelector));
+            acceptThread = new IgniteThread(new GridNioAcceptWorker(instanceName, "nio-acceptor", log, acceptSelector));
         }
         else {
             locAddr = null;
@@ -300,8 +300,8 @@ public class GridNioServer<T> {
 
         for (int i = 0; i < selectorCnt; i++) {
             AbstractNioClientWorker worker = directMode ?
-                new DirectNioClientWorker(i, gridName, "grid-nio-worker-" + i, log) :
-                new ByteBufferNioClientWorker(i, gridName, "grid-nio-worker-" + i, log);
+                new DirectNioClientWorker(i, instanceName, "instance-nio-worker-" + i, log) :
+                new ByteBufferNioClientWorker(i, instanceName, "instance-nio-worker-" + i, log);
 
             clientWorkers.add(worker);
 
@@ -1882,13 +1882,13 @@ public class GridNioServer<T> {
         private Selector selector;
 
         /**
-         * @param gridName Grid name.
+         * @param instanceName Grid instance name.
          * @param name Thread name.
          * @param log Log.
          * @param selector Which will accept incoming connections.
          */
-        protected GridNioAcceptWorker(@Nullable String gridName, String name, IgniteLogger log, Selector selector) {
-            super(gridName, name, log);
+        protected GridNioAcceptWorker(@Nullable String instanceName, String name, IgniteLogger log, Selector selector) {
+            super(instanceName, name, log);
 
             this.selector = selector;
         }
@@ -2355,13 +2355,6 @@ public class GridNioServer<T> {
         /** Selector count. */
         private int selectorCnt;
 
-        /** Grid name.
-         *
-         *  @deprecated  Use {@link #instanceName} instead.
-         */
-        @Deprecated
-        private String gridName;
-
         /** Instance name. */
         private String instanceName;
 
@@ -2497,8 +2490,8 @@ public class GridNioServer<T> {
          * @return This for chaining.
          * @deprecated Use {@link #instanceName} instead.
          */
+        @Deprecated
         public Builder<T> gridName(@Nullable String gridName) {
-            this.gridName = gridName;
             this.instanceName = gridName;
 
             return this;
@@ -2506,7 +2499,6 @@ public class GridNioServer<T> {
 
         public Builder<T> instanceName(@Nullable String instanceName) {
             this.instanceName = instanceName;
-            this.gridName = instanceName;
 
             return this;
         }

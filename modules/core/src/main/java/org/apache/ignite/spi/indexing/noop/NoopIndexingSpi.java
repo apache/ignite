@@ -60,7 +60,7 @@ public class NoopIndexingSpi extends IgniteSpiAdapter implements IndexingSpi {
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+    @Override public void spiStart(@Nullable String instanceName) throws IgniteSpiException {
         // No-op.
     }
 

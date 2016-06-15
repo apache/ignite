@@ -530,14 +530,14 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
     /**
      * Helper method to find Igfs of the given name in the given Ignite instance.
      *
-     * @param gridName The name of the grid to check.
+     * @param instanceName The name of the grid instance to check.
      * @param igfsName The name of Igfs.
      * @return The file system instance, or null if not found.
      */
-    private static IgfsEx getIgfsEx(@Nullable String gridName, @Nullable String igfsName) {
-        if (Ignition.state(gridName) == STARTED) {
+    private static IgfsEx getIgfsEx(@Nullable String instanceName, @Nullable String igfsName) {
+        if (Ignition.state(instanceName) == STARTED) {
             try {
-                for (IgniteFileSystem fs : Ignition.ignite(gridName).fileSystems()) {
+                for (IgniteFileSystem fs : Ignition.ignite(instanceName).fileSystems()) {
                     if (F.eq(fs.name(), igfsName))
                         return (IgfsEx)fs;
                 }

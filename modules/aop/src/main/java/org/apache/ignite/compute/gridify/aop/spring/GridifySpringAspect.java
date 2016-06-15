@@ -66,7 +66,7 @@ public class GridifySpringAspect implements MethodInterceptor {
         // we have accept an empty string and convert it here.
         // NOTE: there's unintended behavior when user specifies an empty
         // string as intended grid name.
-        // NOTE: the 'ann.gridName() == null' check is added to mitigate
+        // NOTE: the 'ann.instanceName() == null' check is added to mitigate
         // annotation bugs in some scripting languages (e.g. Groovy).
         String instanceName = F.isEmpty(ann.instanceName()) ? null : ann.instanceName();
 

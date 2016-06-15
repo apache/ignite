@@ -42,13 +42,13 @@ public class IgniteStripedThreadPoolExecutor implements ExecutorService {
      * Create striped thread pool.
      *
      * @param concurrentLvl Concurrency level.
-     * @param gridName Node name.
+     * @param instanceName Node name.
      * @param threadNamePrefix Thread name prefix.
      */
-    public IgniteStripedThreadPoolExecutor(int concurrentLvl, String gridName, String threadNamePrefix) {
+    public IgniteStripedThreadPoolExecutor(int concurrentLvl, String instanceName, String threadNamePrefix) {
         execs = new ExecutorService[concurrentLvl];
 
-        ThreadFactory factory = new IgniteThreadFactory(gridName, threadNamePrefix);
+        ThreadFactory factory = new IgniteThreadFactory(instanceName, threadNamePrefix);
 
         for (int i = 0; i < concurrentLvl; i++)
             execs[i] = Executors.newSingleThreadExecutor(factory);

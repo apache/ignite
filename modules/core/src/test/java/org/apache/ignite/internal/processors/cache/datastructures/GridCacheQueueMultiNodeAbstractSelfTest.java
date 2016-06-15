@@ -76,7 +76,7 @@ public abstract class GridCacheQueueMultiNodeAbstractSelfTest extends IgniteColl
 
             for (Ignite g : G.allGrids()) {
                 if (g.cluster().nodes().size() != GRID_CNT) {
-                    info("Grid has incorrect nodes count [gridName=" + g.name() +
+                    info("Grid has incorrect nodes count [instanceName=" + g.name() +
                         ", nodesCnt=" + g.cluster().nodes().size() + ']');
 
                     success = false;

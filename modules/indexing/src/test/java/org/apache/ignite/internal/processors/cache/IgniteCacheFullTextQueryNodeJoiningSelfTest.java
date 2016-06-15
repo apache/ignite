@@ -52,8 +52,8 @@ public class IgniteCacheFullTextQueryNodeJoiningSelfTest extends GridCommonAbstr
     private static final int GRID_CNT = 3;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         CacheConfiguration cache = new CacheConfiguration();
 

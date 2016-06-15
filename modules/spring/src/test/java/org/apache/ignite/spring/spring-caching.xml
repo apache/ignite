@@ -37,7 +37,7 @@
         Cache manager.
     -->
     <bean id="cacheManager" class="org.apache.ignite.cache.spring.SpringCacheManager">
-        <property name="gridName" value="testGrid"/>
+        <property name="instanceName" value="testInstance"/>
         <property name="dynamicCacheConfiguration">
             <bean class="org.apache.ignite.configuration.CacheConfiguration">
                 <property name="backups" value="2"/>

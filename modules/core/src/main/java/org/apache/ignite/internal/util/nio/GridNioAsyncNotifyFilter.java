@@ -34,13 +34,6 @@ public class GridNioAsyncNotifyFilter extends GridNioFilterAdapter {
     /** Worker pool. */
     private GridWorkerPool workerPool;
 
-    /** Grid name.
-     *
-     *  @deprecated  Use {@link #instanceName} instead.
-     */
-    @Deprecated
-    private String gridName;
-
     /** Instance name.*/
     private String instanceName;
 
@@ -55,7 +48,6 @@ public class GridNioAsyncNotifyFilter extends GridNioFilterAdapter {
         super(GridNioAsyncNotifyFilter.class.getSimpleName());
 
         this.instanceName = instanceName;
-        this.gridName = instanceName;
         this.log = log;
 
         workerPool = new GridWorkerPool(exec, log);
@@ -68,7 +60,7 @@ public class GridNioAsyncNotifyFilter extends GridNioFilterAdapter {
 
     /** {@inheritDoc} */
     @Override public void onSessionOpened(final GridNioSession ses) throws IgniteCheckedException {
-        workerPool.execute(new GridWorker(gridName, "session-opened-notify", log) {
+        workerPool.execute(new GridWorker(instanceName, "session-opened-notify", log) {
             @Override protected void body() {
                 try {
                     proceedSessionOpened(ses);

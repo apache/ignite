@@ -102,11 +102,11 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     }
 
     /**
-     * @param testGridName Name.
+     * @param testInstanceName Name.
      * @return {@code True} if node is client should be client.
      */
-    protected boolean expectedClient(String testGridName) {
-        return getTestInstanceName(CLIENT_NODE_IDX).equals(testGridName);
+    protected boolean expectedClient(String testInstanceName) {
+        return getTestInstanceName(CLIENT_NODE_IDX).equals(testInstanceName);
     }
 
     /** {@inheritDoc} */
@@ -156,15 +156,15 @@ public abstract class IgniteConfigVariationsAbstractTest extends GridCommonAbstr
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
-        IgniteConfiguration resCfg = testsCfg.configurationFactory().getConfiguration(gridName, cfg);
+        IgniteConfiguration resCfg = testsCfg.configurationFactory().getConfiguration(instanceName, cfg);
 
         resCfg.setWorkDirectory(workDir.getAbsolutePath());
 
         if (testsCfg.withClients())
-            resCfg.setClientMode(expectedClient(gridName));
+            resCfg.setClientMode(expectedClient(instanceName));
 
         return resCfg;
     }

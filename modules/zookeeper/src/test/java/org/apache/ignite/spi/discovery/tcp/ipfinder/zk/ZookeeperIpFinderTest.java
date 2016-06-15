@@ -107,7 +107,11 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
     /**
      * Enhances the default configuration with the {#TcpDiscoveryZookeeperIpFinder}.
      *
+<<<<<<< HEAD
      * @param instanceName Instance name.
+=======
+     * @param instanceName Grid name.
+>>>>>>> modified all gridName to instanceName where needed
      * @return Ignite configuration.
      * @throws Exception If failed.
      */
@@ -122,7 +126,10 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
         // shall be configured through system property
         if (instanceName.equals(getTestInstanceName(0)))
             zkIpFinder.setZkConnectionString(zkCluster.getConnectString());
+<<<<<<< HEAD
 
+=======
+>>>>>>> modified all gridName to instanceName where needed
         else if (instanceName.equals(getTestInstanceName(1))) {
             zkIpFinder.setCurator(CuratorFrameworkFactory.newClient(zkCluster.getConnectString(),
                 new ExponentialBackoffRetry(100, 5)));

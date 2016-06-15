@@ -568,7 +568,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
      */
     @Deprecated
     @Override public String gridName() {
-        return cfg.getGridName();
+        return cfg.getInstanceName();
     }
 
     /** {@inheritDoc} */

@@ -63,8 +63,8 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
 
@@ -76,7 +76,7 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
 
         cfg.setMarshaller(null);
 
-        if (getTestInstanceName(3).equals(gridName)) {
+        if (getTestInstanceName(3).equals(instanceName)) {
             cfg.setClientMode(true);
             cfg.setClassLoader(extClassLoader);
         }

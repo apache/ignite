@@ -80,11 +80,11 @@ public class LocalDeploymentSpi extends IgniteSpiAdapter implements DeploymentSp
     private volatile DeploymentListener lsnr;
 
     /** {@inheritDoc} */
-    @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+    @Override public void spiStart(@Nullable String instanceName) throws IgniteSpiException {
         // Start SPI start stopwatch.
         startStopwatch();
 
-        registerMBean(gridName, this, LocalDeploymentSpiMBean.class);
+        registerMBean(instanceName, this, LocalDeploymentSpiMBean.class);
 
         if (log.isDebugEnabled())
             log.debug(startInfo());

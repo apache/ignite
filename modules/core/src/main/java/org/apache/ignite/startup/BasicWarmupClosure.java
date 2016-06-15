@@ -225,7 +225,7 @@ public class BasicWarmupClosure implements IgniteInClosure<IgniteConfiguration> 
 
                 cfg0.setGridLogger(new NullLogger());
 
-                cfg0.setGridName("ignite-warmup-grid-" + i);
+                cfg0.setInstanceName("ignite-warmup-isntance-" + i);
 
                 ignites.add(Ignition.start(cfg0));
             }

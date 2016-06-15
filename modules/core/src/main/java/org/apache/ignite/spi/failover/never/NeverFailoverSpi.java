@@ -70,11 +70,11 @@ public class NeverFailoverSpi extends IgniteSpiAdapter implements FailoverSpi, N
     private IgniteLogger log;
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws IgniteSpiException {
+    @Override public void spiStart(String instanceName) throws IgniteSpiException {
         // Start SPI start stopwatch.
         startStopwatch();
 
-        registerMBean(gridName, this, NeverFailoverSpiMBean.class);
+        registerMBean(instanceName, this, NeverFailoverSpiMBean.class);
 
         // Ack ok start.
         if (log.isDebugEnabled())

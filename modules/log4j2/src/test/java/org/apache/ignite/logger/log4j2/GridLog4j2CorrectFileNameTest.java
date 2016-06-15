@@ -69,16 +69,16 @@ public class GridLog4j2CorrectFileNameTest extends TestCase {
     /**
      * Creates grid configuration.
      *
-     * @param gridName Grid name.
+     * @param instanceName Grid instance name.
      * @return Grid configuration.
      * @throws Exception If error occurred.
      */
-    private static IgniteConfiguration getConfiguration(String gridName)
+    private static IgniteConfiguration getConfiguration(String instanceName)
             throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
         
    
-        cfg.setGridName(gridName);
+        cfg.setInstanceName(instanceName);
         // We need of a configuration file passed in
         File xml = GridTestUtils
                 .resolveIgnitePath("modules/core/src/test/config/log4j2-test.xml");
