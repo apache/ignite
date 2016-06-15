@@ -85,6 +85,7 @@
   <ItemGroup>
     <Compile Include="Binary\BinaryReflectiveSerializer.cs" />
     <Compile Include="Binary\Package-Info.cs" />
+    <Compile Include="Cache\Affinity\AffinityFunctionBase.cs" />
     <Compile Include="Cache\Affinity\AffinityKey.cs" />
     <Compile Include="Cache\Affinity\AffinityKeyMappedAttribute.cs" />
     <Compile Include="Cache\Affinity\Fair\FairAffinityFunction.cs" />

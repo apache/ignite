@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,14 +15,29 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Cache.Affinity.Fair
+namespace Apache.Ignite.Core.Cache.Affinity
 {
+    using Apache.Ignite.Core.Binary;
+
     /// <summary>
-    /// Fair affinity function which tries to ensure that all nodes get equal number of partitions with 
-    /// minimum amount of reassignments between existing nodes.
+    /// Base class for predefined affinity functions.
     /// </summary>
-    public class FairAffinityFunction : AffinityFunctionBase
+    public abstract class AffinityFunctionBase : IAffinityFunction
     {
-        // No-op.
+        // TODO: Partitions, ExcludeNeighbors
+        internal AffinityFunctionBase()
+        {
+            // TODO: Defaults
+        }
+
+        internal static IAffinityFunction Read(IBinaryRawReader reader)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        internal static void Write(IBinaryRawWriter writer, IAffinityFunction affinityFunction)
+        {
+            throw new System.NotImplementedException();
+        }
     }
 }
