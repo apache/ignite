@@ -2090,7 +2090,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         newEntry = new GridCacheLazyPlainVersionedEntry<>(
                             cctx,
                             key,
-                            cctx.toCacheObject(writeObj),
+                            (CacheObject)writeObj,
                             expiration.get1(),
                             expiration.get2(),
                             conflictVer != null ? conflictVer : newVer,
