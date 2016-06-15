@@ -35,7 +35,7 @@ import org.apache.ignite.resources.SpringApplicationContextResource;
  *
  * <h2 class="header">Spring Example</h2>
  * <pre name="code" class="xml">
- *     &lt;bean id= "simpleDataSource" class="org.h2.jdbcx.JdbcDataSource"/&gt;
+ *     &lt;bean id= "myDataSource" class="org.h2.jdbcx.JdbcDataSource"/&gt;
  *
  *     &lt;bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"&gt;
  *          ...
@@ -46,7 +46,7 @@ import org.apache.ignite.resources.SpringApplicationContextResource;
  *                      &lt;property name="cacheStoreFactory"&gt;
  *                          &lt;bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcBlobStoreFactory"&gt;
  *                              &lt;property name="user" value = "Ignite" /&gt;
- *                              &lt;property name="dataSourceBean" value = "simpleDataSource" /&gt;
+ *                              &lt;property name="dataSourceBean" value = "myDataSource" /&gt;
  *                          &lt;/bean&gt;
  *                      &lt;/property&gt;
  *                  &lt;/bean&gt;
@@ -99,7 +99,7 @@ public class CacheJdbcBlobStoreFactory<K, V> implements Factory<CacheJdbcBlobSto
 
     /** Application context. */
     @SpringApplicationContextResource
-    private Object appContext;
+    private Object appCtx;
 
     /** {@inheritDoc} */
     @Override public CacheJdbcBlobStore<K, V> create() {
@@ -118,7 +118,7 @@ public class CacheJdbcBlobStoreFactory<K, V> implements Factory<CacheJdbcBlobSto
         if (dataSrc != null)
             store.setDataSource(dataSrc);
         else if (dataSrcBean != null) {
-            if (appContext == null)
+            if (appCtx == null)
                 throw new IgniteException("Spring application context resource is not injected.");
 
             IgniteSpringHelper spring;
@@ -126,13 +126,13 @@ public class CacheJdbcBlobStoreFactory<K, V> implements Factory<CacheJdbcBlobSto
             try {
                 spring = IgniteComponentType.SPRING.create(false);
 
-                DataSource data = spring.loadBeanFromAppContext(appContext, dataSrcBean);
+                DataSource data = spring.loadBeanFromAppContext(appCtx, dataSrcBean);
 
                 store.setDataSource(data);
             }
             catch (IgniteCheckedException e) {
                 throw new IgniteException("Failed to load bean in application context [beanName=" + dataSrcBean +
-                    ", igniteConfig=" + appContext + ']');
+                    ", igniteConfig=" + appCtx + ']');
             }
         }
 

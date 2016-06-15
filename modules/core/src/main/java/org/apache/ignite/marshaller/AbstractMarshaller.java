@@ -37,6 +37,16 @@ public abstract class AbstractMarshaller implements Marshaller {
     /** Context. */
     protected MarshallerContext ctx;
 
+
+    /**
+     * Undeployment callback invoked when class loader is being undeployed.
+     *
+     * Some marshallers may want to clean their internal state that uses the undeployed class loader somehow.
+     *
+     * @param ldr Class loader being undeployed.
+     */
+    public abstract void onUndeploy(ClassLoader ldr);
+
     /** {@inheritDoc} */
     @Override public void setContext(MarshallerContext ctx) {
         this.ctx = ctx;

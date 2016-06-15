@@ -33,16 +33,11 @@ BOOST_AUTO_TEST_CASE(TestIgnition)
 {
     IgniteConfiguration cfg;
 
-    IgniteJvmOption opts[5];
-
-    opts[0] = IgniteJvmOption("-Xdebug");
-    opts[1] = IgniteJvmOption("-Xnoagent");
-    opts[2] = IgniteJvmOption("-Djava.compiler=NONE");
-    opts[3] = IgniteJvmOption("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
-    opts[4] = IgniteJvmOption("-XX:+HeapDumpOnOutOfMemoryError");
-
-    cfg.jvmOptsLen = 5;
-    cfg.jvmOpts = opts;
+    cfg.jvmOpts.push_back("-Xdebug");
+    cfg.jvmOpts.push_back("-Xnoagent");
+    cfg.jvmOpts.push_back("-Djava.compiler=NONE");
+    cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
+    cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
 
 #ifdef IGNITE_TESTS_32
         cfg.jvmInitMem = 256;
@@ -54,9 +49,7 @@ BOOST_AUTO_TEST_CASE(TestIgnition)
 
     char* cfgPath = getenv("IGNITE_NATIVE_TEST_CPP_CONFIG_PATH");
 
-    std::string cfgPathStr = std::string(cfgPath).append("/").append("cache-test.xml");
-
-    cfg.springCfgPath = const_cast<char*>(cfgPathStr.c_str());
+    cfg.springCfgPath = std::string(cfgPath).append("/").append("cache-test.xml");
 
     IgniteError err;
 

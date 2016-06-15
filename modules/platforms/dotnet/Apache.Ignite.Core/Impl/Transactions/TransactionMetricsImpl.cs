@@ -19,7 +19,7 @@ namespace Apache.Ignite.Core.Impl.Transactions
 {
     using System;
     using System.Diagnostics;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Transactions;
 
     /// <summary>
@@ -31,13 +31,13 @@ namespace Apache.Ignite.Core.Impl.Transactions
         /// Initializes a new instance of the <see cref="TransactionMetricsImpl"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public TransactionMetricsImpl(IPortableRawReader reader)
+        public TransactionMetricsImpl(IBinaryRawReader reader)
         {
-            var commitTime = reader.ReadDate();
+            var commitTime = reader.ReadTimestamp();
             Debug.Assert(commitTime.HasValue);
             CommitTime = commitTime.Value;
 
-            var rollbackTime = reader.ReadDate();
+            var rollbackTime = reader.ReadTimestamp();
             Debug.Assert(rollbackTime.HasValue);
             RollbackTime = rollbackTime.Value;
 

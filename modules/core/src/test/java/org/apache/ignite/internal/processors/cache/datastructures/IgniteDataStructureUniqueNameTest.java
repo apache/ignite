@@ -27,9 +27,12 @@ import org.apache.ignite.IgniteAtomicLong;
 import org.apache.ignite.IgniteAtomicReference;
 import org.apache.ignite.IgniteAtomicSequence;
 import org.apache.ignite.IgniteAtomicStamped;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteCountDownLatch;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteQueue;
+import org.apache.ignite.IgniteLock;
+import org.apache.ignite.IgniteSemaphore;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMemoryMode;
@@ -239,7 +242,7 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
     private void testUniqueName(final boolean singleGrid) throws Exception {
         final String name = IgniteUuid.randomUuid().toString();
 
-        final int DS_TYPES = 7;
+        final int DS_TYPES = 9;
 
         final int THREADS = DS_TYPES * 3;
 
@@ -314,6 +317,19 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
 
                                     break;
 
+                                case 7:
+                                    log.info("Create atomic semaphore, grid: " + ignite.name());
+
+                                    res = ignite.semaphore(name, 0, false, true);
+
+                                    break;
+
+                                case 8:
+                                    log.info("Create atomic reentrant lock, grid: " + ignite.name());
+
+                                    res = ignite.reentrantLock(name, true, true, true);
+
+                                    break;
                                 default:
                                     fail();
 
@@ -342,7 +358,7 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
             for (IgniteInternalFuture<Object> fut : futs) {
                 Object res = fut.get();
 
-                if (res instanceof IgniteException)
+                if (res instanceof IgniteException || res instanceof IgniteCheckedException)
                     continue;
 
                 assertTrue("Unexpected object: " + res,
@@ -352,7 +368,9 @@ public class IgniteDataStructureUniqueNameTest extends IgniteCollectionAbstractT
                         res instanceof IgniteAtomicStamped ||
                         res instanceof IgniteCountDownLatch ||
                         res instanceof IgniteQueue ||
-                        res instanceof IgniteSet);
+                        res instanceof IgniteSet ||
+                        res instanceof IgniteSemaphore ||
+                        res instanceof IgniteLock);
 
                 log.info("Data structure created: " + dataStructure);
 

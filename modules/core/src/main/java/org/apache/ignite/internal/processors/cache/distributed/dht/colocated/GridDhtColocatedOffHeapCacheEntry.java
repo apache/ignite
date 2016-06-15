@@ -20,8 +20,8 @@ package org.apache.ignite.internal.processors.cache.distributed.dht.colocated;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
-import org.apache.ignite.internal.processors.cache.GridCacheMapEntry;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Cache entry for colocated cache for off-heap tiered or off-heap values modes.
@@ -36,17 +36,15 @@ public class GridDhtColocatedOffHeapCacheEntry extends GridDhtColocatedCacheEntr
      * @param key    Cache key.
      * @param hash   Key hash value.
      * @param val    Entry value.
-     * @param next   Next entry in the linked list.
-     * @param hdrId  Header id.
      */
-    public GridDhtColocatedOffHeapCacheEntry(GridCacheContext ctx,
+    public GridDhtColocatedOffHeapCacheEntry(
+        GridCacheContext ctx,
         AffinityTopologyVersion topVer,
         KeyCacheObject key,
         int hash,
-        CacheObject val,
-        GridCacheMapEntry next,
-        int hdrId) {
-        super(ctx, topVer, key, hash, val, next, hdrId);
+        CacheObject val
+    ) {
+        super(ctx, topVer, key, hash, val);
     }
 
     /** {@inheritDoc} */
@@ -62,5 +60,12 @@ public class GridDhtColocatedOffHeapCacheEntry extends GridDhtColocatedCacheEntr
     /** {@inheritDoc} */
     @Override protected void offHeapPointer(long valPtr) {
         this.valPtr = valPtr;
+    }
+
+    /** {@inheritDoc} */
+    @Override public synchronized String toString() {
+        return S.toString(GridDhtColocatedOffHeapCacheEntry.class, this,
+            "entry", System.identityHashCode(this),
+            "super", super.toString());
     }
 }

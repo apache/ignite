@@ -36,7 +36,7 @@ namespace Apache.Ignite.Benchmarks.Interop
         {
             base.OnStarted();
 
-            _cache = Node.GetCache<object, object>(CacheName).WithAsync();
+            _cache = Node.GetCache<object, object>(CacheName);
         }
 
         /** <inheritDoc /> */
@@ -52,9 +52,7 @@ namespace Apache.Ignite.Benchmarks.Interop
         {
             int idx = BenchmarkUtils.GetRandomInt(Dataset);
 
-            _cache.Put(idx, Emps[idx]);
-
-            _cache.GetFuture<object>().Get();
+            _cache.PutAsync(idx, Emps[idx]).Wait();
         }
     }
 }

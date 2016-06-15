@@ -19,6 +19,8 @@ package org.apache.ignite.marshaller;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+
+import org.apache.ignite.IgniteBinary;
 import org.apache.ignite.IgniteCheckedException;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,7 +31,9 @@ import org.jetbrains.annotations.Nullable;
  * <p>
  * Ignite provides the following {@code Marshaller} implementations:
  * <ul>
- * <li>{@link org.apache.ignite.marshaller.optimized.OptimizedMarshaller} - default</li>
+ * <li>Default binary marshaller. Will be used when no other marshaller is explicitly set to the
+ * configuration. For more information, see {@link IgniteBinary}.</li>
+ * <li>{@link org.apache.ignite.marshaller.optimized.OptimizedMarshaller}</li>
  * <li>{@link org.apache.ignite.marshaller.jdk.JdkMarshaller}</li>
  * </ul>
  * <p>
@@ -92,7 +96,7 @@ public interface Marshaller {
     public byte[] marshal(@Nullable Object obj) throws IgniteCheckedException;
 
     /**
-     * Unmarshals object from the output stream using given class loader.
+     * Unmarshals object from the input stream using given class loader.
      * This method should not close given input stream.
      *
      * @param <T> Type of unmarshalled object.

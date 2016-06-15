@@ -22,9 +22,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
-import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
@@ -160,6 +160,12 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
     public long timeout(long timeout);
 
     /**
+     * Changes transaction state from COMMITTING to MARKED_ROLLBACK.
+     * Must be called only from thread committing transaction.
+     */
+    public void errorWhenCommitting();
+
+    /**
      * Modify the transaction associated with the current thread such that the
      * only possible outcome of the transaction is to roll back the
      * transaction.
@@ -275,9 +281,15 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
     public boolean implicitSingle();
 
     /**
-     * @return Collection of cache IDs involved in this transaction.
+     * @return Transaction state.
      */
-    public Collection<Integer> activeCacheIds();
+    public IgniteTxState txState();
+
+    /**
+     * @return {@code true} or {@code false} if the deployment is enabled or disabled for all active caches involved
+     * in this transaction.
+     */
+    public boolean activeCachesDeploymentEnabled();
 
     /**
      * Attempts to set topology version and returns the current value.
@@ -374,15 +386,6 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
     public boolean ownsLockUnsafe(GridCacheEntryEx entry);
 
     /**
-     * For Partitioned caches, this flag is {@code false} for remote DHT and remote NEAR
-     * transactions because serializability of transaction is enforced on primary node. All
-     * other transaction types must enforce it.
-     *
-     * @return Enforce serializable flag.
-     */
-    public boolean enforceSerializable();
-
-    /**
      * @return {@code True} if near transaction.
      */
     public boolean near();
@@ -430,14 +433,9 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
     public boolean user();
 
     /**
-     * @return {@code True} if transaction is configured with synchronous commit flag.
+     * @return Transaction write synchronization mode.
      */
-    public boolean syncCommit();
-
-    /**
-     * @return {@code True} if transaction is configured with synchronous rollback flag.
-     */
-    public boolean syncRollback();
+    public CacheWriteSynchronizationMode syncMode();
 
     /**
      * @param key Key to check.
@@ -503,20 +501,13 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
      * @param ctx Cache context.
      * @param failFast Fail-fast flag.
      * @param key Key to look up.
-     * @param filter Filter to check.
      * @return Current value for the key within transaction.
      * @throws GridCacheFilterFailedException If filter failed and failFast is {@code true}.
      */
      @Nullable public GridTuple<CacheObject> peek(
          GridCacheContext ctx,
          boolean failFast,
-         KeyCacheObject key,
-         @Nullable CacheEntryPredicate[] filter) throws GridCacheFilterFailedException;
-
-    /**
-     * @return Start version.
-     */
-    public GridCacheVersion startVersion();
+         KeyCacheObject key) throws GridCacheFilterFailedException;
 
     /**
      * @return Transaction version.
@@ -530,15 +521,8 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
 
     /**
      * @param commitVer Commit version.
-     * @return {@code True} if version was set.
      */
-    public boolean commitVersion(GridCacheVersion commitVer);
-
-    /**
-     * @return End version (a.k.a. <tt>'tnc'</tt> or <tt>'transaction number counter'</tt>)
-     *      assigned to this transaction at the end of write phase.
-     */
-    public GridCacheVersion endVersion();
+    public void commitVersion(GridCacheVersion commitVer);
 
     /**
      * Prepare state.
@@ -664,14 +648,6 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
     public boolean serializable();
 
     /**
-     * Checks whether given key has been removed within transaction.
-     *
-     * @param key Key to check.
-     * @return {@code True} if key has been removed.
-     */
-    public boolean removed(IgniteTxKey key);
-
-    /**
      * Gets allowed remaining time for this transaction.
      *
      * @return Remaining time.
@@ -722,4 +698,9 @@ public interface IgniteInternalTx extends AutoCloseable, GridTimeoutObject {
      * @param topVer New topology version.
      */
     public void onRemap(AffinityTopologyVersion topVer);
+
+    /**
+     * @param e Commit error.
+     */
+    public void commitError(Throwable e);
 }

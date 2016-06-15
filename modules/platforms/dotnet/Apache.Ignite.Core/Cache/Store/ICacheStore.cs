@@ -33,24 +33,24 @@ namespace Apache.Ignite.Core.Cache.Store
     /// <example>
     /// Here is an example:
     /// <code>
-    /// <bean class="org.apache.ignite.configuration.CacheConfiguration">
+    /// &lt;bean class="org.apache.ignite.configuration.CacheConfiguration">
     ///     ...
-    ///     <property name="cacheStoreFactory">
-    ///         <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactory">
-    ///             <property name="assemblyName" value="MyAssembly"/>
-    ///             <property name="className" value="MyApp.MyCacheStore"/>
-    ///             <property name="properties">
-    ///                 <map>
-    ///                     <entry key="IntProperty">
-    ///                         <value type="java.lang.Integer">42</value>
-    ///                     </entry>
-    ///                     <entry key="StringProperty" value="String value"/>
-    ///                 </map>
-    ///             </property>
-    ///         </bean>
-    ///     </property>
+    ///     &lt;property name="cacheStoreFactory">
+    ///         &lt;bean class="org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactory">
+    ///             &lt;property name="assemblyName" value="MyAssembly"/>
+    ///             &lt;property name="className" value="MyApp.MyCacheStore"/>
+    ///             &lt;property name="properties">
+    ///                 &lt;map>
+    ///                     &lt;entry key="IntProperty">
+    ///                         &lt;value type="java.lang.Integer">42&lt;/value>
+    ///                     &lt;/entry>
+    ///                     &lt;entry key="StringProperty" value="String value"/>
+    ///                 &lt;/map>
+    ///             &lt;/property>
+    ///         &lt;/bean>
+    ///     &lt;/property>
     ///     ...
-    /// </bean>
+    /// &lt;/bean>
     /// </code>
     /// </example>
     /// Assemply name and class name are passed to <a target="_blank" href="http://msdn.microsoft.com/en-us/library/d133hta4.aspx"><b>System.Activator.CreateInstance(String, String)</b></a>
@@ -98,11 +98,11 @@ namespace Apache.Ignite.Core.Cache.Store
         /// Loads an object. Application developers should implement this method to customize the loading 
         /// of a value for a cache entry. 
         /// This method is called by a cache when a requested entry is not in the cache. 
-        /// If the object can't be loaded <code>null</code> should be returned.
+        /// If the object can't be loaded <c>null</c> should be returned.
         /// </summary>
         /// <param name="key">The key identifying the object being loaded.</param>
         /// <returns>The value for the entry that is to be stored in the cache 
-        /// or <code>null</code> if the object can't be loaded</returns>
+        /// or <c>null</c> if the object can't be loaded</returns>
         /// <exception cref="CacheStoreException" />
         object Load(object key);
 

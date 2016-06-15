@@ -196,7 +196,7 @@ namespace Apache.Ignite.Core.Cluster
         /// <summary>
         /// Amount of heap memory in bytes that the JVM
         /// initially requests from the operating system for memory management.
-        /// This method returns <code>-1</code> if the initial memory size is undefined.
+        /// This method returns <c>-1</c> if the initial memory size is undefined.
         /// <para />
         /// This value represents a setting of the heap memory for Java VM and is
         /// not a sum of all initial heap values for all memory pools.
@@ -223,7 +223,7 @@ namespace Apache.Ignite.Core.Cluster
 
         /// <summary>
         /// Mmaximum amount of heap memory in bytes that can be used for memory management.
-        /// This method returns <code>-1</code> if the maximum memory size is undefined.
+        /// This method returns <c>-1</c> if the maximum memory size is undefined.
         /// <para />
         /// This amount of memory is not guaranteed to be available for memory management if 
         /// it is greater than the amount of committed memory. The JVM may fail to allocate
@@ -235,7 +235,7 @@ namespace Apache.Ignite.Core.Cluster
         long HeapMemoryMaximum { get; }
 
         /// <summary>
-        /// Total amount of heap memory in bytes. This method returns <code>-1</code>
+        /// Total amount of heap memory in bytes. This method returns <c>-1</c>
         /// if the total memory size is undefined.
         /// <para />
         /// This amount of memory is not guaranteed to be available for memory management if it is 

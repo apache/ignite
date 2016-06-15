@@ -18,11 +18,13 @@
 namespace Apache.Ignite.Core.Impl.Services
 {
     using System;
+    using System.Collections;
     using System.Diagnostics;
     using System.Reflection;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Common;
     using Apache.Ignite.Core.Services;
 
     /// <summary>
@@ -36,7 +38,9 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="writer">Writer.</param>
         /// <param name="method">Method.</param>
         /// <param name="arguments">Arguments.</param>
-        public static void WriteProxyMethod(PortableWriterImpl writer, MethodBase method, object[] arguments)
+        /// <param name="platform">The platform.</param>
+        public static void WriteProxyMethod(BinaryWriter writer, MethodBase method, object[] arguments, 
+            Platform platform)
         {
             Debug.Assert(writer != null);
             Debug.Assert(method != null);
@@ -48,8 +52,21 @@ namespace Apache.Ignite.Core.Impl.Services
                 writer.WriteBoolean(true);
                 writer.WriteInt(arguments.Length);
 
-                foreach (var arg in arguments)
-                    writer.WriteObject(arg);
+                if (platform == Platform.DotNet)
+                {
+                    // Write as is
+                    foreach (var arg in arguments)
+                        writer.WriteObject(arg);
+                }
+                else
+                {
+                    // Other platforms do not support Serializable, need to convert arrays and collections
+                    var methodArgs = method.GetParameters();
+                    Debug.Assert(methodArgs.Length == arguments.Length);
+
+                    for (int i = 0; i < arguments.Length; i++)
+                        WriteArgForPlatforms(writer, methodArgs[i], arguments[i]);
+                }
             }
             else
                 writer.WriteBoolean(false);
@@ -62,12 +79,12 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="marsh">Marshaller.</param>
         /// <param name="mthdName">Method name.</param>
         /// <param name="mthdArgs">Method arguments.</param>
-        public static void ReadProxyMethod(IPortableStream stream, PortableMarshaller marsh, 
+        public static void ReadProxyMethod(IBinaryStream stream, Marshaller marsh, 
             out string mthdName, out object[] mthdArgs)
         {
             var reader = marsh.StartUnmarshal(stream);
 
-            var srvKeepPortable = reader.ReadBoolean();
+            var srvKeepBinary = reader.ReadBoolean();
 
             mthdName = reader.ReadString();
 
@@ -75,7 +92,7 @@ namespace Apache.Ignite.Core.Impl.Services
             {
                 mthdArgs = new object[reader.ReadInt()];
 
-                if (srvKeepPortable)
+                if (srvKeepBinary)
                     reader = marsh.StartUnmarshal(stream, true);
 
                 for (var i = 0; i < mthdArgs.Length; i++)
@@ -92,7 +109,7 @@ namespace Apache.Ignite.Core.Impl.Services
         /// <param name="marsh">Marshaller.</param>
         /// <param name="methodResult">Method result.</param>
         /// <param name="invocationError">Method invocation error.</param>
-        public static void WriteInvocationResult(IPortableStream stream, PortableMarshaller marsh, object methodResult,
+        public static void WriteInvocationResult(IBinaryStream stream, Marshaller marsh, object methodResult,
             Exception invocationError)
         {
             Debug.Assert(stream != null);
@@ -100,7 +117,7 @@ namespace Apache.Ignite.Core.Impl.Services
 
             var writer = marsh.StartMarshal(stream);
 
-            PortableUtils.WriteInvocationResult(writer, invocationError == null, invocationError ?? methodResult);
+            BinaryUtils.WriteInvocationResult(writer, invocationError == null, invocationError ?? methodResult);
         }
 
         /// <summary>
@@ -108,33 +125,73 @@ namespace Apache.Ignite.Core.Impl.Services
         /// </summary>
         /// <param name="stream">Stream.</param>
         /// <param name="marsh">Marshaller.</param>
-        /// <param name="keepPortable">Portable flag.</param>
+        /// <param name="keepBinary">Binary flag.</param>
         /// <returns>
         /// Method invocation result, or exception in case of error.
         /// </returns>
-        public static object ReadInvocationResult(IPortableStream stream, PortableMarshaller marsh, bool keepPortable)
+        public static object ReadInvocationResult(IBinaryStream stream, Marshaller marsh, bool keepBinary)
         {
             Debug.Assert(stream != null);
             Debug.Assert(marsh != null);
 
-            var mode = keepPortable ? PortableMode.ForcePortable : PortableMode.Deserialize;
+            var mode = keepBinary ? BinaryMode.ForceBinary : BinaryMode.Deserialize;
 
             var reader = marsh.StartUnmarshal(stream, mode);
 
             object err;
 
-            var res = PortableUtils.ReadInvocationResult(reader, out err);
+            var res = BinaryUtils.ReadInvocationResult(reader, out err);
 
             if (err == null)
                 return res;
 
-            var portErr = err as IPortableObject;
+            var binErr = err as IBinaryObject;
 
-            throw portErr != null
-                ? new ServiceInvocationException("Proxy method invocation failed with a portable error. " +
-                                                 "Examine PortableCause for details.", portErr)
+            throw binErr != null
+                ? new ServiceInvocationException("Proxy method invocation failed with a binary error. " +
+                                                 "Examine BinaryCause for details.", binErr)
                 : new ServiceInvocationException("Proxy method invocation failed with an exception. " +
                                                  "Examine InnerException for details.", (Exception) err);
+        }
+
+        /// <summary>
+        /// Writes the argument in platform-compatible format.
+        /// </summary>
+        private static void WriteArgForPlatforms(BinaryWriter writer, ParameterInfo param, object arg)
+        {
+            var hnd = GetPlatformArgWriter(param, arg);
+
+            if (hnd != null)
+                hnd(writer, arg);
+            else
+                writer.WriteObject(arg);
+        }
+
+        /// <summary>
+        /// Gets arg writer for platform-compatible service calls.
+        /// </summary>
+        private static Action<BinaryWriter, object> GetPlatformArgWriter(ParameterInfo param, object arg)
+        {
+            var type = param.ParameterType;
+
+            // Unwrap nullable
+            type = Nullable.GetUnderlyingType(type) ?? type;
+
+            if (arg == null || type.IsPrimitive)
+                return null;
+
+            var handler = BinarySystemHandlers.GetWriteHandler(type);
+
+            if (handler != null && !handler.IsSerializable)
+                return null;
+
+            if (type.IsArray)
+                return (writer, o) => writer.WriteArrayInternal((Array) o);
+
+            if (arg is ICollection)
+                return (writer, o) => writer.WriteCollection((ICollection) o);
+
+            return null;
         }
     }
 }

@@ -44,6 +44,10 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
     @GridDirectCollection(KeyCacheObject.class)
     private List<KeyCacheObject> keys;
 
+    /** Partition IDs. */
+    @GridDirectCollection(int.class)
+    protected List<Integer> partIds;
+
     /**
      * Empty constructor required by {@link Externalizable}.
      */
@@ -54,9 +58,10 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
     /**
      * @param cacheId Cache ID.
      * @param keyCnt Key count.
+     * @param addDepInfo Deployment info flag.
      */
-    public GridDistributedUnlockRequest(int cacheId, int keyCnt) {
-        super(keyCnt);
+    public GridDistributedUnlockRequest(int cacheId, int keyCnt, boolean addDepInfo) {
+        super(keyCnt, addDepInfo);
 
         this.cacheId = cacheId;
     }
@@ -74,10 +79,13 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
      * @throws IgniteCheckedException If failed.
      */
     public void addKey(KeyCacheObject key, GridCacheContext ctx) throws IgniteCheckedException {
-        if (keys == null)
+        if (keys == null) {
             keys = new ArrayList<>(keysCount());
+            partIds = new ArrayList<>(keysCount());
+        }
 
         keys.add(key);
+        partIds.add(key.partition());
     }
 
     /** {@inheritDoc}
@@ -93,6 +101,13 @@ public class GridDistributedUnlockRequest extends GridDistributedBaseMessage {
         super.finishUnmarshal(ctx, ldr);
 
         finishUnmarshalCacheObjects(keys, ctx.cacheContext(cacheId), ldr);
+
+        if (partIds != null && !partIds.isEmpty()) {
+            assert partIds.size() == keys.size();
+
+            for (int i = 0; i < keys.size(); i++)
+                keys.get(i).partition(partIds.get(i));
+        }
     }
 
     /** {@inheritDoc} */

@@ -20,19 +20,19 @@ namespace Apache.Ignite.Core.Impl.Compute
     using System;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Compute.Closure;
     using Apache.Ignite.Core.Impl.Memory;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Resource;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Holder for user-provided compute job.
     /// </summary>
-    internal class ComputeJobHolder : IPortableWriteAware
+    internal class ComputeJobHolder : IBinaryWriteAware
     {
         /** Actual job. */
         private readonly IComputeJob _job;
@@ -47,15 +47,15 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// Default ctor for marshalling.
         /// </summary>
         /// <param name="reader"></param>
-        public ComputeJobHolder(IPortableReader reader)
+        public ComputeJobHolder(IBinaryReader reader)
         {
             Debug.Assert(reader != null);
 
-            var reader0 = (PortableReaderImpl) reader.GetRawReader();
+            var reader0 = (BinaryReader) reader.GetRawReader();
 
             _ignite = reader0.Marshaller.Ignite;
 
-            _job = PortableUtils.ReadPortableOrSerializable<IComputeJob>(reader0);
+            _job = reader0.ReadObject<IComputeJob>();
         }
 
         /// <summary>
@@ -108,12 +108,12 @@ namespace Apache.Ignite.Core.Impl.Compute
             // 2. Try writing result to the stream.
             ClusterGroupImpl prj = _ignite.ClusterGroup;
 
-            PortableWriterImpl writer = prj.Marshaller.StartMarshal(stream);
+            BinaryWriter writer = prj.Marshaller.StartMarshal(stream);
 
             try
             {
                 // 3. Marshal results.
-                PortableUtils.WriteWrappedInvocationResult(writer, success, res);
+                BinaryUtils.WriteInvocationResult(writer, success, res);
             }
             finally
             {
@@ -137,11 +137,11 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <returns>True if successfull.</returns>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes",
             Justification = "User job can throw any exception")]
-        internal bool Serialize(IPortableStream stream)
+        internal bool Serialize(IBinaryStream stream)
         {
             ClusterGroupImpl prj = _ignite.ClusterGroup;
 
-            PortableWriterImpl writer = prj.Marshaller.StartMarshal(stream);
+            BinaryWriter writer = prj.Marshaller.StartMarshal(stream);
 
             try
             {
@@ -216,11 +216,11 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
-            PortableWriterImpl writer0 = (PortableWriterImpl) writer.GetRawWriter();
+            BinaryWriter writer0 = (BinaryWriter) writer.GetRawWriter();
 
-            writer0.WithDetach(w => PortableUtils.WritePortableOrSerializable(w, _job));
+            writer0.WithDetach(w => w.WriteObject(_job));
         }
 
         /// <summary>
@@ -229,7 +229,7 @@ namespace Apache.Ignite.Core.Impl.Compute
         /// <param name="grid">Grid.</param>
         /// <param name="stream">Stream.</param>
         /// <returns></returns>
-        internal static ComputeJobHolder CreateJob(Ignite grid, IPortableStream stream)
+        internal static ComputeJobHolder CreateJob(Ignite grid, IBinaryStream stream)
         {
             try
             {

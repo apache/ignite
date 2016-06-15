@@ -15,20 +15,28 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_CACHE
-#define _IGNITE_CACHE
+/**
+ * @file
+ * Declares ignite::cache::Cache class.
+ */
+
+#ifndef _IGNITE_CACHE_CACHE
+#define _IGNITE_CACHE_CACHE
 
 #include <map>
 #include <set>
 
 #include <ignite/common/common.h>
 #include <ignite/common/concurrent.h>
+#include <ignite/ignite_error.h>
 
 #include "ignite/cache/cache_peek_mode.h"
 #include "ignite/cache/query/query_cursor.h"
+#include "ignite/cache/query/query_fields_cursor.h"
 #include "ignite/cache/query/query_scan.h"
 #include "ignite/cache/query/query_sql.h"
 #include "ignite/cache/query/query_text.h"
+#include "ignite/cache/query/query_sql_fields.h"
 #include "ignite/impl/cache/cache_impl.h"
 #include "ignite/impl/cache/cache_entry_processor_holder.h"
 #include "ignite/impl/operations.h"
@@ -1083,7 +1091,7 @@ namespace ignite
                 return query::QueryCursor<K, V>(cursorImpl);
             }
 
-            /*
+            /**
              * Perform text query.
              *
              * @param qry Query.
@@ -1100,7 +1108,7 @@ namespace ignite
                 return res;
             }
 
-            /*
+            /**
              * Perform text query.
              *
              * @param qry Query.
@@ -1114,7 +1122,7 @@ namespace ignite
                 return query::QueryCursor<K, V>(cursorImpl);
             }
 
-            /*
+            /**
              * Perform scan query.
              *
              * @param qry Query.
@@ -1131,7 +1139,7 @@ namespace ignite
                 return res;
             }
 
-            /*
+            /**
              * Perform scan query.
              *
              * @param qry Query.
@@ -1143,6 +1151,37 @@ namespace ignite
                 impl::cache::query::QueryCursorImpl* cursorImpl = impl.Get()->QueryScan(qry, &err);
 
                 return query::QueryCursor<K, V>(cursorImpl);
+            }
+
+            /**
+             * Perform sql fields query.
+             *
+             * @param qry Query.
+             * @return Query cursor.
+             */
+            query::QueryFieldsCursor Query(const query::SqlFieldsQuery& qry)
+            {
+                IgniteError err;
+
+                query::QueryFieldsCursor res = Query(qry, err);
+
+                IgniteError::ThrowIfNeeded(err);
+
+                return res;
+            }
+
+            /**
+             * Perform sql fields query.
+             *
+             * @param qry Query.
+             * @param err Error.
+             * @return Query cursor.
+             */
+            query::QueryFieldsCursor Query(const query::SqlFieldsQuery& qry, IgniteError& err)
+            {
+                impl::cache::query::QueryCursorImpl* cursorImpl = impl.Get()->QuerySqlFields(qry, &err);
+
+                return query::QueryFieldsCursor(cursorImpl);
             }
 
             /**
@@ -1198,9 +1237,15 @@ namespace ignite
             /**
              * Check if the instance is valid.
              *
+             * Invalid instance can be returned if some of the previous
+             * operations have resulted in a failure. For example invalid
+             * instance can be returned by not-throwing version of method
+             * in case of error. Invalid instances also often can be
+             * created using default constructor.
+             *
              * @return True if the instance is valid and can be used.
              */
-            bool IsValid()
+            bool IsValid() const
             {
                 return impl.IsValid();
             }
@@ -1212,4 +1257,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_CACHE_CACHE

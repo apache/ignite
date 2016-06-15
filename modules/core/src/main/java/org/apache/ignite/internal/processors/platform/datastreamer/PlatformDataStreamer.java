@@ -24,7 +24,7 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
-import org.apache.ignite.internal.portable.PortableRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamerImpl;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
@@ -65,8 +65,8 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
     /** Data streamer. */
     private final DataStreamerImpl ldr;
 
-    /** Portable flag. */
-    private final boolean keepPortable;
+    /** Binary flag. */
+    private final boolean keepBinary;
 
     /** Topology update event listener. */
     private volatile GridLocalEventListener lsnr;
@@ -78,16 +78,16 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
      * @param ldr Data streamer.
      */
     public PlatformDataStreamer(PlatformContext platformCtx, String cacheName, DataStreamerImpl ldr,
-        boolean keepPortable) {
+        boolean keepBinary) {
         super(platformCtx);
 
         this.cacheName = cacheName;
         this.ldr = ldr;
-        this.keepPortable = keepPortable;
+        this.keepBinary = keepBinary;
     }
 
     /** {@inheritDoc}  */
-    @Override protected long processInStreamOutLong(int type, PortableRawReaderEx reader) throws IgniteCheckedException {
+    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
         switch (type) {
             case OP_UPDATE:
                 int plc = reader.readInt();
@@ -131,7 +131,7 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
 
                 Object rec = reader.readObjectDetached();
 
-                ldr.receiver(platformCtx.createStreamReceiver(rec, ptr, keepPortable));
+                ldr.receiver(platformCtx.createStreamReceiver(rec, ptr, keepBinary));
 
                 return TRUE;
 
@@ -162,10 +162,11 @@ public class PlatformDataStreamer extends PlatformAbstractTarget {
 
         GridDiscoveryManager discoMgr = platformCtx.kernalContext().discovery();
 
-        long topVer = discoMgr.topologyVersion();
-        int topSize = discoMgr.cacheNodes(cacheName, new AffinityTopologyVersion(topVer)).size();
+        AffinityTopologyVersion topVer = discoMgr.topologyVersionEx();
 
-        platformCtx.gateway().dataStreamerTopologyUpdate(ptr, topVer, topSize);
+        int topSize = discoMgr.cacheNodes(cacheName, topVer).size();
+
+        platformCtx.gateway().dataStreamerTopologyUpdate(ptr, topVer.topologyVersion(), topSize);
     }
 
     /**

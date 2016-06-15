@@ -16,17 +16,20 @@
  */
 
 // ReSharper disable SpecifyACultureInStringConversionExplicitly
+// ReSharper disable UnusedAutoPropertyAccessor.Global
 namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
+    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
@@ -36,19 +39,19 @@ namespace Apache.Ignite.Core.Tests.Compute
     public class ComputeApiTest
     {
         /** Echo task name. */
-        private const string EchoTask = "org.apache.ignite.platform.PlatformComputeEchoTask";
+        public const string EchoTask = "org.apache.ignite.platform.PlatformComputeEchoTask";
 
-        /** Portable argument task name. */
-        private const string PortableArgTask = "org.apache.ignite.platform.PlatformComputePortableArgTask";
+        /** Binary argument task name. */
+        public const string BinaryArgTask = "org.apache.ignite.platform.PlatformComputeBinarizableArgTask";
 
         /** Broadcast task name. */
-        private const string BroadcastTask = "org.apache.ignite.platform.PlatformComputeBroadcastTask";
+        public const string BroadcastTask = "org.apache.ignite.platform.PlatformComputeBroadcastTask";
 
         /** Broadcast task name. */
         private const string DecimalTask = "org.apache.ignite.platform.PlatformComputeDecimalTask";
 
-        /** Java portable class name. */
-        private const string JavaPortableCls = "GridInteropComputeJavaPortable";
+        /** Java binary class name. */
+        private const string JavaBinaryCls = "PlatformComputeJavaBinarizable";
 
         /** Echo type: null. */
         private const int EchoTypeNull = 0;
@@ -86,23 +89,29 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** Echo type: map. */
         private const int EchoTypeMap = 11;
 
-        /** Echo type: portable. */
-        private const int EchoTypePortable = 12;
+        /** Echo type: binarizable. */
+        public const int EchoTypeBinarizable = 12;
 
-        /** Echo type: portable (Java only). */
-        private const int EchoTypePortableJava = 13;
+        /** Echo type: binary (Java only). */
+        private const int EchoTypeBinarizableJava = 13;
 
         /** Type: object array. */
         private const int EchoTypeObjArray = 14;
 
-        /** Type: portable object array. */
-        private const int EchoTypePortableArray = 15;
+        /** Type: binary object array. */
+        private const int EchoTypeBinarizableArray = 15;
 
         /** Type: enum. */
         private const int EchoTypeEnum = 16;
 
         /** Type: enum array. */
         private const int EchoTypeEnumArray = 17;
+
+        /** Type: enum field. */
+        private const int EchoTypeEnumField = 18;
+
+        /** Type: affinity key. */
+        public const int EchoTypeAffinityKey = 19;
 
         /** First node. */
         private IIgnite _grid1;
@@ -119,13 +128,34 @@ namespace Apache.Ignite.Core.Tests.Compute
         [TestFixtureSetUp]
         public void InitClient()
         {
-            //TestUtils.JVM_DEBUG = true;
             TestUtils.KillProcesses();
 
-            _grid1 = Ignition.Start(Configuration("config\\compute\\compute-grid1.xml"));
-            _grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
-            _grid3 = Ignition.Start(Configuration("config\\compute\\compute-grid3.xml"));
+            var configs = GetConfigs();
+
+            _grid1 = Ignition.Start(Configuration(configs.Item1));
+            _grid2 = Ignition.Start(Configuration(configs.Item2));
+            _grid3 = Ignition.Start(Configuration(configs.Item3));
         }
+
+        /// <summary>
+        /// Gets the configs.
+        /// </summary>
+        protected virtual Tuple<string, string, string> GetConfigs()
+        {
+            return Tuple.Create(
+                "config\\compute\\compute-grid1.xml",
+                "config\\compute\\compute-grid2.xml",
+                "config\\compute\\compute-grid3.xml");
+        }
+
+        /// <summary>
+        /// Gets the expected compact footers setting.
+        /// </summary>
+        protected virtual bool CompactFooter
+        {
+            get { return true; }
+        }
+
 
         [TestFixtureTearDown]
         public void StopClient()
@@ -306,7 +336,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(topVer + 1, _grid1.GetCluster().TopologyVersion);
 
-            _grid3 = Ignition.Start(Configuration("config\\compute\\compute-grid3.xml"));
+            _grid3 = Ignition.Start(Configuration(GetConfigs().Item3));
 
             Assert.AreEqual(topVer + 2, _grid1.GetCluster().TopologyVersion);
         }
@@ -347,7 +377,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             }
             finally 
             {
-                _grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
+                _grid2 = Ignition.Start(Configuration(GetConfigs().Item2));
             }
         }
 
@@ -379,7 +409,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.IsTrue(nodes.Count == 2);
 
-            _grid2 = Ignition.Start(Configuration("config\\compute\\compute-grid2.xml"));
+            _grid2 = Ignition.Start(Configuration(GetConfigs().Item2));
 
             nodes = _grid1.GetCluster().GetNodes();
 
@@ -786,46 +816,46 @@ namespace Apache.Ignite.Core.Tests.Compute
             Assert.AreEqual(1, res1.Length);
             Assert.AreEqual(1, res1[0]);
 
-            IList<int> res2 = _grid1.GetCompute().ExecuteJavaTask<IList<int>>(EchoTask, EchoTypeCollection);
+            var res2 = _grid1.GetCompute().ExecuteJavaTask<IList>(EchoTask, EchoTypeCollection);
 
             Assert.AreEqual(1, res2.Count);
             Assert.AreEqual(1, res2[0]);
 
-            IDictionary<int, int> res3 = _grid1.GetCompute().ExecuteJavaTask<IDictionary<int, int>>(EchoTask, EchoTypeMap);
+            var res3 = _grid1.GetCompute().ExecuteJavaTask<IDictionary>(EchoTask, EchoTypeMap);
 
             Assert.AreEqual(1, res3.Count);
             Assert.AreEqual(1, res3[1]);
         }
 
         /// <summary>
-        /// Test echo task returning portable object.
+        /// Test echo task returning binary object.
         /// </summary>
         [Test]
-        public void TestEchoTaskPortable()
+        public void TestEchoTaskBinarizable()
         {
-            PlatformComputePortable res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputePortable>(EchoTask, EchoTypePortable);
+            var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeBinarizable>(EchoTask, EchoTypeBinarizable);
 
             Assert.AreEqual(1, res.Field);
         }
 
         /// <summary>
-        /// Test echo task returning portable object with no corresponding class definition.
+        /// Test echo task returning binary object with no corresponding class definition.
         /// </summary>
         [Test]
-        public void TestEchoTaskPortableNoClass()
+        public void TestEchoTaskBinarizableNoClass()
         {
             ICompute compute = _grid1.GetCompute();
 
-            compute.WithKeepPortable();
+            compute.WithKeepBinary();
 
-            IPortableObject res = compute.ExecuteJavaTask<IPortableObject>(EchoTask, EchoTypePortableJava);
+            IBinaryObject res = compute.ExecuteJavaTask<IBinaryObject>(EchoTask, EchoTypeBinarizableJava);
 
             Assert.AreEqual(1, res.GetField<int>("field"));
 
-            // This call must fail because "keepPortable" flag is reset.
-            Assert.Catch(typeof(PortableException), () =>
+            // This call must fail because "keepBinary" flag is reset.
+            Assert.Catch(typeof(BinaryObjectException), () =>
             {
-                compute.ExecuteJavaTask<IPortableObject>(EchoTask, EchoTypePortableJava);
+                compute.ExecuteJavaTask<IBinaryObject>(EchoTask, EchoTypeBinarizableJava);
             });
         }
 
@@ -841,17 +871,17 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
-        /// Tests the echo task returning portable array.
+        /// Tests the echo task returning binary array.
         /// </summary>
         [Test]
-        public void TestEchoTaskPortableArray()
+        public void TestEchoTaskBinarizableArray()
         {
-            var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputePortable[]>(EchoTask, EchoTypePortableArray);
+            var res = _grid1.GetCompute().ExecuteJavaTask<object[]>(EchoTask, EchoTypeBinarizableArray);
             
             Assert.AreEqual(3, res.Length);
 
             for (var i = 0; i < res.Length; i++)
-                Assert.AreEqual(i + 1, res[i].Field);
+                Assert.AreEqual(i + 1, ((PlatformComputeBinarizable) res[i]).Field);
         }
 
         /// <summary>
@@ -860,9 +890,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestEchoTaskEnum()
         {
-            var res = _grid1.GetCompute().ExecuteJavaTask<InteropComputeEnum>(EchoTask, EchoTypeEnum);
+            var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeEnum>(EchoTask, EchoTypeEnum);
 
-            Assert.AreEqual(InteropComputeEnum.Bar, res);
+            Assert.AreEqual(PlatformComputeEnum.Bar, res);
         }
 
         /// <summary>
@@ -871,31 +901,54 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestEchoTaskEnumArray()
         {
-            var res = _grid1.GetCompute().ExecuteJavaTask<InteropComputeEnum[]>(EchoTask, EchoTypeEnumArray);
+            var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeEnum[]>(EchoTask, EchoTypeEnumArray);
 
             Assert.AreEqual(new[]
             {
-                InteropComputeEnum.Bar,
-                InteropComputeEnum.Baz,
-                InteropComputeEnum.Foo
+                PlatformComputeEnum.Bar,
+                PlatformComputeEnum.Baz,
+                PlatformComputeEnum.Foo
             }, res);
         }
 
         /// <summary>
-        /// Test for portable argument in Java.
+        /// Tests the echo task reading enum from a binary object field.
+        /// Ensures that Java can understand enums written by .NET.
         /// </summary>
         [Test]
-        public void TestPortableArgTask()
+        public void TestEchoTaskEnumField()
+        {
+            var enumVal = PlatformComputeEnum.Baz;
+
+            _grid1.GetCache<int, InteropComputeEnumFieldTest>(null)
+                .Put(EchoTypeEnumField, new InteropComputeEnumFieldTest {InteropEnum = enumVal});
+
+            var res = _grid1.GetCompute().ExecuteJavaTask<PlatformComputeEnum>(EchoTask, EchoTypeEnumField);
+
+            var enumMeta = _grid1.GetBinary().GetBinaryType(typeof (PlatformComputeEnum));
+
+            Assert.IsTrue(enumMeta.IsEnum);
+            Assert.AreEqual(enumMeta.TypeName, typeof(PlatformComputeEnum).Name);
+            Assert.AreEqual(0, enumMeta.Fields.Count);
+
+            Assert.AreEqual(enumVal, res);
+        }
+
+        /// <summary>
+        /// Test for binary argument in Java.
+        /// </summary>
+        [Test]
+        public void TestBinarizableArgTask()
         {
             ICompute compute = _grid1.GetCompute();
 
-            compute.WithKeepPortable();
+            compute.WithKeepBinary();
 
-            PlatformComputeNetPortable arg = new PlatformComputeNetPortable();
+            PlatformComputeNetBinarizable arg = new PlatformComputeNetBinarizable();
 
             arg.Field = 100;
 
-            int res = compute.ExecuteJavaTask<int>(PortableArgTask, arg);
+            int res = compute.ExecuteJavaTask<int>(BinaryArgTask, arg);
 
             Assert.AreEqual(arg.Field, res);
         }
@@ -906,7 +959,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestBroadcastTask()
         {
-            ICollection<Guid> res = _grid1.GetCompute().ExecuteJavaTask<ICollection<Guid>>(BroadcastTask, null);
+            var res = _grid1.GetCompute().ExecuteJavaTask<ICollection>(BroadcastTask, null).OfType<Guid>().ToList();
 
             Assert.AreEqual(3, res.Count);
             Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).GetNodes().Count);
@@ -917,7 +970,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(2, prj.GetNodes().Count);
 
-            ICollection<Guid> filteredRes = prj.GetCompute().ExecuteJavaTask<ICollection<Guid>>(BroadcastTask, null);
+            var filteredRes = prj.GetCompute().ExecuteJavaTask<ICollection>(BroadcastTask, null).OfType<Guid>().ToList();
 
             Assert.AreEqual(2, filteredRes.Count);
             Assert.IsTrue(filteredRes.Contains(res.ElementAt(0)));
@@ -930,9 +983,9 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestBroadcastTaskAsync()
         {
-            var gridCompute = _grid1.GetCompute().WithAsync();
-            Assert.IsNull(gridCompute.ExecuteJavaTask<ICollection<Guid>>(BroadcastTask, null));
-            ICollection<Guid> res = gridCompute.GetFuture<ICollection<Guid>>().Get();
+            var gridCompute = _grid1.GetCompute();
+
+            var res = gridCompute.ExecuteJavaTaskAsync<ICollection>(BroadcastTask, null).Result.OfType<Guid>().ToList();
 
             Assert.AreEqual(3, res.Count);
             Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).GetNodes().Count);
@@ -943,9 +996,8 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Assert.AreEqual(2, prj.GetNodes().Count);
 
-            var compute = prj.GetCompute().WithAsync();
-            Assert.IsNull(compute.ExecuteJavaTask<ICollection<Guid>>(BroadcastTask, null));
-            ICollection<Guid> filteredRes = compute.GetFuture<ICollection<Guid>>().Get();
+            var compute = prj.GetCompute();
+            var filteredRes = compute.ExecuteJavaTaskAsync<IList>(BroadcastTask, null).Result;
 
             Assert.AreEqual(2, filteredRes.Count);
             Assert.IsTrue(filteredRes.Contains(res.ElementAt(0)));
@@ -976,6 +1028,25 @@ namespace Apache.Ignite.Core.Tests.Compute
             _grid1.GetCompute().Run(new ComputeAction());
 
             Assert.AreEqual(1, ComputeAction.InvokeCount);
+        }
+
+        /// <summary>
+        /// Tests single action run.
+        /// </summary>
+        [Test]
+        public void TestRunActionAsyncCancel()
+        {
+            using (var cts = new CancellationTokenSource())
+            {
+                // Cancel while executing
+                var task = _grid1.GetCompute().RunAsync(new ComputeAction(), cts.Token);
+                cts.Cancel();
+                Assert.IsTrue(task.IsCanceled);
+
+                // Use cancelled token
+                task = _grid1.GetCompute().RunAsync(new ComputeAction(), cts.Token);
+                Assert.IsTrue(task.IsCanceled);
+            }
         }
 
         /// <summary>
@@ -1051,7 +1122,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestWithNoFailover()
         {
-            ICollection<Guid> res = _grid1.GetCompute().WithNoFailover().ExecuteJavaTask<ICollection<Guid>>(BroadcastTask, null);
+            var res = _grid1.GetCompute().WithNoFailover().ExecuteJavaTask<ICollection>(BroadcastTask, null)
+                .OfType<Guid>().ToList();
 
             Assert.AreEqual(3, res.Count);
             Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).GetNodes().Count);
@@ -1065,7 +1137,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestWithTimeout()
         {
-            ICollection<Guid> res = _grid1.GetCompute().WithTimeout(1000).ExecuteJavaTask<ICollection<Guid>>(BroadcastTask, null);
+            var res = _grid1.GetCompute().WithTimeout(1000).ExecuteJavaTask<ICollection>(BroadcastTask, null)
+                .OfType<Guid>().ToList();
 
             Assert.AreEqual(3, res.Count);
             Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).GetNodes().Count);
@@ -1086,6 +1159,31 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
+        /// Tests the exceptions.
+        /// </summary>
+        [Test]
+        public void TestExceptions()
+        {
+            Assert.Throws<BinaryObjectException>(() => _grid1.GetCompute().Broadcast(new InvalidComputeAction()));
+
+            Assert.Throws<BinaryObjectException>(
+                () => _grid1.GetCompute().Execute<NetSimpleJobArgument, NetSimpleJobResult, NetSimpleTaskResult>(
+                    typeof (NetSimpleTask), new NetSimpleJobArgument(-1)));
+        }
+
+        /// <summary>
+        /// Tests the footer setting.
+        /// </summary>
+        [Test]
+        public void TestFooterSetting()
+        {
+            Assert.AreEqual(CompactFooter, ((Ignite)_grid1).Marshaller.CompactFooter);
+
+            foreach (var g in new[] {_grid1, _grid2, _grid3})
+                Assert.AreEqual(CompactFooter, g.GetConfiguration().BinaryConfiguration.CompactFooter);
+        }
+
+        /// <summary>
         /// Create configuration.
         /// </summary>
         /// <param name="path">XML config path.</param>
@@ -1093,17 +1191,21 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             IgniteConfiguration cfg = new IgniteConfiguration();
 
-            PortableConfiguration portCfg = new PortableConfiguration();
+            BinaryConfiguration portCfg = new BinaryConfiguration();
 
-            ICollection<PortableTypeConfiguration> portTypeCfgs = new List<PortableTypeConfiguration>();
+            var portTypeCfgs = new List<BinaryTypeConfiguration>
+            {
+                new BinaryTypeConfiguration(typeof (PlatformComputeBinarizable)),
+                new BinaryTypeConfiguration(typeof (PlatformComputeNetBinarizable)),
+                new BinaryTypeConfiguration(JavaBinaryCls),
+                new BinaryTypeConfiguration(typeof(PlatformComputeEnum)),
+                new BinaryTypeConfiguration(typeof(InteropComputeEnumFieldTest))
+            };
 
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PlatformComputePortable)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PlatformComputeNetPortable)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(JavaPortableCls));
 
             portCfg.TypeConfigurations = portTypeCfgs;
 
-            cfg.PortableConfiguration = portCfg;
+            cfg.BinaryConfiguration = portCfg;
 
             cfg.JvmClasspath = Classpath.CreateClasspath(cfg, true);
 
@@ -1115,7 +1217,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
     }
 
-    class PlatformComputePortable
+    class PlatformComputeBinarizable
     {
         public int Field
         {
@@ -1124,7 +1226,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
     }
 
-    class PlatformComputeNetPortable : PlatformComputePortable
+    class PlatformComputeNetBinarizable : PlatformComputeBinarizable
     {
 
     }
@@ -1141,7 +1243,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             for (int i = 0; i < subgrid.Count; i++)
             {
-                NetSimpleJob job = new NetSimpleJob {Arg = arg};
+                var job = arg.Arg > 0 ? new NetSimpleJob {Arg = arg} : new InvalidNetSimpleJob();
 
                 jobs[job] = subgrid[i];
             }
@@ -1150,7 +1252,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /** <inheritDoc /> */
-        public ComputeJobResultPolicy Result(IComputeJobResult<NetSimpleJobResult> res,
+        public ComputeJobResultPolicy OnResult(IComputeJobResult<NetSimpleJobResult> res,
             IList<IComputeJobResult<NetSimpleJobResult>> rcvd)
         {
             return ComputeJobResultPolicy.Wait;
@@ -1159,7 +1261,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         /** <inheritDoc /> */
         public NetSimpleTaskResult Reduce(IList<IComputeJobResult<NetSimpleJobResult>> results)
         {
-            return new NetSimpleTaskResult(results.Sum(res => res.Data().Res));
+            return new NetSimpleTaskResult(results.Sum(res => res.Data.Res));
         }
     }
 
@@ -1179,6 +1281,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             // No-op.
         }
+    }
+
+    class InvalidNetSimpleJob : NetSimpleJob
+    {
+        // No-op.
     }
 
     [Serializable]
@@ -1227,9 +1334,15 @@ namespace Apache.Ignite.Core.Tests.Compute
 
         public void Invoke()
         {
+            Thread.Sleep(10);
             Interlocked.Increment(ref InvokeCount);
             LastNodeId = _grid.GetCluster().GetLocalNode().Id;
         }
+    }
+
+    class InvalidComputeAction : ComputeAction
+    {
+        // No-op.
     }
 
     interface IUserInterface<out T>
@@ -1272,10 +1385,15 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
     }
 
-    public enum InteropComputeEnum
+    public enum PlatformComputeEnum
     {
         Foo,
         Bar,
         Baz
+    }
+
+    public class InteropComputeEnumFieldTest
+    {
+        public PlatformComputeEnum InteropEnum { get; set; }
     }
 }

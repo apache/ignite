@@ -18,8 +18,8 @@
 namespace Apache.Ignite.Core.Events
 {
     using System.Globalization;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// In-memory database (cache) rebalancing event. Rebalance event happens every time there is a change
@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Events
         /// Constructor.
         /// </summary>
         /// <param name="r">The reader to read data from.</param>
-        internal CacheRebalancingEvent(IPortableRawReader r) : base(r)
+        internal CacheRebalancingEvent(IBinaryRawReader r) : base(r)
         {
             _cacheName = r.ReadString();
             _partition = r.ReadInt();
@@ -88,7 +88,9 @@ namespace Apache.Ignite.Core.Events
         /// </summary>
         public long DiscoveryTimestamp { get { return _discoveryTimestamp; } }
 
-        /** <inheritDoc /> */
+        /// <summary>
+        /// Gets shortened version of ToString result.
+        /// </summary>
 	    public override string ToShortString()
 	    {
 	        return string.Format(CultureInfo.InvariantCulture,

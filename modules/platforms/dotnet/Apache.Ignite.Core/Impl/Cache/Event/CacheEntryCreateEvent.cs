@@ -60,6 +60,12 @@ namespace Apache.Ignite.Core.Impl.Cache.Event
         }
 
         /** <inheritdoc /> */
+        public bool HasValue
+        {
+            get { return true; }
+        }
+
+        /** <inheritdoc /> */
         public bool HasOldValue
         {
             get { return false; }

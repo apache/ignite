@@ -15,13 +15,18 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_CACHE_QUERY_TEXT
-#define _IGNITE_CACHE_QUERY_TEXT
+/**
+ * @file
+ * Declares ignite::cache::query::TextQuery class.
+ */
+
+#ifndef _IGNITE_CACHE_QUERY_QUERY_TEXT
+#define _IGNITE_CACHE_QUERY_QUERY_TEXT
 
 #include <stdint.h>
 #include <string>
 
-#include "ignite/portable/portable_raw_writer.h"
+#include "ignite/binary/binary_raw_writer.h"
 
 namespace ignite
 {    
@@ -29,13 +34,13 @@ namespace ignite
     {
         namespace query
         {         
-            /*
+            /**
              * Text query.
              */
             class TextQuery
             {
             public:
-                /*
+                /**
                  * Constructor.
                  *
                  * @param type Type name.
@@ -47,7 +52,7 @@ namespace ignite
                     // No-op.
                 }
                 
-                /*
+                /**
                  * Get type name.
                  *
                  * @return Type name.
@@ -57,7 +62,7 @@ namespace ignite
                     return type;
                 }
 
-                /*
+                /**
                  * Set type name.
                  *
                  * @param sql Type name.
@@ -67,7 +72,7 @@ namespace ignite
                     this->type = type;
                 }
 
-                /*
+                /**
                  * Get text string.
                  *
                  * @return text string.
@@ -77,7 +82,7 @@ namespace ignite
                     return text;
                 }
 
-                /*
+                /**
                  * Set text string.
                  *
                  * @param text Text string.
@@ -87,7 +92,7 @@ namespace ignite
                     this->text = text;
                 }
 
-                /*
+                /**
                  * Get page size.
                  *
                  * @return Page size.
@@ -97,7 +102,7 @@ namespace ignite
                     return pageSize;
                 }
 
-                /*
+                /**
                  * Set page size.
                  *
                  * @param pageSize Page size.
@@ -107,7 +112,7 @@ namespace ignite
                     this->pageSize = pageSize;
                 }
 
-                /*
+                /**
                  * Get local flag.
                  *
                  * @return Local flag.
@@ -117,22 +122,22 @@ namespace ignite
                     return loc;
                 }
 
-                /*
-                    * Set local flag.
-                    *
-                    * @param loc Local flag.
-                    */
+                /**
+                 * Set local flag.
+                 *
+                 * @param loc Local flag.
+                 */
                 void SetLocal(bool loc)
                 {
                     this->loc = loc;
                 }
                 
-                /*
+                /**
                  * Write query info to the stream.
                  *
                  * @param writer Writer.
                  */
-                void Write(portable::PortableRawWriter& writer) const
+                void Write(binary::BinaryRawWriter& writer) const
                 {
                     writer.WriteBool(loc);
                     writer.WriteString(text);
@@ -141,20 +146,20 @@ namespace ignite
                 }
 
             private:
-                /* Type name. */
+                /** Type name. */
                 std::string type;
 
-                /* Text string. */
+                /** Text string. */
                 std::string text;
 
-                /* Page size. */
+                /** Page size. */
                 int32_t pageSize;
 
-                /* Local flag. */
+                /** Local flag. */
                 bool loc;
             };
         }
     }    
 }
 
-#endif
+#endif //_IGNITE_CACHE_QUERY_QUERY_TEXT

@@ -15,49 +15,60 @@
 ## limitations under the License.
 ##
 
-ACLOCAL_AMFLAGS = "-Im4"
-
-SUBDIRS = . include os/linux/include
-DIST_SUBDIRS = . include os/linux/include
-
-AM_CPPFLAGS = -I$(srcdir)/include -I$(srcdir)/os/linux/include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -DIGNITE_IMPL
-AM_CXXFLAGS = -Wall -std=c++0x
-LIB_LDFLAGS = -no-undefined -version-info 1
-
-COMMON_SRC = os/linux/src/impl/utils.cpp \
-             src/ignite_error.cpp \
-             src/guid.cpp \
-             src/impl/handle_registry.cpp \
-             src/impl/interop/interop_memory.cpp \
-             src/impl/interop/interop_input_stream.cpp \
-             src/impl/interop/interop_output_stream.cpp \
-             src/portable/portable_type.cpp \
-             src/impl/portable/portable_metadata_snapshot.cpp \
-             src/impl/portable/portable_metadata_handler.cpp \
-             src/impl/portable/portable_metadata_updater.cpp \
-             src/impl/portable/portable_metadata_manager.cpp \
-             src/impl/portable/portable_utils.cpp \
-             src/impl/portable/portable_reader_impl.cpp \
-             src/impl/portable/portable_writer_impl.cpp \
-             src/portable/portable_containers.cpp \
-             src/portable/portable_raw_reader.cpp \
-             src/portable/portable_raw_writer.cpp \
-             src/portable/portable_reader.cpp \
-             src/portable/portable_writer.cpp \
-             src/impl/portable/portable_metadata_updater_impl.cpp \
-             src/impl/ignite_environment.cpp \
-             src/impl/cache/query/query_impl.cpp \
-             src/impl/cache/cache_impl.cpp \
-             src/impl/ignite_impl.cpp \
-             src/ignite.cpp \
-             src/ignition.cpp
+ACLOCAL_AMFLAGS =-I m4
 
 lib_LTLIBRARIES = libignite.la
-libignite_la_SOURCES = $(COMMON_SRC)
-libignite_la_LDFLAGS = $(LIB_LDFLAGS) -L/usr/local/lib -lignite-common -ldl -version-info 0:0:0 -release $(PACKAGE_VERSION)
+
+SUBDIRS = \
+    include
+
+AM_CPPFLAGS = \
+    -I$(srcdir)/include \
+    -I@top_srcdir@/common/include \
+    -I@top_srcdir@/common/os/linux/include \
+    -I@top_srcdir@/binary/include \
+    -I@top_srcdir@/jni/include \
+    -I@top_srcdir@/jni/os/linux/include \
+    -I$(JAVA_HOME)/include \
+    -I$(JAVA_HOME)/include/linux \
+    -DIGNITE_IMPL
+
+AM_CXXFLAGS = \
+    -Wall \
+    -std=c++0x
+
+libignite_la_LIBADD = \
+    @top_srcdir@/jni/libignite-jni.la \
+    @top_srcdir@/binary/libignite-binary.la
+
+libignite_la_LDFLAGS = \
+    -no-undefined \
+    -ldl \
+    -version-info 0:0:0 \
+    -release $(PACKAGE_VERSION)
+
+libignite_la_DEPENDENCIES = \
+    @top_srcdir@/jni/libignite-jni.la \
+    @top_srcdir@/binary/libignite-binary.la
+
+libignite_la_SOURCES = \
+    src/ignite.cpp \
+    src/ignition.cpp \
+    src/impl/ignite_environment.cpp \
+    src/impl/binary/binary_type_updater_impl.cpp \
+    src/impl/handle_registry.cpp \
+    src/impl/cache/query/query_impl.cpp \
+    src/impl/cache/cache_impl.cpp \
+    src/impl/interop/interop_external_memory.cpp \
+    src/impl/interop/interop_target.cpp \
+    src/impl/transactions/transaction_impl.cpp \
+    src/impl/transactions/transactions_impl.cpp \
+    src/impl/ignite_impl.cpp \
+    src/transactions/transaction.cpp \
+    src/transactions/transactions.cpp
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = ignite.pc
+pkgconfig_DATA = $(srcdir)/ignite.pc
 
 clean-local:
 	$(RM) *.gcno *.gcda

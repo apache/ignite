@@ -58,21 +58,24 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritDoc /> */
-        public object Data()
+
+        public object Data
         {
-            return _data;
+            get { return _data; }
         }
 
         /** <inheritDoc /> */
-        public Exception Exception()
+
+        public Exception Exception
         {
-            return _err;
+            get { return _err; }
         }
 
         /** <inheritDoc /> */
-        public IComputeJob<object> Job()
+
+        public IComputeJob<object> Job
         {
-            return _job;
+            get { return _job; }
         }
 
         /** <inheritDoc /> */

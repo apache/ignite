@@ -18,9 +18,10 @@
 namespace Apache.Ignite.Core.Services
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Runtime.Serialization;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Indicates an error during Grid Services invocation.
@@ -29,10 +30,10 @@ namespace Apache.Ignite.Core.Services
     public class ServiceInvocationException : IgniteException
     {
         /** Serializer key. */
-        private const string KeyPortableCause = "PortableCause";
+        private const string KeyBinaryCause = "BinaryCause";
 
         /** Cause. */
-        private readonly IPortableObject _portableCause;
+        private readonly IBinaryObject _binaryCause;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ServiceInvocationException"/> class.
@@ -64,11 +65,11 @@ namespace Apache.Ignite.Core.Services
         /// Initializes a new instance of the <see cref="ServiceInvocationException"/> class.
         /// </summary>
         /// <param name="message">The message.</param>
-        /// <param name="portableCause">The portable cause.</param>
-        public ServiceInvocationException(string message, IPortableObject portableCause)
+        /// <param name="binaryCause">The binary cause.</param>
+        public ServiceInvocationException(string message, IBinaryObject binaryCause)
             :base(message)
         {
-            _portableCause = portableCause;
+            _binaryCause = binaryCause;
         }
 
         /// <summary>
@@ -79,21 +80,22 @@ namespace Apache.Ignite.Core.Services
         protected ServiceInvocationException(SerializationInfo info, StreamingContext ctx)
             : base(info, ctx)
         {
-            _portableCause = (IPortableObject) info.GetValue(KeyPortableCause, typeof (IPortableObject));
+            _binaryCause = (IBinaryObject) info.GetValue(KeyBinaryCause, typeof (IBinaryObject));
         }
 
         /// <summary>
-        /// Gets the portable cause.
+        /// Gets the binary cause.
         /// </summary>
-        public IPortableObject PortableCause
+        public IBinaryObject BinaryCause
         {
-            get { return _portableCause; }
+            get { return _binaryCause; }
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            info.AddValue(KeyPortableCause, _portableCause);
+            info.AddValue(KeyBinaryCause, _binaryCause);
 
             base.GetObjectData(info, context);
         }

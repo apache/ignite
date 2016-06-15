@@ -21,11 +21,19 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.portable.PortableRawReaderEx;
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.MarshallerContextImpl;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryNoopMetadataHandler;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryUtils;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformExtendedException;
 import org.apache.ignite.internal.processors.platform.PlatformNativeException;
@@ -34,23 +42,30 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
-import org.apache.ignite.platform.dotnet.PlatformDotNetPortableConfiguration;
-import org.apache.ignite.platform.dotnet.PlatformDotNetPortableTypeConfiguration;
+import org.apache.ignite.logger.NullLogger;
 import org.jetbrains.annotations.Nullable;
 
 import javax.cache.CacheException;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
+import java.math.BigDecimal;
+import java.security.Timestamp;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_PREFIX;
 
@@ -96,7 +111,7 @@ public class PlatformUtils {
      * @param writer Writer.
      * @param col Collection to write.
      */
-    public static <T> void writeNullableCollection(PortableRawWriterEx writer, @Nullable Collection<T> col) {
+    public static <T> void writeNullableCollection(BinaryRawWriterEx writer, @Nullable Collection<T> col) {
         writeNullableCollection(writer, col, null, null);
     }
 
@@ -107,7 +122,7 @@ public class PlatformUtils {
      * @param col Collection to write.
      * @param writeClo Writer closure.
      */
-    public static <T> void writeNullableCollection(PortableRawWriterEx writer, @Nullable Collection<T> col,
+    public static <T> void writeNullableCollection(BinaryRawWriterEx writer, @Nullable Collection<T> col,
         @Nullable PlatformWriterClosure<T> writeClo) {
         writeNullableCollection(writer, col, writeClo, null);
     }
@@ -120,7 +135,7 @@ public class PlatformUtils {
      * @param writeClo Optional writer closure.
      * @param filter Optional filter.
      */
-    public static <T> void writeNullableCollection(PortableRawWriterEx writer, @Nullable Collection<T> col,
+    public static <T> void writeNullableCollection(BinaryRawWriterEx writer, @Nullable Collection<T> col,
         @Nullable PlatformWriterClosure<T> writeClo, @Nullable IgnitePredicate<T> filter) {
         if (col != null) {
             writer.writeBoolean(true);
@@ -137,7 +152,7 @@ public class PlatformUtils {
      * @param writer Writer.
      * @param col Collection to write.
      */
-    public static <T> void writeCollection(PortableRawWriterEx writer, Collection<T> col) {
+    public static <T> void writeCollection(BinaryRawWriterEx writer, Collection<T> col) {
         writeCollection(writer, col, null, null);
     }
 
@@ -148,7 +163,7 @@ public class PlatformUtils {
      * @param col Collection to write.
      * @param writeClo Writer closure.
      */
-    public static <T> void writeCollection(PortableRawWriterEx writer, Collection<T> col,
+    public static <T> void writeCollection(BinaryRawWriterEx writer, Collection<T> col,
         @Nullable PlatformWriterClosure<T> writeClo) {
         writeCollection(writer, col, writeClo, null);
     }
@@ -161,7 +176,7 @@ public class PlatformUtils {
      * @param writeClo Optional writer closure.
      * @param filter Optional filter.
      */
-    public static <T> void writeCollection(PortableRawWriterEx writer, Collection<T> col,
+    public static <T> void writeCollection(BinaryRawWriterEx writer, Collection<T> col,
         @Nullable PlatformWriterClosure<T> writeClo, @Nullable IgnitePredicate<T> filter) {
         assert col != null;
 
@@ -202,7 +217,7 @@ public class PlatformUtils {
      * @param writer Writer.
      * @param map Map to write.
      */
-    public static <K, V> void writeNullableMap(PortableRawWriterEx writer, @Nullable Map<K, V> map) {
+    public static <K, V> void writeNullableMap(BinaryRawWriterEx writer, @Nullable Map<K, V> map) {
         if (map != null) {
             writer.writeBoolean(true);
 
@@ -218,7 +233,7 @@ public class PlatformUtils {
      * @param writer Writer.
      * @param map Map to write.
      */
-    public static <K, V> void writeMap(PortableRawWriterEx writer, Map<K, V> map) {
+    public static <K, V> void writeMap(BinaryRawWriterEx writer, Map<K, V> map) {
         assert map != null;
 
         writeMap(writer, map, null);
@@ -231,7 +246,7 @@ public class PlatformUtils {
      * @param map Map to write.
      * @param writeClo Writer closure.
      */
-    public static <K, V> void writeMap(PortableRawWriterEx writer, Map<K, V> map,
+    public static <K, V> void writeMap(BinaryRawWriterEx writer, Map<K, V> map,
         @Nullable PlatformWriterBiClosure<K, V> writeClo) {
         assert map != null;
 
@@ -255,7 +270,7 @@ public class PlatformUtils {
      * @param reader Reader.
      * @return List.
      */
-    public static <T> List<T> readCollection(PortableRawReaderEx reader) {
+    public static <T> List<T> readCollection(BinaryRawReaderEx reader) {
         return readCollection(reader, null);
     }
 
@@ -266,7 +281,7 @@ public class PlatformUtils {
      * @param readClo Optional reader closure.
      * @return List.
      */
-    public static <T> List<T> readCollection(PortableRawReaderEx reader, @Nullable PlatformReaderClosure<T> readClo) {
+    public static <T> List<T> readCollection(BinaryRawReaderEx reader, @Nullable PlatformReaderClosure<T> readClo) {
         int cnt = reader.readInt();
 
         List<T> res = new ArrayList<>(cnt);
@@ -289,7 +304,7 @@ public class PlatformUtils {
      * @param reader Reader.
      * @return List.
      */
-    public static <T> List<T> readNullableCollection(PortableRawReaderEx reader) {
+    public static <T> List<T> readNullableCollection(BinaryRawReaderEx reader) {
         return readNullableCollection(reader, null);
     }
 
@@ -299,7 +314,7 @@ public class PlatformUtils {
      * @param reader Reader.
      * @return List.
      */
-    public static <T> List<T> readNullableCollection(PortableRawReaderEx reader,
+    public static <T> List<T> readNullableCollection(BinaryRawReaderEx reader,
         @Nullable PlatformReaderClosure<T> readClo) {
         if (!reader.readBoolean())
             return null;
@@ -311,7 +326,7 @@ public class PlatformUtils {
      * @param reader Reader.
      * @return Set.
      */
-    public static <T> Set<T> readSet(PortableRawReaderEx reader) {
+    public static <T> Set<T> readSet(BinaryRawReaderEx reader) {
         int cnt = reader.readInt();
 
         Set<T> res = U.newHashSet(cnt);
@@ -326,7 +341,7 @@ public class PlatformUtils {
      * @param reader Reader.
      * @return Set.
      */
-    public static <T> Set<T> readNullableSet(PortableRawReaderEx reader) {
+    public static <T> Set<T> readNullableSet(BinaryRawReaderEx reader) {
         if (!reader.readBoolean())
             return null;
 
@@ -339,7 +354,7 @@ public class PlatformUtils {
      * @param reader Reader.
      * @return Map.
      */
-    public static <K, V> Map<K, V> readMap(PortableRawReaderEx reader) {
+    public static <K, V> Map<K, V> readMap(BinaryRawReaderEx reader) {
         return readMap(reader, null);
     }
 
@@ -350,7 +365,7 @@ public class PlatformUtils {
      * @param readClo Reader closure.
      * @return Map.
      */
-    public static <K, V> Map<K, V> readMap(PortableRawReaderEx reader,
+    public static <K, V> Map<K, V> readMap(BinaryRawReaderEx reader,
         @Nullable PlatformReaderBiClosure<K, V> readClo) {
         int cnt = reader.readInt();
 
@@ -377,7 +392,7 @@ public class PlatformUtils {
      * @param reader Reader.
      * @return Map.
      */
-    public static <K, V> Map<K, V> readNullableMap(PortableRawReaderEx reader) {
+    public static <K, V> Map<K, V> readNullableMap(BinaryRawReaderEx reader) {
         if (!reader.readBoolean())
             return null;
 
@@ -390,7 +405,7 @@ public class PlatformUtils {
      * @param writer Writer.
      * @param val Values.
      */
-    public static void writeIgniteUuid(PortableRawWriterEx writer, IgniteUuid val) {
+    public static void writeIgniteUuid(BinaryRawWriterEx writer, IgniteUuid val) {
         if (val == null)
             writer.writeUuid(null);
         else {
@@ -483,7 +498,7 @@ public class PlatformUtils {
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            PortableRawWriterEx writer = ctx.writer(out);
+            BinaryRawWriterEx writer = ctx.writer(out);
 
             int cntPos = writer.reserveInt();
 
@@ -552,7 +567,7 @@ public class PlatformUtils {
      * @param writer Writer.
      * @param evt Event.
      */
-    private static void writeCacheEntryEvent(PortableRawWriterEx writer, CacheEntryEvent evt) {
+    private static void writeCacheEntryEvent(BinaryRawWriterEx writer, CacheEntryEvent evt) {
         writer.writeObjectDetached(evt.getKey());
         writer.writeObjectDetached(evt.getOldValue());
         writer.writeObjectDetached(evt.getValue());
@@ -564,7 +579,7 @@ public class PlatformUtils {
      * @param err Error.
      * @param writer Writer.
      */
-    public static void writeErrorData(Throwable err, PortableRawWriterEx writer) {
+    public static void writeErrorData(Throwable err, BinaryRawWriterEx writer) {
         writeErrorData(err, writer, null);
     }
 
@@ -574,7 +589,7 @@ public class PlatformUtils {
      * @param writer Writer.
      * @param log Optional logger.
      */
-    public static void writeErrorData(Throwable err, PortableRawWriterEx writer, @Nullable IgniteLogger log) {
+    public static void writeErrorData(Throwable err, BinaryRawWriterEx writer, @Nullable IgniteLogger log) {
         // Write additional data if needed.
         if (err instanceof PlatformExtendedException) {
             PlatformExtendedException err0 = (PlatformExtendedException)err;
@@ -659,7 +674,7 @@ public class PlatformUtils {
                 // Write error data.
                 PlatformOutputStream out = mem.output();
 
-                PortableRawWriterEx writer = ctx.writer(out);
+                BinaryRawWriterEx writer = ctx.writer(out);
 
                 try {
                     PlatformUtils.writeErrorData(err, writer, ctx.kernalContext().log(PlatformContext.class));
@@ -696,7 +711,7 @@ public class PlatformUtils {
      * @param resObj Result.
      * @param err Error.
      */
-    public static void writeInvocationResult(PortableRawWriterEx writer, Object resObj, Exception err)
+    public static void writeInvocationResult(BinaryRawWriterEx writer, Object resObj, Exception err)
     {
         if (err == null) {
             writer.writeBoolean(true);
@@ -732,7 +747,7 @@ public class PlatformUtils {
      * @return Result.
      * @throws IgniteCheckedException When invocation result is an error.
      */
-    public static Object readInvocationResult(PlatformContext ctx, PortableRawReaderEx reader)
+    public static Object readInvocationResult(PlatformContext ctx, BinaryRawReaderEx reader)
         throws IgniteCheckedException {
         // 1. Read success flag.
         boolean success = reader.readBoolean();
@@ -764,43 +779,213 @@ public class PlatformUtils {
     }
 
     /**
-     * Write .Net configuration to the stream.
+     * Create binary marshaller.
      *
-     * @param writer Writer.
-     * @param cfg Configuration.
+     * @return Marshaller.
      */
-    public static void writeDotNetConfiguration(PortableRawWriterEx writer, PlatformDotNetConfiguration cfg) {
-        // 1. Write assemblies.
-        writeNullableCollection(writer, cfg.getAssemblies());
+    @SuppressWarnings("deprecation")
+    public static GridBinaryMarshaller marshaller() {
+        try {
+            BinaryContext ctx =
+                new BinaryContext(BinaryNoopMetadataHandler.instance(), new IgniteConfiguration(), new NullLogger());
 
-        PlatformDotNetPortableConfiguration portableCfg = cfg.getPortableConfiguration();
+            BinaryMarshaller marsh = new BinaryMarshaller();
 
-        if (portableCfg != null) {
-            writer.writeBoolean(true);
+            marsh.setContext(new MarshallerContextImpl(null));
 
-            writeNullableCollection(writer, portableCfg.getTypesConfiguration(),
-                new PlatformWriterClosure<PlatformDotNetPortableTypeConfiguration>() {
-                @Override public void write(PortableRawWriterEx writer, PlatformDotNetPortableTypeConfiguration typ) {
-                    writer.writeString(typ.getAssemblyName());
-                    writer.writeString(typ.getTypeName());
-                    writer.writeString(typ.getNameMapper());
-                    writer.writeString(typ.getIdMapper());
-                    writer.writeString(typ.getSerializer());
-                    writer.writeString(typ.getAffinityKeyFieldName());
-                    writer.writeObject(typ.getMetadataEnabled());
-                    writer.writeObject(typ.getKeepDeserialized());
-                }
-            });
+            ctx.configure(marsh, new IgniteConfiguration());
 
-            writeNullableCollection(writer, portableCfg.getTypes());
-            writer.writeString(portableCfg.getDefaultNameMapper());
-            writer.writeString(portableCfg.getDefaultIdMapper());
-            writer.writeString(portableCfg.getDefaultSerializer());
-            writer.writeBoolean(portableCfg.isDefaultMetadataEnabled());
-            writer.writeBoolean(portableCfg.isDefaultKeepDeserialized());
+            return new GridBinaryMarshaller(ctx);
         }
-        else
-            writer.writeBoolean(false);
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+    }
+
+    /**
+     * @param o Object to unwrap.
+     * @return Unwrapped object.
+     */
+    private static Object unwrapBinary(Object o) {
+        if (o == null)
+            return null;
+
+        if (knownArray(o))
+            return o;
+
+        if (o instanceof Map.Entry) {
+            Map.Entry entry = (Map.Entry)o;
+
+            Object key = entry.getKey();
+
+            Object uKey = unwrapBinary(key);
+
+            Object val = entry.getValue();
+
+            Object uVal = unwrapBinary(val);
+
+            return (key != uKey || val != uVal) ? F.t(uKey, uVal) : o;
+        }
+        else if (BinaryUtils.knownCollection(o))
+            return unwrapKnownCollection((Collection<Object>)o);
+        else if (BinaryUtils.knownMap(o))
+            return unwrapBinariesIfNeeded((Map<Object, Object>)o);
+        else if (o instanceof Object[])
+            return unwrapBinariesInArray((Object[])o);
+        else if (o instanceof BinaryObject)
+            return ((BinaryObject)o).deserialize();
+
+        return o;
+    }
+
+    /**
+     * @param obj Obj.
+     * @return True is obj is a known simple type array.
+     */
+    private static boolean knownArray(Object obj) {
+        return obj instanceof String[] ||
+            obj instanceof boolean[] ||
+            obj instanceof byte[] ||
+            obj instanceof char[] ||
+            obj instanceof int[] ||
+            obj instanceof long[] ||
+            obj instanceof short[] ||
+            obj instanceof Timestamp[] ||
+            obj instanceof double[] ||
+            obj instanceof float[] ||
+            obj instanceof UUID[] ||
+            obj instanceof BigDecimal[];
+    }
+
+    /**
+     * @param o Object to test.
+     * @return True if collection should be recursively unwrapped.
+     */
+    private static boolean knownCollection(Object o) {
+        Class<?> cls = o == null ? null : o.getClass();
+
+        return cls == ArrayList.class || cls == LinkedList.class || cls == HashSet.class;
+    }
+
+    /**
+     * @param o Object to test.
+     * @return True if map should be recursively unwrapped.
+     */
+    private static boolean knownMap(Object o) {
+        Class<?> cls = o == null ? null : o.getClass();
+
+        return cls == HashMap.class || cls == LinkedHashMap.class;
+    }
+
+    /**
+     * @param col Collection to unwrap.
+     * @return Unwrapped collection.
+     */
+    @SuppressWarnings("TypeMayBeWeakened")
+    private static Collection<Object> unwrapKnownCollection(Collection<Object> col) {
+        Collection<Object> col0 = BinaryUtils.newKnownCollection(col);
+
+        for (Object obj : col)
+            col0.add(unwrapBinary(obj));
+
+        return col0;
+    }
+
+    /**
+     * Unwrap array of binaries if needed.
+     *
+     * @param arr Array.
+     * @return Result.
+     */
+    public static Object[] unwrapBinariesInArray(Object[] arr) {
+        Object[] res = new Object[arr.length];
+
+        for (int i = 0; i < arr.length; i++)
+            res[i] = unwrapBinary(arr[i]);
+
+        return res;
+    }
+
+    /**
+     * Unwraps map.
+     *
+     * @param map Map to unwrap.
+     * @return Unwrapped collection.
+     */
+    private static Map<Object, Object> unwrapBinariesIfNeeded(Map<Object, Object> map) {
+        Map<Object, Object> map0 = BinaryUtils.newMap(map);
+
+        for (Map.Entry<Object, Object> e : map.entrySet())
+            map0.put(unwrapBinary(e.getKey()), unwrapBinary(e.getValue()));
+
+        return map0;
+    }
+    /**
+     * Create Java object.
+     *
+     * @param clsName Class name.
+     * @return Instance.
+     */
+    public static <T> T createJavaObject(String clsName) {
+        if (clsName == null)
+            throw new IgniteException("Java object/factory class name is not set.");
+
+        Class cls = U.classForName(clsName, null);
+
+        if (cls == null)
+            throw new IgniteException("Java object/factory class is not found (is it in the classpath?): " +
+                clsName);
+
+        try {
+            return (T)cls.newInstance();
+        }
+        catch (ReflectiveOperationException e) {
+            throw new IgniteException("Failed to instantiate Java object/factory class (does it have public " +
+                "default constructor?): " + clsName, e);
+        }
+    }
+
+    /**
+     * Initialize Java object or object factory.
+     *
+     * @param obj Object.
+     * @param clsName Class name.
+     * @param props Properties (optional).
+     * @param ctx Kernal context (optional).
+     */
+    public static void initializeJavaObject(Object obj, String clsName, @Nullable Map<String, Object> props,
+        @Nullable GridKernalContext ctx) {
+        if (props != null) {
+            for (Map.Entry<String, Object> prop : props.entrySet()) {
+                String fieldName = prop.getKey();
+
+                if (fieldName == null)
+                    throw new IgniteException("Java object/factory field name cannot be null: " + clsName);
+
+                Field field = U.findField(obj.getClass(), fieldName);
+
+                if (field == null)
+                    throw new IgniteException("Java object/factory class field is not found [" +
+                        "className=" + clsName + ", fieldName=" + fieldName + ']');
+
+                try {
+                    field.set(obj, prop.getValue());
+                }
+                catch (Exception e) {
+                    throw new IgniteException("Failed to set Java object/factory field [className=" + clsName +
+                        ", fieldName=" + fieldName + ", fieldValue=" + prop.getValue() + ']', e);
+                }
+            }
+        }
+
+        if (ctx != null) {
+            try {
+                ctx.resource().injectGeneric(obj);
+            }
+            catch (IgniteCheckedException e) {
+                throw new IgniteException("Failed to inject resources to Java factory: " + clsName, e);
+            }
+        }
     }
 
     /**

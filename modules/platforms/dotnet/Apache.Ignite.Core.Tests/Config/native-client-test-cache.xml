@@ -118,11 +118,12 @@
                         <property name="addresses">
                             <list>
                                 <!-- In distributed environment, replace with actual host IP address. -->
-                                <value>127.0.0.1:47500..47501</value>
+                                <value>127.0.0.1:47500</value>
                             </list>
                         </property>
                     </bean>
                 </property>
+                <property name="socketTimeout" value="300" />
             </bean>
         </property>
 
@@ -139,56 +140,5 @@
         <property name="swapEnabled" value="true"/>
         <property name="backups" value="1"/>
         <property name="eagerTtl" value="true"/>
-
-        <!--
-        <property name="typeMetadata">
-            <list>
-                <bean class="org.apache.ignite.cache.CacheTypeMetadata">
-                    <property name="valueType" value="GridPortablePerson"/>
-                    <property name="ascendingFields">
-                        <map>
-                            <entry key="age" value="java.lang.Integer"/>
-                        </map>
-                    </property>
-                    <property name="queryFields">
-                        <map>
-                            <entry key="name" value="java.lang.String"/>
-                        </map>
-                    </property>
-                    <property name="textFields">
-                        <list>
-                            <value>address</value>
-                        </list>
-                    </property>
-                </bean>
-                <bean class="org.apache.ignite.cache.CacheTypeMetadata">
-                    <property name="valueType" value="GridImplicitPortablePerson"/>
-                    <property name="ascendingFields">
-                        <map>
-                            <entry key="age" value="java.lang.Integer"/>
-                        </map>
-                    </property>
-                    <property name="queryFields">
-                        <map>
-                            <entry key="name" value="java.lang.String"/>
-                        </map>
-                    </property>
-                </bean>
-                <bean class="org.apache.ignite.cache.CacheTypeMetadata">
-                    <property name="valueType" value="GridNoDefPortablePerson"/>
-                    <property name="ascendingFields">
-                        <map>
-                            <entry key="age" value="java.lang.Integer"/>
-                        </map>
-                    </property>
-                    <property name="queryFields">
-                        <map>
-                            <entry key="name" value="java.lang.String"/>
-                        </map>
-                    </property>
-                </bean>
-            </list>
-        </property>
-        -->
     </bean>
 </beans>

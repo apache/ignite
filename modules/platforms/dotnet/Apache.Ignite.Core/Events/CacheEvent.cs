@@ -18,10 +18,11 @@
 namespace Apache.Ignite.Core.Events
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// In-memory database (cache) event.
@@ -45,9 +46,6 @@ namespace Apache.Ignite.Core.Events
 
         /** */
         private readonly IgniteGuid? _xid;
-
-        /** */
-        private readonly object _lockId;
 
         /** */
         private readonly object _newValue;
@@ -74,15 +72,14 @@ namespace Apache.Ignite.Core.Events
         /// Constructor.
         /// </summary>
         /// <param name="r">The reader to read data from.</param>
-        internal CacheEvent(IPortableRawReader r) : base(r)
+        internal CacheEvent(IBinaryRawReader r) : base(r)
         {
             _cacheName = r.ReadString();
             _partition = r.ReadInt();
             _isNear = r.ReadBoolean();
             _eventNode = ReadNode(r);
             _key = r.ReadObject<object>();
-            _xid = IgniteGuid.ReadPortable(r);
-            _lockId = r.ReadObject<object>();
+            _xid = IgniteGuid.Read(r);
             _newValue = r.ReadObject<object>();
             _oldValue = r.ReadObject<object>();
             _hasOldValue = r.ReadBoolean();
@@ -125,7 +122,9 @@ namespace Apache.Ignite.Core.Events
         /// <summary>
         /// ID of the lock if held or null if no lock held. 
         /// </summary>
-        public object LockId { get { return _lockId; } }
+        [Obsolete("LockId is no longer provided. This property is always null.")]
+        [SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic", Justification = "Compatibility")]
+        public object LockId { get { return null; } }
 
         /// <summary>
         /// Gets new value for this event. 
@@ -151,8 +150,8 @@ namespace Apache.Ignite.Core.Events
 
         /// <summary>
         /// Gets security subject ID initiated this cache event, if available. This property is available only for <see 
-        /// cref="EventType.EventCacheObjectPut" />, <see cref="EventType.EventCacheObjectRemoved" /> and <see 
-        /// cref="EventType.EventCacheObjectRead" /> cache events. Subject ID will be set either to nodeId initiated 
+        /// cref="EventType.CacheObjectPut" />, <see cref="EventType.CacheObjectRemoved" /> and <see 
+        /// cref="EventType.CacheObjectRead" /> cache events. Subject ID will be set either to nodeId initiated 
         /// cache update or read or client ID initiated cache update or read. 
         /// </summary>
         public Guid? SubjectId { get { return _subjectId; } }
@@ -166,9 +165,11 @@ namespace Apache.Ignite.Core.Events
         /// Gets task name if cache event was caused by an operation initiated within task execution. 
         /// </summary>
         public string TaskName { get { return _taskName; } }
-        
-        /** <inheritDoc /> */
-	    public override string ToShortString()
+
+        /// <summary>
+        /// Gets shortened version of ToString result.
+        /// </summary>
+        public override string ToShortString()
 	    {
             return string.Format(CultureInfo.InvariantCulture, 
                 "{0}: IsNear={1}, Key={2}, HasNewValue={3}, HasOldValue={4}, NodeId={5}", Name, 

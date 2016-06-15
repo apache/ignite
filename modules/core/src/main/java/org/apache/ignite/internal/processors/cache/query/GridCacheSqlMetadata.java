@@ -78,6 +78,26 @@ public interface GridCacheSqlMetadata extends Externalizable {
     @Nullable public Map<String, String> fields(String type);
 
     /**
+     * @return Key classes.
+     */
+    public Map<String, String> keyClasses();
+
+    /**
+     * @return Value classes.
+     */
+    public Map<String, String> valClasses();
+
+    /**
+     * @return Fields.
+     */
+    public Map<String, Map<String, String>> fields();
+
+    /**
+     * @return Indexes.
+     */
+    public Map<String, Collection<GridCacheSqlIndexMetadata>> indexes();
+
+    /**
      * Gets descriptors of indexes created for provided type.
      * See {@link GridCacheSqlIndexMetadata} javadoc for more information.
      *

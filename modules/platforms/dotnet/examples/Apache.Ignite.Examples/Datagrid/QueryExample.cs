@@ -19,9 +19,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Apache.Ignite.Core;
+using Apache.Ignite.Core.Cache.Configuration;
 using Apache.Ignite.Core.Cache;
 using Apache.Ignite.Core.Cache.Query;
-using Apache.Ignite.ExamplesDll.Portable;
+using Apache.Ignite.ExamplesDll.Binary;
 
 namespace Apache.Ignite.Examples.Datagrid
 {
@@ -36,27 +37,32 @@ namespace Apache.Ignite.Examples.Datagrid
     /// 3) Start example (F5 or Ctrl+F5).
     /// <para />
     /// This example can be run with standalone Apache Ignite.NET node:
-    /// 1) Run %IGNITE_HOME%/platforms/dotnet/Apache.Ignite/bin/${Platform]/${Configuration}/Apache.Ignite.exe:
-    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\example-cache-query.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
+    /// 1) Run %IGNITE_HOME%/platforms/dotnet/bin/Apache.Ignite.exe:
+    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\examples-config.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
     /// 2) Start example.
     /// </summary>
     public class QueryExample
     {
+        /// <summary>Cache name.</summary>
+        private const string CacheName = "dotnet_cache_query";
+
         [STAThread]
         public static void Main()
         {
-            var cfg = new IgniteConfiguration
-            {
-                SpringConfigUrl = @"platforms\dotnet\examples\config\example-cache-query.xml",
-                JvmOptions = new List<string> { "-Xms512m", "-Xmx1024m" }
-            };
-
-            using (var ignite = Ignition.Start(cfg))
+            using (var ignite = Ignition.Start(@"platforms\dotnet\examples\config\examples-config.xml"))
             {
                 Console.WriteLine();
                 Console.WriteLine(">>> Cache query example started.");
 
-                var cache = ignite.GetCache<object, object>(null);
+                var cache = ignite.GetOrCreateCache<object, object>(new CacheConfiguration
+                {
+                    Name = CacheName,
+                    QueryEntities = new[]
+                    {
+                        new QueryEntity(typeof(int), typeof(Organization)),
+                        new QueryEntity(typeof(EmployeeKey), typeof(Employee))
+                    }
+                });
 
                 // Clean up caches on all nodes before run.
                 cache.Clear();
@@ -65,7 +71,7 @@ namespace Apache.Ignite.Examples.Datagrid
                 PopulateCache(cache);
 
                 // Create cache that will work with specific types.
-                var employeeCache = ignite.GetCache<EmployeeKey, Employee>(null);
+                var employeeCache = ignite.GetCache<EmployeeKey, Employee>(CacheName);
 
                 // Run SQL query example.
                 SqlQueryExample(employeeCache);

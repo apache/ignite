@@ -18,7 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
 {
     using Apache.Ignite.Core.Cache.Event;
-    using Apache.Ignite.Core.Impl.Portable.IO;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Resource;
     using CQU = ContinuousQueryUtils;
 
@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// </summary>
         /// <param name="stream">Stream.</param>
         /// <returns>Result.</returns>
-        bool Evaluate(IPortableStream stream);
+        bool Evaluate(IBinaryStream stream);
 
         /// <summary>
         /// Inject grid.
@@ -60,8 +60,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /** Actual filter. */
         private readonly ICacheEntryEventFilter<TK, TV> _filter;
 
-        /** Keep portable flag. */
-        private readonly bool _keepPortable;
+        /** Keep binary flag. */
+        private readonly bool _keepBinary;
 
         /** Ignite hosting the filter. */
         private volatile Ignite _ignite;
@@ -73,17 +73,17 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// Constructor.
         /// </summary>
         /// <param name="filter">Actual filter.</param>
-        /// <param name="keepPortable">Keep portable flag.</param>
-        public ContinuousQueryFilter(ICacheEntryEventFilter<TK, TV> filter, bool keepPortable)
+        /// <param name="keepBinary">Keep binary flag.</param>
+        public ContinuousQueryFilter(ICacheEntryEventFilter<TK, TV> filter, bool keepBinary)
         {
             _filter = filter;
-            _keepPortable = keepPortable;
+            _keepBinary = keepBinary;
         }
 
         /** <inheritDoc /> */
-        public bool Evaluate(IPortableStream stream)
+        public bool Evaluate(IBinaryStream stream)
         {
-            ICacheEntryEvent<TK, TV> evt = CQU.ReadEvent<TK, TV>(stream, _ignite.Marshaller, _keepPortable);
+            ICacheEntryEvent<TK, TV> evt = CQU.ReadEvent<TK, TV>(stream, _ignite.Marshaller, _keepBinary);
 
             return _filter.Evaluate(evt);
         }

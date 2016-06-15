@@ -20,16 +20,18 @@ namespace Apache.Ignite.Core.Impl
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
+    using System.Threading.Tasks;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Datastream;
     using Apache.Ignite.Core.DataStructures;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cluster;
-    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Messaging;
-    using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Services;
     using Apache.Ignite.Core.Transactions;
 
@@ -37,7 +39,7 @@ namespace Apache.Ignite.Core.Impl
     /// Grid proxy with fake serialization.
     /// </summary>
     [Serializable]
-    internal class IgniteProxy : IIgnite, IClusterGroupEx, IPortableWriteAware, ICluster
+    internal class IgniteProxy : IIgnite, IClusterGroupEx, IBinaryWriteAware, ICluster
     {
         /** */
         [NonSerialized]
@@ -232,13 +234,42 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration)
+        {
+            return _ignite.GetOrCreateCache<TK, TV>(configuration);
+        }
+
+        /** <inheritdoc /> */
+        public ICache<TK, TV> GetOrCreateCache<TK, TV>(CacheConfiguration configuration, NearCacheConfiguration nearConfiguration)
+        {
+            return _ignite.GetOrCreateCache<TK, TV>(configuration, nearConfiguration);
+        }
+
+        /** <inheritdoc /> */
         public ICache<TK, TV> CreateCache<TK, TV>(string name)
         {
             return _ignite.CreateCache<TK, TV>(name);
         }
 
         /** <inheritdoc /> */
+        public ICache<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration)
+        {
+            return _ignite.CreateCache<TK, TV>(configuration);
+        }
 
+        /** <inheritdoc /> */
+        public ICache<TK, TV> CreateCache<TK, TV>(CacheConfiguration configuration, NearCacheConfiguration nearConfiguration)
+        {
+            return _ignite.CreateCache<TK, TV>(configuration, nearConfiguration);
+        }
+
+        /** <inheritdoc /> */
+        public void DestroyCache(string name)
+        {
+            _ignite.DestroyCache(name);
+        }
+
+        /** <inheritdoc /> */
         public IClusterNode GetLocalNode()
         {
             return _ignite.GetCluster().GetLocalNode();
@@ -269,15 +300,21 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public Task<bool> ClientReconnectTask
+        {
+            get { return _ignite.GetCluster().ClientReconnectTask; }
+        }
+
+        /** <inheritdoc /> */
         public IDataStreamer<TK, TV> GetDataStreamer<TK, TV>(string cacheName)
         {
             return _ignite.GetDataStreamer<TK, TV>(cacheName);
         }
 
         /** <inheritdoc /> */
-        public IPortables GetPortables()
+        public IBinary GetBinary()
         {
-            return _ignite.GetPortables();
+            return _ignite.GetBinary();
         }
 
         /** <inheritdoc /> */
@@ -318,7 +355,43 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public IgniteConfiguration GetConfiguration()
+        {
+            return _ignite.GetConfiguration();
+        }
+
+        /** <inheritdoc /> */
+        public ICache<TK, TV> CreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration)
+        {
+            return _ignite.CreateNearCache<TK, TV>(name, configuration);
+        }
+
+        /** <inheritdoc /> */
+        public ICache<TK, TV> GetOrCreateNearCache<TK, TV>(string name, NearCacheConfiguration configuration)
+        {
+            return _ignite.GetOrCreateNearCache<TK, TV>(name, configuration);
+        }
+
+        /** <inheritdoc /> */
+        public ICollection<string> GetCacheNames()
+        {
+            return _ignite.GetCacheNames();
+        }
+
+        /** <inheritdoc /> */
+        public IAtomicSequence GetAtomicSequence(string name, long initialValue, bool create)
+        {
+            return _ignite.GetAtomicSequence(name, initialValue, create);
+        }
+
+        /** <inheritdoc /> */
+        public IAtomicReference<T> GetAtomicReference<T>(string name, T initialValue, bool create)
+        {
+            return _ignite.GetAtomicReference(name, initialValue, create);
+        }
+
+        /** <inheritdoc /> */
+        public void WriteBinary(IBinaryWriter writer)
         {
             // No-op.
         }
@@ -335,9 +408,9 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
-        public IPortableMetadata GetMetadata(int typeId)
+        public IBinaryType GetBinaryType(int typeId)
         {
-            return ((IClusterGroupEx)_ignite).GetMetadata(typeId);
+            return ((IClusterGroupEx)_ignite).GetBinaryType(typeId);
         }
     }
 }

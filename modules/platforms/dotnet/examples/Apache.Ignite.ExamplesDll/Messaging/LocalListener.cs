@@ -24,7 +24,7 @@ namespace Apache.Ignite.ExamplesDll.Messaging
     /// <summary>
     /// Local message listener which signals countdown event on each received message.
     /// </summary>
-    public class LocalListener : IMessageFilter<int>
+    public class LocalListener : IMessageListener<int>
     {
         /** Countdown event. */
         private readonly CountdownEvent _countdown;

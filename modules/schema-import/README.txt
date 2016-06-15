@@ -17,19 +17,19 @@ Use Schema Import Utility for generation of type mapping and domain model in Jav
 
 For example you may use the following script for create sample type 'Person' in your RDBMS system:
 
-create table PERSON(id integer not null, firstName varchar(50), lastName varchar(50), PRIMARY KEY(id));
+create table PERSON(id integer not null PRIMARY KEY, first_name varchar(50), last_name varchar(50), salary double);
 
-insert into PERSON(id, first_name, last_name) values(1, 'Johannes', 'Kepler');
-insert into PERSON(id, first_name, last_name) values(2, 'Galileo', 'Galilei');
-insert into PERSON(id, first_name, last_name) values(3, 'Henry', 'More');
-insert into PERSON(id, first_name, last_name) values(4, 'Polish', 'Brethren');
-insert into PERSON(id, first_name, last_name) values(5, 'Robert', 'Boyle');
-insert into PERSON(id, first_name, last_name) values(6, 'Isaac', 'Newton');
+insert into PERSON(id, first_name, first_name, salary) values(1, 'Johannes', 'Kepler', 1000);
+insert into PERSON(id, first_name, first_name, salary) values(2, 'Galileo', 'Galilei', 1200);
+insert into PERSON(id, first_name, first_name, salary) values(3, 'Henry', 'More', 1150);
+insert into PERSON(id, first_name, first_name, salary) values(4, 'Polish', 'Brethren', 2000);
+insert into PERSON(id, first_name, first_name, salary) values(5, 'Robert', 'Boyle', 2500);
+insert into PERSON(id, first_name, first_name, salary) values(6, 'Isaac', 'Newton', 1300);
 
 The Ignite Schema Import utility generates the following artifacts:
- # Java POJO key and value classes
- # XML CacheTypeMetadata configuration
- # Java configuration snippet (alternative to XML)
+ # Java POJO key and value classes (enter "org.apache.ignite.schema" package name before generation).
+ # XML CacheTypeMetadata configuration.
+ # Java configuration snippet (alternative to XML).
 
 After you exit from the wizard, you should:
  # Copy generated POJO java classes to you project source folder.
@@ -42,6 +42,9 @@ After you exit from the wizard, you should:
 
 Example of spring configuration:
 
+<!-- Sample data source. -->
+<bean id="myDataSource" class="org.h2.jdbcx.JdbcDataSource"/>
+
 <bean class="org.apache.ignite.configuration.IgniteConfiguration">
     ...
     <!-- Cache configuration. -->
@@ -52,67 +55,63 @@ Example of spring configuration:
 
                 <!-- Cache store. -->
                 <property name="cacheStoreFactory">
-                    <bean class="javax.cache.configuration.FactoryBuilder$SingletonFactory">
-                        <constructor-arg>
-                            <bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore">
-                                <property name="dataSource">
-                                    <!-- TODO: Need specify connection pooling DataSource to your RDBMS system. -->
-                                    ...
-                                </property>
-                            </bean>
-                        </constructor-arg>
-                    </bean>
-                </property>
-
-                <!-- Type mapping description. -->
-                <property name="typeMetadata">
-                    <list>
-                        <bean class="org.apache.ignite.cache.CacheTypeMetadata">
-                            <property name="databaseTable" value="PERSON"/>
-                            <property name="keyType" value="org.apache.ignite.examples.datagrid.store.model.PersonKey"/>
-                            <property name="valueType" value="org.apache.ignite.examples.datagrid.store.Person"/>
-                            <property name="keyFields">
+                    <bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory">
+                        <property name="dataSourceBean" value="myDataSource"/>
+                        <bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore">
+                            <property name="dataSourceBean" value="myDataSource" />
+                            <property name="types">
                                 <list>
-                                    <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                                        <property name="databaseName" value="ID"/>
-                                        <property name="databaseType">
-                                            <util:constant static-field="java.sql.Types.BIGINT"/>
+                                    <bean class="org.apache.ignite.cache.store.jdbc.JdbcType">
+                                        <property name="cacheName" value="myCache" />
+                                        <property name="databaseSchema" value="MY_DB_SCHEMA" />
+                                        <property name="databaseTable" value="PERSON" />
+                                        <property name="keyType" value="java.lang.Integer" />
+                                        <property name="keyFields">
+                                            <list>
+                                                <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                                    <property name="databaseFieldType" >
+                                                        <util:constant static-field="java.sql.Types.INTEGER"/>
+                                                    </property>
+                                                    <property name="databaseFieldName" value="ID" />
+                                                    <property name="javaFieldType" value="java.lang.Integer" />
+                                                    <property name="javaFieldName" value="id" />
+                                                </bean>
+                                            </list>
                                         </property>
-                                        <property name="javaName" value="id"/>
-                                        <property name="javaType" value="long"/>
-                                    </bean>
-                                </list>
-                            </property>
-                            <property name="valueFields">
-                                <list>
-                                    <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                                        <property name="databaseName" value="ID"/>
-                                        <property name="databaseType">
-                                            <util:constant static-field="java.sql.Types.BIGINT"/>
+                                        <property name="valueType" value="my.company.Person" />
+                                        <property name="valueFields">
+                                            <list>
+                                                <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                                    <property name="databaseFieldType" >
+                                                        <util:constant static-field="java.sql.Types.VARCHAR"/>
+                                                    </property>
+                                                    <property name="databaseFieldName" value="first_name" />
+                                                    <property name="javaFieldType" value="java.lang.String" />
+                                                    <property name="javaFieldName" value="firstName" />
+                                                </bean>
+                                                <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                                    <property name="databaseFieldType" >
+                                                        <util:constant static-field="java.sql.Types.VARCHAR"/>
+                                                    </property>
+                                                    <property name="databaseFieldName" value="last_name" />
+                                                    <property name="javaFieldType" value="java.lang.String" />
+                                                    <property name="javaFieldName" value="lastName" />
+                                                </bean>
+                                                <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                                                    <property name="databaseFieldType" >
+                                                        <util:constant static-field="java.sql.Types.DOUBLE"/>
+                                                    </property>
+                                                    <property name="databaseFieldName" value="salary" />
+                                                    <property name="javaFieldType" value="java.lang.Double" />
+                                                    <property name="javaFieldName" value="salary" />
+                                                </bean>
+                                            </list>
                                         </property>
-                                        <property name="javaName" value="id"/>
-                                        <property name="javaType" value="long"/>
-                                    </bean>
-                                    <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                                        <property name="databaseName" value="FIRST_NAME"/>
-                                        <property name="databaseType">
-                                            <util:constant static-field="java.sql.Types.VARCHAR"/>
-                                        </property>
-                                        <property name="javaName" value="firstName"/>
-                                        <property name="javaType" value="java.lang.String"/>
-                                    </bean>
-                                    <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                                        <property name="databaseName" value="LAST_NAME"/>
-                                        <property name="databaseType">
-                                            <util:constant static-field="java.sql.Types.VARCHAR"/>
-                                        </property>
-                                        <property name="javaName" value="lastName"/>
-                                        <property name="javaType" value="java.lang.String"/>
                                     </bean>
                                 </list>
                             </property>
                         </bean>
-                    </list>
+                    </bean>
                 </property>
                 ...
             </bean>
@@ -127,44 +126,46 @@ IgniteConfiguration cfg = new IgniteConfiguration();
 ...
 CacheConfiguration ccfg = new CacheConfiguration<>();
 
-DataSource dataSource = null; // TODO: Need specify connection pooling DataSource to your RDBMS system.
-
-// Create store.
-CacheJdbcPojoStore store = new CacheJdbcPojoStore();
-store.setDataSource(dataSource);
-
 // Create store factory.
-ccfg.setCacheStoreFactory(new FactoryBuilder.SingletonFactory<>(store));
+CacheJdbcPojoStoreFactory storeFactory = new CacheJdbcPojoStoreFactory();
+storeFactory.setDataSourceBean("myDataSource");
+
+// Configure cache types.
+Collection<JdbcType> jdbcTypes = new ArrayList<>();
+
+// PERSON type mapping.
+JdbcType jdbcType = new JdbcType();
+
+jdbcType.setCacheName(CACHE_NAME);
+
+jdbcType.setDatabaseSchema("MY_DB_SCHEMA");
+jdbcType.setDatabaseTable("PERSON");
+
+jdbcType.setKeyType("java.lang.Integer");
+jdbcType.setValueType("my.company.Person");
+
+// Key fields for PERSONS.
+jdbcType.setKeyFields(F.asArray(new JdbcType(Types.INTEGER, "ID", Integer.class, "id")));
+
+// Value fields for PERSONS.
+jdbcType.setValueFields(F.asArray(
+    new JdbcType(Types.INTEGER, "ID", int.class, "id"),
+    new JdbcType(Types.VARCHAR, "first_name", String.class, "firstName"),
+    new JdbcType(Types.VARCHAR, "last_name", String.class, "lastName"),
+    new JdbcType(Types.DOUBLE, "salary", Double.class, "salary")
+));
+
+storeFactory.setTypes(jdbcTypes.toArray(new JdbcType[]));
 
 // Configure cache to use store.
 ccfg.setReadThrough(true);
 ccfg.setWriteThrough(true);
-
-// Configure cache types.
-Collection<CacheTypeMetadata> meta = new ArrayList<>();
-
-// PERSON type mapping.
-CacheTypeMetadata tm = new CacheTypeMetadata();
-
-tm.setDatabaseTable("PERSON");
-
-tm.setKeyType("java.lang.Long");
-tm.setValueType("org.apache.ignite.examples.datagrid.store.Person");
-
-// Key fields for PERSONS.
-tm.setKeyFields(F.asList(new CacheTypeFieldMetadata("ID", Types.BIGINT, "id", Long.class)));
-
-// Value fields for PERSONS.
-tm.setValueFields(F.asList(
-    new CacheTypeFieldMetadata("ID", Types.BIGINT, "id", long.class),
-    new CacheTypeFieldMetadata("FIRST_NAME", Types.VARCHAR, "firstName", String.class),
-    new CacheTypeFieldMetadata("LAST_NAME", Types.VARCHAR, "lastName", String.class)
-));
-...
-ccfg.setTypeMetadata(tm);
+ccfg.setCacheStoreFactory(storeFactory);
 
 cfg.setCacheConfiguration(ccfg);
+
 ...
+
 // Start Ignite node.
 Ignition.start(cfg);
 
@@ -183,6 +184,7 @@ Performance optimization.
 
 1. Use DataSource with connection pool.
 2. Enable write-behind feature by default write-behind is disabled.
+   Note, write-behind should not be used with TRANSACTIONAL caches.
 
 Example of spring configuration:
 

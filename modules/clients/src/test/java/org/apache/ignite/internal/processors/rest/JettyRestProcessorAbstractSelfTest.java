@@ -24,21 +24,82 @@ import java.io.Serializable;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLEncoder;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
+import net.sf.json.JSONNull;
 import net.sf.json.JSONObject;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
+import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.configuration.FileSystemConfiguration;
+import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper;
+import org.apache.ignite.igfs.IgfsIpcEndpointConfiguration;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
+import org.apache.ignite.internal.processors.cache.query.GridCacheSqlIndexMetadata;
+import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandler;
+import org.apache.ignite.internal.util.lang.GridTuple3;
+import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.P1;
+import org.apache.ignite.internal.util.typedef.internal.SB;
+import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.visor.cache.VisorCacheClearTask;
+import org.apache.ignite.internal.visor.cache.VisorCacheConfigurationCollectorTask;
+import org.apache.ignite.internal.visor.cache.VisorCacheLoadTask;
+import org.apache.ignite.internal.visor.cache.VisorCacheMetadataTask;
+import org.apache.ignite.internal.visor.cache.VisorCacheMetricsCollectorTask;
+import org.apache.ignite.internal.visor.cache.VisorCacheNodesTask;
+import org.apache.ignite.internal.visor.cache.VisorCacheRebalanceTask;
+import org.apache.ignite.internal.visor.cache.VisorCacheResetMetricsTask;
+import org.apache.ignite.internal.visor.cache.VisorCacheStartTask;
+import org.apache.ignite.internal.visor.cache.VisorCacheStopTask;
+import org.apache.ignite.internal.visor.cache.VisorCacheSwapBackupsTask;
+import org.apache.ignite.internal.visor.compute.VisorComputeCancelSessionsTask;
+import org.apache.ignite.internal.visor.compute.VisorComputeResetMetricsTask;
+import org.apache.ignite.internal.visor.compute.VisorComputeToggleMonitoringTask;
+import org.apache.ignite.internal.visor.compute.VisorGatewayTask;
+import org.apache.ignite.internal.visor.debug.VisorThreadDumpTask;
+import org.apache.ignite.internal.visor.file.VisorFileBlockTask;
+import org.apache.ignite.internal.visor.file.VisorLatestTextFilesTask;
+import org.apache.ignite.internal.visor.igfs.VisorIgfsFormatTask;
+import org.apache.ignite.internal.visor.igfs.VisorIgfsProfilerClearTask;
+import org.apache.ignite.internal.visor.igfs.VisorIgfsProfilerTask;
+import org.apache.ignite.internal.visor.igfs.VisorIgfsResetMetricsTask;
+import org.apache.ignite.internal.visor.igfs.VisorIgfsSamplingStateTask;
+import org.apache.ignite.internal.visor.log.VisorLogSearchTask;
+import org.apache.ignite.internal.visor.misc.VisorAckTask;
+import org.apache.ignite.internal.visor.misc.VisorLatestVersionTask;
+import org.apache.ignite.internal.visor.misc.VisorResolveHostNameTask;
+import org.apache.ignite.internal.visor.node.VisorNodeConfigurationCollectorTask;
+import org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTask;
+import org.apache.ignite.internal.visor.node.VisorNodeDataCollectorTaskArg;
+import org.apache.ignite.internal.visor.node.VisorNodeEventsCollectorTask;
+import org.apache.ignite.internal.visor.node.VisorNodeGcTask;
+import org.apache.ignite.internal.visor.node.VisorNodePingTask;
+import org.apache.ignite.internal.visor.node.VisorNodeSuppressedErrorsTask;
+import org.apache.ignite.internal.visor.query.VisorQueryArg;
+import org.apache.ignite.internal.visor.query.VisorQueryCleanupTask;
+import org.apache.ignite.internal.visor.query.VisorQueryNextPageTask;
+import org.apache.ignite.internal.visor.query.VisorQueryTask;
+import org.apache.ignite.lang.IgniteBiPredicate;
+import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.testframework.GridTestUtils;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_JETTY_PORT;
@@ -84,6 +145,13 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     protected abstract int restPort();
 
     /**
+     * @return Security enabled flag. Should be the same with {@code ctx.security().enabled()}.
+     */
+    protected boolean securityEnabled() {
+        return false;
+    }
+
+    /**
      * @param params Command parameters.
      * @return Returned content.
      * @throws Exception If failed.
@@ -120,7 +188,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @param ptrn Pattern to match.
      */
     @SuppressWarnings("TypeMayBeWeakened")
-    private void jsonEquals(String json, String ptrn) {
+    protected void jsonEquals(String json, String ptrn) {
         assertTrue("JSON mismatch [json=" + json + ", ptrn=" + ptrn + ']', Pattern.matches(ptrn, json));
     }
 
@@ -133,7 +201,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         return "\\{\\\"affinityNodeId\\\":\\\"\\w{8}-\\w{4}-\\w{4}-\\w{4}-\\w{12}\\\"\\," +
             "\\\"error\\\":\\\"\\\"\\," +
             "\\\"response\\\":\\\"" + res + "\\\"\\," +
-            "\\\"sessionToken\\\":\\\"\\\"," +
+            "\\\"sessionToken\\\":\\\"" + (securityEnabled() && success ? ".+" : "") + "\\\"," +
             "\\\"successStatus\\\":" + (success ? 0 : 1) + "\\}";
     }
 
@@ -157,7 +225,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     private String integerPattern(int res, boolean success) {
         return "\\{\\\"error\\\":\\\"\\\"\\," +
             "\\\"response\\\":" + res + "\\," +
-            "\\\"sessionToken\\\":\\\"\\\"," +
+            "\\\"sessionToken\\\":\\\"" + (securityEnabled() && success ? ".+" : "") + "\\\"," +
             "\\\"successStatus\\\":" + (success ? 0 : 1) + "\\}";
     }
 
@@ -170,7 +238,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         return "\\{\\\"affinityNodeId\\\":\\\"\\\"\\," +
             "\\\"error\\\":\\\"\\\"\\," +
             "\\\"response\\\":" + res + "\\," +
-            "\\\"sessionToken\\\":\\\"\\\"," +
+            "\\\"sessionToken\\\":\\\"" + (securityEnabled() && success ? ".+" : "") + "\\\"," +
             "\\\"successStatus\\\":" + (success ? 0 : 1) + "\\}";
     }
 
@@ -183,7 +251,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         return "\\{\\\"affinityNodeId\\\":\\\"\\\"\\," +
             "\\\"error\\\":\\\"\\\"\\," +
             "\\\"response\\\":" + res + "\\," +
-            "\\\"sessionToken\\\":\\\"\\\"," +
+            "\\\"sessionToken\\\":\\\"" + (securityEnabled() && success ? ".+" : "") + "\\\"," +
             "\\\"successStatus\\\":" + (success ? 0 : 1) + "\\}";
     }
 
@@ -196,7 +264,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         return "\\{\\\"affinityNodeId\\\":\\\"\\w{8}-\\w{4}-\\w{4}-\\w{4}-\\w{12}\\\"\\," +
             "\\\"error\\\":\\\"\\\"\\," +
             "\\\"response\\\":" + res + "\\," +
-            "\\\"sessionToken\\\":\\\"\\\"," +
+            "\\\"sessionToken\\\":\\\"" + (securityEnabled() && success ? ".+" : "") + "\\\"," +
             "\\\"successStatus\\\":" + (success ? 0 : 1) + "\\}";
     }
 
@@ -209,7 +277,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         return "\\{\\\"affinityNodeId\\\":\\\"\\\"\\," +
             "\\\"error\\\":\\\"\\\"\\," +
             "\\\"response\\\":" + res + "\\," +
-            "\\\"sessionToken\\\":\\\"\\\"," +
+            "\\\"sessionToken\\\":\\\"" + (securityEnabled() && success ? ".+" : "") + "\\\"," +
             "\\\"successStatus\\\":" + (success ? 0 : 1) + "\\}";
     }
 
@@ -222,7 +290,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         return "\\{\\\"affinityNodeId\\\":\\\"(\\w{8}-\\w{4}-\\w{4}-\\w{4}-\\w{12})?\\\"\\," +
             "\\\"error\\\":\\\"\\\"\\," +
             "\\\"response\\\":" + res + "\\," +
-            "\\\"sessionToken\\\":\\\"\\\"," +
+            "\\\"sessionToken\\\":\\\"" + (securityEnabled() && success ? ".+" : "") + "\\\"," +
             "\\\"successStatus\\\":" + (success ? 0 : 1) + "\\}";
     }
 
@@ -231,10 +299,10 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @param success Success flag.
      * @return Regex pattern for JSON.
      */
-    private String pattern(String res, boolean success) {
+    protected String pattern(String res, boolean success) {
         return "\\{\\\"error\\\":\\\"" + (!success ? ".+" : "") + "\\\"\\," +
             "\\\"response\\\":" + res + "\\," +
-            "\\\"sessionToken\\\":\\\"\\\"," +
+            "\\\"sessionToken\\\":\\\"" + (securityEnabled() && success ? ".+" : "") + "\\\"," +
             "\\\"successStatus\\\":" + (success ? 0 : 1) + "\\}";
     }
 
@@ -246,7 +314,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     private String stringPattern(String res, boolean success) {
         return "\\{\\\"error\\\":\\\"" + (!success ? ".+" : "") + "\\\"\\," +
             "\\\"response\\\":\\\"" + res + "\\\"\\," +
-            "\\\"sessionToken\\\":\\\"\\\"," +
+            "\\\"sessionToken\\\":\\\"" + (securityEnabled() && success ? ".+" : "") + "\\\"," +
             "\\\"successStatus\\\":" + (success ? 0 : 1) + "\\}";
     }
 
@@ -900,6 +968,120 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     }
 
     /**
+     * @param metas Metadata for Ignite caches.
+     * @throws Exception If failed.
+     */
+    private void testMetadata(Collection<GridCacheSqlMetadata> metas) throws Exception {
+        Map<String, String> params = F.asMap("cmd", GridRestCommand.CACHE_METADATA.key());
+
+        String cacheNameArg = F.first(metas).cacheName();
+
+        if (cacheNameArg != null)
+            params.put("cacheName", cacheNameArg);
+
+        String ret = content(params);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        info("Cache metadata result: " + ret);
+
+        jsonEquals(ret, pattern("\\[.+\\]", true));
+
+        Collection<Map> results = (Collection)JSONObject.fromObject(ret).get("response");
+
+        assertEquals(metas.size(), results.size());
+        assertEquals(cacheNameArg, F.first(results).get("cacheName"));
+
+        for (Map res : results) {
+            final Object cacheName = res.get("cacheName");
+
+            GridCacheSqlMetadata meta = F.find(metas, null, new P1<GridCacheSqlMetadata>() {
+                @Override public boolean apply(GridCacheSqlMetadata meta) {
+                    return F.eq(meta.cacheName(), cacheName);
+                }
+            });
+
+            assertNotNull("REST return metadata for unexpected cache: " + cacheName, meta);
+
+            Collection types = (Collection)res.get("types");
+
+            assertNotNull(types);
+            assertEqualsCollections(meta.types(), types);
+
+            Map keyClasses = (Map)res.get("keyClasses");
+
+            assertNotNull(keyClasses);
+            assertTrue(meta.keyClasses().equals(keyClasses));
+
+            Map valClasses = (Map)res.get("valClasses");
+
+            assertNotNull(valClasses);
+            assertTrue(meta.valClasses().equals(valClasses));
+
+            Map fields = (Map)res.get("fields");
+
+            assertNotNull(fields);
+            assertTrue(meta.fields().equals(fields));
+
+            Map indexesByType = (Map)res.get("indexes");
+
+            assertNotNull(indexesByType);
+            assertEquals(meta.indexes().size(), indexesByType.size());
+
+            for (Map.Entry<String, Collection<GridCacheSqlIndexMetadata>> metaIndexes : meta.indexes().entrySet()) {
+                Collection<Map> indexes = (Collection<Map>)indexesByType.get(metaIndexes.getKey());
+
+                assertNotNull(indexes);
+                assertEquals(metaIndexes.getValue().size(), indexes.size());
+
+                for (final GridCacheSqlIndexMetadata metaIdx : metaIndexes.getValue()) {
+                    Map idx = F.find(indexes, null, new P1<Map>() {
+                        @Override public boolean apply(Map map) {
+                            return metaIdx.name().equals(map.get("name"));
+                        }
+                    });
+
+                    assertNotNull(idx);
+
+                    assertEqualsCollections(metaIdx.fields(), (Collection)idx.get("fields"));
+                    assertEqualsCollections(metaIdx.descendings(), (Collection)idx.get("descendings"));
+                    assertEquals(metaIdx.unique(), idx.get("unique"));
+                }
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMetadataLocal() throws Exception {
+        IgniteCacheProxy<?, ?> cache = F.first(grid(0).context().cache().publicCaches());
+
+        assertNotNull("Should have configured public cache!", cache);
+
+        Collection<GridCacheSqlMetadata> meta = cache.context().queries().sqlMetadata();
+
+        testMetadata(meta);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMetadataRemote() throws Exception {
+        CacheConfiguration<Integer, String> partialCacheCfg = new CacheConfiguration<>("partial");
+
+        partialCacheCfg.setIndexedTypes(Integer.class, String.class);
+        partialCacheCfg.setNodeFilter(new NodeIdFilter(grid(1).localNode().id()));
+
+        IgniteCacheProxy<Integer, String> c = (IgniteCacheProxy<Integer, String>)grid(1).createCache(partialCacheCfg);
+
+        Collection<GridCacheSqlMetadata> metas = c.context().queries().sqlMetadata();
+
+        testMetadata(metas);
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testTopology() throws Exception {
@@ -911,6 +1093,40 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         info("Topology command result: " + ret);
 
         jsonEquals(ret, pattern("\\[\\{.+\\}\\]", true));
+
+        JSONObject json = JSONObject.fromObject(ret);
+
+        Collection<Map> nodes = (Collection)json.get("response");
+
+        assertEquals(GRID_CNT, nodes.size());
+
+        for (Map node : nodes) {
+            assertEquals(JSONNull.getInstance(), node.get("attributes"));
+            assertEquals(JSONNull.getInstance(), node.get("metrics"));
+
+            Collection<Map> caches = (Collection)node.get("caches");
+
+            Collection<IgniteCacheProxy<?, ?>> publicCaches = grid(0).context().cache().publicCaches();
+
+            assertNotNull(caches);
+            assertEquals(publicCaches.size(), caches.size());
+
+            for (Map cache : caches) {
+                final String cacheName = cache.get("name").equals("") ? null : (String)cache.get("name");
+
+                IgniteCacheProxy<?, ?> publicCache = F.find(publicCaches, null, new P1<IgniteCacheProxy<?, ?>>() {
+                    @Override public boolean apply(IgniteCacheProxy<?, ?> c) {
+                        return F.eq(c.getName(), cacheName);
+                    }
+                });
+
+                assertNotNull(publicCache);
+
+                CacheMode cacheMode = CacheMode.valueOf((String)cache.get("mode"));
+
+                assertEquals(publicCache.getConfiguration(CacheConfiguration.class).getCacheMode(),cacheMode);
+            }
+        }
     }
 
     /**
@@ -1006,6 +1222,414 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     }
 
     /**
+     * Tests execution of Visor tasks via {@link VisorGatewayTask}.
+     *
+     * @throws Exception If failed.
+     */
+    public void testVisorGateway() throws Exception {
+        ClusterNode locNode = grid(1).localNode();
+
+        final String successRes = pattern(
+            "\\{\\\"error\\\":\\\"\\\",\\\"finished\\\":true,\\\"id\\\":\\\"[^\\\"]+\\\",\\\"result\\\":.+}", true);
+
+        final IgniteUuid cid = grid(1).context().cache().internalCache("person").context().dynamicDeploymentId();
+
+        String ret = content(new VisorGatewayArgument(VisorCacheConfigurationCollectorTask.class)
+            .forNode(locNode)
+            .collection(IgniteUuid.class, cid));
+
+        info("VisorCacheConfigurationCollectorTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new VisorGatewayArgument(VisorCacheNodesTask.class)
+            .forNode(locNode)
+            .argument("person"));
+
+        info("VisorCacheNodesTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new VisorGatewayArgument(VisorCacheLoadTask.class)
+            .forNode(locNode)
+            .tuple3(Set.class, Long.class, Object[].class, "person", 0, "null"));
+
+        info("VisorCacheLoadTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new VisorGatewayArgument(VisorCacheSwapBackupsTask.class)
+            .forNode(locNode)
+            .set(String.class, "person"));
+
+        info("VisorCacheSwapBackupsTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new VisorGatewayArgument(VisorCacheRebalanceTask.class)
+            .forNode(locNode)
+            .set(String.class, "person"));
+
+        info("VisorCacheRebalanceTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new VisorGatewayArgument(VisorCacheMetadataTask.class)
+            .forNode(locNode)
+            .argument("person"));
+
+        info("VisorCacheMetadataTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new VisorGatewayArgument(VisorCacheResetMetricsTask.class)
+            .forNode(locNode)
+            .argument("person"));
+
+        info("VisorCacheResetMetricsTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new VisorGatewayArgument(VisorIgfsSamplingStateTask.class)
+            .forNode(locNode)
+            .pair(String.class, Boolean.class, "igfs", false));
+
+        info("VisorIgfsSamplingStateTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new VisorGatewayArgument(VisorIgfsProfilerClearTask.class)
+            .forNode(locNode)
+            .argument("igfs"));
+
+        info("VisorIgfsProfilerClearTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new VisorGatewayArgument(VisorIgfsProfilerTask.class)
+            .forNode(locNode)
+            .argument("igfs"));
+
+        info("VisorIgfsProfilerTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new VisorGatewayArgument(VisorIgfsFormatTask.class)
+            .forNode(locNode)
+            .argument("igfs"));
+
+        info("VisorIgfsFormatTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new VisorGatewayArgument(VisorIgfsResetMetricsTask.class)
+            .forNode(locNode)
+            .set(String.class, "igfs"));
+
+        info("VisorIgfsResetMetricsTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new VisorGatewayArgument(VisorThreadDumpTask.class)
+            .forNode(locNode));
+
+        info("VisorThreadDumpTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new VisorGatewayArgument(VisorLatestTextFilesTask.class)
+            .forNode(locNode)
+            .pair(String.class, String.class, "", ""));
+
+        info("VisorLatestTextFilesTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new VisorGatewayArgument(VisorLatestVersionTask.class)
+            .forNode(locNode));
+
+        info("VisorLatestVersionTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new VisorGatewayArgument(VisorFileBlockTask.class)
+            .forNode(locNode)
+            .argument(VisorFileBlockTask.VisorFileBlockArg.class, "", 0L, 1, 0L));
+
+        info("VisorFileBlockTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new VisorGatewayArgument(VisorNodePingTask.class)
+            .forNode(locNode)
+            .argument(UUID.class, locNode.id()));
+
+        info("VisorNodePingTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new VisorGatewayArgument(VisorNodeConfigurationCollectorTask.class)
+            .forNode(locNode));
+
+        info("VisorNodeConfigurationCollectorTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new VisorGatewayArgument(VisorComputeResetMetricsTask.class)
+            .forNode(locNode));
+
+        info("VisorComputeResetMetricsTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new VisorGatewayArgument(VisorQueryTask.class)
+            .forNode(locNode)
+            .argument(VisorQueryArg.class, "person", URLEncoder.encode("select * from Person"), false, 1));
+
+        info("VisorQueryTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        JSONObject json = JSONObject.fromObject(ret);
+
+        final String qryId = (String)((Map)((Map)((Map)json.get("response")).get("result")).get("value")).get("queryId");
+
+        ret = content(new VisorGatewayArgument(VisorQueryNextPageTask.class)
+            .forNode(locNode)
+            .pair(String.class, Integer.class, qryId, 1));
+
+        info("VisorQueryNextPageTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new VisorGatewayArgument(VisorQueryCleanupTask.class)
+            .map(UUID.class, Set.class, F.asMap(locNode.id(), qryId)));
+
+        info("VisorQueryCleanupTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new VisorGatewayArgument(VisorResolveHostNameTask.class)
+            .forNode(locNode));
+
+        info("VisorResolveHostNameTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        // Multinode tasks
+
+        ret = content(new VisorGatewayArgument(VisorComputeCancelSessionsTask.class)
+            .map(UUID.class, Set.class, new HashMap()));
+
+        info("VisorComputeCancelSessionsTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new VisorGatewayArgument(VisorCacheMetricsCollectorTask.class)
+            .pair(Boolean.class, Set.class, false, "person"));
+
+        info("VisorCacheMetricsCollectorTask result: " + ret);
+
+        ret = content(new VisorGatewayArgument(VisorCacheMetricsCollectorTask.class)
+            .forNodes(grid(1).cluster().nodes())
+            .pair(Boolean.class, Set.class, false, "person"));
+
+        info("VisorCacheMetricsCollectorTask (with nodes) result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new VisorGatewayArgument(VisorLogSearchTask.class)
+            .argument(VisorLogSearchTask.VisorLogSearchArg.class, ".", ".", "abrakodabra.txt", 1));
+
+        info("VisorLogSearchTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new VisorGatewayArgument(VisorNodeGcTask.class));
+
+        info("VisorNodeGcTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new VisorGatewayArgument(VisorAckTask.class)
+            .argument("MSG"));
+
+        info("VisorAckTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new VisorGatewayArgument(VisorNodeEventsCollectorTask.class)
+            .argument(VisorNodeEventsCollectorTask.VisorNodeEventsCollectorTaskArg.class,
+                "null", "null", "null", "taskName", "null"));
+
+        info("VisorNodeEventsCollectorTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new VisorGatewayArgument(VisorNodeDataCollectorTask.class)
+            .argument(VisorNodeDataCollectorTaskArg.class, false,
+                "CONSOLE_" + UUID.randomUUID(), UUID.randomUUID(), 10, false));
+
+        info("VisorNodeDataCollectorTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new VisorGatewayArgument(VisorComputeToggleMonitoringTask.class)
+            .pair(String.class, Boolean.class, UUID.randomUUID(), false));
+
+        info("VisorComputeToggleMonitoringTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new VisorGatewayArgument(VisorNodeSuppressedErrorsTask.class)
+            .map(UUID.class, Long.class, new HashMap()));
+
+        info("VisorNodeSuppressedErrorsTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new VisorGatewayArgument(VisorCacheClearTask.class)
+            .forNode(locNode)
+            .argument("person"));
+
+        info("VisorCacheClearTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        /** Spring XML to start cache via Visor task. */
+        final String START_CACHE =
+            "<beans xmlns=\"http://www.springframework.org/schema/beans\"\n" +
+                    "    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" +
+                    "    xsi:schemaLocation=\"http://www.springframework.org/schema/beans\n" +
+                    "        http://www.springframework.org/schema/beans/spring-beans-2.5.xsd\">\n" +
+                    "    <bean id=\"cacheConfiguration\" class=\"org.apache.ignite.configuration.CacheConfiguration\">\n" +
+                    "        <property name=\"cacheMode\" value=\"PARTITIONED\"/>\n" +
+                    "        <property name=\"name\" value=\"c\"/>\n" +
+                    "   </bean>\n" +
+                    "</beans>";
+
+        ret = content(new VisorGatewayArgument(VisorCacheStartTask.class)
+            .argument(VisorCacheStartTask.VisorCacheStartArg.class, false, "person2", URLEncoder.encode(START_CACHE)));
+
+        info("VisorCacheStartTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+
+        ret = content(new VisorGatewayArgument(VisorCacheStopTask.class)
+            .forNode(locNode)
+            .argument(String.class, "c"));
+
+        info("VisorCacheStopTask result: " + ret);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        jsonEquals(ret, successRes);
+    }
+
+    /**
      * @throws Exception If failed.
      */
     public void testVersion() throws Exception {
@@ -1044,6 +1668,75 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         assertEquals(2, items.size());
 
         assertFalse(queryCursorFound());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQueryScan() throws Exception {
+        Map<String, String> params = new HashMap<>();
+        params.put("cmd", GridRestCommand.EXECUTE_SCAN_QUERY.key());
+        params.put("pageSize", "10");
+        params.put("cacheName", "person");
+
+        String ret = content(params);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        JSONObject json = JSONObject.fromObject(ret);
+
+        List items = (List)((Map)json.get("response")).get("items");
+
+        assertEquals(4, items.size());
+
+        assertFalse(queryCursorFound());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFilterQueryScan() throws Exception {
+        Map<String, String> params = new HashMap<>();
+        params.put("cmd", GridRestCommand.EXECUTE_SCAN_QUERY.key());
+        params.put("pageSize", "10");
+        params.put("cacheName", "person");
+        params.put("className", ScanFilter.class.getName());
+
+        String ret = content(params);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        JSONObject json = JSONObject.fromObject(ret);
+
+        List items = (List)((Map)json.get("response")).get("items");
+
+        assertEquals(2, items.size());
+
+        assertFalse(queryCursorFound());
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testIncorrectFilterQueryScan() throws Exception {
+        Map<String, String> params = new HashMap<>();
+        params.put("cmd", GridRestCommand.EXECUTE_SCAN_QUERY.key());
+        params.put("pageSize", "10");
+        params.put("cacheName", "person");
+        params.put("className", ScanFilter.class.getName() + 1);
+
+        String ret = content(params);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        JSONObject json = JSONObject.fromObject(ret);
+
+        String err = (String)json.get("error");
+
+        assertTrue(err.contains("Failed to find target class"));
     }
 
     /**
@@ -1202,6 +1895,46 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         assertFalse(queryCursorFound());
     }
 
+    /**
+     * @throws Exception If failed.
+     */
+    public void testQueryDelay() throws Exception {
+        String qry = "salary > ? and salary <= ?";
+
+        Map<String, String> params = new HashMap<>();
+        params.put("cmd", GridRestCommand.EXECUTE_SQL_QUERY.key());
+        params.put("type", "Person");
+        params.put("pageSize", "1");
+        params.put("cacheName", "person");
+        params.put("qry", URLEncoder.encode(qry));
+        params.put("arg1", "1000");
+        params.put("arg2", "2000");
+
+        String ret = null;
+
+        for (int i = 0; i < 10; ++i)
+            ret = content(params);
+
+        assertNotNull(ret);
+        assertTrue(!ret.isEmpty());
+
+        JSONObject json = JSONObject.fromObject(ret);
+
+        List items = (List)((Map)json.get("response")).get("items");
+
+        assertEquals(1, items.size());
+
+        assertTrue(queryCursorFound());
+
+        U.sleep(10000);
+
+        assertFalse(queryCursorFound());
+    }
+
+    /**
+     * @return Signature.
+     * @throws Exception If failed.
+     */
     protected abstract String signature() throws Exception;
 
     /**
@@ -1229,6 +1962,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      */
     private void initCache() {
         CacheConfiguration<Integer, Person> personCacheCfg = new CacheConfiguration<>("person");
+
         personCacheCfg.setIndexedTypes(Integer.class, Person.class);
 
         IgniteCache<Integer, Person> personCache = grid(0).getOrCreateCache(personCacheCfg);
@@ -1315,5 +2049,280 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         public Integer getId() {
             return id;
         }
+    }
+
+    /**
+     * Test filter for scan query.
+     */
+    public static class ScanFilter implements IgniteBiPredicate<Integer, Person> {
+        /** {@inheritDoc} */
+        @Override public boolean apply(Integer integer, Person person) {
+            return person.salary > 1000;
+        }
+    }
+
+    /** Filter by node ID. */
+    private static class NodeIdFilter implements IgnitePredicate<ClusterNode> {
+        /** */
+        private final UUID nid;
+
+        /**
+         * @param nid Node ID where cache should be started.
+         */
+        NodeIdFilter(UUID nid) {
+            this.nid = nid;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean apply(ClusterNode n) {
+            return n.id().equals(nid);
+        }
+    }
+
+    /**
+     * Helper for build {@link VisorGatewayTask} arguments.
+     */
+    public static class VisorGatewayArgument extends HashMap<String, String> {
+        /** Latest argument index. */
+        private int idx = 3;
+
+        /**
+         * Construct helper object.
+         *
+         * @param cls Class of executed task.
+         */
+        public VisorGatewayArgument(Class cls) {
+            super(F.asMap(
+                "cmd", GridRestCommand.EXE.key(),
+                "name", VisorGatewayTask.class.getName(),
+                "p1", "null",
+                "p2", cls.getName()
+            ));
+        }
+
+        /**
+         * Execute task on node.
+         *
+         * @param node Node.
+         * @return This helper for chaining method calls.
+         */
+        public VisorGatewayArgument forNode(ClusterNode node) {
+            put("p1", node.id().toString());
+
+            return this;
+        }
+
+        /**
+         * Prepare list of node IDs.
+         *
+         * @param nodes Collection of nodes.
+         * @return This helper for chaining method calls.
+         */
+        public VisorGatewayArgument forNodes(Collection<ClusterNode> nodes) {
+            put("p1", concat(F.transform(nodes, new C1<ClusterNode, UUID>() {
+                /** {@inheritDoc} */
+                @Override public UUID apply(ClusterNode node) {
+                    return node.id();
+                }
+            }).toArray(), ";"));
+
+            return this;
+        }
+
+        /**
+         * Add string argument.
+         *
+         * @param val Value.
+         * @return This helper for chaining method calls.
+         */
+        public VisorGatewayArgument argument(String val) {
+            put("p" + idx++, String.class.getName());
+            put("p" + idx++, val);
+
+            return this;
+        }
+
+        /**
+         * Add custom class argument.
+         *
+         * @param cls Class.
+         * @param vals Values.
+         * @return This helper for chaining method calls.
+         */
+        public VisorGatewayArgument argument(Class cls, Object ... vals) {
+            put("p" + idx++, cls.getName());
+
+            for (Object val : vals)
+                put("p" + idx++, val != null ? val.toString() : null);
+
+            return this;
+        }
+
+        /**
+         * Add collection argument.
+         *
+         * @param cls Class.
+         * @param vals Values.
+         * @return This helper for chaining method calls.
+         */
+        public VisorGatewayArgument collection(Class cls, Object ... vals) {
+            put("p" + idx++, Collection.class.getName());
+            put("p" + idx++, cls.getName());
+            put("p" + idx++, concat(vals, ";"));
+
+            return this;
+        }
+
+        /**
+         * Add tuple argument.
+         *
+         * @param keyCls Key class.
+         * @param valCls Values class.
+         * @param key Key.
+         * @param val Value.
+         * @return This helper for chaining method calls.
+         */
+        public VisorGatewayArgument pair(Class keyCls, Class valCls, Object key, Object val) {
+            put("p" + idx++, IgniteBiTuple.class.getName());
+            put("p" + idx++, keyCls.getName());
+            put("p" + idx++, valCls.getName());
+            put("p" + idx++, key != null ? key.toString() : "null");
+            put("p" + idx++, val != null ? val.toString() : "null");
+
+            return this;
+        }
+
+        /**
+         * Add tuple argument.
+         *
+         * @param firstCls Class of first argument.
+         * @param secondCls Class of second argument.
+         * @param thirdCls Class of third argument.
+         * @param first First argument.
+         * @param second Second argument.
+         * @param third Third argument.
+         * @return This helper for chaining method calls.
+         */
+        public VisorGatewayArgument tuple3(Class firstCls, Class secondCls, Class thirdCls,
+            Object first, Object second, Object third) {
+            put("p" + idx++, GridTuple3.class.getName());
+            put("p" + idx++, firstCls.getName());
+            put("p" + idx++, secondCls.getName());
+            put("p" + idx++, thirdCls.getName());
+            put("p" + idx++, first != null ? first.toString() : "null");
+            put("p" + idx++, second != null ? second.toString() : "null");
+            put("p" + idx++, third != null ? third.toString() : "null");
+
+            return this;
+        }
+
+        /**
+         * Add set argument.
+         *
+         * @param cls Class.
+         * @param vals Values.
+         * @return This helper for chaining method calls.
+         */
+        public VisorGatewayArgument set(Class cls, Object ... vals) {
+            put("p" + idx++, Set.class.getName());
+            put("p" + idx++, cls.getName());
+            put("p" + idx++, concat(vals, ";"));
+
+            return this;
+        }
+
+        /**
+         * Add map argument.
+         *
+         * @param keyCls Key class.
+         * @param valCls Value class.
+         * @param map Map.
+         */
+        public VisorGatewayArgument map(Class keyCls, Class valCls, Map<?, ?> map) {
+            put("p" + idx++, Map.class.getName());
+            put("p" + idx++, keyCls.getName());
+            put("p" + idx++, valCls.getName());
+
+            SB sb = new SB();
+
+            boolean first = true;
+
+            for (Map.Entry<?, ?> entry : map.entrySet()) {
+                if (!first)
+                    sb.a(";");
+
+                sb.a(entry.getKey());
+
+                if (entry.getValue() != null)
+                    sb.a("=").a(entry.getValue());
+
+                first = false;
+            }
+
+            put("p" + idx++, URLEncoder.encode(sb.toString()));
+
+            return this;
+        }
+
+        /**
+         * Concat object with delimiter.
+         *
+         * @param vals Values.
+         * @param delim Delimiter.
+         */
+        private static String concat(Object[] vals, String delim) {
+            SB sb = new SB();
+
+            boolean first = true;
+
+            for (Object val : vals) {
+                if (!first)
+                    sb.a(delim);
+
+                sb.a(val);
+
+                first = false;
+            }
+
+            return sb.toString();
+        };
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        CacheConfiguration cacheIgfs_data = new CacheConfiguration();
+
+        cacheIgfs_data.setName("igfs-data");
+        cacheIgfs_data.setCacheMode(CacheMode.PARTITIONED);
+        cacheIgfs_data.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        cacheIgfs_data.setBackups(0);
+
+        cacheIgfs_data.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+
+        cacheIgfs_data.setAffinityMapper(new IgfsGroupDataBlocksKeyMapper(512));
+
+        CacheConfiguration cacheIgfs_meta = new CacheConfiguration();
+
+        cacheIgfs_meta.setName("igfs-meta");
+        cacheIgfs_meta.setCacheMode(CacheMode.REPLICATED);
+        cacheIgfs_meta.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+
+        cacheIgfs_meta.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
+
+        cfg.setCacheConfiguration(cfg.getCacheConfiguration()[0], cacheIgfs_data, cacheIgfs_meta);
+
+        FileSystemConfiguration igfs = new FileSystemConfiguration();
+
+        igfs.setName("igfs");
+        igfs.setDataCacheName("igfs-data");
+        igfs.setMetaCacheName("igfs-meta");
+
+        igfs.setIpcEndpointConfiguration(new IgfsIpcEndpointConfiguration());
+
+        cfg.setFileSystemConfiguration(igfs);
+
+        return cfg;
     }
 }

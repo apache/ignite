@@ -19,28 +19,29 @@ package org.apache.ignite.internal.processors.platform.dotnet;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryBasicIdMapper;
+import org.apache.ignite.binary.BinaryBasicNameMapper;
+import org.apache.ignite.binary.BinaryIdMapper;
+import org.apache.ignite.binary.BinaryNameMapper;
+import org.apache.ignite.configuration.BinaryConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
-import org.apache.ignite.internal.MarshallerContextImpl;
-import org.apache.ignite.internal.portable.GridPortableMarshaller;
-import org.apache.ignite.internal.portable.PortableContext;
-import org.apache.ignite.internal.portable.PortableMetaDataHandler;
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractConfigurationClosure;
 import org.apache.ignite.internal.processors.platform.lifecycle.PlatformLifecycleBean;
-import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManagerImpl;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
+import org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
-import org.apache.ignite.marshaller.portable.PortableMarshaller;
 import org.apache.ignite.platform.dotnet.PlatformDotNetLifecycleBean;
-import org.apache.ignite.portable.PortableException;
-import org.apache.ignite.portable.PortableMetadata;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -90,18 +91,55 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
         igniteCfg.setPlatformConfiguration(dotNetCfg0);
 
-        // Check marshaller
+        // Check marshaller.
         Marshaller marsh = igniteCfg.getMarshaller();
 
         if (marsh == null) {
-            igniteCfg.setMarshaller(new PortableMarshaller());
+            igniteCfg.setMarshaller(new BinaryMarshaller());
 
             dotNetCfg0.warnings(Collections.singleton("Marshaller is automatically set to " +
-                PortableMarshaller.class.getName() + " (other nodes must have the same marshaller type)."));
+                BinaryMarshaller.class.getName() + " (other nodes must have the same marshaller type)."));
         }
-        else if (!(marsh instanceof PortableMarshaller))
-            throw new IgniteException("Unsupported marshaller (only " + PortableMarshaller.class.getName() +
+        else if (!(marsh instanceof BinaryMarshaller))
+            throw new IgniteException("Unsupported marshaller (only " + BinaryMarshaller.class.getName() +
                 " can be used when running Apache Ignite.NET): " + marsh.getClass().getName());
+
+        BinaryConfiguration bCfg = igniteCfg.getBinaryConfiguration();
+
+        if (bCfg == null) {
+            bCfg = new BinaryConfiguration();
+
+            bCfg.setNameMapper(new BinaryBasicNameMapper(true));
+            bCfg.setIdMapper(new BinaryBasicIdMapper(true));
+
+            igniteCfg.setBinaryConfiguration(bCfg);
+
+            dotNetCfg0.warnings(Collections.singleton("Binary configuration is automatically initiated, " +
+                "note that binary name mapper is set to " + bCfg.getNameMapper()
+                + " and binary ID mapper is set to " + bCfg.getIdMapper()
+                + " (other nodes must have the same binary name and ID mapper types)."));
+        }
+        else {
+            BinaryNameMapper nameMapper = bCfg.getNameMapper();
+
+            if (nameMapper == null) {
+                bCfg.setNameMapper(new BinaryBasicNameMapper(true));
+
+                dotNetCfg0.warnings(Collections.singleton("Binary name mapper is automatically set to " +
+                    bCfg.getNameMapper()
+                    + " (other nodes must have the same binary name mapper type)."));
+            }
+
+            BinaryIdMapper idMapper = bCfg.getIdMapper();
+
+            if (idMapper == null) {
+                bCfg.setIdMapper(new BinaryBasicIdMapper(true));
+
+                dotNetCfg0.warnings(Collections.singleton("Binary ID mapper is automatically set to " +
+                    bCfg.getIdMapper()
+                    + " (other nodes must have the same binary ID mapper type)."));
+            }
+        }
 
         // Set Ignite home so that marshaller context works.
         String ggHome = igniteCfg.getIgniteHome();
@@ -131,23 +169,23 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
      */
     @SuppressWarnings("ConstantConditions")
     private void prepare(IgniteConfiguration igniteCfg, PlatformDotNetConfigurationEx interopCfg) {
-        this.cfg = igniteCfg;
+        cfg = igniteCfg;
 
         try (PlatformMemory outMem = memMgr.allocate()) {
             try (PlatformMemory inMem = memMgr.allocate()) {
                 PlatformOutputStream out = outMem.output();
 
-                PortableRawWriterEx writer = marshaller().writer(out);
+                GridBinaryMarshaller marshaller = PlatformUtils.marshaller();
+                BinaryRawWriterEx writer = marshaller.writer(out);
 
-                PlatformUtils.writeDotNetConfiguration(writer, interopCfg.unwrap());
+                PlatformConfigurationUtils.writeDotNetConfiguration(writer, interopCfg.unwrap());
 
                 List<PlatformDotNetLifecycleBean> beans = beans(igniteCfg);
 
                 writer.writeInt(beans.size());
 
                 for (PlatformDotNetLifecycleBean bean : beans) {
-                    writer.writeString(bean.getAssemblyName());
-                    writer.writeString(bean.getClassName());
+                    writer.writeString(bean.getTypeName());
                     writer.writeMap(bean.getProperties());
                 }
 
@@ -156,7 +194,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
                 gate.extensionCallbackInLongLongOutLong(
                     PlatformUtils.OP_PREPARE_DOT_NET, outMem.pointer(), inMem.pointer());
 
-                processPrepareResult(inMem.input());
+                processPrepareResult(marshaller.reader(inMem.input()));
             }
         }
     }
@@ -166,8 +204,10 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
      *
      * @param in Input stream.
      */
-    private void processPrepareResult(PlatformInputStream in) {
+    private void processPrepareResult(BinaryReaderExImpl in) {
         assert cfg != null;
+
+        PlatformConfigurationUtils.readIgniteConfiguration(in, cfg);
 
         List<PlatformDotNetLifecycleBean> beans = beans(cfg);
         List<PlatformLifecycleBean> newBeans = new ArrayList<>();
@@ -219,37 +259,5 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
         }
 
         return res;
-    }
-
-    /**
-     * Create portable marshaller.
-     *
-     * @return Marshaller.
-     */
-    @SuppressWarnings("deprecation")
-    private static GridPortableMarshaller marshaller() {
-        try {
-            PortableContext ctx = new PortableContext(new PortableMetaDataHandler() {
-                @Override public void addMeta(int typeId, PortableMetadata meta)
-                    throws PortableException {
-                    // No-op.
-                }
-
-                @Override public PortableMetadata metadata(int typeId) throws PortableException {
-                    return null;
-                }
-            }, null);
-
-            PortableMarshaller marsh = new PortableMarshaller();
-
-            marsh.setContext(new MarshallerContextImpl(null));
-
-            ctx.configure(marsh);
-
-            return new GridPortableMarshaller(ctx);
-        }
-        catch (IgniteCheckedException e) {
-            throw U.convertException(e);
-        }
     }
 }

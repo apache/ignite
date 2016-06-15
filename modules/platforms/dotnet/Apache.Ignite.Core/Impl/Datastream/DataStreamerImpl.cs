@@ -19,12 +19,13 @@ namespace Apache.Ignite.Core.Impl.Datastream
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading;
-    using Apache.Ignite.Core.Common;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Datastream;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
@@ -86,7 +87,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         private long _topVer;
 
         /** Topology size. */
-        private int _topSize;
+        private int _topSize = 1;
         
         /** Buffer send size. */
         private volatile int _bufSndSize;
@@ -103,8 +104,8 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /** Receiver handle. */
         private long _rcvHnd;
 
-        /** Receiver portable mode. */
-        private readonly bool _keepPortable;
+        /** Receiver binary mode. */
+        private readonly bool _keepBinary;
 
         /// <summary>
         /// Constructor.
@@ -112,12 +113,12 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
         /// <param name="cacheName">Cache name.</param>
-        /// <param name="keepPortable">Portable flag.</param>
-        public DataStreamerImpl(IUnmanagedTarget target, PortableMarshaller marsh, string cacheName, bool keepPortable)
+        /// <param name="keepBinary">Binary flag.</param>
+        public DataStreamerImpl(IUnmanagedTarget target, Marshaller marsh, string cacheName, bool keepBinary)
             : base(target, marsh)
         {
             _cacheName = cacheName;
-            _keepPortable = keepPortable;
+            _keepBinary = keepBinary;
 
             // Create empty batch.
             _batch = new DataStreamerBatch<TK, TV>();
@@ -326,13 +327,13 @@ namespace Apache.Ignite.Core.Impl.Datastream
         }
 
         /** <inheritDoc /> */
-        public IFuture Future
+        public Task Task
         {
             get
             {
                 ThrowIfDisposed();
 
-                return _closeFut;
+                return _closeFut.Task;
             }
         }
 
@@ -361,9 +362,9 @@ namespace Apache.Ignite.Core.Impl.Datastream
                         return;
 
                     var rcvHolder = new StreamReceiverHolder(value,
-                        (rec, grid, cache, stream, keepPortable) =>
+                        (rec, grid, cache, stream, keepBinary) =>
                             StreamReceiverHolder.InvokeReceiver((IStreamReceiver<TK, TV>) rec, grid, cache, stream,
-                                keepPortable));
+                                keepBinary));
 
                     var rcvHnd0 = handleRegistry.Allocate(rcvHolder);
 
@@ -396,7 +397,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         }
 
         /** <inheritDoc /> */
-        public IFuture AddData(TK key, TV val)
+        public Task AddData(TK key, TV val)
         {
             ThrowIfDisposed(); 
             
@@ -406,7 +407,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         }
 
         /** <inheritDoc /> */
-        public IFuture AddData(KeyValuePair<TK, TV> pair)
+        public Task AddData(KeyValuePair<TK, TV> pair)
         {
             ThrowIfDisposed();
 
@@ -414,7 +415,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         }
         
         /** <inheritDoc /> */
-        public IFuture AddData(ICollection<KeyValuePair<TK, TV>> entries)
+        public Task AddData(ICollection<KeyValuePair<TK, TV>> entries)
         {
             ThrowIfDisposed();
 
@@ -424,7 +425,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         }
 
         /** <inheritDoc /> */
-        public IFuture RemoveData(TK key)
+        public Task RemoveData(TK key)
         {
             ThrowIfDisposed();
 
@@ -505,16 +506,16 @@ namespace Apache.Ignite.Core.Impl.Datastream
         }
 
         /** <inheritDoc /> */
-        public IDataStreamer<TK1, TV1> WithKeepPortable<TK1, TV1>()
+        public IDataStreamer<TK1, TV1> WithKeepBinary<TK1, TV1>()
         {
-            if (_keepPortable)
+            if (_keepBinary)
             {
                 var result = this as IDataStreamer<TK1, TV1>;
 
                 if (result == null)
                     throw new InvalidOperationException(
-                        "Can't change type of portable streamer. WithKeepPortable has been called on an instance of " +
-                        "portable streamer with incompatible generic arguments.");
+                        "Can't change type of binary streamer. WithKeepBinary has been called on an instance of " +
+                        "binary streamer with incompatible generic arguments.");
 
                 return result;
             }
@@ -537,6 +538,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                     if (_batch != null)
                         _batch.Send(this, PlcCancelClose);
                 }
+                // ReSharper disable once EmptyGeneralCatchClause
                 catch (Exception)
                 {
                     // Finalizers should never throw
@@ -544,9 +546,9 @@ namespace Apache.Ignite.Core.Impl.Datastream
 
                 Marshaller.Ignite.HandleRegistry.Release(_hnd, true);
                 Marshaller.Ignite.HandleRegistry.Release(_rcvHnd, true);
-
-                base.Dispose(false);
             }
+
+            base.Dispose(false);
         }
 
         /** <inheritDoc /> */
@@ -567,9 +569,9 @@ namespace Apache.Ignite.Core.Impl.Datastream
                 if (_topVer < topVer)
                 {
                     _topVer = topVer;
-                    _topSize = topSize;
+                    _topSize = topSize > 0 ? topSize : 1;  // Do not set to 0 to avoid 0 buffer size.
 
-                    _bufSndSize = topSize * UU.DataStreamerPerNodeBufferSizeGet(Target);
+                    _bufSndSize = _topSize * UU.DataStreamerPerNodeBufferSizeGet(Target);
                 }
             }
             finally
@@ -585,9 +587,11 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// <param name="val">Value.</param>
         /// <param name="cnt">Items count.</param>
         /// <returns>Future.</returns>
-        private IFuture Add0(object val, int cnt)
+        private Task Add0(object val, int cnt)
         {
             int bufSndSize0 = _bufSndSize;
+
+            Debug.Assert(bufSndSize0 > 0);
 
             while (true)
             {
@@ -610,7 +614,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
                     // Batch is too big, schedule flush.
                     Flush0(batch0, false, PlcContinue);
 
-                return batch0.Future;
+                return batch0.Task;
             }
         }
 
@@ -642,7 +646,7 @@ namespace Apache.Ignite.Core.Impl.Datastream
         /// Start write.
         /// </summary>
         /// <returns>Writer.</returns>
-        internal void Update(Action<PortableWriterImpl> action)
+        internal void Update(Action<BinaryWriter> action)
         {
             _rwLock.EnterReadLock();
 

@@ -26,8 +26,8 @@ import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.portable.PortableRawReaderEx;
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.PlatformProcessor;
 import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
@@ -52,13 +52,13 @@ public class PlatformCacheEntryProcessorImpl implements PlatformCacheEntryProces
     /** Indicates that remove has been called on an entry  */
     private static final byte ENTRY_STATE_REMOVED = 2;
 
-    /** Indicates error in processor that is written as portable.  */
-    private static final byte ENTRY_STATE_ERR_PORTABLE = 3;
+    /** Indicates error in processor that is written as binary.  */
+    private static final byte ENTRY_STATE_ERR_BINARY = 3;
 
     /** Indicates error in processor that is written as string.  */
     private static final byte ENTRY_STATE_ERR_STRING = 4;
 
-    /** Native portable processor */
+    /** Native binary processor */
     private Object proc;
 
     /** Pointer to processor in the native platform. */
@@ -74,7 +74,7 @@ public class PlatformCacheEntryProcessorImpl implements PlatformCacheEntryProces
     /**
      * Constructor.
      *
-     * @param proc Native portable processor
+     * @param proc Native binary processor
      * @param ptr Pointer to processor in the native platform.
      */
     public PlatformCacheEntryProcessorImpl(Object proc, long ptr) {
@@ -119,7 +119,7 @@ public class PlatformCacheEntryProcessorImpl implements PlatformCacheEntryProces
         try (PlatformMemory outMem = ctx.memory().allocate()) {
             PlatformOutputStream out = outMem.output();
 
-            PortableRawWriterEx writer = ctx.writer(out);
+            BinaryRawWriterEx writer = ctx.writer(out);
 
             writeEntryAndProcessor(entry, writer);
 
@@ -132,7 +132,7 @@ public class PlatformCacheEntryProcessorImpl implements PlatformCacheEntryProces
 
                 in.synchronize();
 
-                PortableRawReaderEx reader = ctx.reader(in);
+                BinaryRawReaderEx reader = ctx.reader(in);
 
                 return readResultAndUpdateEntry(ctx, entry, reader);
             }
@@ -145,7 +145,7 @@ public class PlatformCacheEntryProcessorImpl implements PlatformCacheEntryProces
      * @param entry Entry to process.
      * @param writer Writer.
      */
-    private void writeEntryAndProcessor(MutableEntry entry, PortableRawWriterEx writer) {
+    private void writeEntryAndProcessor(MutableEntry entry, BinaryRawWriterEx writer) {
         writer.writeObject(entry.getKey());
         writer.writeObject(entry.getValue());
 
@@ -170,7 +170,7 @@ public class PlatformCacheEntryProcessorImpl implements PlatformCacheEntryProces
      * @throws javax.cache.processor.EntryProcessorException If processing has failed in user code.
      */
     @SuppressWarnings("unchecked")
-    private Object readResultAndUpdateEntry(PlatformContext ctx, MutableEntry entry, PortableRawReaderEx reader) {
+    private Object readResultAndUpdateEntry(PlatformContext ctx, MutableEntry entry, BinaryRawReaderEx reader) {
         byte state = reader.readByte();
 
         switch (state) {
@@ -184,7 +184,7 @@ public class PlatformCacheEntryProcessorImpl implements PlatformCacheEntryProces
 
                 break;
 
-            case ENTRY_STATE_ERR_PORTABLE:
+            case ENTRY_STATE_ERR_BINARY:
                 // Full exception
                 Object nativeErr = reader.readObjectDetached();
 

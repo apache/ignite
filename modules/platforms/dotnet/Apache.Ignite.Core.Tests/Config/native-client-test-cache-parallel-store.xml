@@ -39,12 +39,11 @@
                     <property name="name" value="object_store_parallel"/>
                     <property name="cacheMode" value="LOCAL"/>
                     <property name="atomicityMode" value="TRANSACTIONAL"/>
-                    <property name="keepPortableInStore" value="false"/>
+                    <property name="storeKeepBinary" value="false"/>
 
                     <property name="cacheStoreFactory">
                         <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactory">
-                            <property name="assemblyName" value="Apache.Ignite.Core.Tests"/>
-                            <property name="className" value="Apache.Ignite.Core.Tests.Cache.Store.CacheTestParallelLoadStore"/>
+                            <property name="typeName" value="Apache.Ignite.Core.Tests.Cache.Store.CacheTestParallelLoadStore, Apache.Ignite.Core.Tests"/>
                         </bean>
                     </property>
                 </bean>
@@ -58,11 +57,12 @@
                         <property name="addresses">
                             <list>
                                 <!-- In distributed environment, replace with actual host IP address. -->
-                                <value>127.0.0.1:47500..47501</value>
+                                <value>127.0.0.1:47500</value>
                             </list>
                         </property>
                     </bean>
                 </property>
+                <property name="socketTimeout" value="300" />
             </bean>
         </property>
     </bean>

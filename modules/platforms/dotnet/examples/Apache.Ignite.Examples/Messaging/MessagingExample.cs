@@ -16,7 +16,6 @@
  */
 
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using Apache.Ignite.Core;
 using Apache.Ignite.ExamplesDll.Messaging;
@@ -26,10 +25,10 @@ namespace Apache.Ignite.Examples.Messaging
     /// <summary>
     /// Example demonstrating Ignite messaging. Should be run with standalone Apache Ignite.NET node.
     /// <para />
-    /// 1) Run %IGNITE_HOME%/platforms/dotnet/Apache.Ignite/bin/${Platform]/${Configuration}/Apache.Ignite.exe:
-    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\example-compute.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
-    /// 2) Build the project Apache.Ignite.ExamplesDll (select it -> right-click -> Build).
-    ///    Apache.Ignite.ExamplesDll.dll must appear in %IGNITE_HOME%/platforms/dotnet/examples/Apache.Ignite.ExamplesDll/bin/${Platform]/${Configuration} folder.
+    /// 1) Build the project Apache.Ignite.ExamplesDll (select it -> right-click -> Build).
+    ///    Apache.Ignite.ExamplesDll.dll must appear in %IGNITE_HOME%/platforms/dotnet/examples/Apache.Ignite.ExamplesDll/bin/${Platform]/${Configuration} folder;
+    /// 2) Run %IGNITE_HOME%/platforms/dotnet/bin/Apache.Ignite.exe:
+    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\examples-config.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
     /// 3) Set this class as startup object (Apache.Ignite.Examples project -> right-click -> Properties ->
     ///     Application -> Startup object);
     /// 4) Start example (F5 or Ctrl+F5).
@@ -42,13 +41,7 @@ namespace Apache.Ignite.Examples.Messaging
         [STAThread]
         public static void Main()
         {
-            var cfg = new IgniteConfiguration
-            {
-                SpringConfigUrl = @"platforms\dotnet\examples\config\example-compute.xml",
-                JvmOptions = new List<string> { "-Xms512m", "-Xmx1024m" }
-            };
-
-            using (var ignite = Ignition.Start(cfg))
+            using (var ignite = Ignition.Start(@"platforms\dotnet\examples\config\examples-config.xml"))
             {
                 var remotes = ignite.GetCluster().ForRemotes();
 
@@ -72,13 +65,14 @@ namespace Apache.Ignite.Examples.Messaging
                     var unorderedCounter = new CountdownEvent(msgCount);
 
                     localMessaging.LocalListen(new LocalListener(unorderedCounter), Topic.Unordered);
+
                     localMessaging.LocalListen(new LocalListener(orderedCounter), Topic.Ordered);
 
                     // Set up remote listeners
                     var remoteMessaging = remotes.GetMessaging();
 
-                    remoteMessaging.RemoteListen(new RemoteUnorderedListener(), Topic.Unordered);
-                    remoteMessaging.RemoteListen(new RemoteOrderedListener(), Topic.Ordered);
+                    var idUnordered = remoteMessaging.RemoteListen(new RemoteUnorderedListener(), Topic.Unordered);
+                    var idOrdered = remoteMessaging.RemoteListen(new RemoteOrderedListener(), Topic.Ordered);
 
                     // Send unordered
                     Console.WriteLine(">>> Sending unordered messages...");
@@ -101,6 +95,10 @@ namespace Apache.Ignite.Examples.Messaging
 
                     unorderedCounter.Wait();
                     orderedCounter.Wait();
+
+                    // Unsubscribe
+                    remoteMessaging.StopRemoteListen(idUnordered);
+                    remoteMessaging.StopRemoteListen(idOrdered);
                 }
             }
 

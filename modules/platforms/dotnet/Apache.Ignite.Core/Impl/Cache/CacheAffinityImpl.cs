@@ -22,9 +22,9 @@ namespace Apache.Ignite.Core.Impl.Cache
     using System.Diagnostics;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
     using Apache.Ignite.Core.Impl.Unmanaged;
     using UU = Apache.Ignite.Core.Impl.Unmanaged.UnmanagedUtils;
 
@@ -76,7 +76,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         private const int OpPrimaryPartitions = 14;
 
         /** */
-        private readonly bool _keepPortable;
+        private readonly bool _keepBinary;
         
         /** Grid. */
         private readonly Ignite _ignite;
@@ -86,12 +86,12 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </summary>
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
-        /// <param name="keepPortable">Keep portable flag.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
         /// <param name="ignite">Grid.</param>
-        public CacheAffinityImpl(IUnmanagedTarget target, PortableMarshaller marsh, bool keepPortable, 
+        public CacheAffinityImpl(IUnmanagedTarget target, Marshaller marsh, bool keepBinary, 
             Ignite ignite) : base(target, marsh)
         {
-            _keepPortable = keepPortable;
+            _keepBinary = keepBinary;
 
             Debug.Assert(ignite != null);
             
@@ -175,12 +175,12 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public IDictionary<IClusterNode, IList<TK>> MapKeysToNodes<TK>(IList<TK> keys)
+        public IDictionary<IClusterNode, IList<TK>> MapKeysToNodes<TK>(IEnumerable<TK> keys)
         {
             IgniteArgumentCheck.NotNull(keys, "keys");
 
-            return DoOutInOp(OpMapKeysToNodes, w => w.WriteObject(keys),
-                reader => ReadDictionary(reader, ReadNode, r => r.ReadObject<IList<TK>>()));
+            return DoOutInOp(OpMapKeysToNodes, w => WriteEnumerable(w, keys),
+                reader => ReadDictionary(reader, ReadNode, r => (IList<TK>) r.ReadCollectionAsList<TK>()));
         }
 
         /** <inheritDoc /> */
@@ -206,12 +206,12 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        public IDictionary<int, IClusterNode> MapPartitionsToNodes(IList<int> parts)
+        public IDictionary<int, IClusterNode> MapPartitionsToNodes(IEnumerable<int> parts)
         {
             IgniteArgumentCheck.NotNull(parts, "parts");
 
             return DoOutInOp(OpMapPartitionsToNodes,
-                w => w.WriteObject(parts),
+                w => WriteEnumerable(w, parts),
                 reader => ReadDictionary(reader, r => r.ReadInt(), ReadNode));
         }
 
@@ -222,9 +222,9 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritDoc /> */
-        protected override T Unmarshal<T>(IPortableStream stream)
+        protected override T Unmarshal<T>(IBinaryStream stream)
         {
-            return Marshaller.Unmarshal<T>(stream, _keepPortable);
+            return Marshaller.Unmarshal<T>(stream, _keepBinary);
         }
 
 
@@ -241,7 +241,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <summary>
         /// Reads a node from stream.
         /// </summary>
-        private IClusterNode ReadNode(PortableReaderImpl r)
+        private IClusterNode ReadNode(BinaryReader r)
         {
             return GetNode(r.ReadGuid());
         }
@@ -249,18 +249,18 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// <summary>
         /// Reads nodes from stream.
         /// </summary>
-        private IList<IClusterNode> ReadNodes(IPortableStream reader)
+        private IList<IClusterNode> ReadNodes(IBinaryStream reader)
         {
-            return IgniteUtils.ReadNodes(Marshaller.StartUnmarshal(reader, _keepPortable));
+            return IgniteUtils.ReadNodes(Marshaller.StartUnmarshal(reader, _keepBinary));
         }
 
         /// <summary>
         /// Reads a dictionary from stream.
         /// </summary>
-        private Dictionary<TK, TV> ReadDictionary<TK, TV>(IPortableStream reader, Func<PortableReaderImpl, TK> readKey,
-            Func<PortableReaderImpl, TV> readVal)
+        private Dictionary<TK, TV> ReadDictionary<TK, TV>(IBinaryStream reader, Func<BinaryReader, TK> readKey,
+            Func<BinaryReader, TV> readVal)
         {
-            var r = Marshaller.StartUnmarshal(reader, _keepPortable);
+            var r = Marshaller.StartUnmarshal(reader, _keepBinary);
 
             var cnt = r.ReadInt();
 

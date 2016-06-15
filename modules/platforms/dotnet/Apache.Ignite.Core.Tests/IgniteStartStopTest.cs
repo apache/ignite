@@ -118,52 +118,26 @@ namespace Apache.Ignite.Core.Tests
             Assert.IsNull(grid3.Name);
 
             Assert.AreSame(grid1, Ignition.GetIgnite("grid1"));
+            Assert.AreSame(grid1, Ignition.TryGetIgnite("grid1"));
 
             Assert.AreSame(grid2, Ignition.GetIgnite("grid2"));
+            Assert.AreSame(grid2, Ignition.TryGetIgnite("grid2"));
 
             Assert.AreSame(grid3, Ignition.GetIgnite(null));
+            Assert.AreSame(grid3, Ignition.TryGetIgnite(null));
 
-            try
-            {
-                Ignition.GetIgnite("invalid_name");
-            }
-            catch (IgniteException e)
-            {
-                Console.WriteLine("Expected exception: " + e);
-            }
+            Assert.Throws<IgniteException>(() => Ignition.GetIgnite("invalid_name"));
+            Assert.IsNull(Ignition.TryGetIgnite("invalid_name"));
+
 
             Assert.IsTrue(Ignition.Stop("grid1", true));
-
-            try
-            {
-                Ignition.GetIgnite("grid1");
-            }
-            catch (IgniteException e)
-            {
-                Console.WriteLine("Expected exception: " + e);
-            }
+            Assert.Throws<IgniteException>(() => Ignition.GetIgnite("grid1"));
 
             grid2.Dispose();
-
-            try
-            {
-                Ignition.GetIgnite("grid2");
-            }
-            catch (IgniteException e)
-            {
-                Console.WriteLine("Expected exception: " + e);
-            }
+            Assert.Throws<IgniteException>(() => Ignition.GetIgnite("grid2"));
 
             grid3.Dispose();
-
-            try
-            {
-                Ignition.GetIgnite(null);
-            }
-            catch (IgniteException e)
-            {
-                Console.WriteLine("Expected exception: " + e);
-            }
+            Assert.Throws<IgniteException>(() => Ignition.GetIgnite("grid3"));
 
             foreach (var cfgName in cfgs)
             {
@@ -178,17 +152,8 @@ namespace Apache.Ignite.Core.Tests
 
             Ignition.StopAll(true);
 
-            foreach (var gridName in new List<string> { "grid1", "grid2", null })
-            {
-                try
-                {
-                    Ignition.GetIgnite(gridName);
-                }
-                catch (IgniteException e)
-                {
-                    Console.WriteLine("Expected exception: " + e);
-                }
-            }
+            foreach (var gridName in new List<string> {"grid1", "grid2", null})
+                Assert.Throws<IgniteException>(() => Ignition.GetIgnite(gridName));
         }
 
         /// <summary>
@@ -311,12 +276,16 @@ namespace Apache.Ignite.Core.Tests
 
             try
             {
-                using (Ignition.Start(servCfg))  // start server-mode ignite first
+                using (var serv = Ignition.Start(servCfg))  // start server-mode ignite first
                 {
+                    Assert.IsFalse(serv.GetCluster().GetLocalNode().IsClient);
+
                     Ignition.ClientMode = true;
 
                     using (var grid = Ignition.Start(clientCfg))
                     {
+                        Assert.IsTrue(grid.GetCluster().GetLocalNode().IsClient);
+
                         UseIgnite(grid);
                     }
                 }
@@ -337,7 +306,7 @@ namespace Apache.Ignite.Core.Tests
             var comp = ignite.GetCompute();
 
             // ReSharper disable once RedundantAssignment
-            comp = comp.WithKeepPortable();
+            comp = comp.WithKeepBinary();
 
             var prj = ignite.GetCluster().ForOldest();
 
@@ -384,7 +353,7 @@ namespace Apache.Ignite.Core.Tests
             // to test race conditions during processor init on remote node
             var listenTask = Task.Factory.StartNew(() =>
             {
-                var filter = new MessageFilter();
+                var filter = new MessageListener();
 
                 while (!token.IsCancellationRequested)
                 {
@@ -410,7 +379,7 @@ namespace Apache.Ignite.Core.Tests
         /// Noop message filter.
         /// </summary>
         [Serializable]
-        private class MessageFilter : IMessageFilter<int>
+        private class MessageListener : IMessageListener<int>
         {
             /** <inheritdoc /> */
             public bool Invoke(Guid nodeId, int message)

@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_IMPL_OPERATION
-#define _IGNITE_IMPL_OPERATION
+#ifndef _IGNITE_IMPL_OPERATIONS
+#define _IGNITE_IMPL_OPERATIONS
 
 #include <map>
 #include <set>
@@ -25,9 +25,9 @@
 #include <ignite/common/common.h>
 
 #include "ignite/cache/cache_entry.h"
-#include "ignite/impl/portable/portable_reader_impl.h"
-#include "ignite/impl/portable/portable_writer_impl.h"
-#include "ignite/portable/portable.h"
+#include "ignite/impl/binary/binary_reader_impl.h"
+#include "ignite/impl/binary/binary_writer_impl.h"
+#include "ignite/binary/binary.h"
 
 namespace ignite
 {
@@ -52,7 +52,7 @@ namespace ignite
              *
              * @param writer Writer.
              */
-            virtual void ProcessInput(ignite::impl::portable::PortableWriterImpl& writer) = 0;
+            virtual void ProcessInput(ignite::impl::binary::BinaryWriterImpl& writer) = 0;
         };
 
         /**
@@ -72,7 +72,7 @@ namespace ignite
                 // No-op.
             }
 
-            virtual void ProcessInput(ignite::impl::portable::PortableWriterImpl& writer)
+            virtual void ProcessInput(ignite::impl::binary::BinaryWriterImpl& writer)
             {
                 writer.WriteTopObject<T>(*val);
             }
@@ -101,7 +101,7 @@ namespace ignite
                 // No-op.
             }
 
-            virtual void ProcessInput(ignite::impl::portable::PortableWriterImpl& writer)
+            virtual void ProcessInput(ignite::impl::binary::BinaryWriterImpl& writer)
             {
                 writer.WriteTopObject<T1>(*val1);
                 writer.WriteTopObject<T2>(*val2);
@@ -135,7 +135,7 @@ namespace ignite
                 // No-op.
             }
 
-            virtual void ProcessInput(ignite::impl::portable::PortableWriterImpl& writer)
+            virtual void ProcessInput(ignite::impl::binary::BinaryWriterImpl& writer)
             {
                 writer.WriteTopObject<T1>(*val1);
                 writer.WriteTopObject<T2>(*val2);
@@ -154,7 +154,7 @@ namespace ignite
             IGNITE_NO_COPY_ASSIGNMENT(In3Operation)
         };
 
-        /*
+        /**
          * Input set operation.
          */
         template<typename T>
@@ -171,7 +171,7 @@ namespace ignite
                 // No-op.
             }
 
-            virtual void ProcessInput(ignite::impl::portable::PortableWriterImpl& writer)
+            virtual void ProcessInput(ignite::impl::binary::BinaryWriterImpl& writer)
             {
                 writer.GetStream()->WriteInt32(static_cast<int32_t>(val->size()));
 
@@ -192,7 +192,7 @@ namespace ignite
         class InMapOperation : public InputOperation
         {
         public:
-            /*
+            /**
              * Constructor.
              *
              * @param val Value.
@@ -202,7 +202,7 @@ namespace ignite
                 // No-op.
             }
 
-            virtual void ProcessInput(ignite::impl::portable::PortableWriterImpl& writer)
+            virtual void ProcessInput(ignite::impl::binary::BinaryWriterImpl& writer)
             {
                 writer.GetStream()->WriteInt32(static_cast<int32_t>(val->size()));
 
@@ -236,7 +236,7 @@ namespace ignite
                 // No-op.
             }
 
-            virtual void ProcessInput(ignite::impl::portable::PortableWriterImpl& writer)
+            virtual void ProcessInput(ignite::impl::binary::BinaryWriterImpl& writer)
             {
                 writer.WriteTopObject<T>(*key);
                 writer.GetStream()->WriteInt32(peekModes);
@@ -270,7 +270,7 @@ namespace ignite
              *
              * @param reader Reader.
              */
-            virtual void ProcessOutput(ignite::impl::portable::PortableReaderImpl& reader) = 0;
+            virtual void ProcessOutput(ignite::impl::binary::BinaryReaderImpl& reader) = 0;
         };
 
         /**
@@ -288,7 +288,7 @@ namespace ignite
                 // No-op.
             }
 
-            virtual void ProcessOutput(ignite::impl::portable::PortableReaderImpl& reader)
+            virtual void ProcessOutput(ignite::impl::binary::BinaryReaderImpl& reader)
             {
                 val = reader.ReadTopObject<T>();
             }
@@ -310,7 +310,7 @@ namespace ignite
         };
 
         /**
-         * Output operation returning single object.
+         * Output operation returning two objects.
          */
         template<typename T1, typename T2>
         class Out2Operation : public OutputOperation
@@ -324,7 +324,7 @@ namespace ignite
                 // No-op.
             }
 
-            virtual void ProcessOutput(ignite::impl::portable::PortableReaderImpl& reader)
+            virtual void ProcessOutput(ignite::impl::binary::BinaryReaderImpl& reader)
             {
                 val1 = reader.ReadTopObject<T1>();
                 val2 = reader.ReadTopObject<T2>();
@@ -359,8 +359,87 @@ namespace ignite
 
             IGNITE_NO_COPY_ASSIGNMENT(Out2Operation)
         };
-        
-        /*
+
+        /**
+         * Output operation returning four objects.
+         */
+        template<typename T1, typename T2, typename T3, typename T4>
+        class Out4Operation : public OutputOperation
+        {
+        public:
+            /**
+             * Constructor.
+             */
+            Out4Operation()
+            {
+                // No-op.
+            }
+
+            virtual void ProcessOutput(ignite::impl::binary::BinaryReaderImpl& reader)
+            {
+                val1 = reader.ReadTopObject<T1>();
+                val2 = reader.ReadTopObject<T2>();
+                val3 = reader.ReadTopObject<T3>();
+                val4 = reader.ReadTopObject<T4>();
+            }
+
+            /**
+             * Get value 1.
+             *
+             * @param Value 1.
+             */
+            T1& Get1()
+            {
+                return val1;
+            }
+
+            /**
+             * Get value 2.
+             *
+             * @param Value 2.
+             */
+            T2& Get2()
+            {
+                return val2;
+            }
+
+            /**
+             * Get value 3.
+             *
+             * @param Value 3.
+             */
+            T3& Get3()
+            {
+                return val3;
+            }
+
+            /**
+             * Get value 4.
+             *
+             * @param Value 4.
+             */
+            T4& Get4()
+            {
+                return val4;
+            }
+
+        private:
+            /** Value 1. */
+            T1 val1; 
+            
+            /** Value 2. */
+            T2 val2;
+
+            /** Value 3. */
+            T3 val3;
+
+            /** Value 4. */
+            T4 val4;
+
+            IGNITE_NO_COPY_ASSIGNMENT(Out4Operation)
+        };
+
+        /**
          * Output map operation.
          */
         template<typename T1, typename T2>
@@ -375,7 +454,7 @@ namespace ignite
                 // No-op.
             }
 
-            virtual void ProcessOutput(ignite::impl::portable::PortableReaderImpl& reader)
+            virtual void ProcessOutput(ignite::impl::binary::BinaryReaderImpl& reader)
             {
                 bool exists = reader.GetStream()->ReadBool();
 
@@ -412,7 +491,7 @@ namespace ignite
             IGNITE_NO_COPY_ASSIGNMENT(OutMapOperation)
         };
 
-        /*
+        /**
          * Output query GET ALL operation.
          */
         template<typename K, typename V>
@@ -427,7 +506,7 @@ namespace ignite
                 // No-op.
             }
 
-            virtual void ProcessOutput(ignite::impl::portable::PortableReaderImpl& reader)
+            virtual void ProcessOutput(ignite::impl::binary::BinaryReaderImpl& reader)
             {
                 int32_t cnt = reader.ReadInt32();
 
@@ -449,4 +528,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_IMPL_OPERATIONS

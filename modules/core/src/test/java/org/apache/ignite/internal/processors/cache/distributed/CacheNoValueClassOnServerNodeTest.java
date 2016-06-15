@@ -111,6 +111,7 @@ public class CacheNoValueClassOnServerNodeTest extends GridCommonAbstractTest {
                         }
                     },
                     null,
+                    null,
                     jvmArgs,
                     cp
                 );

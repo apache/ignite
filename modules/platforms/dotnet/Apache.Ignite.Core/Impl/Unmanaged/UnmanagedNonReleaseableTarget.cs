@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Impl.Unmanaged
 {
-    using System;
     using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
@@ -26,7 +25,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     internal unsafe class UnmanagedNonReleaseableTarget : IUnmanagedTarget
     {
         /** Context. */
-        private readonly void* _ctx;
+        private readonly UnmanagedContext _ctx;
 
         /** Target. */
         private readonly void* _target;
@@ -36,7 +35,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// </summary>
         /// <param name="ctx">Context.</param>
         /// <param name="target">Target.</param>
-        public UnmanagedNonReleaseableTarget(void* ctx, void* target)
+        public UnmanagedNonReleaseableTarget(UnmanagedContext ctx, void* target)
         {
             _ctx = ctx;
             _target = target;
@@ -45,7 +44,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** <inheritdoc /> */
         public void* Context
         {
-            get { return _ctx; }
+            get { return _ctx.NativeContext; }
         }
 
         /** <inheritdoc /> */
@@ -57,7 +56,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** <inheritdoc /> */
         public IUnmanagedTarget ChangeTarget(void* target)
         {
-            throw new NotSupportedException();
+            return new UnmanagedTarget(_ctx, target);
         }
 
         /** <inheritdoc /> */

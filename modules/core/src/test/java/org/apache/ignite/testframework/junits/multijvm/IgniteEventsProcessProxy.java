@@ -20,15 +20,16 @@ package org.apache.ignite.testframework.junits.multijvm;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteRunnable;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -39,23 +40,11 @@ public class IgniteEventsProcessProxy implements IgniteEvents {
     /** Ignite proxy. */
     private final transient IgniteProcessProxy igniteProxy;
 
-    /** Grid id. */
-    private final UUID gridId;
-
     /**
      * @param igniteProxy Ignite proxy.
      */
     public IgniteEventsProcessProxy(IgniteProcessProxy igniteProxy) {
         this.igniteProxy = igniteProxy;
-
-        gridId = igniteProxy.getId();
-    }
-
-    /**
-     * @return Events instance.
-     */
-    private IgniteEvents events() {
-        return Ignition.ignite(gridId).events();
     }
 
     /** {@inheritDoc} */
@@ -105,11 +94,7 @@ public class IgniteEventsProcessProxy implements IgniteEvents {
 
     /** {@inheritDoc} */
     @Override public void localListen(final IgnitePredicate<? extends Event> lsnr, final int... types) {
-        igniteProxy.remoteCompute().run(new IgniteRunnable() {
-            @Override public void run() {
-                events().localListen(lsnr, types);
-            }
-        });
+        igniteProxy.remoteCompute().run(new LocalListenTask(lsnr, types));
     }
 
     /** {@inheritDoc} */
@@ -150,5 +135,34 @@ public class IgniteEventsProcessProxy implements IgniteEvents {
     /** {@inheritDoc} */
     @Override public <R> IgniteFuture<R> future() {
         throw new UnsupportedOperationException("Operation isn't supported yet.");
+    }
+
+    /**
+     *
+     */
+    private static class LocalListenTask implements IgniteRunnable {
+        /** Ignite. */
+        @IgniteInstanceResource
+        private Ignite ignite;
+
+        /** Listener. */
+        private final IgnitePredicate<? extends Event> lsnr;
+
+        /** Types. */
+        private final int[] types;
+
+        /**
+         * @param lsnr Listener.
+         * @param types Types.
+         */
+        public LocalListenTask(IgnitePredicate<? extends Event> lsnr, int[] types) {
+            this.lsnr = lsnr;
+            this.types = types;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void run() {
+            ignite.events().localListen(lsnr, types);
+        }
     }
 }

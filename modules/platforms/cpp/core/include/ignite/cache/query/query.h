@@ -15,13 +15,19 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_QUERY
-#define _IGNITE_QUERY
+/**
+ * @file
+ * Includes all query API headers.
+ */
+
+#ifndef _IGNITE_CACHE_QUERY_QUERY
+#define _IGNITE_CACHE_QUERY_QUERY
 
 #include "ignite/cache/query/query_argument.h"
 #include "ignite/cache/query/query_cursor.h"
 #include "ignite/cache/query/query_scan.h"
 #include "ignite/cache/query/query_sql.h"
+#include "ignite/cache/query/query_sql_fields.h"
 #include "ignite/cache/query/query_text.h"
 
-#endif
+#endif //_IGNITE_CACHE_QUERY_QUERY

@@ -18,7 +18,6 @@
 package org.apache.ignite.stream;
 
 import java.util.Map;
-
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteDataStreamer;
 
@@ -33,11 +32,10 @@ import org.apache.ignite.IgniteDataStreamer;
  *     <li>A single tuple extractor, which extracts either no or 1 tuple out of a message. See
  *     see {@link #setTupleExtractor(StreamTupleExtractor)}.</li>
  *     <li>A multiple tuple extractor, which is capable of extracting multiple tuples out of a single message, in the
- *     form of a {@link Map<K, V>}. See {@link #setMultipleTupleExtractor(StreamMultipleTupleExtractor)}.</li>
+ *     form of a {@link Map}. See {@link #setMultipleTupleExtractor(StreamMultipleTupleExtractor)}.</li>
  * </ol>
  */
 public abstract class StreamAdapter<T, K, V> {
-
     /** Tuple extractor extracting a single tuple from an event */
     private StreamSingleTupleExtractor<T, K, V> singleTupleExtractor;
 
@@ -99,9 +97,9 @@ public abstract class StreamAdapter<T, K, V> {
      */
     @Deprecated
     public StreamTupleExtractor<T, K, V> getTupleExtractor() {
-        if (singleTupleExtractor instanceof StreamTupleExtractor) {
+        if (singleTupleExtractor instanceof StreamTupleExtractor)
             return (StreamTupleExtractor) singleTupleExtractor;
-        }
+
         throw new IllegalArgumentException("This method is deprecated and only relevant if using an old " +
             "StreamTupleExtractor; use getSingleTupleExtractor instead");
     }
@@ -112,9 +110,9 @@ public abstract class StreamAdapter<T, K, V> {
      */
     @Deprecated
     public void setTupleExtractor(StreamTupleExtractor<T, K, V> extractor) {
-        if (multipleTupleExtractor != null) {
+        if (multipleTupleExtractor != null)
             throw new IllegalArgumentException("Multiple tuple extractor already set; cannot set both types at once.");
-        }
+
         this.singleTupleExtractor = extractor;
     }
 
@@ -129,9 +127,9 @@ public abstract class StreamAdapter<T, K, V> {
      * @param singleTupleExtractor Extractor for key-value tuples from messages.
      */
     public void setSingleTupleExtractor(StreamSingleTupleExtractor<T, K, V> singleTupleExtractor) {
-        if (multipleTupleExtractor != null) {
+        if (multipleTupleExtractor != null)
             throw new IllegalArgumentException("Multiple tuple extractor already set; cannot set both types at once.");
-        }
+
         this.singleTupleExtractor = singleTupleExtractor;
     }
 
@@ -146,9 +144,9 @@ public abstract class StreamAdapter<T, K, V> {
      * @param multipleTupleExtractor Extractor for 1:n tuple extraction.
      */
     public void setMultipleTupleExtractor(StreamMultipleTupleExtractor<T, K, V> multipleTupleExtractor) {
-        if (singleTupleExtractor != null) {
+        if (singleTupleExtractor != null)
             throw new IllegalArgumentException("Single tuple extractor already set; cannot set both types at once.");
-        }
+
         this.multipleTupleExtractor = multipleTupleExtractor;
     }
 

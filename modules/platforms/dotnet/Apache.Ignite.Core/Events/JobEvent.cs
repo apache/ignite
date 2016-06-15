@@ -19,9 +19,9 @@ namespace Apache.Ignite.Core.Events
 {
     using System;
     using System.Globalization;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Ignite job event.
@@ -50,12 +50,12 @@ namespace Apache.Ignite.Core.Events
         /// Constructor.
         /// </summary>
         /// <param name="r">The reader to read data from.</param>
-        internal JobEvent(IPortableRawReader r) : base(r)
+        internal JobEvent(IBinaryRawReader r) : base(r)
         {
             _taskName = r.ReadString();
             _taskClassName = r.ReadString();
-            _taskSessionId = IgniteGuid.ReadPortable(r);
-            _jobId = IgniteGuid.ReadPortable(r);
+            _taskSessionId = IgniteGuid.Read(r);
+            _jobId = IgniteGuid.Read(r);
             _taskNode = ReadNode(r);
             _taskSubjectId = r.ReadGuid();
         }

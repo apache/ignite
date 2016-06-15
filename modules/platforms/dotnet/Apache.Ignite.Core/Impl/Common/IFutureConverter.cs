@@ -18,7 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
-    using Apache.Ignite.Core.Impl.Portable.IO;
+    using Apache.Ignite.Core.Impl.Binary.IO;
 
     /// <summary>
     /// Marshals and converts future value.
@@ -28,7 +28,8 @@ namespace Apache.Ignite.Core.Impl.Common
     {
         /// <summary>
         /// Reads and converts a value.
+        /// Null stream means null value.
         /// </summary>
-        T Convert(IPortableStream stream);
+        T Convert(IBinaryStream stream);
     }
 }

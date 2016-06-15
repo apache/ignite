@@ -170,66 +170,64 @@ public class VisorCacheMetrics implements Serializable {
      * @param cacheName Cache name.
      * @return Data transfer object for given cache metrics.
      */
-    public static VisorCacheMetrics from(IgniteEx ignite, String cacheName) {
-        VisorCacheMetrics cm = new VisorCacheMetrics();
-
+    public VisorCacheMetrics from(IgniteEx ignite, String cacheName) {
         GridCacheProcessor cacheProcessor = ignite.context().cache();
 
         IgniteCache<Object, Object> c = cacheProcessor.jcache(cacheName);
 
-        cm.name = cacheName;
-        cm.mode = cacheProcessor.cacheMode(cacheName);
-        cm.sys = cacheProcessor.systemCache(cacheName);
+        name = cacheName;
+        mode = cacheProcessor.cacheMode(cacheName);
+        sys = cacheProcessor.systemCache(cacheName);
 
-        CacheMetrics m = c.metrics();
+        CacheMetrics m = c.localMetrics();
 
-        cm.size = m.getSize();
-        cm.keySize = m.getKeySize();
+        size = m.getSize();
+        keySize = m.getKeySize();
 
-        cm.reads = m.getCacheGets();
-        cm.writes = m.getCachePuts() + m.getCacheRemovals();
-        cm.hits = m.getCacheHits();
-        cm.misses = m.getCacheMisses();
+        reads = m.getCacheGets();
+        writes = m.getCachePuts() + m.getCacheRemovals();
+        hits = m.getCacheHits();
+        misses = m.getCacheMisses();
 
-        cm.txCommits = m.getCacheTxCommits();
-        cm.txRollbacks = m.getCacheTxRollbacks();
+        txCommits = m.getCacheTxCommits();
+        txRollbacks = m.getCacheTxRollbacks();
 
-        cm.avgTxCommitTime = m.getAverageTxCommitTime();
-        cm.avgTxRollbackTime = m.getAverageTxRollbackTime();
+        avgTxCommitTime = m.getAverageTxCommitTime();
+        avgTxRollbackTime = m.getAverageTxRollbackTime();
 
-        cm.puts = m.getCachePuts();
-        cm.removals = m.getCacheRemovals();
-        cm.evictions = m.getCacheEvictions();
+        puts = m.getCachePuts();
+        removals = m.getCacheRemovals();
+        evictions = m.getCacheEvictions();
 
-        cm.avgReadTime = m.getAverageGetTime();
-        cm.avgPutTime = m.getAveragePutTime();
-        cm.avgRemovalTime = m.getAverageRemoveTime();
+        avgReadTime = m.getAverageGetTime();
+        avgPutTime = m.getAveragePutTime();
+        avgRemovalTime = m.getAverageRemoveTime();
 
-        cm.readsPerSec = perSecond(m.getAverageGetTime());
-        cm.putsPerSec = perSecond(m.getAveragePutTime());
-        cm.removalsPerSec = perSecond(m.getAverageRemoveTime());
-        cm.commitsPerSec = perSecond(m.getAverageTxCommitTime());
-        cm.rollbacksPerSec = perSecond(m.getAverageTxRollbackTime());
+        readsPerSec = perSecond(m.getAverageGetTime());
+        putsPerSec = perSecond(m.getAveragePutTime());
+        removalsPerSec = perSecond(m.getAverageRemoveTime());
+        commitsPerSec = perSecond(m.getAverageTxCommitTime());
+        rollbacksPerSec = perSecond(m.getAverageTxRollbackTime());
 
-        cm.qryMetrics = VisorCacheQueryMetrics.from(c.queryMetrics());
+        qryMetrics = VisorCacheQueryMetrics.from(c.queryMetrics());
 
-        cm.dhtEvictQueueCurrSize = m.getDhtEvictQueueCurrentSize();
-        cm.txThreadMapSize = m.getTxThreadMapSize();
-        cm.txXidMapSize = m.getTxXidMapSize();
-        cm.txCommitQueueSize = m.getTxCommitQueueSize();
-        cm.txPrepareQueueSize = m.getTxPrepareQueueSize();
-        cm.txStartVerCountsSize = m.getTxStartVersionCountsSize();
-        cm.txCommittedVersionsSize = m.getTxCommittedVersionsSize();
-        cm.txRolledbackVersionsSize = m.getTxRolledbackVersionsSize();
-        cm.txDhtThreadMapSize = m.getTxDhtThreadMapSize();
-        cm.txDhtXidMapSize = m.getTxDhtXidMapSize();
-        cm.txDhtCommitQueueSize = m.getTxDhtCommitQueueSize();
-        cm.txDhtPrepareQueueSize = m.getTxDhtPrepareQueueSize();
-        cm.txDhtStartVerCountsSize = m.getTxDhtStartVersionCountsSize();
-        cm.txDhtCommittedVersionsSize = m.getTxDhtCommittedVersionsSize();
-        cm.txDhtRolledbackVersionsSize = m.getTxDhtRolledbackVersionsSize();
+        dhtEvictQueueCurrSize = m.getDhtEvictQueueCurrentSize();
+        txThreadMapSize = m.getTxThreadMapSize();
+        txXidMapSize = m.getTxXidMapSize();
+        txCommitQueueSize = m.getTxCommitQueueSize();
+        txPrepareQueueSize = m.getTxPrepareQueueSize();
+        txStartVerCountsSize = m.getTxStartVersionCountsSize();
+        txCommittedVersionsSize = m.getTxCommittedVersionsSize();
+        txRolledbackVersionsSize = m.getTxRolledbackVersionsSize();
+        txDhtThreadMapSize = m.getTxDhtThreadMapSize();
+        txDhtXidMapSize = m.getTxDhtXidMapSize();
+        txDhtCommitQueueSize = m.getTxDhtCommitQueueSize();
+        txDhtPrepareQueueSize = m.getTxDhtPrepareQueueSize();
+        txDhtStartVerCountsSize = m.getTxDhtStartVersionCountsSize();
+        txDhtCommittedVersionsSize = m.getTxDhtCommittedVersionsSize();
+        txDhtRolledbackVersionsSize = m.getTxDhtRolledbackVersionsSize();
 
-        return cm;
+        return this;
     }
 
     /**
@@ -237,6 +235,15 @@ public class VisorCacheMetrics implements Serializable {
      */
     public String name() {
         return name;
+    }
+
+    /**
+     * Sets cache name.
+     *
+     * @param name New value for cache name.
+     */
+    public void name(String name) {
+        this.name = name;
     }
 
     /**

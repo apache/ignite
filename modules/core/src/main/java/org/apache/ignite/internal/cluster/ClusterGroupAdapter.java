@@ -51,6 +51,7 @@ import org.apache.ignite.internal.IgniteServicesImpl;
 import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.executor.GridExecutorService;
 import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
+import org.apache.ignite.internal.processors.igfs.IgfsNodePredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -108,8 +109,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
      */
     protected ClusterGroupAdapter(@Nullable GridKernalContext ctx,
         @Nullable UUID subjId,
-        @Nullable IgnitePredicate<ClusterNode> p)
-    {
+        @Nullable IgnitePredicate<ClusterNode> p) {
         if (ctx != null)
             setKernalContext(ctx);
 
@@ -126,8 +126,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
      */
     protected ClusterGroupAdapter(@Nullable GridKernalContext ctx,
         @Nullable UUID subjId,
-        Set<UUID> ids)
-    {
+        Set<UUID> ids) {
         if (ctx != null)
             setKernalContext(ctx);
 
@@ -148,8 +147,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     private ClusterGroupAdapter(@Nullable GridKernalContext ctx,
         @Nullable UUID subjId,
         @Nullable IgnitePredicate<ClusterNode> p,
-        Set<UUID> ids)
-    {
+        Set<UUID> ids) {
         if (ctx != null)
             setKernalContext(ctx);
 
@@ -310,7 +308,12 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
                 }
             }
             else {
-                Collection<ClusterNode> all = ctx.discovery().allNodes();
+                Collection<ClusterNode> all;
+
+                if (p instanceof DaemonFilter)
+                    all = F.concat(false, ctx.discovery().daemonNodes(), ctx.discovery().allNodes());
+                else
+                    all = ctx.discovery().allNodes();
 
                 return p != null ? F.view(all, p) : all;
             }
@@ -602,6 +605,11 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     }
 
     /** {@inheritDoc} */
+    @Override public ClusterGroup forIgfsMetadataDataNodes(@Nullable String igfsName, @Nullable String metaCacheName) {
+        return forPredicate(new IgfsNodePredicate(igfsName)).forDataNodes(metaCacheName);
+    }
+
+    /** {@inheritDoc} */
     @Override public final ClusterGroup forHost(ClusterNode node) {
         A.notNull(node, "node");
 
@@ -626,7 +634,15 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public final ClusterGroup forRandom() {
-        return ids != null ? forNodeId(F.rand(ids)) : forNode(F.rand(nodes()));
+        if (!F.isEmpty(ids))
+            return forNodeId(F.rand(ids));
+
+        Collection<ClusterNode> nodes = nodes();
+
+        if (nodes.isEmpty())
+            return new ClusterGroupAdapter(ctx, null, Collections.<UUID>emptySet());
+
+        return forNode(F.rand(nodes));
     }
 
     /** {@inheritDoc} */

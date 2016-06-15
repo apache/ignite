@@ -19,6 +19,8 @@ package org.apache.ignite.internal.managers;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.UUID;
 import javax.cache.expiry.Duration;
@@ -32,6 +34,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.timeout.GridSpiTimeoutObject;
@@ -57,7 +60,6 @@ import org.apache.ignite.spi.IgniteSpiNoop;
 import org.apache.ignite.spi.IgniteSpiTimeoutObject;
 import org.jetbrains.annotations.Nullable;
 
-import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 
@@ -82,6 +84,9 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
 
     /** Checks is SPI implementation is {@code NO-OP} or not. */
     private final boolean enabled;
+
+    /** */
+    private final Map<IgniteSpi, Boolean> spiMap = new IdentityHashMap<>();
 
     /**
      * @param ctx Kernal context.
@@ -192,9 +197,11 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
     }
 
     /** {@inheritDoc} */
-    @Override public void onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
+    @Override public IgniteInternalFuture<?> onReconnected(boolean clusterRestarted) throws IgniteCheckedException {
         for (T t : spis)
             t.onClientReconnected(clusterRestarted);
+
+        return null;
     }
 
     /**
@@ -206,6 +213,14 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
         Collection<String> names = U.newHashSet(spis.length);
 
         for (T spi : spis) {
+            if (spi instanceof IgniteSpiAdapter)
+                ((IgniteSpiAdapter)spi).onBeforeStart();
+
+            // Save SPI to map to make sure to stop it properly.
+            Boolean res = spiMap.put(spi, Boolean.TRUE);
+
+            assert res == null;
+
             // Inject all spi resources.
             ctx.resource().inject(spi);
 
@@ -269,6 +284,13 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
      */
     protected final void stopSpi() throws IgniteCheckedException {
         for (T spi : spis) {
+            if (spiMap.remove(spi) == null) {
+                if (log.isDebugEnabled())
+                    log.debug("Will not stop SPI since it has not been started by this manager: " + spi);
+
+                continue;
+            }
+
             if (log.isDebugEnabled())
                 log.debug("Stopping SPI: " + spi);
 
@@ -367,7 +389,7 @@ public abstract class GridManagerAdapter<T extends IgniteSpi> implements GridMan
                             if (msg instanceof Message)
                                 ctx.io().send(node, topic, (Message)msg, SYSTEM_POOL);
                             else
-                                ctx.io().sendUserMessage(asList(node), msg, topic, false, 0);
+                                ctx.io().sendUserMessage(Collections.singletonList(node), msg, topic, false, 0);
                         }
                         catch (IgniteCheckedException e) {
                             throw unwrapException(e);

@@ -215,6 +215,11 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
             entries.add(entry);
         }
 
+        /** {@inheritDoc} */
+        @Override public boolean addDeploymentInfo() {
+            return false;
+        }
+
         /**
          * @return COllection of test messages.
          */
@@ -303,6 +308,11 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
             this.msg = mes;
 
             this.body = body;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean addDeploymentInfo() {
+            return false;
         }
 
         /**
@@ -421,6 +431,11 @@ public class GridCacheMessageSelfTest extends GridCommonAbstractTest {
             this.id = id;
             this.msg = mes;
             this.body = body;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean addDeploymentInfo() {
+            return false;
         }
 
         /**

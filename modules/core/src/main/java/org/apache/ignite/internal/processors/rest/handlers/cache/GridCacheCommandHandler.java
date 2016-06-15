@@ -18,10 +18,13 @@
 package org.apache.ignite.internal.processors.rest.handlers.cache;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -35,11 +38,20 @@ import org.apache.ignite.cache.CacheMetrics;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterGroup;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.compute.ComputeJob;
+import org.apache.ignite.compute.ComputeJobAdapter;
+import org.apache.ignite.compute.ComputeJobResult;
+import org.apache.ignite.compute.ComputeTaskAdapter;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
+import org.apache.ignite.internal.managers.discovery.GridDiscoveryManager;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
@@ -73,6 +85,7 @@ import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_G
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_AND_PUT_IF_ABSENT;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_AND_REMOVE;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_GET_AND_REPLACE;
+import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_METADATA;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_METRICS;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_PREPEND;
 import static org.apache.ignite.internal.processors.rest.GridRestCommand.CACHE_PUT;
@@ -119,7 +132,8 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         CACHE_APPEND,
         CACHE_PREPEND,
         CACHE_METRICS,
-        CACHE_SIZE
+        CACHE_SIZE,
+        CACHE_METADATA
     );
 
     /** Requests with required parameter {@code key}. */
@@ -151,11 +165,6 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         super(ctx);
     }
 
-    /** {@inheritDoc} */
-    @Override public Collection<GridRestCommand> supportedCommands() {
-        return SUPPORTED_COMMANDS;
-    }
-
     /**
      * Retrieves cache flags from corresponding bits.
      *
@@ -170,6 +179,153 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             return true;
 
         return false;
+    }
+
+    /**
+     * Handles append and prepend commands.
+     *
+     * @param ctx Kernal context.
+     * @param cache Cache.
+     * @param key Key.
+     * @param req Request.
+     * @param prepend Whether to prepend.
+     * @return Future of operation result.
+     * @throws IgniteCheckedException In case of any exception.
+     */
+    private static IgniteInternalFuture<?> appendOrPrepend(
+        final GridKernalContext ctx,
+        final IgniteInternalCache<Object, Object> cache,
+        final Object key, GridRestCacheRequest req, final boolean prepend) throws IgniteCheckedException {
+        assert cache != null;
+        assert key != null;
+        assert req != null;
+
+        final Object val = req.value();
+
+        if (val == null)
+            throw new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("val"));
+
+        return ctx.closure().callLocalSafe(new Callable<Object>() {
+            @Override public Object call() throws Exception {
+                try (IgniteInternalTx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
+                    Object curVal = cache.get(key);
+
+                    if (curVal == null)
+                        return false;
+
+                    // Modify current value with appendix one.
+                    Object newVal = appendOrPrepend(curVal, val, !prepend);
+
+                    // Put new value asynchronously.
+                    cache.put(key, newVal);
+
+                    tx.commit();
+                }
+
+                return true;
+            }
+        }, false);
+    }
+
+    /**
+     * Append or prepend new value to the current one.
+     *
+     * @param origVal Original value.
+     * @param appendVal Appendix value to add to the original one.
+     * @param appendPlc Append or prepend policy flag.
+     * @return Resulting value.
+     * @throws IgniteCheckedException In case of grid exceptions.
+     */
+    private static Object appendOrPrepend(Object origVal, Object appendVal, boolean appendPlc) throws IgniteCheckedException {
+        // Strings.
+        if (appendVal instanceof String && origVal instanceof String)
+            return appendPlc ? origVal + (String)appendVal : (String)appendVal + origVal;
+
+        // Maps.
+        if (appendVal instanceof Map && origVal instanceof Map) {
+            Map<Object, Object> origMap = (Map<Object, Object>)origVal;
+            Map<Object, Object> appendMap = (Map<Object, Object>)appendVal;
+
+            Map<Object, Object> map = X.cloneObject(origMap, false, true);
+
+            if (appendPlc)
+                map.putAll(appendMap); // Append.
+            else {
+                map.clear();
+                map.putAll(appendMap); // Prepend.
+                map.putAll(origMap);
+            }
+
+            for (Map.Entry<Object, Object> e : appendMap.entrySet()) // Remove zero-valued entries.
+                if (e.getValue() == null && map.get(e.getKey()) == null)
+                    map.remove(e.getKey());
+
+            return map;
+        }
+
+        // Generic collection.
+        if (appendVal instanceof Collection<?> && origVal instanceof Collection<?>) {
+            Collection<Object> origCol = (Collection<Object>)origVal;
+            Collection<Object> appendCol = (Collection<Object>)appendVal;
+
+            Collection<Object> col = X.cloneObject(origCol, false, true);
+
+            if (appendPlc)
+                col.addAll(appendCol); // Append.
+            else {
+                col.clear();
+                col.addAll(appendCol); // Prepend.
+                col.addAll(origCol);
+            }
+
+            return col;
+        }
+
+        throw new IgniteCheckedException("Incompatible types [appendVal=" + appendVal + ", old=" + origVal + ']');
+    }
+
+    /**
+     * Creates a transformation function from {@link CacheCommand}'s results into {@link GridRestResponse}.
+     *
+     * @param c Cache instance to obtain affinity data.
+     * @param key Affinity key for previous operation.
+     * @return Rest response.
+     */
+    private static IgniteClosure<IgniteInternalFuture<?>, GridRestResponse> resultWrapper(
+        final IgniteInternalCache<Object, Object> c, @Nullable final Object key) {
+        return new CX1<IgniteInternalFuture<?>, GridRestResponse>() {
+            @Override public GridRestResponse applyx(IgniteInternalFuture<?> f) throws IgniteCheckedException {
+                GridCacheRestResponse resp = new GridCacheRestResponse();
+
+                resp.setResponse(f.get());
+
+                if (key != null)
+                    resp.setAffinityNodeId(c.cache().affinity().mapKeyToNode(key).id().toString());
+
+                return resp;
+            }
+        };
+    }
+
+    /**
+     * @param ignite Grid instance.
+     * @param cacheName Name of the cache.
+     * @return Instance on the named cache.
+     * @throws IgniteCheckedException If cache not found.
+     */
+    private static IgniteInternalCache<Object, Object> cache(Ignite ignite, String cacheName) throws IgniteCheckedException {
+        IgniteInternalCache<Object, Object> cache = ((IgniteKernal)ignite).getCache(cacheName);
+
+        if (cache == null)
+            throw new IgniteCheckedException(
+                "Failed to find cache for given cache name (null for default cache): " + cacheName);
+
+        return cache;
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<GridRestCommand> supportedCommands() {
+        return SUPPORTED_COMMANDS;
     }
 
     /** {@inheritDoc} */
@@ -201,7 +357,8 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
             switch (cmd) {
                 case DESTROY_CACHE: {
-                    fut = ((IgniteKernal)ctx.grid()).destroyCacheAsync(cacheName).chain(
+                    // Do not check thread tx here since there can be active system cache txs.
+                    fut = ((IgniteKernal)ctx.grid()).destroyCacheAsync(cacheName, false).chain(
                         new CX1<IgniteInternalFuture<?>, GridRestResponse>() {
                             @Override public GridRestResponse applyx(IgniteInternalFuture<?> f)
                                 throws IgniteCheckedException {
@@ -213,13 +370,20 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
                 }
 
                 case GET_OR_CREATE_CACHE: {
-                    fut = ((IgniteKernal)ctx.grid()).getOrCreateCacheAsync(cacheName).chain(
+                    // Do not check thread tx here since there can be active system cache txs.
+                    fut = ((IgniteKernal)ctx.grid()).getOrCreateCacheAsync(cacheName, false).chain(
                         new CX1<IgniteInternalFuture<?>, GridRestResponse>() {
                             @Override public GridRestResponse applyx(IgniteInternalFuture<?> f)
                                 throws IgniteCheckedException {
                                 return new GridRestResponse(f.get());
                             }
                         });
+
+                    break;
+                }
+
+                case CACHE_METADATA: {
+                    fut = ctx.task().execute(MetadataTask.class, cacheName);
 
                     break;
                 }
@@ -545,135 +709,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         }
     }
 
-    /**
-     * Handles append and prepend commands.
-     *
-     * @param ctx Kernal context.
-     * @param cache Cache.
-     * @param key Key.
-     * @param req Request.
-     * @param prepend Whether to prepend.
-     * @return Future of operation result.
-     * @throws IgniteCheckedException In case of any exception.
-     */
-    private static IgniteInternalFuture<?> appendOrPrepend(
-        final GridKernalContext ctx,
-        final IgniteInternalCache<Object, Object> cache,
-        final Object key, GridRestCacheRequest req, final boolean prepend) throws IgniteCheckedException {
-        assert cache != null;
-        assert key != null;
-        assert req != null;
-
-        final Object val = req.value();
-
-        if (val == null)
-            throw new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("val"));
-
-        return ctx.closure().callLocalSafe(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                try (IgniteInternalTx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-                    Object curVal = cache.get(key);
-
-                    if (curVal == null)
-                        return false;
-
-                    // Modify current value with appendix one.
-                    Object newVal = appendOrPrepend(curVal, val, !prepend);
-
-                    // Put new value asynchronously.
-                    cache.put(key, newVal);
-
-                    tx.commit();
-                }
-
-                return true;
-            }
-        }, false);
-    }
-
-    /**
-     * Append or prepend new value to the current one.
-     *
-     * @param origVal Original value.
-     * @param appendVal Appendix value to add to the original one.
-     * @param appendPlc Append or prepend policy flag.
-     * @return Resulting value.
-     * @throws IgniteCheckedException In case of grid exceptions.
-     */
-    private static Object appendOrPrepend(Object origVal, Object appendVal, boolean appendPlc) throws IgniteCheckedException {
-        // Strings.
-        if (appendVal instanceof String && origVal instanceof String)
-            return appendPlc ? origVal + (String)appendVal : (String)appendVal + origVal;
-
-        // Maps.
-        if (appendVal instanceof Map && origVal instanceof Map) {
-            Map<Object, Object> origMap = (Map<Object, Object>)origVal;
-            Map<Object, Object> appendMap = (Map<Object, Object>)appendVal;
-
-            Map<Object, Object> map = X.cloneObject(origMap, false, true);
-
-            if (appendPlc)
-                map.putAll(appendMap); // Append.
-            else {
-                map.clear();
-                map.putAll(appendMap); // Prepend.
-                map.putAll(origMap);
-            }
-
-            for (Map.Entry<Object, Object> e : appendMap.entrySet()) // Remove zero-valued entries.
-                if (e.getValue() == null && map.get(e.getKey()) == null)
-                    map.remove(e.getKey());
-
-            return map;
-        }
-
-        // Generic collection.
-        if (appendVal instanceof Collection<?> && origVal instanceof Collection<?>) {
-            Collection<Object> origCol = (Collection<Object>)origVal;
-            Collection<Object> appendCol = (Collection<Object>)appendVal;
-
-            Collection<Object> col = X.cloneObject(origCol, false, true);
-
-            if (appendPlc)
-                col.addAll(appendCol); // Append.
-            else {
-                col.clear();
-                col.addAll(appendCol); // Prepend.
-                col.addAll(origCol);
-            }
-
-            return col;
-        }
-
-        throw new IgniteCheckedException("Incompatible types [appendVal=" + appendVal + ", old=" + origVal + ']');
-    }
-
     /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridCacheCommandHandler.class, this);
-    }
-
-    /**
-     * Creates a transformation function from {@link CacheCommand}'s results into {@link GridRestResponse}.
-     *
-     * @param c Cache instance to obtain affinity data.
-     * @param key Affinity key for previous operation.
-     * @return Rest response.
-     */
-    private static IgniteClosure<IgniteInternalFuture<?>, GridRestResponse> resultWrapper(
-        final IgniteInternalCache<Object, Object> c, @Nullable final Object key) {
-        return new CX1<IgniteInternalFuture<?>, GridRestResponse>() {
-            @Override public GridRestResponse applyx(IgniteInternalFuture<?> f) throws IgniteCheckedException {
-                GridCacheRestResponse resp = new GridCacheRestResponse();
-
-                resp.setResponse(f.get());
-
-                if (key != null)
-                    resp.setAffinityNodeId(c.cache().affinity().mapKeyToNode(key).id().toString());
-
-                return resp;
-            }
-        };
     }
 
     /**
@@ -693,22 +731,6 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      */
     protected IgniteInternalCache<Object, Object> localCache(String cacheName) throws IgniteCheckedException {
         IgniteInternalCache<Object, Object> cache = ctx.cache().cache(cacheName);
-
-        if (cache == null)
-            throw new IgniteCheckedException(
-                "Failed to find cache for given cache name (null for default cache): " + cacheName);
-
-        return cache;
-    }
-
-    /**
-     * @param ignite Grid instance.
-     * @param cacheName Name of the cache.
-     * @return Instance on the named cache.
-     * @throws IgniteCheckedException If cache not found.
-     */
-    private static IgniteInternalCache<Object, Object> cache(Ignite ignite, String cacheName) throws IgniteCheckedException {
-        IgniteInternalCache<Object, Object> cache = ((IgniteKernal)ignite).getCache(cacheName);
 
         if (cache == null)
             throw new IgniteCheckedException(
@@ -771,22 +793,16 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     private static class FlaggedCacheOperationCallable implements Callable<GridRestResponse>, Serializable {
         /** */
         private static final long serialVersionUID = 0L;
-
-        /** Client ID. */
-        private UUID clientId;
-
         /** */
         private final String cacheName;
-
         /** */
         private final boolean skipStore;
-
         /** */
         private final CacheProjectionCommand op;
-
         /** */
         private final Object key;
-
+        /** Client ID. */
+        private UUID clientId;
         /** */
         @IgniteInstanceResource
         private Ignite g;
@@ -829,19 +845,14 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
     private static class CacheOperationCallable implements Callable<GridRestResponse>, Serializable {
         /** */
         private static final long serialVersionUID = 0L;
-
-        /** Client ID. */
-        private UUID clientId;
-
         /** */
         private final String cacheName;
-
         /** */
         private final CacheCommand op;
-
         /** */
         private final Object key;
-
+        /** Client ID. */
+        private UUID clientId;
         /** */
         @IgniteInstanceResource
         private Ignite g;
@@ -888,6 +899,113 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         /** {@inheritDoc} */
         @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
             return c.containsKeyAsync(key);
+        }
+    }
+
+    /** */
+    @GridInternal
+    private static class MetadataTask extends ComputeTaskAdapter<String, GridRestResponse> {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** */
+        @IgniteInstanceResource
+        private IgniteEx ignite;
+
+        /** */
+        private String cacheName;
+
+        /** {@inheritDoc} */
+        @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
+            @Nullable String cacheName) throws IgniteException {
+            this.cacheName = cacheName;
+
+            GridDiscoveryManager discovery = ignite.context().discovery();
+
+            boolean sameCaches = true;
+
+            int hash = discovery.nodeCaches(F.first(subgrid)).hashCode();
+
+            for (int i = 1; i < subgrid.size(); i++) {
+                if (hash != discovery.nodeCaches(subgrid.get(i)).hashCode()) {
+                    sameCaches = false;
+
+                    break;
+                }
+            }
+
+            Map<ComputeJob, ClusterNode> map = U.newHashMap(sameCaches ? 1 : subgrid.size());
+
+            if (sameCaches)
+                map.put(new MetadataJob(), ignite.localNode());
+            else {
+                for (ClusterNode node : subgrid)
+                    map.put(new MetadataJob(), node);
+            }
+
+            return map;
+        }
+
+        /** {@inheritDoc} */
+        @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+        @Nullable @Override public GridRestResponse reduce(List<ComputeJobResult> results) throws IgniteException {
+            Map<String, GridCacheSqlMetadata> map = new HashMap<>();
+
+            for (ComputeJobResult r : results) {
+                if (!r.isCancelled() && r.getException() == null) {
+                    for (GridCacheSqlMetadata m : r.<Collection<GridCacheSqlMetadata>>getData()) {
+                        if (!map.containsKey(m.cacheName()))
+                            map.put(m.cacheName(), m);
+                    }
+                }
+            }
+
+            Collection<GridCacheSqlMetadata> metas = new ArrayList<>(map.size());
+
+            // Metadata for current cache must be first in list.
+            GridCacheSqlMetadata cacheMeta = map.remove(cacheName);
+
+            if (cacheMeta != null)
+                metas.add(cacheMeta);
+
+            metas.addAll(map.values());
+
+            return new GridRestResponse(metas);
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(MetadataTask.class, this);
+        }
+    }
+
+    /** */
+    private static class MetadataJob extends ComputeJobAdapter {
+        /** */
+        private static final long serialVersionUID = 0L;
+
+        /** Auto-injected grid instance. */
+        @IgniteInstanceResource
+        private transient IgniteEx ignite;
+
+        /** {@inheritDoc} */
+        @Override public Collection<GridCacheSqlMetadata> execute() {
+            IgniteCacheProxy<?, ?> cache = F.first(ignite.context().cache().publicCaches());
+
+            if (cache == null)
+                return Collections.emptyList();
+
+            try {
+                return cache.context().queries().sqlMetadata();
+            }
+            catch (IgniteCheckedException e) {
+                throw U.convertException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(MetadataJob.class, this);
         }
     }
 
@@ -1368,7 +1486,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
         /** {@inheritDoc} */
         @Override public IgniteInternalFuture<?> applyx(IgniteInternalCache<Object, Object> c, GridKernalContext ctx) {
-            CacheMetrics metrics = c.cache().metrics();
+            CacheMetrics metrics = c.cache().localMetrics();
 
             assert metrics != null;
 

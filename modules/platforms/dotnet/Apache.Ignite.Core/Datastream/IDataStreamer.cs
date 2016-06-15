@@ -19,8 +19,8 @@ namespace Apache.Ignite.Core.Datastream
 {
     using System;
     using System.Collections.Generic;
+    using System.Threading.Tasks;
     using Apache.Ignite.Core.Cache.Store;
-    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Data streamer is responsible for loading external data into cache. It achieves it by
@@ -88,14 +88,14 @@ namespace Apache.Ignite.Core.Datastream
         /// <summary>
         /// Flag value indicating that this data streamer assumes that there could be concurrent updates to the cache. 
         /// <para />
-        /// Default is <code>false</code>.
+        /// Default is <c>false</c>.
         /// </summary>
         bool AllowOverwrite { get; set; }
 
         /// <summary>
         /// Flag indicating that write-through behavior should be disabled for data loading.
         /// <para />
-        /// Default is <code>false</code>.
+        /// Default is <c>false</c>.
         /// </summary>
         bool SkipStore { get; set; }
 
@@ -104,7 +104,7 @@ namespace Apache.Ignite.Core.Datastream
         /// <para />
         /// Setter must be called before any add/remove operation.
         /// <para />
-        /// Default is <code>1024</code>.
+        /// Default is <c>1024</c>.
         /// </summary>
         int PerNodeBufferSize { get; set; }
 
@@ -113,7 +113,7 @@ namespace Apache.Ignite.Core.Datastream
         /// <para />
         /// Setter must be called before any add/remove operation.
         /// <para />
-        /// Default is <code>16</code>.
+        /// Default is <c>16</c>.
         /// </summary>
         int PerNodeParallelOperations { get; set; }
 
@@ -123,17 +123,17 @@ namespace Apache.Ignite.Core.Datastream
         /// Note that there is no guarantee that data will be delivered after this concrete
         /// attempt (e.g., it can fail when topology is changing), but it won't be lost anyway.
         /// <para />
-        /// If set to <code>0</code>, automatic flush is disabled.
+        /// If set to <c>0</c>, automatic flush is disabled.
         /// <para />
-        /// Default is <code>0</code> (disabled).
+        /// Default is <c>0</c> (disabled).
         /// </summary>
         long AutoFlushFrequency { get; set; }
 
         /// <summary>
-        /// Gets future for this loading process. This future completes whenever method
+        /// Gets the task for this loading process. This task completes whenever method
         /// <see cref="IDataStreamer{K,V}.Close(bool)"/> completes.
         /// </summary>
-        IFuture Future { get; }
+        Task Task { get; }
 
         /// <summary>
         /// Gets or sets custom stream receiver.
@@ -146,30 +146,30 @@ namespace Apache.Ignite.Core.Datastream
         /// </summary>
         /// <param name="key">Key.</param>
         /// <param name="val">Value.</param>
-        /// <returns>Future for this operation.</returns>
-        IFuture AddData(TK key, TV val);
+        /// <returns>Task for this operation.</returns>
+        Task AddData(TK key, TV val);
 
         /// <summary>
         /// Adds single key-value pair for loading. Passing <c>null</c> as pair's value will 
         /// be interpreted as removal.
         /// </summary>
         /// <param name="pair">Key-value pair.</param>
-        /// <returns>Future for this operation.</returns>
-        IFuture AddData(KeyValuePair<TK, TV> pair);
+        /// <returns>Task for this operation.</returns>
+        Task AddData(KeyValuePair<TK, TV> pair);
 
         /// <summary>
         /// Adds collection of key-value pairs for loading. 
         /// </summary>
         /// <param name="entries">Entries.</param>
-        /// <returns>Future for this operation.</returns>
-        IFuture AddData(ICollection<KeyValuePair<TK, TV>> entries);
+        /// <returns>Task for this operation.</returns>
+        Task AddData(ICollection<KeyValuePair<TK, TV>> entries);
 
         /// <summary>
         /// Adds key for removal.
         /// </summary>
         /// <param name="key">Key.</param>
-        /// <returns>Future for this operation.</returns>
-        IFuture RemoveData(TK key);
+        /// <returns>Task for this operation.</returns>
+        Task RemoveData(TK key);
 
         /// <summary>
         /// Makes an attempt to load remaining data. This method is mostly similar to 
@@ -193,14 +193,14 @@ namespace Apache.Ignite.Core.Datastream
         void Close(bool cancel);
 
         /// <summary>
-        /// Gets streamer instance with portable mode enabled, changing key and/or value types if necessary.
-        /// In portable mode stream receiver gets data in portable format.
-        /// You can only change key/value types when transitioning from non-portable to portable streamer;
-        /// Changing type of portable streamer is not allowed and will throw an <see cref="InvalidOperationException"/>
+        /// Gets streamer instance with binary mode enabled, changing key and/or value types if necessary.
+        /// In binary mode stream receiver gets data in binary format.
+        /// You can only change key/value types when transitioning from non-binary to binary streamer;
+        /// Changing type of binary streamer is not allowed and will throw an <see cref="InvalidOperationException"/>
         /// </summary>
-        /// <typeparam name="TK1">Key type in portable mode.</typeparam>
-        /// <typeparam name="TV1">Value type in protable mode.</typeparam>
-        /// <returns>Streamer instance with portable mode enabled.</returns>
-        IDataStreamer<TK1, TV1> WithKeepPortable<TK1, TV1>();
+        /// <typeparam name="TK1">Key type in binary mode.</typeparam>
+        /// <typeparam name="TV1">Value type in binary mode.</typeparam>
+        /// <returns>Streamer instance with binary mode enabled.</returns>
+        IDataStreamer<TK1, TV1> WithKeepBinary<TK1, TV1>();
     }
 }

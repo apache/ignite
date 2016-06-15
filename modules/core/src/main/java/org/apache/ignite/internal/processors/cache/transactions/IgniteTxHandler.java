@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.cache.transactions;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
@@ -68,8 +69,11 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteFutureCancelledException;
+import org.apache.ignite.transactions.TransactionState;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
@@ -98,7 +102,12 @@ public class IgniteTxHandler {
      */
     public IgniteInternalFuture<?> processNearTxPrepareRequest(final UUID nearNodeId,
         final GridNearTxPrepareRequest req) {
-        return prepareTx(nearNodeId, null, req);
+        IgniteInternalFuture<GridNearTxPrepareResponse> fut = prepareTx(nearNodeId, null, req);
+
+        assert req.txState() != null || fut.error() != null ||
+            (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null);
+
+        return fut;
     }
 
     /**
@@ -211,12 +220,13 @@ public class IgniteTxHandler {
         final GridNearTxLocal locTx,
         final GridNearTxPrepareRequest req
     ) {
+        req.txState(locTx.txState());
+
         IgniteInternalFuture<GridNearTxPrepareResponse> fut = locTx.prepareAsyncLocal(
             req.reads(),
             req.writes(),
             req.transactionNodes(),
-            req.last(),
-            req.lastBackups());
+            req.last());
 
         if (locTx.isRollbackOnly())
             locTx.rollbackAsync();
@@ -241,7 +251,8 @@ public class IgniteTxHandler {
                         req.version(),
                         null,
                         e,
-                        null);
+                        null,
+                        req.deployInfo() != null);
                 }
             }
         });
@@ -283,7 +294,7 @@ public class IgniteTxHandler {
 
         assert firstEntry != null : req;
 
-        GridDhtTxLocal tx;
+        GridDhtTxLocal tx = null;
 
         GridCacheVersion mappedVer = ctx.tm().mappedVersion(req.version());
 
@@ -327,7 +338,8 @@ public class IgniteTxHandler {
                         req.version(),
                         null,
                         null,
-                        top.topologyVersion());
+                        top.topologyVersion(),
+                        req.deployInfo() != null);
 
                     try {
                         ctx.io().send(nearNode, res, req.policy());
@@ -347,6 +359,7 @@ public class IgniteTxHandler {
 
                 tx = new GridDhtTxLocal(
                     ctx,
+                    req.topologyVersion(),
                     nearNode.id(),
                     req.version(),
                     req.futureId(),
@@ -378,14 +391,19 @@ public class IgniteTxHandler {
                         req.version() + ", req=" + req + ']');
             }
             finally {
+                if (tx != null)
+                    req.txState(tx.txState());
+
                 if (top != null)
                     top.readUnlock();
             }
         }
 
         if (tx != null) {
+            req.txState(tx.txState());
+
             if (req.explicitLock())
-                tx.explicitLock(req.explicitLock());
+                tx.explicitLock(true);
 
             tx.transactionNodes(req.transactionNodes());
 
@@ -395,7 +413,6 @@ public class IgniteTxHandler {
 
             if (req.onePhaseCommit()) {
                 assert req.last();
-                assert F.isEmpty(req.lastBackups()) || req.lastBackups().size() <= 1;
 
                 tx.onePhaseCommit(true);
             }
@@ -410,12 +427,12 @@ public class IgniteTxHandler {
                 req.messageId(),
                 req.miniId(),
                 req.transactionNodes(),
-                req.last(),
-                req.lastBackups());
+                req.last());
 
-            if (tx.isRollbackOnly()) {
+            if (tx.isRollbackOnly() && !tx.commitOnPrepare()) {
                 try {
-                    tx.rollback();
+                    if (tx.state() != TransactionState.ROLLED_BACK && tx.state() != TransactionState.ROLLING_BACK)
+                        tx.rollback();
                 }
                 catch (IgniteCheckedException e) {
                     U.error(log, "Failed to rollback transaction: " + tx, e);
@@ -433,7 +450,7 @@ public class IgniteTxHandler {
                         tx0.setRollbackOnly(); // Just in case.
 
                         if (!X.hasCause(e, IgniteTxOptimisticCheckedException.class) &&
-                            !X.hasCause(e, IgniteFutureCancelledException.class))
+                            !X.hasCause(e, IgniteFutureCancelledException.class) && !ctx.kernalContext().isStopping())
                             U.error(log, "Failed to prepare DHT transaction: " + tx0, e);
                     }
                 }
@@ -463,8 +480,19 @@ public class IgniteTxHandler {
             Collection<ClusterNode> cacheNodes0 = ctx.discovery().cacheAffinityNodes(ctx.name(), expVer);
             Collection<ClusterNode> cacheNodes1 = ctx.discovery().cacheAffinityNodes(ctx.name(), curVer);
 
-            if (!cacheNodes0.equals(cacheNodes1))
+            if (!cacheNodes0.equals(cacheNodes1) || ctx.affinity().affinityTopologyVersion().compareTo(curVer) < 0)
                 return true;
+
+            try {
+                List<List<ClusterNode>> aff1 = ctx.affinity().assignments(expVer);
+                List<List<ClusterNode>> aff2 = ctx.affinity().assignments(curVer);
+
+                if (!aff1.equals(aff2))
+                    return true;
+            }
+            catch (IllegalStateException err) {
+                return true;
+            }
         }
 
         return false;
@@ -476,13 +504,19 @@ public class IgniteTxHandler {
      */
     private void processNearTxPrepareResponse(UUID nodeId, GridNearTxPrepareResponse res) {
         GridNearTxPrepareFutureAdapter fut = (GridNearTxPrepareFutureAdapter)ctx.mvcc()
-            .<IgniteInternalTx>future(res.version(), res.futureId());
+            .<IgniteInternalTx>mvccFuture(res.version(), res.futureId());
 
         if (fut == null) {
             U.warn(log, "Failed to find future for prepare response [sender=" + nodeId + ", res=" + res + ']');
 
             return;
         }
+
+        IgniteInternalTx tx = fut.tx();
+
+        assert tx != null;
+
+        res.txState(tx.txState());
 
         fut.onResult(nodeId, res);
     }
@@ -494,8 +528,7 @@ public class IgniteTxHandler {
     private void processNearTxFinishResponse(UUID nodeId, GridNearTxFinishResponse res) {
         ctx.tm().onFinishedRemote(nodeId, res.threadId());
 
-        GridNearTxFinishFuture fut = (GridNearTxFinishFuture)ctx.mvcc().<IgniteInternalTx>future(
-            res.xid(), res.futureId());
+        GridNearTxFinishFuture fut = (GridNearTxFinishFuture)ctx.mvcc().<IgniteInternalTx>future(res.futureId());
 
         if (fut == null) {
             if (log.isDebugEnabled())
@@ -512,7 +545,7 @@ public class IgniteTxHandler {
      * @param res Response.
      */
     private void processDhtTxPrepareResponse(UUID nodeId, GridDhtTxPrepareResponse res) {
-        GridDhtTxPrepareFuture fut = (GridDhtTxPrepareFuture)ctx.mvcc().future(res.version(), res.futureId());
+        GridDhtTxPrepareFuture fut = (GridDhtTxPrepareFuture)ctx.mvcc().mvccFuture(res.version(), res.futureId());
 
         if (fut == null) {
             if (log.isDebugEnabled())
@@ -520,6 +553,12 @@ public class IgniteTxHandler {
 
             return;
         }
+
+        IgniteInternalTx tx = fut.tx();
+
+        assert tx != null;
+
+        res.txState(tx.txState());
 
         fut.onResult(nodeId, res);
     }
@@ -533,8 +572,7 @@ public class IgniteTxHandler {
         assert res != null;
 
         if (res.checkCommitted()) {
-            GridNearTxFinishFuture fut = (GridNearTxFinishFuture)ctx.mvcc().<IgniteInternalTx>future(
-                res.xid(), res.futureId());
+            GridNearTxFinishFuture fut = (GridNearTxFinishFuture)ctx.mvcc().<IgniteInternalTx>future(res.futureId());
 
             if (fut == null) {
                 if (log.isDebugEnabled())
@@ -546,8 +584,7 @@ public class IgniteTxHandler {
             fut.onResult(nodeId, res);
         }
         else {
-            GridDhtTxFinishFuture fut = (GridDhtTxFinishFuture)ctx.mvcc().<IgniteInternalTx>future(
-                res.xid(), res.futureId());
+            GridDhtTxFinishFuture fut = (GridDhtTxFinishFuture)ctx.mvcc().<IgniteInternalTx>future(res.futureId());
 
             if (fut == null) {
                 if (log.isDebugEnabled())
@@ -565,8 +602,14 @@ public class IgniteTxHandler {
      * @param req Request.
      * @return Future.
      */
-    @Nullable public IgniteInternalFuture<IgniteInternalTx> processNearTxFinishRequest(UUID nodeId, GridNearTxFinishRequest req) {
-        return finish(nodeId, null, req);
+    @Nullable public IgniteInternalFuture<IgniteInternalTx> processNearTxFinishRequest(UUID nodeId,
+        GridNearTxFinishRequest req) {
+        IgniteInternalFuture<IgniteInternalTx> fut = finish(nodeId, null, req);
+
+        assert req.txState() != null || fut.error() != null ||
+            (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null);
+
+        return fut;
     }
 
     /**
@@ -579,6 +622,9 @@ public class IgniteTxHandler {
         GridNearTxFinishRequest req) {
         assert nodeId != null;
         assert req != null;
+
+        if (locTx != null)
+            req.txState(locTx.txState());
 
         // Transaction on local cache only.
         if (locTx != null && !locTx.nearLocallyMapped() && !locTx.colocatedLocallyMapped())
@@ -633,6 +679,9 @@ public class IgniteTxHandler {
         else
             tx = ctx.tm().tx(dhtVer);
 
+        if (tx != null)
+            req.txState(tx.txState());
+
         if (tx == null && locTx != null && !req.commit()) {
             U.warn(log, "DHT local tx not found for near local tx rollback " +
                 "[req=" + req + ", dhtVer=" + dhtVer + ", tx=" + locTx + ']');
@@ -676,6 +725,14 @@ public class IgniteTxHandler {
             assert tx != null : "Transaction is null for near finish request [nodeId=" +
                 nodeId + ", req=" + req + "]";
 
+            if (req.syncMode() == null) {
+                boolean sync = req.commit() ? req.syncCommit() : req.syncRollback();
+
+                tx.syncMode(sync ? FULL_SYNC : FULL_ASYNC);
+            }
+            else
+                tx.syncMode(req.syncMode());
+
             if (req.commit()) {
                 tx.storeEnabled(req.storeEnabled());
 
@@ -685,9 +742,6 @@ public class IgniteTxHandler {
 
                     return null;
                 }
-
-                if (!tx.syncCommit())
-                    tx.syncCommit(req.syncCommit());
 
                 tx.nearFinishFutureId(req.futureId());
                 tx.nearFinishMiniId(req.miniId());
@@ -700,8 +754,6 @@ public class IgniteTxHandler {
                 return commitFut;
             }
             else {
-                tx.syncRollback(req.syncRollback());
-
                 tx.nearFinishFutureId(req.futureId());
                 tx.nearFinishMiniId(req.miniId());
 
@@ -714,18 +766,20 @@ public class IgniteTxHandler {
             }
         }
         catch (Throwable e) {
+            tx.commitError(e);
+
+            tx.systemInvalidate(true);
+
             U.error(log, "Failed completing transaction [commit=" + req.commit() + ", tx=" + tx + ']', e);
 
             IgniteInternalFuture<IgniteInternalTx> res = null;
 
-            if (tx != null) {
-                IgniteInternalFuture<IgniteInternalTx> rollbackFut = tx.rollbackAsync();
+            IgniteInternalFuture<IgniteInternalTx> rollbackFut = tx.rollbackAsync();
 
-                // Only for error logging.
-                rollbackFut.listen(CU.errorLogger(log));
+            // Only for error logging.
+            rollbackFut.listen(CU.errorLogger(log));
 
-                res = rollbackFut;
-            }
+            res = rollbackFut;
 
             if (e instanceof Error)
                 throw (Error)e;
@@ -787,7 +841,7 @@ public class IgniteTxHandler {
         GridDhtTxPrepareResponse res;
 
         try {
-            res = new GridDhtTxPrepareResponse(req.version(), req.futureId(), req.miniId());
+            res = new GridDhtTxPrepareResponse(req.version(), req.futureId(), req.miniId(), req.deployInfo() != null);
 
             // Start near transaction first.
             nearTx = !F.isEmpty(req.nearWrites()) ? startNearRemoteTx(ctx.deploy().globalLoader(), nodeId, req) : null;
@@ -796,6 +850,11 @@ public class IgniteTxHandler {
             // Set evicted keys from near transaction.
             if (nearTx != null)
                 res.nearEvicted(nearTx.evicted());
+
+            if (dhtTx != null)
+                req.txState(dhtTx.txState());
+            else if (nearTx != null)
+                req.txState(nearTx.txState());
 
             if (dhtTx != null && !F.isEmpty(dhtTx.invalidPartitions()))
                 res.invalidPartitionsByCacheId(dhtTx.invalidPartitions());
@@ -833,12 +892,13 @@ public class IgniteTxHandler {
             if (nearTx != null)
                 nearTx.rollback();
 
-            res = new GridDhtTxPrepareResponse(req.version(), req.futureId(), req.miniId(), e);
+            res = new GridDhtTxPrepareResponse(req.version(), req.futureId(), req.miniId(), e,
+                req.deployInfo() != null);
         }
 
         try {
             // Reply back to sender.
-            ctx.io().send(nodeId, res, req.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+            ctx.io().send(nodeId, res, req.policy());
         }
         catch (IgniteCheckedException e) {
             if (e instanceof ClusterTopologyCheckedException) {
@@ -848,7 +908,7 @@ public class IgniteTxHandler {
             }
             else
                 U.warn(log, "Failed to send tx response to remote node (will rollback transaction) [node=" + nodeId +
-                    ", xid=" + req.version() + ", err=" +  e.getMessage() + ']');
+                    ", xid=" + req.version() + ", err=" + e.getMessage() + ']');
 
             if (nearTx != null)
                 nearTx.rollback();
@@ -856,6 +916,9 @@ public class IgniteTxHandler {
             if (dhtTx != null)
                 dhtTx.rollback();
         }
+
+        assert req.txState() != null || res.error() != null ||
+            (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null);
     }
 
     /**
@@ -871,7 +934,19 @@ public class IgniteTxHandler {
             log.debug("Processing dht tx finish request [nodeId=" + nodeId + ", req=" + req + ']');
 
         if (req.checkCommitted()) {
-            sendReply(nodeId, req, checkDhtRemoteTxCommitted(req.version()));
+            boolean committed = req.waitRemoteTransactions() || !ctx.tm().addRolledbackTx(null, req.version());
+
+            if (!committed || !req.syncCommit())
+                sendReply(nodeId, req, committed);
+            else {
+                IgniteInternalFuture<?> fut = ctx.tm().remoteTxFinishFuture(req.version());
+
+                fut.listen(new CI1<IgniteInternalFuture<?>>() {
+                    @Override public void apply(IgniteInternalFuture<?> fut) {
+                        sendReply(nodeId, req, true);
+                    }
+                });
+            }
 
             return;
         }
@@ -891,8 +966,11 @@ public class IgniteTxHandler {
         if (req.replyRequired()) {
             IgniteInternalFuture completeFut;
 
-            IgniteInternalFuture<IgniteInternalTx> dhtFin = dhtTx == null ? null : dhtTx.done() ? null : dhtTx.finishFuture();
-            IgniteInternalFuture<IgniteInternalTx> nearFin = nearTx == null ? null : nearTx.done() ? null : nearTx.finishFuture();
+            IgniteInternalFuture<IgniteInternalTx> dhtFin = dhtTx == null ?
+                null : dhtTx.done() ? null : dhtTx.finishFuture();
+
+            IgniteInternalFuture<IgniteInternalTx> nearFin = nearTx == null ?
+                null : nearTx.done() ? null : nearTx.finishFuture();
 
             if (dhtFin != null && nearFin != null) {
                 GridCompoundFuture fut = new GridCompoundFuture();
@@ -909,8 +987,7 @@ public class IgniteTxHandler {
 
             if (completeFut != null) {
                 completeFut.listen(new CI1<IgniteInternalFuture<IgniteInternalTx>>() {
-                    @Override
-                    public void apply(IgniteInternalFuture<IgniteInternalTx> igniteTxIgniteFuture) {
+                    @Override public void apply(IgniteInternalFuture<IgniteInternalTx> igniteTxIgniteFuture) {
                         sendReply(nodeId, req, true);
                     }
                 });
@@ -920,24 +997,8 @@ public class IgniteTxHandler {
         }
         else
             sendReply(nodeId, req, true);
-    }
 
-    /**
-     * Checks whether DHT remote transaction with given version has been committed. If not, will add version
-     * to rollback version set so that late response will not falsely commit this transaction.
-     *
-     * @param writeVer Write version to check.
-     * @return {@code True} if transaction has been committed, {@code false} otherwise.
-     */
-    public boolean checkDhtRemoteTxCommitted(GridCacheVersion writeVer) {
-        assert writeVer != null;
-
-        boolean committed = true;
-
-        if (ctx.tm().addRolledbackTx(writeVer))
-            committed = false;
-
-        return committed;
+        assert req.txState() != null || (ctx.tm().tx(req.version()) == null && ctx.tm().nearTx(req.version()) == null);
     }
 
     /**
@@ -948,7 +1009,8 @@ public class IgniteTxHandler {
     protected void finish(
         UUID nodeId,
         IgniteTxRemoteEx tx,
-        GridDhtTxFinishRequest req) {
+        GridDhtTxFinishRequest req
+    ) {
         // We don't allow explicit locks for transactions and
         // therefore immediately return if transaction is null.
         // However, we may decide to relax this restriction in
@@ -956,9 +1018,9 @@ public class IgniteTxHandler {
         if (tx == null) {
             if (req.commit())
                 // Must be some long time duplicate, but we add it anyway.
-                ctx.tm().addCommittedTx(req.version(), null);
+                ctx.tm().addCommittedTx(tx, req.version(), null);
             else
-                ctx.tm().addRolledbackTx(req.version());
+                ctx.tm().addRolledbackTx(tx, req.version());
 
             if (log.isDebugEnabled())
                 log.debug("Received finish request for non-existing transaction (added to completed set) " +
@@ -970,6 +1032,8 @@ public class IgniteTxHandler {
             log.debug("Received finish request for transaction [senderNodeId=" + nodeId + ", req=" + req +
                 ", tx=" + tx + ']');
 
+        req.txState(tx.txState());
+
         try {
             if (req.commit() || req.isSystemInvalidate()) {
                 tx.commitVersion(req.commitVersion());
@@ -978,6 +1042,9 @@ public class IgniteTxHandler {
 
                 // Complete remote candidates.
                 tx.doneRemote(req.baseVersion(), null, null, null);
+
+                tx.setPartitionUpdateCounters(
+                    req.partUpdateCounters() != null ? req.partUpdateCounters().array() : null);
 
                 tx.commit();
             }
@@ -1052,7 +1119,7 @@ public class IgniteTxHandler {
      * @param committed {@code True} if transaction committed on this node.
      */
     protected void sendReply(UUID nodeId, GridDhtTxFinishRequest req, boolean committed) {
-        if (req.replyRequired()) {
+        if (req.replyRequired() || req.checkCommitted()) {
             GridDhtTxFinishResponse res = new GridDhtTxFinishResponse(req.version(), req.futureId(), req.miniId());
 
             if (req.checkCommitted()) {
@@ -1068,7 +1135,7 @@ public class IgniteTxHandler {
             }
 
             try {
-                ctx.io().send(nodeId, res, req.system() ? UTILITY_CACHE_POOL : SYSTEM_POOL);
+                ctx.io().send(nodeId, res, req.policy());
             }
             catch (Throwable e) {
                 // Double-check.
@@ -1101,12 +1168,13 @@ public class IgniteTxHandler {
             GridDhtTxRemote tx = ctx.tm().tx(req.version());
 
             if (tx == null) {
+                boolean single = req.last() && req.writes().size() == 1;
+
                 tx = new GridDhtTxRemote(
                     ctx,
                     req.nearNodeId(),
                     req.futureId(),
                     nodeId,
-                    req.threadId(),
                     req.topologyVersion(),
                     req.version(),
                     null,
@@ -1120,7 +1188,8 @@ public class IgniteTxHandler {
                     req.nearXidVersion(),
                     req.transactionNodes(),
                     req.subjectId(),
-                    req.taskNameHash());
+                    req.taskNameHash(),
+                    single);
 
                 tx.writeVersion(req.writeVersion());
 
@@ -1148,7 +1217,7 @@ public class IgniteTxHandler {
                 tx.transactionNodes(req.transactionNodes());
             }
 
-            if (!tx.isSystemInvalidate() && !F.isEmpty(req.writes())) {
+            if (!tx.isSystemInvalidate()) {
                 int idx = 0;
 
                 for (IgniteTxEntry entry : req.writes()) {
@@ -1243,10 +1312,10 @@ public class IgniteTxHandler {
             if (tx == null) {
                 tx = new GridNearTxRemote(
                     ctx,
+                    req.topologyVersion(),
                     ldr,
                     nodeId,
                     req.nearNodeId(),
-                    req.threadId(),
                     req.version(),
                     null,
                     req.system(),
@@ -1293,8 +1362,7 @@ public class IgniteTxHandler {
      * @param req Request.
      */
     protected void processCheckPreparedTxRequest(final UUID nodeId,
-        final GridCacheTxRecoveryRequest req)
-    {
+        final GridCacheTxRecoveryRequest req) {
         if (log.isDebugEnabled())
             log.debug("Processing check prepared transaction requests [nodeId=" + nodeId + ", req=" + req + ']');
 
@@ -1344,7 +1412,8 @@ public class IgniteTxHandler {
         GridCacheTxRecoveryRequest req,
         boolean prepared) {
         GridCacheTxRecoveryResponse res =
-            new GridCacheTxRecoveryResponse(req.version(), req.futureId(), req.miniId(), prepared);
+            new GridCacheTxRecoveryResponse(req.version(), req.futureId(), req.miniId(), prepared,
+                req.deployInfo() != null);
 
         try {
             if (log.isDebugEnabled())
@@ -1370,8 +1439,7 @@ public class IgniteTxHandler {
         if (log.isDebugEnabled())
             log.debug("Processing check prepared transaction response [nodeId=" + nodeId + ", res=" + res + ']');
 
-        GridCacheTxRecoveryFuture fut = (GridCacheTxRecoveryFuture)ctx.mvcc().
-            <Boolean>future(res.version(), res.futureId());
+        GridCacheTxRecoveryFuture fut = (GridCacheTxRecoveryFuture)ctx.mvcc().future(res.futureId());
 
         if (fut == null) {
             if (log.isDebugEnabled())
@@ -1379,6 +1447,8 @@ public class IgniteTxHandler {
 
             return;
         }
+        else
+            res.txState(fut.tx().txState());
 
         fut.onResult(nodeId, res);
     }

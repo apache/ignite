@@ -25,6 +25,7 @@ import javax.cache.integration.CompletionListenerFuture;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -141,7 +142,8 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
      * @throws Exception If failed.
      */
     public void testReadThrough() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-821");
+        if (atomicityMode() == CacheAtomicityMode.TRANSACTIONAL)
+            fail("https://issues.apache.org/jira/browse/IGNITE-821");
 
         IgniteCache<Integer, Integer> cache = jcache(0);
 
@@ -185,6 +187,7 @@ public abstract class IgniteCacheExpiryPolicyWithStoreAbstractTest extends Ignit
     /**
      * @param key Key.
      * @param ttl TTL.
+     * @param primaryOnly If {@code true} expect entries only on primary node.
      * @throws Exception If failed.
      */
     private void checkTtl(Object key, final long ttl, boolean primaryOnly) throws Exception {

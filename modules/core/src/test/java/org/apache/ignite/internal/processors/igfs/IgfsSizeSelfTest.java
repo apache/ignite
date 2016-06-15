@@ -17,19 +17,7 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cluster.ClusterNode;
@@ -52,17 +40,21 @@ import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
-import org.apache.ignite.transactions.Transaction;
 import org.jsr166.ThreadLocalRandom8;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.Callable;
 
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheRebalanceMode.SYNC;
-import static org.apache.ignite.internal.processors.igfs.IgfsFileInfo.ROOT_ID;
-import static org.apache.ignite.internal.processors.igfs.IgfsFileInfo.TRASH_ID;
-import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
-import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
  * {@link IgfsAttributes} test case.
@@ -257,41 +249,6 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
     }
 
     /**
-     * Ensure that exception is not thrown in case PARTITIONED cache is oversized, but data is deleted concurrently.
-     *
-     * @throws Exception If failed.
-     */
-    public void testPartitionedOversizeDelay() throws Exception {
-        cacheMode = PARTITIONED;
-        nearEnabled = true;
-
-        checkOversizeDelay();
-    }
-
-    /**
-     * Ensure that exception is not thrown in case co-located cache is oversized, but data is deleted concurrently.
-     *
-     * @throws Exception If failed.
-     */
-    public void testColocatedOversizeDelay() throws Exception {
-        cacheMode = PARTITIONED;
-        nearEnabled = false;
-
-        checkOversizeDelay();
-    }
-
-    /**
-     * Ensure that exception is not thrown in case REPLICATED cache is oversized, but data is deleted concurrently.
-     *
-     * @throws Exception If failed.
-     */
-    public void testReplicatedOversizeDelay() throws Exception {
-        cacheMode = REPLICATED;
-
-        checkOversizeDelay();
-    }
-
-    /**
      * Ensure that IGFS size is correctly updated in case of preloading for PARTITIONED cache.
      *
      * @throws Exception If failed.
@@ -482,96 +439,6 @@ public class IgfsSizeSelfTest extends IgfsCommonAbstractTest {
             }
         }, IgfsOutOfSpaceException.class, "Failed to write data block (IGFS maximum data size exceeded) [used=" +
             igfsMaxData + ", allowed=" + igfsMaxData + ']');
-    }
-
-    /**
-     * Ensure that exception is not thrown or thrown with some delay when there is something in trash directory.
-     *
-     * @throws Exception If failed.
-     */
-    private void checkOversizeDelay() throws Exception {
-        final CountDownLatch latch = new CountDownLatch(1);
-
-        igfsMaxData = 256;
-        trashPurgeTimeout = 2000;
-
-        startUp();
-
-        IgfsImpl igfs = igfs(0);
-
-        final IgfsPath path = new IgfsPath("/file");
-        final IgfsPath otherPath = new IgfsPath("/fileOther");
-
-        // Fill cache with data up to it's limit.
-        IgfsOutputStream os = igfs.create(path, false);
-        os.write(chunk((int)igfsMaxData));
-        os.close();
-
-        final IgniteCache<IgniteUuid, IgfsFileInfo> metaCache = igfs.context().kernalContext().cache().jcache(
-            igfs.configuration().getMetaCacheName());
-
-        // Start a transaction in a separate thread which will lock file ID.
-        final IgniteUuid id = igfs.context().meta().fileId(path);
-        final IgfsFileInfo info = igfs.context().meta().info(id);
-
-        final AtomicReference<Throwable> err = new AtomicReference<>();
-
-        try {
-            new Thread(new Runnable() {
-                @Override public void run() {
-                    try {
-
-                        try (Transaction tx = metaCache.unwrap(Ignite.class).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                            metaCache.get(id);
-
-                            latch.await();
-
-                            U.sleep(1000); // Sleep here so that data manager could "see" oversize.
-
-                            tx.commit();
-                        }
-                    }
-                    catch (Throwable e) {
-                        err.set(e);
-                    }
-                }
-            }).start();
-
-            // Now add file ID to trash listing so that delete worker could "see" it.
-
-            try (Transaction tx = metaCache.unwrap(Ignite.class).transactions().txStart(PESSIMISTIC, REPEATABLE_READ)) {
-                Map<String, IgfsListingEntry> listing = Collections.singletonMap(path.name(),
-                    new IgfsListingEntry(info));
-
-                // Clear root listing.
-                metaCache.put(ROOT_ID, new IgfsFileInfo(ROOT_ID));
-
-                // Add file to trash listing.
-                IgfsFileInfo trashInfo = metaCache.get(TRASH_ID);
-
-                if (trashInfo == null)
-                    metaCache.put(TRASH_ID, new IgfsFileInfo(listing, new IgfsFileInfo(TRASH_ID)));
-                else
-                    metaCache.put(TRASH_ID, new IgfsFileInfo(listing, trashInfo));
-
-                tx.commit();
-            }
-
-            assert metaCache.get(TRASH_ID) != null;
-
-            // Now the file is locked and is located in trash, try adding some more data.
-            os = igfs.create(otherPath, false);
-            os.write(new byte[1]);
-
-            latch.countDown();
-
-            os.close();
-
-            assert err.get() == null;
-        }
-        finally {
-            latch.countDown(); // Safety.
-        }
     }
 
     /**

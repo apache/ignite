@@ -47,8 +47,8 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
         /// <summary>
         /// Default time interval.
         /// </summary>
-        [SuppressMessage("ReSharper", "StaticMemberInGenericType")]
         [SuppressMessage("Microsoft.Design", "CA1000:DoNotDeclareStaticMembersOnGenericTypes")]
+        [SuppressMessage("ReSharper", "StaticMemberInGenericType")]
         public static readonly TimeSpan DfltTimeInterval = new TimeSpan(0);
 
         /// <summary>
@@ -115,7 +115,7 @@ namespace Apache.Ignite.Core.Cache.Query.Continuous
         /// returns <c>false</c>, then cache entry event will not be sent to a node where
         /// continuous query has been started.
         /// <para />
-        /// Must be either portable or serializable in case query is not local.
+        /// Must be either binary or serializable in case query is not local.
         /// </summary>
         public ICacheEntryEventFilter<TK, TV> Filter { get; set; }
 

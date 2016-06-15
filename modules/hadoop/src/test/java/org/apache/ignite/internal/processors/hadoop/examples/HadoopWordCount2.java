@@ -20,11 +20,14 @@ package org.apache.ignite.internal.processors.hadoop.examples;
 import java.io.IOException;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.SequenceFile;
 import org.apache.hadoop.io.Text;
+import org.apache.hadoop.io.compress.SnappyCodec;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+import org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 
 /**
@@ -62,7 +65,7 @@ public class HadoopWordCount2 {
         job.setOutputKeyClass(Text.class);
         job.setOutputValueClass(IntWritable.class);
 
-        setTasksClasses(job, true, true, true);
+        setTasksClasses(job, true, true, true, false);
 
         FileInputFormat.setInputPaths(job, new Path(input));
         FileOutputFormat.setOutputPath(job, new Path(output));
@@ -80,18 +83,29 @@ public class HadoopWordCount2 {
      * @param setCombiner Option to set combiner class.
      * @param setReducer Option to set reducer and output format classes.
      */
-    public static void setTasksClasses(Job job, boolean setMapper, boolean setCombiner, boolean setReducer) {
+    public static void setTasksClasses(Job job, boolean setMapper, boolean setCombiner, boolean setReducer,
+            boolean outputCompression) {
         if (setMapper) {
             job.setMapperClass(HadoopWordCount2Mapper.class);
             job.setInputFormatClass(TextInputFormat.class);
         }
 
         if (setCombiner)
-            job.setCombinerClass(HadoopWordCount2Reducer.class);
+            job.setCombinerClass(HadoopWordCount2Combiner.class);
 
         if (setReducer) {
             job.setReducerClass(HadoopWordCount2Reducer.class);
             job.setOutputFormatClass(TextOutputFormat.class);
+        }
+
+        if (outputCompression) {
+            job.setOutputFormatClass(SequenceFileOutputFormat.class);
+
+            SequenceFileOutputFormat.setOutputCompressionType(job, SequenceFile.CompressionType.BLOCK);
+
+            SequenceFileOutputFormat.setCompressOutput(job, true);
+
+            job.getConfiguration().set(FileOutputFormat.COMPRESS_CODEC, SnappyCodec.class.getName());
         }
     }
 }

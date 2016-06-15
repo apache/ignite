@@ -51,6 +51,11 @@ public interface GridCacheSqlIndexMetadata extends Externalizable {
     public boolean descending(String field);
 
     /**
+     * @return Descendings.
+     */
+    public Collection<String> descendings();
+
+    /**
      * Gets whether this is a unique index.
      *
      * @return {@code True} if index is unique, {@code false} otherwise.

@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_CACHE_QUERY_IMPL
-#define _IGNITE_CACHE_QUERY_IMPL
+#ifndef _IGNITE_IMPL_CACHE_QUERY_QUERY_IMPL
+#define _IGNITE_IMPL_CACHE_QUERY_QUERY_IMPL
 
-#include "ignite/ignite_error.h"
+#include <ignite/ignite_error.h>
+
 #include "ignite/impl/ignite_environment.h"
 #include "ignite/impl/operations.h"
 
@@ -30,6 +31,8 @@ namespace ignite
         {
             namespace query
             {
+                class QueryFieldsRowImpl;
+
                 /**
                  * Query cursor implementation.
                  */
@@ -64,6 +67,14 @@ namespace ignite
                      * @param err Error.
                      */
                     void GetNext(OutputOperation& op, IgniteError* err);
+
+                    /**
+                     * Get next row.
+                     *
+                     * @param err Error.
+                     * @return Output row.
+                     */
+                    QueryFieldsRowImpl* GetNextRow(IgniteError* err);
 
                     /**
                      * Get all cursor entries.
@@ -112,4 +123,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_IMPL_CACHE_QUERY_QUERY_IMPL

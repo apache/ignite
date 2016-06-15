@@ -16,13 +16,12 @@
  */
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using Apache.Ignite.Core;
 using Apache.Ignite.Core.Events;
 using Apache.Ignite.ExamplesDll.Compute;
 using Apache.Ignite.ExamplesDll.Events;
-using Apache.Ignite.ExamplesDll.Portable;
+using Apache.Ignite.ExamplesDll.Binary;
 
 namespace Apache.Ignite.Examples.Events
 {
@@ -36,8 +35,8 @@ namespace Apache.Ignite.Examples.Events
     /// 3) Start example (F5 or Ctrl+F5).
     /// <para />
     /// This example can be run with standalone Apache Ignite.NET node:
-    /// 1) Run %IGNITE_HOME%/platforms/dotnet/Apache.Ignite/bin/${Platform]/${Configuration}/Apache.Ignite.exe:
-    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\example-compute.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
+    /// 1) Run %IGNITE_HOME%/platforms/dotnet/bin/Apache.Ignite.exe:
+    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\examples-config.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
     /// 2) Start example.
     /// </summary>
     public class EventsExample
@@ -48,13 +47,7 @@ namespace Apache.Ignite.Examples.Events
         [STAThread]
         public static void Main()
         {
-            var cfg = new IgniteConfiguration
-            {
-                SpringConfigUrl = @"platforms\dotnet\examples\config\example-compute.xml",
-                JvmOptions = new List<string> {"-Xms512m", "-Xmx1024m"}
-            };
-
-            using (var ignite = Ignition.Start(cfg))
+            using (var ignite = Ignition.Start(@"platforms\dotnet\examples\config\examples-config.xml"))
             {
                 Console.WriteLine(">>> Events example started.");
                 Console.WriteLine();
@@ -63,7 +56,7 @@ namespace Apache.Ignite.Examples.Events
                 Console.WriteLine(">>> Listening for a local event...");
 
                 var listener = new LocalListener();
-                ignite.GetEvents().LocalListen(listener, EventType.EventsTaskExecution);
+                ignite.GetEvents().LocalListen(listener, EventType.TaskExecutionAll);
 
                 ExecuteTask(ignite);
 
@@ -71,24 +64,6 @@ namespace Apache.Ignite.Examples.Events
 
                 Console.WriteLine(">>> Received events count: " + listener.EventsReceived);
                 Console.WriteLine();
-
-                // Remote listen example (start standalone nodes for better demonstration)
-                Console.WriteLine(">>> Listening for remote events...");
-
-                var localListener = new LocalListener();
-                var remoteFilter = new RemoteFilter();
-
-                var listenId = ignite.GetEvents().RemoteListen(localListener: localListener,
-                    remoteFilter: remoteFilter, types: EventType.EventsJobExecution);
-
-                if (listenId == null)
-                    throw new InvalidOperationException("Subscription failed.");
-
-                ExecuteTask(ignite);
-
-                ignite.GetEvents().StopRemoteListen(listenId.Value);
-
-                Console.WriteLine(">>> Received events count: " + localListener.EventsReceived);
             }
 
             Console.WriteLine();

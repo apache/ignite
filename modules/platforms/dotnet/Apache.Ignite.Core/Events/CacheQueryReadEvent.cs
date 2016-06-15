@@ -19,7 +19,7 @@ namespace Apache.Ignite.Core.Events
 {
     using System;
     using System.Globalization;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// Cache query read event.
@@ -60,7 +60,7 @@ namespace Apache.Ignite.Core.Events
         /// Constructor.
         /// </summary>
         /// <param name="r">The reader to read data from.</param>
-        internal CacheQueryReadEvent(IPortableRawReader r) : base(r)
+        internal CacheQueryReadEvent(IBinaryRawReader r) : base(r)
         {
             _queryType = r.ReadString();
             _cacheName = r.ReadString();
@@ -124,8 +124,10 @@ namespace Apache.Ignite.Core.Events
         /// </summary>
         public object Row { get { return _row; } }
 
-        /** <inheritDoc /> */
-	    public override string ToShortString()
+        /// <summary>
+        /// Gets shortened version of ToString result.
+        /// </summary>
+        public override string ToShortString()
 	    {
 	        return string.Format(CultureInfo.InvariantCulture,
 	            "{0}: QueryType={1}, CacheName={2}, ClassName={3}, Clause={4}, SubjectId={5}, " +

@@ -120,6 +120,8 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
      * @param taskNameHash Task name hash code.
      * @param accessTtl TTL for read operation.
      * @param skipStore Skip store flag.
+     * @param keepBinary Keep binary flag.
+     * @param addDepInfo Deployment info flag.
      */
     public GridDhtLockRequest(
         int cacheId,
@@ -141,7 +143,9 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         @Nullable UUID subjId,
         int taskNameHash,
         long accessTtl,
-        boolean skipStore
+        boolean skipStore,
+        boolean keepBinary,
+        boolean addDepInfo
     ) {
         super(cacheId,
             nodeId,
@@ -156,7 +160,9 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
             timeout,
             dhtCnt == 0 ? nearCnt : dhtCnt,
             txSize,
-            skipStore);
+            skipStore,
+            keepBinary,
+            addDepInfo);
 
         this.topVer = topVer;
 
@@ -169,11 +175,6 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         this.subjId = subjId;
         this.taskNameHash = taskNameHash;
         this.accessTtl = accessTtl;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean allowForStartup() {
-        return true;
     }
 
     /**
@@ -238,7 +239,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
     ) throws IgniteCheckedException {
         invalidateEntries.set(idx, invalidateEntry);
 
-        addKeyBytes(key, false, null, ctx);
+        addKeyBytes(key, false, ctx);
     }
 
     /**
@@ -304,14 +305,13 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
         return accessTtl;
     }
 
-    /** {@inheritDoc}
-     * @param ctx*/
+    /** {@inheritDoc} */
     @Override public void prepareMarshal(GridCacheSharedContext ctx) throws IgniteCheckedException {
         super.prepareMarshal(ctx);
 
         prepareMarshalCacheObjects(nearKeys, ctx.cacheContext(cacheId));
 
-        if (owned != null) {
+        if (owned != null && ownedKeys == null) {
             ownedKeys = new KeyCacheObject[owned.size()];
             ownedValues = new GridCacheVersion[ownedKeys.length];
 
@@ -419,6 +419,12 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
                 writer.incrementState();
 
+            case 30:
+                if (!writer.writeCollection("partIds", partIds, MessageCollectionItemType.INT))
+                    return false;
+
+                writer.incrementState();
+
         }
 
         return true;
@@ -515,6 +521,14 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
                 reader.incrementState();
 
+            case 30:
+                partIds = reader.readCollection("partIds", MessageCollectionItemType.INT);
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
         }
 
         return reader.afterMessageRead(GridDhtLockRequest.class);
@@ -527,7 +541,7 @@ public class GridDhtLockRequest extends GridDistributedLockRequest {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 30;
+        return 31;
     }
 
     /** {@inheritDoc} */

@@ -19,19 +19,22 @@ namespace Apache.Ignite.Core.Impl
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
     using System.IO;
     using System.Linq;
     using System.Reflection;
     using System.Runtime.InteropServices;
     using System.Text;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Cluster;
     using Apache.Ignite.Core.Impl.Common;
-    using Apache.Ignite.Core.Impl.Portable;
     using Apache.Ignite.Core.Impl.Unmanaged;
-    using Apache.Ignite.Core.Portable;
+    using Microsoft.Win32;
+    using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
 
     /// <summary>
     /// Native utility methods.
@@ -41,20 +44,21 @@ namespace Apache.Ignite.Core.Impl
         /** Environment variable: JAVA_HOME. */
         private const string EnvJavaHome = "JAVA_HOME";
 
-        /** Directory: jre. */
-        private const string DirJre = "jre";
+        /** Lookup paths. */
+        private static readonly string[] JvmDllLookupPaths = {@"jre\bin\server", @"jre\bin\default"};
 
-        /** Directory: bin. */
-        private const string DirBin = "bin";
-
-        /** Directory: server. */
-        private const string DirServer = "server";
+        /** Registry lookup paths. */
+        private static readonly string[] JreRegistryKeys =
+        {
+            @"Software\JavaSoft\Java Runtime Environment",
+            @"Software\Wow6432Node\JavaSoft\Java Runtime Environment"
+        };
 
         /** File: jvm.dll. */
-        private const string FileJvmDll = "jvm.dll";
+        internal const string FileJvmDll = "jvm.dll";
 
-        /** File: Ignite.Common.dll. */
-        internal const string FileIgniteJniDll = "ignite.common.dll";
+        /** File: Ignite.Jni.dll. */
+        internal const string FileIgniteJniDll = "ignite.jni.dll";
         
         /** Prefix for temp directory names. */
         private const string DirIgniteTmp = "Ignite_";
@@ -69,6 +73,8 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Initializes the <see cref="IgniteUtils"/> class.
         /// </summary>
+        [SuppressMessage("Microsoft.Performance", "CA1810:InitializeReferenceTypeStaticFieldsInline",
+            Justification = "Readability.")]
         static IgniteUtils()
         {
             TryCleanTempDirectories();
@@ -77,13 +83,10 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Gets thread local random.
         /// </summary>
-        /// <returns>Thread local random.</returns>
-        public static Random ThreadLocalRandom()
+        /// <value>Thread local random.</value>
+        public static Random ThreadLocalRandom
         {
-            if (_rnd == null)
-                _rnd = new Random();
-
-            return _rnd;
+            get { return _rnd ?? (_rnd = new Random()); }
         }
 
         /// <summary>
@@ -97,7 +100,7 @@ namespace Apache.Ignite.Core.Impl
             if (cnt > 1) {
                 List<T> res = new List<T>(list);
 
-                Random rnd = ThreadLocalRandom();
+                Random rnd = ThreadLocalRandom;
 
                 while (cnt > 1)
                 {
@@ -135,20 +138,18 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Create new instance of specified class.
         /// </summary>
-        /// <param name="assemblyName">Assembly name.</param>
-        /// <param name="clsName">Class name</param>
+        /// <param name="typeName">Class name</param>
         /// <returns>New Instance.</returns>
-        public static object CreateInstance(string assemblyName, string clsName)
+        public static T CreateInstance<T>(string typeName)
         {
-            IgniteArgumentCheck.NotNullOrEmpty(clsName, "clsName");
+            IgniteArgumentCheck.NotNullOrEmpty(typeName, "typeName");
 
-            var type = new TypeResolver().ResolveType(clsName, assemblyName);
+            var type = new TypeResolver().ResolveType(typeName);
 
             if (type == null)
-                throw new IgniteException("Failed to create class instance [assemblyName=" + assemblyName +
-                    ", className=" + clsName + ']');
+                throw new IgniteException("Failed to create class instance [className=" + typeName + ']');
 
-            return Activator.CreateInstance(type);
+            return (T) Activator.CreateInstance(type);
         }
 
         /// <summary>
@@ -260,29 +261,51 @@ namespace Apache.Ignite.Core.Impl
             var javaHomeDir = Environment.GetEnvironmentVariable(EnvJavaHome);
 
             if (!string.IsNullOrEmpty(javaHomeDir))
-                yield return
-                    new KeyValuePair<string, string>(EnvJavaHome, GetJvmDllPath(Path.Combine(javaHomeDir, DirJre)));
-        }
+                foreach (var path in JvmDllLookupPaths)
+                    yield return
+                        new KeyValuePair<string, string>(EnvJavaHome, Path.Combine(javaHomeDir, path, FileJvmDll));
 
-        /// <summary>
-        /// Gets the JVM DLL path from JRE dir.
-        /// </summary>
-        private static string GetJvmDllPath(string jreDir)
-        {
-            return Path.Combine(jreDir, DirBin, DirServer, FileJvmDll);
+            // Get paths from the Windows Registry
+            foreach (var regPath in JreRegistryKeys)
+            {
+                using (var jSubKey = Registry.LocalMachine.OpenSubKey(regPath))
+                {
+                    if (jSubKey == null)
+                        continue;
+
+                    var curVer = jSubKey.GetValue("CurrentVersion") as string;
+
+                    // Current version comes first
+                    var versions = new[] {curVer}.Concat(jSubKey.GetSubKeyNames().Where(x => x != curVer));
+
+                    foreach (var ver in versions.Where(v => !string.IsNullOrEmpty(v)))
+                    {
+                        using (var verKey = jSubKey.OpenSubKey(ver))
+                        {
+                            var dllPath = verKey == null ? null : verKey.GetValue("RuntimeLib") as string;
+
+                            if (dllPath != null)
+                                yield return new KeyValuePair<string, string>(verKey.Name, dllPath);
+                        }
+                    }
+                }
+            }
         }
 
         /// <summary>
         /// Unpacks an embedded resource into a temporary folder and returns the full path of resulting file.
         /// </summary>
         /// <param name="resourceName">Resource name.</param>
-        /// <returns>Path to a temp file with an unpacked resource.</returns>
-        public static string UnpackEmbeddedResource(string resourceName)
+        /// <param name="fileName">Name of the resulting file.</param>
+        /// <returns>
+        /// Path to a temp file with an unpacked resource.
+        /// </returns>
+        public static string UnpackEmbeddedResource(string resourceName, string fileName)
         {
             var dllRes = Assembly.GetExecutingAssembly().GetManifestResourceNames()
                 .Single(x => x.EndsWith(resourceName, StringComparison.OrdinalIgnoreCase));
 
-            return WriteResourceToTempFile(dllRes, resourceName);
+            return WriteResourceToTempFile(dllRes, fileName);
         }
 
         /// <summary>
@@ -402,7 +425,7 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="reader">Reader.</param>
         /// <param name="pred">The predicate.</param>
         /// <returns> Nodes list or null. </returns>
-        public static List<IClusterNode> ReadNodes(IPortableRawReader reader, Func<ClusterNodeImpl, bool> pred = null)
+        public static List<IClusterNode> ReadNodes(IBinaryRawReader reader, Func<ClusterNodeImpl, bool> pred = null)
         {
             var cnt = reader.ReadInt();
 
@@ -411,7 +434,7 @@ namespace Apache.Ignite.Core.Impl
 
             var res = new List<IClusterNode>(cnt);
 
-            var ignite = ((PortableReaderImpl)reader).Marshaller.Ignite;
+            var ignite = ((BinaryReader)reader).Marshaller.Ignite;
 
             if (pred == null)
             {
@@ -430,15 +453,6 @@ namespace Apache.Ignite.Core.Impl
             }
 
             return res;
-        }
-
-        /// <summary>
-        /// Gets the asynchronous mode disabled exception.
-        /// </summary>
-        /// <returns>Asynchronous mode disabled exception.</returns>
-        public static InvalidOperationException GetAsyncModeDisabledException()
-        {
-            return new InvalidOperationException("Asynchronous mode is disabled");
         }
     }
 }

@@ -38,21 +38,24 @@ namespace Apache.Ignite.Core.Impl.Compute
         }
 
         /** <inheritdoc /> */
-        public T Data()
+
+        public T Data
         {
-            return (T)_wrappedRes.Data();
+            get { return (T) _wrappedRes.Data; }
         }
 
         /** <inheritdoc /> */
-        public Exception Exception()
+
+        public Exception Exception
         {
-            return _wrappedRes.Exception();
+            get { return _wrappedRes.Exception; }
         }
 
         /** <inheritdoc /> */
-        public IComputeJob<T> Job()
+
+        public IComputeJob<T> Job
         {
-            return _wrappedRes.Job().Unwrap<object, T>();
+            get { return _wrappedRes.Job.Unwrap<object, T>(); }
         }
 
         /** <inheritdoc /> */

@@ -18,27 +18,34 @@
 #ifndef _IGNITE_EXAMPLES_ORGANIZATION
 #define _IGNITE_EXAMPLES_ORGANIZATION
 
-#include "ignite/portable/portable.h"
+#include "ignite/binary/binary.h"
 
 #include "ignite/examples/address.h"
 
 namespace ignite
 {
-    namespace examples 
+    namespace examples
     {
-        struct Organization 
+        struct Organization
         {
-            Organization()
-            {
-                name = "";
-                addr = Address();
-            }
-            
-            Organization(std::string name, Address addr) : name(name), addr(addr) 
+            Organization() :
+                name(), addr()
             {
                 // No-op.
             }
-            
+
+            Organization(const std::string& name) :
+                name(name), addr()
+            {
+                // No-op.
+            }
+
+            Organization(const std::string& name, Address addr) :
+                name(name), addr(addr)
+            {
+                // No-op.
+            }
+
             std::string ToString() 
             {
                 std::ostringstream oss;
@@ -47,23 +54,23 @@ namespace ignite
 
                 return oss.str();
             }
-            
+
             std::string name;
             Address addr;
-        };    
+        };
     }
 }
 
 namespace ignite
 {
-    namespace portable 
+    namespace binary
     {
         template<>
-        struct PortableType<ignite::examples::Organization>
+        struct BinaryType<ignite::examples::Organization>
         {
             int32_t GetTypeId()
             {
-                return GetPortableStringHashCode("Organization");
+                return GetBinaryStringHashCode("Organization");
             }
 
             std::string GetTypeName()
@@ -73,7 +80,7 @@ namespace ignite
 
             int32_t GetFieldId(const char* name)
             {
-                return GetPortableStringHashCode(name);
+                return GetBinaryStringHashCode(name);
             }
 
             int32_t GetHashCode(ignite::examples::Organization obj)
@@ -91,21 +98,21 @@ namespace ignite
                 return ignite::examples::Organization("", ignite::examples::Address());
             }
 
-            void Write(PortableWriter& writer, ignite::examples::Organization obj)
+            void Write(BinaryWriter& writer, ignite::examples::Organization obj)
             {
                 writer.WriteString("name", obj.name);
                 writer.WriteObject<ignite::examples::Address>("addr", obj.addr);
             }
 
-            ignite::examples::Organization Read(PortableReader& reader)
+            ignite::examples::Organization Read(BinaryReader& reader)
             {
                 std::string name = reader.ReadString("name");
                 ignite::examples::Address addr = reader.ReadObject<ignite::examples::Address>("addr");
-                                
+
                 return ignite::examples::Organization(name, addr);
             }
-        };    
-    }    
+        };
+    }
 }
 
 #endif

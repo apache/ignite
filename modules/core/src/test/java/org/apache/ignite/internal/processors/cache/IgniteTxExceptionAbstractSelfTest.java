@@ -28,6 +28,7 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.MutableEntry;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -35,6 +36,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxHeuristicCheckedException;
+import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.spi.IgniteSpiAdapter;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.indexing.IndexingQueryFilter;
@@ -53,9 +55,6 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  * Tests that transaction is invalidated in case of {@link IgniteTxHeuristicCheckedException}.
  */
 public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstractSelfTest {
-    /** Index SPI throwing exception. */
-    private static TestIndexingSpi idxSpi = new TestIndexingSpi();
-
     /** */
     private static final int PRIMARY = 0;
 
@@ -77,7 +76,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
-        cfg.setIndexingSpi(idxSpi);
+        cfg.setIndexingSpi(new TestIndexingSpi());
 
         cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
 
@@ -107,7 +106,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        idxSpi.forceFail(false);
+        TestIndexingSpi.forceFail(false);
 
         Transaction tx = jcache().unwrap(Ignite.class).transactions().tx();
 
@@ -320,7 +319,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         IgniteCache<Integer, Integer> cache = grid(0).cache(null);
 
         if (putBefore) {
-            idxSpi.forceFail(false);
+            TestIndexingSpi.forceFail(false);
 
             info("Start transaction.");
 
@@ -343,7 +342,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
                 grid(i).cache(null).get(key);
         }
 
-        idxSpi.forceFail(true);
+        TestIndexingSpi.forceFail(true);
 
         try {
             info("Start transaction.");
@@ -368,6 +367,9 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
 
         for (Integer key : keys)
             checkUnlocked(key);
+
+        for (int i = 0; i < gridCount(); i++)
+            assertEquals(0, ((IgniteKernal)ignite(0)).internalCache(null).context().tm().idMapSize());
     }
 
     /**
@@ -376,30 +378,64 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      */
     @SuppressWarnings("unchecked")
     private void checkUnlocked(final Integer key) throws Exception {
-        idxSpi.forceFail(false);
+        TestIndexingSpi.forceFail(false);
+
+        awaitPartitionMapExchange();
 
         info("Check key: " + key);
 
         for (int i = 0; i < gridCount(); i++) {
-            IgniteKernal grid = (IgniteKernal)grid(i);
+            final int idx = i;
 
-            GridCacheAdapter cache = grid.internalCache(null);
+            GridTestUtils.waitForCondition(new PA() {
+                @Override public boolean apply() {
+                    IgniteKernal grid = (IgniteKernal)grid(idx);
 
-            GridCacheEntryEx entry = cache.peekEx(key);
+                    GridCacheAdapter cache = grid.internalCache(null);
 
-            log.info("Entry: " + entry);
+                    GridCacheEntryEx entry = cache.peekEx(key);
 
-            if (entry != null)
-                assertFalse("Unexpected entry for grid [i=" + i + ", entry=" + entry + ']', entry.lockedByAny());
+                    log.info("Entry: " + entry);
 
-            if (cache.isNear()) {
-                entry = ((GridNearCacheAdapter)cache).dht().peekEx(key);
+                    if (entry != null) {
+                        try {
+                            boolean locked = entry.lockedByAny();
 
-                log.info("Dht entry: " + entry);
+                            if (locked) {
+                                info("Unexpected entry for grid [i=" + idx + ", entry=" + entry + ']');
 
-                if (entry != null)
-                    assertFalse("Unexpected entry for grid [i=" + i + ", entry=" + entry + ']', entry.lockedByAny());
-            }
+                                return false;
+                            }
+                        }
+                        catch (GridCacheEntryRemovedException ignore) {
+                            // Obsolete entry cannot be locked.
+                        }
+                    }
+
+                    if (cache.isNear()) {
+                        entry = ((GridNearCacheAdapter)cache).dht().peekEx(key);
+
+                        log.info("Dht entry: " + entry);
+
+                        if (entry != null) {
+                            try {
+                                boolean locked = entry.lockedByAny();
+
+                                if (locked) {
+                                    info("Unexpected entry for grid [i=" + idx + ", entry=" + entry + ']');
+
+                                    return false;
+                                }
+                            }
+                            catch (GridCacheEntryRemovedException ignore) {
+                                // Obsolete entry cannot be locked.
+                            }
+                        }
+                    }
+
+                    return true;
+                }
+            }, getTestTimeout());
         }
     }
 
@@ -410,7 +446,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      */
     private void checkPut(boolean putBefore, final Integer key) throws Exception {
         if (putBefore) {
-            idxSpi.forceFail(false);
+            TestIndexingSpi.forceFail(false);
 
             info("Put key: " + key);
 
@@ -421,7 +457,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         for (int i = 0; i < gridCount(); i++)
             grid(i).cache(null).get(key);
 
-        idxSpi.forceFail(true);
+        TestIndexingSpi.forceFail(true);
 
         info("Going to put: " + key);
 
@@ -443,7 +479,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      */
     private void checkTransform(boolean putBefore, final Integer key) throws Exception {
         if (putBefore) {
-            idxSpi.forceFail(false);
+            TestIndexingSpi.forceFail(false);
 
             info("Put key: " + key);
 
@@ -454,7 +490,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         for (int i = 0; i < gridCount(); i++)
             grid(i).cache(null).get(key);
 
-        idxSpi.forceFail(true);
+        TestIndexingSpi.forceFail(true);
 
         info("Going to transform: " + key);
 
@@ -486,7 +522,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         assert keys.length > 1;
 
         if (putBefore) {
-            idxSpi.forceFail(false);
+            TestIndexingSpi.forceFail(false);
 
             Map<Integer, Integer> m = new HashMap<>();
 
@@ -504,7 +540,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
                 grid(i).cache(null).get(key);
         }
 
-        idxSpi.forceFail(true);
+        TestIndexingSpi.forceFail(true);
 
         final Map<Integer, Integer> m = new HashMap<>();
 
@@ -532,7 +568,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      */
     private void checkRemove(boolean putBefore, final Integer key) throws Exception {
         if (putBefore) {
-            idxSpi.forceFail(false);
+            TestIndexingSpi.forceFail(false);
 
             info("Put key: " + key);
 
@@ -543,7 +579,7 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
         for (int i = 0; i < gridCount(); i++)
             grid(i).cache(null).get(key);
 
-        idxSpi.forceFail(true);
+        TestIndexingSpi.forceFail(true);
 
         info("Going to remove: " + key);
 
@@ -619,13 +655,13 @@ public abstract class IgniteTxExceptionAbstractSelfTest extends GridCacheAbstrac
      */
     private static class TestIndexingSpi extends IgniteSpiAdapter implements IndexingSpi {
         /** Fail flag. */
-        private volatile boolean fail;
+        private static volatile boolean fail;
 
         /**
-         * @param fail Fail flag.
+         * @param failFlag Fail flag.
          */
-        public void forceFail(boolean fail) {
-            this.fail = fail;
+        public static void forceFail(boolean failFlag) {
+            fail = failFlag;
         }
 
         /** {@inheritDoc} */

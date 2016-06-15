@@ -180,6 +180,14 @@ public class GridTestSwapSpaceSpi extends IgniteSpiAdapter implements SwapSpaceS
     }
 
     /**
+     *
+     */
+    public void clearAll() {
+        for (Space space : spaces.values())
+            space.clear();
+    }
+
+    /**
      * Gets space, creates if does not exist.
      *
      * @param spaceName Space name.

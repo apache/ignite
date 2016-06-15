@@ -52,6 +52,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.PRIMARY_SYNC
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.transactions.TransactionIsolation.SERIALIZABLE;
 
 /**
  *
@@ -124,7 +125,7 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void _testCrossCacheTxOperationsFairAffinity() throws Exception {
+    public void testCrossCacheTxOperationsFairAffinity() throws Exception {
         txOperations(PARTITIONED, FULL_SYNC, true, true);
     }
 
@@ -149,7 +150,7 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
      * @param fairAff If {@code true} uses {@link FairAffinityFunction}, otherwise {@link RendezvousAffinityFunction}.
      * @return Cache configuration.
      */
-    private CacheConfiguration cacheConfiguration(String name,
+    protected CacheConfiguration cacheConfiguration(String name,
         CacheMode cacheMode,
         CacheWriteSynchronizationMode writeSync,
         boolean fairAff) {
@@ -169,6 +170,13 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
     }
 
     /**
+     */
+    protected void createCache(CacheMode cacheMode, CacheWriteSynchronizationMode writeSync, boolean fairAff,
+        Ignite ignite, String name) {
+        ignite.createCache(cacheConfiguration(name, cacheMode, writeSync, fairAff));
+    }
+
+    /**
      * @param cacheMode Cache mode.
      * @param writeSync Write synchronization mode.
      * @param crossCacheTx If {@code true} uses cross cache transaction.
@@ -182,14 +190,19 @@ public class CrossCacheTxRandomOperationsTest extends GridCommonAbstractTest {
         Ignite ignite = ignite(0);
 
         try {
-            ignite.createCache(cacheConfiguration(CACHE1, cacheMode, writeSync, fairAff));
-            ignite.createCache(cacheConfiguration(CACHE2, cacheMode, writeSync, fairAff));
+            createCache(cacheMode, writeSync, fairAff, ignite, CACHE1);
+            createCache(cacheMode, writeSync, fairAff, ignite, CACHE2);
 
             txOperations(PESSIMISTIC, REPEATABLE_READ, crossCacheTx, false);
             txOperations(PESSIMISTIC, REPEATABLE_READ, crossCacheTx, true);
 
             txOperations(OPTIMISTIC, REPEATABLE_READ, crossCacheTx, false);
             txOperations(OPTIMISTIC, REPEATABLE_READ, crossCacheTx, true);
+
+            if (writeSync == FULL_SYNC) {
+                txOperations(OPTIMISTIC, SERIALIZABLE, crossCacheTx, false);
+                txOperations(OPTIMISTIC, SERIALIZABLE, crossCacheTx, true);
+            }
         }
         finally {
             ignite.destroyCache(CACHE1);

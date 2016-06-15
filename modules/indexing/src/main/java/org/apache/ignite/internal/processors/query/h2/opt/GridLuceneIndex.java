@@ -164,8 +164,8 @@ public class GridLuceneIndex implements Closeable {
     public void store(CacheObject k, CacheObject v, byte[] ver, long expires) throws IgniteCheckedException {
         CacheObjectContext coctx = objectContext();
 
-        Object key = k.value(coctx, false);
-        Object val = v.value(coctx, false);
+        Object key = k.isPlatformType() ? k.value(coctx, false) : k;
+        Object val = v.isPlatformType() ? v.value(coctx, false) : v;
 
         Document doc = new Document();
 

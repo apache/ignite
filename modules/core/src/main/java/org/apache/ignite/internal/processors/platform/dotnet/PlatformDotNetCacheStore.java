@@ -21,19 +21,16 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreSession;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.portable.PortableRawReaderEx;
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheStore;
 import org.apache.ignite.internal.processors.platform.cache.store.PlatformCacheStoreCallback;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
-import org.apache.ignite.internal.util.lang.GridMapEntry;
 import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
-import org.apache.ignite.internal.util.typedef.C1;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -43,13 +40,9 @@ import org.jetbrains.annotations.Nullable;
 import javax.cache.Cache;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
-import java.util.AbstractMap;
-import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Wrapper for .NET cache store implementations.
@@ -96,14 +89,14 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     @CacheStoreSessionResource
     private CacheStoreSession ses;
 
-    /** .Net assembly name. */
-    private String assemblyName;
-
     /** .Net class name. */
-    private String clsName;
+    private String typName;
 
     /** Properties. */
     private Map<String, ?> props;
+
+    /** Native factory. */
+    private final Object nativeFactory;
 
     /** Interop processor. */
     protected PlatformContext platformCtx;
@@ -112,21 +105,19 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     protected long ptr;
 
     /**
-     * Gets .NET assembly name.
-     *
-     * @return .NET assembly name.
+     * Default ctor.
      */
-    public String getAssemblyName() {
-        return assemblyName;
+    public PlatformDotNetCacheStore() {
+        nativeFactory = null;
     }
 
     /**
-     * Set .NET assembly name.
-     *
-     * @param assemblyName .NET assembly name.
+     * Native factory ctor.
      */
-    public void setAssemblyName(String assemblyName) {
-        this.assemblyName = assemblyName;
+    public PlatformDotNetCacheStore(Object nativeFactory) {
+        assert nativeFactory != null;
+
+        this.nativeFactory = nativeFactory;
     }
 
     /**
@@ -134,17 +125,17 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
      *
      * @return .NET class name.
      */
-    public String getClassName() {
-        return clsName;
+    public String getTypeName() {
+        return typName;
     }
 
     /**
      * Sets .NET class name.
      *
-     * @param clsName .NET class name.
+     * @param typName .NET class name.
      */
-    public void setClassName(String clsName) {
-        this.clsName = clsName;
+    public void setTypeName(String typName) {
+        this.typName = typName;
     }
 
     /**
@@ -170,8 +161,8 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
         try {
             final GridTuple<V> val = new GridTuple<>();
 
-            doInvoke(new IgniteInClosureX<PortableRawWriterEx>() {
-                @Override public void applyx(PortableRawWriterEx writer) throws IgniteCheckedException {
+            doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
+                @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
                     writer.writeByte(OP_LOAD);
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
@@ -191,12 +182,12 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
         try {
             final Map<K, V> loaded = new HashMap<>();
 
-            doInvoke(new IgniteInClosureX<PortableRawWriterEx>() {
-                @Override public void applyx(PortableRawWriterEx writer) throws IgniteCheckedException {
+            doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
+                @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
                     writer.writeByte(OP_LOAD_ALL);
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
-                    writer.writeCollection((Collection) keys);
+                    writer.writeCollection((Collection)keys);
                 }
             }, new LoadAllCallback<>(platformCtx, loaded));
 
@@ -210,8 +201,8 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     /** {@inheritDoc} */
     @Override public void loadCache(final IgniteBiInClosure<K, V> clo, final @Nullable Object... args) {
         try {
-            doInvoke(new IgniteInClosureX<PortableRawWriterEx>() {
-                @Override public void applyx(PortableRawWriterEx writer) throws IgniteCheckedException {
+            doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
+                @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
                     writer.writeByte(OP_LOAD_CACHE);
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
@@ -227,8 +218,8 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     /** {@inheritDoc} */
     @Override public void write(final Cache.Entry<? extends K, ? extends V> entry) {
         try {
-            doInvoke(new IgniteInClosureX<PortableRawWriterEx>() {
-                @Override public void applyx(PortableRawWriterEx writer) throws IgniteCheckedException {
+            doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
+                @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
                     writer.writeByte(OP_PUT);
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
@@ -245,37 +236,20 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     /** {@inheritDoc} */
     @SuppressWarnings({"NullableProblems", "unchecked"})
     @Override public void writeAll(final Collection<Cache.Entry<? extends K, ? extends V>> entries) {
+        assert entries != null;
         try {
-            doInvoke(new IgniteInClosureX<PortableRawWriterEx>() {
-                @Override public void applyx(PortableRawWriterEx writer) throws IgniteCheckedException {
-                    Map<K, V> map = new AbstractMap<K, V>() {
-                        @Override public int size() {
-                            return entries.size();
-                        }
-
-                        @Override public Set<Entry<K, V>> entrySet() {
-                            return new AbstractSet<Entry<K, V>>() {
-                                @Override public Iterator<Entry<K, V>> iterator() {
-                                    return F.iterator(entries, new C1<Cache.Entry<? extends K, ? extends V>, Entry<K, V>>() {
-                                        private static final long serialVersionUID = 0L;
-
-                                        @Override public Entry<K, V> apply(Cache.Entry<? extends K, ? extends V> entry) {
-                                            return new GridMapEntry<>(entry.getKey(), entry.getValue());
-                                        }
-                                    }, true);
-                                }
-
-                                @Override public int size() {
-                                    return entries.size();
-                                }
-                            };
-                        }
-                    };
-
+            doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
+                @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
                     writer.writeByte(OP_PUT_ALL);
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
-                    writer.writeMap(map);
+
+                    writer.writeInt(entries.size());
+
+                    for (Cache.Entry<? extends K, ? extends V> e : entries) {
+                        writer.writeObject(e.getKey());
+                        writer.writeObject(e.getValue());
+                    }
                 }
             }, null);
         }
@@ -287,8 +261,8 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     /** {@inheritDoc} */
     @Override public void delete(final Object key) {
         try {
-            doInvoke(new IgniteInClosureX<PortableRawWriterEx>() {
-                @Override public void applyx(PortableRawWriterEx writer) throws IgniteCheckedException {
+            doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
+                @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
                     writer.writeByte(OP_RMV);
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
@@ -304,8 +278,8 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     /** {@inheritDoc} */
     @Override public void deleteAll(final Collection<?> keys) {
         try {
-            doInvoke(new IgniteInClosureX<PortableRawWriterEx>() {
-                @Override public void applyx(PortableRawWriterEx writer) throws IgniteCheckedException {
+            doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
+                @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
                     writer.writeByte(OP_RMV_ALL);
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
@@ -321,8 +295,8 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
     /** {@inheritDoc} */
     @Override public void sessionEnd(final boolean commit) {
         try {
-            doInvoke(new IgniteInClosureX<PortableRawWriterEx>() {
-                @Override public void applyx(PortableRawWriterEx writer) throws IgniteCheckedException {
+            doInvoke(new IgniteInClosureX<BinaryRawWriterEx>() {
+                @Override public void applyx(BinaryRawWriterEx writer) throws IgniteCheckedException {
                     writer.writeByte(OP_SES_END);
                     writer.writeLong(session());
                     writer.writeString(ses.cacheName());
@@ -339,28 +313,41 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
      * Initialize the store.
      *
      * @param ctx Context.
-     * @param convertPortable Convert portable flag.
+     * @param convertBinary Convert binary flag.
      * @throws org.apache.ignite.IgniteCheckedException
      */
-    public void initialize(GridKernalContext ctx, boolean convertPortable) throws IgniteCheckedException {
-        A.notNull(assemblyName, "assemblyName");
-        A.notNull(clsName, "clsName");
+    public void initialize(GridKernalContext ctx, boolean convertBinary) throws IgniteCheckedException {
+        A.ensure(typName != null || nativeFactory != null,
+                "Either typName or nativeFactory must be set in PlatformDotNetCacheStore");
 
         platformCtx = PlatformUtils.platformContext(ctx.grid());
 
         try (PlatformMemory mem = platformCtx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            PortableRawWriterEx writer = platformCtx.writer(out);
+            BinaryRawWriterEx writer = platformCtx.writer(out);
 
-            writer.writeString(assemblyName);
-            writer.writeString(clsName);
-            writer.writeBoolean(convertPortable);
-            writer.writeMap(props);
+            write(writer, convertBinary);
 
             out.synchronize();
 
             ptr = platformCtx.gateway().cacheStoreCreate(mem.pointer());
+        }
+    }
+
+    /**
+     * Write store data to a stream.
+     *
+     * @param writer Writer.
+     * @param convertBinary Convert binary flag.
+     */
+    protected void write(BinaryRawWriterEx writer, boolean convertBinary) {
+        writer.writeBoolean(convertBinary);
+        writer.writeObjectDetached(nativeFactory);
+
+        if (nativeFactory == null) {
+            writer.writeString(typName);
+            writer.writeMap(props);
         }
     }
 
@@ -391,12 +378,12 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
      * @return Result.
      * @throws org.apache.ignite.IgniteCheckedException If failed.
      */
-    protected int doInvoke(IgniteInClosureX<PortableRawWriterEx> task, @Nullable PlatformCacheStoreCallback cb)
+    protected int doInvoke(IgniteInClosureX<BinaryRawWriterEx> task, @Nullable PlatformCacheStoreCallback cb)
         throws IgniteCheckedException{
         try (PlatformMemory mem = platformCtx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            PortableRawWriterEx writer = platformCtx.writer(out);
+            BinaryRawWriterEx writer = platformCtx.writer(out);
 
             task.apply(writer);
 
@@ -438,7 +425,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
-        @Override protected void invoke0(PortableRawReaderEx reader) {
+        @Override protected void invoke0(BinaryRawReaderEx reader) {
             val.set((V)reader.readObjectDetached());
         }
     }
@@ -464,7 +451,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
-        @Override protected void invoke0(PortableRawReaderEx reader) {
+        @Override protected void invoke0(BinaryRawReaderEx reader) {
             loaded.put((K) reader.readObjectDetached(), (V) reader.readObjectDetached());
         }
     }
@@ -490,7 +477,7 @@ public class PlatformDotNetCacheStore<K, V> implements CacheStore<K, V>, Platfor
 
         /** {@inheritDoc} */
         @SuppressWarnings("unchecked")
-        @Override protected void invoke0(PortableRawReaderEx reader) {
+        @Override protected void invoke0(BinaryRawReaderEx reader) {
             clo.apply((K) reader.readObjectDetached(), (V) reader.readObjectDetached());
         }
     }

@@ -18,7 +18,7 @@
 namespace Apache.Ignite.Core.Events
 {
     using System.Globalization;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// Grid checkpoint event.
@@ -32,7 +32,7 @@ namespace Apache.Ignite.Core.Events
         /// Constructor.
         /// </summary>
         /// <param name="r">The reader to read data from.</param>
-        internal CheckpointEvent(IPortableRawReader r) : base(r)
+        internal CheckpointEvent(IBinaryRawReader r) : base(r)
         {
             _key = r.ReadString();
         }
@@ -42,7 +42,9 @@ namespace Apache.Ignite.Core.Events
         /// </summary>
         public string Key { get { return _key; } }
 
-        /** <inheritDoc /> */
+        /// <summary>
+        /// Gets shortened version of ToString result.
+        /// </summary>
 	    public override string ToShortString()
 	    {
             return string.Format(CultureInfo.InvariantCulture, "{0}: Key={1}", Name, Key);

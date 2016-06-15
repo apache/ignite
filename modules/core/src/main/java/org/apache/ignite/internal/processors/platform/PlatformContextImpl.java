@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.platform;
 
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheEvent;
@@ -33,11 +34,16 @@ import org.apache.ignite.events.JobEvent;
 import org.apache.ignite.events.SwapSpaceEvent;
 import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.portable.GridPortableMarshaller;
-import org.apache.ignite.internal.portable.PortableMetaDataImpl;
-import org.apache.ignite.internal.portable.PortableRawReaderEx;
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
-import org.apache.ignite.internal.processors.cache.portable.CacheObjectPortableProcessorImpl;
+import org.apache.ignite.internal.binary.BinaryContext;
+import org.apache.ignite.internal.binary.BinaryMetadata;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryReaderExImpl;
+import org.apache.ignite.internal.binary.BinarySchema;
+import org.apache.ignite.internal.binary.BinarySchemaRegistry;
+import org.apache.ignite.internal.binary.BinaryTypeImpl;
+import org.apache.ignite.internal.binary.GridBinaryMarshaller;
+import org.apache.ignite.internal.processors.cache.binary.CacheObjectBinaryProcessorImpl;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilter;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryFilterImpl;
 import org.apache.ignite.internal.processors.platform.cache.PlatformCacheEntryProcessor;
@@ -67,18 +73,17 @@ import org.apache.ignite.internal.processors.platform.utils.PlatformReaderBiClos
 import org.apache.ignite.internal.processors.platform.utils.PlatformReaderClosure;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.T4;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.apache.ignite.portable.PortableMetadata;
 import org.jetbrains.annotations.Nullable;
 
+import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -87,6 +92,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Implementation of platform context.
  */
+@SuppressWarnings("TypeMayBeWeakened")
 public class PlatformContextImpl implements PlatformContext {
     /** Supported event types. */
     private static final Set<Integer> evtTyps;
@@ -95,7 +101,7 @@ public class PlatformContextImpl implements PlatformContext {
     private final GridKernalContext ctx;
 
     /** Marshaller. */
-    private final GridPortableMarshaller marsh;
+    private final GridBinaryMarshaller marsh;
 
     /** Memory manager. */
     private final PlatformMemoryManagerImpl mem;
@@ -104,10 +110,13 @@ public class PlatformContextImpl implements PlatformContext {
     private final PlatformCallbackGateway gate;
 
     /** Cache object processor. */
-    private final CacheObjectPortableProcessorImpl cacheObjProc;
+    private final CacheObjectBinaryProcessorImpl cacheObjProc;
 
     /** Node ids that has been sent to native platform. */
     private final Set<UUID> sentNodes = Collections.newSetFromMap(new ConcurrentHashMap<UUID, Boolean>());
+
+    /** Platform name. */
+    private final String platform;
 
     /**
      * Static initializer.
@@ -143,13 +152,16 @@ public class PlatformContextImpl implements PlatformContext {
      * @param ctx Kernal context.
      * @param gate Callback gateway.
      * @param mem Memory manager.
+     * @param platform Platform name.
      */
-    public PlatformContextImpl(GridKernalContext ctx, PlatformCallbackGateway gate, PlatformMemoryManagerImpl mem) {
+    public PlatformContextImpl(GridKernalContext ctx, PlatformCallbackGateway gate, PlatformMemoryManagerImpl mem,
+        String platform) {
         this.ctx = ctx;
         this.gate = gate;
         this.mem = mem;
+        this.platform = platform;
 
-        cacheObjProc = (CacheObjectPortableProcessorImpl)ctx.cacheObjects();
+        cacheObjProc = (CacheObjectBinaryProcessorImpl)ctx.cacheObjects();
 
         marsh = cacheObjProc.marshaller();
     }
@@ -170,22 +182,27 @@ public class PlatformContextImpl implements PlatformContext {
     }
 
     /** {@inheritDoc} */
-    @Override public PortableRawReaderEx reader(PlatformMemory mem) {
+    @Override public BinaryRawReaderEx reader(PlatformMemory mem) {
         return reader(mem.input());
     }
 
     /** {@inheritDoc} */
-    @Override public PortableRawReaderEx reader(PlatformInputStream in) {
-        return marsh.reader(in);
+    @Override public BinaryRawReaderEx reader(PlatformInputStream in) {
+        return new BinaryReaderExImpl(marsh.context(),
+            in,
+            ctx.config().getClassLoader(),
+            null,
+            true,
+            true);
     }
 
     /** {@inheritDoc} */
-    @Override public PortableRawWriterEx writer(PlatformMemory mem) {
+    @Override public BinaryRawWriterEx writer(PlatformMemory mem) {
         return writer(mem.output());
     }
 
     /** {@inheritDoc} */
-    @Override public PortableRawWriterEx writer(PlatformOutputStream out) {
+    @Override public BinaryRawWriterEx writer(PlatformOutputStream out) {
         return marsh.writer(out);
     }
 
@@ -198,7 +215,7 @@ public class PlatformContextImpl implements PlatformContext {
         try (PlatformMemory mem0 = mem.allocate()) {
             PlatformOutputStream out = mem0.output();
 
-            PortableRawWriterEx w = writer(out);
+            BinaryRawWriterEx w = writer(out);
 
             w.writeUuid(node.id());
 
@@ -221,6 +238,7 @@ public class PlatformContextImpl implements PlatformContext {
             w.writeLong(node.order());
             w.writeBoolean(node.isLocal());
             w.writeBoolean(node.isDaemon());
+            w.writeBoolean(node.isClient());
             writeClusterMetrics(w, node.metrics());
 
             out.synchronize();
@@ -232,7 +250,7 @@ public class PlatformContextImpl implements PlatformContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeNode(PortableRawWriterEx writer, ClusterNode node) {
+    @Override public void writeNode(BinaryRawWriterEx writer, ClusterNode node) {
         if (node == null) {
             writer.writeUuid(null);
 
@@ -245,7 +263,7 @@ public class PlatformContextImpl implements PlatformContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeNodes(PortableRawWriterEx writer, Collection<ClusterNode> nodes) {
+    @Override public void writeNodes(BinaryRawWriterEx writer, Collection<ClusterNode> nodes) {
         if (nodes == null) {
             writer.writeInt(-1);
 
@@ -262,14 +280,14 @@ public class PlatformContextImpl implements PlatformContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeClusterMetrics(PortableRawWriterEx writer, @Nullable ClusterMetrics metrics) {
+    @Override public void writeClusterMetrics(BinaryRawWriterEx writer, @Nullable ClusterMetrics metrics) {
         if (metrics == null)
             writer.writeBoolean(false);
         else {
             writer.writeBoolean(true);
 
             writer.writeLong(metrics.getLastUpdateTime());
-            writer.writeDate(new Date(metrics.getLastUpdateTime()));
+            writer.writeTimestamp(new Timestamp(metrics.getLastUpdateTime()));
             writer.writeInt(metrics.getMaximumActiveJobs());
             writer.writeInt(metrics.getCurrentActiveJobs());
             writer.writeFloat(metrics.getAverageActiveJobs());
@@ -317,8 +335,8 @@ public class PlatformContextImpl implements PlatformContext {
             writer.writeLong(metrics.getNonHeapMemoryTotal());
             writer.writeLong(metrics.getUpTime());
 
-            writer.writeDate(new Date(metrics.getStartTime()));
-            writer.writeDate(new Date(metrics.getNodeStartTime()));
+            writer.writeTimestamp(new Timestamp(metrics.getStartTime()));
+            writer.writeTimestamp(new Timestamp(metrics.getNodeStartTime()));
             writer.writeInt(metrics.getCurrentThreadCount());
             writer.writeInt(metrics.getMaximumThreadCount());
             writer.writeLong(metrics.getTotalStartedThreadCount());
@@ -338,69 +356,115 @@ public class PlatformContextImpl implements PlatformContext {
 
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
-    @Override public void processMetadata(PortableRawReaderEx reader) {
-        Collection<T4<Integer, String, String, Map<String, Integer>>> metas = PlatformUtils.readCollection(reader,
-            new PlatformReaderClosure<T4<Integer, String, String, Map<String, Integer>>>() {
-                @Override public T4<Integer, String, String, Map<String, Integer>> read(PortableRawReaderEx reader) {
+    @Override public void processMetadata(BinaryRawReaderEx reader) {
+        Collection<Metadata> metas = PlatformUtils.readCollection(reader,
+            new PlatformReaderClosure<Metadata>() {
+                @Override public Metadata read(BinaryRawReaderEx reader) {
                     int typeId = reader.readInt();
                     String typeName = reader.readString();
                     String affKey = reader.readString();
 
                     Map<String, Integer> fields = PlatformUtils.readMap(reader,
                         new PlatformReaderBiClosure<String, Integer>() {
-                            @Override public IgniteBiTuple<String, Integer> read(PortableRawReaderEx reader) {
+                            @Override public IgniteBiTuple<String, Integer> read(BinaryRawReaderEx reader) {
                                 return F.t(reader.readString(), reader.readInt());
                             }
                         });
 
-                    return new T4<>(typeId, typeName, affKey, fields);
+                    boolean isEnum = reader.readBoolean();
+
+                    // Read schemas
+                    int schemaCnt = reader.readInt();
+
+                    List<BinarySchema> schemas = null;
+
+                    if (schemaCnt > 0) {
+                        schemas = new ArrayList<>(schemaCnt);
+
+                        for (int i = 0; i < schemaCnt; i++) {
+                            int id = reader.readInt();
+                            int fieldCnt = reader.readInt();
+                            List<Integer> fieldIds = new ArrayList<>(fieldCnt);
+
+                            for (int j = 0; j < fieldCnt; j++)
+                                fieldIds.add(reader.readInt());
+
+                            schemas.add(new BinarySchema(id, fieldIds));
+                        }
+                    }
+
+                    return new Metadata(typeId, typeName, affKey, fields, isEnum, schemas);
                 }
             }
         );
 
-        for (T4<Integer, String, String, Map<String, Integer>> meta : metas)
-            cacheObjProc.updateMetaData(meta.get1(), meta.get2(), meta.get3(), meta.get4());
+        BinaryContext binCtx = cacheObjProc.binaryContext();
+
+        for (Metadata meta : metas)
+            binCtx.updateMetadata(meta.typeId, new BinaryMetadata(meta.typeId,
+                meta.typeName, meta.fields, meta.affKey, meta.schemas, meta.isEnum));
     }
 
     /** {@inheritDoc} */
-    @Override public void writeMetadata(PortableRawWriterEx writer, int typeId) {
+    @Override public void writeMetadata(BinaryRawWriterEx writer, int typeId) {
         writeMetadata0(writer, typeId, cacheObjProc.metadata(typeId));
     }
 
     /** {@inheritDoc} */
-    @Override public void writeAllMetadata(PortableRawWriterEx writer) {
-        Collection<PortableMetadata> metas = cacheObjProc.metadata();
+    @Override public void writeAllMetadata(BinaryRawWriterEx writer) {
+        Collection<BinaryType> metas = cacheObjProc.metadata();
 
         writer.writeInt(metas.size());
 
-        for (org.apache.ignite.portable.PortableMetadata m : metas)
+        for (BinaryType m : metas)
             writeMetadata0(writer, cacheObjProc.typeId(m.typeName()), m);
     }
 
+    /** {@inheritDoc} */
+    @Override public void writeSchema(BinaryRawWriterEx writer, int typeId, int schemaId) {
+        BinarySchemaRegistry schemaReg = cacheObjProc.binaryContext().schemaRegistry(typeId);
+        BinarySchema schema = schemaReg.schema(schemaId);
+
+        if (schema == null) {
+            BinaryTypeImpl meta = (BinaryTypeImpl)cacheObjProc.metadata(typeId);
+
+            for (BinarySchema typeSchema : meta.metadata().schemas()) {
+                if (schemaId == typeSchema.schemaId()) {
+                    schema = typeSchema;
+                    break;
+                }
+            }
+
+            if (schema != null)
+                schemaReg.addSchema(schemaId, schema);
+        }
+
+        int[] fieldIds = schema == null ? null : schema.fieldIds();
+
+        writer.writeIntArray(fieldIds);
+    }
+
     /**
-     * Write portable metadata.
+     * Write binary metadata.
      *
      * @param writer Writer.
      * @param typeId Type id.
      * @param meta Metadata.
      */
-    private void writeMetadata0(PortableRawWriterEx writer, int typeId, PortableMetadata meta) {
+    private void writeMetadata0(BinaryRawWriterEx writer, int typeId, BinaryType meta) {
         if (meta == null)
             writer.writeBoolean(false);
         else {
             writer.writeBoolean(true);
 
-            Map<String, String> metaFields = ((PortableMetaDataImpl)meta).fields0();
-
-            Map<String, Integer> fields = U.newHashMap(metaFields.size());
-
-            for (Map.Entry<String, String> metaField : metaFields.entrySet())
-                fields.put(metaField.getKey(), CacheObjectPortableProcessorImpl.fieldTypeId(metaField.getValue()));
+            BinaryMetadata meta0 = ((BinaryTypeImpl) meta).metadata();
+            Map<String, Integer> fields = meta0.fieldsMap();
 
             writer.writeInt(typeId);
             writer.writeString(meta.typeName());
             writer.writeString(meta.affinityKeyFieldName());
             writer.writeMap(fields);
+            writer.writeBoolean(meta.isEnum());
         }
     }
 
@@ -426,7 +490,7 @@ public class PlatformContextImpl implements PlatformContext {
     }
 
     /** {@inheritDoc} */
-    @Override public void writeEvent(PortableRawWriterEx writer, Event evt) {
+    @Override public void writeEvent(BinaryRawWriterEx writer, Event evt) {
         assert writer != null;
 
         if (evt == null)
@@ -450,7 +514,6 @@ public class PlatformContextImpl implements PlatformContext {
             writeNode(writer, event0.eventNode());
             writer.writeObject(event0.key());
             PlatformUtils.writeIgniteUuid(writer, event0.xid());
-            writer.writeObject(event0.lockId());
             writer.writeObject(event0.newValue());
             writer.writeObject(event0.oldValue());
             writer.writeBoolean(event0.hasOldValue());
@@ -564,14 +627,14 @@ public class PlatformContextImpl implements PlatformContext {
      * @param writer Writer.
      * @param evt Event.
      */
-    private void writeCommonEventData(PortableRawWriterEx writer, EventAdapter evt) {
+    private void writeCommonEventData(BinaryRawWriterEx writer, EventAdapter evt) {
         PlatformUtils.writeIgniteUuid(writer, evt.id());
         writer.writeLong(evt.localOrder());
         writeNode(writer, evt.node());
         writer.writeString(evt.message());
         writer.writeInt(evt.type());
         writer.writeString(evt.name());
-        writer.writeDate(new Date(evt.timestamp()));
+        writer.writeTimestamp(new Timestamp(evt.timestamp()));
     }
 
     /** {@inheritDoc} */
@@ -610,12 +673,59 @@ public class PlatformContextImpl implements PlatformContext {
     }
 
     /** {@inheritDoc} */
-    @Override public PlatformStreamReceiver createStreamReceiver(Object rcv, long ptr, boolean keepPortable) {
-        return new PlatformStreamReceiverImpl(rcv, ptr, keepPortable, this);
+    @Override public PlatformStreamReceiver createStreamReceiver(Object rcv, long ptr, boolean keepBinary) {
+        return new PlatformStreamReceiverImpl(rcv, ptr, keepBinary, this);
     }
 
     /** {@inheritDoc} */
     @Override public PlatformClusterNodeFilter createClusterNodeFilter(Object filter) {
         return new PlatformClusterNodeFilterImpl(filter, this);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String platform() {
+        return platform;
+    }
+
+    /**
+     * Metadata holder.
+     */
+    private static class Metadata {
+        /** Type ID. */
+        private final int typeId;
+
+        /** Type name. */
+        private final String typeName;
+
+        /** Affinity key. */
+        private final String affKey;
+
+        /** Fields map. */
+        private final Map<String, Integer> fields;
+
+        /** Enum flag. */
+        private final boolean isEnum;
+
+        /** Schemas. */
+        private final List<BinarySchema> schemas;
+
+        /**
+         * Constructor.
+         *  @param typeId Type ID.
+         * @param typeName Type name.
+         * @param affKey Affinity key.
+         * @param fields Fields.
+         * @param isEnum Enum flag.
+         * @param schemas Schemas.
+         */
+        private Metadata(int typeId, String typeName, String affKey, Map<String, Integer> fields, boolean isEnum,
+            List<BinarySchema> schemas) {
+            this.typeId = typeId;
+            this.typeName = typeName;
+            this.affKey = affKey;
+            this.fields = fields;
+            this.isEnum = isEnum;
+            this.schemas = schemas;
+        }
     }
 }

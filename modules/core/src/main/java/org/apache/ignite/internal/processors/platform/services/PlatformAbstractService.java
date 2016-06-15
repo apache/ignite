@@ -23,8 +23,8 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.portable.PortableRawReaderEx;
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -41,11 +41,11 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** .Net portable service. */
+    /** .Net binary service. */
     protected Object svc;
 
-    /** Whether to keep objects portable on server if possible. */
-    protected boolean srvKeepPortable;
+    /** Whether to keep objects binary on server if possible. */
+    protected boolean srvKeepBinary;
 
     /** Pointer to deployed service. */
     protected transient long ptr;
@@ -65,15 +65,15 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
      *
      * @param svc Service.
      * @param ctx Context.
-     * @param srvKeepPortable Whether to keep objects portable on server if possible.
+     * @param srvKeepBinary Whether to keep objects binary on server if possible.
      */
-    public PlatformAbstractService(Object svc, PlatformContext ctx, boolean srvKeepPortable) {
+    public PlatformAbstractService(Object svc, PlatformContext ctx, boolean srvKeepBinary) {
         assert svc != null;
         assert ctx != null;
 
         this.svc = svc;
         this.platformCtx = ctx;
-        this.srvKeepPortable = srvKeepPortable;
+        this.srvKeepBinary = srvKeepBinary;
     }
 
     /** {@inheritDoc} */
@@ -84,9 +84,9 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
         try (PlatformMemory mem = platformCtx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            PortableRawWriterEx writer = platformCtx.writer(out);
+            BinaryRawWriterEx writer = platformCtx.writer(out);
 
-            writer.writeBoolean(srvKeepPortable);
+            writer.writeBoolean(srvKeepBinary);
             writer.writeObject(svc);
 
             writeServiceContext(ctx, writer);
@@ -108,9 +108,9 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
         try (PlatformMemory mem = platformCtx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            PortableRawWriterEx writer = platformCtx.writer(out);
+            BinaryRawWriterEx writer = platformCtx.writer(out);
 
-            writer.writeBoolean(srvKeepPortable);
+            writer.writeBoolean(srvKeepBinary);
 
             writeServiceContext(ctx, writer);
 
@@ -131,9 +131,9 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
         try (PlatformMemory mem = platformCtx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            PortableRawWriterEx writer = platformCtx.writer(out);
+            BinaryRawWriterEx writer = platformCtx.writer(out);
 
-            writer.writeBoolean(srvKeepPortable);
+            writer.writeBoolean(srvKeepBinary);
 
             writeServiceContext(ctx, writer);
 
@@ -152,7 +152,7 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
      * @param ctx Context.
      * @param writer Writer.
      */
-    private void writeServiceContext(ServiceContext ctx, PortableRawWriterEx writer) {
+    private void writeServiceContext(ServiceContext ctx, BinaryRawWriterEx writer) {
         writer.writeString(ctx.name());
         writer.writeUuid(ctx.executionId());
         writer.writeBoolean(ctx.isCancelled());
@@ -168,16 +168,16 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
     }
 
     /** {@inheritDoc} */
-    @Override public Object invokeMethod(String mthdName, boolean srvKeepPortable, Object[] args)
+    @Override public Object invokeMethod(String mthdName, boolean srvKeepBinary, Object[] args)
         throws IgniteCheckedException {
         assert ptr != 0;
         assert platformCtx != null;
 
         try (PlatformMemory outMem = platformCtx.memory().allocate()) {
             PlatformOutputStream out = outMem.output();
-            PortableRawWriterEx writer = platformCtx.writer(out);
+            BinaryRawWriterEx writer = platformCtx.writer(out);
 
-            writer.writeBoolean(srvKeepPortable);
+            writer.writeBoolean(srvKeepBinary);
             writer.writeString(mthdName);
 
             if (args == null)
@@ -195,11 +195,11 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
             try (PlatformMemory inMem = platformCtx.memory().allocate()) {
                 PlatformInputStream in = inMem.input();
 
-                PortableRawReaderEx reader = platformCtx.reader(in);
-
                 platformCtx.gateway().serviceInvokeMethod(ptr, outMem.pointer(), inMem.pointer());
 
                 in.synchronize();
+
+                BinaryRawReaderEx reader = platformCtx.reader(in);
 
                 return PlatformUtils.readInvocationResult(platformCtx, reader);
             }
@@ -219,12 +219,12 @@ public abstract class PlatformAbstractService implements PlatformService, Extern
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         svc = in.readObject();
-        srvKeepPortable = in.readBoolean();
+        srvKeepBinary = in.readBoolean();
     }
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(svc);
-        out.writeBoolean(srvKeepPortable);
+        out.writeBoolean(srvKeepBinary);
     }
 }

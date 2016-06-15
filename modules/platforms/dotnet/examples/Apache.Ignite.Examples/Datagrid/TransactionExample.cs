@@ -16,10 +16,10 @@
  */
 
 using System;
-using System.Collections.Generic;
 using Apache.Ignite.Core;
+using Apache.Ignite.Core.Cache.Configuration;
+using Apache.Ignite.ExamplesDll.Binary;
 using Apache.Ignite.Core.Transactions;
-using Apache.Ignite.ExamplesDll.Portable;
 
 namespace Apache.Ignite.Examples.Datagrid
 {
@@ -33,30 +33,31 @@ namespace Apache.Ignite.Examples.Datagrid
     /// 3) Start example (F5 or Ctrl+F5).
     /// <para />
     /// This example can be run with standalone Apache Ignite.NET node:
-    /// 1) Run %IGNITE_HOME%/platforms/dotnet/Apache.Ignite/bin/${Platform]/${Configuration}/Apache.Ignite.exe:
-    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\example-cache.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
+    /// 1) Run %IGNITE_HOME%/platforms/dotnet/bin/Apache.Ignite.exe:
+    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\examples-config.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
     /// 2) Start example.
     /// </summary>
     class TransactionExample
     {
+        /// <summary>Cache name.</summary>
+        private const string CacheName = "dotnet_cache_tx";
+
         /// <summary>
         /// Runs the example.
         /// </summary>
         [STAThread]
         public static void Main()
         {
-            var cfg = new IgniteConfiguration
-            {
-                SpringConfigUrl = @"platforms\dotnet\examples\config\example-cache.xml",
-                JvmOptions = new List<string> { "-Xms512m", "-Xmx1024m" }
-            };
-
-            using (var ignite = Ignition.Start(cfg))
+            using (var ignite = Ignition.Start(@"platforms\dotnet\examples\config\examples-config.xml"))
             {
                 Console.WriteLine();
                 Console.WriteLine(">>> Transaction example started.");
 
-                var cache = ignite.GetCache<int, Account>("tx");
+                var cache = ignite.GetOrCreateCache<int, Account>(new CacheConfiguration
+                {
+                    Name = CacheName,
+                    AtomicityMode = CacheAtomicityMode.Transactional
+                });
 
                 // Clean up caches on all nodes before run.
                 cache.Clear();

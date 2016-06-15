@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.Map;
 import javax.cache.processor.EntryProcessorResult;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.internal.GridDirectCollection;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
@@ -101,13 +102,13 @@ public class GridCacheReturn implements Externalizable, Message {
      * @param v Value.
      * @param success Success flag.
      */
-    public GridCacheReturn(GridCacheContext cctx, boolean loc, Object v, boolean success) {
+    public GridCacheReturn(GridCacheContext cctx, boolean loc, boolean keepBinary, Object v, boolean success) {
         this.loc = loc;
         this.success = success;
 
         if (v != null) {
             if (v instanceof CacheObject)
-                initValue(cctx, (CacheObject)v);
+                initValue(cctx, (CacheObject)v, keepBinary);
             else {
                 assert loc;
 
@@ -152,8 +153,8 @@ public class GridCacheReturn implements Externalizable, Message {
      * @param v Value.
      * @return This instance for chaining.
      */
-    public GridCacheReturn value(GridCacheContext cctx, CacheObject v) {
-        initValue(cctx, v);
+    public GridCacheReturn value(GridCacheContext cctx, CacheObject v, boolean keepBinary) {
+        initValue(cctx, v, keepBinary);
 
         return this;
     }
@@ -169,12 +170,18 @@ public class GridCacheReturn implements Externalizable, Message {
      * @param cctx Cache context.
      * @param cacheObj Value to set.
      * @param success Success flag to set.
+     * @param keepBinary Keep binary flag.
      * @return This instance for chaining.
      */
-    public GridCacheReturn set(GridCacheContext cctx, @Nullable CacheObject cacheObj, boolean success) {
+    public GridCacheReturn set(
+        GridCacheContext cctx,
+        @Nullable CacheObject cacheObj,
+        boolean success,
+        boolean keepBinary
+    ) {
         this.success = success;
 
-        initValue(cctx, cacheObj);
+        initValue(cctx, cacheObj, keepBinary);
 
         return this;
     }
@@ -182,10 +189,11 @@ public class GridCacheReturn implements Externalizable, Message {
     /**
      * @param cctx Cache context.
      * @param cacheObj Cache object.
+     * @param keepBinary Keep binary flag.
      */
-    private void initValue(GridCacheContext cctx, @Nullable CacheObject cacheObj) {
+    private void initValue(GridCacheContext cctx, @Nullable CacheObject cacheObj, boolean keepBinary) {
         if (loc)
-            v = CU.value(cacheObj, cctx, true);
+            v = cctx.cacheObjectContext().unwrapBinaryIfNeeded(cacheObj, keepBinary, true);
         else {
             assert cacheId == 0 || cacheId == cctx.cacheId();
 
@@ -211,6 +219,7 @@ public class GridCacheReturn implements Externalizable, Message {
      * @param key0 Key value.
      * @param res Result.
      * @param err Error.
+     * @param keepBinary Keep binary.
      */
     @SuppressWarnings("unchecked")
     public synchronized void addEntryProcessResult(
@@ -218,7 +227,8 @@ public class GridCacheReturn implements Externalizable, Message {
         KeyCacheObject key,
         @Nullable Object key0,
         @Nullable Object res,
-        @Nullable Exception err) {
+        @Nullable Exception err,
+        boolean keepBinary) {
         assert v == null || v instanceof Map : v;
         assert key != null;
         assert res != null || err != null;
@@ -236,7 +246,10 @@ public class GridCacheReturn implements Externalizable, Message {
 
             CacheInvokeResult res0 = err == null ? CacheInvokeResult.fromResult(res) : CacheInvokeResult.fromError(err);
 
-            resMap.put(key0 != null ? key0 : CU.value(key, cctx, true), res0);
+            Object resKey = key0 != null ? key0 :
+                ((keepBinary && key instanceof BinaryObject) ? key : CU.value(key, cctx, true));
+
+            resMap.put(resKey, res0);
         }
         else {
             assert v == null;
@@ -313,7 +326,7 @@ public class GridCacheReturn implements Externalizable, Message {
         if (cacheObj != null) {
             cacheObj.finishUnmarshal(ctx.cacheObjectContext(), ldr);
 
-            v = cacheObj.value(ctx.cacheObjectContext(), false);
+            v = ctx.cacheObjectContext().unwrapBinaryIfNeeded(cacheObj, true, false);
         }
 
         if (invokeRes && invokeResCol != null) {
@@ -324,14 +337,19 @@ public class GridCacheReturn implements Externalizable, Message {
 
             for (CacheInvokeDirectResult res : invokeResCol) {
                 CacheInvokeResult<?> res0 = res.error() == null ?
-                    CacheInvokeResult.fromResult(CU.value(res.result(), ctx, false)) :
+                    CacheInvokeResult.fromResult(ctx.cacheObjectContext().unwrapBinaryIfNeeded(res.result(), true, false)) :
                     CacheInvokeResult.fromError(res.error());
 
-                map0.put(res.key().value(ctx.cacheObjectContext(), false), res0);
+                map0.put(ctx.cacheObjectContext().unwrapBinaryIfNeeded(res.key(), true, false), res0);
             }
 
             v = map0;
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
     }
 
     /** {@inheritDoc} */

@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Compute
     using System.Collections.Generic;
     using System.Linq;
     using System.Runtime.Serialization;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Compute;
@@ -87,7 +88,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             Mode = ErrorMode.MapJobNotMarshalable;
 
-            SerializationException e = ExecuteWithError() as SerializationException;
+            var e = ExecuteWithError() as BinaryObjectException;
 
             Assert.IsNotNull(e);
         }
@@ -435,13 +436,13 @@ namespace Apache.Ignite.Core.Tests.Compute
             }
 
             /** <inheritDoc /> */
-            public ComputeJobResultPolicy Result(IComputeJobResult<object> res, IList<IComputeJobResult<object>> rcvd)
+            public ComputeJobResultPolicy OnResult(IComputeJobResult<object> res, IList<IComputeJobResult<object>> rcvd)
             {
-                if (res.Exception() != null)
-                    JobErrs.Add(res.Exception());
+                if (res.Exception != null)
+                    JobErrs.Add(res.Exception);
                 else
                 {
-                    object res0 = res.Data();
+                    object res0 = res.Data;
 
                     bool rmt = res0 is GoodJobResult ? ((GoodJobResult)res0).Rmt : ((BadJobResult)res0).Rmt;
 

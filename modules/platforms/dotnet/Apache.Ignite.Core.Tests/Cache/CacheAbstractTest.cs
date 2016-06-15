@@ -21,17 +21,16 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
-    using System.Runtime.Serialization;
     using System.Text;
     using System.Threading;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Expiry;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Cache;
-    using Apache.Ignite.Core.Portable;
     using Apache.Ignite.Core.Tests.Query;
     using Apache.Ignite.Core.Transactions;
     using NUnit.Framework;
@@ -149,7 +148,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         public bool ThrowErr { get; set; }
 
         // Error flag
-        public bool ThrowErrPortable { get; set; }
+        public bool ThrowErrBinarizable { get; set; }
 
         // Error flag
         public bool ThrowErrNonSerializable { get; set; }
@@ -180,8 +179,8 @@ namespace Apache.Ignite.Core.Tests.Cache
                 if (ThrowErr)
                     throw new Exception(ExceptionText);
 
-                if (ThrowErrPortable)
-                    throw new PortableTestException {Info = ExceptionText};
+                if (ThrowErrBinarizable)
+                    throw new BinarizableTestException {Info = ExceptionText};
 
                 if (ThrowErrNonSerializable)
                     throw new NonSerializableException();
@@ -205,17 +204,17 @@ namespace Apache.Ignite.Core.Tests.Cache
     }
 
     /// <summary>
-    /// Portable add processor.
+    /// Binary add processor.
     /// </summary>
-    public class PortableAddArgCacheEntryProcessor : AddArgCacheEntryProcessor, IPortableMarshalAware
+    public class BinarizableAddArgCacheEntryProcessor : AddArgCacheEntryProcessor, IBinarizable
     {
         /** <inheritdoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
             var w = writer.GetRawWriter();
 
             w.WriteBoolean(ThrowErr);
-            w.WriteBoolean(ThrowErrPortable);
+            w.WriteBoolean(ThrowErrBinarizable);
             w.WriteBoolean(ThrowErrNonSerializable);
             w.WriteInt(ThrowOnKey);
             w.WriteBoolean(Remove);
@@ -223,12 +222,12 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritdoc /> */
-        public void ReadPortable(IPortableReader reader)
+        public void ReadBinary(IBinaryReader reader)
         {
             var r = reader.GetRawReader();
 
             ThrowErr = r.ReadBoolean();
-            ThrowErrPortable = r.ReadBoolean();
+            ThrowErrBinarizable = r.ReadBoolean();
             ThrowErrNonSerializable = r.ReadBoolean();
             ThrowOnKey = r.ReadInt();
             Remove = r.ReadBoolean();
@@ -245,9 +244,9 @@ namespace Apache.Ignite.Core.Tests.Cache
     }
 
     /// <summary>
-    /// Portable exception.
+    /// Binary exception.
     /// </summary>
-    public class PortableTestException : Exception, IPortableMarshalAware
+    public class BinarizableTestException : Exception, IBinarizable
     {
         /// <summary>
         /// Gets or sets exception info.
@@ -261,13 +260,13 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         /** <inheritdoc /> */
-        public void WritePortable(IPortableWriter writer)
+        public void WriteBinary(IBinaryWriter writer)
         {
             writer.GetRawWriter().WriteString(Info);
         }
 
         /** <inheritdoc /> */
-        public void ReadPortable(IPortableReader reader)
+        public void ReadBinary(IBinaryReader reader)
         {
             Info = reader.GetRawReader().ReadString();
         }
@@ -293,21 +292,21 @@ namespace Apache.Ignite.Core.Tests.Cache
         public virtual void StartGrids() {
             TestUtils.KillProcesses();
 
-            IgniteConfigurationEx cfg = new IgniteConfigurationEx();
+            IgniteConfiguration cfg = new IgniteConfiguration();
 
-            PortableConfiguration portCfg = new PortableConfiguration();
+            BinaryConfiguration portCfg = new BinaryConfiguration();
 
-            ICollection<PortableTypeConfiguration> portTypeCfgs = new List<PortableTypeConfiguration>();
+            ICollection<BinaryTypeConfiguration> portTypeCfgs = new List<BinaryTypeConfiguration>();
 
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortablePerson)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(CacheTestKey)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(TestReferenceObject)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortableAddArgCacheEntryProcessor)));
-            portTypeCfgs.Add(new PortableTypeConfiguration(typeof(PortableTestException)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizablePerson)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(CacheTestKey)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(TestReferenceObject)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableAddArgCacheEntryProcessor)));
+            portTypeCfgs.Add(new BinaryTypeConfiguration(typeof(BinarizableTestException)));
 
             portCfg.TypeConfigurations = portTypeCfgs;
 
-            cfg.PortableConfiguration = portCfg;
+            cfg.BinaryConfiguration = portCfg;
             cfg.JvmClasspath = TestUtils.CreateTestClasspath();
             cfg.JvmOptions = TestUtils.TestJavaOptions();
             cfg.SpringConfigUrl = "config\\native-client-test-cache.xml";
@@ -343,22 +342,21 @@ namespace Apache.Ignite.Core.Tests.Cache
         [TearDown]
         public virtual void AfterTest() {
             for (int i = 0; i < GridCount(); i++) 
-                Cache(i).RemoveAll();
+                Cache(i).WithKeepBinary<object, object>().RemoveAll();
 
             for (int i = 0; i < GridCount(); i++)
             {
                 var cache = Cache(i);
+                var entries = cache.Select(pair => pair.ToString() + GetKeyAffinity(cache, pair.Key)).ToArray();
 
-                if (!cache.IsEmpty())
-                {
-                    var entries = Enumerable.Range(0, 2000)
-                        .Select(x => new KeyValuePair<int, int>(x, cache.LocalPeek(x)))
-                        .Where(x => x.Value != 0)
-                        .Select(pair => pair.ToString() + GetKeyAffinity(cache, pair.Key))
-                        .Aggregate((acc, val) => string.Format("{0}, {1}", acc, val));
+                if (entries.Any())
+                    Assert.Fail("Cache '{0}' is not empty in grid [{1}]: ({2})", CacheName(), i,
+                        entries.Aggregate((acc, val) => string.Format("{0}, {1}", acc, val)));
 
-                    Assert.Fail("Cache '{0}' is not empty in grid [{1}]: ({2})", CacheName(), i, entries);
-                }
+                var size = cache.GetSize();
+                Assert.AreEqual(0, size,
+                    "Cache enumerator returned no entries, but cache '{0}' size is {1} in grid [{2}]",
+                    CacheName(), size, i);
             }
 
             Console.WriteLine("Test finished: " + TestContext.CurrentContext.Test.Name);
@@ -400,7 +398,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestCircularReference()
         {
-            var cache = Cache().WithKeepPortable<int, object>();
+            var cache = Cache().WithKeepBinary<int, object>();
 
             TestReferenceObject obj1 = new TestReferenceObject();
 
@@ -408,7 +406,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.Put(1, obj1);
 
-            var po = (IPortableObject) cache.Get(1);
+            var po = (IBinaryObject) cache.Get(1);
 
             Assert.IsNotNull(po);
 
@@ -487,11 +485,15 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.Put(key1, 1);
 
+            int val;
+
             Assert.AreEqual(1, cache.LocalPeek(key1));
-            Assert.AreEqual(0, cache.LocalPeek(-1));
+            Assert.Throws<KeyNotFoundException>(() => cache.LocalPeek(-1));
+            Assert.IsFalse(cache.TryLocalPeek(-1, out val));
 
             Assert.AreEqual(1, cache.LocalPeek(key1, CachePeekMode.All));
-            Assert.AreEqual(0, cache.LocalPeek(-1, CachePeekMode.All));
+            Assert.Throws<KeyNotFoundException>(() => cache.LocalPeek(-1, CachePeekMode.All));
+            Assert.AreEqual(false, cache.TryLocalPeek(-1, out val, CachePeekMode.All));
         }
 
         [Test]
@@ -504,20 +506,36 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(1, cache.Get(1));
             Assert.AreEqual(2, cache.Get(2));
-            Assert.AreEqual(0, cache.Get(3));
+            
+            Assert.Throws<KeyNotFoundException>(() => cache.Get(3));
+
+            int value;
+            
+            Assert.IsTrue(cache.TryGet(1, out value));
+            Assert.AreEqual(1, value);
+
+            Assert.IsTrue(cache.TryGet(2, out value));
+            Assert.AreEqual(2, value);
+
+            Assert.IsFalse(cache.TryGet(3, out value));
+            Assert.AreEqual(0, value);
         }
 
         [Test]
         public void TestGetAsync()
         {
-            var cache = Cache().WithAsync().WrapAsync();
+            var cache = Cache().WrapAsync();
 
             cache.Put(1, 1);
             cache.Put(2, 2);
             
             Assert.AreEqual(1, cache.Get(1));
             Assert.AreEqual(2, cache.Get(2));
-            Assert.AreEqual(0, cache.Get(3));
+            Assert.IsFalse(cache.ContainsKey(3));
+            Assert.Throws<KeyNotFoundException>(() => cache.Get(3));
+
+            Assert.AreEqual(1, Cache().TryGetAsync(1).Result.Value);
+            Assert.IsFalse(Cache().TryGetAsync(3).Result.Success);
         }
 
         [Test]
@@ -542,7 +560,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestGetAllAsync()
         {
-            var cache = Cache().WithAsync().WrapAsync();
+            var cache = Cache().WrapAsync();
 
             cache.Put(1, 1);
             cache.Put(2, 2);
@@ -561,17 +579,17 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache();
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.AreEqual(false, cache.ContainsKey(1));
 
-            int old = cache.GetAndPut(1, 1);
+            var old = cache.GetAndPut(1, 1);
 
-            Assert.AreEqual(0, old);
+            Assert.IsFalse(old.Success);
 
             Assert.AreEqual(1, cache.Get(1));
 
             old = cache.GetAndPut(1, 2);
 
-            Assert.AreEqual(1, old);
+            Assert.AreEqual(1, old.Value);
 
             Assert.AreEqual(2, cache.Get(1));
         }
@@ -583,11 +601,11 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.Put(1, 10);
 
-            Assert.AreEqual(10, cache.GetAndReplace(1, 100));
+            Assert.AreEqual(10, cache.GetAndReplace(1, 100).Value);
 
-            Assert.AreEqual(0, cache.GetAndReplace(2, 2));
+            Assert.AreEqual(false, cache.GetAndReplace(2, 2).Success);
 
-            Assert.AreEqual(0, cache.Get(2));
+            Assert.AreEqual(false, cache.ContainsKey(2));
 
             Assert.AreEqual(100, cache.Get(1));
 
@@ -603,31 +621,31 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(1, cache.Get(1));
 
-            Assert.AreEqual(0, cache.GetAndRemove(0));
+            Assert.IsFalse(cache.GetAndRemove(0).Success);
             
-            Assert.AreEqual(1, cache.GetAndRemove(1));
+            Assert.AreEqual(1, cache.GetAndRemove(1).Value);
+
+            Assert.IsFalse(cache.GetAndRemove(1).Success);
             
-            Assert.AreEqual(0, cache.GetAndRemove(1));
-            
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
         }
 
         [Test]
         public void TestGetAndPutAsync()
         {
-            var cache = Cache().WithAsync().WrapAsync();
+            var cache = Cache().WrapAsync();
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.AreEqual(false, cache.ContainsKey(1));
 
-            int old = cache.GetAndPut(1, 1);
+            var old = cache.GetAndPut(1, 1);
 
-            Assert.AreEqual(0, old);
+            Assert.IsFalse(old.Success);
 
             Assert.AreEqual(1, cache.Get(1));
 
             old = cache.GetAndPut(1, 2);
 
-            Assert.AreEqual(1, old);
+            Assert.AreEqual(1, old.Value);
 
             Assert.AreEqual(2, cache.Get(1));
         }
@@ -645,7 +663,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestPutxAsync()
         {
-            var cache = Cache().WithAsync().WrapAsync();
+            var cache = Cache().WrapAsync();
 
             cache.Put(1, 1);
 
@@ -657,7 +675,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache();
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
 
             Assert.AreEqual(true, cache.PutIfAbsent(1, 1));
 
@@ -673,13 +691,13 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache();
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
 
-            Assert.AreEqual(0, cache.GetAndPutIfAbsent(1, 1));
+            Assert.IsFalse(cache.GetAndPutIfAbsent(1, 1).Success);
 
             Assert.AreEqual(1, cache.Get(1));
 
-            Assert.AreEqual(1, cache.GetAndPutIfAbsent(1, 2));
+            Assert.AreEqual(1, cache.GetAndPutIfAbsent(1, 2).Value);
 
             Assert.AreEqual(1, cache.Get(1));
         }
@@ -687,19 +705,19 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestGetAndPutIfAbsentAsync()
         {
-            var cache = Cache().WithAsync().WrapAsync();
+            var cache = Cache().WrapAsync();
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
 
-            int old = cache.GetAndPutIfAbsent(1, 1);
+            var old = cache.GetAndPutIfAbsent(1, 1);
 
-            Assert.AreEqual(0, old);
+            Assert.IsFalse(old.Success);
 
             Assert.AreEqual(1, cache.Get(1));
 
             old = cache.GetAndPutIfAbsent(1, 2);
 
-            Assert.AreEqual(1, old);
+            Assert.AreEqual(1, old.Value);
 
             Assert.AreEqual(1, cache.Get(1));
         }
@@ -707,9 +725,10 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestPutIfAbsentAsync()
         {
-            var cache = Cache().WithAsync().WrapAsync();
+            var cache = Cache().WrapAsync();
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.Throws<KeyNotFoundException>(() => cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
 
             Assert.IsTrue(cache.PutIfAbsent(1, 1));
 
@@ -725,13 +744,13 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache();
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
 
             bool success = cache.Replace(1, 1);
 
             Assert.AreEqual(false, success);
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
 
             cache.Put(1, 1);
 
@@ -755,15 +774,15 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestGetAndReplaceAsync()
         {
-            var cache = Cache().WithAsync().WrapAsync();
+            var cache = Cache().WrapAsync();
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
 
-            int old = cache.GetAndReplace(1, 1);
+            var old = cache.GetAndReplace(1, 1);
 
-            Assert.AreEqual(0, old);
+            Assert.IsFalse(old.Success);
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
 
             cache.Put(1, 1);
 
@@ -771,7 +790,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             old = cache.GetAndReplace(1, 2);
 
-            Assert.AreEqual(1, old);
+            Assert.AreEqual(1, old.Value);
 
             Assert.AreEqual(2, cache.Get(1));
 
@@ -789,11 +808,11 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache();
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
 
             Assert.IsFalse(cache.Replace(1, 1));
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
 
             cache.Put(1, 1);
 
@@ -807,13 +826,13 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestReplaceAsync()
         {
-            var cache = Cache().WithAsync().WrapAsync();
+            var cache = Cache().WrapAsync();
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
 
             Assert.IsFalse(cache.Replace(1, 1));
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
 
             cache.Put(1, 1);
 
@@ -839,7 +858,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestPutAllAsync()
         {
-            var cache = Cache().WithAsync().WrapAsync();
+            var cache = Cache().WrapAsync();
 
             cache.PutAll(new Dictionary<int, int> { { 1, 1 }, { 2, 2 }, { 3, 3 } });
 
@@ -916,6 +935,64 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache0.RemoveAll(new List<int> { key0, key1 });
 
+            // Test regular expiration.
+            cache = cache0.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromMilliseconds(100),
+                TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(100)));
+
+            cache.Put(key0, key0);
+            cache.Put(key1, key1);
+            Assert.IsTrue(cache0.ContainsKey(key0));
+            Assert.IsTrue(cache0.ContainsKey(key1));
+            Thread.Sleep(200);
+            Assert.IsFalse(cache0.ContainsKey(key0));
+            Assert.IsFalse(cache0.ContainsKey(key1));
+
+            cache0.Put(key0, key0);
+            cache0.Put(key1, key1);
+            cache.Put(key0, key0 + 1);
+            cache.Put(key1, key1 + 1);
+            Assert.IsTrue(cache0.ContainsKey(key0));
+            Assert.IsTrue(cache0.ContainsKey(key1));
+            Thread.Sleep(200);
+            Assert.IsFalse(cache0.ContainsKey(key0));
+            Assert.IsFalse(cache0.ContainsKey(key1));
+
+            cache0.Put(key0, key0);
+            cache0.Put(key1, key1);
+            cache.Get(key0); 
+            cache.Get(key1);
+            Assert.IsTrue(cache0.ContainsKey(key0));
+            Assert.IsTrue(cache0.ContainsKey(key1));
+            Thread.Sleep(200);
+            Assert.IsFalse(cache0.ContainsKey(key0));
+            Assert.IsFalse(cache0.ContainsKey(key1));
+        }
+        
+        /// <summary>
+        /// Expiry policy tests for zero and negative expiry values.
+        /// </summary>
+        [Test]
+        [Ignore("IGNITE-1423")]
+        public void TestWithExpiryPolicyZeroNegative()
+        {
+            ICache<int, int> cache0 = Cache(0);
+            
+            int key0;
+            int key1;
+
+            if (LocalCache())
+            {
+                key0 = 0;
+                key1 = 1;
+            }
+            else
+            {
+                key0 = PrimaryKeyForCache(cache0);
+                key1 = PrimaryKeyForCache(Cache(1));
+            }
+
+            var cache = cache0.WithExpiryPolicy(new ExpiryPolicy(null, null, null));
+
             // Test zero expiration.
             cache = cache0.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.Zero, TimeSpan.Zero, TimeSpan.Zero));
 
@@ -968,38 +1045,6 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.IsFalse(cache0.ContainsKey(key1));
 
             cache0.RemoveAll(new List<int> { key0, key1 });
-
-            // Test regular expiration.
-            cache = cache0.WithExpiryPolicy(new ExpiryPolicy(TimeSpan.FromMilliseconds(100),
-                TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(100)));
-
-            cache.Put(key0, key0);
-            cache.Put(key1, key1);
-            Assert.IsTrue(cache0.ContainsKey(key0));
-            Assert.IsTrue(cache0.ContainsKey(key1));
-            Thread.Sleep(200);
-            Assert.IsFalse(cache0.ContainsKey(key0));
-            Assert.IsFalse(cache0.ContainsKey(key1));
-
-            cache0.Put(key0, key0);
-            cache0.Put(key1, key1);
-            cache.Put(key0, key0 + 1);
-            cache.Put(key1, key1 + 1);
-            Assert.IsTrue(cache0.ContainsKey(key0));
-            Assert.IsTrue(cache0.ContainsKey(key1));
-            Thread.Sleep(200);
-            Assert.IsFalse(cache0.ContainsKey(key0));
-            Assert.IsFalse(cache0.ContainsKey(key1));
-
-            cache0.Put(key0, key0);
-            cache0.Put(key1, key1);
-            cache.Get(key0); 
-            cache.Get(key1);
-            Assert.IsTrue(cache0.ContainsKey(key0));
-            Assert.IsTrue(cache0.ContainsKey(key1));
-            Thread.Sleep(200);
-            Assert.IsFalse(cache0.ContainsKey(key0));
-            Assert.IsFalse(cache0.ContainsKey(key1));
         }
 
         [Test]
@@ -1092,7 +1137,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 cache.Clear(key);
 
-                Assert.AreEqual(0, cache.Get(key));
+                Assert.IsFalse(cache.ContainsKey(key));
+                Assert.Throws<KeyNotFoundException>(() => cache.Get(key));
 
                 Assert.Less(cache.GetSize(), i);
 
@@ -1111,8 +1157,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.ClearAll(keys);
 
-            foreach (var key in keys)
-                Assert.AreEqual(0, cache.Get(key));
+            Assert.IsFalse(cache.ContainsKeys(keys));
         }
 
         [Test]
@@ -1130,7 +1175,8 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 cache.LocalClear(key);
 
-                Assert.AreEqual(0, cache.LocalPeek(key));
+                int val;
+                Assert.IsFalse(cache.TryLocalPeek(key, out val));
 
                 Assert.Less(cache.GetSize(), i);
 
@@ -1151,8 +1197,10 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             cache.LocalClearAll(keys);
 
+            int val;
+
             foreach (var key in keys)
-                Assert.AreEqual(0, cache.LocalPeek(key));
+                Assert.IsFalse(cache.TryLocalPeek(key, out val));
 
             cache.Clear();
         }
@@ -1170,7 +1218,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(0, cache.GetSize());
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
 
             cache.Put(1, 1);
 
@@ -1181,23 +1229,23 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(0, cache.GetSize());
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
         }
 
         [Test]
         public void TestGetAndRemoveAsync()
         {
-            var cache = Cache().WithAsync().WrapAsync();
+            var cache = Cache().WrapAsync();
 
             cache.Put(1, 1);
 
             Assert.AreEqual(1, cache.Get(1));
 
-            Assert.AreEqual(1, cache.GetAndRemove(1));
+            Assert.AreEqual(1, cache.GetAndRemove(1).Value);
 
             Assert.AreEqual(0, cache.GetSize());
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
 
             cache.Put(1, 1);
 
@@ -1208,7 +1256,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(0, cache.GetSize());
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
         }
 
         [Test]
@@ -1225,13 +1273,13 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(0, cache.GetSize());
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
         }
 
         [Test]
         public void TestRemoveAsync()
         {
-            var cache = Cache().WithAsync().WrapAsync();
+            var cache = Cache().WrapAsync();
 
             cache.Put(1, 1);
 
@@ -1242,7 +1290,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(0, cache.GetSize());
 
-            Assert.AreEqual(0, cache.Get(1));
+            Assert.IsFalse(cache.ContainsKey(1));
         }
 
         [Test]
@@ -1250,7 +1298,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         {
             var cache = Cache();
 
-            List<int> keys = PrimaryKeysForCache(cache, 2);
+            var keys = PrimaryKeysForCache(cache, 2);
 
             cache.Put(keys[0], 1);
             cache.Put(keys[1], 2);
@@ -1262,14 +1310,13 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(0, cache.GetSize());
 
-            Assert.AreEqual(0, cache.Get(keys[0]));
-            Assert.AreEqual(0, cache.Get(keys[1]));
+            Assert.IsFalse(cache.ContainsKeys(keys));
         }
 
         [Test]
         public void TestRemoveAllAsync()
         {
-            var cache = Cache().WithAsync().WrapAsync();
+            var cache = Cache().WrapAsync();
 
             List<int> keys = PrimaryKeysForCache(cache, 2);
 
@@ -1283,8 +1330,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(0, cache.GetSize());
 
-            Assert.AreEqual(0, cache.Get(keys[0]));
-            Assert.AreEqual(0, cache.Get(keys[1]));
+            Assert.IsFalse(cache.ContainsKeys(keys));
         }
 
         [Test]
@@ -1306,15 +1352,14 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(1, cache.GetSize(CachePeekMode.Primary));
 
-            Assert.AreEqual(0, cache.Get(1));
-            Assert.AreEqual(0, cache.Get(2));
+            Assert.IsFalse(cache.ContainsKeys(new[] {1, 2}));
             Assert.AreEqual(3, cache.Get(3));
         }
 
         [Test]
         public void TestRemoveAllKeysAsync()
         {
-            var cache = Cache().WithAsync().WrapAsync();
+            var cache = Cache().WrapAsync();
 
             Assert.AreEqual(0, cache.GetSize());
 
@@ -1330,8 +1375,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             Assert.AreEqual(1, cache.GetSize(CachePeekMode.Primary));
 
-            Assert.AreEqual(0, cache.Get(1));
-            Assert.AreEqual(0, cache.Get(2));
+            Assert.IsFalse(cache.ContainsKeys(new[] {1, 2}));
             Assert.AreEqual(3, cache.Get(3));
         }
 
@@ -1539,11 +1583,11 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        public void TestPutGetPortable()
+        public void TestPutGetBinary()
         {
-            var cache = Cache<int, PortablePerson>();
+            var cache = Cache<int, BinarizablePerson>();
 
-            PortablePerson obj1 = new PortablePerson("obj1", 1);
+            BinarizablePerson obj1 = new BinarizablePerson("obj1", 1);
 
             cache.Put(1, obj1);
 
@@ -1554,11 +1598,11 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        public void TestPutGetPortableAsync()
+        public void TestPutGetBinaryAsync()
         {
-            var cache = Cache<int, PortablePerson>().WithAsync().WrapAsync();
+            var cache = Cache<int, BinarizablePerson>().WrapAsync();
 
-            PortablePerson obj1 = new PortablePerson("obj1", 1);
+            BinarizablePerson obj1 = new BinarizablePerson("obj1", 1);
 
             cache.Put(1, obj1);
 
@@ -1569,7 +1613,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        public void TestPutGetPortableKey()
+        public void TestPutGetBinaryKey()
         {
             var cache = Cache<CacheTestKey, string>();
 
@@ -1585,28 +1629,22 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestGetAsync2()
         {
-            var cache = Cache().WithAsync();
+            var cache = Cache();
 
             for (int i = 0; i < 100; i++)
-            {
                 cache.Put(i, i);
 
-                cache.GetFuture<object>().Get();
-            }
-
-            var futs = new List<IFuture<int>>();
+            var futs = new List<Task<int>>();
 
             for (int i = 0; i < 1000; i++)
             {
-                cache.Get(i % 100);
-
-                futs.Add(cache.GetFuture<int>());
+                futs.Add(cache.GetAsync(i % 100));
             }
 
             for (int i = 0; i < 1000; i++) {
-                Assert.AreEqual(i % 100, futs[i].Get(), "Unexpected result: " + i);
+                Assert.AreEqual(i % 100, futs[i].Result, "Unexpected result: " + i);
 
-                Assert.IsTrue(futs[i].IsDone);
+                Assert.IsTrue(futs[i].IsCompleted);
             }
         }
 
@@ -1614,30 +1652,22 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Category(TestUtils.CategoryIntensive)]
         public void TestGetAsyncMultithreaded()
         {
-            var cache = Cache().WithAsync();
+            var cache = Cache();
 
             for (int i = 0; i < 100; i++)
-            {
                 cache.Put(i, i);
-
-                cache.GetFuture<object>().Get();
-            }
 
             TestUtils.RunMultiThreaded(() =>
             {
                 for (int i = 0; i < 100; i++)
                 {
-                    var futs = new List<IFuture<int>>();
+                    var futs = new List<Task<int>>();
 
                     for (int j = 0; j < 100; j++)
-                    {
-                        cache.Get(j);
-
-                        futs.Add(cache.GetFuture<int>());
-                    }
+                        futs.Add(cache.GetAsync(j));
 
                     for (int j = 0; j < 100; j++)
-                        Assert.AreEqual(j, futs[j].Get());
+                        Assert.AreEqual(j, futs[j].Result);
                 }
             }, 10);
         }
@@ -1646,7 +1676,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Category(TestUtils.CategoryIntensive)]
         public void TestPutxAsyncMultithreaded()
         {
-            var cache = Cache().WithAsync();
+            var cache = Cache();
 
             TestUtils.RunMultiThreaded(() =>
             {
@@ -1654,17 +1684,13 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                 for (int i = 0; i < 50; i++)
                 {
-                    var futs = new List<IFuture<object>>();
+                    var futs = new List<Task>();
 
                     for (int j = 0; j < 10; j++)
-                    {
-                        cache.Put(rnd.Next(1000), i);
-
-                        futs.Add(cache.GetFuture<object>());
-                    }
+                        futs.Add(cache.PutAsync(rnd.Next(1000), i));
 
                     foreach (var fut in futs)
-                        fut.Get();
+                        fut.Wait();
                 }
             }, 5);
         }
@@ -1673,7 +1699,7 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Category(TestUtils.CategoryIntensive)]
         public void TestPutGetAsyncMultithreaded()
         {
-            var cache = Cache<CacheTestKey, PortablePerson>().WithAsync();
+            var cache = Cache<CacheTestKey, BinarizablePerson>();
 
             const int threads = 10;
             const int objPerThread = 1000;
@@ -1685,22 +1711,20 @@ namespace Apache.Ignite.Core.Tests.Cache
                 // ReSharper disable once AccessToModifiedClosure
                 int threadIdx = Interlocked.Increment(ref cntr);
 
-                var futs = new List<IFuture<object>>();
+                var futs = new List<Task>();
 
                 for (int i = 0; i < objPerThread; i++)
                 {
                     int key = threadIdx * objPerThread + i;
 
-                    cache.Put(new CacheTestKey(key), new PortablePerson("Person-" + key, key));
-
-                    futs.Add(cache.GetFuture<object>());
+                    futs.Add(cache.PutAsync(new CacheTestKey(key), new BinarizablePerson("Person-" + key, key)));
                 }
 
                 foreach (var fut in futs)
                 {
-                    fut.Get();
+                    fut.Wait();
 
-                    Assert.IsTrue(fut.IsDone);
+                    Assert.IsTrue(fut.IsCompleted);
                 }
             }, threads);
 
@@ -1712,8 +1736,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 {
                     int key = threadIdx * objPerThread + i;
 
-                    cache.Get(new CacheTestKey(key));
-                    var p = cache.GetFuture<PortablePerson>().Get();
+                    var p = cache.GetAsync(new CacheTestKey(key)).Result;
 
                     Assert.IsNotNull(p);
                     Assert.AreEqual(key, p.Age);
@@ -1731,9 +1754,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 {
                     int key = threadIdx * objPerThread + i;
 
-                    cache.Put(new CacheTestKey(key), new PortablePerson("Person-" + key, key));
-
-                    cache.GetFuture<object>().Get();
+                    cache.PutAsync(new CacheTestKey(key), new BinarizablePerson("Person-" + key, key)).Wait();
                 }
             }, threads);
 
@@ -1743,15 +1764,13 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 int threadIdx = Interlocked.Increment(ref cntr);
 
-                var futs = new List<IFuture<PortablePerson>>();
+                var futs = new List<Task<BinarizablePerson>>();
 
                 for (int i = 0; i < objPerThread; i++)
                 {
                     int key = threadIdx * objPerThread + i;
 
-                    cache.Get(new CacheTestKey(key));
-
-                    futs.Add(cache.GetFuture<PortablePerson>());
+                    futs.Add(cache.GetAsync(new CacheTestKey(key)));
                 }
 
                 for (int i = 0; i < objPerThread; i++)
@@ -1760,7 +1779,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                     int key = threadIdx * objPerThread + i;
 
-                    var p = fut.Get();
+                    var p = fut.Result;
 
                     Assert.IsNotNull(p);
                     Assert.AreEqual(key, p.Age);
@@ -1771,10 +1790,10 @@ namespace Apache.Ignite.Core.Tests.Cache
 
         //[Test]
         //[Category(TestUtils.CATEGORY_INTENSIVE)]
-        public void TestAsyncMultithreadedKeepPortable()
+        public void TestAsyncMultithreadedKeepBinary()
         {
-            var cache = Cache().WithAsync().WithKeepPortable<CacheTestKey, PortablePerson>();
-            var portCache = Cache().WithAsync().WithKeepPortable<CacheTestKey, IPortableObject>();
+            var cache = Cache().WithKeepBinary<CacheTestKey, BinarizablePerson>();
+            var portCache = Cache().WithKeepBinary<CacheTestKey, IBinaryObject>();
 
             const int threads = 10;
             const int objPerThread = 1000;
@@ -1786,19 +1805,19 @@ namespace Apache.Ignite.Core.Tests.Cache
                 // ReSharper disable once AccessToModifiedClosure
                 int threadIdx = Interlocked.Increment(ref cntr);
 
-                var futs = new List<IFuture<object>>();
+                var futs = new List<Task>();
 
                 for (int i = 0; i < objPerThread; i++)
                 {
                     int key = threadIdx * objPerThread + i;
 
-                    cache.Put(new CacheTestKey(key), new PortablePerson("Person-" + key, key));
+                    var task = cache.PutAsync(new CacheTestKey(key), new BinarizablePerson("Person-" + key, key));
 
-                    futs.Add(cache.GetFuture<object>());
+                    futs.Add(task);
                 }
 
                 foreach (var fut in futs)
-                    Assert.IsNull(fut.Get());
+                    fut.Wait();
             }, threads);
 
             for (int i = 0; i < threads; i++)
@@ -1809,7 +1828,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 {
                     int key = threadIdx * objPerThread + i;
 
-                    IPortableObject p = portCache.Get(new CacheTestKey(key));
+                    IBinaryObject p = portCache.Get(new CacheTestKey(key));
 
                     Assert.IsNotNull(p);
                     Assert.AreEqual(key, p.GetField<int>("age"));
@@ -1823,15 +1842,13 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 int threadIdx = Interlocked.Increment(ref cntr);
 
-                var futs = new List<IFuture<IPortableObject>>();
+                var futs = new List<Task<IBinaryObject>>();
 
                 for (int i = 0; i < objPerThread; i++)
                 {
                     int key = threadIdx * objPerThread + i;
 
-                    portCache.Get(new CacheTestKey(key));
-
-                    futs.Add(cache.GetFuture<IPortableObject>());
+                    futs.Add(portCache.GetAsync(new CacheTestKey(key)));
                 }
 
                 for (int i = 0; i < objPerThread; i++)
@@ -1840,7 +1857,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                     int key = threadIdx * objPerThread + i;
 
-                    var p = fut.Get();
+                    var p = fut.Result;
 
                     Assert.IsNotNull(p);
                     Assert.AreEqual(key, p.GetField<int>("age"));
@@ -1854,22 +1871,20 @@ namespace Apache.Ignite.Core.Tests.Cache
             {
                 int threadIdx = Interlocked.Increment(ref cntr);
 
-                var futs = new List<IFuture<bool>>();
+                var futs = new List<Task<bool>>();
 
                 for (int i = 0; i < objPerThread; i++)
                 {
                     int key = threadIdx * objPerThread + i;
 
-                    cache.Remove(new CacheTestKey(key));
-
-                    futs.Add(cache.GetFuture<bool>());
+                    futs.Add(cache.RemoveAsync(new CacheTestKey(key)));
                 }
 
                 for (int i = 0; i < objPerThread; i++)
                 {
                     var fut = futs[i];
 
-                    Assert.AreEqual(true, fut.Get());
+                    Assert.IsTrue(fut.Result);
                 }
             }, threads);
         }
@@ -2034,16 +2049,11 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                 if (async)
                 {
-                    var asyncTx = tx.WithAsync();
-                    
-                    asyncTx.Commit();
+                    var task = tx.CommitAsync();
 
-                    var fut = asyncTx.GetFuture();
+                    task.Wait();
 
-                    fut.Get();
-
-                    Assert.IsTrue(fut.IsDone);
-                    Assert.AreEqual(fut.Get(), null);
+                    Assert.IsTrue(task.IsCompleted);
                 }
                 else
                     tx.Commit();
@@ -2382,24 +2392,22 @@ namespace Apache.Ignite.Core.Tests.Cache
                 // Expected
             }
 
-            tx = Transactions.TxStart().WithAsync();
+            tx = Transactions.TxStart();
 
             Assert.AreEqual(TransactionState.Active, tx.State);
 
-            tx.Commit();
-
-            tx.GetFuture().Get();
+            tx.CommitAsync().Wait();
 
             Assert.AreEqual(TransactionState.Committed, tx.State);
 
-            tx.Rollback();  // Illegal, but should not fail here; will fail in future
+            var task = tx.RollbackAsync();  // Illegal, but should not fail here; will fail in task
 
             try
             {
-                tx.GetFuture<object>().Get();
+                task.Wait();
                 Assert.Fail();
             }
-            catch (InvalidOperationException)
+            catch (AggregateException)
             {
                 // Expected
             }
@@ -2476,22 +2484,21 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Category(TestUtils.CategoryIntensive)]
         public void TestFuturesGc()
         {
-            var cache = Cache().WithAsync();
+            var cache = Cache();
 
-            cache.Put(1, 1);
+            cache.PutAsync(1, 1);
 
             for (int i = 0; i < 10; i++)
             {
                 TestUtils.RunMultiThreaded(() =>
                 {
                     for (int j = 0; j < 1000; j++)
-                        cache.Get(1);
+                        cache.GetAsync(1);
                 }, 5);
 
                 GC.Collect();
 
-                cache.Get(1);
-                Assert.AreEqual(1, cache.GetFuture<int>().Get());
+                Assert.AreEqual(1, cache.GetAsync(1).Result);
             }
 
             Thread.Sleep(2000);
@@ -2760,15 +2767,15 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
-        public void TestKeepPortableFlag()
+        public void TestKeepBinaryFlag()
         {
-            TestKeepPortableFlag(false);
+            TestKeepBinaryFlag(false);
         }
 
         [Test]
-        public void TestKeepPortableFlagAsync()
+        public void TestKeepBinaryFlagAsync()
         {
-            TestKeepPortableFlag(true);
+            TestKeepBinaryFlag(true);
         }
 
         [Test]
@@ -2811,6 +2818,22 @@ namespace Apache.Ignite.Core.Tests.Cache
         }
 
         [Test]
+        public void TestSerializableKeepBinary()
+        {
+            var cache = Cache<int, TestSerializableObject>();
+
+            var obj = new TestSerializableObject {Name = "Vasya", Id = 128};
+
+            cache.Put(1, obj);
+
+            var binaryRes = cache.WithKeepBinary<int, IBinaryObject>().Get(1);
+
+            var resultObj = binaryRes.Deserialize<TestSerializableObject>();
+
+            Assert.AreEqual(obj, resultObj);
+        }
+
+        [Test]
         public void TestInvoke()
         {
             TestInvoke(false);
@@ -2825,14 +2848,14 @@ namespace Apache.Ignite.Core.Tests.Cache
         private void TestInvoke(bool async)
         {
             TestInvoke<AddArgCacheEntryProcessor>(async);
-            TestInvoke<PortableAddArgCacheEntryProcessor>(async);
+            TestInvoke<BinarizableAddArgCacheEntryProcessor>(async);
 
             try
             {
                 TestInvoke<NonSerializableCacheEntryProcessor>(async);
                 Assert.Fail();
             }
-            catch (SerializationException)
+            catch (BinaryObjectException)
             {
                 // Expected
             }
@@ -2840,7 +2863,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
         private void TestInvoke<T>(bool async) where T: AddArgCacheEntryProcessor, new()
         {
-            var cache = async ? Cache().WithAsync().WrapAsync() : Cache();
+            var cache = async ? Cache().WrapAsync() : Cache();
 
             cache.Clear();
 
@@ -2860,14 +2883,14 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             // Remove entry
             Assert.AreEqual(0, cache.Invoke(key, new T {Remove = true}, arg));
-            Assert.AreEqual(0, cache.Get(key));
+            Assert.AreEqual(false, cache.ContainsKey(key));
 
             // Test exceptions
             AssertThrowsCacheEntryProcessorException(() => cache.Invoke(key, new T {ThrowErr = true}, arg));
             AssertThrowsCacheEntryProcessorException(
-                () => cache.Invoke(key, new T {ThrowErrPortable = true}, arg));
+                () => cache.Invoke(key, new T {ThrowErrBinarizable = true}, arg));
             AssertThrowsCacheEntryProcessorException(
-                () => cache.Invoke(key, new T { ThrowErrNonSerializable = true }, arg), "SerializationException");
+                () => cache.Invoke(key, new T { ThrowErrNonSerializable = true }, arg), "BinaryObjectException");
         }
 
         private static void AssertThrowsCacheEntryProcessorException(Action action, string containsText = null)
@@ -2906,14 +2929,14 @@ namespace Apache.Ignite.Core.Tests.Cache
             for (var i = 1; i < 10; i++)
             {
                 TestInvokeAll<AddArgCacheEntryProcessor>(async, i);
-                TestInvokeAll<PortableAddArgCacheEntryProcessor>(async, i);
+                TestInvokeAll<BinarizableAddArgCacheEntryProcessor>(async, i);
 
                 try
                 {
                     TestInvokeAll<NonSerializableCacheEntryProcessor>(async, i);
                     Assert.Fail();
                 }
-                catch (SerializationException)
+                catch (BinaryObjectException)
                 {
                     // Expected
                 }
@@ -2922,7 +2945,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
         public void TestInvokeAll<T>(bool async, int entryCount) where T : AddArgCacheEntryProcessor, new()
         {
-            var cache = async ? Cache().WithAsync().WrapAsync() : Cache();
+            var cache = async ? Cache().WrapAsync() : Cache();
 
             var entries = Enumerable.Range(1, entryCount).ToDictionary(x => x, x => x + 1);
 
@@ -2958,10 +2981,10 @@ namespace Apache.Ignite.Core.Tests.Cache
             var errKey = entries.Keys.Reverse().Take(5).Last();
 
             TestInvokeAllException(cache, entries, new T { ThrowErr = true, ThrowOnKey = errKey }, arg, errKey);
-            TestInvokeAllException(cache, entries, new T { ThrowErrPortable = true, ThrowOnKey = errKey }, 
+            TestInvokeAllException(cache, entries, new T { ThrowErrBinarizable = true, ThrowOnKey = errKey }, 
                 arg, errKey);
-            TestInvokeAllException(cache, entries, new T { ThrowErrNonSerializable = true, ThrowOnKey = errKey }, 
-                arg, errKey, "SerializationException");
+            TestInvokeAllException(cache, entries, new T { ThrowErrNonSerializable = true, ThrowOnKey = errKey },
+                arg, errKey, "BinaryObjectException");
 
         }
 
@@ -2986,26 +3009,25 @@ namespace Apache.Ignite.Core.Tests.Cache
         [Test]
         public void TestSkipStore()
         {
-            CacheProxyImpl<int, int> cache = (CacheProxyImpl<int, int>)Cache();
+            var cache = (CacheImpl<int, int>) Cache();
 
-            Assert.IsFalse(cache.SkipStore);
+            Assert.IsFalse(cache.IsSkipStore);
 
             // Ensure correct flag set.
-            CacheProxyImpl<int, int> cacheSkipStore1 = (CacheProxyImpl<int, int>)cache.WithSkipStore();
+            var cacheSkipStore1 = (CacheImpl<int, int>) cache.WithSkipStore();
 
             Assert.AreNotSame(cache, cacheSkipStore1);
-            Assert.IsFalse(cache.SkipStore);
-            Assert.IsTrue(cacheSkipStore1.SkipStore);
+            Assert.IsFalse(cache.IsSkipStore);
+            Assert.IsTrue(cacheSkipStore1.IsSkipStore);
 
             // Ensure that the same instance is returned if flag is already set.
-            CacheProxyImpl<int, int> cacheSkipStore2 = (CacheProxyImpl<int, int>)cacheSkipStore1.WithSkipStore();
+            var cacheSkipStore2 = (CacheImpl<int, int>) cacheSkipStore1.WithSkipStore();
 
-            Assert.IsTrue(cacheSkipStore2.SkipStore);
+            Assert.IsTrue(cacheSkipStore2.IsSkipStore);
             Assert.AreSame(cacheSkipStore1, cacheSkipStore2);
 
             // Ensure other flags are preserved.
-            Assert.IsTrue(((CacheProxyImpl<int, int>)cache.WithKeepPortable<int, int>().WithSkipStore()).IsKeepPortable);
-            Assert.IsTrue(cache.WithAsync().WithSkipStore().IsAsync);
+            Assert.IsTrue(((CacheImpl<int, int>) cache.WithKeepBinary<int, int>().WithSkipStore()).IsKeepBinary);
         }
 
         [Test]
@@ -3029,7 +3051,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             var fut = cache.Rebalance();
 
-            Assert.IsNull(fut.Get());
+            
         }
 
         [Test]
@@ -3040,8 +3062,10 @@ namespace Apache.Ignite.Core.Tests.Cache
 
             // Can't get non-existent cache with Cache method
             Assert.Throws<ArgumentException>(() => GetIgnite(0).GetCache<int, int>(randomName));
+            Assert.IsFalse(GetIgnite(0).GetCacheNames().Contains(randomName));
 
             var cache = GetIgnite(0).CreateCache<int, int>(randomName);
+            Assert.IsTrue(GetIgnite(0).GetCacheNames().Contains(randomName));
 
             cache.Put(1, 10);
 
@@ -3079,29 +3103,78 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(10, cache1.Get(1));
         }
 
-        private void TestKeepPortableFlag(bool async)
+        [Test]
+        public void TestDestroy()
         {
-            var cache0 = async ? Cache().WithAsync().WrapAsync() : Cache();
+            var cacheName = "template" + Guid.NewGuid();
 
-            var cache = cache0.WithKeepPortable<int, PortablePerson>();
+            var ignite = GetIgnite(0);
 
-            var portCache = cache0.WithKeepPortable<int, IPortableObject>();
+            var cache = ignite.CreateCache<int, int>(cacheName);
+
+            Assert.IsNotNull(ignite.GetCache<int, int>(cacheName));
+            Assert.IsTrue(GetIgnite(0).GetCacheNames().Contains(cacheName));
+
+            ignite.DestroyCache(cache.Name);
+
+            Assert.IsFalse(GetIgnite(0).GetCacheNames().Contains(cacheName));
+
+            var ex = Assert.Throws<ArgumentException>(() => ignite.GetCache<int, int>(cacheName));
+
+            Assert.IsTrue(ex.Message.StartsWith("Cache doesn't exist"));
+
+            Assert.Throws<InvalidOperationException>(() => cache.Get(1));
+        }
+
+        [Test]
+        public void TestCacheNames()
+        {
+            var cacheNames = GetIgnite(0).GetCacheNames();
+            var expectedNames = new[]
+            {
+                "local", "local_atomic", "partitioned", "partitioned_atomic",
+                "partitioned_near", "partitioned_atomic_near", "replicated", "replicated_atomic"
+            };
+
+            Assert.AreEqual(0, expectedNames.Except(cacheNames).Count());
+        }
+
+
+        [Test]
+        public void TestIndexer()
+        {
+            var cache = Cache();
+
+            Assert.Throws<KeyNotFoundException>(() => Console.WriteLine(cache[0]));  // missing key throws
+
+            cache[1] = 5;
+
+            Assert.AreEqual(5, cache[1]);
+        }
+
+        private void TestKeepBinaryFlag(bool async)
+        {
+            var cache0 = async ? Cache().WrapAsync() : Cache();
+
+            var cache = cache0.WithKeepBinary<int, BinarizablePerson>();
+
+            var binCache = cache0.WithKeepBinary<int, IBinaryObject>();
 
             int cnt = 10;
 
             IList<int> keys = new List<int>();
 
             for (int i = 0; i < cnt; i++ ) {
-                cache.Put(i, new PortablePerson("person-" + i, i));
+                cache.Put(i, new BinarizablePerson("person-" + i, i));
 
                 keys.Add(i);
             }
 
-            IList<IPortableObject> objs = new List<IPortableObject>();
+            IList<IBinaryObject> objs = new List<IBinaryObject>();
 
             for (int i = 0; i < cnt; i++)
             {
-                var obj = portCache.Get(i);
+                var obj = binCache.Get(i);
 
                 CheckPersonData(obj, "person-" + i, i);
 
@@ -3111,15 +3184,15 @@ namespace Apache.Ignite.Core.Tests.Cache
             // Check objects weren't corrupted by subsequent cache operations.
             for (int i = 0; i < cnt; i++)
             {
-                IPortableObject obj = objs[i];
+                IBinaryObject obj = objs[i];
 
                 CheckPersonData(obj, "person-" + i, i);
             }
 
-            // Check keepPortable for GetAll operation.
-            var allObjs1 = portCache.GetAll(keys);
+            // Check keepBinary for GetAll operation.
+            var allObjs1 = binCache.GetAll(keys);
 
-            var allObjs2 = portCache.GetAll(keys);
+            var allObjs2 = binCache.GetAll(keys);
 
             for (int i = 0; i < cnt; i++)
             {
@@ -3128,7 +3201,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 CheckPersonData(allObjs2[i], "person-" + i, i);
             }
 
-            // Check keepPortable for Remove operation.
+            // Check keepBinary for Remove operation.
             var success0 = cache.Remove(0);
             var success1 = cache.Remove(1);
 
@@ -3136,12 +3209,12 @@ namespace Apache.Ignite.Core.Tests.Cache
             Assert.AreEqual(true, success1);
         }
 
-        private void CheckPersonData(IPortableObject obj, string expName, int expAge)
+        private void CheckPersonData(IBinaryObject obj, string expName, int expAge)
         {
             Assert.AreEqual(expName, obj.GetField<string>("name"));
             Assert.AreEqual(expAge, obj.GetField<int>("age"));
 
-            PortablePerson person = obj.Deserialize<PortablePerson>();
+            BinarizablePerson person = obj.Deserialize<BinarizablePerson>();
 
             Assert.AreEqual(expName, person.Name);
             Assert.AreEqual(expAge, person.Age);
@@ -3246,7 +3319,11 @@ namespace Apache.Ignite.Core.Tests.Cache
 
         private static int PeekInt(ICache<int, int> cache, int key)
         {
-            return cache.LocalPeek(key, CachePeekMode.Onheap);
+            int val;
+
+            cache.TryLocalPeek(key, out val, CachePeekMode.Onheap);
+
+            return val;
         }
     }
 }

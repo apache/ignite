@@ -17,11 +17,11 @@
 
 namespace Apache.Ignite.Core.Compute
 {
-    using System;
     using System.Collections.Generic;
-    using System.Diagnostics;
+    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Compute;
 
     /// <summary>
@@ -30,13 +30,8 @@ namespace Apache.Ignite.Core.Compute
     /// in most homogeneous environments where all nodes are equally suitable for executing grid
     /// job, see <see cref="Split"/> method for more details.
     /// </summary>
-    public abstract class ComputeTaskSplitAdapter<TA, T, TR> : ComputeTaskAdapter<TA, T, TR>
+    public abstract class ComputeTaskSplitAdapter<TArg, TJobRes, TTaskRes> : ComputeTaskAdapter<TArg, TJobRes, TTaskRes>
     {
-        /** Random generator */
-        [ThreadStatic]
-        // ReSharper disable once StaticMemberInGenericType
-        private static Random _rnd;
-
         /// <summary>
         /// This is a simplified version of <see cref="IComputeTask{A,T,R}.Map"/> method.
         /// <p/>
@@ -49,7 +44,7 @@ namespace Apache.Ignite.Core.Compute
         /// <param name="gridSize">Number of available Ignite nodes. Note that returned number of jobs can be less, 
         ///  equal or greater than this grid size.</param>
         /// <param name="arg">Task execution argument. Can be <c>null</c>.</param>
-        protected abstract ICollection<IComputeJob<T>> Split(int gridSize, TA arg);
+        protected abstract ICollection<IComputeJob<TJobRes>> Split(int gridSize, TArg arg);
 
         /// <summary>
         /// This method is called to map or split Ignite task into multiple Ignite jobs. This is the
@@ -66,23 +61,21 @@ namespace Apache.Ignite.Core.Compute
         /// exception will be thrown.
         /// </returns>
         /// <exception cref="IgniteException">Split returned no jobs.</exception>
-        override public IDictionary<IComputeJob<T>, IClusterNode> Map(IList<IClusterNode> subgrid, TA arg)
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
+        override public IDictionary<IComputeJob<TJobRes>, IClusterNode> Map(IList<IClusterNode> subgrid, TArg arg)
         {
-            Debug.Assert(subgrid != null && subgrid.Count > 0);
-
             var jobs = Split(subgrid.Count, arg);
 
             if (jobs == null || jobs.Count == 0)
                 throw new IgniteException("Split returned no jobs.");
 
-            var map = new Dictionary<IComputeJob<T>, IClusterNode>(jobs.Count);
+            var map = new Dictionary<IComputeJob<TJobRes>, IClusterNode>(jobs.Count);
 
-            if (_rnd == null)
-                _rnd = new Random();
+            var rnd = IgniteUtils.ThreadLocalRandom;
 
             foreach (var job in jobs)
             {
-                int idx = _rnd.Next(subgrid.Count);
+                int idx = rnd.Next(subgrid.Count);
 
                 IClusterNode node = subgrid[idx];
 

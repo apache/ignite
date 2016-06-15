@@ -22,6 +22,7 @@ import java.net.URL;
 import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSpring;
 import org.apache.ignite.Ignition;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -30,9 +31,11 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.core.io.UrlResource;
 import org.yardstickframework.BenchmarkConfiguration;
@@ -40,6 +43,7 @@ import org.yardstickframework.BenchmarkServer;
 import org.yardstickframework.BenchmarkUtils;
 
 import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_VALUES;
+import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MARSHALLER;
 
 /**
  * Standalone Ignite node.
@@ -73,15 +77,20 @@ public class IgniteNode implements BenchmarkServer {
 
         BenchmarkUtils.jcommander(cfg.commandLineArguments(), args, "<ignite-node>");
 
-        IgniteConfiguration c = loadConfiguration(args.configuration());
+        IgniteBiTuple<IgniteConfiguration, ? extends ApplicationContext> tup = loadConfiguration(args.configuration());
+
+        IgniteConfiguration c = tup.get1();
 
         assert c != null;
+
+        ApplicationContext appCtx = tup.get2();
+
+        assert appCtx != null;
 
         for (CacheConfiguration cc : c.getCacheConfiguration()) {
             // IgniteNode can not run in CLIENT_ONLY mode,
             // except the case when it's used inside IgniteAbstractBenchmark.
-            boolean cl = args.isClientOnly() && !args.isNearCache() && !clientMode ?
-                false : args.isClientOnly();
+            boolean cl = args.isClientOnly() && (args.isNearCache() || clientMode);
 
             if (cl)
                 c.setClientMode(true);
@@ -127,6 +136,8 @@ public class IgniteNode implements BenchmarkServer {
             cc.setWriteThrough(args.isStoreEnabled());
 
             cc.setWriteBehindEnabled(args.isWriteBehind());
+
+            BenchmarkUtils.println(cfg, "Cache configured with the following parameters: " + cc);
         }
 
         TransactionConfiguration tc = c.getTransactionConfiguration();
@@ -141,15 +152,18 @@ public class IgniteNode implements BenchmarkServer {
 
         c.setCommunicationSpi(commSpi);
 
-        ignite = Ignition.start(c);
+        ignite = IgniteSpring.start(c, appCtx);
+
+        BenchmarkUtils.println("Configured marshaller: " + ignite.cluster().localNode().attribute(ATTR_MARSHALLER));
     }
 
     /**
      * @param springCfgPath Spring configuration file path.
-     * @return Grid configuration.
+     * @return Tuple with grid configuration and Spring application context.
      * @throws Exception If failed.
      */
-    private static IgniteConfiguration loadConfiguration(String springCfgPath) throws Exception {
+    private static IgniteBiTuple<IgniteConfiguration, ? extends ApplicationContext> loadConfiguration(String springCfgPath)
+        throws Exception {
         URL url;
 
         try {
@@ -191,7 +205,7 @@ public class IgniteNode implements BenchmarkServer {
         if (cfgMap == null || cfgMap.isEmpty())
             throw new Exception("Failed to find ignite configuration in: " + url);
 
-        return cfgMap.values().iterator().next();
+        return new IgniteBiTuple<>(cfgMap.values().iterator().next(), springCtx);
     }
 
     /** {@inheritDoc} */

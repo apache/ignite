@@ -30,21 +30,25 @@ import org.apache.ignite.compute.ComputeJob;
 import org.apache.ignite.compute.ComputeJobAdapter;
 import org.apache.ignite.compute.ComputeJobResult;
 import org.apache.ignite.compute.ComputeTaskFuture;
+import org.apache.ignite.compute.ComputeTaskMapAsync;
 import org.apache.ignite.compute.ComputeTaskSession;
 import org.apache.ignite.compute.ComputeTaskSessionFullSupport;
 import org.apache.ignite.compute.ComputeTaskSplitAdapter;
 import org.apache.ignite.compute.ComputeTaskTimeoutException;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CheckpointEvent;
 import org.apache.ignite.events.DeploymentEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.JobEvent;
 import org.apache.ignite.events.TaskEvent;
 import org.apache.ignite.internal.util.IgniteUtils;
+import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.resources.TaskSessionResource;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.testframework.junits.common.GridCommonTest;
 import org.jetbrains.annotations.Nullable;
@@ -81,6 +85,16 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
      */
     public GridEventStorageCheckAllEventsSelfTest() {
         super(/*start grid*/true);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration() throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration();
+
+        // TODO: IGNITE-3099 (hotfix the test to check the event order in common case).
+        cfg.setPublicThreadPoolSize(1);
+
+        return cfg;
     }
 
     /** {@inheritDoc} */
@@ -138,9 +152,22 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
      * @throws Exception If test failed.
      */
     public void testTaskUndeployEvents() throws Exception {
-        long tstamp = startTimestamp();
+        final long tstamp = startTimestamp();
 
         generateEvents(null, new GridAllEventsSuccessTestJob()).get();
+
+        // TODO: IGNITE-3099 (hotfix the test to check the event order in common case).
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                try {
+                    List<Event> evts = pullEvents(tstamp, 10);
+                    return evts.get(evts.size() - 1).type() == EVT_JOB_FINISHED;
+                }
+                catch (Exception e) {
+                    return false;
+                }
+            }
+        }, 500);
 
         ignite.compute().undeployTask(GridAllEventsTestTask.class.getName());
         ignite.compute().localDeployTask(GridAllEventsTestTask.class, GridAllEventsTestTask.class.getClassLoader());
@@ -165,6 +192,8 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
      * @throws Exception If test failed.
      */
     public void testSuccessTask() throws Exception {
+        generateEvents(null, new GridAllEventsSuccessTestJob()).get();
+
         long tstamp = startTimestamp();
 
         generateEvents(null, new GridAllEventsSuccessTestJob()).get();
@@ -194,7 +223,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
         try {
             fut.get();
 
-            assert false : "Grid with locally executed job with timeout should throw GridComputeTaskTimeoutException.";
+            assert false : "Grid with locally executed job with timeout should throw ComputeTaskTimeoutException.";
         }
         catch (IgniteException e) {
             info("Expected exception caught [taskFuture=" + fut + ", exception=" + e + ']');
@@ -271,14 +300,22 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
      * to allow pass {@link IgniteUtils#currentTimeMillis()}.
      *
      * @return Call timestamp.
-     * @throws InterruptedException If sleep was interrupted.
+     * @throws Exception If failed.
      */
-    private long startTimestamp() throws InterruptedException {
-        long tstamp = System.currentTimeMillis();
+    private long startTimestamp() throws Exception {
+        final long tstamp = U.currentTimeMillis();
 
         Thread.sleep(20);
 
-        return tstamp;
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return U.currentTimeMillis() > tstamp;
+            }
+        }, 5000);
+
+        assert U.currentTimeMillis() > tstamp;
+
+        return U.currentTimeMillis();
     }
 
     /**
@@ -451,6 +488,7 @@ public class GridEventStorageCheckAllEventsSelfTest extends GridCommonAbstractTe
      *
      */
     @ComputeTaskSessionFullSupport
+    @ComputeTaskMapAsync // TODO: IGNITE-3099 (hotfix the test to check the event order in common case).
     private static class GridAllEventsTestTask extends ComputeTaskSplitAdapter<Object, Object> {
         /** {@inheritDoc} */
         @Override protected Collection<? extends ComputeJob> split(int gridSize, Object arg) {

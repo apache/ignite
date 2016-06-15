@@ -20,8 +20,9 @@ package org.apache.ignite.internal.processors.cache.distributed;
 import java.io.Externalizable;
 import java.nio.ByteBuffer;
 import java.util.Collection;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
+import org.apache.ignite.internal.GridDirectTransient;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxState;
+import org.apache.ignite.internal.processors.cache.transactions.IgniteTxStateAware;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.tostring.GridToStringBuilder;
 import org.apache.ignite.lang.IgniteUuid;
@@ -32,7 +33,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Transaction completion message.
  */
-public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
+public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage implements IgniteTxStateAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -52,9 +53,11 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
     private boolean commit;
 
     /** Sync commit flag. */
+    @Deprecated
     private boolean syncCommit;
 
     /** Sync commit flag. */
+    @Deprecated
     private boolean syncRollback;
 
     /** Min version used as base for completed versions. */
@@ -68,6 +71,10 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
 
     /** IO policy. */
     private byte plc;
+
+    /** Transient TX state. */
+    @GridDirectTransient
+    private IgniteTxState txState;
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -85,10 +92,13 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
      * @param invalidate Invalidate flag.
      * @param sys System transaction flag.
      * @param plc IO policy.
+     * @param syncCommit Sync commit flag.
+     * @param syncRollback Sync rollback flag.
      * @param baseVer Base version.
      * @param committedVers Committed versions.
      * @param rolledbackVers Rolled back versions.
      * @param txSize Expected transaction size.
+     * @param addDepInfo Deployment info flag.
      */
     public GridDistributedTxFinishRequest(
         GridCacheVersion xidVer,
@@ -104,9 +114,10 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
         GridCacheVersion baseVer,
         Collection<GridCacheVersion> committedVers,
         Collection<GridCacheVersion> rolledbackVers,
-        int txSize
+        int txSize,
+        boolean addDepInfo
     ) {
-        super(xidVer, 0);
+        super(xidVer, 0, addDepInfo);
         assert xidVer != null;
 
         this.futId = futId;
@@ -182,6 +193,13 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
     }
 
     /**
+     * @param syncCommit Sync commit flag.
+     */
+    public void syncCommit(boolean syncCommit) {
+        this.syncCommit = syncCommit;
+    }
+
+    /**
      * @return Sync rollback flag.
      */
     public boolean syncRollback() {
@@ -208,6 +226,16 @@ public class GridDistributedTxFinishRequest extends GridDistributedBaseMessage {
      */
     public boolean replyRequired() {
         return commit ? syncCommit : syncRollback;
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteTxState txState() {
+        return txState;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void txState(IgniteTxState txState) {
+        this.txState = txState;
     }
 
     /** {@inheritDoc} */

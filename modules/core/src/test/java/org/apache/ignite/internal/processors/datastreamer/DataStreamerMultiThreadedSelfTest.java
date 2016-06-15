@@ -92,6 +92,8 @@ public class DataStreamerMultiThreadedSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStartStopIgnitesDynamicCache() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1602");
+
         dynamicCache = true;
 
         startStopIgnites();
@@ -103,7 +105,7 @@ public class DataStreamerMultiThreadedSelfTest extends GridCommonAbstractTest {
     private void startStopIgnites() throws Exception {
         for (int attempt = 0; attempt < 3; ++attempt) {
             log.info("Iteration: " + attempt);
-            
+
             final Ignite ignite = startGrid(0);
 
             Set<IgniteFuture> futs = new HashSet<>();

@@ -114,7 +114,7 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="keys">Keys to map to nodes.</param>
         /// <returns>Map of nodes to keys or empty map if there are no alive nodes for this cache.</returns>
-        IDictionary<IClusterNode, IList<TK>> MapKeysToNodes<TK>(IList<TK> keys);
+        IDictionary<IClusterNode, IList<TK>> MapKeysToNodes<TK>(IEnumerable<TK> keys);
 
         /// <summary>
         /// This method provides ability to detect to which primary node the given key
@@ -145,7 +145,7 @@ namespace Apache.Ignite.Core.Cache
         /// </summary>
         /// <param name="parts">Partition ids.</param>
         /// <returns>Mapping of given partitions to their primary nodes.</returns>
-        IDictionary<int, IClusterNode> MapPartitionsToNodes(IList<int> parts);
+        IDictionary<int, IClusterNode> MapPartitionsToNodes(IEnumerable<int> parts);
 
         /// <summary>
         /// Gets primary and backup nodes for partition. Note that primary node is always

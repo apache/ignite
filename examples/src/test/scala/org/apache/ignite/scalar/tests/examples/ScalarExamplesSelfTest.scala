@@ -35,6 +35,11 @@ class ScalarExamplesSelfTest extends GridAbstractExamplesTest with JUnitSuiteLik
     }
 
     /** */
+    def testScalarCacheEntryProcessorExample() {
+        ScalarCacheEntryProcessorExample.main(EMPTY_ARGS)
+    }
+
+    /** */
     def testScalarCacheExample() {
         ScalarCacheExample.main(EMPTY_ARGS)
     }
@@ -74,11 +79,6 @@ class ScalarExamplesSelfTest extends GridAbstractExamplesTest with JUnitSuiteLik
     /** */
     def testScalarPrimeExample() {
         ScalarPrimeExample.main(EMPTY_ARGS)
-    }
-
-    /** */
-    def testScalarScheduleCallableExample() {
-        ScalarScheduleExample.main(EMPTY_ARGS)
     }
 
     /** */

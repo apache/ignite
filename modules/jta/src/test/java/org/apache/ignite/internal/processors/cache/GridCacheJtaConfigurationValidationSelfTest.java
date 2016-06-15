@@ -49,6 +49,8 @@ public class GridCacheJtaConfigurationValidationSelfTest extends GridCommonAbstr
     }
 
     /**
+     * Tests that a user did not set 'transactionManagerLookupClassName' property for atomic cache.
+     *
      * @throws Exception If failed.
      */
     public void testAtomicWithTmLookup() throws Exception {

@@ -26,7 +26,7 @@
 
 namespace ignite
 {
-    namespace common 
+    namespace common
     {
         namespace concurrent 
         {
@@ -403,4 +403,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_COMMON_CONCURRENT_OS

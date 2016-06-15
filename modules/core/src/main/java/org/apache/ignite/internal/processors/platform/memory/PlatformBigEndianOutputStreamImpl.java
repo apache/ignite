@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.platform.memory;
 
-import static org.apache.ignite.internal.processors.platform.memory.PlatformMemoryUtils.UNSAFE;
+import org.apache.ignite.internal.util.GridUnsafe;
 
 /**
  * Interop output stream implementation working with BIG ENDIAN architecture.
@@ -46,7 +46,7 @@ public class PlatformBigEndianOutputStreamImpl extends PlatformOutputStreamImpl 
         long startPos = data + pos;
 
         for (short item : val) {
-            UNSAFE.putShort(startPos, Short.reverseBytes(item));
+            GridUnsafe.putShort(startPos, Short.reverseBytes(item));
 
             startPos += 2;
         }
@@ -68,7 +68,7 @@ public class PlatformBigEndianOutputStreamImpl extends PlatformOutputStreamImpl 
         long startPos = data + pos;
 
         for (char item : val) {
-            UNSAFE.putChar(startPos, Character.reverseBytes(item));
+            GridUnsafe.putChar(startPos, Character.reverseBytes(item));
 
             startPos += 2;
         }
@@ -90,12 +90,17 @@ public class PlatformBigEndianOutputStreamImpl extends PlatformOutputStreamImpl 
         long startPos = data + pos;
 
         for (int item : val) {
-            UNSAFE.putInt(startPos, Integer.reverseBytes(item));
+            GridUnsafe.putInt(startPos, Integer.reverseBytes(item));
 
             startPos += 4;
         }
 
         shift(cnt);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeShort(int pos, short val) {
+        super.writeShort(pos, Short.reverseBytes(val));
     }
 
     /** {@inheritDoc} */
@@ -112,7 +117,7 @@ public class PlatformBigEndianOutputStreamImpl extends PlatformOutputStreamImpl 
         long startPos = data + pos;
 
         for (float item : val) {
-            UNSAFE.putInt(startPos, Integer.reverseBytes(Float.floatToIntBits(item)));
+            GridUnsafe.putInt(startPos, Integer.reverseBytes(Float.floatToIntBits(item)));
 
             startPos += 4;
         }
@@ -134,7 +139,7 @@ public class PlatformBigEndianOutputStreamImpl extends PlatformOutputStreamImpl 
         long startPos = data + pos;
 
         for (long item : val) {
-            UNSAFE.putLong(startPos, Long.reverseBytes(item));
+            GridUnsafe.putLong(startPos, Long.reverseBytes(item));
 
             startPos += 8;
         }
@@ -151,11 +156,41 @@ public class PlatformBigEndianOutputStreamImpl extends PlatformOutputStreamImpl 
         long startPos = data + pos;
 
         for (double item : val) {
-            UNSAFE.putLong(startPos, Long.reverseBytes(Double.doubleToLongBits(item)));
+            GridUnsafe.putLong(startPos, Long.reverseBytes(Double.doubleToLongBits(item)));
 
             startPos += 8;
         }
 
         shift(cnt);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafeWriteShort(short val) {
+        super.unsafeWriteShort(Short.reverseBytes(val));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafeWriteShort(int pos, short val) {
+        super.unsafeWriteShort(pos, Short.reverseBytes(val));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafeWriteChar(char val) {
+        super.unsafeWriteChar(Character.reverseBytes(val));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafeWriteInt(int val) {
+        super.unsafeWriteInt(Integer.reverseBytes(val));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafeWriteInt(int pos, int val) {
+        super.unsafeWriteInt(pos, Integer.reverseBytes(val));
+    }
+
+    /** {@inheritDoc} */
+    @Override public void unsafeWriteLong(long val) {
+        super.unsafeWriteLong(Long.reverseBytes(val));
     }
 }

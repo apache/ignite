@@ -28,6 +28,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearGetRequest;
+import org.apache.ignite.internal.processors.cache.distributed.near.GridNearSingleGetRequest;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -228,7 +229,7 @@ public class GridCachePartitionedGetSelfTest extends GridCommonAbstractTest {
                         @Override public void onMessage(UUID nodeId, Object msg) {
                             info("Received message from node [nodeId=" + nodeId + ", msg=" + msg + ']');
 
-                            if (msg instanceof GridNearGetRequest) {
+                            if (msg instanceof GridNearSingleGetRequest) {
                                 info("Setting flag: " + System.identityHashCode(received));
 
                                 received.set(true);

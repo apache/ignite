@@ -17,11 +17,14 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.CacheAtomicityMode;
-import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -46,12 +49,9 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionRollbackException;
 
-import javax.cache.CacheException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
-
+import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
+import static org.apache.ignite.cache.CacheMode.PARTITIONED;
+import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.transactions.TransactionConcurrency.OPTIMISTIC;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -79,7 +79,11 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
 
         cfg.setCacheConfiguration(cacheConfiguration(gridName));
 
-        cfg.setCommunicationSpi(new BanningCommunicationSpi());
+        BanningCommunicationSpi commSpi = new BanningCommunicationSpi();
+
+        commSpi.setSharedMemoryPort(-1);
+
+        cfg.setCommunicationSpi(commSpi);
 
         return cfg;
     }
@@ -91,9 +95,10 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     protected CacheConfiguration cacheConfiguration(String gridName) {
         CacheConfiguration ccfg = new CacheConfiguration();
 
-        ccfg.setCacheMode(CacheMode.PARTITIONED);
-        ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);
+        ccfg.setCacheMode(PARTITIONED);
+        ccfg.setAtomicityMode(TRANSACTIONAL);
         ccfg.setBackups(1);
+        ccfg.setWriteSynchronizationMode(FULL_SYNC);
 
         return ccfg;
     }
@@ -137,6 +142,8 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testPrimaryNodeFailureBackupRollbackOptimistic() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1731");
+
         checkPrimaryNodeFailureBackupCommit(OPTIMISTIC, false, false);
     }
 
@@ -183,6 +190,9 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @param conc Transaction concurrency.
+     * @param backup Check backup flag.
+     * @param commit Check commit flag.
      * @throws Exception If failed.
      */
     private void checkPrimaryNodeFailureBackupCommit(
@@ -190,13 +200,14 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
         boolean backup,
         final boolean commit
     ) throws Exception {
-        startGrids(gridCount());
-        awaitPartitionMapExchange();
-
-        for (int i = 0; i < gridCount(); i++)
-            info("Grid " + i + ": " + ignite(i).cluster().localNode().id());
-
         try {
+            startGrids(gridCount());
+
+            awaitPartitionMapExchange();
+
+            for (int i = 0; i < gridCount(); i++)
+                info("Grid " + i + ": " + ignite(i).cluster().localNode().id());
+
             final Ignite ignite = ignite(0);
 
             final IgniteCache<Object, Object> cache = ignite.cache(null).withNoRetries();
@@ -285,7 +296,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
 
                     return null;
                 }
-            });
+            }, "tx-thread");
 
             commitLatch.await();
 
@@ -293,6 +304,10 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
 
             // Check that thread successfully finished.
             fut.get();
+
+            ((IgniteKernal)ignite(0)).context().discovery().topologyFuture(gridCount() + 1).get();
+
+            awaitPartitionMapExchange();
 
             // Check there are no hanging transactions.
             assertEquals(0, ((IgniteEx)ignite(0)).context().cache().context().tm().idMapSize());
@@ -359,6 +374,7 @@ public class GridCacheTxNodeFailureSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param ignite Ignite instance to generate key.
+     * @param backup Backup key flag.
      * @return Generated key that is not primary nor backup for {@code ignite(0)} and primary for
      *      {@code ignite(1)}.
      */

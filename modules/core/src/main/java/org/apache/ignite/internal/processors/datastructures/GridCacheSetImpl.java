@@ -31,6 +31,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteCompute;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSet;
 import org.apache.ignite.cache.affinity.AffinityKeyMapped;
@@ -49,7 +51,9 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteReducer;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
@@ -66,7 +70,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     private final GridCacheContext ctx;
 
     /** Cache. */
-    private final IgniteInternalCache<GridCacheSetItemKey, Boolean> cache;
+    private final IgniteInternalCache<SetItemKey, Boolean> cache;
 
     /** Logger. */
     private final IgniteLogger log;
@@ -80,11 +84,20 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     /** Collocation flag. */
     private final boolean collocated;
 
-    /** Queue header partition. */
+    /** Set header partition. */
     private final int hdrPart;
+
+    /** Set header key. */
+    protected final GridCacheSetHeaderKey setKey;
 
     /** Removed flag. */
     private volatile boolean rmvd;
+
+    /** */
+    private final boolean binaryMarsh;
+
+    /** Access to affinityRun() and affinityCall() functions. */
+    private final IgniteCompute compute;
 
     /**
      * @param ctx Cache context.
@@ -97,8 +110,12 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
         this.name = name;
         id = hdr.id();
         collocated = hdr.collocated();
+        binaryMarsh = ctx.binaryMarshaller();
+        compute = ctx.kernalContext().grid().compute();
 
         cache = ctx.cache();
+
+        setKey = new GridCacheSetHeaderKey(name);
 
         log = ctx.logger(GridCacheSetImpl.class);
 
@@ -140,7 +157,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
             onAccess();
 
             if (ctx.isLocal() || ctx.isReplicated()) {
-                GridConcurrentHashSet<GridCacheSetItemKey> set = ctx.dataStructures().setData(id);
+                GridConcurrentHashSet<SetItemKey> set = ctx.dataStructures().setData(id);
 
                 return set != null ? set.size() : 0;
             }
@@ -171,7 +188,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     @Override public boolean isEmpty() {
         onAccess();
 
-        GridConcurrentHashSet<GridCacheSetItemKey> set = ctx.dataStructures().setData(id);
+        GridConcurrentHashSet<SetItemKey> set = ctx.dataStructures().setData(id);
 
         return (set == null || set.isEmpty()) && size() == 0;
     }
@@ -180,7 +197,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     @Override public boolean contains(Object o) {
         onAccess();
 
-        final GridCacheSetItemKey key = itemKey(o);
+        final SetItemKey key = itemKey(o);
 
         return retry(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
@@ -193,7 +210,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     @Override public boolean add(T o) {
         onAccess();
 
-        final GridCacheSetItemKey key = itemKey(o);
+        final SetItemKey key = itemKey(o);
 
         return retry(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
@@ -206,7 +223,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     @Override public boolean remove(Object o) {
         onAccess();
 
-        final GridCacheSetItemKey key = itemKey(o);
+        final SetItemKey key = itemKey(o);
 
         return retry(new Callable<Boolean>() {
             @Override public Boolean call() throws Exception {
@@ -231,7 +248,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
 
         boolean add = false;
 
-        Map<GridCacheSetItemKey, Boolean> addKeys = null;
+        Map<SetItemKey, Boolean> addKeys = null;
 
         for (T obj : c) {
             if (add) {
@@ -247,7 +264,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
                 }
             }
             else
-                add |= add(obj);
+                add = add(obj);
         }
 
         if (!F.isEmpty(addKeys))
@@ -262,7 +279,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
 
         boolean rmv = false;
 
-        Set<GridCacheSetItemKey> rmvKeys = null;
+        Set<SetItemKey> rmvKeys = null;
 
         for (Object obj : c) {
             if (rmv) {
@@ -278,7 +295,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
                 }
             }
             else
-                rmv |= remove(obj);
+                rmv = remove(obj);
         }
 
         if (!F.isEmpty(rmvKeys))
@@ -295,7 +312,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
             try (GridCloseableIterator<T> iter = iterator0()) {
                 boolean rmv = false;
 
-                Set<GridCacheSetItemKey> rmvKeys = null;
+                Set<SetItemKey> rmvKeys = null;
 
                 for (T val : iter) {
                     if (!c.contains(val)) {
@@ -331,7 +348,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
             onAccess();
 
             try (GridCloseableIterator<T> iter = iterator0()) {
-                Collection<GridCacheSetItemKey> rmvKeys = new ArrayList<>(BATCH_SIZE);
+                Collection<SetItemKey> rmvKeys = new ArrayList<>(BATCH_SIZE);
 
                 for (T val : iter) {
                     rmvKeys.add(itemKey(val));
@@ -360,6 +377,24 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     }
 
     /** {@inheritDoc} */
+    public void affinityRun(IgniteRunnable job) {
+        if (!collocated)
+            throw new IgniteException("Failed to execute affinityRun() for non-collocated set: " + name() +
+                ". This operation is supported only for collocated sets.");
+
+        compute.affinityRun(cache.name(), setKey, job);
+    }
+
+    /** {@inheritDoc} */
+    public <R> R affinityCall(IgniteCallable<R> job) {
+        if (!collocated)
+            throw new IgniteException("Failed to execute affinityCall() for non-collocated set: " + name() +
+                ". This operation is supported only for collocated sets.");
+
+        return compute.affinityCall(cache.name(), setKey, job);
+    }
+
+    /** {@inheritDoc} */
     @Override public void close() {
         try {
             if (rmvd)
@@ -385,7 +420,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
 
             CacheQueryFuture<Map.Entry<T, ?>> fut = qry.execute();
 
-            CacheWeakQueryIteratorsHolder.WeakQueryFutureIterator it =
+            CacheWeakQueryIteratorsHolder.WeakReferenceCloseableIterator it =
                 ctx.itHolder().iterator(fut, new CacheIteratorConverter<T, Map.Entry<T, ?>>() {
                     @Override protected T convert(Map.Entry<T, ?> e) {
                         return e.getKey();
@@ -425,7 +460,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     /**
      * @param keys Keys to remove.
      */
-    private void retryRemoveAll(final Collection<GridCacheSetItemKey> keys) {
+    private void retryRemoveAll(final Collection<SetItemKey> keys) {
         retry(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 cache.removeAll(keys);
@@ -438,7 +473,7 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
     /**
      * @param keys Keys to remove.
      */
-    private void retryPutAll(final Map<GridCacheSetItemKey, Boolean> keys) {
+    private void retryPutAll(final Map<SetItemKey, Boolean> keys) {
         retry(new Callable<Void>() {
             @Override public Void call() throws Exception {
                 cache.putAll(keys);
@@ -523,8 +558,9 @@ public class GridCacheSetImpl<T> extends AbstractCollection<T> implements Ignite
      * @param item Set item.
      * @return Item key.
      */
-    private GridCacheSetItemKey itemKey(Object item) {
-        return collocated ? new CollocatedItemKey(name, id, item) : new GridCacheSetItemKey(id, item);
+    private SetItemKey itemKey(Object item) {
+        return collocated ? (binaryMarsh ? new CollocatedSetItemKey(name, id, item) : new CollocatedItemKey(name, id, item))
+            : new GridCacheSetItemKey(id, item);
     }
 
     /** {@inheritDoc} */

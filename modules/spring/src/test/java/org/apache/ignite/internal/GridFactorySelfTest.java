@@ -44,6 +44,7 @@ import org.apache.ignite.internal.util.lang.GridTuple;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteRunnable;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -56,6 +57,8 @@ import org.apache.ignite.spi.collision.CollisionContext;
 import org.apache.ignite.spi.collision.CollisionExternalListener;
 import org.apache.ignite.spi.collision.CollisionSpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
+import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.http.GridEmbeddedHttpServer;
@@ -82,8 +85,14 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_OVERRIDE_MCAST_GRP
 @SuppressWarnings("UnusedDeclaration")
 @GridCommonTest(group = "NonDistributed Kernal Self")
 public class GridFactorySelfTest extends GridCommonAbstractTest {
+    /** IP finder. */
+    private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
+
     /** */
     private static final AtomicInteger cnt = new AtomicInteger();
+
+    /** Concurrency. */
+    private static final int CONCURRENCY = 10;
 
     /** */
     private static final String CUSTOM_CFG_PATH =
@@ -102,6 +111,15 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         cnt.set(0);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(gridName);
+
+        ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
+
+        return cfg;
     }
 
     /**
@@ -188,6 +206,88 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
 
             G.stop(gridName, false);
         }
+    }
+
+    /**
+     * Tests default grid
+     */
+    public void testDefaultGridGetOrStart() throws Exception {
+        IgniteConfiguration cfg = getConfiguration(null);
+
+        try (Ignite ignite = Ignition.getOrStart(cfg)) {
+            try {
+                Ignition.start(cfg);
+
+                fail("Expected exception after grid started");
+            }
+            catch (IgniteException ignored) {
+            }
+
+            Ignite ignite2 = Ignition.getOrStart(cfg);
+
+            assertEquals("Must return same instance", ignite, ignite2);
+        }
+
+        assertTrue(G.allGrids().isEmpty());
+    }
+
+    /**
+     * Tests named grid
+     */
+    public void testNamedGridGetOrStart() throws Exception {
+        IgniteConfiguration cfg = getConfiguration("test");
+        try (Ignite ignite = Ignition.getOrStart(cfg)) {
+            try {
+                Ignition.start(cfg);
+
+                fail("Expected exception after grid started");
+            }
+            catch (IgniteException ignored) {
+                // No-op.
+            }
+
+            Ignite ignite2 = Ignition.getOrStart(cfg);
+
+            assertEquals("Must return same instance", ignite, ignite2);
+        }
+
+        assertTrue(G.allGrids().isEmpty());
+    }
+
+    /**
+     * Tests concurrent grid initialization
+     */
+    public void testConcurrentGridGetOrStartCon() throws Exception {
+        final IgniteConfiguration cfg = getConfiguration(null);
+
+        final AtomicReference<Ignite> ref = new AtomicReference<>();
+
+        try {
+            GridTestUtils.runMultiThreaded(new Runnable() {
+                @Override public void run() {
+                    // must return same instance in each thread
+
+                    try {
+                        Ignite ignite = Ignition.getOrStart(cfg);
+
+                        boolean set = ref.compareAndSet(null, ignite);
+
+                        if (!set)
+                            assertEquals(ref.get(), ignite);
+                    }
+                    catch (IgniteException e) {
+                        throw new RuntimeException("Ignite error", e);
+                    }
+                }
+            }, CONCURRENCY, "GridCreatorThread");
+        }
+        catch (Exception ignored) {
+            fail("Exception is not expected");
+        }
+
+        G.stopAll(true);
+
+        assertTrue(G.allGrids().isEmpty());
     }
 
     /**
@@ -454,7 +554,7 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
                                 String msg = e.getMessage();
 
                                 if (msg != null &&
-                                    (msg.contains("Default grid instance has already been started.") ||
+                                    (msg.contains("Default Ignite instance has already been started.") ||
                                     msg.contains("Ignite instance with this name has already been started:")))
                                     info("Caught expected exception: " + msg);
                                 else
@@ -853,6 +953,61 @@ public class GridFactorySelfTest extends GridCommonAbstractTest {
     public void testConfigInClassPath() throws Exception {
         try (Ignite ignite = Ignition.start("config/ignite-test-config.xml")) {
             assert "config-in-classpath".equals(ignite.name());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCurrentIgnite() throws Exception {
+        final String LEFT = "LEFT";
+        final String RIGHT = "RIGHT";
+
+        try {
+            Ignite iLEFT = startGrid(LEFT);
+            Ignite iRIGHT = startGrid(RIGHT);
+
+            waitForDiscovery(iLEFT, iRIGHT);
+
+            iLEFT.compute(iLEFT.cluster().forRemotes()).run(new IgniteRunnable() {
+                @Override public void run() {
+                    assert Ignition.localIgnite().name().equals(RIGHT);
+                }
+            });
+
+            iRIGHT.compute(iRIGHT.cluster().forRemotes()).run(new IgniteRunnable() {
+                @Override public void run() {
+                    assert Ignition.localIgnite().name().equals(LEFT);
+                }
+            });
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRepeatingStart() throws Exception {
+        try {
+            IgniteConfiguration c = getConfiguration("1");
+
+            startGrid("1", c);
+
+            assert ((TcpDiscoverySpi)c.getDiscoverySpi()).started();
+
+            try {
+                startGrid("2", c);
+
+                fail("Should not be able to start grid using same configuration instance.");
+            }
+            catch (Exception e) {
+                info("Caught expected exception: " + e);
+            }
+        }
+        finally {
+            stopAllGrids();
         }
     }
 

@@ -18,7 +18,12 @@
 package org.apache.ignite.internal;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.Socket;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -80,7 +85,7 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
 
         cfg.setDiscoverySpi(disco);
 
-        BlockTpcCommunicationSpi commSpi = new BlockTpcCommunicationSpi();
+        BlockTcpCommunicationSpi commSpi = new BlockTcpCommunicationSpi();
 
         commSpi.setSharedMemoryPort(-1);
 
@@ -97,6 +102,15 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
      * @throws Exception If failed.
      */
     protected void waitReconnectEvent(CountDownLatch latch) throws Exception {
+        waitReconnectEvent(log, latch);
+    }
+
+    /**
+     * @param log Logger.
+     * @param latch Latch.
+     * @throws Exception If failed.
+     */
+    protected static void waitReconnectEvent(IgniteLogger log, CountDownLatch latch) throws Exception {
         if (!latch.await(RECONNECT_TIMEOUT, MILLISECONDS)) {
             log.error("Failed to wait for reconnect event, will dump threads, latch count: " + latch.getCount());
 
@@ -122,7 +136,7 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
      * @param ignite Node.
      * @return Discovery SPI.
      */
-    protected TestTcpDiscoverySpi spi(Ignite ignite) {
+    protected static TestTcpDiscoverySpi spi(Ignite ignite) {
         return ((TestTcpDiscoverySpi)ignite.configuration().getDiscoverySpi());
     }
 
@@ -130,8 +144,8 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
      * @param ignite Node.
      * @return Communication SPI.
      */
-    protected BlockTpcCommunicationSpi commSpi(Ignite ignite) {
-        return ((BlockTpcCommunicationSpi)ignite.configuration().getCommunicationSpi());
+    protected BlockTcpCommunicationSpi commSpi(Ignite ignite) {
+        return ((BlockTcpCommunicationSpi)ignite.configuration().getCommunicationSpi());
     }
 
     /** {@inheritDoc} */
@@ -199,25 +213,58 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
      */
     protected void reconnectClientNode(Ignite client, Ignite srv, @Nullable Runnable disconnectedC)
         throws Exception {
-        final TestTcpDiscoverySpi clientSpi = spi(client);
+        reconnectClientNodes(log, Collections.singletonList(client), srv, disconnectedC);
+    }
+
+    /**
+     * Reconnect client node.
+     *
+     * @param log  Logger.
+     * @param client Client.
+     * @param srv Server.
+     * @param disconnectedC Closure which will be run when client node disconnected.
+     * @throws Exception If failed.
+     */
+    public static void reconnectClientNode(IgniteLogger log,
+        Ignite client,
+        Ignite srv,
+        @Nullable Runnable disconnectedC)
+        throws Exception {
+        reconnectClientNodes(log, Collections.singletonList(client), srv, disconnectedC);
+    }
+
+    /**
+     * Reconnect client node.
+     *
+     * @param log  Logger.
+     * @param clients Clients.
+     * @param srv Server.
+     * @param disconnectedC Closure which will be run when client node disconnected.
+     * @throws Exception If failed.
+     */
+    protected static void reconnectClientNodes(final IgniteLogger log,
+        List<Ignite> clients, Ignite srv,
+        @Nullable Runnable disconnectedC)
+        throws Exception {
         final TestTcpDiscoverySpi srvSpi = spi(srv);
 
-        final CountDownLatch disconnectLatch = new CountDownLatch(1);
-        final CountDownLatch reconnectLatch = new CountDownLatch(1);
+        final CountDownLatch disconnectLatch = new CountDownLatch(clients.size());
+        final CountDownLatch reconnectLatch = new CountDownLatch(clients.size());
 
         log.info("Block reconnect.");
 
-        clientSpi.writeLatch = new CountDownLatch(1);
+        for (Ignite client : clients)
+            spi(client).writeLatch = new CountDownLatch(1);
 
         IgnitePredicate<Event> p = new IgnitePredicate<Event>() {
             @Override public boolean apply(Event evt) {
                 if (evt.type() == EVT_CLIENT_NODE_DISCONNECTED) {
-                    info("Disconnected: " + evt);
+                    log.info("Disconnected: " + evt);
 
                     disconnectLatch.countDown();
                 }
                 else if (evt.type() == EVT_CLIENT_NODE_RECONNECTED) {
-                    info("Reconnected: " + evt);
+                    log.info("Reconnected: " + evt);
 
                     reconnectLatch.countDown();
                 }
@@ -226,22 +273,71 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
             }
         };
 
-        client.events().localListen(p, EVT_CLIENT_NODE_DISCONNECTED, EVT_CLIENT_NODE_RECONNECTED);
+        for (Ignite client : clients)
+            client.events().localListen(p, EVT_CLIENT_NODE_DISCONNECTED, EVT_CLIENT_NODE_RECONNECTED);
 
-        srvSpi.failNode(client.cluster().localNode().id(), null);
+        for (Ignite client : clients)
+            srvSpi.failNode(client.cluster().localNode().id(), null);
 
-        waitReconnectEvent(disconnectLatch);
+        waitReconnectEvent(log, disconnectLatch);
 
         if (disconnectedC != null)
             disconnectedC.run();
 
         log.info("Allow reconnect.");
 
-        clientSpi.writeLatch.countDown();
+        for (Ignite client : clients)
+            spi(client).writeLatch.countDown();
 
-        waitReconnectEvent(reconnectLatch);
+        waitReconnectEvent(log, reconnectLatch);
 
-        client.events().stopLocalListen(p);
+        for (Ignite client : clients)
+            client.events().stopLocalListen(p);
+    }
+
+    /**
+     * @param log Logger.
+     * @param client Client node.
+     * @param srvs Server nodes to stop.
+     * @param srvStartC Closure starting server nodes.
+     * @throws Exception If failed.
+     * @return Restarted servers.
+     */
+    public static Collection<Ignite> reconnectServersRestart(final IgniteLogger log,
+        Ignite client,
+        Collection<Ignite> srvs,
+        Callable<Collection<Ignite>> srvStartC)
+        throws Exception {
+        final CountDownLatch disconnectLatch = new CountDownLatch(1);
+        final CountDownLatch reconnectLatch = new CountDownLatch(1);
+
+        client.events().localListen(new IgnitePredicate<Event>() {
+            @Override public boolean apply(Event evt) {
+                if (evt.type() == EVT_CLIENT_NODE_DISCONNECTED) {
+                    log.info("Disconnected: " + evt);
+
+                    disconnectLatch.countDown();
+                }
+                else if (evt.type() == EVT_CLIENT_NODE_RECONNECTED) {
+                    log.info("Reconnected: " + evt);
+
+                    reconnectLatch.countDown();
+                }
+
+                return true;
+            }
+        }, EVT_CLIENT_NODE_DISCONNECTED, EVT_CLIENT_NODE_RECONNECTED);
+
+        for (Ignite srv : srvs)
+            srv.close();
+
+        assertTrue(disconnectLatch.await(30_000, MILLISECONDS));
+
+        Collection<Ignite> startedSrvs = srvStartC.call();
+
+        assertTrue(reconnectLatch.await(10_000, MILLISECONDS));
+
+        return startedSrvs;
     }
 
     /**
@@ -284,12 +380,12 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
     /**
      *
      */
-    protected static class TestTcpDiscoverySpi extends TcpDiscoverySpi {
+    public static class TestTcpDiscoverySpi extends TcpDiscoverySpi {
         /** */
         volatile CountDownLatch writeLatch;
 
         /** {@inheritDoc} */
-        @Override protected void writeToSocket(Socket sock, TcpDiscoveryAbstractMessage msg, long timeout)
+        @Override protected void writeToSocket(Socket sock, OutputStream out, TcpDiscoveryAbstractMessage msg, long timeout)
             throws IOException, IgniteCheckedException {
             if (msg instanceof TcpDiscoveryJoinRequestMessage) {
                 CountDownLatch writeLatch0 = writeLatch;
@@ -301,14 +397,14 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
                 }
             }
 
-            super.writeToSocket(sock, msg, timeout);
+            super.writeToSocket(sock, out, msg, timeout);
         }
     }
 
     /**
      *
      */
-    protected static class BlockTpcCommunicationSpi extends TcpCommunicationSpi {
+    protected static class BlockTcpCommunicationSpi extends TcpCommunicationSpi {
         /** */
         volatile Class msgCls;
 
@@ -323,7 +419,7 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
         private IgniteLogger log;
 
         /** {@inheritDoc} */
-        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackClosure)
+        @Override public void sendMessage(ClusterNode node, Message msg, IgniteInClosure<IgniteException> ackC)
             throws IgniteSpiException {
             Class msgCls0 = msgCls;
 
@@ -337,7 +433,7 @@ public abstract class IgniteClientReconnectAbstractTest extends GridCommonAbstra
                 return;
             }
 
-            super.sendMessage(node, msg, ackClosure);
+            super.sendMessage(node, msg, ackC);
         }
 
         /**

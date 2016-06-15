@@ -21,8 +21,8 @@ namespace Apache.Ignite.Core.Impl.Cache
     using System.Collections;
     using System.Collections.Generic;
     using Apache.Ignite.Core.Cache;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
@@ -33,8 +33,8 @@ namespace Apache.Ignite.Core.Impl.Cache
         /** Operation: next value. */
         private const int OpNext = 1;
 
-        /** Keep portable flag. */
-        private readonly bool _keepPortable;
+        /** Keep binary flag. */
+        private readonly bool _keepBinary;
 
         /** Current entry. */
         private CacheEntry<TK, TV>? _cur;
@@ -44,11 +44,11 @@ namespace Apache.Ignite.Core.Impl.Cache
         /// </summary>
         /// <param name="target">Target.</param>
         /// <param name="marsh">Marshaller.</param>
-        /// <param name="keepPortable">Keep portable flag.</param>
-        public CacheEnumerator(IUnmanagedTarget target, PortableMarshaller marsh, bool keepPortable) : 
+        /// <param name="keepBinary">Keep binary flag.</param>
+        public CacheEnumerator(IUnmanagedTarget target, Marshaller marsh, bool keepBinary) : 
             base(target, marsh)
         {
-            _keepPortable = keepPortable;
+            _keepBinary = keepBinary;
         }
 
         /** <inheritdoc /> */
@@ -58,7 +58,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             return DoInOp(OpNext, stream =>
             {
-                var reader = Marshaller.StartUnmarshal(stream, _keepPortable);
+                var reader = Marshaller.StartUnmarshal(stream, _keepBinary);
 
                 bool hasNext = reader.ReadBoolean();
 
@@ -109,7 +109,7 @@ namespace Apache.Ignite.Core.Impl.Cache
         }
 
         /** <inheritdoc /> */
-        protected override T Unmarshal<T>(IPortableStream stream)
+        protected override T Unmarshal<T>(IBinaryStream stream)
         {
             throw new InvalidOperationException("Should not be called.");
         }

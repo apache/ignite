@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Tests.Examples
 {
     using System.IO;
-    using Apache.Ignite.Core.Impl;
 
     /// <summary>
     /// Grid path resolver.

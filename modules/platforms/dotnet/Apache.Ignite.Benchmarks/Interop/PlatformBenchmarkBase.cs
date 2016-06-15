@@ -20,7 +20,7 @@ namespace Apache.Ignite.Benchmarks.Interop
     using System.Collections.Generic;
     using Apache.Ignite.Benchmarks.Model;
     using Apache.Ignite.Core;
-    using Apache.Ignite.Core.Portable;
+    using Apache.Ignite.Core.Binary;
 
     /// <summary>
     /// Base class for all platform benchmarks.
@@ -58,7 +58,7 @@ namespace Apache.Ignite.Benchmarks.Interop
 
             var cfg = new IgniteConfiguration
             {
-                PortableConfiguration = GetPortableConfiguration(),
+                BinaryConfiguration = GetBinaryConfiguration(),
                 JvmOptions = new List<string>
                 {
                     "-Xms2g",
@@ -75,22 +75,21 @@ namespace Apache.Ignite.Benchmarks.Interop
         }
 
         /// <summary>
-        /// Get portable configuration.
+        /// Get binary configuration.
         /// </summary>
-        /// <returns>Portable configuration.</returns>
-        private static PortableConfiguration GetPortableConfiguration()
+        /// <returns>Gets binary configuration.</returns>
+        private static BinaryConfiguration GetBinaryConfiguration()
         {
-            return new PortableConfiguration
+            return new BinaryConfiguration
             {
-                TypeConfigurations = new List<PortableTypeConfiguration>
+                TypeConfigurations = new List<BinaryTypeConfiguration>
                 {
-                    new PortableTypeConfiguration(typeof (Address)),
-                    new PortableTypeConfiguration(typeof (Company)),
-                    new PortableTypeConfiguration(typeof (Employee)),
-                    new PortableTypeConfiguration(typeof (MyClosure)),
-                    new PortableTypeConfiguration(typeof (MyJob))
-                },
-                DefaultMetadataEnabled = false
+                    new BinaryTypeConfiguration(typeof (Address)),
+                    new BinaryTypeConfiguration(typeof (Company)),
+                    new BinaryTypeConfiguration(typeof (Employee)),
+                    new BinaryTypeConfiguration(typeof (MyClosure)),
+                    new BinaryTypeConfiguration(typeof (MyJob))
+                }
             };
         }
 

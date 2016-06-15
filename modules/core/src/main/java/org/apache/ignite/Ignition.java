@@ -26,6 +26,7 @@ import org.apache.ignite.internal.IgnitionEx;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
+import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -220,7 +221,7 @@ public class Ignition {
      *      not found).
      */
     public static boolean stop(@Nullable String name, boolean cancel) {
-        return IgnitionEx.stop(name, cancel);
+        return IgnitionEx.stop(name, cancel, false);
     }
 
     /**
@@ -308,7 +309,7 @@ public class Ignition {
     }
 
     /**
-     * Starts grid with given configuration. Note that this method is no-op if grid with the name
+     * Starts grid with given configuration. Note that this method will throw an exception if grid with the name
      * provided in given configuration is already started.
      *
      * @param cfg Grid configuration. This cannot be {@code null}.
@@ -394,6 +395,23 @@ public class Ignition {
     public static Ignite start(InputStream springCfgStream) throws IgniteException {
         try {
             return IgnitionEx.start(springCfgStream);
+        }
+        catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
+    }
+
+
+    /**
+     * Gets or starts new grid instance if it hasn't been started yet.
+     *
+     * @param cfg Grid configuration. This cannot be {@code null}.
+     * @return Grid instance.
+     * @throws IgniteException If grid could not be started.
+     */
+    public static Ignite getOrStart(IgniteConfiguration cfg) throws IgniteException {
+        try {
+            return IgnitionEx.start(cfg, false);
         }
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
@@ -513,6 +531,21 @@ public class Ignition {
      */
     public static Ignite ignite(@Nullable String name) throws IgniteIllegalStateException {
         return IgnitionEx.grid(name);
+    }
+
+    /**
+     * This method is used to address a local {@link Ignite} instance, principally from closure.
+     * <p>
+     * According to contract this method has to be called only under {@link IgniteThread}.
+     * An {@link IllegalArgumentException} will be thrown otherwise.
+     *
+     * @return A current {@link Ignite} instance to address from closure.
+     * @throws IgniteIllegalStateException Thrown if grid was not properly
+     *      initialized or grid instance was stopped or was not started
+     * @throws IllegalArgumentException Thrown if current thread is not an {@link IgniteThread}.
+     */
+    public static Ignite localIgnite() throws IgniteIllegalStateException, IllegalArgumentException {
+        return IgnitionEx.localIgnite();
     }
 
     /**

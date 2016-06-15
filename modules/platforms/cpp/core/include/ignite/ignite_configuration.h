@@ -15,91 +15,38 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_CONFIGURATION
-#define _IGNITE_CONFIGURATION
+/**
+ * @file
+ * Declares ignite::IgniteConfiguration class.
+ */
+
+#ifndef _IGNITE_IGNITE_CONFIGURATION
+#define _IGNITE_IGNITE_CONFIGURATION
 
 #include <stdint.h>
+#include <string>
+#include <list>
 
-#include "ignite/impl/utils.h"
+#include <ignite/common/utils.h>
 
 namespace ignite
-{    
-    /**
-     * Single JVM option.
-     */
-    struct IgniteJvmOption
-    {
-        /** Option. */
-        char* opt;
-
-        /**
-         * Default constructor.
-         */
-        IgniteJvmOption() : opt(NULL)
-        {
-            // No-op.    
-        }
-
-        /**
-         * Copy constructor.
-         * 
-         * @param option Other instance.
-         */
-        IgniteJvmOption(const IgniteJvmOption& option) : opt()
-        {
-            this->opt = impl::utils::CopyChars(option.opt);
-        }
-
-        /**
-         * Constructor.
-         *
-         * @param opt Option.
-         */
-        IgniteJvmOption(const char* opt) : opt()
-        {
-            this->opt = impl::utils::CopyChars(opt);
-        }
-
-        /**
-         * Destructor.
-         */
-        ~IgniteJvmOption()
-        {
-            impl::utils::ReleaseChars(opt);
-        }
-
-        /**
-         * Copy operator.
-         *
-         * @param option Other instance.
-         * @return This instance.
-         */
-        IgniteJvmOption& operator=(const IgniteJvmOption& option)
-        {
-            impl::utils::ReleaseChars(opt);
-
-            this->opt = impl::utils::CopyChars(option.opt);
-            
-            return *this;
-        }
-    };
-
+{
     /**
      * Ignite configuration.
      */
     struct IgniteConfiguration
     {
         /** Path to Ignite home. */
-        char* igniteHome;
+        std::string igniteHome;
 
         /** Path to Spring configuration file. */
-        char* springCfgPath;
+        std::string springCfgPath;
 
         /** Path ot JVM libbrary. */
-        char* jvmLibPath;
+        std::string jvmLibPath;
 
         /** JVM classpath. */
-        char* jvmClassPath;
+        std::string jvmClassPath;
 
         /** Initial amount of JVM memory. */
         int32_t jvmInitMem;
@@ -108,20 +55,17 @@ namespace ignite
         int32_t jvmMaxMem;
 
         /** Additional JVM options. */
-        IgniteJvmOption* jvmOpts;
-
-        /** Additional JVM options count. */
-        int32_t jvmOptsLen;
+        std::list<std::string> jvmOpts;
 
         /**
          * Constructor.
          */
-        IgniteConfiguration() : igniteHome(NULL), springCfgPath(NULL), jvmLibPath(NULL), jvmClassPath(NULL),
-            jvmInitMem(512), jvmMaxMem(1024), jvmOpts(NULL), jvmOptsLen(0)
+        IgniteConfiguration() : igniteHome(), springCfgPath(), jvmLibPath(), jvmClassPath(),
+            jvmInitMem(512), jvmMaxMem(1024), jvmOpts()
         {
             // No-op.
         }
     };    
 }
 
-#endif
+#endif //_IGNITE_IGNITE_CONFIGURATION

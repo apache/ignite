@@ -55,11 +55,8 @@ public class PlatformDotNetCacheStoreFactory implements Factory<PlatformDotNetCa
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** .Net assembly name. */
-    private String assemblyName;
-
-    /** .Net class name. */
-    private String clsName;
+    /** .Net type name. */
+    private String typName;
 
     /** Properties. */
     private Map<String, ?> props;
@@ -68,39 +65,21 @@ public class PlatformDotNetCacheStoreFactory implements Factory<PlatformDotNetCa
     private transient PlatformDotNetCacheStore instance;
 
     /**
-     * Gets .NET assembly name.
+     * Gets .NET type name.
      *
-     * @return .NET assembly name.
+     * @return .NET type name.
      */
-    public String getAssemblyName() {
-        return assemblyName;
+    public String getTypeName() {
+        return typName;
     }
 
     /**
-     * Set .NET assembly name.
+     * Sets .NET type name.
      *
-     * @param assemblyName .NET assembly name.
+     * @param typName .NET type name.
      */
-    public void setAssemblyName(String assemblyName) {
-        this.assemblyName = assemblyName;
-    }
-
-    /**
-     * Gets .NET class name.
-     *
-     * @return .NET class name.
-     */
-    public String getClassName() {
-        return clsName;
-    }
-
-    /**
-     * Sets .NET class name.
-     *
-     * @param clsName .NET class name.
-     */
-    public void setClassName(String clsName) {
-        this.clsName = clsName;
+    public void setTypeName(String typName) {
+        this.typName = typName;
     }
 
     /**
@@ -128,8 +107,7 @@ public class PlatformDotNetCacheStoreFactory implements Factory<PlatformDotNetCa
             if (instance == null) {
                 instance = new PlatformDotNetCacheStore();
 
-                instance.setAssemblyName(assemblyName);
-                instance.setClassName(clsName);
+                instance.setTypeName(typName);
                 instance.setProperties(props);
             }
 

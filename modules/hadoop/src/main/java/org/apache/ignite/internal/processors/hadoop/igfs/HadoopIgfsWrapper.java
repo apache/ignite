@@ -19,13 +19,16 @@ package org.apache.ignite.internal.processors.hadoop.igfs;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.logging.Log;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.IgniteIllegalStateException;
+import org.apache.ignite.Ignition;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsFile;
 import org.apache.ignite.igfs.IgfsPath;
@@ -34,11 +37,12 @@ import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.processors.igfs.IgfsHandshakeResponse;
 import org.apache.ignite.internal.processors.igfs.IgfsStatus;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.SB;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
+import static org.apache.ignite.IgniteState.STARTED;
 import static org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsEndpoint.LOCALHOST;
 import static org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsUtils.PARAM_IGFS_ENDPOINT_NO_EMBED;
 import static org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsUtils.PARAM_IGFS_ENDPOINT_NO_LOCAL_SHMEM;
@@ -331,7 +335,12 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
             }
         }
 
-        throw new IOException("Failed to communicate with IGFS.", err);
+        List<Throwable> list = X.getThrowableList(err);
+
+        Throwable cause = list.get(list.size() - 1);
+
+        throw new IOException("Failed to communicate with IGFS: "
+            + (cause.getMessage() == null ? cause.toString() : cause.getMessage()), err);
     }
 
     /**
@@ -354,30 +363,7 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
         boolean skipInProc = parameter(conf, PARAM_IGFS_ENDPOINT_NO_EMBED, authority, false);
 
         if (!skipInProc) {
-            IgfsEx igfs = null;
-
-            if (endpoint.grid() == null) {
-                try {
-                    Ignite ignite = G.ignite();
-
-                    igfs = (IgfsEx)ignite.fileSystem(endpoint.igfs());
-                }
-                catch (Exception ignore) {
-                    // No-op.
-                }
-            }
-            else {
-                for (Ignite ignite : G.allGrids()) {
-                    try {
-                        igfs = (IgfsEx)ignite.fileSystem(endpoint.igfs());
-
-                        break;
-                    }
-                    catch (Exception ignore) {
-                        // No-op.
-                    }
-                }
-            }
+            IgfsEx igfs = getIgfsEx(endpoint.grid(), endpoint.igfs());
 
             if (igfs != null) {
                 HadoopIgfsEx hadoop = null;
@@ -539,5 +525,28 @@ public class HadoopIgfsWrapper implements HadoopIgfs {
             if (closeGuard.compareAndSet(false, true))
                 hadoop.close(force);
         }
+    }
+
+    /**
+     * Helper method to find Igfs of the given name in the given Ignite instance.
+     *
+     * @param gridName The name of the grid to check.
+     * @param igfsName The name of Igfs.
+     * @return The file system instance, or null if not found.
+     */
+    private static IgfsEx getIgfsEx(@Nullable String gridName, @Nullable String igfsName) {
+        if (Ignition.state(gridName) == STARTED) {
+            try {
+                for (IgniteFileSystem fs : Ignition.ignite(gridName).fileSystems()) {
+                    if (F.eq(fs.name(), igfsName))
+                        return (IgfsEx)fs;
+                }
+            }
+            catch (IgniteIllegalStateException ignore) {
+                // May happen if the grid state has changed:
+            }
+        }
+
+        return null;
     }
 }

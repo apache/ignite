@@ -17,10 +17,11 @@
 
 using System;
 using Apache.Ignite.Core.Cache;
-using Apache.Ignite.ExamplesDll.Portable;
 
 namespace Apache.Ignite.ExamplesDll.Datagrid
 {
+    using Apache.Ignite.ExamplesDll.Binary;
+
     /// <summary>
     /// Example cache entry predicate.
     /// </summary>

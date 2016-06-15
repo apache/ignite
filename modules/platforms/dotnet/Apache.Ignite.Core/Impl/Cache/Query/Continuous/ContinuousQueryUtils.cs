@@ -20,26 +20,26 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Cache.Event;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cache.Event;
-    using Apache.Ignite.Core.Impl.Portable;
-    using Apache.Ignite.Core.Impl.Portable.IO;
 
     /// <summary>
     /// Utility methods for continuous queries.
     /// </summary>
-    static class ContinuousQueryUtils
+    internal static class ContinuousQueryUtils
     {
         /// <summary>
         /// Read single event.
         /// </summary>
         /// <param name="stream">Stream to read data from.</param>
         /// <param name="marsh">Marshaller.</param>
-        /// <param name="keepPortable">Keep portable flag.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
         /// <returns>Event.</returns>
-        public static ICacheEntryEvent<TK, TV> ReadEvent<TK, TV>(IPortableStream stream, 
-            PortableMarshaller marsh, bool keepPortable)
+        public static ICacheEntryEvent<TK, TV> ReadEvent<TK, TV>(IBinaryStream stream, 
+            Marshaller marsh, bool keepBinary)
         {
-            var reader = marsh.StartUnmarshal(stream, keepPortable);
+            var reader = marsh.StartUnmarshal(stream, keepBinary);
 
             return ReadEvent0<TK, TV>(reader);
         }
@@ -49,13 +49,13 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// </summary>
         /// <param name="stream">Stream.</param>
         /// <param name="marsh">Marshaller.</param>
-        /// <param name="keepPortable">Keep portable flag.</param>
+        /// <param name="keepBinary">Keep binary flag.</param>
         /// <returns>Events.</returns>
         [SuppressMessage("ReSharper", "PossibleNullReferenceException")]
-        public static ICacheEntryEvent<TK, TV>[] ReadEvents<TK, TV>(IPortableStream stream,
-            PortableMarshaller marsh, bool keepPortable)
+        public static ICacheEntryEvent<TK, TV>[] ReadEvents<TK, TV>(IBinaryStream stream,
+            Marshaller marsh, bool keepBinary)
         {
-            var reader = marsh.StartUnmarshal(stream, keepPortable);
+            var reader = marsh.StartUnmarshal(stream, keepBinary);
 
             int cnt = reader.ReadInt();
 
@@ -72,43 +72,24 @@ namespace Apache.Ignite.Core.Impl.Cache.Query.Continuous
         /// </summary>
         /// <param name="reader">Reader.</param>
         /// <returns>Event.</returns>
-        private static ICacheEntryEvent<TK, TV> ReadEvent0<TK, TV>(PortableReaderImpl reader)
+        private static ICacheEntryEvent<TK, TV> ReadEvent0<TK, TV>(BinaryReader reader)
         {
-            reader.DetachNext();
-            TK key = reader.ReadObject<TK>();
+            var key = reader.DetachNext().ReadObject<TK>();
 
-            reader.DetachNext();
-            TV oldVal = reader.ReadObject<TV>();
+            // Read as objects: TV may be value type
+            TV oldVal, val;
 
-            reader.DetachNext();
-            TV val = reader.ReadObject<TV>();
+            var hasOldVal = reader.DetachNext().TryDeserialize(out oldVal);
+            var hasVal = reader.DetachNext().TryDeserialize(out val);
 
-            return CreateEvent(key, oldVal, val);
-        }
+            Debug.Assert(hasVal || hasOldVal);
 
-        /// <summary>
-        /// Create event.
-        /// </summary>
-        /// <param name="key">Key.</param>
-        /// <param name="oldVal">Old value.</param>
-        /// <param name="val">Value.</param>
-        /// <returns>Event.</returns>
-        public static ICacheEntryEvent<TK, TV> CreateEvent<TK, TV>(TK key, TV oldVal, TV val)
-        {
-            if (oldVal == null)
-            {
-                Debug.Assert(val != null);
-
+            if (!hasOldVal)
                 return new CacheEntryCreateEvent<TK, TV>(key, val);
-            }
 
-            if (val == null)
-            {
-                Debug.Assert(oldVal != null);
-
+            if (!hasVal)
                 return new CacheEntryRemoveEvent<TK, TV>(key, oldVal);
-            }
-            
+
             return new CacheEntryUpdateEvent<TK, TV>(key, oldVal, val);
         }
     }

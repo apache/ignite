@@ -15,13 +15,18 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_CACHE_QUERY_SCAN
-#define _IGNITE_CACHE_QUERY_SCAN
+/**
+ * @file
+ * Declares ignite::cache::query::ScanQuery class.
+ */
+
+#ifndef _IGNITE_CACHE_QUERY_QUERY_SCAN
+#define _IGNITE_CACHE_QUERY_QUERY_SCAN
 
 #include <stdint.h>
 #include <string>
 
-#include "ignite/portable/portable_raw_writer.h"
+#include "ignite/binary/binary_raw_writer.h"
 
 namespace ignite
 {    
@@ -29,21 +34,21 @@ namespace ignite
     {
         namespace query
         {         
-            /*
-             * Scab query.
+            /**
+             * Scan query.
              */
             class ScanQuery
             {
             public:
-                /* 
-                 * Constructor.
+                /**
+                 * Default constructor.
                  */
                 ScanQuery() : part(-1), pageSize(1024), loc(false)
                 {
                     // No-op.
                 }
                 
-                /*
+                /**
                  * Constructor.
                  *
                  * @param part Partition.
@@ -53,7 +58,7 @@ namespace ignite
                     // No-op.
                 }
                 
-                /*
+                /**
                  * Get partition to scan.
                  *
                  * @return Partition to scan.
@@ -63,7 +68,7 @@ namespace ignite
                     return part;
                 }
 
-                /*
+                /**
                  * Set partition to scan.
                  *
                  * @param part Partition to scan.
@@ -73,7 +78,7 @@ namespace ignite
                     this->part = part;
                 }
 
-                /*
+                /**
                  * Get page size.
                  *
                  * @return Page size.
@@ -83,7 +88,7 @@ namespace ignite
                     return pageSize;
                 }
 
-                /*
+                /**
                  * Set page size.
                  *
                  * @param pageSize Page size.
@@ -93,7 +98,7 @@ namespace ignite
                     this->pageSize = pageSize;
                 }
 
-                /*
+                /**
                  * Get local flag.
                  *
                  * @return Local flag.
@@ -103,7 +108,7 @@ namespace ignite
                     return loc;
                 }
 
-                /*
+                /**
                  * Set local flag.
                  *
                  * @param loc Local flag.
@@ -113,12 +118,12 @@ namespace ignite
                     this->loc = loc;
                 }
                 
-                /*
+                /**
                  * Write query info to the stream.
                  *
                  * @param writer Writer.
                  */
-                void Write(portable::PortableRawWriter& writer) const
+                void Write(binary::BinaryRawWriter& writer) const
                 {
                     writer.WriteBool(loc);
                     writer.WriteInt32(pageSize);
@@ -135,17 +140,17 @@ namespace ignite
                 }
 
             private:
-                /* Partition. */
+                /** Partition. */
                 int32_t part;
 
-                /* Page size. */
+                /** Page size. */
                 int32_t pageSize;
 
-                /* Local flag. */
+                /** Local flag. */
                 bool loc;
             };
         }
     }    
 }
 
-#endif
+#endif //_IGNITE_CACHE_QUERY_QUERY_SCAN

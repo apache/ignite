@@ -35,30 +35,27 @@ namespace Apache.Ignite.Examples.Datagrid
     /// 3) Start example (F5 or Ctrl+F5).
     /// <para />
     /// This example can be run with standalone Apache Ignite.NET node:
-    /// 1) Run %IGNITE_HOME%/platforms/dotnet/Apache.Ignite/bin/${Platform]/${Configuration}/Apache.Ignite.exe:
-    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\example-cache.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
+    /// 1) Run %IGNITE_HOME%/platforms/dotnet/bin/Apache.Ignite.exe:
+    /// Apache.Ignite.exe -IgniteHome="%IGNITE_HOME%" -springConfigUrl=platforms\dotnet\examples\config\examples-config.xml -assembly=[path_to_Apache.Ignite.ExamplesDll.dll]
     /// 2) Start example.
     /// </summary>
     public class ContinuousQueryExample
     {
+        /// <summary>Cache name.</summary>
+        private const string CacheName = "dotnet_cache_continuous_query";
+
         /// <summary>
         /// Runs the example.
         /// </summary>
         [STAThread]
         public static void Main()
         {
-            var cfg = new IgniteConfiguration
-            {
-                SpringConfigUrl = @"platforms\dotnet\examples\config\example-cache.xml",
-                JvmOptions = new List<string> {"-Xms512m", "-Xmx1024m"}
-            };
-
-            using (var ignite = Ignition.Start(cfg))
+            using (var ignite = Ignition.Start(@"platforms\dotnet\examples\config\examples-config.xml"))
             {
                 Console.WriteLine();
                 Console.WriteLine(">>> Cache continuous query example started.");
 
-                var cache = ignite.GetOrCreateCache<int, string>("cache_continuous_query");
+                var cache = ignite.GetOrCreateCache<int, string>(CacheName);
 
                 // Clean up caches on all nodes before run.
                 cache.Clear();

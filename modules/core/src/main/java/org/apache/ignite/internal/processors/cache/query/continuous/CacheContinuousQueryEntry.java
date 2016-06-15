@@ -20,12 +20,15 @@ package org.apache.ignite.internal.processors.cache.query.continuous;
 import java.nio.ByteBuffer;
 import javax.cache.event.EventType;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.internal.GridCodegenConverter;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeployable;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
+import org.apache.ignite.internal.util.GridLongList;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -42,6 +45,12 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     private static final long serialVersionUID = 0L;
 
     /** */
+    private static final byte BACKUP_ENTRY = 0b0001;
+
+    /** */
+    private static final byte FILTERED_ENTRY = 0b0010;
+
+    /** */
     private static final EventType[] EVT_TYPE_VALS = EventType.values();
 
     /**
@@ -53,18 +62,26 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     }
 
     /** */
+    @GridCodegenConverter(
+        type = byte.class,
+        get = "evtType != null ? (byte)evtType.ordinal() : -1",
+        set = "eventTypeFromOrdinal($val$)"
+    )
     private EventType evtType;
 
     /** Key. */
     @GridToStringInclude
+    @GridCodegenConverter(get = "isFiltered() ? null : key")
     private KeyCacheObject key;
 
     /** New value. */
     @GridToStringInclude
+    @GridCodegenConverter(get = "isFiltered() ? null : newVal")
     private CacheObject newVal;
 
     /** Old value. */
     @GridToStringInclude
+    @GridCodegenConverter(get = "isFiltered() ? null : oldVal")
     private CacheObject oldVal;
 
     /** Cache name. */
@@ -75,8 +92,27 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     @GridDirectTransient
     private GridDeploymentInfo depInfo;
 
+    /** Partition. */
+    private int part;
+
+    /** Update counter. */
+    private long updateCntr;
+
+    /** Flags. */
+    private byte flags;
+
+    /** */
+    @GridToStringInclude
+    private AffinityTopologyVersion topVer;
+
+    /** Filtered events. */
+    private GridLongList filteredEvts;
+
+    /** Keep binary. */
+    private boolean keepBinary;
+
     /**
-     * Required by {@link org.apache.ignite.plugin.extensions.communication.Message}.
+     * Required by {@link Message}.
      */
     public CacheContinuousQueryEntry() {
         // No-op.
@@ -88,18 +124,36 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      * @param key Key.
      * @param newVal New value.
      * @param oldVal Old value.
+     * @param part Partition.
+     * @param updateCntr Update partition counter.
+     * @param topVer Topology version if applicable.
      */
     CacheContinuousQueryEntry(
         int cacheId,
         EventType evtType,
         KeyCacheObject key,
         @Nullable CacheObject newVal,
-        @Nullable CacheObject oldVal) {
+        @Nullable CacheObject oldVal,
+        boolean keepBinary,
+        int part,
+        long updateCntr,
+        @Nullable AffinityTopologyVersion topVer) {
         this.cacheId = cacheId;
         this.evtType = evtType;
         this.key = key;
         this.newVal = newVal;
         this.oldVal = oldVal;
+        this.part = part;
+        this.updateCntr = updateCntr;
+        this.topVer = topVer;
+        this.keepBinary = keepBinary;
+    }
+
+    /**
+     * @return Topology version if applicable.
+     */
+    @Nullable AffinityTopologyVersion topologyVersion() {
+        return topVer;
     }
 
     /**
@@ -114,6 +168,70 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      */
     EventType eventType() {
         return evtType;
+    }
+
+    /**
+     * @return Partition.
+     */
+    int partition() {
+        return part;
+    }
+
+    /**
+     * @return Update counter.
+     */
+    long updateCounter() {
+        return updateCntr;
+    }
+
+    /**
+     * Mark that entry create on backup.
+     */
+    void markBackup() {
+        flags |= BACKUP_ENTRY;
+    }
+
+    /**
+     * Mark that entry filtered.
+     */
+    void markFiltered() {
+        flags |= FILTERED_ENTRY;
+        depInfo = null;
+    }
+
+    /**
+     * @return {@code True} if entry sent by backup node.
+     */
+    boolean isBackup() {
+        return (flags & BACKUP_ENTRY) != 0;
+    }
+
+    /**
+     * @return {@code True} if entry was filtered.
+     */
+    boolean isFiltered() {
+        return (flags & FILTERED_ENTRY) != 0;
+    }
+
+    /**
+     * @return Keep binary flag.
+     */
+    boolean isKeepBinary() {
+        return keepBinary;
+    }
+
+    /**
+     * @param cntrs Filtered events.
+     */
+    void filteredEvents(GridLongList cntrs) {
+        filteredEvts = cntrs;
+    }
+
+    /**
+     * @return previous filtered events.
+     */
+    long[] filteredEvents() {
+        return filteredEvts == null ? null : filteredEvts.array();
     }
 
     /**
@@ -138,13 +256,15 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      * @throws IgniteCheckedException In case of error.
      */
     void unmarshal(GridCacheContext cctx, @Nullable ClassLoader ldr) throws IgniteCheckedException {
-        key.finishUnmarshal(cctx.cacheObjectContext(), ldr);
+        if (!isFiltered()) {
+            key.finishUnmarshal(cctx.cacheObjectContext(), ldr);
 
-        if (newVal != null)
-            newVal.finishUnmarshal(cctx.cacheObjectContext(), ldr);
+            if (newVal != null)
+                newVal.finishUnmarshal(cctx.cacheObjectContext(), ldr);
 
-        if (oldVal != null)
-            oldVal.finishUnmarshal(cctx.cacheObjectContext(), ldr);
+            if (oldVal != null)
+                oldVal.finishUnmarshal(cctx.cacheObjectContext(), ldr);
+        }
     }
 
     /**
@@ -166,6 +286,11 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
      */
     CacheObject oldValue() {
         return oldVal;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onAckReceived() {
+        // No-op.
     }
 
     /** {@inheritDoc} */
@@ -208,19 +333,55 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
                 writer.incrementState();
 
             case 2:
-                if (!writer.writeMessage("key", key))
+                if (!writer.writeMessage("filteredEvts", filteredEvts))
                     return false;
 
                 writer.incrementState();
 
             case 3:
-                if (!writer.writeMessage("newVal", newVal))
+                if (!writer.writeByte("flags", flags))
                     return false;
 
                 writer.incrementState();
 
             case 4:
-                if (!writer.writeMessage("oldVal", oldVal))
+                if (!writer.writeBoolean("keepBinary", keepBinary))
+                    return false;
+
+                writer.incrementState();
+
+            case 5:
+                if (!writer.writeMessage("key", isFiltered() ? null : key))
+                    return false;
+
+                writer.incrementState();
+
+            case 6:
+                if (!writer.writeMessage("newVal", isFiltered() ? null : newVal))
+                    return false;
+
+                writer.incrementState();
+
+            case 7:
+                if (!writer.writeMessage("oldVal", isFiltered() ? null : oldVal))
+                    return false;
+
+                writer.incrementState();
+
+            case 8:
+                if (!writer.writeInt("part", part))
+                    return false;
+
+                writer.incrementState();
+
+            case 9:
+                if (!writer.writeMessage("topVer", topVer))
+                    return false;
+
+                writer.incrementState();
+
+            case 10:
+                if (!writer.writeLong("updateCntr", updateCntr))
                     return false;
 
                 writer.incrementState();
@@ -247,19 +408,15 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
                 reader.incrementState();
 
             case 1:
-                byte evtTypeOrd;
-
-                evtTypeOrd = reader.readByte("evtType");
+                evtType = eventTypeFromOrdinal(reader.readByte("evtType"));
 
                 if (!reader.isLastRead())
                     return false;
 
-                evtType = eventTypeFromOrdinal(evtTypeOrd);
-
                 reader.incrementState();
 
             case 2:
-                key = reader.readMessage("key");
+                filteredEvts = reader.readMessage("filteredEvts");
 
                 if (!reader.isLastRead())
                     return false;
@@ -267,7 +424,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
                 reader.incrementState();
 
             case 3:
-                newVal = reader.readMessage("newVal");
+                flags = reader.readByte("flags");
 
                 if (!reader.isLastRead())
                     return false;
@@ -275,7 +432,55 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
                 reader.incrementState();
 
             case 4:
+                keepBinary = reader.readBoolean("keepBinary");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 5:
+                key = reader.readMessage("key");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 6:
+                newVal = reader.readMessage("newVal");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 7:
                 oldVal = reader.readMessage("oldVal");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 8:
+                part = reader.readInt("part");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 9:
+                topVer = reader.readMessage("topVer");
+
+                if (!reader.isLastRead())
+                    return false;
+
+                reader.incrementState();
+
+            case 10:
+                updateCntr = reader.readLong("updateCntr");
 
                 if (!reader.isLastRead())
                     return false;
@@ -289,7 +494,7 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
 
     /** {@inheritDoc} */
     @Override public byte fieldsCount() {
-        return 5;
+        return 11;
     }
 
     /** {@inheritDoc} */

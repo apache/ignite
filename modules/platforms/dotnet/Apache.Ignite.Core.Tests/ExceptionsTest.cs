@@ -21,12 +21,13 @@ namespace Apache.Ignite.Core.Tests
     using System.IO;
     using System.Linq;
     using System.Runtime.Serialization.Formatters.Binary;
+    using System.Threading;
     using System.Threading.Tasks;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
-    using Apache.Ignite.Core.Portable;
     using NUnit.Framework;
 
     /// <summary>
@@ -107,18 +108,18 @@ namespace Apache.Ignite.Core.Tests
             TestPartialUpdateException(false, (x, g) => x);
 
             // User type
-            TestPartialUpdateException(false, (x, g) => new PortableEntry(x));
+            TestPartialUpdateException(false, (x, g) => new BinarizableEntry(x));
         }
 
         /// <summary>
-        /// Tests CachePartialUpdateException keys propagation in portable mode.
+        /// Tests CachePartialUpdateException keys propagation in binary mode.
         /// </summary>
         [Test]
         [Category(TestUtils.CategoryIntensive)]
-        public void TestPartialUpdateExceptionPortable()
+        public void TestPartialUpdateExceptionBinarizable()
         {
             // User type
-            TestPartialUpdateException(false, (x, g) => g.GetPortables().ToPortable<IPortableObject>(new PortableEntry(x)));
+            TestPartialUpdateException(false, (x, g) => g.GetBinary().ToBinary<IBinaryObject>(new BinarizableEntry(x)));
         }
 
         /// <summary>
@@ -195,17 +196,17 @@ namespace Apache.Ignite.Core.Tests
             TestPartialUpdateException(true, (x, g) => x);
 
             // User type
-            TestPartialUpdateException(true, (x, g) => new PortableEntry(x));
+            TestPartialUpdateException(true, (x, g) => new BinarizableEntry(x));
         }
 
         /// <summary>
-        /// Tests CachePartialUpdateException keys propagation in portable mode.
+        /// Tests CachePartialUpdateException keys propagation in binary mode.
         /// </summary>
         [Test]
         [Category(TestUtils.CategoryIntensive)]
-        public void TestPartialUpdateExceptionAsyncPortable()
+        public void TestPartialUpdateExceptionAsyncBinarizable()
         {
-            TestPartialUpdateException(true, (x, g) => g.GetPortables().ToPortable<IPortableObject>(new PortableEntry(x)));
+            TestPartialUpdateException(true, (x, g) => g.GetBinary().ToBinary<IBinaryObject>(new BinarizableEntry(x)));
         }
 
         /// <summary>
@@ -217,11 +218,8 @@ namespace Apache.Ignite.Core.Tests
             {
                 var cache = grid.GetCache<TK, int>("partitioned_atomic").WithNoRetries();
 
-                if (async)
-                    cache = cache.WithAsync();
-
-                if (typeof (TK) == typeof (IPortableObject))
-                    cache = cache.WithKeepPortable<TK, int>();
+                if (typeof (TK) == typeof (IBinaryObject))
+                    cache = cache.WithKeepBinary<TK, int>();
 
                 // Do cache puts in parallel
                 var putTask = Task.Factory.StartNew(() =>
@@ -231,21 +229,23 @@ namespace Apache.Ignite.Core.Tests
                         // Do a lot of puts so that one fails during Ignite stop
                         for (var i = 0; i < 1000000; i++)
                         {
-                            cache.PutAll(Enumerable.Range(1, 100).ToDictionary(k => keyFunc(k, grid), k => i));
+                            var dict = Enumerable.Range(1, 100).ToDictionary(k => keyFunc(k, grid), k => i);
 
                             if (async)
-                                cache.GetFuture().Get();
+                                cache.PutAllAsync(dict).Wait();
+                            else
+                                cache.PutAll(dict);
                         }
+                    }
+                    catch (AggregateException ex)
+                    {
+                        CheckPartialUpdateException<TK>((CachePartialUpdateException) ex.InnerException);
+
+                        return;
                     }
                     catch (CachePartialUpdateException ex)
                     {
-                        var failedKeys = ex.GetFailedKeys<TK>();
-
-                        Assert.IsTrue(failedKeys.Any());
-
-                        var failedKeysObj = ex.GetFailedKeys<object>();
-
-                        Assert.IsTrue(failedKeysObj.Any());
+                        CheckPartialUpdateException<TK>(ex);
 
                         return;
                     }
@@ -255,8 +255,12 @@ namespace Apache.Ignite.Core.Tests
 
                 while (true)
                 {
+                    Thread.Sleep(1000);
+
                     Ignition.Stop("grid_2", true);
                     StartGrid("grid_2");
+
+                    Thread.Sleep(1000);
 
                     if (putTask.Exception != null)
                         throw putTask.Exception;
@@ -268,30 +272,44 @@ namespace Apache.Ignite.Core.Tests
         }
 
         /// <summary>
+        /// Checks the partial update exception.
+        /// </summary>
+        private static void CheckPartialUpdateException<TK>(CachePartialUpdateException ex)
+        {
+            var failedKeys = ex.GetFailedKeys<TK>();
+
+            Assert.IsTrue(failedKeys.Any());
+
+            var failedKeysObj = ex.GetFailedKeys<object>();
+
+            Assert.IsTrue(failedKeysObj.Any());
+        }
+
+        /// <summary>
         /// Starts the grid.
         /// </summary>
         private static IIgnite StartGrid(string gridName = null)
         {
-            return Ignition.Start(new IgniteConfigurationEx
+            return Ignition.Start(new IgniteConfiguration
             {
                 SpringConfigUrl = "config\\native-client-test-cache.xml",
                 JvmOptions = TestUtils.TestJavaOptions(),
                 JvmClasspath = TestUtils.CreateTestClasspath(),
                 GridName = gridName,
-                PortableConfiguration = new PortableConfiguration
+                BinaryConfiguration = new BinaryConfiguration
                 {
                     TypeConfigurations = new[]
                     {
-                        new PortableTypeConfiguration(typeof (PortableEntry))
+                        new BinaryTypeConfiguration(typeof (BinarizableEntry))
                     }
                 }
             });
         }
 
         /// <summary>
-        /// Portable entry.
+        /// Binarizable entry.
         /// </summary>
-        private class PortableEntry
+        private class BinarizableEntry
         {
             /** Value. */
             private readonly int _val;
@@ -306,7 +324,7 @@ namespace Apache.Ignite.Core.Tests
             /// Constructor.
             /// </summary>
             /// <param name="val">Value.</param>
-            public PortableEntry(int val)
+            public BinarizableEntry(int val)
             {
                 _val = val;
             }
@@ -314,12 +332,12 @@ namespace Apache.Ignite.Core.Tests
             /** <inheritDoc /> */
             public override bool Equals(object obj)
             {
-                return obj is PortableEntry && ((PortableEntry)obj)._val == _val;
+                return obj is BinarizableEntry && ((BinarizableEntry)obj)._val == _val;
             }
         }
 
         /// <summary>
-        /// Portable entry.
+        /// Serializable entry.
         /// </summary>
         [Serializable]
         private class SerializableEntry

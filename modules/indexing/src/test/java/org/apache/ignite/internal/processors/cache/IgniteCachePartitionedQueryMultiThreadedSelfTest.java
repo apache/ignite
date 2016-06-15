@@ -18,9 +18,6 @@
 package org.apache.ignite.internal.processors.cache;
 
 import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -43,7 +40,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.CAX;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
@@ -220,7 +216,7 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
     }
 
     /** Test class. */
-    private static class PersonObj implements Externalizable {
+    private static class PersonObj {
         /** */
         @GridToStringExclude
         private UUID id = UUID.randomUUID();
@@ -276,22 +272,6 @@ public class IgniteCachePartitionedQueryMultiThreadedSelfTest extends GridCommon
         /** @return Degree. */
         String degree() {
             return degree;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void writeExternal(ObjectOutput out) throws IOException {
-            U.writeUuid(out, id);
-            U.writeString(out, name);
-            out.writeInt(salary);
-            U.writeString(out, degree);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            id = U.readUuid(in);
-            name = U.readString(in);
-            salary = in.readInt();
-            degree = U.readString(in);
         }
 
         /** {@inheritDoc} */

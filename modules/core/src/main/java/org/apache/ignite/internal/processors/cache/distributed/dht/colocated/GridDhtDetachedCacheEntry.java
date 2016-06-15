@@ -41,7 +41,7 @@ public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
      */
     public GridDhtDetachedCacheEntry(GridCacheContext ctx, KeyCacheObject key, int hash, CacheObject val,
         GridCacheMapEntry next, int hdrId) {
-        super(ctx, key, hash, val, next, hdrId);
+        super(ctx, key, hash, val);
     }
 
     /**
@@ -57,7 +57,7 @@ public class GridDhtDetachedCacheEntry extends GridDistributedCacheEntry {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public CacheObject unswap(boolean needVal) throws IgniteCheckedException {
+    @Nullable @Override public CacheObject unswap(boolean needVal, boolean checkExpire) throws IgniteCheckedException {
         return null;
     }
 

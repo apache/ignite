@@ -24,7 +24,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
- * Deserializes portable objects if needed.
+ * Deserializes binary objects if needed.
  */
 public class GridQueryCacheObjectsIterator implements Iterator<List<?>>, AutoCloseable {
     /** */
@@ -34,17 +34,17 @@ public class GridQueryCacheObjectsIterator implements Iterator<List<?>>, AutoClo
     private final GridCacheContext<?,?> cctx;
 
     /** */
-    private final boolean keepPortable;
+    private final boolean keepBinary;
 
     /**
      * @param iter Iterator.
      * @param cctx Cache context.
-     * @param keepPortable Keep portable.
+     * @param keepBinary Keep binary.
      */
-    public GridQueryCacheObjectsIterator(Iterator<List<?>> iter, GridCacheContext<?,?> cctx, boolean keepPortable) {
+    public GridQueryCacheObjectsIterator(Iterator<List<?>> iter, GridCacheContext<?,?> cctx, boolean keepBinary) {
         this.iter = iter;
         this.cctx = cctx;
-        this.keepPortable = keepPortable;
+        this.keepBinary = keepBinary;
     }
 
     /** {@inheritDoc} */
@@ -61,7 +61,7 @@ public class GridQueryCacheObjectsIterator implements Iterator<List<?>>, AutoClo
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Override public List<?> next() {
-        return (List<?>)cctx.unwrapPortablesIfNeeded((Collection<Object>)iter.next(), keepPortable);
+        return (List<?>)cctx.unwrapBinariesIfNeeded((Collection<Object>)iter.next(), keepBinary);
     }
 
     /** {@inheritDoc} */

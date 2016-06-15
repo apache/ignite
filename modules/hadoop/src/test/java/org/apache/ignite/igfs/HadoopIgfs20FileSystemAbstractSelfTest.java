@@ -59,6 +59,7 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem;
+import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsCommonAbstractTest;
 import org.apache.ignite.internal.util.GridConcurrentHashSet;
 import org.apache.ignite.internal.util.typedef.F;
@@ -225,6 +226,8 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
         }
 
         startGrids(4);
+
+        awaitPartitionMapExchange();
     }
 
     /** {@inheritDoc} */
@@ -352,7 +355,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
     /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
         try {
-            fs.delete(new Path("/"), true);
+            HadoopIgfsUtils.clear(fs);
         }
         catch (Exception ignore) {
             // No-op.
@@ -627,7 +630,9 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
 
         Path root = new Path(fsHome, "/");
 
-        assertTrue(fs.delete(root, true));
+        assertFalse(fs.delete(root, true));
+
+        assertTrue(fs.delete(new Path(fsHome, "/someDir1"), true));
 
         assertPathDoesNotExist(fs, someDir3);
         assertPathDoesNotExist(fs, new Path(fsHome, "/someDir1/someDir2"));
@@ -894,7 +899,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
 
         os.close();
 
-        GridTestUtils.assertThrows(log, new Callable<Object>() {
+        GridTestUtils.assertThrowsInherited(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
                 return fs.create(new Path(fsHome, dir), EnumSet.of(CreateFlag.APPEND),
                     Options.CreateOpts.perms(FsPermission.getDefault()));
@@ -916,8 +921,7 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
             Options.CreateOpts.perms(FsPermission.getDefault()));
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
-            @Override
-            public Object call() throws Exception {
+            @Override public Object call() throws Exception {
                 return fs.create(file, EnumSet.of(CreateFlag.APPEND),
                     Options.CreateOpts.perms(FsPermission.getDefault()));
             }
@@ -1122,10 +1126,10 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
         is.close();
     }
 
-    /** @throws Exception If failed. */
+    /**
+     * @throws Exception If failed.
+     */
     public void testRenameDirectoryIfDstPathExists() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-825"); 
-        
         Path fsHome = new Path(primaryFsUri);
         Path srcDir = new Path(fsHome, "/tmp/");
         Path dstDir = new Path(fsHome, "/tmpNew/");
@@ -1140,11 +1144,21 @@ public abstract class HadoopIgfs20FileSystemAbstractSelfTest extends IgfsCommonA
 
         os.close();
 
-        fs.rename(srcDir, dstDir);
+        try {
+            fs.rename(srcDir, dstDir);
 
+            fail("FileAlreadyExistsException expected.");
+        }
+        catch (FileAlreadyExistsException ignore) {
+            // No-op.
+        }
+
+        // Check all the files stay unchanged:
         assertPathExists(fs, dstDir);
-        assertPathExists(fs, new Path(fsHome, "/tmpNew/tmp"));
-        assertPathExists(fs, new Path(fsHome, "/tmpNew/tmp/file1"));
+        assertPathExists(fs, new Path(dstDir, "file2"));
+
+        assertPathExists(fs, srcDir);
+        assertPathExists(fs, new Path(srcDir, "file1"));
     }
 
     /** @throws Exception If failed. */

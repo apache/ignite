@@ -17,24 +17,21 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
-import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.cache.Cache;
 import javax.cache.CacheException;
@@ -54,12 +51,13 @@ import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.store.CacheStoreSessionListener;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteClientDisconnectedCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.cluster.ClusterGroupEmptyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.cluster.ClusterTopologyServerNotFoundException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -69,7 +67,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartit
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
+import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.C1;
@@ -80,7 +78,6 @@ import org.apache.ignite.internal.util.typedef.P2;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
-import org.apache.ignite.internal.util.typedef.internal.LT;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteClosure;
@@ -89,13 +86,15 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.plugin.CachePluginConfiguration;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.apache.ignite.spi.swapspace.noop.NoopSwapSpaceSpi;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.apache.ignite.transactions.TransactionIsolation;
+import org.apache.ignite.transactions.TransactionRollbackException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
-import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SKIP_CONFIGURATION_CONSISTENCY_CHECK;
 import static org.apache.ignite.cache.CacheAtomicityMode.TRANSACTIONAL;
@@ -147,22 +146,20 @@ public class GridCacheUtils {
     /** Skip store flag bit mask. */
     public static final int SKIP_STORE_FLAG_MASK = 0x1;
 
+    /** Keep serialized flag. */
+    public static final int KEEP_BINARY_FLAG_MASK = 0x2;
+
     /** Empty predicate array. */
     private static final IgnitePredicate[] EMPTY = new IgnitePredicate[0];
+
+    /** Default transaction config. */
+    private static final TransactionConfiguration DEFAULT_TX_CFG = new TransactionConfiguration();
 
     /** Partition to state transformer. */
     private static final IgniteClosure PART2STATE =
         new C1<GridDhtLocalPartition, GridDhtPartitionState>() {
             @Override public GridDhtPartitionState apply(GridDhtLocalPartition p) {
                 return p.state();
-            }
-        };
-
-    /** */
-    private static final IgniteClosure<Integer, GridCacheVersion[]> VER_ARR_FACTORY =
-        new C1<Integer, GridCacheVersion[]>() {
-            @Override public GridCacheVersion[] apply(Integer size) {
-                return new GridCacheVersion[size];
             }
         };
 
@@ -278,59 +275,15 @@ public class GridCacheUtils {
         }
     };
 
+    /** NoopSwapSpaceSpi used attribute. */
+    private static final String NOOP_SWAP_SPACE_SPI_ATTR_NAME = U.spiAttribute(new NoopSwapSpaceSpi(),
+        IgniteNodeAttributes.ATTR_SPI_CLASS);
+
     /**
      * Ensure singleton.
      */
     protected GridCacheUtils() {
         // No-op.
-    }
-
-    /**
-     * @param msg Message to check.
-     * @return {@code True} if preloader message.
-     */
-    public static boolean allowForStartup(Object msg) {
-        return ((GridCacheMessage)msg).allowForStartup();
-    }
-
-    /**
-     * Writes {@link GridCacheVersion} to output stream. This method is meant to be used by
-     * implementations of {@link Externalizable} interface.
-     *
-     * @param out Output stream.
-     * @param ver Version to write.
-     * @throws IOException If write failed.
-     */
-    public static void writeVersion(ObjectOutput out, GridCacheVersion ver) throws IOException {
-        // Write null flag.
-        out.writeBoolean(ver == null);
-
-        if (ver != null) {
-            out.writeBoolean(ver instanceof GridCacheVersionEx);
-
-            ver.writeExternal(out);
-        }
-    }
-
-    /**
-     * Reads {@link GridCacheVersion} from input stream. This method is meant to be used by
-     * implementations of {@link Externalizable} interface.
-     *
-     * @param in Input stream.
-     * @return Read version.
-     * @throws IOException If read failed.
-     */
-    @Nullable public static GridCacheVersion readVersion(ObjectInput in) throws IOException {
-        // If UUID is not null.
-        if (!in.readBoolean()) {
-            GridCacheVersion ver = in.readBoolean() ? new GridCacheVersionEx() : new GridCacheVersion();
-
-            ver.readExternal(in);
-
-            return ver;
-        }
-
-        return null;
     }
 
     /**
@@ -370,6 +323,16 @@ public class GridCacheUtils {
             throw new GridCacheFilterFailedException(val);
 
         return null;
+    }
+
+    /**
+     * Create filter array.
+     *
+     * @param filter Filter.
+     * @return Filter array.
+     */
+    public static CacheEntryPredicate[] filterArray(@Nullable CacheEntryPredicate filter) {
+        return filter != null ? new CacheEntryPredicate[] { filter } : CU.empty0();
     }
 
     /**
@@ -754,23 +717,28 @@ public class GridCacheUtils {
      * @param <T> Collection element type.
      * @return Reducer.
      */
-    public static <T> IgniteReducer<Collection<T>, Collection<T>> collectionsReducer() {
+    public static <T> IgniteReducer<Collection<T>, Collection<T>> collectionsReducer(final int size) {
         return new IgniteReducer<Collection<T>, Collection<T>>() {
-            private final Collection<T> ret = new ConcurrentLinkedQueue<>();
+            private List<T> ret;
 
-            @Override public boolean collect(Collection<T> c) {
-                if (c != null)
-                    ret.addAll(c);
+            @Override public synchronized boolean collect(Collection<T> c) {
+                if (c == null)
+                    return true;
+
+                if (ret == null)
+                    ret = new ArrayList<>(size);
+
+                ret.addAll(c);
 
                 return true;
             }
 
-            @Override public Collection<T> reduce() {
-                return ret;
+            @Override public synchronized Collection<T> reduce() {
+                return ret == null ? Collections.<T>emptyList() : ret;
             }
 
             /** {@inheritDoc} */
-            @Override public String toString() {
+            @Override public synchronized String toString() {
                 return "Collection reducer: " + ret;
             }
         };
@@ -814,21 +782,6 @@ public class GridCacheUtils {
 
     /**
      * @param nodes Nodes.
-     * @param locId Local node ID.
-     * @return Local node if it is in the list of nodes, or primary node.
-     */
-    public static ClusterNode localOrPrimary(Iterable<ClusterNode> nodes, UUID locId) {
-        assert !F.isEmpty(nodes);
-
-        for (ClusterNode n : nodes)
-            if (n.id().equals(locId))
-                return n;
-
-        return F.first(nodes);
-    }
-
-    /**
-     * @param nodes Nodes.
      * @return Backup nodes.
      */
     public static Collection<ClusterNode> backups(Collection<ClusterNode> nodes) {
@@ -836,38 +789,6 @@ public class GridCacheUtils {
             return Collections.emptyList();
 
         return F.view(nodes, F.notEqualTo(F.first(nodes)));
-    }
-
-    /**
-     * @param mappings Mappings.
-     * @param k map key.
-     * @return Either current list value or newly created one.
-     */
-    public static <K, V> Collection<V> getOrSet(Map<K, List<V>> mappings, K k) {
-        List<V> vals = mappings.get(k);
-
-        if (vals == null)
-            mappings.put(k, vals = new LinkedList<>());
-
-        return vals;
-    }
-
-    /**
-     * @param mappings Mappings.
-     * @param k map key.
-     * @return Either current list value or newly created one.
-     */
-    public static <K, V> Collection<V> getOrSet(ConcurrentMap<K, Collection<V>> mappings, K k) {
-        Collection<V> vals = mappings.get(k);
-
-        if (vals == null) {
-            Collection<V> old = mappings.putIfAbsent(k, vals = new ConcurrentLinkedDeque8<>());
-
-            if (old != null)
-                vals = old;
-        }
-
-        return vals;
     }
 
     /**
@@ -900,20 +821,6 @@ public class GridCacheUtils {
 
     /**
      * @param t Exception to check.
-     * @return {@code true} if caused by lock timeout.
-     */
-    public static boolean isLockTimeout(Throwable t) {
-        if (t == null)
-            return false;
-
-        while (t instanceof IgniteCheckedException || t instanceof IgniteException)
-            t = t.getCause();
-
-        return t instanceof GridCacheLockTimeoutException;
-    }
-
-    /**
-     * @param t Exception to check.
      * @return {@code true} if caused by lock timeout or cancellation.
      */
     public static boolean isLockTimeoutOrCancelled(Throwable t) {
@@ -933,11 +840,25 @@ public class GridCacheUtils {
      * @throws IgniteCheckedException If marshalling failed.
      */
     @SuppressWarnings("unchecked")
-    public static byte[] marshal(GridCacheSharedContext ctx, Object obj)
+    public static byte[] marshal(GridCacheContext ctx, Object obj)
         throws IgniteCheckedException {
         assert ctx != null;
 
-        if (ctx.gridDeploy().enabled()) {
+        return marshal(ctx.shared(), ctx.deploymentEnabled(), obj);
+    }
+
+    /**
+     * @param ctx Cache context.
+     * @param depEnabled deployment enabled flag.
+     * @param obj Object to marshal.
+     * @return Buffer that contains obtained byte array.
+     * @throws IgniteCheckedException If marshalling failed.
+     */
+    public static byte[] marshal(GridCacheSharedContext ctx, boolean depEnabled, Object obj)
+        throws IgniteCheckedException {
+        assert ctx != null;
+
+        if (depEnabled) {
             if (obj != null) {
                 if (obj instanceof Iterable)
                     ctx.deploy().registerClasses((Iterable<?>)obj);
@@ -1092,13 +1013,6 @@ public class GridCacheUtils {
     }
 
     /**
-     * @return Version array factory.
-     */
-    public static IgniteClosure<Integer, GridCacheVersion[]> versionArrayFactory() {
-        return VER_ARR_FACTORY;
-    }
-
-    /**
      * Converts cache version to byte array.
      *
      * @param ver Version.
@@ -1231,31 +1145,14 @@ public class GridCacheUtils {
     }
 
     /**
-     * Validates that cache value object implements {@link Externalizable}.
+     * Validates that cache key object has overridden equals and hashCode methods.
      *
-     * @param log Logger used to log warning message.
-     * @param val Value.
-     */
-    public static void validateCacheValue(IgniteLogger log, @Nullable Object val) {
-        if (val == null)
-            return;
-
-        validateExternalizable(log, val);
-    }
-
-    /**
-     * Validates that cache key object has overridden equals and hashCode methods and
-     * implements {@link Externalizable}.
-     *
-     * @param log Logger used to log warning message.
      * @param key Key.
      * @throws IllegalArgumentException If equals or hashCode is not implemented.
      */
-    public static void validateCacheKey(IgniteLogger log, @Nullable Object key) {
+    public static void validateCacheKey(@Nullable Object key) {
         if (key == null)
             return;
-
-        validateExternalizable(log, key);
 
         if (!U.overridesEqualsAndHashCode(key))
             throw new IllegalArgumentException("Cache key must override hashCode() and equals() methods: " +
@@ -1343,20 +1240,6 @@ public class GridCacheUtils {
             return 1;
     }
 
-    /**
-     * Validates that cache key or cache value implements {@link Externalizable}
-     *
-     * @param log Logger used to log warning message.
-     * @param obj Cache key or cache value.
-     */
-    private static void validateExternalizable(IgniteLogger log, Object obj) {
-        Class<?> cls = obj.getClass();
-
-        if (!cls.isArray() && !U.isJdk(cls) && !(obj instanceof Externalizable) && !(obj instanceof GridCacheInternal))
-            LT.warn(log, null, "For best performance you should implement " +
-                "java.io.Externalizable for all cache keys and values: " + cls.getName());
-    }
-
 //    /**
 //     * @param cfg Grid configuration.
 //     * @param cacheName Cache name.
@@ -1387,18 +1270,7 @@ public class GridCacheUtils {
      * @return {@code True} in this is IGFS data or meta cache.
      */
     public static boolean isIgfsCache(IgniteConfiguration cfg, @Nullable String cacheName) {
-        FileSystemConfiguration[] igfsCfgs = cfg.getFileSystemConfiguration();
-
-        if (igfsCfgs != null) {
-            for (FileSystemConfiguration igfsCfg : igfsCfgs) {
-                // IGFS config probably has not been validated yet => possible NPE, so we check for null.
-                if (igfsCfg != null &&
-                    (F.eq(cacheName, igfsCfg.getDataCacheName()) || F.eq(cacheName, igfsCfg.getMetaCacheName())))
-                    return true;
-            }
-        }
-
-        return false;
+        return IgfsUtils.isIgfsCache(cfg, cacheName);
     }
 
     /**
@@ -1566,23 +1438,7 @@ public class GridCacheUtils {
     ) {
         return new CacheEntryPredicateAdapter() {
             @Override public boolean apply(GridCacheEntryEx e) {
-                return aff.isPrimary(n, e.key().value(e.context().cacheObjectContext(), false));
-            }
-        };
-    }
-
-    /**
-     * @param aff Affinity.
-     * @param n Node.
-     * @return Predicate that evaulates to {@code true} if entry is primary for node.
-     */
-    public static <K, V> IgnitePredicate<Cache.Entry<K, V>> cachePrimary0(
-        final Affinity<K> aff,
-        final ClusterNode n
-    ) {
-        return new IgnitePredicate<Cache.Entry<K, V>>() {
-            @Override public boolean apply(Cache.Entry<K, V> e) {
-                return aff.isPrimary(n, e.getKey());
+                return aff.isPrimary(n, e.key());
             }
         };
     }
@@ -1675,6 +1531,18 @@ public class GridCacheUtils {
      * @return {@code True} if given node is client node (has flag {@link IgniteConfiguration#isClientMode()} set).
      */
     public static boolean clientNode(ClusterNode node) {
+        if (node instanceof TcpDiscoveryNode)
+            return ((TcpDiscoveryNode)node).isCacheClient();
+        else
+            return clientNodeDirect(node);
+    }
+
+    /**
+     * @param node Node.
+     * @return {@code True} if given node is client node (has flag {@link IgniteConfiguration#isClientMode()} set).
+     */
+    @SuppressWarnings("ConstantConditions")
+    public static boolean clientNodeDirect(ClusterNode node) {
         Boolean clientModeAttr = node.attribute(IgniteNodeAttributes.ATTR_CLIENT_MODE);
 
         assert clientModeAttr != null : node;
@@ -1773,28 +1641,41 @@ public class GridCacheUtils {
     public static <S> Callable<S> retryTopologySafe(final Callable<S> c ) {
         return new Callable<S>() {
             @Override public S call() throws Exception {
-                int retries = GridCacheAdapter.MAX_RETRIES;
-
                 IgniteCheckedException err = null;
 
-                for (int i = 0; i < retries; i++) {
+                for (int i = 0; i < GridCacheAdapter.MAX_RETRIES; i++) {
                     try {
                         return c.call();
                     }
-                    catch (IgniteCheckedException e) {
-                        if (X.hasCause(e, ClusterTopologyCheckedException.class) ||
-                            X.hasCause(e, IgniteTxRollbackCheckedException.class) ||
-                            X.hasCause(e, CachePartialUpdateCheckedException.class)) {
-                            if (i < retries - 1) {
-                                err = e;
-
-                                U.sleep(1);
-
-                                continue;
-                            }
-
+                    catch (ClusterGroupEmptyCheckedException | ClusterTopologyServerNotFoundException e) {
+                        throw e;
+                    }
+                    catch (TransactionRollbackException e) {
+                        if (i + 1 == GridCacheAdapter.MAX_RETRIES)
                             throw e;
+
+                        U.sleep(1);
+                    }
+                    catch (IgniteCheckedException e) {
+                        if (i + 1 == GridCacheAdapter.MAX_RETRIES)
+                            throw e;
+
+                        if (X.hasCause(e, ClusterTopologyCheckedException.class)) {
+                            ClusterTopologyCheckedException topErr = e.getCause(ClusterTopologyCheckedException.class);
+
+                            if (topErr instanceof ClusterGroupEmptyCheckedException || topErr instanceof
+                                ClusterTopologyServerNotFoundException)
+                                throw e;
+
+                            // IGNITE-1948: remove this check when the issue is fixed
+                            if (topErr.retryReadyFuture() != null)
+                                topErr.retryReadyFuture().get();
+                            else
+                                U.sleep(1);
                         }
+                        else if (X.hasCause(e, IgniteTxRollbackCheckedException.class,
+                            CachePartialUpdateCheckedException.class))
+                            U.sleep(1);
                         else
                             throw e;
                     }
@@ -1804,5 +1685,74 @@ public class GridCacheUtils {
                 throw err;
             }
         };
+    }
+
+    /**
+     * Builds neighborhood map for all nodes in snapshot.
+     *
+     * @param topSnapshot Topology snapshot.
+     * @return Neighbors map.
+     */
+    public static Map<UUID, Collection<ClusterNode>> neighbors(Collection<ClusterNode> topSnapshot) {
+        Map<String, Collection<ClusterNode>> macMap = new HashMap<>(topSnapshot.size(), 1.0f);
+
+        // Group by mac addresses.
+        for (ClusterNode node : topSnapshot) {
+            String macs = node.attribute(IgniteNodeAttributes.ATTR_MACS);
+
+            Collection<ClusterNode> nodes = macMap.get(macs);
+
+            if (nodes == null)
+                macMap.put(macs, nodes = new HashSet<>());
+
+            nodes.add(node);
+        }
+
+        Map<UUID, Collection<ClusterNode>> neighbors = new HashMap<>(topSnapshot.size(), 1.0f);
+
+        for (Collection<ClusterNode> group : macMap.values())
+            for (ClusterNode node : group)
+                neighbors.put(node.id(), group);
+
+        return neighbors;
+    }
+
+    /**
+     * Returns neighbors for all {@code nodes}.
+     *
+     * @param neighborhood Neighborhood cache.
+     * @param nodes Nodes.
+     * @return All neighbors for given nodes.
+     */
+    public static Collection<ClusterNode> neighborsForNodes(Map<UUID, Collection<ClusterNode>> neighborhood,
+        Iterable<ClusterNode> nodes) {
+        Collection<ClusterNode> res = new HashSet<>();
+
+        for (ClusterNode node : nodes) {
+            if (!res.contains(node))
+                res.addAll(neighborhood.get(node.id()));
+        }
+
+        return res;
+    }
+
+    /**
+     * Checks if swap is enabled on node.
+     *
+     * @param node Node
+     * @return {@code true} if swap is enabled, {@code false} otherwise.
+     */
+    public static boolean isSwapEnabled(ClusterNode node) {
+        return !node.attributes().containsKey(NOOP_SWAP_SPACE_SPI_ATTR_NAME);
+    }
+
+    /**
+     * @return default TX configuration if system cache is used or current grid TX config otherwise.
+     */
+    public static TransactionConfiguration transactionConfiguration(final @Nullable GridCacheContext sysCacheCtx,
+        final IgniteConfiguration cfg) {
+        return sysCacheCtx != null && sysCacheCtx.systemTx()
+            ? DEFAULT_TX_CFG
+            : cfg.getTransactionConfiguration();
     }
 }

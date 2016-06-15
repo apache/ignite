@@ -98,6 +98,33 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAllExamples() throws Exception {
+        checkQuery("select 42");
+        checkQuery("select ()");
+        checkQuery("select (1)");
+        checkQuery("select (1 + 1)");
+        checkQuery("select (1,)");
+        checkQuery("select (?)");
+        checkQuery("select (?,)");
+        checkQuery("select (1, 2)");
+        checkQuery("select (?, ? + 1, 2 + 2) as z");
+        checkQuery("select (1,(1,(1,(1,(1,?)))))");
+        checkQuery("select (select 1)");
+        checkQuery("select (select 1, select ?)");
+        checkQuery("select ((select 1), select ? + ?)");
+
+        checkQuery("select extract(year from ?)");
+        checkQuery("select convert(?, timestamp)");
+
+        checkQuery("select * from table(id bigint = 1)");
+        checkQuery("select * from table(id bigint = (1))");
+        checkQuery("select * from table(id bigint = (1,))");
+        checkQuery("select * from table(id bigint = (1,), name varchar = 'asd')");
+        checkQuery("select * from table(id bigint = (1,2), name varchar = 'asd')");
+        checkQuery("select * from table(id bigint = (1,2), name varchar = ('asd',))");
+        checkQuery("select * from table(id bigint = (1,2), name varchar = ?)");
+        checkQuery("select * from table(id bigint = (1,2), name varchar = (?,))");
+        checkQuery("select * from table(id bigint = ?, name varchar = ('abc', 'def', 100, ?)) t");
+
         checkQuery("select ? limit ? offset ?");
 
         checkQuery("select cool1()");
@@ -172,7 +199,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         checkQuery("select p.name, ? from Person p where name regexp ? and p.old < ?");
 
-        checkQuery("select count(*) as a from Person");
+        checkQuery("select count(*) as a from Person having a > 10");
         checkQuery("select count(*) as a, count(p.*), count(p.name) from Person p");
         checkQuery("select count(distinct p.name) from Person p");
         checkQuery("select name, count(*) cnt from Person group by name order by cnt desc limit 10");
@@ -289,12 +316,7 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         GridSqlQueryParser ses = new GridSqlQueryParser();
 
-        String res;
-
-        if (prepared instanceof Query)
-            res = ses.parse((Query) prepared).getSQL();
-        else
-            throw new UnsupportedOperationException();
+        String res = ses.parse(prepared).getSQL();
 
         System.out.println(normalizeSql(res));
 

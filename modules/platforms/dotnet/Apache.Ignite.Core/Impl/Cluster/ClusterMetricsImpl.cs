@@ -19,8 +19,8 @@ namespace Apache.Ignite.Core.Impl.Cluster
 {
     using System;
     using System.Diagnostics;
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Portable;
 
     /// <summary>
     /// Cluster metrics implementation.
@@ -31,11 +31,11 @@ namespace Apache.Ignite.Core.Impl.Cluster
         /// Initializes a new instance of the <see cref="ClusterMetricsImpl"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public ClusterMetricsImpl(IPortableRawReader reader)
+        public ClusterMetricsImpl(IBinaryRawReader reader)
         {
             LastUpdateTimeRaw = reader.ReadLong();
 
-            var lastUpdateTime = reader.ReadDate();
+            var lastUpdateTime = reader.ReadTimestamp();
             Debug.Assert(lastUpdateTime.HasValue);
             LastUpdateTime = lastUpdateTime.Value;
 
@@ -86,11 +86,11 @@ namespace Apache.Ignite.Core.Impl.Cluster
             NonHeapMemoryTotal = reader.ReadLong();
             Uptime = reader.ReadLong();
 
-            var startTime = reader.ReadDate();
+            var startTime = reader.ReadTimestamp();
             Debug.Assert(startTime.HasValue);
             StartTime = startTime.Value;
 
-            var nodeStartTime = reader.ReadDate();
+            var nodeStartTime = reader.ReadTimestamp();
             Debug.Assert(nodeStartTime.HasValue);
             NodeStartTime = nodeStartTime.Value;
 

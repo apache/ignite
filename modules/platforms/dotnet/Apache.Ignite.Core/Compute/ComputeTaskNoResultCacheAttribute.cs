@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Compute
     /// This attribute disables caching of task results when attached to <see cref="IComputeTask{A,T,R}"/> 
     /// instance. Use it when number of jobs within task grows too big, or jobs themselves are too large 
     /// to keep in memory throughout task execution. By default all results are cached and passed into
-    /// <see cref="IComputeTask{A,T,R}.Result"/> 
+    /// <see cref="IComputeTask{TA,T,TR}.OnResult"/> 
     /// and <see cref="IComputeTask{A,T,R}.Reduce"/> methods. When this 
     /// attribute is attached to a task class, then this list of job results will always be empty.
     /// </summary>

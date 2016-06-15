@@ -26,11 +26,6 @@ import static org.apache.ignite.cache.CacheMemoryMode.OFFHEAP_TIERED;
 public class GridCachePartitionedAtomicOffheapQueueCreateMultiNodeSelfTest
     extends GridCachePartitionedAtomicQueueCreateMultiNodeSelfTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTest() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-80");
-    }
-
-    /** {@inheritDoc} */
     @Override protected CacheMemoryMode collectionMemoryMode() {
         return OFFHEAP_TIERED;
     }

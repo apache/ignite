@@ -30,47 +30,42 @@
     <!--
         Store data source.
     -->
-    <bean id="storeDataSource" class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStore">
-        <property name="dataSource">
-            <bean class="org.h2.jdbcx.JdbcConnectionPool" factory-method="create">
-                <constructor-arg value="jdbc:h2:tcp://localhost/store-benchmark/h2-benchmark"/>
-                <constructor-arg value="sa"/>
-                <constructor-arg value=""/>
-            </bean>
-        </property>
+    <bean id="storeDataSource" class="org.h2.jdbcx.JdbcDataSource">
+        <property name="url" value="jdbc:h2:tcp://localhost/store-benchmark/h2-benchmark"/>
+        <property name="user" value="sa"/>
     </bean>
 
-    <bean id="sampleTypeMetadata" class="org.apache.ignite.cache.CacheTypeMetadata">
+    <bean id="sampleTypeMetadata" class="org.apache.ignite.cache.store.jdbc.JdbcType">
         <property name="databaseTable" value="SAMPLE"/>
         <property name="keyType" value="org.apache.ignite.yardstick.cache.model.SampleKey"/>
-        <property name="valueType" value="org.apache.ignite.yardstick.cache.model.SampleValue"/>
         <property name="keyFields">
             <list>
-                <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="databaseName" value="ID"/>
-                    <property name="databaseType">
+                <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                    <property name="databaseFieldType">
                         <util:constant static-field="java.sql.Types.INTEGER"/>
                     </property>
-                    <property name="javaName" value="id"/>
-                    <property name="javaType" value="int"/>
+                    <property name="databaseFieldName" value="ID"/>
+                    <property name="javaFieldType" value="int"/>
+                    <property name="javaFieldName" value="id"/>
                 </bean>
             </list>
         </property>
+        <property name="valueType" value="org.apache.ignite.yardstick.cache.model.SampleValue"/>
         <property name="valueFields">
             <list>
-                <bean class="org.apache.ignite.cache.CacheTypeFieldMetadata">
-                    <property name="databaseName" value="VALUE"/>
-                    <property name="databaseType">
+                <bean class="org.apache.ignite.cache.store.jdbc.JdbcTypeField">
+                    <property name="databaseFieldType">
                         <util:constant static-field="java.sql.Types.INTEGER"/>
                     </property>
-                    <property name="javaName" value="id"/>
-                    <property name="javaType" value="int"/>
+                    <property name="databaseFieldName" value="VALUE"/>
+                    <property name="javaFieldType" value="int"/>
+                    <property name="javaFieldName" value="id"/>
                 </bean>
             </list>
         </property>
     </bean>
 
-    <bean class="org.apache.ignite.configuration.IgniteConfiguration" >
+    <bean class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="peerClassLoadingEnabled" value="false"/>
 
         <property name="cacheConfiguration">
@@ -84,15 +79,19 @@
 
                     <property name="swapEnabled" value="false"/>
 
-                    <property name="typeMetadata">
-                        <list>
-                            <ref bean="sampleTypeMetadata"/>
-                        </list>
-                    </property>
-
                     <property name="cacheStoreFactory">
-                        <bean class="javax.cache.configuration.FactoryBuilder$SingletonFactory">
-                            <constructor-arg ref="storeDataSource"/>
+                        <bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory">
+                            <property name="dataSourceBean" value="storeDataSource"/>
+                            <property name="dialect">
+                                <bean class="org.apache.ignite.cache.store.jdbc.dialect.H2Dialect"/>
+                            </property>
+                            <property name="types">
+                                <list>
+                                    <bean parent="sampleTypeMetadata">
+                                        <property name="cacheName" value="atomic"/>
+                                    </bean>
+                                </list>
+                            </property>
                         </bean>
                     </property>
                 </bean>
@@ -106,22 +105,28 @@
 
                     <property name="swapEnabled" value="false"/>
 
-                    <property name="typeMetadata">
-                        <list>
-                            <ref bean="sampleTypeMetadata"/>
-                        </list>
-                    </property>
-
                     <property name="cacheStoreFactory">
-                        <bean class="javax.cache.configuration.FactoryBuilder$SingletonFactory">
-                            <constructor-arg ref="storeDataSource"/>
+                        <bean class="org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory">
+                            <property name="dataSourceBean" value="storeDataSource"/>
+                            <property name="dialect">
+                                <bean class="org.apache.ignite.cache.store.jdbc.dialect.H2Dialect"/>
+                            </property>
+                            <property name="types">
+                                <list>
+                                    <bean parent="sampleTypeMetadata">
+                                        <property name="cacheName" value="tx"/>
+                                    </bean>
+                                </list>
+                            </property>
                         </bean>
                     </property>
                 </bean>
             </list>
         </property>
 
-        <property name="connectorConfiguration"><null/></property>
+        <property name="connectorConfiguration">
+            <null/>
+        </property>
 
         <property name="includeEventTypes">
             <list/>

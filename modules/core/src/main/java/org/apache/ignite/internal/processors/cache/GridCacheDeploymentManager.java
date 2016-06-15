@@ -29,6 +29,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryInvalidTypeException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -164,7 +165,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
      * Callback on method enter.
      */
     public void onEnter() {
-        if (!locDepOwner && depEnabled && !ignoreOwnership.get()
+        if (depEnabled && !locDepOwner && !ignoreOwnership.get()
             && !cctx.kernalContext().job().internal()) {
             ClassLoader ldr = Thread.currentThread().getContextClassLoader();
 
@@ -179,8 +180,12 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     /**
      * @param ignore {@code True} to ignore.
      */
-    public void ignoreOwnership(boolean ignore) {
+    public boolean ignoreOwnership(boolean ignore) {
+        boolean old = ignoreOwnership.get();
+
         ignoreOwnership.set(ignore);
+
+        return old;
     }
 
     /**
@@ -299,7 +304,7 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
     private void addEntries(ClassLoader ldr, Collection<KeyCacheObject> keys, GridCacheAdapter cache) {
         GridCacheContext cacheCtx = cache.context();
 
-        for (GridCacheEntryEx e : (Collection<GridCacheEntryEx>)cache.entries()) {
+        for (GridCacheEntryEx e : (Iterable<GridCacheEntryEx>)cache.entries()) {
             boolean undeploy = cacheCtx.isNear() ?
                 undeploy(ldr, e, cacheCtx.near()) || undeploy(ldr, e, cacheCtx.near().dht()) :
                 undeploy(ldr, e, cacheCtx.cache());
@@ -336,6 +341,11 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
             val0 = CU.value(v, cache.context(), false);
         }
         catch (GridCacheEntryRemovedException ignore) {
+            return false;
+        }
+        catch (BinaryInvalidTypeException ignore) {
+            log.error("An attempt to undeploy cache with binary objects.", ignore);
+
             return false;
         }
         catch (IgniteCheckedException | IgniteException ignore) {
@@ -844,6 +854,11 @@ public class GridCacheDeploymentManager<K, V> extends GridCacheSharedManagerAdap
                         return cls;
                 }
             }
+
+            Class cls = getParent().loadClass(name);
+
+            if (cls != null)
+                return cls;
 
             throw new ClassNotFoundException("Failed to load class [name=" + name+ ", ctx=" + deps + ']');
         }

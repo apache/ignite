@@ -31,6 +31,12 @@ public interface CacheObject extends Message {
     /** */
     public static final byte TYPE_BYTE_ARR = 2;
 
+    /** */
+    public static final byte TYPE_BINARY = 100;
+
+    /** */
+    public static final byte TYPE_BINARY_ENUM = 101;
+
     /**
      * @param ctx Context.
      * @param cpy If {@code true} need to copy value.
@@ -48,7 +54,16 @@ public interface CacheObject extends Message {
     /**
      * @return Object type.
      */
-    public byte type();
+    public byte cacheObjectType();
+
+    /**
+     * Gets flag indicating whether object value is a platform type. Platform types will be automatically
+     * deserialized on public API cache operations regardless whether
+     * {@link org.apache.ignite.IgniteCache#withKeepBinary()} is used or not.
+     *
+     * @return Platform type flag.
+     */
+    public boolean isPlatformType();
 
     /**
      * Prepares cache object for cache (e.g. copies user-provided object if needed).

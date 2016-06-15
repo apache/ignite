@@ -20,13 +20,12 @@ package org.apache.ignite.internal.processors.platform;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
-import org.apache.ignite.internal.portable.PortableRawReaderEx;
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
-import org.apache.ignite.internal.util.future.IgniteFutureImpl;
-import org.apache.ignite.lang.IgniteFuture;
+import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -62,7 +61,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
     /** {@inheritDoc} */
     @Override public long inStreamOutLong(int type, long memPtr) throws Exception {
         try (PlatformMemory mem = platformCtx.memory().get(memPtr)) {
-            PortableRawReaderEx reader = platformCtx.reader(mem);
+            BinaryRawReaderEx reader = platformCtx.reader(mem);
 
             if (type == OP_META) {
                 platformCtx.processMetadata(reader);
@@ -80,7 +79,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
     /** {@inheritDoc} */
     @Override public Object inStreamOutObject(int type, long memPtr) throws Exception {
         try (PlatformMemory mem = platformCtx.memory().get(memPtr)) {
-            PortableRawReaderEx reader = platformCtx.reader(mem);
+            BinaryRawReaderEx reader = platformCtx.reader(mem);
 
             return processInStreamOutObject(type, reader);
         }
@@ -104,7 +103,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
         try (PlatformMemory mem = platformCtx.memory().get(memPtr)) {
             PlatformOutputStream out = mem.output();
 
-            PortableRawWriterEx writer = platformCtx.writer(out);
+            BinaryRawWriterEx writer = platformCtx.writer(out);
 
             processOutStream(type, writer);
 
@@ -128,12 +127,12 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
     /** {@inheritDoc} */
     @Override public void inStreamOutStream(int type, long inMemPtr, long outMemPtr) throws Exception {
         try (PlatformMemory inMem = platformCtx.memory().get(inMemPtr)) {
-            PortableRawReaderEx reader = platformCtx.reader(inMem);
+            BinaryRawReaderEx reader = platformCtx.reader(inMem);
 
             try (PlatformMemory outMem = platformCtx.memory().get(outMemPtr)) {
                 PlatformOutputStream out = outMem.output();
 
-                PortableRawWriterEx writer = platformCtx.writer(out);
+                BinaryRawWriterEx writer = platformCtx.writer(out);
 
                 processInStreamOutStream(type, reader, writer);
 
@@ -148,12 +147,12 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
     /** {@inheritDoc} */
     @Override public void inObjectStreamOutStream(int type, Object arg, long inMemPtr, long outMemPtr) throws Exception {
         try (PlatformMemory inMem = platformCtx.memory().get(inMemPtr)) {
-            PortableRawReaderEx reader = platformCtx.reader(inMem);
+            BinaryRawReaderEx reader = platformCtx.reader(inMem);
 
             try (PlatformMemory outMem = platformCtx.memory().get(outMemPtr)) {
                 PlatformOutputStream out = outMem.output();
 
-                PortableRawWriterEx writer = platformCtx.writer(out);
+                BinaryRawWriterEx writer = platformCtx.writer(out);
 
                 processInObjectStreamOutStream(type, arg, reader, writer);
 
@@ -184,25 +183,23 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
 
     /** {@inheritDoc} */
     @Override public void listenFuture(final long futId, int typ) throws Exception {
-        PlatformFutureUtils.listen(platformCtx, currentFutureWrapped(), futId, typ, null, this);
+        listenFutureAndGet(futId, typ);
     }
 
     /** {@inheritDoc} */
     @Override public void listenFutureForOperation(final long futId, int typ, int opId) throws Exception {
-        PlatformFutureUtils.listen(platformCtx, currentFutureWrapped(), futId, typ, futureWriter(opId), this);
+        listenFutureForOperationAndGet(futId, typ, opId);
     }
 
-    /**
-     * Get current future with proper exception conversions.
-     *
-     * @return Future.
-     * @throws IgniteCheckedException If failed.
-     */
-    @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
-    protected IgniteInternalFuture currentFutureWrapped() throws IgniteCheckedException {
-        IgniteFutureImpl fut = (IgniteFutureImpl)currentFuture();
+    /** {@inheritDoc} */
+    @Override public PlatformListenable listenFutureAndGet(final long futId, int typ) throws Exception {
+        return PlatformFutureUtils.listen(platformCtx, currentFuture(), futId, typ, null, this);
+    }
 
-        return fut.internalFuture();
+    /** {@inheritDoc} */
+    @Override public PlatformListenable listenFutureForOperationAndGet(final long futId, int typ, int opId)
+            throws Exception {
+        return PlatformFutureUtils.listen(platformCtx, currentFuture(), futId, typ, futureWriter(opId), this);
     }
 
     /**
@@ -211,8 +208,8 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @return current future.
      * @throws IgniteCheckedException
      */
-    protected IgniteFuture currentFuture() throws IgniteCheckedException {
-        throw new IgniteCheckedException("Future listening is not supported in " + this.getClass());
+    protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {
+        throw new IgniteCheckedException("Future listening is not supported in " + getClass());
     }
 
     /**
@@ -221,7 +218,7 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * @param opId Operation id.
      * @return A custom writer for given op id.
      */
-    protected @Nullable PlatformFutureUtils.Writer futureWriter(int opId){
+    @Nullable protected PlatformFutureUtils.Writer futureWriter(int opId){
         return null;
     }
 
@@ -229,11 +226,11 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * Process IN operation.
      *
      * @param type Type.
-     * @param reader Portable reader.
+     * @param reader Binary reader.
      * @return Result.
      * @throws IgniteCheckedException In case of exception.
      */
-    protected long processInStreamOutLong(int type, PortableRawReaderEx reader) throws IgniteCheckedException {
+    protected long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
         return throwUnsupported(type);
     }
 
@@ -241,11 +238,11 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * Process IN-OUT operation.
      *
      * @param type Type.
-     * @param reader Portable reader.
-     * @param writer Portable writer.
+     * @param reader Binary reader.
+     * @param writer Binary writer.
      * @throws IgniteCheckedException In case of exception.
      */
-    protected void processInStreamOutStream(int type, PortableRawReaderEx reader, PortableRawWriterEx writer)
+    protected void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
         throws IgniteCheckedException {
         throwUnsupported(type);
     }
@@ -254,11 +251,11 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * Process IN operation with managed object as result.
      *
      * @param type Type.
-     * @param reader Portable reader.
+     * @param reader Binary reader.
      * @return Result.
      * @throws IgniteCheckedException In case of exception.
      */
-    protected Object processInStreamOutObject(int type, PortableRawReaderEx reader) throws IgniteCheckedException {
+    protected Object processInStreamOutObject(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
         return throwUnsupported(type);
     }
 
@@ -267,12 +264,12 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      *
      * @param type Type.
      * @param arg Argument.
-     * @param reader Portable reader.
-     * @param writer Portable writer.
+     * @param reader Binary reader.
+     * @param writer Binary writer.
      * @throws IgniteCheckedException In case of exception.
      */
-    protected void processInObjectStreamOutStream(int type, @Nullable Object arg, PortableRawReaderEx reader,
-        PortableRawWriterEx writer) throws IgniteCheckedException {
+    protected void processInObjectStreamOutStream(int type, @Nullable Object arg, BinaryRawReaderEx reader,
+        BinaryRawWriterEx writer) throws IgniteCheckedException {
         throwUnsupported(type);
     }
 
@@ -290,10 +287,10 @@ public abstract class PlatformAbstractTarget implements PlatformTarget {
      * Process OUT operation.
      *
      * @param type Type.
-     * @param writer Portable writer.
+     * @param writer Binary writer.
      * @throws IgniteCheckedException In case of exception.
      */
-    protected void processOutStream(int type, PortableRawWriterEx writer) throws IgniteCheckedException {
+    protected void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
         throwUnsupported(type);
     }
 

@@ -18,7 +18,7 @@
 package org.apache.ignite.internal.processors.platform.messaging;
 
 import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractPredicate;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -46,7 +46,7 @@ public class PlatformMessageFilterImpl extends PlatformAbstractPredicate impleme
     /**
      * Constructor.
      *
-     * @param pred .Net portable predicate.
+     * @param pred .Net binary predicate.
      * @param ptr Pointer to predicate in the native platform.
      * @param ctx Kernal context.
      */
@@ -62,7 +62,7 @@ public class PlatformMessageFilterImpl extends PlatformAbstractPredicate impleme
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            PortableRawWriterEx writer = ctx.writer(out);
+            BinaryRawWriterEx writer = ctx.writer(out);
 
             writer.writeObject(uuid);
             writer.writeObject(m);
@@ -83,7 +83,7 @@ public class PlatformMessageFilterImpl extends PlatformAbstractPredicate impleme
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
 
-            PortableRawWriterEx writer = ctx.writer(out);
+            BinaryRawWriterEx writer = ctx.writer(out);
 
             writer.writeObject(pred);
 

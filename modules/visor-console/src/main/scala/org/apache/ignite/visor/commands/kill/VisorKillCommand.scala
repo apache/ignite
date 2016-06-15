@@ -131,7 +131,7 @@ class VisorKillCommand extends VisorConsoleCommand {
             if (kill && restart)
                 scold("Only one of '-k' or '-r' can be specified.")
             else if (!kill && !restart)
-                scold("Invalid command arguments: " + args)
+                scold("Missing '-k' or '-r' option in command: " + args)
             else if (id8.isDefined && id.isDefined)
                 scold("Only one of -id8 or -id is allowed.")
             else {

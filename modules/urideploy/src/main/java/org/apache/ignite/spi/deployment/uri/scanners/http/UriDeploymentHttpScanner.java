@@ -60,11 +60,15 @@ import org.w3c.dom.NodeList;
 import org.w3c.tidy.Tidy;
 
 /**
- * URI deployment HTTP scanner.
+ * HTTP-based URI deployment scanner.
+ * <p>
+ * This scanner reads DOM of the HTML available via {@link UriDeploymentScannerContext#getUri()}
+ * and parses out href attributes of all {@code &lt;a&gt;} tags -
+ * they become the collection of URLs to GAR files that should be deployed.
  */
 public class UriDeploymentHttpScanner implements UriDeploymentScanner {
     /** Default scan frequency. */
-    private static final int DFLT_SCAN_FREQ = 300000;
+    public static final int DFLT_SCAN_FREQ = 300000;
 
     /** Secure socket protocol to use. */
     private static final String PROTOCOL = "TLS";

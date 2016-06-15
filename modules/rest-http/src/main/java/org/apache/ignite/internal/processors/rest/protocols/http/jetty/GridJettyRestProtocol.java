@@ -168,8 +168,8 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
         }
 
         int initPort = connector.getPort();
-
-        int lastPort = initPort + config().getPortRange() - 1;
+        int portRange = config().getPortRange();
+        int lastPort = portRange == 0 ? initPort : initPort + portRange - 1;
 
         for (port = initPort; port <= lastPort; port++) {
             connector.setPort(port);
@@ -280,14 +280,14 @@ public class GridJettyRestProtocol extends GridRestProtocolAdapter {
             int srvPort;
 
             try {
-                srvPort = Integer.valueOf(srvPortStr);
+                srvPort = Integer.parseInt(srvPortStr);
             }
             catch (NumberFormatException ignore) {
                 throw new IgniteCheckedException("Failed to start Jetty server because IGNITE_JETTY_PORT system property " +
                     "cannot be cast to integer: " + srvPortStr);
             }
 
-            httpSrv = new Server(new QueuedThreadPool(20, 200));
+            httpSrv = new Server(new QueuedThreadPool(200, 20));
 
             ServerConnector srvConn = new ServerConnector(httpSrv, new HttpConnectionFactory(httpCfg));
 

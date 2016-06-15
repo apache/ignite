@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Cache
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Runtime.Serialization;
 
@@ -109,6 +110,7 @@ namespace Apache.Ignite.Core.Cache
         }
 
         /** <inheritdoc /> */
+        [SuppressMessage("Microsoft.Design", "CA1062:Validate arguments of public methods")]
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             info.AddValue(KeyFailedKeys, _failedKeys);

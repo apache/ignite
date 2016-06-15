@@ -114,7 +114,7 @@ public abstract class GridCacheWriteBehindStoreAbstractTest extends GridCommonAb
 
         Map<Integer, String> map = store.getMap();
 
-        assert map.isEmpty();
+        assert map.isEmpty() : map;
 
         Transaction tx = grid().transactions().txStart(OPTIMISTIC, REPEATABLE_READ);
 

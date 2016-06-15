@@ -56,23 +56,23 @@ struct Person
 
 namespace ignite
 {
-    namespace portable
+    namespace binary
     {
-        IGNITE_PORTABLE_TYPE_START(Person)
-        IGNITE_PORTABLE_GET_TYPE_ID_AS_HASH(Person)
-        IGNITE_PORTABLE_GET_TYPE_NAME_AS_IS(Person)
-        IGNITE_PORTABLE_GET_FIELD_ID_AS_HASH
-        IGNITE_PORTABLE_GET_HASH_CODE_ZERO(Person)
-        IGNITE_PORTABLE_IS_NULL_FALSE(Person)
-        IGNITE_PORTABLE_GET_NULL_DEFAULT_CTOR(Person)
+        IGNITE_BINARY_TYPE_START(Person)
+        IGNITE_BINARY_GET_TYPE_ID_AS_HASH(Person)
+        IGNITE_BINARY_GET_TYPE_NAME_AS_IS(Person)
+        IGNITE_BINARY_GET_FIELD_ID_AS_HASH
+        IGNITE_BINARY_GET_HASH_CODE_ZERO(Person)
+        IGNITE_BINARY_IS_NULL_FALSE(Person)
+        IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(Person)
             
-        void Write(PortableWriter& writer, Person obj)
+        void Write(BinaryWriter& writer, Person obj)
         {
             writer.WriteString("name", obj.name);
             writer.WriteInt32("age", obj.age);            
         }
 
-        Person Read(PortableReader& reader)
+        Person Read(BinaryReader& reader)
         {
             std::string name = reader.ReadString("name");
             int age = reader.ReadInt32("age");
@@ -80,7 +80,7 @@ namespace ignite
             return Person(name, age);
         }
 
-        IGNITE_PORTABLE_TYPE_END
+        IGNITE_BINARY_TYPE_END
     }
 }
 
@@ -95,16 +95,11 @@ struct CacheTestSuiteFixture {
     {
         IgniteConfiguration cfg;
 
-        IgniteJvmOption opts[5];
-
-        opts[0] = IgniteJvmOption("-Xdebug");
-        opts[1] = IgniteJvmOption("-Xnoagent");
-        opts[2] = IgniteJvmOption("-Djava.compiler=NONE");
-        opts[3] = IgniteJvmOption("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
-        opts[4] = IgniteJvmOption("-XX:+HeapDumpOnOutOfMemoryError");
-
-        cfg.jvmOptsLen = 5;
-        cfg.jvmOpts = opts;
+        cfg.jvmOpts.push_back("-Xdebug");
+        cfg.jvmOpts.push_back("-Xnoagent");
+        cfg.jvmOpts.push_back("-Djava.compiler=NONE");
+        cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
+        cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
 
 #ifdef IGNITE_TESTS_32
         cfg.jvmInitMem = 256;
@@ -116,9 +111,7 @@ struct CacheTestSuiteFixture {
 
         char* cfgPath = getenv("IGNITE_NATIVE_TEST_CPP_CONFIG_PATH");
 
-        std::string cfgPathStr = std::string(cfgPath).append("/").append("cache-test.xml");
-
-        cfg.springCfgPath = const_cast<char*>(cfgPathStr.c_str());
+        cfg.springCfgPath = std::string(cfgPath).append("/").append("cache-test.xml");
         
         for (int i = 0; i < 2; i++) 
         {
@@ -241,12 +234,12 @@ BOOST_AUTO_TEST_CASE(TestGetAll)
     
     std::set<int> keySet (keys, keys + 5);
 
-    for (int i = 0; i < keySet.size(); i++)
+    for (int i = 0; i < static_cast<int>(keySet.size()); i++)
         cache.Put(i + 1, i + 1);
 
     std::map<int, int> map = cache.GetAll(keySet);
 
-    for (int i = 0; i < keySet.size(); i++)
+    for (int i = 0; i < static_cast<int>(keySet.size()); i++)
         BOOST_REQUIRE(i + 1 == map[i + 1]);
 }
 
@@ -435,7 +428,7 @@ BOOST_AUTO_TEST_CASE(TestLocalEvict)
     BOOST_REQUIRE(5 == cache.LocalPeek(1, cache::IGNITE_PEEK_MODE_ONHEAP));
 }
 
-BOOST_AUTO_TEST_CASE(TestPortable)
+BOOST_AUTO_TEST_CASE(TestBinary)
 {
     cache::Cache<int, Person> cache = grid0.GetCache<int, Person>("partitioned");
 
@@ -481,6 +474,42 @@ BOOST_AUTO_TEST_CASE(TestGetOrCreateCache)
     cache2.Put(5, 7);
 
     BOOST_REQUIRE(7 == cache2.Get(5));
+}
+
+BOOST_AUTO_TEST_CASE(TestPutGetDate)
+{
+    // Get existing cache
+    cache::Cache<int, Date> cache = grid0.GetOrCreateCache<int, Date>("partitioned");
+
+    Date now = Date(time(NULL) * 1000);
+
+    cache.Put(5, now);
+
+    BOOST_REQUIRE(now == cache.Get(5));
+}
+
+BOOST_AUTO_TEST_CASE(TestPutGetTimestamp)
+{
+    // Get existing cache
+    cache::Cache<int, Timestamp> cache = grid0.GetOrCreateCache<int, Timestamp>("partitioned");
+
+    Timestamp now = Timestamp(time(NULL), 0);
+
+    cache.Put(42, now);
+
+    BOOST_REQUIRE(now == cache.Get(42));
+}
+
+BOOST_AUTO_TEST_CASE(TestGetBigString)
+{
+    // Get existing cache
+    cache::Cache<int, std::string> cache = grid0.GetOrCreateCache<int, std::string>("partitioned");
+
+    std::string longStr(impl::IgniteEnvironment::DEFAULT_ALLOCATION_SIZE * 10, 'a');
+
+    cache.Put(5, longStr);
+
+    BOOST_REQUIRE(longStr == cache.Get(5));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

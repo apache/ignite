@@ -22,11 +22,14 @@ import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.plugin.CachePluginManager;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Cache start descriptor.
@@ -38,9 +41,6 @@ public class DynamicCacheDescriptor {
     /** Cache configuration. */
     @GridToStringExclude
     private CacheConfiguration cacheCfg;
-
-    /** Cancelled flag. */
-    private boolean cancelled;
 
     /** Locally configured flag. */
     private boolean locCfg;
@@ -66,6 +66,21 @@ public class DynamicCacheDescriptor {
     /** */
     private boolean updatesAllowed = true;
 
+    /** */
+    private AffinityTopologyVersion startTopVer;
+
+    /** */
+    private boolean rcvdOnDiscovery;
+
+    /** */
+    private Integer cacheId;
+
+    /** */
+    private UUID rcvdFrom;
+
+    /** */
+    private AffinityTopologyVersion rcvdFromVer;
+
     /**
      * @param ctx Context.
      * @param cacheCfg Cache configuration.
@@ -78,12 +93,37 @@ public class DynamicCacheDescriptor {
         CacheType cacheType,
         boolean template,
         IgniteUuid deploymentId) {
+        assert cacheCfg != null;
+
         this.cacheCfg = cacheCfg;
         this.cacheType = cacheType;
         this.template = template;
         this.deploymentId = deploymentId;
 
         pluginMgr = new CachePluginManager(ctx, cacheCfg);
+
+        cacheId = CU.cacheId(cacheCfg.getName());
+    }
+
+    /**
+     * @return Cache ID.
+     */
+    public Integer cacheId() {
+        return cacheId;
+    }
+
+    /**
+     * @return Start topology version.
+     */
+    @Nullable public AffinityTopologyVersion startTopologyVersion() {
+        return startTopVer;
+    }
+
+    /**
+     * @param startTopVer Start topology version.
+     */
+    public void startTopologyVersion(AffinityTopologyVersion startTopVer) {
+        this.startTopVer = startTopVer;
     }
 
     /**
@@ -156,6 +196,13 @@ public class DynamicCacheDescriptor {
     }
 
     /**
+     * @return Started flag.
+     */
+    public boolean started() {
+        return started;
+    }
+
+    /**
      * @return Cache configuration.
      */
     public CacheConfiguration cacheConfiguration() {
@@ -211,6 +258,48 @@ public class DynamicCacheDescriptor {
      */
     public void updatesAllowed(boolean updatesAllowed) {
         this.updatesAllowed = updatesAllowed;
+    }
+
+    /**
+     * @return {@code True} if received in discovery data.
+     */
+    public boolean receivedOnDiscovery() {
+        return rcvdOnDiscovery;
+    }
+
+    /**
+     * @param rcvdOnDiscovery {@code True} if received in discovery data.
+     */
+    public void receivedOnDiscovery(boolean rcvdOnDiscovery) {
+        this.rcvdOnDiscovery = rcvdOnDiscovery;
+    }
+
+    /**
+     * @param nodeId ID of node provided cache configuration in discovery data.
+     */
+    public void receivedFrom(UUID nodeId) {
+        rcvdFrom = nodeId;
+    }
+
+    /**
+     * @return Topology version when node provided cache configuration was started.
+     */
+    @Nullable public AffinityTopologyVersion receivedFromStartVersion() {
+        return rcvdFromVer;
+    }
+
+    /**
+     * @param rcvdFromVer Topology version when node provided cache configuration was started.
+     */
+    public void receivedFromStartVersion(AffinityTopologyVersion rcvdFromVer) {
+        this.rcvdFromVer = rcvdFromVer;
+    }
+
+    /**
+     * @return ID of node provided cache configuration in discovery data.
+     */
+    @Nullable public UUID receivedFrom() {
+        return rcvdFrom;
     }
 
     /** {@inheritDoc} */

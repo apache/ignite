@@ -46,13 +46,13 @@ import org.jetbrains.annotations.Nullable;
  * local deployment.
  * </strong>
  * <p>
- * Ignite provides the following {@code GridDeploymentSpi} implementations:
+ * Ignite provides following {@code GridDeploymentSpi} implementations out of the box:
  * <ul>
  * <li>{@link org.apache.ignite.spi.deployment.local.LocalDeploymentSpi}</li>
  * <li>{@ignitelink org.apache.ignite.spi.deployment.uri.UriDeploymentSpi}</li>
  * </ul>
- * <b>NOTE:</b> this SPI (i.e. methods in this interface) should never be used directly. SPIs provide
- * internal view on the subsystem and is used internally by Ignite kernal. In rare use cases when
+ * <b>NOTE:</b> SPI methods should never be used directly. SPIs provide
+ * internal view on the subsystem and is used internally by Ignite. In rare use cases when
  * access to a specific implementation of this SPI is required - an instance of this SPI can be obtained
  * via {@link org.apache.ignite.Ignite#configuration()} method to check its configuration properties or call other non-SPI
  * methods. Note again that calling methods from this interface on the obtained instance can lead

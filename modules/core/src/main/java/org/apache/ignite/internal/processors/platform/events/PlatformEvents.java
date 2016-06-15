@@ -17,23 +17,25 @@
 
 package org.apache.ignite.internal.processors.platform.events;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteEvents;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventAdapter;
-import org.apache.ignite.internal.portable.PortableRawReaderEx;
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
-import org.apache.ignite.internal.processors.platform.PlatformEventFilterListener;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.PlatformEventFilterListener;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.UUID;
 
 /**
  * Interop events.
@@ -137,7 +139,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected long processInStreamOutLong(int type, PortableRawReaderEx reader)
+    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader)
         throws IgniteCheckedException {
         switch (type) {
             case OP_RECORD_LOCAL:
@@ -168,7 +170,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "ConstantConditions", "unchecked"})
-    @Override protected void processInStreamOutStream(int type, PortableRawReaderEx reader, PortableRawWriterEx writer)
+    @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
         throws IgniteCheckedException {
         switch (type) {
             case OP_LOCAL_QUERY: {
@@ -256,7 +258,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected void processOutStream(int type, PortableRawWriterEx writer) throws IgniteCheckedException {
+    @Override protected void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_GET_ENABLED_EVENTS:
                 writeEventTypes(events.enabledEvents(), writer);
@@ -269,8 +271,8 @@ public class PlatformEvents extends PlatformAbstractTarget {
     }
 
     /** <inheritDoc /> */
-    @Override protected IgniteFuture currentFuture() throws IgniteCheckedException {
-        return events.future();
+    @Override protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {
+        return ((IgniteFutureImpl)events.future()).internalFuture();
     }
 
     /** <inheritDoc /> */
@@ -292,7 +294,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
      * @param reader Reader
      * @return Event types, or null.
      */
-    private int[] readEventTypes(PortableRawReaderEx reader) {
+    private int[] readEventTypes(BinaryRawReaderEx reader) {
         return reader.readIntArray();
     }
 
@@ -302,7 +304,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
      * @param writer Writer
      * @param types Types.
      */
-    private void writeEventTypes(int[] types, PortableRawWriterEx writer) {
+    private void writeEventTypes(int[] types, BinaryRawWriterEx writer) {
         if (types == null) {
             writer.writeIntArray(null);
 
@@ -349,7 +351,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
         }
 
         /** <inheritDoc /> */
-        @Override public void write(PortableRawWriterEx writer, Object obj, Throwable err) {
+        @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
             platformCtx.writeEvent(writer, (EventAdapter)obj);
         }
 
@@ -379,7 +381,7 @@ public class PlatformEvents extends PlatformAbstractTarget {
 
         /** <inheritDoc /> */
         @SuppressWarnings("unchecked")
-        @Override public void write(PortableRawWriterEx writer, Object obj, Throwable err) {
+        @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
             Collection<EventAdapter> events = (Collection<EventAdapter>)obj;
 
             writer.writeInt(events.size());

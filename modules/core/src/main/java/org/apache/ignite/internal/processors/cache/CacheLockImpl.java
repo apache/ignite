@@ -69,6 +69,8 @@ class CacheLockImpl<K, V> implements Lock {
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
+            checkTx();
+
             delegate.lockAll(keys, 0);
 
             incrementLockCounter();
@@ -102,6 +104,8 @@ class CacheLockImpl<K, V> implements Lock {
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
+            checkTx();
+
             boolean res = delegate.lockAll(keys, -1);
 
             if (res)
@@ -128,6 +132,8 @@ class CacheLockImpl<K, V> implements Lock {
         CacheOperationContext prev = gate.enter(opCtx);
 
         try {
+            checkTx();
+
             IgniteInternalFuture<Boolean> fut = delegate.lockAllAsync(keys, unit.toMillis(time));
 
             try {
@@ -196,6 +202,16 @@ class CacheLockImpl<K, V> implements Lock {
     /** {@inheritDoc} */
     @NotNull @Override public Condition newCondition() {
         throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Verifies there is no ongoing user transaction.
+     *
+     * @throws CacheException
+     */
+    private void checkTx() throws CacheException {
+        if (delegate.context().tm().inUserTx())
+            throw new CacheException("Explicit lock can't be acquired within a transaction.");
     }
 
     /** {@inheritDoc} */

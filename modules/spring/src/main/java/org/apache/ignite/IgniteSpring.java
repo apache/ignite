@@ -87,7 +87,7 @@ public class IgniteSpring {
      *      been started or Spring XML configuration file is invalid.
      */
     public static Ignite start(String springCfgPath, @Nullable ApplicationContext springCtx) throws IgniteCheckedException {
-        return IgnitionEx.start(springCfgPath, null, new GridSpringResourceContextImpl(springCtx));
+        return IgnitionEx.start(springCfgPath, null, new GridSpringResourceContextImpl(springCtx), null);
     }
 
     /**
@@ -111,6 +111,6 @@ public class IgniteSpring {
      *      been started or Spring XML configuration file is invalid.
      */
     public static Ignite start(URL springCfgUrl, @Nullable ApplicationContext springCtx) throws IgniteCheckedException {
-        return IgnitionEx.start(springCfgUrl, null, new GridSpringResourceContextImpl(springCtx));
+        return IgnitionEx.start(springCfgUrl, null, new GridSpringResourceContextImpl(springCtx), null);
     }
 }

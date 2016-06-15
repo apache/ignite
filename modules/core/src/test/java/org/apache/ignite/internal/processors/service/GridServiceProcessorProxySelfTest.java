@@ -29,7 +29,6 @@ import org.apache.ignite.services.ServiceContext;
  * Service proxy test.
  */
 public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstractSelfTest {
-
     /** {@inheritDoc} */
     @Override protected int nodeCount() {
         return 4;
@@ -216,7 +215,7 @@ public class GridServiceProcessorProxySelfTest extends GridServiceProcessorAbstr
             MapService<Integer, String> svc =  grid(i).services().serviceProxy(name, MapService.class, false);
 
             // Make sure service is a local instance.
-            assertTrue(svc instanceof Service);
+            assertTrue("Invalid service instance [srv=" + svc + ", node=" + i + ']', svc instanceof Service);
 
             svc.put(i, Integer.toString(i));
         }

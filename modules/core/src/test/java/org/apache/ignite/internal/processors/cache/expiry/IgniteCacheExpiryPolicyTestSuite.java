@@ -19,6 +19,8 @@ package org.apache.ignite.internal.processors.cache.expiry;
 
 import junit.framework.TestSuite;
 import org.apache.ignite.cache.store.IgniteCacheExpiryStoreLoadSelfTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheEntryListenerExpiredEventsTest;
+import org.apache.ignite.internal.processors.cache.IgniteCacheExpireAndUpdateConsistencyTest;
 
 /**
  *
@@ -43,6 +45,19 @@ public class IgniteCacheExpiryPolicyTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheTxWithStoreExpiryPolicyTest.class);
         suite.addTestSuite(IgniteCacheTxReplicatedExpiryPolicyTest.class);
 
+        // Offheap tests.
+        suite.addTestSuite(IgniteCacheAtomicLocalOffheapExpiryPolicyTest.class);
+        suite.addTestSuite(IgniteCacheAtomicOffheapExpiryPolicyTest.class);
+        suite.addTestSuite(IgniteCacheAtomicWithStoreOffheapExpiryPolicyTest.class);
+        suite.addTestSuite(IgniteCacheAtomicPrimaryWriteOrderOffheapExpiryPolicyTest.class);
+        suite.addTestSuite(IgniteCacheAtomicPrimaryWriteOrderWithStoreOffheapExpiryPolicyTest.class);
+        suite.addTestSuite(IgniteCacheAtomicReplicatedOffheapExpiryPolicyTest.class);
+
+        suite.addTestSuite(IgniteCacheTxLocalOffheapExpiryPolicyTest.class);
+        suite.addTestSuite(IgniteCacheTxOffheapExpiryPolicyTest.class);
+        suite.addTestSuite(IgniteCacheTxWithStoreOffheapExpiryPolicyTest.class);
+        suite.addTestSuite(IgniteCacheTxReplicatedOffheapExpiryPolicyTest.class);
+
         suite.addTestSuite(IgniteCacheAtomicExpiryPolicyWithStoreTest.class);
         suite.addTestSuite(IgniteCacheTxExpiryPolicyWithStoreTest.class);
 
@@ -51,6 +66,10 @@ public class IgniteCacheExpiryPolicyTestSuite extends TestSuite {
         suite.addTestSuite(IgniteCacheTtlCleanupSelfTest.class);
 
         suite.addTestSuite(IgniteCacheClientNearCacheExpiryTest.class);
+
+        suite.addTestSuite(IgniteCacheEntryListenerExpiredEventsTest.class);
+
+        suite.addTestSuite(IgniteCacheExpireAndUpdateConsistencyTest.class);
 
         return suite;
     }

@@ -25,6 +25,7 @@ import org.apache.ignite.internal.IgniteFutureCancelledCheckedException;
 import org.apache.ignite.internal.IgniteFutureTimeoutCheckedException;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -72,6 +73,7 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
     private boolean ignoreInterrupts;
 
     /** */
+    @GridToStringExclude
     private IgniteInClosure<? super IgniteInternalFuture<R>> lsnr;
 
     /** {@inheritDoc} */
@@ -211,9 +213,8 @@ public class GridFutureAdapter<R> extends AbstractQueuedSynchronizer implements 
                         lsnr = lsnr0;
                     else if (lsnr instanceof ArrayListener)
                         ((ArrayListener)lsnr).add(lsnr0);
-                    else {
+                    else
                         lsnr = (IgniteInClosure)new ArrayListener<IgniteInternalFuture>(lsnr, lsnr0);
-                    }
 
                     return;
                 }

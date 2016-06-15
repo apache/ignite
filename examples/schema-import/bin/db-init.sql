@@ -17,7 +17,8 @@
 
 -- Script of database initialization for Schema Import Demo.
 drop table PERSON;
-create table PERSON(id integer not null, first_name varchar(50), last_name varchar(50), salary double not null, PRIMARY KEY(id));
+
+create table PERSON(id integer not null PRIMARY KEY, first_name varchar(50), last_name varchar(50), salary double not null);
 
 insert into PERSON(id, first_name, last_name, salary) values(1, 'Johannes', 'Kepler', 1000);
 insert into PERSON(id, first_name, last_name, salary) values(2, 'Galileo', 'Galilei', 2000);

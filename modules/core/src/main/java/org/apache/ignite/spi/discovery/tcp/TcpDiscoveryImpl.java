@@ -5,9 +5,9 @@
  * The ASF licenses this file to You under the Apache License, Version 2.0
  * (the "License"); you may not use this file except in compliance with
  * the License.  You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,6 +37,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.IgniteSpiThread;
 import org.apache.ignite.spi.discovery.DiscoverySpiCustomMessage;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -99,9 +100,10 @@ abstract class TcpDiscoveryImpl {
     }
 
     /**
+     * @param discoMsg Discovery message.
      * @param msg Message.
      */
-    protected void debugLog(String msg) {
+    protected void debugLog(@Nullable TcpDiscoveryAbstractMessage discoMsg, String msg) {
         assert debugMode;
 
         String msg0 = new SimpleDateFormat("[HH:mm:ss,SSS]").format(new Date(System.currentTimeMillis())) +
@@ -258,6 +260,9 @@ abstract class TcpDiscoveryImpl {
     @SuppressWarnings("BusyWait")
     protected final void registerLocalNodeAddress() throws IgniteSpiException {
         // Make sure address registration succeeded.
+        // ... but limit it if join timeout is configured.
+        long start = spi.getJoinTimeout() > 0 ? U.currentTimeMillis() : 0;
+
         while (true) {
             try {
                 spi.ipFinder.initializeLocalAddresses(locNode.socketAddresses());
@@ -273,6 +278,13 @@ abstract class TcpDiscoveryImpl {
                 LT.error(log, e, "Failed to register local node address in IP finder on start " +
                     "(retrying every 2000 ms).");
             }
+
+            if (start > 0 && (U.currentTimeMillis() - start) > spi.getJoinTimeout())
+                throw new IgniteSpiException(
+                    "Failed to register local addresses with IP finder within join timeout " +
+                        "(make sure IP finder configuration is correct, and operating system firewalls are disabled " +
+                        "on all host machines, or consider increasing 'joinTimeout' configuration property) " +
+                        "[joinTimeout=" + spi.getJoinTimeout() + ']');
 
             try {
                 U.sleep(2000);

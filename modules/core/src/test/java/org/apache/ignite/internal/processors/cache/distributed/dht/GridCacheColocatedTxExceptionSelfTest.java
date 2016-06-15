@@ -28,11 +28,6 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  */
 public class GridCacheColocatedTxExceptionSelfTest extends IgniteTxExceptionAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-257");
-    }
-
-    /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return PARTITIONED;
     }

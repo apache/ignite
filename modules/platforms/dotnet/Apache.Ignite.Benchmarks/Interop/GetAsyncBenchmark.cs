@@ -41,8 +41,6 @@ namespace Apache.Ignite.Benchmarks.Interop
 
             for (int i = 0; i < Emps.Length; i++)
                 _cache.Put(i, Emps[i]);
-
-            _cache = _cache.WithAsync();
         }
 
         /** <inheritDoc /> */
@@ -58,9 +56,7 @@ namespace Apache.Ignite.Benchmarks.Interop
         {
             int idx = BenchmarkUtils.GetRandomInt(Dataset);
 
-            _cache.Get(idx);
-
-            _cache.GetFuture<Employee>().ToTask().Wait();
+            _cache.GetAsync(idx).Wait();
         }
     }
 }

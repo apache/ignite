@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache.distributed.dht;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -26,7 +27,7 @@ import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionFullMap;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
+import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionsExchangeFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.jetbrains.annotations.Nullable;
@@ -51,6 +52,8 @@ public interface GridDhtPartitionTopology {
      *
      * @param exchId Exchange ID.
      * @param exchFut Exchange future.
+     * @param updateSeq Update sequence.
+     * @param stopping Stopping flag.
      * @throws IgniteInterruptedCheckedException If interrupted.
      */
     public void updateTopologyVersion(
@@ -84,9 +87,17 @@ public interface GridDhtPartitionTopology {
      * Pre-initializes this topology.
      *
      * @param exchFut Exchange future.
+     * @param affReady Affinity ready flag.
      * @throws IgniteCheckedException If failed.
      */
-    public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut) throws IgniteCheckedException;
+    public void beforeExchange(GridDhtPartitionsExchangeFuture exchFut, boolean affReady)
+        throws IgniteCheckedException;
+
+    /**
+     * @param exchFut Exchange future.
+     * @throws IgniteInterruptedCheckedException If interrupted.
+     */
+    public void initPartitions(GridDhtPartitionsExchangeFuture exchFut) throws IgniteInterruptedCheckedException;
 
     /**
      * Post-initializes this topology.
@@ -109,6 +120,11 @@ public interface GridDhtPartitionTopology {
         throws GridDhtInvalidPartitionException;
 
     /**
+     * @param parts Partitions to release (should be reserved before).
+     */
+    public void releasePartitions(int... parts);
+
+    /**
      * @param key Cache key.
      * @param create If {@code true}, then partition will be created if it's not there.
      * @return Local partition.
@@ -127,12 +143,12 @@ public interface GridDhtPartitionTopology {
      *
      * @return All current local partitions.
      */
-    public Collection<GridDhtLocalPartition> currentLocalPartitions();
+    public Iterable<GridDhtLocalPartition> currentLocalPartitions();
 
     /**
      * @return Local IDs.
      */
-    public GridDhtPartitionMap localPartitionMap();
+    public GridDhtPartitionMap2 localPartitionMap();
 
     /**
      * @param nodeId Node ID.
@@ -151,7 +167,7 @@ public interface GridDhtPartitionTopology {
      * @param topVer Topology version.
      * @return Collection of all nodes responsible for this partition with primary node being first.
      */
-    public Collection<ClusterNode> nodes(int p, AffinityTopologyVersion topVer);
+    public List<ClusterNode> nodes(int p, AffinityTopologyVersion topVer);
 
     /**
      * @param p Partition ID.
@@ -179,13 +195,6 @@ public interface GridDhtPartitionTopology {
     public GridDhtPartitionFullMap partitionMap(boolean onlyActive);
 
     /**
-     * @param topVer Topology version.
-     * @param e Entry added to cache.
-     * @return Local partition.
-     */
-    public GridDhtLocalPartition onAdded(AffinityTopologyVersion topVer, GridDhtCacheEntry e);
-
-    /**
      * @param e Entry removed from cache.
      */
     public void onRemoved(GridDhtCacheEntry e);
@@ -193,17 +202,27 @@ public interface GridDhtPartitionTopology {
     /**
      * @param exchId Exchange ID.
      * @param partMap Update partition map.
+     * @param cntrMap Partition update counters.
      * @return Local partition map if there were evictions or {@code null} otherwise.
      */
-    public GridDhtPartitionMap update(@Nullable GridDhtPartitionExchangeId exchId, GridDhtPartitionFullMap partMap);
+    public GridDhtPartitionMap2 update(@Nullable GridDhtPartitionExchangeId exchId,
+        GridDhtPartitionFullMap partMap,
+        @Nullable Map<Integer, Long> cntrMap);
 
     /**
      * @param exchId Exchange ID.
      * @param parts Partitions.
+     * @param cntrMap Partition update counters.
      * @return Local partition map if there were evictions or {@code null} otherwise.
      */
-    @Nullable public GridDhtPartitionMap update(@Nullable GridDhtPartitionExchangeId exchId,
-        GridDhtPartitionMap parts);
+    @Nullable public GridDhtPartitionMap2 update(@Nullable GridDhtPartitionExchangeId exchId,
+        GridDhtPartitionMap2 parts,
+        @Nullable Map<Integer, Long> cntrMap);
+
+    /**
+     * @return Partition update counters.
+     */
+    public Map<Integer, Long> updateCounters();
 
     /**
      * @param part Partition to own.
@@ -213,6 +232,7 @@ public interface GridDhtPartitionTopology {
 
     /**
      * @param part Evicted partition.
+     * @param updateSeq Update sequence increment flag.
      */
     public void onEvicted(GridDhtLocalPartition part, boolean updateSeq);
 
@@ -220,7 +240,7 @@ public interface GridDhtPartitionTopology {
      * @param nodeId Node to get partitions for.
      * @return Partitions for node.
      */
-    @Nullable public GridDhtPartitionMap partitions(UUID nodeId);
+    @Nullable public GridDhtPartitionMap2 partitions(UUID nodeId);
 
     /**
      * Prints memory stats.
@@ -228,4 +248,10 @@ public interface GridDhtPartitionTopology {
      * @param threshold Threshold for number of entries.
      */
     public void printMemoryStats(int threshold);
+
+    /**
+     * @param topVer Topology version.
+     * @return {@code True} if rebalance process finished.
+     */
+    public boolean rebalanceFinished(AffinityTopologyVersion topVer);
 }

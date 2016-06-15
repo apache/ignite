@@ -18,18 +18,27 @@
 package org.apache.ignite.internal.processors.cache.distributed.replicated;
 
 import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteTxPreloadAbstractTest;
 
 import static org.apache.ignite.cache.CacheMode.REPLICATED;
 
 /**
  * Tests cache transaction during preloading.
- *
- * TODO: IGNITE-808.
  */
 public class GridReplicatedTxPreloadTest extends IgniteTxPreloadAbstractTest {
     /** {@inheritDoc} */
     @Override protected CacheMode cacheMode() {
         return REPLICATED;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+        return super.getConfiguration(gridName).setMarshaller(null);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void testLocalTxPreloadingOptimistic() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-1755");
     }
 }

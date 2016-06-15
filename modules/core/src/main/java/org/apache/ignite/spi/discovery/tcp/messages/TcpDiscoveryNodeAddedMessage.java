@@ -48,9 +48,16 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
     /** Discarded message ID. */
     private IgniteUuid discardMsgId;
 
+    /** Discarded message ID. */
+    private IgniteUuid discardCustomMsgId;
+
     /** Current topology. Initialized by coordinator. */
     @GridToStringInclude
     private Collection<TcpDiscoveryNode> top;
+
+    /** */
+    @GridToStringInclude
+    private transient Collection<TcpDiscoveryNode> clientTop;
 
     /** Topology snapshots history. */
     private Map<Long, Collection<ClusterNode>> topHist;
@@ -90,6 +97,24 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
     }
 
     /**
+     * @param msg Message.
+     */
+    public TcpDiscoveryNodeAddedMessage(TcpDiscoveryNodeAddedMessage msg) {
+        super(msg);
+
+        this.node = msg.node;
+        this.msgs = msg.msgs;
+        this.discardMsgId = msg.discardMsgId;
+        this.discardCustomMsgId = msg.discardCustomMsgId;
+        this.top = msg.top;
+        this.clientTop = msg.clientTop;
+        this.topHist = msg.topHist;
+        this.newNodeDiscoData = msg.newNodeDiscoData;
+        this.oldNodesDiscoData = msg.oldNodesDiscoData;
+        this.gridStartTime = msg.gridStartTime;
+    }
+
+    /**
      * Gets newly added node.
      *
      * @return New node.
@@ -117,14 +142,29 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
     }
 
     /**
+     * Gets discarded custom message ID.
+     *
+     * @return Discarded message ID.
+     */
+    @Nullable public IgniteUuid discardedCustomMessageId() {
+        return discardCustomMsgId;
+    }
+
+    /**
      * Sets pending messages to send to new node.
      *
      * @param msgs Pending messages to send to new node.
      * @param discardMsgId Discarded message ID.
+     * @param discardCustomMsgId Discarded custom message ID.
      */
-    public void messages(@Nullable Collection<TcpDiscoveryAbstractMessage> msgs, @Nullable IgniteUuid discardMsgId) {
+    public void messages(
+        @Nullable Collection<TcpDiscoveryAbstractMessage> msgs,
+        @Nullable IgniteUuid discardMsgId,
+        @Nullable IgniteUuid discardCustomMsgId
+    ) {
         this.msgs = msgs;
         this.discardMsgId = discardMsgId;
+        this.discardCustomMsgId = discardCustomMsgId;
     }
 
     /**
@@ -143,6 +183,22 @@ public class TcpDiscoveryNodeAddedMessage extends TcpDiscoveryAbstractMessage {
      */
     public void topology(@Nullable Collection<TcpDiscoveryNode> top) {
         this.top = top;
+    }
+
+    /**
+     * @param top Topology at the moment when client joined.
+     */
+    public void clientTopology(Collection<TcpDiscoveryNode> top) {
+        assert top != null && !top.isEmpty() : top;
+
+        this.clientTop = top;
+    }
+
+    /**
+     * @return Topology at the moment when client joined.
+     */
+    public Collection<TcpDiscoveryNode> clientTopology() {
+        return clientTop;
     }
 
     /**

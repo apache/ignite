@@ -237,9 +237,7 @@ public class IgfsFragmentizerSelfTest extends IgfsFragmentizerAbstractSelfTest {
             U.sleep(200);
         }
 
-        igfs.delete(new IgfsPath("/"), true);
-
-        igfs.awaitDeletesAsync().get();
+        igfs.format();
 
         GridTestUtils.retryAssert(log, 50, 100, new CA() {
             @Override public void apply() {

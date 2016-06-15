@@ -17,20 +17,20 @@
 
 package org.apache.ignite.internal.managers.discovery;
 
-import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.DeploymentMode;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteNodeAttributes;
+import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.marshaller.optimized.OptimizedMarshaller;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.configuration.DeploymentMode.CONTINUOUS;
 import static org.apache.ignite.configuration.DeploymentMode.SHARED;
 
@@ -50,12 +50,18 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     /** */
     private static boolean p2pEnabled;
 
+    /** */
+    private static boolean binaryMarshallerEnabled;
+
     /** {@inheritDoc} */
     @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
         IgniteConfiguration cfg = super.getConfiguration(gridName);
 
         if (gridName.equals(getTestGridName(1)))
             cfg.setClientMode(true);
+
+        if (binaryMarshallerEnabled)
+            cfg.setMarshaller(new BinaryMarshaller());
 
         cfg.setIncludeProperties(PREFER_IPV4);
         cfg.setDeploymentMode(mode);
@@ -123,6 +129,167 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    public void testUseDefaultSuid() throws Exception {
+        try {
+            doTestUseDefaultSuid(Boolean.TRUE.toString(), Boolean.FALSE.toString(), true);
+            doTestUseDefaultSuid(Boolean.FALSE.toString(), Boolean.TRUE.toString(), true);
+
+            doTestUseDefaultSuid(Boolean.TRUE.toString(), Boolean.TRUE.toString(), false);
+            doTestUseDefaultSuid(Boolean.FALSE.toString(), Boolean.FALSE.toString(), false);
+        }
+        finally {
+            System.setProperty(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID,
+                String.valueOf(OptimizedMarshaller.USE_DFLT_SUID));
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestUseDefaultSuid(String first, String second, boolean fail) throws Exception {
+        try {
+            System.setProperty(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, first);
+
+            startGrid(0);
+
+            System.setProperty(IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID, second);
+
+            try {
+                startGrid(1);
+
+                if (fail)
+                    fail("Node should not join");
+            }
+            catch (Exception e) {
+                if (!fail)
+                    fail("Node should join");
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    public void testUseStringSerVer2() throws Exception {
+        String old = System.getProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);
+
+        binaryMarshallerEnabled = true;
+
+        try {
+            doTestUseStrSerVer2(Boolean.TRUE.toString(), Boolean.FALSE.toString(), true);
+            doTestUseStrSerVer2(Boolean.FALSE.toString(), Boolean.TRUE.toString(), true);
+
+            doTestUseStrSerVer2(Boolean.TRUE.toString(), Boolean.TRUE.toString(), false);
+            doTestUseStrSerVer2(Boolean.FALSE.toString(), Boolean.FALSE.toString(), false);
+        }
+        finally {
+            if (old != null)
+                System.setProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, old);
+            else
+                System.clearProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);
+
+            binaryMarshallerEnabled = false;
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void doTestUseStrSerVer2(String first, String second, boolean fail) throws Exception {
+        try {
+            if (first != null)
+                System.setProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, first);
+            else
+                System.clearProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);
+
+            startGrid(0);
+
+            if (second != null)
+                System.setProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, second);
+            else
+                System.clearProperty(IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2);
+
+            try {
+                startGrid(1);
+
+                if (fail)
+                    fail("Node should not join");
+            }
+            catch (Exception e) {
+                if (!fail)
+                    fail("Node should join");
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testServiceCompatibilityEnabled() throws Exception {
+        String backup = System.getProperty(IGNITE_SERVICES_COMPATIBILITY_MODE);
+
+        try {
+            doTestServiceCompatibilityEnabled(true, null, true);
+            doTestServiceCompatibilityEnabled(false, null, true);
+            doTestServiceCompatibilityEnabled(null, false, true);
+            doTestServiceCompatibilityEnabled(true, false, true);
+            doTestServiceCompatibilityEnabled(null, true, true);
+            doTestServiceCompatibilityEnabled(false, true, true);
+
+            doTestServiceCompatibilityEnabled(true, true, false);
+            doTestServiceCompatibilityEnabled(false, false, false);
+            doTestServiceCompatibilityEnabled(null, null, false);
+        }
+        finally {
+            if (backup != null)
+                System.setProperty(IGNITE_SERVICES_COMPATIBILITY_MODE, backup);
+            else
+                System.clearProperty(IGNITE_SERVICES_COMPATIBILITY_MODE);
+        }
+    }
+
+    /**
+     * @param first Service compatibility enabled flag for first node.
+     * @param second Service compatibility enabled flag for second node.
+     * @param fail Fail flag.
+     * @throws Exception If failed.
+     */
+    private void doTestServiceCompatibilityEnabled(Object first, Object second, boolean fail) throws Exception {
+        try {
+            if (first != null)
+                System.setProperty(IGNITE_SERVICES_COMPATIBILITY_MODE, String.valueOf(first));
+            else
+                System.clearProperty(IGNITE_SERVICES_COMPATIBILITY_MODE);
+
+            startGrid(0);
+
+            if (second != null)
+                System.setProperty(IGNITE_SERVICES_COMPATIBILITY_MODE, String.valueOf(second));
+            else
+                System.clearProperty(IGNITE_SERVICES_COMPATIBILITY_MODE);
+
+            try {
+                startGrid(1);
+
+                if (fail)
+                    fail("Node must not join");
+            }
+            catch (Exception e) {
+                if (!fail)
+                    fail("Node must join: " + e.getMessage());
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testDifferentDeploymentModes() throws Exception {
         startGrid(0);
 
@@ -156,51 +323,6 @@ public abstract class GridDiscoveryManagerAttributesSelfTest extends GridCommonA
             if (!e.getCause().getMessage().startsWith("Remote node has peer class loading enabled flag different from"))
                 throw e;
         }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testDifferentPortableProtocolVersions() throws Exception {
-        startGridWithPortableProtocolVer("VER_99_99_99");
-
-        try {
-            startGrid(1);
-
-            fail();
-        }
-        catch (IgniteCheckedException e) {
-            if (!e.getCause().getMessage().startsWith("Remote node has portable protocol version different from local"))
-                throw e;
-        }
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testNullPortableProtocolVersion() throws Exception {
-        startGridWithPortableProtocolVer(null);
-
-        // Must not fail in order to preserve backward compatibility with the nodes that don't have this property yet.
-        startGrid(1);
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    private void startGridWithPortableProtocolVer(String ver) throws Exception {
-        Ignite ignite = startGrid(0);
-
-        ClusterNode clusterNode = ignite.cluster().localNode();
-
-        Field f = clusterNode.getClass().getDeclaredField("attrs");
-        f.setAccessible(true);
-
-        Map<String, Object> attrs = new HashMap<>((Map<String, Object>)f.get(clusterNode));
-
-        attrs.put(IgniteNodeAttributes.ATTR_PORTABLE_PROTO_VER, ver);
-
-        f.set(clusterNode, attrs);
     }
 
     /**

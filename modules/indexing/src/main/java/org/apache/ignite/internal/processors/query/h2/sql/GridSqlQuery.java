@@ -163,6 +163,9 @@ public abstract class GridSqlQuery {
                     if (expr == null) // For plain select should never be null, for union H2 itself can't parse query.
                         throw new IllegalStateException("Failed to build query: " + buff.toString());
 
+                    if (expr instanceof GridSqlAlias)
+                        expr = expr.child();
+
                     buff.append('=').append(StringUtils.unEnclose(expr.getSQL()));
                 }
 

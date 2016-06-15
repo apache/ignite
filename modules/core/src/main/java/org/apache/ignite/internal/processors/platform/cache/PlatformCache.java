@@ -28,28 +28,35 @@ import org.apache.ignite.cache.query.ScanQuery;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.cache.query.SqlQuery;
 import org.apache.ignite.cache.query.TextQuery;
-import org.apache.ignite.internal.portable.PortableRawReaderEx;
-import org.apache.ignite.internal.portable.PortableRawWriterEx;
+import org.apache.ignite.configuration.*;
+import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.cache.CacheOperationContext;
 import org.apache.ignite.internal.processors.cache.CachePartialUpdateCheckedException;
 import org.apache.ignite.internal.processors.cache.IgniteCacheProxy;
 import org.apache.ignite.internal.processors.cache.query.QueryCursorEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.PlatformNativeException;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformContinuousQuery;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformFieldsQueryCursor;
 import org.apache.ignite.internal.processors.platform.cache.query.PlatformQueryCursor;
-import org.apache.ignite.internal.processors.platform.PlatformNativeException;
+import org.apache.ignite.internal.processors.platform.utils.PlatformConfigurationUtils;
 import org.apache.ignite.internal.processors.platform.utils.PlatformFutureUtils;
+import org.apache.ignite.internal.processors.platform.utils.PlatformListenable;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.internal.util.GridConcurrentFactory;
+import org.apache.ignite.internal.util.future.IgniteFutureImpl;
 import org.apache.ignite.internal.util.typedef.C1;
+import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteFuture;
 import org.jetbrains.annotations.Nullable;
 
 import javax.cache.Cache;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ExpiryPolicy;
+import javax.cache.integration.CompletionListener;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.EntryProcessorResult;
 import java.util.Iterator;
@@ -176,11 +183,17 @@ public class PlatformCache extends PlatformAbstractTarget {
     /** */
     public static final int OP_REPLACE_3 = 38;
 
+    /** */
+    public static final int OP_GET_CONFIG = 39;
+
+    /** */
+    public static final int OP_LOAD_ALL = 40;
+
     /** Underlying JCache. */
     private final IgniteCacheProxy cache;
 
-    /** Whether this cache is created with "keepPortable" flag on the other side. */
-    private final boolean keepPortable;
+    /** Whether this cache is created with "keepBinary" flag on the other side. */
+    private final boolean keepBinary;
 
     /** */
     private static final GetAllWriter WRITER_GET_ALL = new GetAllWriter();
@@ -202,13 +215,13 @@ public class PlatformCache extends PlatformAbstractTarget {
      *
      * @param platformCtx Context.
      * @param cache Underlying cache.
-     * @param keepPortable Keep portable flag.
+     * @param keepBinary Keep binary flag.
      */
-    public PlatformCache(PlatformContext platformCtx, IgniteCache cache, boolean keepPortable) {
+    public PlatformCache(PlatformContext platformCtx, IgniteCache cache, boolean keepBinary) {
         super(platformCtx);
 
         this.cache = (IgniteCacheProxy)cache;
-        this.keepPortable = keepPortable;
+        this.keepBinary = keepBinary;
     }
 
     /**
@@ -220,19 +233,19 @@ public class PlatformCache extends PlatformAbstractTarget {
         if (cache.delegate().skipStore())
             return this;
 
-        return new PlatformCache(platformCtx, cache.withSkipStore(), keepPortable);
+        return new PlatformCache(platformCtx, cache.withSkipStore(), keepBinary);
     }
 
     /**
-     * Gets cache with "keep portable" flag.
+     * Gets cache with "keep binary" flag.
      *
-     * @return Cache with "keep portable" flag set.
+     * @return Cache with "keep binary" flag set.
      */
-    public PlatformCache withKeepPortable() {
-        if (keepPortable)
+    public PlatformCache withKeepBinary() {
+        if (keepBinary)
             return this;
 
-        return new PlatformCache(platformCtx, cache.withSkipStore(), true);
+        return new PlatformCache(platformCtx, cache.withKeepBinary(), true);
     }
 
     /**
@@ -246,7 +259,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     public PlatformCache withExpiryPolicy(final long create, final long update, final long access) {
         IgniteCache cache0 = cache.withExpiryPolicy(new InteropExpiryPolicy(create, update, access));
 
-        return new PlatformCache(platformCtx, cache0, keepPortable);
+        return new PlatformCache(platformCtx, cache0, keepBinary);
     }
 
     /**
@@ -258,7 +271,7 @@ public class PlatformCache extends PlatformAbstractTarget {
         if (cache.isAsync())
             return this;
 
-        return new PlatformCache(platformCtx, (IgniteCache)cache.withAsync(), keepPortable);
+        return new PlatformCache(platformCtx, (IgniteCache)cache.withAsync(), keepBinary);
     }
 
     /**
@@ -272,11 +285,11 @@ public class PlatformCache extends PlatformAbstractTarget {
         if (opCtx != null && opCtx.noRetries())
             return this;
 
-        return new PlatformCache(platformCtx, cache.withNoRetries(), keepPortable);
+        return new PlatformCache(platformCtx, cache.withNoRetries(), keepBinary);
     }
 
     /** {@inheritDoc} */
-    @Override protected long processInStreamOutLong(int type, PortableRawReaderEx reader) throws IgniteCheckedException {
+    @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
         switch (type) {
             case OP_PUT:
                 cache.put(reader.readObjectDetached(), reader.readObjectDetached());
@@ -362,6 +375,19 @@ public class PlatformCache extends PlatformAbstractTarget {
             case OP_IS_LOCAL_LOCKED:
                 return cache.isLocalLocked(reader.readObjectDetached(), reader.readBoolean()) ? TRUE : FALSE;
 
+            case OP_LOAD_ALL: {
+                long futId = reader.readLong();
+                boolean replaceExisting = reader.readBoolean();
+
+                CompletionListenable fut = new CompletionListenable();
+
+                PlatformFutureUtils.listen(platformCtx, fut, futId, PlatformFutureUtils.TYP_OBJ, null, this);
+
+                cache.loadAll(PlatformUtils.readSet(reader), replaceExisting, fut);
+
+                return TRUE;
+            }
+
             default:
                 return super.processInStreamOutLong(type, reader);
         }
@@ -372,13 +398,13 @@ public class PlatformCache extends PlatformAbstractTarget {
     /**
      * Loads cache via localLoadCache or loadCache.
      */
-    private void loadCache0(PortableRawReaderEx reader, boolean loc) throws IgniteCheckedException {
+    private void loadCache0(BinaryRawReaderEx reader, boolean loc) {
         PlatformCacheEntryFilter filter = null;
 
         Object pred = reader.readObjectDetached();
 
         if (pred != null)
-            filter = platformCtx.createCacheEntryFilter(pred, reader.readLong());
+            filter = platformCtx.createCacheEntryFilter(pred, 0);
 
         Object[] args = reader.readObjectArray();
 
@@ -389,7 +415,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected Object processInStreamOutObject(int type, PortableRawReaderEx reader)
+    @Override protected Object processInStreamOutObject(int type, BinaryRawReaderEx reader)
         throws IgniteCheckedException {
         switch (type) {
             case OP_QRY_SQL:
@@ -432,7 +458,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @param reader Reader.
      * @return Arguments.
      */
-    @Nullable private Object[] readQueryArgs(PortableRawReaderEx reader) {
+    @Nullable private Object[] readQueryArgs(BinaryRawReaderEx reader) {
         int cnt = reader.readInt();
 
         if (cnt > 0) {
@@ -448,7 +474,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected void processOutStream(int type, PortableRawWriterEx writer) throws IgniteCheckedException {
+    @Override protected void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
         switch (type) {
             case OP_GET_NAME:
                 writer.writeObject(cache.getName());
@@ -456,7 +482,7 @@ public class PlatformCache extends PlatformAbstractTarget {
                 break;
 
             case OP_METRICS:
-                CacheMetrics metrics = cache.metrics();
+                CacheMetrics metrics = cache.localMetrics();
 
                 writer.writeLong(metrics.getCacheGets());
                 writer.writeLong(metrics.getCachePuts());
@@ -514,6 +540,14 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 break;
 
+            case OP_GET_CONFIG:
+                CacheConfiguration ccfg = ((IgniteCache<Object, Object>)cache).
+                        getConfiguration(CacheConfiguration.class);
+
+                PlatformConfigurationUtils.writeCacheConfiguration(writer, ccfg);
+
+                break;
+
             default:
                 super.processOutStream(type, writer);
         }
@@ -521,7 +555,7 @@ public class PlatformCache extends PlatformAbstractTarget {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional", "ConstantConditions"})
-    @Override protected void processInStreamOutStream(int type, PortableRawReaderEx reader, PortableRawWriterEx writer)
+    @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader, BinaryRawWriterEx writer)
         throws IgniteCheckedException {
         switch (type) {
             case OP_GET: {
@@ -623,10 +657,10 @@ public class PlatformCache extends PlatformAbstractTarget {
     @Override public Exception convertException(Exception e) {
         if (e instanceof CachePartialUpdateException)
             return new PlatformCachePartialUpdateException((CachePartialUpdateCheckedException)e.getCause(),
-                platformCtx, keepPortable);
+                platformCtx, keepBinary);
 
         if (e instanceof CachePartialUpdateCheckedException)
-            return new PlatformCachePartialUpdateException((CachePartialUpdateCheckedException)e, platformCtx, keepPortable);
+            return new PlatformCachePartialUpdateException((CachePartialUpdateCheckedException)e, platformCtx, keepBinary);
 
         if (e.getCause() instanceof EntryProcessorException)
             return (EntryProcessorException) e.getCause();
@@ -640,7 +674,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @param writer Writer.
      * @param results Results.
      */
-    private static void writeInvokeAllResult(PortableRawWriterEx writer, Map<Object, EntryProcessorResult> results) {
+    private static void writeInvokeAllResult(BinaryRawWriterEx writer, Map<Object, EntryProcessorResult> results) {
         if (results == null) {
             writer.writeInt(-1);
 
@@ -674,7 +708,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      * @param writer Writer.
      * @param ex Exception.
      */
-    private static void writeError(PortableRawWriterEx writer, Exception ex) {
+    private static void writeError(BinaryRawWriterEx writer, Exception ex) {
         if (ex.getCause() instanceof PlatformNativeException)
             writer.writeObjectDetached(((PlatformNativeException)ex.getCause()).cause());
         else {
@@ -684,8 +718,8 @@ public class PlatformCache extends PlatformAbstractTarget {
     }
 
     /** <inheritDoc /> */
-    @Override protected IgniteFuture currentFuture() throws IgniteCheckedException {
-        return cache.future();
+    @Override protected IgniteInternalFuture currentFuture() throws IgniteCheckedException {
+        return ((IgniteFutureImpl)cache.future()).internalFuture();
     }
 
     /** <inheritDoc /> */
@@ -703,8 +737,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     }
 
     /**
-     * Clears the contents of the cache, without notifying listeners or
-     * {@ignitelink javax.cache.integration.CacheWriter}s.
+     * Clears the contents of the cache, without notifying listeners or CacheWriters.
      *
      * @throws IllegalStateException if the cache is closed.
      * @throws javax.cache.CacheException if there is a problem during the clear
@@ -845,7 +878,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     /**
      * Runs specified query.
      */
-    private PlatformQueryCursor runQuery(PortableRawReaderEx reader, Query qry) throws IgniteCheckedException {
+    private PlatformQueryCursor runQuery(BinaryRawReaderEx reader, Query qry) throws IgniteCheckedException {
 
         try {
             QueryCursorEx cursor = (QueryCursorEx) cache.query(qry);
@@ -861,7 +894,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     /**
      * Runs specified fields query.
      */
-    private PlatformFieldsQueryCursor runFieldsQuery(PortableRawReaderEx reader, Query qry)
+    private PlatformFieldsQueryCursor runFieldsQuery(BinaryRawReaderEx reader, Query qry)
         throws IgniteCheckedException {
         try {
             QueryCursorEx cursor = (QueryCursorEx) cache.query(qry);
@@ -877,7 +910,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     /**
      * Reads the query of specified type.
      */
-    private Query readInitialQuery(PortableRawReaderEx reader) throws IgniteCheckedException {
+    private Query readInitialQuery(BinaryRawReaderEx reader) throws IgniteCheckedException {
         int typ = reader.readInt();
 
         switch (typ) {
@@ -900,7 +933,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     /**
      * Reads sql query.
      */
-    private Query readSqlQuery(PortableRawReaderEx reader) {
+    private Query readSqlQuery(BinaryRawReaderEx reader) {
         boolean loc = reader.readBoolean();
         String sql = reader.readString();
         String typ = reader.readString();
@@ -914,7 +947,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     /**
      * Reads fields query.
      */
-    private Query readFieldsQuery(PortableRawReaderEx reader) {
+    private Query readFieldsQuery(BinaryRawReaderEx reader) {
         boolean loc = reader.readBoolean();
         String sql = reader.readString();
         final int pageSize = reader.readInt();
@@ -927,7 +960,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     /**
      * Reads text query.
      */
-    private Query readTextQuery(PortableRawReaderEx reader) {
+    private Query readTextQuery(BinaryRawReaderEx reader) {
         boolean loc = reader.readBoolean();
         String txt = reader.readString();
         String typ = reader.readString();
@@ -939,7 +972,7 @@ public class PlatformCache extends PlatformAbstractTarget {
     /**
      * Reads scan query.
      */
-    private Query readScanQuery(PortableRawReaderEx reader) {
+    private Query readScanQuery(BinaryRawReaderEx reader) {
         boolean loc = reader.readBoolean();
         final int pageSize = reader.readInt();
 
@@ -954,7 +987,7 @@ public class PlatformCache extends PlatformAbstractTarget {
         Object pred = reader.readObjectDetached();
 
         if (pred != null)
-            qry.setFilter(platformCtx.createCacheEntryFilter(pred, reader.readLong()));
+            qry.setFilter(platformCtx.createCacheEntryFilter(pred, 0));
 
         qry.setLocal(loc);
 
@@ -966,7 +999,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      */
     private static class GetAllWriter implements PlatformFutureUtils.Writer {
         /** <inheritDoc /> */
-        @Override public void write(PortableRawWriterEx writer, Object obj, Throwable err) {
+        @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
             assert obj instanceof Map;
 
             PlatformUtils.writeNullableMap(writer, (Map) obj);
@@ -983,7 +1016,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      */
     private static class EntryProcessorInvokeWriter implements PlatformFutureUtils.Writer {
         /** <inheritDoc /> */
-        @Override public void write(PortableRawWriterEx writer, Object obj, Throwable err) {
+        @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
             if (err == null) {
                 writer.writeBoolean(false);  // No error.
 
@@ -1007,7 +1040,7 @@ public class PlatformCache extends PlatformAbstractTarget {
      */
     private static class EntryProcessorInvokeAllWriter implements PlatformFutureUtils.Writer {
         /** <inheritDoc /> */
-        @Override public void write(PortableRawWriterEx writer, Object obj, Throwable err) {
+        @Override public void write(BinaryRawWriterEx writer, Object obj, Throwable err) {
             writeInvokeAllResult(writer, (Map)obj);
         }
 
@@ -1085,6 +1118,41 @@ public class PlatformCache extends PlatformAbstractTarget {
 
                 return new Duration(TimeUnit.MILLISECONDS, dur);
             }
+        }
+    }
+
+    /**
+     * Listenable around CompletionListener.
+     */
+    private static class CompletionListenable implements PlatformListenable, CompletionListener {
+        /** */
+        private IgniteBiInClosure<Object, Throwable> lsnr;
+
+        /** {@inheritDoc} */
+        @Override public void onCompletion() {
+            assert lsnr != null;
+
+            lsnr.apply(null, null);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void onException(Exception e) {
+            lsnr.apply(null, e);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void listen(IgniteBiInClosure<Object, Throwable> lsnr) {
+            this.lsnr = lsnr;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean cancel() throws IgniteCheckedException {
+            return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isCancelled() {
+            return false;
         }
     }
 }

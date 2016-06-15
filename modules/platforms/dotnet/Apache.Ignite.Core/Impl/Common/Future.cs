@@ -18,34 +18,29 @@
 namespace Apache.Ignite.Core.Impl.Common
 {
     using System;
-    using System.Collections.Generic;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Threading;
     using System.Threading.Tasks;
     using Apache.Ignite.Core.Common;
-    using Apache.Ignite.Core.Impl.Portable.IO;
+    using Apache.Ignite.Core.Impl.Binary.IO;
+    using Apache.Ignite.Core.Impl.Unmanaged;
 
     /// <summary>
     /// Grid future implementation.
     /// </summary>
     [SuppressMessage("ReSharper", "ParameterHidesMember")]
     [CLSCompliant(false)]
-    public sealed class Future<T> : IFutureInternal, IFuture<T>
+    public sealed class Future<T> : IFutureInternal
     {
         /** Converter. */
         private readonly IFutureConverter<T> _converter;
 
-        /** Result. */
-        private T _res;
+        /** Task completion source. */
+        private readonly TaskCompletionSource<T> _taskCompletionSource = new TaskCompletionSource<T>();
 
-        /** Caught cxception. */
-        private Exception _err;
-
-        /** Done flag. */
-        private volatile bool _done;
-
-        /** Listener(s). Either Action or List{Action}. */
-        private object _callbacks;
+        /** */
+        private volatile IUnmanagedTarget _unmanagedTarget;
 
         /// <summary>
         /// Constructor.
@@ -56,145 +51,50 @@ namespace Apache.Ignite.Core.Impl.Common
             _converter = converter;
         }
 
-        /** <inheritdoc/> */
-        public bool IsDone
-        {
-            get { return _done; }
-        }
-
-        /** <inheritdoc/> */
+        /// <summary>
+        /// Gets the result.
+        /// </summary>
         public T Get()
         {
-            if (!_done)
+            try
             {
-                lock (this)
-                {
-                    while (!_done)
-                        Monitor.Wait(this);
-                }
+                return Task.Result;
             }
-
-            return Get0();
-        }
-
-        /** <inheritdoc/> */
-        public T Get(TimeSpan timeout)
-        {
-            long ticks = timeout.Ticks;
-
-            if (ticks < 0)
-                throw new ArgumentException("Timeout cannot be negative.");
-
-            if (ticks == 0)
-                return Get();
-
-            if (!_done)
+            catch (AggregateException ex)
             {
-                // Fallback to locked mode.
-                lock (this)
-                {
-                    long endTime = DateTime.Now.Ticks + ticks;
-
-                    if (!_done)
-                    {
-                        while (true)
-                        {
-                            Monitor.Wait(this, timeout);
-
-                            if (_done)
-                                break;
-
-                            ticks = endTime - DateTime.Now.Ticks;
-
-                            if (ticks <= 0)
-                                throw new TimeoutException("Timeout waiting for future completion.");
-
-                            timeout = TimeSpan.FromTicks(ticks);
-                        }
-                    }
-                }
+                throw ex.InnerException;
             }
-
-            return Get0();
-        }
-
-        /** <inheritdoc/> */
-        public void Listen(Action callback)
-        {
-            Listen((Action<IFuture<T>>) (fut => callback()));
-        }
-
-        /** <inheritdoc/> */
-        public void Listen(Action<IFuture> callback)
-        {
-            Listen((Action<IFuture<T>>)callback);
-        }
-
-        /** <inheritdoc/> */
-        public void Listen(Action<IFuture<T>> callback)
-        {
-            IgniteArgumentCheck.NotNull(callback, "callback");
-
-            if (!_done)
-            {
-                lock (this)
-                {
-                    if (!_done)
-                    {
-                        AddCallback(callback);
-
-                        return;
-                    }
-                }
-            }
-
-            callback(this);
         }
 
         /// <summary>
-        /// Get result or throw an error.
+        /// Gets the task.
         /// </summary>
-        private T Get0()
+        [SuppressMessage("Microsoft.Naming", "CA1721:PropertyNamesShouldNotMatchGetMethods")]
+        public Task<T> Task
         {
-            if (_err != null)
-                throw _err;
-
-            return _res;
+            get { return _taskCompletionSource.Task; }
         }
 
-        /** <inheritdoc/> */
-        public IAsyncResult ToAsyncResult()
+        /// <summary>
+        /// Gets the task with cancellation.
+        /// </summary>
+        /// <param name="cancellationToken">The cancellation token.</param>
+        public Task<T> GetTask(CancellationToken cancellationToken)
         {
-            return _done ? (IAsyncResult) new CompletedAsyncResult() : new AsyncResult(this);
+            Debug.Assert(_unmanagedTarget != null);
+
+            // OnTokenCancel will fire even if cancellationToken is already cancelled.
+            cancellationToken.Register(OnTokenCancel);
+
+            return Task;
         }
 
-        /** <inheritdoc/> */
-        Task<object> IFuture.ToTask()
-        {
-            return Task.Factory.FromAsync(ToAsyncResult(), x => (object) Get());
-        }
-
-        /** <inheritdoc/> */
-        public Task<T> ToTask()
-        {
-            return Task.Factory.FromAsync(ToAsyncResult(), x => Get());
-        }
-
-        /** <inheritdoc/> */
-        object IFuture.Get(TimeSpan timeout)
-        {
-            return Get(timeout);
-        }
-
-        /** <inheritdoc/> */
-        object IFuture.Get()
-        {
-            return Get();
-        }
-
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Set result from stream.
+        /// </summary>
+        /// <param name="stream">Stream.</param>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        public void OnResult(IPortableStream stream)
+        public void OnResult(IBinaryStream stream)
         {
             try
             {
@@ -206,16 +106,39 @@ namespace Apache.Ignite.Core.Impl.Common
             }
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Set error result.
+        /// </summary>
+        /// <param name="err">Exception.</param>
         public void OnError(Exception err)
         {
-            OnDone(default(T), err);
+            if (err is IgniteFutureCancelledException)
+                _taskCompletionSource.TrySetCanceled();
+            else
+                _taskCompletionSource.TrySetException(err);
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Set null result.
+        /// </summary>
+        [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
         public void OnNullResult()
         {
-            OnResult(default(T));
+            if (_converter == null)
+            {
+                OnResult(default(T));
+
+                return;
+            }
+
+            try
+            {
+                OnResult(_converter.Convert(null));
+            }
+            catch (Exception ex)
+            {
+                OnError(ex);
+            }
         }
 
         /// <summary>
@@ -224,7 +147,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <param name="res">Result.</param>
         internal void OnResult(T res)
         {
-            OnDone(res, null);
+            _taskCompletionSource.TrySetResult(res);
         }
 
         /// <summary>
@@ -234,54 +157,50 @@ namespace Apache.Ignite.Core.Impl.Common
         /// <param name="err">Error.</param>
         public void OnDone(T res, Exception err)
         {
-            object callbacks0 = null;
-
-            lock (this)
-            {
-                if (!_done)
-                {
-                    _res = res;
-                    _err = err;
-
-                    _done = true;
-
-                    Monitor.PulseAll(this);
-
-                    // Notify listeners outside the lock
-                    callbacks0 = _callbacks;
-                    _callbacks = null;
-                }
-            }
-
-            if (callbacks0 != null)
-            {
-                var list = callbacks0 as List<Action<IFuture<T>>>;
-
-                if (list != null)
-                    list.ForEach(x => x(this));
-                else
-                    ((Action<IFuture<T>>) callbacks0)(this);
-            }
+            if (err != null)
+                OnError(err);
+            else
+                OnResult(res);
         }
 
         /// <summary>
-        /// Adds a callback.
+        /// Sets unmanaged future target for cancellation.
         /// </summary>
-        private void AddCallback(Action<IFuture<T>> callback)
+        internal void SetTarget(IUnmanagedTarget target)
         {
-            if (_callbacks == null)
-            {
-                _callbacks = callback;
+            Debug.Assert(target != null);
 
-                return;
-            }
+            _unmanagedTarget = target;
+        }
 
-            var list = _callbacks as List<Action<IFuture<T>>> ??
-                new List<Action<IFuture<T>>> {(Action<IFuture<T>>) _callbacks};
+        /// <summary>
+        /// Cancels this instance.
+        /// </summary>
+        internal bool Cancel()
+        {
+            if (_unmanagedTarget == null)
+                return false;
 
-            list.Add(callback);
+            return UnmanagedUtils.ListenableCancel(_unmanagedTarget);
+        }
 
-            _callbacks = list;
+        /// <summary>
+        /// Determines whether this instance is cancelled.
+        /// </summary>
+        internal bool IsCancelled()
+        {
+            if (_unmanagedTarget == null)
+                return false;
+
+            return UnmanagedUtils.ListenableIsCancelled(_unmanagedTarget);
+        }
+
+        /// <summary>
+        /// Called when token cancellation occurs.
+        /// </summary>
+        private void OnTokenCancel()
+        {
+            Cancel();
         }
     }
 }

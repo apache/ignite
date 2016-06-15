@@ -85,7 +85,7 @@ public interface Ignite extends AutoCloseable {
     public IgniteLogger log();
 
     /**
-     * Gets the configuration of this grid instance.
+     * Gets the configuration of this Ignite instance.
      * <p>
      * <b>NOTE:</b>
      * <br>
@@ -95,7 +95,7 @@ public interface Ignite extends AutoCloseable {
      * via this method to check its configuration properties or call other non-SPI
      * methods.
      *
-     * @return Grid configuration instance.
+     * @return Ignite configuration instance.
      */
     public IgniteConfiguration configuration();
 
@@ -214,6 +214,9 @@ public interface Ignite extends AutoCloseable {
      * <p>
      * If local node is an affinity node, this method will return the instance of started cache.
      * Otherwise, it will create a client cache on local node.
+     * <p>
+     * If a cache with the same name already exists in the grid, an exception will be thrown regardless
+     * whether the given configuration matches the configuration of the existing cache or not.
      *
      * @param cacheCfg Cache configuration to use.
      * @return Instance of started cache.
@@ -225,6 +228,8 @@ public interface Ignite extends AutoCloseable {
      * <p>
      * If local node is an affinity node, this method will return the instance of started cache.
      * Otherwise, it will create a client cache on local node.
+     * <p>
+     * If a cache with the same name already exists in the grid, an exception will be thrown.
      *
      * @param cacheName Cache name.
      * @return Instance of started cache.
@@ -233,6 +238,10 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * Gets existing cache with the given name or creates new one with the given configuration.
+     * <p>
+     * If a cache with the same name already exist, this method will not check that the given
+     * configuration matches the configuration of existing cache and will return an instance
+     * of the existing cache.
      *
      * @param cacheCfg Cache configuration to use.
      * @return Existing or newly created cache.
@@ -259,6 +268,9 @@ public interface Ignite extends AutoCloseable {
      * <p>
      * If local node is an affinity node, this method will return the instance of started cache.
      * Otherwise, it will create a near cache with the given configuration on local node.
+     * <p>
+     * If a cache with the same name already exists in the grid, an exception will be thrown regardless
+     * whether the given configuration matches the configuration of the existing cache or not.
      *
      * @param cacheCfg Cache configuration to use.
      * @param nearCfg Near cache configuration to use on local node in case it is not an
@@ -270,6 +282,13 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * Gets existing cache with the given cache configuration or creates one if it does not exist.
+     * <p>
+     * If a cache with the same name already exist, this method will not check that the given
+     * configuration matches the configuration of existing cache and will return an instance
+     * of the existing cache.
+     * <p>
+     * If local node is not an affinity node and a client cache without near cache has been already started
+     * on this node, an exception will be thrown.
      *
      * @param cacheCfg Cache configuration.
      * @param nearCfg Near cache configuration for client.
@@ -313,6 +332,16 @@ public interface Ignite extends AutoCloseable {
      * @return Instance of the cache for the specified name.
      */
     public <K, V> IgniteCache<K, V> cache(@Nullable String name);
+
+    /**
+     * Gets the collection of names of currently available caches.
+     *
+     * Collection may contain {@code null} as a value for a cache name. Refer to {@link CacheConfiguration#getName()}
+     * for more info.
+     *
+     * @return Collection of names of currently available caches or an empty collection if no caches are available.
+     */
+    public Collection<String> cacheNames();
 
     /**
      * Gets grid transactions facade.
@@ -420,6 +449,40 @@ public interface Ignite extends AutoCloseable {
         throws IgniteException;
 
     /**
+     * Gets or creates semaphore. If semaphore is not found in cache and {@code create} flag
+     * is {@code true}, it is created using provided name and count parameter.
+     *
+     * @param name Name of the semaphore.
+     * @param cnt Count for new semaphore creation. Ignored if {@code create} flag is {@code false}.
+     * @param failoverSafe {@code True} to create failover safe semaphore which means that
+     *      if any node leaves topology permits already acquired by that node are silently released
+     *      and become available for alive nodes to acquire. If flag is {@code false} then
+     *      all threads waiting for available permits get interrupted.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return Semaphore for the given name.
+     * @throws IgniteException If semaphore could not be fetched or created.
+     */
+    public IgniteSemaphore semaphore(String name, int cnt, boolean failoverSafe, boolean create)
+        throws IgniteException;
+
+    /**
+     * Gets or creates reentrant lock. If reentrant lock is not found in cache and {@code create} flag
+     * is {@code true}, it is created using provided name.
+     *
+     * @param name Name of the lock.
+     * @param failoverSafe {@code True} to create failover safe lock which means that
+     *      if any node leaves topology, all locks already acquired by that node are silently released
+     *      and become available for other nodes to acquire. If flag is {@code false} then
+     *      all threads on other nodes waiting to acquire lock are interrupted.
+     * @param fair If {@code True}, fair lock will be created.
+     * @param create Boolean flag indicating whether data structure should be created if does not exist.
+     * @return ReentrantLock for the given name.
+     * @throws IgniteException If reentrant lock could not be fetched or created.
+     */
+    public IgniteLock reentrantLock(String name, boolean failoverSafe, boolean fair, boolean create)
+        throws IgniteException;
+
+    /**
      * Will get a named queue from cache and create one if it has not been created yet and {@code cfg} is not
      * {@code null}.
      * If queue is present already, queue properties will not be changed. Use
@@ -459,11 +522,11 @@ public interface Ignite extends AutoCloseable {
     public <T extends IgnitePlugin> T plugin(String name) throws PluginNotFoundException;
 
     /**
-     * Gets an instance of {@link IgnitePortables} interface.
+     * Gets an instance of {@link IgniteBinary} interface.
      *
-     * @return Instance of {@link IgnitePortables} interface.
+     * @return Instance of {@link IgniteBinary} interface.
      */
-    public IgnitePortables portables();
+    public IgniteBinary binary();
 
     /**
      * Closes {@code this} instance of grid. This method is identical to calling
