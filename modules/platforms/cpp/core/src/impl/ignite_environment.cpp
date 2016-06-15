@@ -217,11 +217,11 @@ namespace ignite
         {
             InteropExternalMemory inMem(reinterpret_cast<int8_t*>(inMemPtr));
             InteropInputStream inStream(&inMem);
-            PortableReaderImpl reader(&inStream);
+            BinaryReaderImpl reader(&inStream);
 
             InteropExternalMemory outMem(reinterpret_cast<int8_t*>(outMemPtr));
             InteropOutputStream outStream(&outMem);
-            PortableWriterImpl writer(&outStream, GetMetadataManager());
+            BinaryWriterImpl writer(&outStream, GetTypeManager());
 
             ModuleManager &mm = ModuleManager::GetInstance();
 

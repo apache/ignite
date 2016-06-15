@@ -41,7 +41,17 @@ namespace ignite
             }
 
             /**
-             * Constructor.
+             * Constructor for non-existing entry.
+             *
+             * @param key Key.
+             */
+            MutableCacheEntry(const K& key) : key(key), val(), exists(false)
+            {
+                // No-op.
+            }
+
+            /**
+             * Constructor for existing entry.
              *
              * @param key Key.
              * @param val Value.
@@ -124,7 +134,7 @@ namespace ignite
             void SetValue(const V& val)
             {
                 this->val = val;
-                
+
                 exists = true;
             }
 

@@ -20,7 +20,7 @@
 
 #include <ignite/common/common.h>
 #include <ignite/cache/mutable_cache_entry.h>
-#include <ignite/portable/portable.h>
+#include <ignite/binary/binary.h>
 
 namespace ignite
 {
@@ -65,7 +65,7 @@ namespace ignite
 
             /**
              * Holder for the Cache Entry Processor and its argument. Used as a convenient way to
-             * transmit Cache Entry Processor processor between nodes.
+             * transmit Cache Entry Processor between nodes.
              */
             template<typename P, typename A>
             class CacheEntryProcessorHolder
@@ -132,7 +132,14 @@ namespace ignite
                 template<typename R, typename K, typename V>
                 R Process(const K& key, V& value, bool exists, MutableCacheEntryState &state)
                 {
-                    ignite::cache::MutableCacheEntry<K, V> entry(key, value);
+                    typedef ignite::cache::MutableCacheEntry<K, V> Entry;
+
+                    Entry entry;
+
+                    if (exists)
+                        entry = Entry(key, value);
+                    else
+                        entry = Entry(key);
 
                     R res = proc.Process(entry, arg);
 
@@ -153,43 +160,43 @@ namespace ignite
         }
     }
 
-    namespace portable
+    namespace binary
     {
         /**
-         * Portable type specialisation for CacheEntryProcessorHolder.
+         * Binary type specialization for CacheEntryProcessorHolder.
          */
         template<typename P, typename A>
-        struct PortableType<impl::cache::CacheEntryProcessorHolder<P, A>>
+        struct BinaryType<impl::cache::CacheEntryProcessorHolder<P, A>>
         {
             typedef impl::cache::CacheEntryProcessorHolder<P, A> UnderlyingType;
 
-            IGNITE_PORTABLE_GET_FIELD_ID_AS_HASH
-            IGNITE_PORTABLE_GET_HASH_CODE_ZERO(UnderlyingType)
-            IGNITE_PORTABLE_IS_NULL_FALSE(UnderlyingType)
-            IGNITE_PORTABLE_GET_NULL_DEFAULT_CTOR(UnderlyingType)
+            IGNITE_BINARY_GET_FIELD_ID_AS_HASH
+            IGNITE_BINARY_GET_HASH_CODE_ZERO(UnderlyingType)
+            IGNITE_BINARY_IS_NULL_FALSE(UnderlyingType)
+            IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(UnderlyingType)
 
             int32_t GetTypeId()
             {
-                return GetPortableStringHashCode(GetTypeName().c_str());
+                return GetBinaryStringHashCode(GetTypeName().c_str());
             }
             
             std::string GetTypeName()
             {
-                PortableType<P> p;
+                BinaryType<P> p;
                 // TODO: implement GetTypeName for basic types?
-                //PortableType<A> a;
+                //BinaryType<A> a;
 
                 std::string name = "CacheEntryProcessorHolder<" + p.GetTypeName() + ",int>";
                 return name;
             }
 
-            void Write(PortableWriter& writer, UnderlyingType obj)
+            void Write(BinaryWriter& writer, UnderlyingType obj)
             {
                 writer.WriteObject("proc", obj.getProcessor());
                 writer.WriteObject("arg", obj.getArgument());
             }
 
-            UnderlyingType Read(PortableReader& reader)
+            UnderlyingType Read(BinaryReader& reader)
             {
                 const P& proc = reader.ReadObject<P>("proc");
                 const A& arg = reader.ReadObject<A>("arg");

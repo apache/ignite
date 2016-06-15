@@ -23,7 +23,7 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include "ignite/impl/utils.h"
+#include "ignite/common/utils.h"
 #include "ignite/ignite.h"
 #include "ignite/ignition.h"
 
@@ -31,7 +31,7 @@ using namespace boost::unit_test;
 
 using namespace ignite;
 using namespace ignite::cache;
-using namespace ignite::impl::utils;
+using namespace ignite::common;
 
 /**
  * NumberSum class for compute tests.
@@ -90,20 +90,23 @@ public:
 
     /**
      * Call instance.
+     *
      * @return New value of entry multiplied by two.
      */
     int Process(MutableCacheEntry<int, int>& entry, const int& arg)
     {
-        if (entry.Exists())
-        {
-            int entryValue = entry.GetValue() - arg - num;
+        std::cout << entry.GetKey() << std::endl;
+        std::cout << entry.Exists() << std::endl;
+        std::cout << arg << std::endl;
+        std::cout << num << std::endl;
 
-            entry.SetValue(entryValue);
-        }
+        if (entry.Exists())
+            entry.SetValue(entry.GetValue() - arg - num);
         else
-        {
             entry.SetValue(42);
-        }
+
+        std::cout << entry.Exists() << std::endl;
+        std::cout << entry.GetValue() << std::endl;
 
         return entry.GetValue() * 2;
     }
@@ -125,32 +128,32 @@ private:
 
 namespace ignite
 {
-    namespace portable
+    namespace binary
     {
         /**
-         * Portable type definition for CacheEntryModifier.
+         * Binary type definition for CacheEntryModifier.
          */
-        IGNITE_PORTABLE_TYPE_START(CacheEntryModifier)
-            IGNITE_PORTABLE_GET_TYPE_ID_AS_HASH(CacheEntryModifier)
-            IGNITE_PORTABLE_GET_TYPE_NAME_AS_IS(CacheEntryModifier)
-            IGNITE_PORTABLE_GET_FIELD_ID_AS_HASH
-            IGNITE_PORTABLE_GET_HASH_CODE_ZERO(CacheEntryModifier)
-            IGNITE_PORTABLE_IS_NULL_FALSE(CacheEntryModifier)
-            IGNITE_PORTABLE_GET_NULL_DEFAULT_CTOR(CacheEntryModifier)
+        IGNITE_BINARY_TYPE_START(CacheEntryModifier)
+            IGNITE_BINARY_GET_TYPE_ID_AS_HASH(CacheEntryModifier)
+            IGNITE_BINARY_GET_TYPE_NAME_AS_IS(CacheEntryModifier)
+            IGNITE_BINARY_GET_FIELD_ID_AS_HASH
+            IGNITE_BINARY_GET_HASH_CODE_ZERO(CacheEntryModifier)
+            IGNITE_BINARY_IS_NULL_FALSE(CacheEntryModifier)
+            IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(CacheEntryModifier)
 
-            void Write(PortableWriter& writer, CacheEntryModifier obj)
+            void Write(BinaryWriter& writer, CacheEntryModifier obj)
             {
                 writer.WriteInt32("num", obj.GetNum());
             }
 
-            CacheEntryModifier Read(PortableReader& reader)
+            CacheEntryModifier Read(BinaryReader& reader)
             {
                 int num = reader.ReadInt32("num");
 
                 return CacheEntryModifier(num);
             }
 
-        IGNITE_PORTABLE_TYPE_END
+        IGNITE_BINARY_TYPE_END
     }
 }
 
@@ -167,16 +170,11 @@ struct CacheInvokeTestSuiteFixture {
     {
         IgniteConfiguration cfg;
 
-        IgniteJvmOption opts[5];
-
-        opts[0] = IgniteJvmOption("-Xdebug");
-        opts[1] = IgniteJvmOption("-Xnoagent");
-        opts[2] = IgniteJvmOption("-Djava.compiler=NONE");
-        opts[3] = IgniteJvmOption("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
-        opts[4] = IgniteJvmOption("-XX:+HeapDumpOnOutOfMemoryError");
-
-        cfg.jvmOptsLen = 5;
-        cfg.jvmOpts = opts;
+        cfg.jvmOpts.push_back("-Xdebug");
+        cfg.jvmOpts.push_back("-Xnoagent");
+        cfg.jvmOpts.push_back("-Djava.compiler=NONE");
+        cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
+        cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
 
 #ifdef IGNITE_TESTS_32
         cfg.jvmInitMem = 256;
@@ -186,11 +184,7 @@ struct CacheInvokeTestSuiteFixture {
         cfg.jvmMaxMem = 2048;
 #endif
 
-        char* cfgPath = getenv("IGNITE_NATIVE_TEST_CPP_CONFIG_PATH");
-
-        std::string cfgPathStr = std::string(cfgPath).append("/").append("cache-query.xml");
-
-        cfg.springCfgPath = const_cast<char*>(cfgPathStr.c_str());
+        cfg.springCfgPath = std::string(getenv("IGNITE_NATIVE_TEST_CPP_CONFIG_PATH")) + "/cache-query.xml";
 
         IgniteError err;
 
@@ -228,32 +222,17 @@ BOOST_FIXTURE_TEST_SUITE(CacheInvokeTestSuite, CacheInvokeTestSuiteFixture)
  */
 BOOST_AUTO_TEST_CASE(TestExisting)
 {
-    try
-    {
-        Cache<int, int> cache = grid.GetOrCreateCache<int, int>("TestCache");
+    Cache<int, int> cache = grid.GetOrCreateCache<int, int>("TestCache");
 
-        cache.Put(5, 20);
+    cache.Put(5, 20);
 
-        CacheEntryModifier ced(5);
+    CacheEntryModifier ced(5);
 
-        int res = cache.Invoke<int>(5, ced, 4);
+    int res = cache.Invoke<int>(5, ced, 4);
 
-        BOOST_REQUIRE(res == 22);
+    BOOST_REQUIRE(res == 22);
 
-        BOOST_REQUIRE(cache.Get(5) == 11); 
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_FAIL(err.GetText());
-    }
-    catch (std::exception& err)
-    {
-        BOOST_FAIL(err.what());
-    }
-    catch (...)
-    {
-        BOOST_FAIL("Unknown error");
-    }
+    BOOST_REQUIRE(cache.Get(5) == 11);
 }
 
 /**
@@ -261,32 +240,17 @@ BOOST_AUTO_TEST_CASE(TestExisting)
  */
 BOOST_AUTO_TEST_CASE(TestNonExisting)
 {
-    try
-    {
-        Cache<int, int> cache = grid.GetOrCreateCache<int, int>("TestCache");
+    Cache<int, int> cache = grid.GetOrCreateCache<int, int>("TestCache");
 
-        CacheEntryModifier ced;
+    CacheEntryModifier ced;
 
-        int res = cache.Invoke<int>(4, ced, 4);
+    int res = cache.Invoke<int>(4, ced, 4);
 
-        std::cout << res << std::endl;
+    std::cout << res << std::endl;
 
-        BOOST_REQUIRE(res == 84);
+    BOOST_CHECK_EQUAL(res, 84);
 
-        BOOST_REQUIRE(cache.Get(4) == 42); 
-    }
-    catch (IgniteError& err)
-    {
-        BOOST_FAIL(err.GetText());
-    }
-    catch (std::exception& err)
-    {
-        BOOST_FAIL(err.what());
-    }
-    catch (...)
-    {
-        BOOST_FAIL("Unknown error");
-    }
+    BOOST_CHECK_EQUAL(cache.Get(4), 42);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

@@ -223,7 +223,8 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
         // CPP platform does not currently support remote code execution
         // Therefore, all remote execution attempts come from .NET
         // Throw an error if current platform is not .NET
-        if (!PlatformUtils.PLATFORM_DOTNET.equals(interopCfg.platform())) {
+        if (!PlatformUtils.PLATFORM_DOTNET.equals(interopCfg.platform()) &&
+            !PlatformUtils.PLATFORM_CPP.equals(interopCfg.platform())) {
             throw new IgniteException(".NET platform is not available [nodeId=" + ctx.grid().localNode().id() + "] " +
                 "(Use Apache.Ignite.Core.Ignition.Start() or Apache.Ignite.exe to start Ignite.NET nodes).");
         }

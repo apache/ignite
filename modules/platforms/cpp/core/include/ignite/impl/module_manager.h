@@ -22,8 +22,8 @@
 
 #include <ignite/common/common.h>
 #include <ignite/common/dynamic_load_os.h>
-#include <ignite/impl/portable/portable_reader_impl.h>
-#include <ignite/impl/portable/portable_writer_impl.h>
+#include <ignite/impl/binary/binary_reader_impl.h>
+#include <ignite/impl/binary/binary_writer_impl.h>
 #include "ignite/impl/cache/cache_entry_processor_holder.h"
 
 
@@ -32,8 +32,8 @@
 #define IGNITE_REMOTE_JOB_LIST_BEGIN \
     extern "C" IGNITE_IMPORT_EXPORT \
     bool ignite_impl_InvokeRemoteJob(const std::string& jobTypeId, \
-                                     ignite::impl::portable::PortableReaderImpl& reader, \
-                                     ignite::impl::portable::PortableWriterImpl& writer) \
+                                     ignite::impl::binary::BinaryReaderImpl& reader, \
+                                     ignite::impl::binary::BinaryWriterImpl& writer) \
     {
 
 #define IGNITE_REMOTE_JOB_LIST_END \
@@ -53,17 +53,17 @@ namespace ignite
     namespace impl
     {
         template<typename P, typename K, typename V, typename R, typename A>
-        void CallCacheEntryProcessor(impl::portable::PortableReaderImpl& reader, impl::portable::PortableWriterImpl& writer)
+        void CallCacheEntryProcessor(impl::binary::BinaryReaderImpl& reader, impl::binary::BinaryWriterImpl& writer)
         {
             typedef cache::CacheEntryProcessorHolder<P, A> ProcessorHolder;
 
             K key = reader.ReadObject<K>();
             V value = reader.ReadObject<V>();
             bool isLocal = reader.ReadBool();
-            
+
             cache::MutableCacheEntryState entryState;
 
-            ignite::portable::PortableType<V> pvalue;
+            ignite::binary::BinaryType<V> pvalue;
 
             ProcessorHolder procHolder = reader.ReadObject<ProcessorHolder>();
 
@@ -74,12 +74,11 @@ namespace ignite
             writer.WriteTopObject(res);
         }
 
-        typedef bool (JobInvoker)(const std::string&, 
-                                  ignite::impl::portable::PortableReaderImpl&,
-                                  ignite::impl::portable::PortableWriterImpl&);
-
         class ModuleManager
         {
+            typedef bool (JobInvoker)(const std::string&,
+                                      ignite::impl::binary::BinaryReaderImpl&,
+                                      ignite::impl::binary::BinaryWriterImpl&);
         public:
             static ModuleManager& GetInstance()
             {
@@ -89,8 +88,8 @@ namespace ignite
             }
 
             bool InvokeJobById(const std::string& id,
-                               impl::portable::PortableReaderImpl& reader,
-                               impl::portable::PortableWriterImpl& writer)
+                               impl::binary::BinaryReaderImpl& reader,
+                               impl::binary::BinaryWriterImpl& writer)
             {
                 typedef std::vector<JobInvoker*> Invokers;
 

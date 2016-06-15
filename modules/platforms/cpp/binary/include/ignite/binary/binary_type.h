@@ -255,9 +255,9 @@ namespace ignite
             /**
              * Constructor.
              */
-            BinaryType()
+            BinaryType() : typ()
             {
-                typ = BinaryType<T>();
+                // No-op.
             }
 
             int32_t GetTypeId()

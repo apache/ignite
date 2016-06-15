@@ -591,7 +591,7 @@ namespace ignite
                 m_PlatformCache_withNoRetries = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_WITH_NO_RETRIES);
                 m_PlatformCache_withExpiryPolicy = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_WITH_EXPIRY_PLC);
                 m_PlatformCache_withAsync = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_WITH_ASYNC);
-                m_PlatformCache_withKeepPortable = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_WITH_KEEP_PORTABLE);
+                m_PlatformCache_withKeepBinary = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_WITH_KEEP_PORTABLE);
                 m_PlatformCache_clear = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_CLEAR);
                 m_PlatformCache_removeAll = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_REMOVE_ALL);
                 m_PlatformCache_iterator = FindMethod(env, c_PlatformCache, M_PLATFORM_CACHE_ITERATOR);
@@ -645,7 +645,7 @@ namespace ignite
 
 				c_PlatformServices = FindClass(env, C_PLATFORM_SERVICES);
 				m_PlatformServices_withAsync = FindMethod(env, c_PlatformServices, M_PLATFORM_SERVICES_WITH_ASYNC);
-				m_PlatformServices_withServerKeepPortable = FindMethod(env, c_PlatformServices, M_PLATFORM_SERVICES_WITH_SERVER_KEEP_PORTABLE);
+				m_PlatformServices_withServerKeepBinary = FindMethod(env, c_PlatformServices, M_PLATFORM_SERVICES_WITH_SERVER_KEEP_PORTABLE);
 				m_PlatformServices_cancel = FindMethod(env, c_PlatformServices, M_PLATFORM_SERVICES_CANCEL);
 				m_PlatformServices_cancelAll = FindMethod(env, c_PlatformServices, M_PLATFORM_SERVICES_CANCEL_ALL);
 				m_PlatformServices_serviceProxy = FindMethod(env, c_PlatformServices, M_PLATFORM_SERVICES_SERVICE_PROXY);
@@ -1333,13 +1333,13 @@ namespace ignite
                 return LocalToGlobal(env, aff);
             }
 
-            jobject JniContext::ProcessorDataStreamer(jobject obj, const char* name, bool keepPortable) {
+            jobject JniContext::ProcessorDataStreamer(jobject obj, const char* name, bool keepBinary) {
                 JNIEnv* env = Attach();
 
                 jstring name0 = name != NULL ? env->NewStringUTF(name) : NULL;
 
                 jobject ldr = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_dataStreamer, name0,
-                    keepPortable);
+                    keepBinary);
 
                 if (name0)
                     env->DeleteLocalRef(name0);
@@ -1631,10 +1631,10 @@ namespace ignite
                 return LocalToGlobal(env, cache);
             }
 
-            jobject JniContext::CacheWithKeepPortable(jobject obj) {
+            jobject JniContext::CacheWithKeepBinary(jobject obj) {
                 JNIEnv* env = Attach();
 
-                jobject cache = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformCache_withKeepPortable);
+                jobject cache = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformCache_withKeepBinary);
 
                 ExceptionCheck(env);
 
@@ -2137,10 +2137,10 @@ namespace ignite
 				return LocalToGlobal(env, res);
             }
 
-            jobject JniContext::ServicesWithServerKeepPortable(jobject obj) {
+            jobject JniContext::ServicesWithServerKeepBinary(jobject obj) {
                 JNIEnv* env = Attach();
 
-                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformServices_withServerKeepPortable);
+                jobject res = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformServices_withServerKeepBinary);
 
                 ExceptionCheck(env);
 
@@ -2687,14 +2687,14 @@ namespace ignite
                 IGNITE_SAFE_PROC(env, envPtr, DataStreamerTopologyUpdateHandler, dataStreamerTopologyUpdate, ldrPtr, topVer, topSize);
             }
 
-            JNIEXPORT void JNICALL JniDataStreamerStreamReceiverInvoke(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jobject cache, jlong memPtr, jboolean keepPortable) {
+            JNIEXPORT void JNICALL JniDataStreamerStreamReceiverInvoke(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jobject cache, jlong memPtr, jboolean keepBinary) {
                 jobject cache0 = env->NewGlobalRef(cache);
 
                 if (cache0)
                 {
                     JniGlobalRefGuard guard(env, cache0);
 
-                    IGNITE_SAFE_PROC(env, envPtr, DataStreamerStreamReceiverInvokeHandler, streamReceiverInvoke, ptr, cache0, memPtr, keepPortable);
+                    IGNITE_SAFE_PROC(env, envPtr, DataStreamerStreamReceiverInvokeHandler, streamReceiverInvoke, ptr, cache0, memPtr, keepBinary);
                 }
             }
 
