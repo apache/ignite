@@ -15,7 +15,7 @@ mkdir pkg
 
 # Find all nuspec files and run 'nuget pack' on corresponding csproj files
 ls ..\*.nuspec -Recurse  `
-    | % { If (Test-Path [io.path]::ChangeExtension($_.FullName, ".csproj")){[io.path]::ChangeExtension($_.FullName, ".csproj")} Else {$_.FullName}  } `
+    | % { If (Test-Path ([io.path]::ChangeExtension($_.FullName, ".csproj"))){[io.path]::ChangeExtension($_.FullName, ".csproj")} Else {$_.FullName}  } `
     | % { & $ng pack $_ -Prop Configuration=$cfg -Version $ver -Prop Platform=AnyCPU -OutputDirectory nupkg }
 
 # Replace versions in project files
