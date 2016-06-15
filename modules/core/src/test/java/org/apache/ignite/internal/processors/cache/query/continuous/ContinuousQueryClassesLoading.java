@@ -18,41 +18,148 @@
 package org.apache.ignite.internal.processors.cache.query.continuous;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
+import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
+import org.apache.ignite.cache.CacheMode;
+import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.testframework.GridStringLogger;
-import org.apache.ignite.testframework.GridTestClassLoader;
+import org.apache.ignite.testframework.config.GridTestProperties;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import javax.cache.configuration.Factory;
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryEventFilter;
+import javax.cache.event.CacheEntryListenerException;
+import javax.cache.event.CacheEntryUpdatedListener;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 
 /**
  *
  */
 public class ContinuousQueryClassesLoading extends GridCommonAbstractTest {
+    /** URL of classes. */
+    private static final URL[] URLS;
 
+    static {
+        try {
+            URLS = new URL[] {new URL(GridTestProperties.getProperty("p2p.uri.cls"))};
+        }
+        catch (MalformedURLException e) {
+            throw new RuntimeException("Define property p2p.uri.cls", e);
+        }
+    }
+
+    /** */
     private GridStringLogger log;
-    private ClassLoader ldr;
+
+    /** */
     private boolean clientMode;
 
-    @Override protected IgniteConfiguration getConfiguration() throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration();
+    /** */
+    private ClassLoader ldr;
 
-        cfg.setGridLogger(log);
-        cfg.setClassLoader(ldr);
+    /** {@inheritDoc} */
+    @Override protected IgniteConfiguration getConfiguration(String name) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(name);
+
+        cfg.setPeerClassLoadingEnabled(false);
+
         cfg.setClientMode(clientMode);
+
+        if (!clientMode) {
+            CacheConfiguration cacheCfg = new CacheConfiguration();
+
+            cacheCfg.setName("simple");
+
+            cacheCfg.setCacheMode(CacheMode.PARTITIONED);
+
+            cfg.setCacheConfiguration(cacheCfg);
+
+            cfg.setClassLoader(ldr);
+        }
+        else
+            cfg.setGridLogger(log);
 
         return cfg;
     }
 
+    /**
+     * @throws Exception If fail.
+     */
     public void testTowServerWithOtherClassLoader() throws Exception {
-        log = new GridStringLogger();
-        ldr = new GridTestClassLoader();
-        clientMode = false;
-        final Ignite ignite0 = startGrid(0);
+        ldr = new URLClassLoader(URLS, getClass().getClassLoader());
 
+        clientMode = false;
+        final Ignite ignite0 = startGrid(1);
+
+        executeContiniouseQuery(ignite0.cache("simple"));
+
+        log = new GridStringLogger();
+        clientMode = true;
+        final Ignite ignite1 = startGrid(2);
+
+        System.out.println("LOG");
+        System.out.println(log.toString());
+
+        assertTrue(log.toString().contains("Failed to find class with given class loader for unmarshalling"));
 
     }
 
-    public void testServerClientWithOtherClassLoader() {
+    /**
+     * @param cache Ignite cache.
+     * @throws Exception If fail.
+     */
+    private void executeContiniouseQuery(IgniteCache cache) throws Exception {
+        ContinuousQuery<Integer, String> qry = new ContinuousQuery<>();
 
+        qry.setLocalListener(
+            new CacheEntryUpdatedListener<Integer, String>() {
+                @Override public void onUpdated(Iterable<CacheEntryEvent<? extends Integer, ? extends String>> events)
+                    throws CacheEntryListenerException {
+                    for (CacheEntryEvent<? extends Integer, ? extends String> event : events)
+                        System.out.println("Key = " + event.getKey() + ", Value = " + event.getValue());
+                }
+            }
+        );
+
+        final Class<CacheEntryEventSerializableFilter> remoteFilterClass = (Class<CacheEntryEventSerializableFilter>)
+            ldr.loadClass("org.apache.ignite.tests.p2p.CacheDeploymentCacheEntryEventSerializableFilter");
+
+        qry.setRemoteFilterFactory(new ClassFilterFactory(remoteFilterClass));
+
+        cache.query(qry);
+
+        for (int i = 0; i < 100; i++)
+            cache.put(i, "Message " + i);
+    }
+
+    /**
+     *
+     */
+    private static class ClassFilterFactory implements Factory<CacheEntryEventFilter<Integer, String>> {
+        /** */
+        private Class<CacheEntryEventSerializableFilter> cls;
+
+        /**
+         * @param cls Class.
+         */
+        public ClassFilterFactory(Class<CacheEntryEventSerializableFilter> cls) {
+            this.cls = cls;
+        }
+
+        /** {@inheritDoc} */
+        @Override public CacheEntryEventSerializableFilter<Integer, String> create() {
+            try {
+                return cls.newInstance();
+            }
+            catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
 }
