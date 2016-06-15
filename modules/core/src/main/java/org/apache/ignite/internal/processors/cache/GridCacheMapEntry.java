@@ -55,7 +55,6 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
 import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVersionedEntry;
-import org.apache.ignite.internal.processors.cache.version.GridCachePlainVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
@@ -2034,8 +2033,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
                 // Cache is conflict-enabled.
                 if (cctx.conflictNeedResolve()) {
-                    // Get new value, optionally unmarshalling and/or transforming it.
-                    Object writeObj0;
                     GridCacheVersionedEntryEx newEntry;
 
                     GridTuple3<Long, Long, Boolean> expiration = ttlAndExpireTime(expiryPlc,
@@ -2058,14 +2055,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                         try {
                             Object computed = entryProcessor.process(entry, invokeArgs);
 
-                            if (entry.modified()) {
-                                writeObj0 = cctx.unwrapTemporary(entry.getValue());
-                                writeObj = cctx.toCacheObject(writeObj0);
-                            }
-                            else {
+                            if (entry.modified())
+                                writeObj = cctx.toCacheObject(cctx.unwrapTemporary(entry.getValue()));
+                            else
                                 writeObj = oldVal;
-                                writeObj0 = cctx.unwrapBinaryIfNeeded(oldVal, keepBinary, false);
-                            }
 
                             key0 = entry.key();
 
@@ -2076,26 +2069,17 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             invokeRes = new IgniteBiTuple(null, e);
 
                             writeObj = oldVal;
-                            writeObj0 = cctx.unwrapBinaryIfNeeded(oldVal, keepBinary, false);
                         }
+                    }
 
-                        newEntry = new GridCachePlainVersionedEntry<>(
-                            oldEntry.key(),
-                            writeObj0,
-                            expiration.get1(),
-                            expiration.get2(),
-                            conflictVer != null ? conflictVer : newVer);
-                    }
-                    else {
-                        newEntry = new GridCacheLazyPlainVersionedEntry<>(
-                            cctx,
-                            key,
-                            (CacheObject)writeObj,
-                            expiration.get1(),
-                            expiration.get2(),
-                            conflictVer != null ? conflictVer : newVer,
-                            keepBinary);
-                    }
+                    newEntry = new GridCacheLazyPlainVersionedEntry<>(
+                        cctx,
+                        key,
+                        (CacheObject)writeObj,
+                        expiration.get1(),
+                        expiration.get2(),
+                        conflictVer != null ? conflictVer : newVer,
+                        keepBinary);
 
                     // Resolve conflict.
                     conflictCtx = cctx.conflictResolve(oldEntry, newEntry, verCheck);
