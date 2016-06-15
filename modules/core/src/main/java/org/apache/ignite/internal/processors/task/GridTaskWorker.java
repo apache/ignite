@@ -1064,9 +1064,9 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
         IgniteInternalFuture<?> affFut = null;
 
         if (affKey != null) {
-            Long topVer = ctx.discovery().topologyVersion();
+            AffinityTopologyVersion topVer = ctx.discovery().topologyVersionEx();
 
-            affFut = ctx.cache().context().exchange().affinityReadyFuture(new AffinityTopologyVersion(topVer));
+            affFut = ctx.cache().context().exchange().affinityReadyFuture(topVer);
         }
 
         if (affFut == null)
