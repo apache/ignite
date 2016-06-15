@@ -54,6 +54,7 @@ import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalAdapter;
+import org.apache.ignite.internal.processors.cache.version.GridCacheLazyPlainVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCachePlainVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionConflictContext;
@@ -2035,6 +2036,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                 if (cctx.conflictNeedResolve()) {
                     // Get new value, optionally unmarshalling and/or transforming it.
                     Object writeObj0;
+                    GridCacheVersionedEntryEx newEntry;
+
+                    GridTuple3<Long, Long, Boolean> expiration = ttlAndExpireTime(expiryPlc,
+                        explicitTtl,
+                        explicitExpireTime);
+
+                    // Prepare old and new entries for conflict resolution.
+                    GridCacheVersionedEntryEx oldEntry = versionedEntry(keepBinary);
 
                     if (op == GridCacheOperation.TRANSFORM) {
                         transformClo = writeObj;
@@ -2069,22 +2078,24 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                             writeObj = oldVal;
                             writeObj0 = cctx.unwrapBinaryIfNeeded(oldVal, keepBinary, false);
                         }
+
+                        newEntry = new GridCachePlainVersionedEntry<>(
+                            oldEntry.key(),
+                            writeObj0,
+                            expiration.get1(),
+                            expiration.get2(),
+                            conflictVer != null ? conflictVer : newVer);
                     }
-                    else
-                        writeObj0 = cctx.unwrapBinaryIfNeeded(writeObj, keepBinary, false);
-
-                    GridTuple3<Long, Long, Boolean> expiration = ttlAndExpireTime(expiryPlc,
-                        explicitTtl,
-                        explicitExpireTime);
-
-                    // Prepare old and new entries for conflict resolution.
-                    GridCacheVersionedEntryEx oldEntry = versionedEntry(keepBinary);
-                    GridCacheVersionedEntryEx newEntry = new GridCachePlainVersionedEntry<>(
-                        oldEntry.key(),
-                        writeObj0,
-                        expiration.get1(),
-                        expiration.get2(),
-                        conflictVer != null ? conflictVer : newVer);
+                    else {
+                        newEntry = new GridCacheLazyPlainVersionedEntry<>(
+                            cctx,
+                            key,
+                            cctx.toCacheObject(writeObj),
+                            expiration.get1(),
+                            expiration.get2(),
+                            conflictVer != null ? conflictVer : newVer,
+                            keepBinary);
+                    }
 
                     // Resolve conflict.
                     conflictCtx = cctx.conflictResolve(oldEntry, newEntry, verCheck);
@@ -3549,12 +3560,14 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         CacheObject val = isNew ? unswap(true, false) : rawGetOrUnmarshalUnlocked(false);
 
-        return new GridCachePlainVersionedEntry<>(cctx.unwrapBinaryIfNeeded(key, keepBinary, true),
-            cctx.unwrapBinaryIfNeeded(val, keepBinary, true),
+        return new GridCacheLazyPlainVersionedEntry<>(cctx,
+            key,
+            val,
             ttlExtras(),
             expireTimeExtras(),
             ver.conflictVersion(),
-            isNew);
+            isNew,
+            keepBinary);
     }
 
     /** {@inheritDoc} */
