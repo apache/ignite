@@ -26,9 +26,11 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.CacheObject;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryInfo;
+import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
@@ -76,6 +78,7 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_ASYNC;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYSTEM_POOL;
 import static org.apache.ignite.internal.managers.communication.GridIoPolicy.UTILITY_CACHE_POOL;
+import static org.apache.ignite.internal.processors.cache.GridCacheOperation.TRANSFORM;
 import static org.apache.ignite.internal.processors.cache.GridCacheUtils.isNearEnabled;
 import static org.apache.ignite.internal.processors.cache.distributed.near.GridNearTxFinishFuture.FINISH_NEAR_ONE_PHASE_SINCE;
 import static org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx.FinalizationStatus.USER_FINISH;
@@ -1239,6 +1242,49 @@ public class IgniteTxHandler {
 
                             if (info != null && !info.isNew() && !info.isDeleted())
                                 res.addPreloadEntry(info);
+                        }
+
+                        if (cacheCtx.readThroughConfigured() &&
+                            !entry.skipStore() &&
+                            entry.op() == TRANSFORM &&
+                            entry.oldValueOnPrimary() &&
+                            !entry.hasValue()) {
+                            while (true) {
+                                try {
+                                    GridCacheEntryEx cached = entry.cached();
+
+                                    if (cached == null)
+                                        cached = cacheCtx.cache().entryEx(entry.key(), req.topologyVersion());
+
+                                    CacheObject val = cached.innerGet(
+                                        /*ver*/null,
+                                        tx,
+                                        /*readSwap*/true,
+                                        /*readThrough*/false,
+                                        /*updateMetrics*/false,
+                                        /*evt*/false,
+                                        /*tmp*/false,
+                                        tx.subjectId(),
+                                        /*transformClo*/null,
+                                        tx.resolveTaskName(),
+                                        /*expiryPlc*/null,
+                                        /*keepBinary*/true);
+
+                                    if (val == null)
+                                        val = cacheCtx.toCacheObject(cacheCtx.store().load(null, entry.key()));
+
+                                    if (val != null)
+                                        entry.readValue(val);
+
+                                    break;
+                                }
+                                catch (GridCacheEntryRemovedException e) {
+                                    if (log.isDebugEnabled())
+                                        log.debug("Got entry removed exception, will retry: " + entry.txKey());
+
+                                    entry.cached(null);
+                                }
+                            }
                         }
                     }
                     catch (GridDhtInvalidPartitionException e) {

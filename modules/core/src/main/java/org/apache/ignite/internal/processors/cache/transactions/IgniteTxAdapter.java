@@ -1493,8 +1493,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
                     this,
                     /*swap*/false,
                     /*read through*/false,
-                    /*fail fast*/true,
-                    /*unmarshal*/true,
                     /*metrics*/metrics,
                     /*event*/recordEvt,
                     /*temporary*/true,

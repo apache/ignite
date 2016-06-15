@@ -279,9 +279,6 @@ public interface GridCacheEntryEx {
      * @param tx Ongoing transaction (possibly null).
      * @param readSwap Flag indicating whether to check swap memory.
      * @param readThrough Flag indicating whether to read through.
-     * @param failFast If {@code true}, then throw {@link GridCacheFilterFailedException} if
-     *      filter didn't pass.
-     * @param unmarshal Unmarshal flag.
      * @param updateMetrics If {@code true} then metrics should be updated.
      * @param evt Flag to signal event notification.
      * @param tmp If {@code true} can return temporary instance which is valid while entry lock is held,
@@ -300,8 +297,6 @@ public interface GridCacheEntryEx {
         @Nullable IgniteInternalTx tx,
         boolean readSwap,
         boolean readThrough,
-        boolean failFast,
-        boolean unmarshal,
         boolean updateMetrics,
         boolean evt,
         boolean tmp,
@@ -676,6 +671,7 @@ public interface GridCacheEntryEx {
      * @param preload Flag indicating whether entry is being preloaded.
      * @param topVer Topology version.
      * @param drType DR type.
+     * @param fromStore {@code True} if value was loaded from store.
      * @return {@code True} if initial value was set.
      * @throws IgniteCheckedException In case of error.
      * @throws GridCacheEntryRemovedException If entry was removed.
@@ -686,7 +682,8 @@ public interface GridCacheEntryEx {
         long expireTime,
         boolean preload,
         AffinityTopologyVersion topVer,
-        GridDrType drType) throws IgniteCheckedException, GridCacheEntryRemovedException;
+        GridDrType drType,
+        boolean fromStore) throws IgniteCheckedException, GridCacheEntryRemovedException;
 
     /**
      * Sets new value if current version is <tt>0</tt> using swap entry data.
