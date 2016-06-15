@@ -51,6 +51,7 @@ import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.AddressResolver;
 import org.apache.ignite.configuration.IgniteConfiguration;
+import org.apache.ignite.internal.GridComponent;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
@@ -1716,11 +1717,24 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
                 data0.put(entry.getKey(), compData);
             }
             catch (IgniteCheckedException e) {
-                U.error(log, "Failed to unmarshal discovery data for component: "  + entry.getKey(), e);
+                if (cantLoadConinousClassesOnClient(entry, e))
+                    U.warn(log, e.getMessage());
+                else
+                    U.error(log, "Failed to unmarshal discovery data for component: "  + entry.getKey(), e);
             }
         }
 
         exchange.onExchange(joiningNodeID, nodeId, data0);
+    }
+
+    /**
+     * @param entry Map entry.
+     * @param e Exception.
+     * @return True if client can not load classes of continuous, false otherwise.
+     */
+    private boolean cantLoadConinousClassesOnClient(Map.Entry<Integer, byte[]> entry, IgniteCheckedException e) {
+        return isClientMode() && GridComponent.DiscoveryDataExchangeType.CONTINUOUS_PROC.ordinal() == entry.getKey()
+            && X.hasCause(e, ClassNotFoundException.class);
     }
 
     /** {@inheritDoc} */
