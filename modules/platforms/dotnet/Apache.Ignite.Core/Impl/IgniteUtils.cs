@@ -220,9 +220,13 @@ namespace Apache.Ignite.Core.Impl
         private static string FormatWin32Error(int errorCode)
         {
             if (errorCode == NativeMethods.ERROR_BAD_EXE_FORMAT)
+            {
+                var mode = Environment.Is64BitProcess ? "x64" : "x86";
+
                 return string.Format("DLL could not be loaded (193: ERROR_BAD_EXE_FORMAT). " +
                                      "This is often caused by x64/x86 mismatch. " +
-                                     "Current process runs in {0} mode.", Environment.Is64BitProcess ? "x64" : "x86");
+                                     "Current process runs in {0} mode, and DLL is not {0}.", mode);
+            }
 
             return string.Format("{0}: {1}", errorCode, new Win32Exception(errorCode).Message);
         }
