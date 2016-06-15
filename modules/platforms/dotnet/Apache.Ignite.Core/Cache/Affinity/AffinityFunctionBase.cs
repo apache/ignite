@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Cache.Affinity
 {
+    using System.ComponentModel;
     using Apache.Ignite.Core.Binary;
 
     /// <summary>
@@ -24,17 +25,39 @@ namespace Apache.Ignite.Core.Cache.Affinity
     /// </summary>
     public abstract class AffinityFunctionBase : IAffinityFunction
     {
-        // TODO: Partitions, ExcludeNeighbors
+        /// <summary> The default value for <see cref="PartitionCount"/> property. </summary>
+        public const int DefaultPartitionCount = 1024;
+
+        /// <summary>
+        /// Gets or sets the total number of partitions.
+        /// </summary>
+        [DefaultValue(DefaultPartitionCount)]
+        public int PartitionCount { get; set; }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether to exclude same-host-neighbors from being backups of each other.
+        /// </summary>
+        public bool ExcludeNeighbors { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AffinityFunctionBase"/> class.
+        /// </summary>
         internal AffinityFunctionBase()
         {
-            // TODO: Defaults
+            PartitionCount = DefaultPartitionCount;
         }
 
+        /// <summary>
+        /// Reads the instance.
+        /// </summary>
         internal static IAffinityFunction Read(IBinaryRawReader reader)
         {
             throw new System.NotImplementedException();
         }
 
+        /// <summary>
+        /// Writes the instance.
+        /// </summary>
         internal static void Write(IBinaryRawWriter writer, IAffinityFunction affinityFunction)
         {
             throw new System.NotImplementedException();
