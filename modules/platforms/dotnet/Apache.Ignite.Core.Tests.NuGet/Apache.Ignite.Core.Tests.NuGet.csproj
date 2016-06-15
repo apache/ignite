@@ -93,6 +93,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ComputeTest.cs" />
@@ -110,9 +111,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Apache.Ignite.Core.Tests.NuGet.sln.DotSettings" />
-    <None Include="IgniteConfigurationSection.xsd">
+    <Content Include="IgniteConfigurationSection.xsd">
       <SubType>Designer</SubType>
-    </None>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <None Include="install-package.ps1" />
     <None Include="NuGet.config" />
     <None Include="packages.config">

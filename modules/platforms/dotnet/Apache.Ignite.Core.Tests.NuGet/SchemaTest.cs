@@ -17,11 +17,46 @@
 
 namespace Apache.Ignite.Core.Tests.NuGet
 {
+    using System.IO;
+    using System.Xml;
+    using System.Xml.Schema;
+    using NUnit.Framework;
+
     /// <summary>
     /// Tests the Apache.Ignite.Schema package.
     /// </summary>
     public class SchemaTest
     {
-        // TODO
+        /// <summary>
+        /// Tests that schema exists and validates XML config properly..
+        /// </summary>
+        [Test]
+        public void TestSchemavalidation()
+        {
+            Assert.IsTrue(File.Exists("IgniteConfigurationSection.xsd"));
+
+            // Valid schema
+            CheckSchemaValidation(@"<igniteConfiguration xmlns='http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection' gridName='myGrid'><binaryConfiguration /></igniteConfiguration>");
+
+            // Invalid schema
+            Assert.Throws<XmlSchemaValidationException>(() => CheckSchemaValidation(
+                @"<igniteConfiguration xmlns='http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection' invalidAttr='myGrid' />"));
+        }
+
+        /// <summary>
+        /// Checks the schema validation.
+        /// </summary>
+        /// <param name="xml">The XML.</param>
+        private static void CheckSchemaValidation(string xml)
+        {
+            var document = new XmlDocument();
+
+            document.Schemas.Add("http://ignite.apache.org/schema/dotnet/IgniteConfigurationSection",
+                XmlReader.Create("IgniteConfigurationSection.xsd"));
+
+            document.Load(new StringReader(xml));
+
+            document.Validate(null);
+        }
     }
 }
