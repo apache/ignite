@@ -33,12 +33,14 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
@@ -90,6 +92,7 @@ import org.jsr166.ConcurrentLinkedDeque8;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_PRELOAD_RESEND_TIMEOUT;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT;
 import static org.apache.ignite.IgniteSystemProperties.getLong;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_STARTED;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
@@ -1106,16 +1109,17 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
     }
 
     /**
-     *
+     * @throws Exception If failed.
      */
-    public void dumpDebugInfo() {
+    public void dumpDebugInfo() throws Exception {
         dumpDebugInfo(null);
     }
 
     /**
-     *
+     * @param exchTopVer Optional current exchange topology version.
+     * @throws Exception If failed.
      */
-    public void dumpDebugInfo(@Nullable AffinityTopologyVersion exchTopVer) {
+    public void dumpDebugInfo(@Nullable AffinityTopologyVersion exchTopVer) throws Exception {
         U.warn(log, "Ready affinity version: " + readyTopVer.get());
 
         U.warn(log, "Last exchange future: " + lastInitializedFut);
@@ -1332,7 +1336,36 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                             exchFut.init();
 
-                            exchFut.get();
+                            int dumpedObjects = 0;
+
+                            while (true) {
+                                try {
+                                    exchFut.get(2 * cctx.gridConfig().getNetworkTimeout(), TimeUnit.MILLISECONDS);
+
+                                    break;
+                                }
+                                catch (IgniteFutureTimeoutCheckedException ignored) {
+                                    U.warn(log, "Failed to wait for partition map exchange [" +
+                                        "topVer=" + exchFut.topologyVersion() +
+                                        ", node=" + cctx.localNodeId() + "]. " +
+                                        "Dumping pending objects that might be the cause: ");
+
+                                    if (dumpedObjects < GridDhtPartitionsExchangeFuture.DUMP_PENDING_OBJECTS_THRESHOLD) {
+                                        try {
+                                            dumpDebugInfo(exchFut.topologyVersion());
+                                        }
+                                        catch (Exception e) {
+                                            U.error(log, "Failed to dump debug information: " + e, e);
+                                        }
+
+                                        if (IgniteSystemProperties.getBoolean(IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT, false))
+                                            U.dumpThreads(log);
+
+                                        dumpedObjects++;
+                                    }
+                                }
+                            }
+
 
                             if (log.isDebugEnabled())
                                 log.debug("After waiting for exchange future [exchFut=" + exchFut + ", worker=" +
