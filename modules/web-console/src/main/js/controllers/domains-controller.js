@@ -1118,14 +1118,14 @@ consoleModule.controller('domainsController', [
                 }
 
                 $scope.$watch('ui.inputForm.$valid', function(valid) {
-                    if (valid && __original_value === JSON.stringify($cleanup($scope.backupItem)))
+                    if (valid && _.isEqual(__original_value, $cleanup($scope.backupItem)))
                         $scope.ui.inputForm.$dirty = false;
                 });
 
                 $scope.$watch('backupItem', function(val) {
                     const form = $scope.ui.inputForm;
 
-                    if (form.$pristine || (form.$valid && __original_value === JSON.stringify($cleanup(val))))
+                    if (form.$pristine || (form.$valid && _.isEqual(__original_value, $cleanup(val))))
                         form.$setPristine();
                     else
                         form.$setDirty();
@@ -1176,7 +1176,7 @@ consoleModule.controller('domainsController', [
 
                 $scope.backupItem = angular.merge({}, blank, $scope.backupItem);
 
-                __original_value = JSON.stringify($cleanup($scope.backupItem));
+                __original_value = $cleanup($scope.backupItem);
 
                 if ($common.isDefined($scope.backupItem) && !$common.isDefined($scope.backupItem.queryMetadata))
                     $scope.backupItem.queryMetadata = 'Configuration';

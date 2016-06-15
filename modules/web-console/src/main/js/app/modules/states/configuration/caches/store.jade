@@ -20,7 +20,7 @@ include ../../../../../app/helpers/jade/mixins.jade
 -var model = 'backupItem'
 
 //- Mixin for DB dialect.
-mixin dialect(lbl, model, name, tipTitle, genericDialectName, placeholder)
+mixin dialect(lbl, model, name, required, tipTitle, genericDialectName, placeholder)
     ignite-form-field
         ignite-form-field-label
             | #{lbl}
@@ -46,7 +46,7 @@ mixin dialect(lbl, model, name, tipTitle, genericDialectName, placeholder)
                 {value: "H2", label: "H2 database"}\
             ]'
             data-ng-model=model
-            data-ng-required='true'
+            data-ng-required=required
             data-placeholder=placeholder
         )
 
@@ -102,13 +102,14 @@ form.panel.panel-default(name=form novalidate)
                         .panel-details(ng-show='__.expanded')
                             div(ng-show='#{storeFactoryKind} === "CacheJdbcPojoStoreFactory"')
                                 -var pojoStoreFactory = storeFactory + '.CacheJdbcPojoStoreFactory'
+                                -var required = storeFactoryKind + ' === "CacheJdbcPojoStoreFactory"'
 
                                 .details-row
                                     +text('Data source bean name:', pojoStoreFactory + '.dataSourceBean',
-                                        'pojoDataSourceBean', 'true', 'Input bean name',
+                                        'pojoDataSourceBean', required, 'Input bean name',
                                         'Name of the data source bean in Spring context')
                                 .details-row
-                                    +dialect('Dialect:', pojoStoreFactory + '.dialect', 'pojoDialect',
+                                    +dialect('Dialect:', pojoStoreFactory + '.dialect', 'pojoDialect', required,
                                         'Dialect of SQL implemented by a particular RDBMS:', 'Generic JDBC dialect',
                                         'Choose JDBC dialect')
                             div(ng-show='#{storeFactoryKind} === "CacheJdbcBlobStoreFactory"')
@@ -127,19 +128,23 @@ form.panel.panel-default(name=form novalidate)
                                             <li>Configured data source</li>\
                                         </ul>')
                                 div(ng-show='#{blobStoreFactoryVia} === "URL"')
+                                    -var required = storeFactoryKind + ' === "CacheJdbcBlobStoreFactory" && ' + blobStoreFactoryVia + ' === "URL"'
+
                                     .details-row
-                                        +text('Connection URL:', blobStoreFactory + '.connectionUrl', 'connectionUrl', 'true', 'Input URL',
+                                        +text('Connection URL:', blobStoreFactory + '.connectionUrl', 'connectionUrl', required, 'Input URL',
                                             'URL for database access, for example: jdbc:h2:mem:myDatabase')
                                     .details-row
-                                        +text('User:', blobStoreFactory + '.user', 'user', 'true', 'Input user name', 'User name for database access')
+                                        +text('User:', blobStoreFactory + '.user', 'user', required, 'Input user name', 'User name for database access')
                                     .details-row
                                         label Note, password will be generated as stub
                                 div(ng-show='#{blobStoreFactoryVia} !== "URL"')
+                                    -var required = storeFactoryKind + ' === "CacheJdbcBlobStoreFactory" && ' + blobStoreFactoryVia + '!== "URL"'
+
                                     .details-row
-                                        +text('Data source bean name:', blobStoreFactory + '.dataSourceBean', 'blobDataSourceBean', 'true', 'Input bean name',
+                                        +text('Data source bean name:', blobStoreFactory + '.dataSourceBean', 'blobDataSourceBean', required, 'Input bean name',
                                             'Name of the data source bean in Spring context')
                                     .details-row
-                                        +dialect('Database:', blobStoreFactory + '.dialect', 'blobDialect', 'Supported databases:', 'Generic database', 'Choose database')
+                                        +dialect('Database:', blobStoreFactory + '.dialect', 'blobDialect', required, 'Supported databases:', 'Generic database', 'Choose database')
                                 .details-row
                                     +checkbox('Init schema', blobStoreFactory + '.initSchema', 'initSchema',
                                         'Flag indicating whether DB schema should be initialized by Ignite (default behaviour) or was explicitly created by user')

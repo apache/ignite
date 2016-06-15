@@ -31,7 +31,8 @@ class IgniteAgentMonitor {
             scope: this._scope,
             templateUrl: '/templates/agent-download.html',
             show: false,
-            backdrop: 'static'
+            backdrop: 'static',
+            keyboard: false
         });
 
         const _modalHide = this._downloadAgentModal.hide;

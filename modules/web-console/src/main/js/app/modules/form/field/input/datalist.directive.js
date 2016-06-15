@@ -74,10 +74,10 @@ export default ['igniteFormFieldInputDatalist', ['IgniteFormGUID', '$table', (gu
         scope.ngChange = () => {
             ngModel.$setViewValue(scope.value);
 
-            if (JSON.stringify(scope.value) !== JSON.stringify(form.$defaults[name]))
-                ngModel.$setDirty();
-            else
+            if (_.isEqual(scope.value, form.$defaults[name]))
                 ngModel.$setPristine();
+            else
+                ngModel.$setDirty();
 
             setTimeout(checkValid, 100); // Use setTimeout() workaround of problem of two controllers.
         };
