@@ -89,8 +89,8 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
     /** Initialization guard. */
     private final AtomicBoolean initGuard = new AtomicBoolean();
 
-    /** Update guard. */
-    private final AtomicBoolean updateGuard = new AtomicBoolean(false);
+    /** Flag that controls the moment when remote updates will be accepted and processed by latch implementation. */
+    private volatile boolean acceptUpdates;
 
     /** Initialization latch. */
     private final CountDownLatch initLatch = new CountDownLatch(1);
@@ -240,12 +240,18 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
     @Override public void onUpdate(int cnt) {
         assert cnt >= 0;
 
-        if (!updateGuard.get())
+        if (!acceptUpdates)
             return;
 
-        U.awaitQuiet(initLatch);
-
         CountDownLatch latch0 = internalLatch;
+
+        if (latch0 == null) {
+            U.awaitQuiet(initLatch);
+
+            latch0 = initLatch;
+        }
+
+        assert latch0 != null;
 
         while (latch0.getCount() > cnt)
             latch0.countDown();
@@ -264,7 +270,7 @@ public final class GridCacheCountDownLatchImpl implements GridCacheCountDownLatc
                             try (IgniteInternalTx tx = CU.txStartInternal(ctx, latchView, PESSIMISTIC, REPEATABLE_READ)) {
                                 GridCacheCountDownLatchValue val = latchView.get(key);
 
-                                updateGuard.set(true);
+                                acceptUpdates = true;
 
                                 if (val == null) {
                                     if (log.isDebugEnabled())
