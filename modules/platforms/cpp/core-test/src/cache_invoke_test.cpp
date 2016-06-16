@@ -95,18 +95,10 @@ public:
      */
     int Process(MutableCacheEntry<int, int>& entry, const int& arg)
     {
-        std::cout << entry.GetKey() << std::endl;
-        std::cout << entry.Exists() << std::endl;
-        std::cout << arg << std::endl;
-        std::cout << num << std::endl;
-
         if (entry.Exists())
             entry.SetValue(entry.GetValue() - arg - num);
         else
             entry.SetValue(42);
-
-        std::cout << entry.Exists() << std::endl;
-        std::cout << entry.GetValue() << std::endl;
 
         return entry.GetValue() * 2;
     }
@@ -245,8 +237,6 @@ BOOST_AUTO_TEST_CASE(TestNonExisting)
     CacheEntryModifier ced;
 
     int res = cache.Invoke<int>(4, ced, 4);
-
-    std::cout << res << std::endl;
 
     BOOST_CHECK_EQUAL(res, 84);
 

@@ -58,16 +58,21 @@ namespace ignite
             typedef cache::CacheEntryProcessorHolder<P, A> ProcessorHolder;
 
             K key = reader.ReadObject<K>();
-            V value = reader.ReadObject<V>();
+            V value;
+
+            bool exists = reader.TryReadObject<V>(value);
+
             bool isLocal = reader.ReadBool();
+
+            // For C++ client we currently always writing processor as an
+            // object, no matter if it's local or not.
+            assert(!isLocal);
 
             cache::MutableCacheEntryState entryState;
 
-            ignite::binary::BinaryType<V> pvalue;
-
             ProcessorHolder procHolder = reader.ReadObject<ProcessorHolder>();
 
-            R res = procHolder.Process<R, K, V>(key, value, !pvalue.IsNull(value), entryState);
+            R res = procHolder.Process<R, K, V>(key, value, exists, entryState);
 
             writer.WriteInt8(static_cast<int8_t>(entryState));
             writer.WriteTopObject(value);
@@ -105,7 +110,6 @@ namespace ignite
             }
 
         private:
-
             JobInvoker* GetRemoteJobInvoker(common::dynamic::Module& module)
             {
                 return reinterpret_cast<JobInvoker*>(module.FindSymbol(IGNITE_REMOTE_JOB_INVOKER_NAME));
@@ -118,9 +122,7 @@ namespace ignite
                 JobInvoker *invoker = GetRemoteJobInvoker(module);
 
                 if (invoker)
-                {
                     jobInvokers.push_back(invoker);
-                }
             }
 
             ModuleManager() : loadedModules(), jobInvokers()

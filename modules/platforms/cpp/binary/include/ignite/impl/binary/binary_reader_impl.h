@@ -722,6 +722,13 @@ namespace ignite
                 bool HasNextElement(int32_t id) const;
 
                 /**
+                 * Skip next value if it is the null.
+                 *
+                 * @return True if the null value has been detected and skipped.
+                 */
+                bool SkipIfNull();
+
+                /**
                  * Read element.
                  *
                  * @param id Session ID.
@@ -762,7 +769,7 @@ namespace ignite
                     *key = ReadTopObject<K>();
                     *val = ReadTopObject<V>();
                 }
-                
+
                 /**
                  * Read object.
                  *
@@ -797,6 +804,28 @@ namespace ignite
                     stream->Position(fieldPos);
 
                     return ReadTopObject<T>();
+                }
+
+                /**
+                 * Try read object.
+                 * Reads value, stores it to res and returns true if the value is
+                 * not null. Otherwise just returns false.
+                 *
+                 * @param res Read value is placed here if non-null.
+                 * @return True if the non-null value has been read and false
+                 *     otherwise.
+                 */
+                template<typename T>
+                bool TryReadObject(T& res)
+                {
+                    CheckRawMode(true);
+
+                    if (SkipIfNull())
+                        return false;
+
+                    res = ReadObject<T>();
+
+                    return true;
                 }
 
                 /**

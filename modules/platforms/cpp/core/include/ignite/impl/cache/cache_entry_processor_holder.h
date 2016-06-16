@@ -179,7 +179,7 @@ namespace ignite
             {
                 return GetBinaryStringHashCode(GetTypeName().c_str());
             }
-            
+
             std::string GetTypeName()
             {
                 BinaryType<P> p;
