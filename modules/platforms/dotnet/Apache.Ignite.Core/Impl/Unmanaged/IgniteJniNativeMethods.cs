@@ -273,6 +273,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProjectionForYoungest")]
         public static extern void* ProjectionForYoungest(void* ctx, void* obj);
 
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProjectionForServers")]
+        public static extern void* ProjectionForServers(void* ctx, void* obj);
+
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteProjectionResetMetrics")]
         public static extern void ProjectionResetMetrics(void* ctx, void* obj);
 

@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Tests.Process;
@@ -212,6 +213,14 @@ namespace Apache.Ignite.Core.Tests.Compute
         protected virtual void GetBinaryTypeConfigurations(ICollection<BinaryTypeConfiguration> portTypeCfgs)
         {
             // No-op.
+        }
+
+        /// <summary>
+        /// Gets the server count.
+        /// </summary>
+        protected int GetServerCount()
+        {
+            return Grid1.GetCluster().GetNodes().Count(x => !x.IsClient);
         }
     }
 }
