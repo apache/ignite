@@ -45,8 +45,6 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestOldMode()
         {
-            TestUtils.JvmDebug = false;  // avoid conflicting listener from standalone process
-
             using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration(false)))
             {
                 CheckString(ignite, "Normal string строка 123 — ☺");
