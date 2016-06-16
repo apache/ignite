@@ -28,6 +28,4 @@ gulp.task('watch', ['build'], () => {
     gulp.watch(resourcePaths, ['copy:resource']);
     gulp.watch(resourceModulePaths, ['copy:ignite_modules:resource']);
     gulp.watch(appModulePaths, ['watch:ignite-modules']);
-    gulp.watch(appPaths, ['copy']);
 });
-

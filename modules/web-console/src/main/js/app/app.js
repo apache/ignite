@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import '../public/stylesheets/style.scss';
 
 import './decorator/select';
@@ -56,7 +57,7 @@ import igniteUiAcePom from './directives/ui-ace-pom/ui-ace-pom.directive';
 import igniteUiAceDocker from './directives/ui-ace-docker/ui-ace-docker.directive';
 import igniteUiAcePojos from './directives/ui-ace-pojos/ui-ace-pojos.directive';
 import igniteBsAffixUpdate from './directives/bs-affix-update.directive';
-import igniteСentered from './directives/centered/centered.directive.js';
+import igniteCentered from './directives/centered/centered.directive.js';
 
 // Services.
 import cleanup from './services/cleanup.service';
@@ -101,7 +102,6 @@ import 'controllers/sql-controller';
 
 // Inject external modules.
 import 'ignite_modules_temp/index';
-
 
 import baseTemplate from '../views/base.jade';
 
@@ -153,7 +153,7 @@ angular
 .directive(...igniteUiAceDocker)
 .directive(...igniteUiAcePojos)
 .directive(...igniteBsAffixUpdate)
-.directive(...igniteСentered)
+.directive(...igniteCentered)
 // Services.
 .service(...cleanup)
 .service(...confirm)
