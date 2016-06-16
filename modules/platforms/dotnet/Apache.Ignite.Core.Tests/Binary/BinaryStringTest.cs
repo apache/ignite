@@ -28,7 +28,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     public class BinaryStringTest
     {
         /** */
-        const string StringTestTask = "org.apache.ignite.platform.PlatformStringTestTask";
+        private const string StringTestTask = "org.apache.ignite.platform.PlatformStringTestTask";
 
         /// <summary>
         /// Tests the default mode.
@@ -47,7 +47,7 @@ namespace Apache.Ignite.Core.Tests.Binary
         {
             TestUtils.JvmDebug = false;  // avoid conflicting listener from standalone process
 
-            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
+            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration(false)))
             {
                 CheckString(ignite, "Normal string строка 123 — ☺");
 
