@@ -16,21 +16,11 @@
  */
 
 import webpack from 'webpack';
-import HtmlWebpackPlugin from 'html-webpack-plugin';
 import {destDir, rootDir} from '../../paths';
-import jade from 'jade';
-import path from 'path';
 
 export default () => {
     let plugins = [
-        new webpack.HotModuleReplacementPlugin(),
-        new HtmlWebpackPlugin({
-            filename: 'index.html',
-            templateContent: function () {
-                return jade.renderFile(path.join(rootDir, 'views', 'index.jade'));
-            },
-            title: 'DEBUG:Ignite Web Console'
-        })
+        new webpack.HotModuleReplacementPlugin()
     ];
 
     return {
@@ -64,7 +54,7 @@ export default () => {
                 aggregateTimeout: 1000,
                 poll: 1000
             },
-            stats: 'verbose',
+            stats: {colors: true},
             port: 9000
         },
         stats: {colors: true},

@@ -18,20 +18,22 @@
 import path from 'path';
 import webpack from 'webpack';
 import autoprefixer from 'autoprefixer-core';
+import jade from 'jade';
 import progressPlugin from './plugins/progress';
 
 //import  Manifest from 'manifest-revision-webpack-plugin';
 import ExtractTextPlugin from 'extract-text-webpack-plugin';
+import HtmlWebpackPlugin from 'html-webpack-plugin';
 
 import {srcDir, destDir, rootDir} from '../paths';
 
 const NODE_ENV = process.env.NODE_ENV || 'production';
-const IS_DEVELOPMENT = NODE_ENV === 'development';
-
+const development = NODE_ENV === 'development';
+const node_modules_path = path.resolve('node_modules');
 const stylesLoader = 'css-loader?sourceMap!postcss-loader!sass-loader?outputStyle=expanded&sourceMap=true&sourceMapContents=true';
 
+
 export default () => {
-    const NODE_MODULES_PATH = path.resolve('node_modules');
 
     const webpackConfig = {
         node: {
@@ -41,7 +43,7 @@ export default () => {
         // Entry points.
         entry: {
             polyfill: 'babel-polyfill',
-            app: path.join(srcDir, 'index.js'),
+            app: path.join(srcDir, 'app.js'),
             vendor: path.join(srcDir, 'vendor.js')
         },
         
@@ -56,7 +58,7 @@ export default () => {
         resolve: {
             extensions: ['', '.js'],
             root: [rootDir],
-            modulesDirectories: [NODE_MODULES_PATH, './'],
+            modulesDirectories: [node_modules_path, './'],
         },
         
         // Modules resolvers.
@@ -65,7 +67,7 @@ export default () => {
             preLoaders: [
                 {
                     test: /\.js$/,
-                    exclude: [NODE_MODULES_PATH],
+                    exclude: [node_modules_path],
                     loader: 'eslint-loader'
                 }
             ],
@@ -88,12 +90,12 @@ export default () => {
                 },
                 {
                     test: /\.js$/,
-                    exclude: [NODE_MODULES_PATH],
+                    exclude: [node_modules_path],
                     loaders: ['ng-annotate-loader']
                 },
                 {
                     test: /\.js$/,
-                    exclude: [NODE_MODULES_PATH],
+                    exclude: [node_modules_path],
                     loader: 'babel-loader',
                     query: {
                         cacheDirectory: true,
@@ -108,7 +110,7 @@ export default () => {
                 },
                 {
                     test: /\.(scss|sass)$/,
-                    loader: IS_DEVELOPMENT ? `style-loader!${stylesLoader}` : ExtractTextPlugin.extract('style-loader', stylesLoader)
+                    loader: development ? `style-loader!${stylesLoader}` : ExtractTextPlugin.extract('style-loader', stylesLoader)
                 },
                 {
                     test: /\.(woff2|woff|ttf|eot|svg)?(\?v=[0-9]\.[0-9]\.[0-9])?$/,
@@ -142,7 +144,7 @@ export default () => {
         // ESLint loader configuration.
         eslint: {
             failOnWarning: false,
-            failOnError: false
+            failOnError: !development
         },
 
         // Load plugins.
@@ -166,7 +168,14 @@ export default () => {
             //     rootAssetPath: rootAssetPath,
             //     ignorePaths: ['.DS_Store']
             // }),
-            new ExtractTextPlugin('assets/css/[name]' + (IS_DEVELOPMENT ? '' : '.[chunkhash]') + '.css', {allChunks: true}),
+            new ExtractTextPlugin('assets/css/[name]' + (development ? '' : '.[chunkhash]') + '.css', {allChunks: true}),
+            new HtmlWebpackPlugin({
+                filename: 'index.html',
+                templateContent: () => {
+                    return jade.renderFile(path.join(rootDir, 'views', 'index.jade'));
+                },
+                title: 'Ignite Web Console'
+            }),
             progressPlugin
         ]
     };
