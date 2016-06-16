@@ -36,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheA
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCacheAtomicNearEnabledFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCachePartitionedFieldsQueryP2PEnabledSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.near.IgniteCachePartitionedFieldsQuerySelfTest;
+import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedFieldsQueryNodeFailSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedFieldsQueryP2PEnabledSelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedFieldsQuerySelfTest;
 import org.apache.ignite.internal.processors.cache.distributed.replicated.IgniteCacheReplicatedFieldsQueryStopSelfTest;
@@ -69,6 +70,7 @@ public class IgniteCacheQuerySelfTestSuite2 extends TestSuite {
         suite.addTestSuite(IgniteCacheReplicatedFieldsQuerySelfTest.class);
         suite.addTestSuite(IgniteCacheReplicatedFieldsQueryP2PEnabledSelfTest.class);
         suite.addTestSuite(IgniteCacheReplicatedFieldsQueryStopSelfTest.class);
+        suite.addTestSuite(IgniteCacheReplicatedFieldsQueryNodeFailSelfTest.class);
         suite.addTestSuite(IgniteCachePartitionedFieldsQuerySelfTest.class);
         suite.addTestSuite(IgniteCacheAtomicFieldsQuerySelfTest.class);
         suite.addTestSuite(IgniteCacheAtomicNearEnabledFieldsQuerySelfTest.class);

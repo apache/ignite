@@ -47,13 +47,13 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  * Tests distributed fields query resources cleanup on node failure.
  */
 public class IgniteCacheReplicatedFieldsQueryNodeFailSelfTest extends GridCommonAbstractTest {
-    /** Huge resultset query. */
+    /** */
     private static final String KEY_CROSS_JOIN_QRY = "select a._key, b._key from String a, String b";
 
-    /** Grid count. */
+    /** */
     public static final int GRID_COUNT = 3;
 
-    /** IP finder. */
+    /** */
     public static final TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /**

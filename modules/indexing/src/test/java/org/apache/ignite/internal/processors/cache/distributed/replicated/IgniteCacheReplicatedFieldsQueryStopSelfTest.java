@@ -42,16 +42,16 @@ import static org.apache.ignite.cache.CachePeekMode.ALL;
  * Tests distributed fields query resources cleanup on cancellation by various reasons.
  */
 public class IgniteCacheReplicatedFieldsQueryStopSelfTest extends IgniteCacheAbstractQuerySelfTest {
-    /** Huge resultset query. */
+    /** */
     private static final String CROSS_KEY_JOIN_QRY = "select a._key, b._key from String a, String b";
 
-    /** Reduce query. */
+    /** */
     private static final String GROUP_QRY = "select a._key, count(*) from String a group by a._key";
 
-    /** Large value size query. */
+    /** */
     private static final String CROSS_VAL_JOIN_QRY = "select a._val, b._val from String a, String b";
 
-    /** Simple query. */
+    /** */
     private static final String SIMPLE_QRY = "select a._key from String a";
 
     /** {@inheritDoc} */
