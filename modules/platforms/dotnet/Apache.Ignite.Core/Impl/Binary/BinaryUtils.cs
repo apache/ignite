@@ -263,7 +263,7 @@ namespace Apache.Ignite.Core.Impl.Binary
 
         /** String mode. */
         public static readonly bool UseStringSerializationVer2 =
-            (Environment.GetEnvironmentVariable(IgniteBinaryMarshallerUseStringSerializationVer2) ?? "true") == "true";
+            (Environment.GetEnvironmentVariable(IgniteBinaryMarshallerUseStringSerializationVer2) ?? "false") == "true";
 
         /// <summary>
         /// Default marshaller.

@@ -36,14 +36,14 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestDefaultMode()
         {
-            Assert.IsTrue(BinaryUtils.UseStringSerializationVer2);
+            Assert.IsFalse(BinaryUtils.UseStringSerializationVer2);
         }
 
         /// <summary>
         /// Tests the new serialization mode.
         /// </summary>
         [Test]
-        public void TestNewMode()
+        public void TestOldMode()
         {
             TestUtils.JvmDebug = false;  // avoid conflicting listener from standalone process
 
@@ -83,17 +83,17 @@ namespace Apache.Ignite.Core.Tests.Binary
         /// Tests the old serialization mode.
         /// </summary>
         [Test]
-        public void TestOldMode()
+        public void TestNewMode()
         {
             // Run "TestNewMode" in a separate process
             var envVar = BinaryUtils.IgniteBinaryMarshallerUseStringSerializationVer2;
 
-            Environment.SetEnvironmentVariable(envVar, "false");
+            Environment.SetEnvironmentVariable(envVar, "true");
 
             var procStart = new ProcessStartInfo
             {
                 FileName = GetType().Assembly.Location,
-                Arguments = GetType().FullName + " TestNewMode",
+                Arguments = GetType().FullName + " TestOldMode",
                 CreateNoWindow = true,
                 UseShellExecute = false,
                 RedirectStandardOutput = true,
