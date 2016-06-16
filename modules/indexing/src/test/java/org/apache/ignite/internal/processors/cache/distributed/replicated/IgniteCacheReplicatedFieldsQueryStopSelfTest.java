@@ -180,7 +180,7 @@ public class IgniteCacheReplicatedFieldsQueryStopSelfTest extends IgniteCacheAbs
                 log().error("Got expected exception", ex);
 
                 // Expecting instance of GridRemoteQueryCancelledException.
-                assertTrue(ex.getCause() instanceof GridRemoteQueryCancelledException);
+                assertTrue("Must throw correct exception", ex.getCause() instanceof GridRemoteQueryCancelledException);
             }
 
             l.await();
@@ -242,10 +242,12 @@ public class IgniteCacheReplicatedFieldsQueryStopSelfTest extends IgniteCacheAbs
             ConcurrentMap<UUID, ConcurrentMap<Long, ?>> map = U.field(((IgniteH2Indexing)U.field(U.field(
                 grid.context(), "qryProc"), "idx")).mapQueryExecutor(), "qryRess");
 
+            String msg = "Executor state is not cleared";
+
             if (map.size() == 1)
-                assertEquals(0, map.entrySet().iterator().next().getValue().size());
+                assertEquals(msg, 0, map.entrySet().iterator().next().getValue().size());
             else
-                assertEquals(0, map.size());
+                assertEquals(msg, 0, map.size());
         }
     }
 }
