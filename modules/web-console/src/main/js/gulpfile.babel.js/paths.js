@@ -29,38 +29,13 @@ const sassPaths = [
 ];
 
 const jadePaths = [
-    '!./views/error.jade',
     './views/*.jade',
     './views/**/*.jade'
-];
-
-const jadeModulePaths = [
-    igniteModulesDir + '/**/view/**/*.jade'
-];
-
-const resourcePaths = [
-    './controllers/**/*.json',
-    './public/**/*.png',
-    './public/*.ico'
-];
-
-const resourceModulePaths = [
-    igniteModulesDir + '/**/controllers/models/*.json',
-    igniteModulesDir + '/**/images/*.png'
 ];
 
 const jsPaths = [
     './{app,controllers,generator}/*.js',
     './{app,controllers,generator}/**/*.js'
-];
-
-const jsModulePaths = [
-    igniteModulesTemp + '/index.js',
-    igniteModulesTemp + '/**/main.js',
-    igniteModulesTemp + '/**/module.js',
-    igniteModulesTemp + '/**/app/modules/*.js',
-    igniteModulesTemp + '/**/app/modules/**/*.js',
-    igniteModulesTemp + '/**/app/modules/**/*.jade'
 ];
 
 const appPaths = [
@@ -69,15 +44,31 @@ const appPaths = [
     './app/data/*.json'
 ].concat(jsPaths);
 
-const appModulePaths = [
+const resourcePaths = [
+    './public/**/*.png',
+    './public/*.ico'
+];
+
+const jadeModulePaths = [
+    igniteModulesDir + '/**/view/**/*.jade'
+];
+
+const jsModulePaths = [
     igniteModulesDir + '/index.js',
     igniteModulesDir + '/**/main.js',
     igniteModulesDir + '/**/module.js',
-    igniteModulesDir + '/**/app/**/*.css',
-    igniteModulesDir + '/**/app/data/*.json',
     igniteModulesDir + '/**/app/modules/*.js',
     igniteModulesDir + '/**/app/modules/**/*.js',
     igniteModulesDir + '/**/app/modules/**/*.jade'
+];
+
+const appModulePaths = [
+    igniteModulesDir + '/**/app/**/*.css',
+    igniteModulesDir + '/**/app/data/*.json'
+].concat(jsModulePaths);
+
+const resourceModulePaths = [
+    igniteModulesDir + '/**/images/*.png'
 ];
 
 export {
@@ -90,14 +81,12 @@ export {
     sassPaths,
 
     jadePaths,
-    jadeModulePaths,
-
     resourcePaths,
-    resourceModulePaths,
-
     jsPaths,
-    jsModulePaths,
-
     appPaths,
+
+    jadeModulePaths,
+    resourceModulePaths,
+    jsModulePaths,
     appModulePaths
 };

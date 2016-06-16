@@ -19,7 +19,7 @@ import webpack from 'webpack';
 import {destDir, rootDir} from '../../paths';
 
 export default () => {
-    let plugins = [
+    const plugins = [
         new webpack.HotModuleReplacementPlugin()
     ];
 
@@ -44,8 +44,9 @@ export default () => {
                 '/api/v1/*': {
                     target: 'http://localhost:3000',
                     changeOrigin: true,
-                    rewrite: function(req) {
+                    rewrite: (req) => {
                         req.url = req.url.replace(/^\/api\/v1/, '');
+
                         return req;
                     }
                 }

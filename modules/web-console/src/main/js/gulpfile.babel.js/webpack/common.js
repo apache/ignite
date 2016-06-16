@@ -32,35 +32,39 @@ const development = NODE_ENV === 'development';
 const node_modules_path = path.resolve('node_modules');
 const stylesLoader = 'css-loader?sourceMap!postcss-loader!sass-loader?outputStyle=expanded&sourceMap=true&sourceMapContents=true';
 
-
 export default () => {
-
-    const webpackConfig = {
+    return {
         node: {
             fs: 'empty'
         },
-        
+
         // Entry points.
         entry: {
             polyfill: 'babel-polyfill',
             app: path.join(srcDir, 'app.js'),
             vendor: path.join(srcDir, 'vendor.js')
         },
-        
+
         // Output system.
         output: {
             path: destDir,
             publicPath: './',
             filename: '[name].js'
         },
-        
+
         // Resolves modules.
         resolve: {
-            extensions: ['', '.js'],
+            extensions: [
+                '',
+                '.js'
+            ],
             root: [rootDir],
-            modulesDirectories: [node_modules_path, './'],
+            modulesDirectories: [
+                node_modules_path,
+                './'
+            ]
         },
-        
+
         // Modules resolvers.
         module: {
             noParse: [],
@@ -99,14 +103,17 @@ export default () => {
                     loader: 'babel-loader',
                     query: {
                         cacheDirectory: true,
-                        plugins: ['transform-runtime', 'add-module-exports'],
+                        plugins: ['transform-runtime',
+                            'add-module-exports'],
                         presets: ['angular']
 
                     }
                 },
                 {
                     test: /\.css$/,
-                    loaders: ['style-loader', 'css-loader?sourceMap', 'postcss-loader']
+                    loaders: ['style-loader',
+                        'css-loader?sourceMap',
+                        'postcss-loader']
                 },
                 {
                     test: /\.(scss|sass)$/,
@@ -179,6 +186,4 @@ export default () => {
             progressPlugin
         ]
     };
-
-    return webpackConfig;
 };
