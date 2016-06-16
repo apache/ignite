@@ -459,9 +459,6 @@ public class TcpDiscoverySpi extends IgniteSpiAdapter implements DiscoverySpi, T
 
     /** {@inheritDoc} */
     @Override public void failNode(UUID nodeId, @Nullable String warning) {
-        // TODO remove it
-        U.dumpStack(log, "== Fail node");
-
         impl.failNode(nodeId, warning);
     }
 
