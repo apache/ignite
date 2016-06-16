@@ -31,6 +31,7 @@ import 'angular-drag-and-drop-lists';
 import 'angular-nvd3';
 import 'angular-tree-control';
 import 'angular-gridster';
+import 'bootstrap-sass/assets/javascripts/bootstrap/transition';
 import 'bootstrap-sass/assets/javascripts/bootstrap/carousel';
 import 'brace';
 import 'brace/mode/xml';
