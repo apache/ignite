@@ -39,6 +39,7 @@ import org.apache.curator.x.discovery.details.JsonInstanceSerializer;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.A;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.resources.LoggerResource;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinderAdapter;
@@ -68,11 +69,8 @@ import org.codehaus.jackson.map.annotate.JsonRootName;
  *
  * @see <a href="http://zookeeper.apache.org">Apache ZooKeeper</a>
  * @see <a href="http://curator.apache.org">Apache Curator</a>
- *
- * @author Raul Kripalani
  */
 public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
-
     /** System property name to provide the ZK Connection String. */
     public static final String PROP_ZK_CONNECTION_STRING = "IGNITE_ZK_CONNECTION_STRING";
 
@@ -88,6 +86,10 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
     /** Init guard. */
     @GridToStringExclude
     private final AtomicBoolean initGuard = new AtomicBoolean();
+
+    /** Init guard. */
+    @GridToStringExclude
+    private final AtomicBoolean closeGuard = new AtomicBoolean();
 
     /** Logger. */
     @LoggerResource
@@ -140,8 +142,10 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
             curator = CuratorFrameworkFactory.newClient(zkConnectionString, retryPolicy);
         }
 
-        if (curator.getState() != CuratorFrameworkState.STARTED)
+        if (curator.getState() == CuratorFrameworkState.LATENT)
             curator.start();
+
+        A.ensure(curator.getState() == CuratorFrameworkState.STARTED, "CuratorFramework can't be started.");
 
         discovery = ServiceDiscoveryBuilder.builder(IgniteInstanceDetails.class)
             .client(curator)
@@ -152,8 +156,11 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
 
     /** {@inheritDoc} */
     @Override public void onSpiContextDestroyed() {
-        if (!initGuard.compareAndSet(true, false))
+        if (!closeGuard.compareAndSet(false, true)) {
+            U.warn(log, "ZooKeeper IP Finder can't be closed more than once.");
+
             return;
+        }
 
         log.info("Destroying ZooKeeper IP Finder.");
 
@@ -175,7 +182,8 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
 
         try {
             serviceInstances = discovery.queryForInstances(serviceName);
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             log.warning("Error while getting registered addresses from ZooKeeper IP Finder.", e);
             return Collections.emptyList();
         }
@@ -214,17 +222,18 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
 
             try {
                 ServiceInstance<IgniteInstanceDetails> si = ServiceInstance.<IgniteInstanceDetails>builder()
-                        .name(serviceName)
-                        .uriSpec(URI_SPEC)
-                        .address(addr.getAddress().getHostAddress())
-                        .port(addr.getPort())
-                        .build();
+                    .name(serviceName)
+                    .uriSpec(URI_SPEC)
+                    .address(addr.getAddress().getHostAddress())
+                    .port(addr.getPort())
+                    .build();
 
                 ourInstances.put(addr, si);
 
                 discovery.registerService(si);
 
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 log.warning(String.format("Error while registering an address from ZooKeeper IP Finder " +
                     "[message=%s,addresses=%s]", e.getMessage(), addr), e);
             }
@@ -245,13 +254,14 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
             ServiceInstance<IgniteInstanceDetails> si = ourInstances.get(addr);
             if (si == null) {
                 log.warning("Asked to unregister address from ZooKeeper IP Finder, but no match was found in local " +
-                        "instance map for: " + addrs);
+                    "instance map for: " + addrs);
                 continue;
             }
 
             try {
                 discovery.unregisterService(si);
-            } catch (Exception e) {
+            }
+            catch (Exception e) {
                 log.warning("Error while unregistering an address from ZooKeeper IP Finder: " + addr, e);
             }
         }
@@ -272,7 +282,8 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
     }
 
     /**
-     * @param zkConnectionString ZooKeeper connection string in case a {@link CuratorFramework} is not being set explicitly.
+     * @param zkConnectionString ZooKeeper connection string in case a {@link CuratorFramework} is not being set
+     * explicitly.
      */
     public void setZkConnectionString(String zkConnectionString) {
         this.zkConnectionString = zkConnectionString;
@@ -286,8 +297,8 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
     }
 
     /**
-     * @param retryPolicy {@link RetryPolicy} to use in case a ZK Connection String is being injected, or if
-     *                    using a system property.
+     * @param retryPolicy {@link RetryPolicy} to use in case a ZK Connection String is being injected, or if using a
+     * system property.
      */
     public void setRetryPolicy(RetryPolicy retryPolicy) {
         this.retryPolicy = retryPolicy;
@@ -315,9 +326,8 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
     }
 
     /**
-     * @param serviceName Service name to use, as defined by Curator's {#link ServiceDiscovery} recipe. In physical
-     *                    ZK terms, it represents the node under {@link #basePath}, under which services will be
-     *                    registered.
+     * @param serviceName Service name to use, as defined by Curator's {#link ServiceDiscovery} recipe. In physical ZK
+     * terms, it represents the node under {@link #basePath}, under which services will be registered.
      */
     public void setServiceName(String serviceName) {
         this.serviceName = serviceName;
@@ -331,20 +341,19 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
     }
 
     /**
-     * @param allowDuplicateRegistrations Whether to register each node only once, or if duplicate registrations
-     *                                    are allowed. Nodes will attempt to register themselves, plus those they
-     *                                    know about. By default, duplicate registrations are not allowed, but you
-     *                                    might want to set this property to <tt>true</tt> if you have multiple
-     *                                    network interfaces or if you are facing troubles.
+     * @param allowDuplicateRegistrations Whether to register each node only once, or if duplicate registrations are
+     * allowed. Nodes will attempt to register themselves, plus those they know about. By default, duplicate
+     * registrations are not allowed, but you might want to set this property to <tt>true</tt> if you have multiple
+     * network interfaces or if you are facing troubles.
      */
     public void setAllowDuplicateRegistrations(boolean allowDuplicateRegistrations) {
         this.allowDuplicateRegistrations = allowDuplicateRegistrations;
     }
 
     /**
-     * Empty DTO for storing service instances details. Currently acting as a placeholder because Curator requires
-     * a payload type when registering and discovering nodes. May be enhanced in the future with further information
-     * to assist discovery.
+     * Empty DTO for storing service instances details. Currently acting as a placeholder because Curator requires a
+     * payload type when registering and discovering nodes. May be enhanced in the future with further information to
+     * assist discovery.
      *
      * @author Raul Kripalani
      */
