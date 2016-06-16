@@ -109,10 +109,10 @@ namespace Apache.Ignite.Core.Tests.Binary
         }
 
         /// <summary>
-        /// Fixture tear down.
+        /// Test tear down.
         /// </summary>
-        [TestFixtureTearDown]
-        public void FixtureTearDown()
+        [TearDown]
+        public void TearDown()
         {
             Environment.SetEnvironmentVariable(BinaryUtils.IgniteBinaryMarshallerUseStringSerializationVer2, null);
         }
