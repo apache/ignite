@@ -157,17 +157,12 @@ export default () => {
             }),
             new webpack.DefinePlugin({'NODE_ENV': JSON.stringify(NODE_ENV)}),
             // new webpack.NoErrorsPlugin(),
-            new webpack.optimize.AggressiveMergingPlugin({moveToParents: true}),
+            new webpack.optimize.DedupePlugin(),
             new webpack.optimize.CommonsChunkPlugin({
                 name: 'common',
-                async: true,
-                children: true,
-                minChunks: Infinity
+                chunks: ['vendor', 'app']
             }),
-            // new Manifest(path.join(_path + '/config', 'manifest.json'), {
-            //     rootAssetPath: rootAssetPath,
-            //     ignorePaths: ['.DS_Store']
-            // }),
+            new webpack.optimize.AggressiveMergingPlugin({moveToParents: true}),
             new ExtractTextPlugin('assets/css/[name]' + (development ? '' : '.[chunkhash]') + '.css', {allChunks: true}),
             new HtmlWebpackPlugin({
                 filename: 'index.html',

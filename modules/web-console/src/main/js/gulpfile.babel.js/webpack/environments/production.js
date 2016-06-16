@@ -21,7 +21,6 @@ import {destDir, rootDir} from '../../paths';
 
 export default () => {
     const plugins = [
-        new webpack.optimize.DedupePlugin(),
         new webpack.optimize.UglifyJsPlugin({
             path: destDir,
             minimize: true,
