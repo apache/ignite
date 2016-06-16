@@ -464,9 +464,12 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Test]
         public void TestWriteSpecialString()
         {
-            foreach (var test in SpecialStrings)
+            if (BinaryUtils.UseStringSerializationVer2)
             {
-                Assert.AreEqual(_marsh.Unmarshal<string>(_marsh.Marshal(test)), test);
+                foreach (var test in SpecialStrings)
+                {
+                    Assert.AreEqual(_marsh.Unmarshal<string>(_marsh.Marshal(test)), test);
+                }
             }
         }
 
