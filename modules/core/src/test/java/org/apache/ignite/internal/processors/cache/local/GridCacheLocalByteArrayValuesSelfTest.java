@@ -176,7 +176,7 @@ public class GridCacheLocalByteArrayValuesSelfTest extends GridCacheAbstractByte
      */
     @SuppressWarnings("TooBroadScope")
     public void testSwap() throws Exception {
-        // TODO GG-10884.
+        // TODO GG-11148.
         // assert cache.getConfiguration(CacheConfiguration.class).isSwapEnabled();
 
         byte[] val1 = wrap(1);
