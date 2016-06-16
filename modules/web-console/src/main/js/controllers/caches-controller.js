@@ -87,12 +87,9 @@ consoleModule.controller('cachesController', [
                 const validFilter = $filter('domainsValidation');
 
                 $scope.spaces = data.spaces;
-
-                _.forEach(data.caches, function(cache) {
-                    cache.label = _cacheLbl(cache);
-                });
-
                 $scope.caches = data.caches;
+
+                _.forEach($scope.caches, (cache) => cache.label = _cacheLbl(cache));
 
                 $scope.clusters = _.map(data.clusters, function(cluster) {
                     return {
@@ -111,8 +108,8 @@ consoleModule.controller('cachesController', [
                     };
                 }), 'label');
 
-                if ($state.params.id)
-                    $scope.createItem($state.params.id);
+                if ($state.params.linkId)
+                    $scope.createItem($state.params.linkId);
                 else {
                     const lastSelectedCache = angular.fromJson(sessionStorage.lastSelectedCache);
 
@@ -188,27 +185,27 @@ consoleModule.controller('cachesController', [
             $common.confirmUnsavedChanges($scope.backupItem && $scope.ui.inputForm.$dirty, selectItem);
         };
 
-        function prepareNewItem(id) {
+        $scope.linkId = () => $scope.backupItem._id ? $scope.backupItem._id : 'create';
+
+        function prepareNewItem(linkId) {
             return {
                 space: $scope.spaces[0]._id,
                 cacheMode: 'PARTITIONED',
                 atomicityMode: 'ATOMIC',
                 readFromBackup: true,
                 copyOnRead: true,
-                clusters: id && _.find($scope.clusters, {value: id})
-                    ? [id] : _.map($scope.clusters, function(cluster) { return cluster.value; }),
-                domains: id && _.find($scope.domains, { value: id }) ? [id] : [],
+                clusters: linkId && _.find($scope.clusters, {value: linkId})
+                    ? [linkId] : _.map($scope.clusters, function(cluster) { return cluster.value; }),
+                domains: linkId && _.find($scope.domains, { value: linkId }) ? [linkId] : [],
                 cacheStoreFactory: {CacheJdbcBlobStoreFactory: {connectVia: 'DataSource'}}
             };
         }
 
         // Add new cache.
-        $scope.createItem = function(id) {
-            $timeout(function() {
-                $common.ensureActivePanel($scope.ui, 'general', 'cacheName');
-            });
+        $scope.createItem = function(linkId) {
+            $timeout(() => $common.ensureActivePanel($scope.ui, 'general', 'cacheName'));
 
-            $scope.selectItem(null, prepareNewItem(id));
+            $scope.selectItem(null, prepareNewItem(linkId));
         };
 
         function checkDataSources() {

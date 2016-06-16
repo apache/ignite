@@ -225,8 +225,8 @@ consoleModule.controller('clustersController', [
                         cluster.logger = {Log4j: { mode: 'Default'}};
                 });
 
-                if ($state.params.id)
-                    $scope.createItem($state.params.id);
+                if ($state.params.linkId)
+                    $scope.createItem($state.params.linkId);
                 else {
                     const lastSelectedCluster = angular.fromJson(sessionStorage.lastSelectedCluster);
 
@@ -306,7 +306,9 @@ consoleModule.controller('clustersController', [
             $common.confirmUnsavedChanges($scope.backupItem && $scope.ui.inputForm.$dirty, selectItem);
         };
 
-        function prepareNewItem(id) {
+        $scope.linkId = () => $scope.backupItem._id ? $scope.backupItem._id : 'create';
+
+        function prepareNewItem(linkId) {
             return angular.merge({}, blank, {
                 space: $scope.spaces[0]._id,
                 discovery: {kind: 'Multicast', Vm: {addresses: ['127.0.0.1:47500..47510']}, Multicast: {addresses: ['127.0.0.1:47500..47510']}},
@@ -316,18 +318,16 @@ consoleModule.controller('clustersController', [
                 collision: {kind: 'Noop', JobStealing: {stealingEnabled: true}, PriorityQueue: {starvationPreventionEnabled: true}},
                 failoverSpi: [],
                 logger: {Log4j: { mode: 'Default'}},
-                caches: id && _.find($scope.caches, {value: id}) ? [id] : [],
-                igfss: id && _.find($scope.igfss, {value: id}) ? [id] : []
+                caches: linkId && _.find($scope.caches, {value: linkId}) ? [linkId] : [],
+                igfss: linkId && _.find($scope.igfss, {value: linkId}) ? [linkId] : []
             });
         }
 
         // Add new cluster.
-        $scope.createItem = function(id) {
-            $timeout(function() {
-                $common.ensureActivePanel($scope.ui, 'general', 'clusterName');
-            });
+        $scope.createItem = function(linkId) {
+            $timeout(() => $common.ensureActivePanel($scope.ui, 'general', 'clusterName'));
 
-            $scope.selectItem(null, prepareNewItem(id));
+            $scope.selectItem(null, prepareNewItem(linkId));
         };
 
         $scope.indexOfCache = function(cacheId) {

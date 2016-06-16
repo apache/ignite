@@ -304,9 +304,8 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
 
                 popover = newPopover;
 
-                $timeout(function() { newPopover.$promise.then(newPopover.show); }, 400);
-
-                $timeout(function() { newPopover.hide(); }, showTime || 5000);
+                $timeout(() => newPopover.$promise.then(newPopover.show), 400);
+                $timeout(() => newPopover.hide(), showTime || 5000);
             }
         };
 
@@ -1512,7 +1511,7 @@ consoleModule.directive('retainSelection', ['$timeout', ($timeout) => {
             if (promise)
                 $timeout.cancel(promise);
 
-            promise = $timeout(function() {
+            promise = $timeout(() => {
                 let setCursor = false;
 
                 // Handle Backspace[8].
@@ -1555,7 +1554,7 @@ consoleModule.factory('$focus', ['$timeout', ($timeout) => {
         // Timeout makes sure that is invoked after any other event has been triggered.
         // E.g. click events that need to run before the focus or inputs elements that are
         // in a disabled state but are enabled when those events are triggered.
-        $timeout(function() {
+        $timeout(() => {
             const elem = $('#' + id);
 
             if (elem.length > 0)

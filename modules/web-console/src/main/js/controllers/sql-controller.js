@@ -110,7 +110,7 @@ consoleModule.controller('sqlController', [
         function _min(rows, idx, dflt) {
             let min = _chartNumber(rows[0], idx, dflt);
 
-            _.forEach(rows, function(row) {
+            _.forEach(rows, (row) => {
                 const v = _chartNumber(row, idx, dflt);
 
                 if (v < min)
@@ -123,7 +123,7 @@ consoleModule.controller('sqlController', [
         function _max(rows, idx, dflt) {
             let max = _chartNumber(rows[0], idx, dflt);
 
-            _.forEach(rows, function(row) {
+            _.forEach(rows, (row) => {
                 const v = _chartNumber(row, idx, dflt);
 
                 if (v > max)
@@ -136,9 +136,7 @@ consoleModule.controller('sqlController', [
         function _sum(rows, idx) {
             let sum = 0;
 
-            _.forEach(rows, function(row) {
-                sum += _chartNumber(row, idx, 0);
-            });
+            _.forEach(rows, (row) => sum += _chartNumber(row, idx, 0));
 
             return sum;
         }
@@ -303,7 +301,7 @@ consoleModule.controller('sqlController', [
         }
 
         function _updateChartsWithData(paragraph, newDatum) {
-            $timeout(function() {
+            $timeout(() => {
                 if (!paragraph.chartTimeLineEnabled()) {
                     const chartDatum = paragraph.charts[0].data;
 
@@ -1318,7 +1316,7 @@ consoleModule.controller('sqlController', [
         };
 
         function _updatePieChartsWithData(paragraph, newDatum) {
-            $timeout(function() {
+            $timeout(() => {
                 _.forEach(paragraph.charts, function(chart) {
                     const chartDatum = chart.data;
 
