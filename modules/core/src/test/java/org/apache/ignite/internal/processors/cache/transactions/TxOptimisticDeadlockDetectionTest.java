@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -364,8 +363,7 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
                 }
             }
 
-            ConcurrentMap<Long, TxDeadlockDetection.TxDeadlockFuture> futs =
-                GridTestUtils.getFieldValue(txMgr, IgniteTxManager.class, "deadlockDetectFuts");
+            Collection<IgniteInternalFuture<?>> futs = txMgr.deadlockDetectionFutures();
 
             assertTrue(futs.isEmpty());
 

@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.concurrent.ConcurrentMap;
+import java.util.Collection;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -156,8 +156,7 @@ public class TxPessimisticDeadlockDetectionCrossCacheTest extends GridCommonAbst
 
             IgniteTxManager txMgr = ((IgniteKernal)ignite).context().cache().context().tm();
 
-            ConcurrentMap<Long, TxDeadlockDetection.TxDeadlockFuture> futs =
-                GridTestUtils.getFieldValue(txMgr, IgniteTxManager.class, "deadlockDetectFuts");
+            Collection<IgniteInternalFuture<?>> futs = txMgr.deadlockDetectionFutures();
 
             assertTrue(futs.isEmpty());
         }

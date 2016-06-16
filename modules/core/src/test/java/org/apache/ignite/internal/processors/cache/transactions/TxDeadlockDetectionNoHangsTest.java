@@ -17,12 +17,13 @@
 
 package org.apache.ignite.internal.processors.cache.transactions;
 
-import java.util.concurrent.ConcurrentMap;
+import java.util.Collection;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteSystemProperties;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -35,6 +36,9 @@ import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
 import org.jsr166.ThreadLocalRandom8;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS;
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT;
+import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
 
 /**
@@ -78,11 +82,36 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
         stopAllGrids();
     }
 
+    /** {@inheritDoc} */
+    @Override protected void beforeTestsStarted() throws Exception {
+        super.beforeTestsStarted();
+
+        GridTestUtils.setFieldValue(null, TxDeadlockDetection.class, "DEADLOCK_TIMEOUT", (int)(getTestTimeout() * 2));
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void afterTestsStopped() throws Exception {
+        super.afterTestsStopped();
+
+        GridTestUtils.setFieldValue(null, TxDeadlockDetection.class, "DEADLOCK_TIMEOUT",
+            getInteger(IGNITE_TX_DEADLOCK_DETECTION_TIMEOUT, 60000));
+    }
+
     /**
      * @throws Exception If failed.
      */
     public void testNoHangsPessimistic() throws Exception {
         doTest(TransactionConcurrency.PESSIMISTIC);
+
+        try {
+            GridTestUtils.setFieldValue(null, IgniteTxManager.class, "DEADLOCK_MAX_ITERS", 0);
+
+            doTest(TransactionConcurrency.PESSIMISTIC);
+        }
+        finally {
+            GridTestUtils.setFieldValue(null, IgniteTxManager.class, "DEADLOCK_MAX_ITERS",
+                IgniteSystemProperties.getInteger(IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS, 1000));
+        }
     }
 
     /**
@@ -90,6 +119,16 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
      */
     public void testNoHangsOptimistic() throws Exception {
         doTest(TransactionConcurrency.OPTIMISTIC);
+
+        try {
+            GridTestUtils.setFieldValue(null, IgniteTxManager.class, "DEADLOCK_MAX_ITERS", 0);
+
+            doTest(TransactionConcurrency.OPTIMISTIC);
+        }
+        finally {
+            GridTestUtils.setFieldValue(null, IgniteTxManager.class, "DEADLOCK_MAX_ITERS",
+                IgniteSystemProperties.getInteger(IGNITE_TX_DEADLOCK_DETECTION_MAX_ITERS, 1000));
+        }
     }
 
     /**
@@ -182,8 +221,7 @@ public class TxDeadlockDetectionNoHangsTest extends GridCommonAbstractTest {
 
             IgniteTxManager txMgr = ((IgniteKernal)ignite).context().cache().context().tm();
 
-            ConcurrentMap<Long, TxDeadlockDetection.TxDeadlockFuture> futs =
-                GridTestUtils.getFieldValue(txMgr, IgniteTxManager.class, "deadlockDetectFuts");
+            Collection<IgniteInternalFuture<?>> futs = txMgr.deadlockDetectionFutures();
 
             assertTrue(futs.isEmpty());
         }

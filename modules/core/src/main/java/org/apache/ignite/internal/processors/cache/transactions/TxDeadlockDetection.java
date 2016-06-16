@@ -36,6 +36,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
@@ -158,15 +160,18 @@ public class TxDeadlockDetection {
         private final Set<IgniteTxKey> keys;
 
         /** Processed keys. */
+        @GridToStringInclude
         private final Set<IgniteTxKey> processedKeys = new HashSet<>();
 
         /** Processed nodes. */
         private final Set<UUID> processedNodes = new HashSet<>();
 
         /** Pending keys. */
+        @GridToStringInclude
         private Map<UUID, Set<IgniteTxKey>> pendingKeys = new HashMap<>();
 
         /** Nodes queue. */
+        @GridToStringInclude
         private final UniqueDeque<UUID> nodesQueue = new UniqueDeque<>();
 
         /** Preferred nodes. */
@@ -194,6 +199,7 @@ public class TxDeadlockDetection {
         private int itersCnt;
 
         /** Timeout object. */
+        @GridToStringExclude
         private DeadlockTimeoutObject timeoutObj;
 
         /** Timed out flag. */
@@ -252,8 +258,8 @@ public class TxDeadlockDetection {
 
             if (topVer == null) // Tx manager already stopped
                 onDone();
-
-            map(keys, Collections.<IgniteTxKey, TxLockList>emptyMap());
+            else
+                map(keys, Collections.<IgniteTxKey, TxLockList>emptyMap());
         }
 
         /**
@@ -441,6 +447,9 @@ public class TxDeadlockDetection {
          * @param txLocks Tx locks.
          */
         private void updateWaitForGraph(Map<IgniteTxKey, TxLockList> txLocks) {
+            if (txLocks == null || txLocks.isEmpty())
+                return;
+
             for (Map.Entry<IgniteTxKey, TxLockList> e : txLocks.entrySet()) {
 
                 GridCacheVersion txOwner = null;
@@ -526,6 +535,11 @@ public class TxDeadlockDetection {
             }
 
             return false;
+        }
+
+        /** {@inheritDoc} */
+        @Override public String toString() {
+            return S.toString(TxDeadlockFuture.class, this);
         }
 
         /**

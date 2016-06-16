@@ -51,7 +51,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheMessage;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccFuture;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheMappedVersion;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxFinishSync;
 import org.apache.ignite.internal.processors.cache.distributed.GridCacheTxRecoveryFuture;
@@ -1982,7 +1981,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
             Collection<IgniteTxEntry> txEntries = tx.allEntries();
 
-            Set<KeyCacheObject> requestedKeys = null;
+            Set<IgniteTxKey> requestedKeys = null;
 
             // Try to get info about requested keys for detached entries in case of GridNearTxLocal transaction
             // in order to reduce amount of requests to remote nodes.
@@ -2096,6 +2095,16 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      */
     public void removeFuture(long futId) {
         deadlockDetectFuts.remove(futId);
+    }
+
+    /**
+     * @return Collection of active transaction deadlock detection futures.
+     */
+    @SuppressWarnings("unchecked")
+    public Collection<IgniteInternalFuture<?>> deadlockDetectionFutures() {
+        Collection<? extends IgniteInternalFuture<?>> values = deadlockDetectFuts.values();
+
+        return (Collection<IgniteInternalFuture<?>>)values;
     }
 
     /**

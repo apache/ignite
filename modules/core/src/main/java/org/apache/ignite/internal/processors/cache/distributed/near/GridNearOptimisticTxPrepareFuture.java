@@ -38,14 +38,12 @@ import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryRemovedException;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.GridDistributedTxMapping;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTxMapping;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.TxDeadlock;
-import org.apache.ignite.internal.processors.timeout.GridTimeoutObjectAdapter;
 import org.apache.ignite.internal.transactions.IgniteTxRollbackCheckedException;
 import org.apache.ignite.internal.transactions.IgniteTxTimeoutCheckedException;
 import org.apache.ignite.internal.util.future.GridFutureAdapter;
@@ -76,15 +74,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
     @GridToStringExclude
     private KeyLockFuture keyLockFut;
 
-    /** Timeout. */
-    private final long timeout;
-
-    /** Timeout object. */
-    private PrepareTimeoutObject timeoutObj;
-
-    /** Timed out. */
-    private boolean timedOut;
-
     /** Deadlock detection started. */
     private AtomicBoolean deadlockDetectionStarted;
 
@@ -92,21 +81,13 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
      * @param cctx Context.
      * @param tx Transaction.
      */
-    public GridNearOptimisticTxPrepareFuture(GridCacheSharedContext cctx, GridNearTxLocal tx, long timeout) {
+    public GridNearOptimisticTxPrepareFuture(GridCacheSharedContext cctx, GridNearTxLocal tx) {
         super(cctx, tx);
 
         assert tx.optimistic() && !tx.serializable() : tx;
 
-        this.timeout = timeout;
-
         if (cctx.tm().deadlockDetectionEnabled())
             deadlockDetectionStarted = new AtomicBoolean();
-
-        if (timeout > 0) {
-            timeoutObj = new PrepareTimeoutObject();
-
-            cctx.time().addTimeoutObject(timeoutObj);
-        }
     }
 
     /** {@inheritDoc} */
@@ -115,7 +96,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             log.debug("Transaction future received owner changed callback: " + entry);
 
         synchronized (this) {
-            if (timedOut)
+            if (tx.remainingTime() == -1)
                 return false;
 
             if ((entry.context().isNear() || entry.context().isLocal()) &&
@@ -202,7 +183,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             if (mini != null) {
                 assert mini.node().id().equals(nodeId);
 
-                mini.onResult(nodeId, res);
+                mini.onResult(res);
             }
         }
     }
@@ -211,22 +192,24 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
      * @return Keys for which {@link MiniFuture} isn't completed.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    public Set<KeyCacheObject> requestedKeys() {
-        if (futs != null && !futs.isEmpty()) {
-            for (int i = 0; i < futs.size(); i++) {
-                IgniteInternalFuture<GridNearTxPrepareResponse> fut = futs.get(i);
+    public Set<IgniteTxKey> requestedKeys() {
+        synchronized (futs) {
+            if (!futs.isEmpty()) {
+                for (int i = 0; i < futs.size(); i++) {
+                    IgniteInternalFuture<GridNearTxPrepareResponse> fut = futs.get(i);
 
-                if (isMini(fut) && !fut.isDone()) {
-                    MiniFuture miniFut = (MiniFuture)fut;
+                    if (isMini(fut) && !fut.isDone()) {
+                        MiniFuture miniFut = (MiniFuture)fut;
 
-                    Collection<IgniteTxEntry> entries = miniFut.mapping().entries();
+                        Collection<IgniteTxEntry> entries = miniFut.mapping().entries();
 
-                    Set<KeyCacheObject> keys = U.newHashSet(entries.size());
+                        Set<IgniteTxKey> keys = U.newHashSet(entries.size());
 
-                    for (IgniteTxEntry entry : entries)
-                        keys.add(entry.txKey().key());
+                        for (IgniteTxEntry entry : entries)
+                            keys.add(entry.txKey());
 
-                    return keys;
+                        return keys;
+                    }
                 }
             }
         }
@@ -297,9 +280,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         if (super.onDone(tx, err0)) {
             // Don't forget to clean up.
             cctx.mvcc().removeMvccFuture(this);
-
-            if (timeoutObj != null)
-                cctx.time().removeTimeoutObject(timeoutObj);
 
             return true;
         }
@@ -493,9 +473,8 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             final ClusterNode n = m.node();
 
             synchronized (this) {
-                if (!timedOut) {
-                    long timeout = tx.remainingTime();
-
+                long timeout = tx.remainingTime();
+                if (timeout != -1) {
                     GridNearTxPrepareRequest req = new GridNearTxPrepareRequest(
                         futId,
                         tx.topologyVersion(),
@@ -548,7 +527,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                         prepFut.listen(new CI1<IgniteInternalFuture<GridNearTxPrepareResponse>>() {
                             @Override public void apply(IgniteInternalFuture<GridNearTxPrepareResponse> prepFut) {
                                 try {
-                                    fut.onResult(n.id(), prepFut.get());
+                                    fut.onResult(prepFut.get());
                                 }
                                 catch (IgniteCheckedException e) {
                                     fut.onResult(e);
@@ -571,7 +550,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                         }
                     }
                 }
-                else if (cctx.tm().deadlockDetectionEnabled())
+                else
                     onTimeout();
             }
         }
@@ -850,16 +829,15 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         }
 
         /**
-         * @param nodeId Failed node ID.
          * @param res Result callback.
          */
-        synchronized void onResult(UUID nodeId, final GridNearTxPrepareResponse res) {
+        synchronized void onResult(final GridNearTxPrepareResponse res) {
             if (isDone())
                 return;
 
             if (rcvRes.compareAndSet(false, true)) {
                 if (cctx.tm().deadlockDetectionEnabled() &&
-                    (timedOut || res.error() instanceof IgniteTxTimeoutCheckedException)) {
+                    (tx.remainingTime() == -1 || res.error() instanceof IgniteTxTimeoutCheckedException)) {
                     onTimeout();
 
                     return;
@@ -921,31 +899,6 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(MiniFuture.class, this, "done", isDone(), "cancelled", isCancelled(), "err", error());
-        }
-    }
-
-    /**
-     *
-     */
-    private class PrepareTimeoutObject extends GridTimeoutObjectAdapter {
-        /**
-         * Default constructor.
-         */
-        PrepareTimeoutObject() {
-            super(timeout);
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("ForLoopReplaceableByForEach")
-        @Override public void onTimeout() {
-            synchronized (GridNearOptimisticTxPrepareFuture.this) {
-                timedOut = true;
-            }
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(PrepareTimeoutObject.class, this);
         }
     }
 }

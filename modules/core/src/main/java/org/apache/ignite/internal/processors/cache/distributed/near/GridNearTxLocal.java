@@ -795,7 +795,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                 if (serializable())
                     fut = new GridNearOptimisticSerializableTxPrepareFuture(cctx, this);
                 else {
-                    fut = new GridNearOptimisticTxPrepareFuture(cctx, this, timeout);
+                    fut = new GridNearOptimisticTxPrepareFuture(cctx, this);
 
                     if (timeout == -1)
                         ((GridNearOptimisticTxPrepareFuture)fut).onError(timeoutException());
