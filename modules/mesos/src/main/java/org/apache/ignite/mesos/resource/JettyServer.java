@@ -17,9 +17,10 @@
 
 package org.apache.ignite.mesos.resource;
 
-import java.net.InetSocketAddress;
+import org.apache.ignite.mesos.ClusterProperties;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 
 /**
  * Embedded jetty server.
@@ -31,14 +32,21 @@ public class JettyServer {
     /**
      * Starts jetty server.
      *
-     * @param address Inter socket address.
      * @param handler Handler.
+     * @param props Cluster properties.
      * @throws Exception If failed.
      */
-    public void start(InetSocketAddress address, Handler handler) throws Exception {
+    public void start(Handler handler, ClusterProperties props) throws Exception {
         if (server == null) {
-            server = new Server(address);
+            server = new Server();
 
+            ServerConnector connector = new ServerConnector(server);
+
+            connector.setHost(props.httpServerHost());
+            connector.setPort(props.httpServerPort());
+            connector.setIdleTimeout(props.idleTimeout());
+
+            server.addConnector(connector);
             server.setHandler(handler);
 
             server.start();

@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredAtomicS
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredEvictionAtomicSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredEvictionSelfTest;
 import org.apache.ignite.internal.processors.cache.GridCacheOffHeapTieredSelfTest;
+import org.apache.ignite.internal.processors.cache.binary.CacheKeepBinaryWithInterceptorTest;
 import org.apache.ignite.internal.processors.cache.expiry.IgniteCacheAtomicLocalExpiryPolicyTest;
 import org.apache.ignite.internal.processors.cache.binary.GridBinaryCacheEntryMemorySizeSelfTest;
 import org.apache.ignite.internal.processors.cache.binary.datastreaming.DataStreamProcessorBinarySelfTest;
@@ -97,6 +98,7 @@ public class IgniteBinaryCacheTestSuite extends TestSuite {
 
         suite.addTestSuite(GridCacheAffinityRoutingBinarySelfTest.class);
         suite.addTestSuite(GridBinaryCacheEntryMemorySizeSelfTest.class);
+        suite.addTestSuite(CacheKeepBinaryWithInterceptorTest.class);
 
         return suite;
     }

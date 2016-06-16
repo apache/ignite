@@ -101,7 +101,6 @@ public class IgfsOneClientNodeTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testStartIgfs() throws Exception {
-
         final IgfsImpl igfs = (IgfsImpl) grid(0).fileSystem("igfs");
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
@@ -109,7 +108,7 @@ public class IgfsOneClientNodeTest extends GridCommonAbstractTest {
                 IgfsAbstractSelfTest.create(igfs, new IgfsPath[]{new IgfsPath("/dir")}, null);
                 return null;
             }
-        }, IgfsException.class, "Cache server nodes not found.");
+        }, IgfsException.class, "Failed to execute operation because there are no IGFS metadata nodes.");
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -119,7 +118,7 @@ public class IgfsOneClientNodeTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, IgfsException.class, "Cache server nodes not found.");
+        }, IgfsException.class, "Failed to execute operation because there are no IGFS metadata nodes.");
 
         GridTestUtils.assertThrows(log, new Callable<Object>() {
             @Override public Object call() throws Exception {
@@ -129,6 +128,6 @@ public class IgfsOneClientNodeTest extends GridCommonAbstractTest {
 
                 return null;
             }
-        }, IgfsException.class, "Cache server nodes not found.");
+        }, IgfsException.class, "Failed to execute operation because there are no IGFS metadata nodes.");
     }
 }

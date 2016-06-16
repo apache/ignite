@@ -50,9 +50,6 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
     private static final String CACHE_NAME = "myCache";
 
     /** */
-    private static final int MAX_FAILOVER_ATTEMPTS = 500;
-
-    /** */
     private static final int SRVS = 4;
 
     /** */
@@ -69,20 +66,21 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
         cfg.setDiscoverySpi(spi);
 
         AlwaysFailoverSpi failSpi = new AlwaysFailoverSpi();
-        failSpi.setMaximumFailoverAttempts(MAX_FAILOVER_ATTEMPTS);
         cfg.setFailoverSpi(failSpi);
 
-        CacheConfiguration ccfg = defaultCacheConfiguration();
-        ccfg.setName(CACHE_NAME);
-        ccfg.setCacheMode(PARTITIONED);
-        ccfg.setBackups(1);
-
-        cfg.setCacheConfiguration(ccfg);
-
+        // Do not configure cache on client.
         if (gridName.equals(getTestGridName(SRVS))) {
             cfg.setClientMode(true);
 
             spi.setForceServerMode(true);
+        }
+        else {
+            CacheConfiguration ccfg = defaultCacheConfiguration();
+            ccfg.setName(CACHE_NAME);
+            ccfg.setCacheMode(PARTITIONED);
+            ccfg.setBackups(1);
+
+            cfg.setCacheConfiguration(ccfg);
         }
 
         return cfg;
@@ -99,7 +97,27 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
     public void testAffinityCallRestartNode() throws Exception {
         startGridsMultiThreaded(SRVS);
 
-        final int ITERS = 5;
+        affinityCallRestartNode();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testAffinityCallFromClientRestartNode() throws Exception {
+        startGridsMultiThreaded(SRVS + 1);
+
+        Ignite client = grid(SRVS);
+
+        assertTrue(client.configuration().isClientMode());
+
+        affinityCallRestartNode();
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    private void affinityCallRestartNode() throws Exception {
+        final int ITERS = 10;
 
         for (int i = 0; i < ITERS; i++) {
             log.info("Iteration: " + i);
