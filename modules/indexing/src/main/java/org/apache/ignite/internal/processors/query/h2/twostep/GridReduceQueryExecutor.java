@@ -735,6 +735,10 @@ public class GridReduceQueryExecutor {
 
                     if (disconnectedErr != null)
                         cause = disconnectedErr;
+
+                    // Throw correct exception if the reduce query was cancelled by user.
+                    if ( e.getCause() instanceof SQLException && r.cancelled)
+                        throw cancellationException();
                 }
 
                 throw new CacheException("Failed to run reduce query locally.", cause);
@@ -1258,10 +1262,17 @@ public class GridReduceQueryExecutor {
 
         if ( run == null ) return;
 
-        CacheException err = new CacheException("Query was cancelled by user.",
-            new GridRemoteQueryCancelledException());
+        run.cancelled = true;
 
-        run.failed(err);
+        run.failed(cancellationException());
+    }
+
+    /**
+     * Constructs cancellation exception.
+     */
+    protected CacheException cancellationException() {
+        return new CacheException("Query was cancelled by user.",
+            new GridRemoteQueryCancelledException());
     }
 
     /**
@@ -1288,6 +1299,9 @@ public class GridReduceQueryExecutor {
 
         /** */
         public volatile PreparedStatement rdcPrepStmt;
+
+        /** */
+        public volatile boolean cancelled;
 
         /**
          * @param o Fail state object.
