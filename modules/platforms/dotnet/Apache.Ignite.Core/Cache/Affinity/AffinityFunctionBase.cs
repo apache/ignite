@@ -52,7 +52,8 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// </summary>
         internal static IAffinityFunction Read(IBinaryRawReader reader)
         {
-            throw new System.NotImplementedException();
+            // TODO
+            return null;
         }
 
         /// <summary>
@@ -60,7 +61,7 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// </summary>
         internal static void Write(IBinaryRawWriter writer, IAffinityFunction affinityFunction)
         {
-            throw new System.NotImplementedException();
+            // TODO
         }
     }
 }
