@@ -667,14 +667,15 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="enc">Encoding.</param>
         /// <param name="data">Data.</param>
         /// <returns>Amount of bytes written.</returns>
-        [SuppressMessage("ReSharper", "TooWideLocalVariableScope", Justification = "Keep code identical to Java part.")]
         public static unsafe int StringToUtf8Bytes(char* chars, int charCnt, int byteCnt, Encoding enc, byte* data)
         {
             if (!UseStringSerializationVer2)
                 return enc.GetBytes(chars, charCnt, data, byteCnt);
 
             int strLen = charCnt;
+            // ReSharper disable TooWideLocalVariableScope (keep code similar to Java part)
             int c, cnt;
+            // ReSharper restore TooWideLocalVariableScope
 
             int position = 0;
 
@@ -732,7 +733,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// </summary>
         /// <param name="arr">The bytes.</param>
         /// <returns>Resulting string.</returns>
-        [SuppressMessage("ReSharper", "TooWideLocalVariableScope", Justification = "Keep code identical to Java part.")]
         public static string Utf8BytesToString(byte[] arr)
         {
             if (!UseStringSerializationVer2)
@@ -740,7 +740,9 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             int len = arr.Length, off = 0;
             int c, charArrCnt = 0, total = len;
+            // ReSharper disable TooWideLocalVariableScope (keep code similar to Java part)
             int c2, c3;
+            // ReSharper restore TooWideLocalVariableScope
             char[] res = new char[len];
 
             // try reading ascii
