@@ -17,9 +17,9 @@
 
 package org.apache.ignite.cache.store.cassandra.session;
 
-import com.datastax.driver.core.Row;
 import java.util.HashSet;
 import java.util.Set;
+import com.datastax.driver.core.Row;
 
 /**
  * Implementation of the {@link org.apache.ignite.cache.store.cassandra.session.BatchExecutionAssistant}.
@@ -61,7 +61,12 @@ public abstract class GenericBatchExecutionAssistant<R, V> implements BatchExecu
         return false;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Processes the row.
+     *
+     * @param row Row.
+     */
     protected void process(Row row) {
+        // No-op.
     }
 }
