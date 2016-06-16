@@ -17,43 +17,50 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
+import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
+
 import java.io.OutputStream;
 
 /**
- * Descriptor of an output stream opened to the secondary file system.
+ * IGFS file create result.
  */
-public class IgfsSecondaryOutputStreamDescriptor {
+public class IgfsCreateResult {
     /** File info in the primary file system. */
     private final IgfsEntryInfo info;
 
     /** Output stream to the secondary file system. */
-    private final OutputStream out;
+    private final OutputStream secondaryOut;
 
     /**
      * Constructor.
      *
      * @param info File info in the primary file system.
-     * @param out Output stream to the secondary file system.
+     * @param secondaryOut Output stream to the secondary file system.
      */
-    IgfsSecondaryOutputStreamDescriptor(IgfsEntryInfo info, OutputStream out) {
+    public IgfsCreateResult(IgfsEntryInfo info, @Nullable OutputStream secondaryOut) {
         assert info != null;
-        assert out != null;
 
         this.info = info;
-        this.out = out;
+        this.secondaryOut = secondaryOut;
     }
 
     /**
      * @return File info in the primary file system.
      */
-    IgfsEntryInfo info() {
+    public IgfsEntryInfo info() {
         return info;
     }
 
     /**
      * @return Output stream to the secondary file system.
      */
-    OutputStream out() {
-        return out;
+    @Nullable public OutputStream secondaryOutputStream() {
+        return secondaryOut;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IgfsCreateResult.class, this);
     }
 }

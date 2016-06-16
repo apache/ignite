@@ -104,10 +104,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static org.apache.ignite.events.EventType.EVT_IGFS_DIR_DELETED;
 import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_CLOSED_READ;
-import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_CLOSED_WRITE;
 import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_DELETED;
 import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_OPENED_READ;
-import static org.apache.ignite.events.EventType.EVT_IGFS_FILE_OPENED_WRITE;
 import static org.apache.ignite.events.EventType.EVT_IGFS_META_UPDATED;
 import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
 import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
@@ -723,38 +721,21 @@ public final class IgfsImpl implements IgfsEx {
                 if (IgfsPath.SLASH.equals(path.toString()))
                     return false;
 
-                IgfsMode mode = resolveMode(path);
-
                 Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
 
-                boolean res = false;
+                boolean dual = childrenModes.contains(DUAL_SYNC) ||childrenModes.contains(DUAL_ASYNC);
 
-                FileDescriptor desc = getFileDescriptor(path);
-
-                if (childrenModes.contains(PRIMARY)) {
-                    if (desc != null) {
-                        IgniteUuid deletedId = meta.softDelete(path, recursive);
-
-                        res = deletedId != null;
-                    }
-                    else if (mode == PRIMARY)
-                        checkConflictWithPrimary(path);
-                }
-
-                if (childrenModes.contains(DUAL_SYNC) || childrenModes.contains(DUAL_ASYNC)) {
-                    assert secondaryFs != null;
-
+                if (dual)
                     await(path);
 
-                    res |= meta.deleteDual(secondaryFs, path, recursive);
-                }
+                IgfsDeleteResult res = meta.softDelete(path, recursive, dual ? secondaryFs : null);
 
                 // Record event if needed.
-                if (res && desc != null)
+                if (res.success() && res.info() != null)
                     IgfsUtils.sendEvents(igfsCtx.kernalContext(), path,
-                            desc.isFile ? EVT_IGFS_FILE_DELETED : EVT_IGFS_DIR_DELETED);
+                        res.info().isFile() ? EVT_IGFS_FILE_DELETED : EVT_IGFS_DIR_DELETED);
 
-                return res;
+                return res.success();
             }
         });
     }
@@ -1037,28 +1018,10 @@ public final class IgfsImpl implements IgfsEx {
                     log.debug("Open file for writing [path=" + path + ", bufSize=" + bufSize + ", overwrite=" +
                         overwrite + ", props=" + props + ']');
 
+                // Resolve mode.
                 final IgfsMode mode = resolveMode(path);
 
-                IgfsFileWorkerBatch batch;
-
-                if (mode != PRIMARY) {
-                    assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
-
-                    await(path);
-
-                    IgfsSecondaryOutputStreamDescriptor desc = meta.createDual(secondaryFs, path, simpleCreate,
-                        props, overwrite, bufSize, (short) replication, groupBlockSize(), affKey);
-
-                    batch = newBatch(path, desc.out());
-
-                    IgfsOutputStreamImpl os = new IgfsOutputStreamImpl(igfsCtx, path, desc.info(),
-                        bufferSize(bufSize), mode, batch);
-
-                    IgfsUtils.sendEvents(igfsCtx.kernalContext(), path, EVT_IGFS_FILE_OPENED_WRITE);
-
-                    return os;
-                }
-
+                // Prepare properties.
                 final Map<String, String> dirProps, fileProps;
 
                 if (props == null) {
@@ -1069,19 +1032,37 @@ public final class IgfsImpl implements IgfsEx {
                 else
                     dirProps = fileProps = new HashMap<>(props);
 
-                IgfsEntryInfo res = meta.create(
+                // Prepare context for DUAL mode.
+                IgfsSecondaryFileSystemCreateContext secondaryCtx = null;
+
+                if (mode != PRIMARY)
+                    secondaryCtx = new IgfsSecondaryFileSystemCreateContext(secondaryFs, path, overwrite, simpleCreate,
+                        fileProps, (short)replication, groupBlockSize(), bufSize);
+
+                // Await for async ops completion if in DUAL mode.
+                if (mode != PRIMARY)
+                    await(path);
+
+                // Perform create.
+                IgfsCreateResult res = meta.create(
                     path,
                     dirProps,
                     overwrite,
                     cfg.getBlockSize(),
                     affKey,
-                    evictExclude(path, true),
-                    fileProps
+                    evictExclude(path, mode == PRIMARY),
+                    fileProps,
+                    secondaryCtx
                 );
 
                 assert res != null;
 
-                return new IgfsOutputStreamImpl(igfsCtx, path, res, bufferSize(bufSize), mode, null);
+                // Create secondary file system batch.
+                OutputStream secondaryStream = res.secondaryOutputStream();
+
+                IgfsFileWorkerBatch batch = secondaryStream != null ? newBatch(path, secondaryStream) : null;
+
+                return new IgfsOutputStreamImpl(igfsCtx, path, res.info(), bufferSize(bufSize), mode, batch);
             }
         });
     }
@@ -1112,9 +1093,9 @@ public final class IgfsImpl implements IgfsEx {
 
                     await(path);
 
-                    IgfsSecondaryOutputStreamDescriptor desc = meta.appendDual(secondaryFs, path, bufSize, create);
+                    IgfsCreateResult desc = meta.appendDual(secondaryFs, path, bufSize, create);
 
-                    batch = newBatch(path, desc.out());
+                    batch = newBatch(path, desc.secondaryOutputStream());
 
                     return new IgfsOutputStreamImpl(igfsCtx, path, desc.info(), bufferSize(bufSize), mode, batch);
                 }
