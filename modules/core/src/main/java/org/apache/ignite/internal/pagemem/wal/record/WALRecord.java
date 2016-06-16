@@ -41,7 +41,10 @@ public abstract class WALRecord {
         STORE_OPERATION_RECORD,
 
         /** */
-        CHECKPOINT_RECORD;
+        CHECKPOINT_RECORD,
+
+        /** */
+        HEADER_RECORD;
 
         /** */
         private static final RecordType[] VALS = RecordType.values();
@@ -53,7 +56,7 @@ public abstract class WALRecord {
     }
 
     /** */
-    private int size = -1;
+    private int size;
 
     /** */
     private int chainSize;
@@ -104,6 +107,8 @@ public abstract class WALRecord {
      * @param pos Position in file.
      */
     public void position(long pos) {
+        assert pos >= 0: pos;
+
         this.pos = pos;
     }
 
@@ -111,8 +116,6 @@ public abstract class WALRecord {
      * @return Size of this record in bytes.
      */
     public int size() {
-        assert size != -1;
-
         return size;
     }
 
