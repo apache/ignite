@@ -3123,6 +3123,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (existingNode != null) {
                     if (!node.socketAddresses().equals(existingNode.socketAddresses())) {
                         if (!pingNode(existingNode)) {
+                            log.error("== Node cannot be pinged: " + existingNode);
+
                             addMessage(new TcpDiscoveryNodeFailedMessage(locNodeId,
                                 existingNode.id(), existingNode.internalOrder()));
 
@@ -3679,6 +3681,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                                 log.debug("Failing reconnecting client node because failed to restore pending " +
                                     "messages [locNodeId=" + locNodeId + ", clientNodeId=" + nodeId + ']');
 
+                            log.error("== Failing reconnecting client node because failed to restore pending " +
+                                "messages [locNodeId=" + locNodeId + ", clientNodeId=" + nodeId + ']');
+
                             TcpDiscoveryNodeFailedMessage nodeFailedMsg = new TcpDiscoveryNodeFailedMessage(locNodeId,
                                 node.id(), node.internalOrder());
 
@@ -3866,6 +3871,9 @@ class ServerImpl extends TcpDiscoveryImpl {
                     }
                     finally {
                         if (authFailed) {
+                            // TODO remove!!
+                            log.debug("== Auth failed");
+
                             try {
                                 trySendMessageDirectly(node, new TcpDiscoveryAuthFailedMessage(locNodeId,
                                     spi.locHost));
