@@ -190,8 +190,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /**
-     * Gets cache proxy which does not acquire read lock on gateway enter, should be
-     * used only if grid read lock is externally acquired.
+     * Gets cache proxy which does not acquire read lock on gateway enter, should be used only if grid read lock is
+     * externally acquired.
      *
      * @return Ignite cache proxy with simple gate.
      */
@@ -372,10 +372,18 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             CacheOperationContext prev = onEnter(gate, opCtx);
 
             try {
-                if (isAsync())
-                    setFuture(ctx.cache().globalLoadCacheAsync(p, args));
-                else
-                    ctx.cache().globalLoadCache(p, args);
+                if (isAsync()) {
+                    if (ctx.cache().isLocal())
+                        setFuture(ctx.cache().localLoadCacheAsync(p, args));
+                    else
+                        setFuture(ctx.cache().globalLoadCacheAsync(p, args));
+                }
+                else {
+                    if (ctx.cache().isLocal())
+                        ctx.cache().localLoadCache(p, args);
+                    else
+                        ctx.cache().globalLoadCache(p, args);
+                }
             }
             finally {
                 onLeave(gate, prev);
@@ -463,9 +471,9 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * @return Cursor.
      */
     @SuppressWarnings("unchecked")
-    private QueryCursor<Cache.Entry<K,V>> query(final Query filter, @Nullable ClusterGroup grp)
+    private QueryCursor<Cache.Entry<K, V>> query(final Query filter, @Nullable ClusterGroup grp)
         throws IgniteCheckedException {
-        final CacheQuery<Map.Entry<K,V>> qry;
+        final CacheQuery<Map.Entry<K, V>> qry;
 
         boolean isKeepBinary = opCtx != null && opCtx.isKeepBinary();
 
@@ -478,8 +486,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 qry.projection(grp);
 
             final GridCloseableIterator<Entry<K, V>> iter = ctx.kernalContext().query().executeQuery(ctx,
-                new IgniteOutClosureX<GridCloseableIterator<Entry<K,V>>>() {
-                    @Override public GridCloseableIterator<Entry<K,V>> applyx() throws IgniteCheckedException {
+                new IgniteOutClosureX<GridCloseableIterator<Entry<K, V>>>() {
+                    @Override public GridCloseableIterator<Entry<K, V>> applyx() throws IgniteCheckedException {
                         final GridCloseableIterator<Map.Entry> iter0 = qry.executeScanQuery();
 
                         return new GridCloseableIteratorAdapter<Cache.Entry<K, V>>() {
@@ -503,7 +511,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             return new QueryCursorImpl<>(iter);
         }
 
-        final CacheQueryFuture<Map.Entry<K,V>> fut;
+        final CacheQueryFuture<Map.Entry<K, V>> fut;
 
         if (filter instanceof TextQuery) {
             TextQuery p = (TextQuery)filter;
@@ -541,15 +549,15 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
             throw new CacheException("Unsupported query type: " + filter);
         }
 
-        return new QueryCursorImpl<>(new GridCloseableIteratorAdapter<Entry<K,V>>() {
+        return new QueryCursorImpl<>(new GridCloseableIteratorAdapter<Entry<K, V>>() {
             /** */
-            private Map.Entry<K,V> cur;
+            private Map.Entry<K, V> cur;
 
-            @Override protected Entry<K,V> onNext() throws IgniteCheckedException {
+            @Override protected Entry<K, V> onNext() throws IgniteCheckedException {
                 if (!onHasNext())
                     throw new NoSuchElementException();
 
-                Map.Entry<K,V> e = cur;
+                Map.Entry<K, V> e = cur;
 
                 cur = null;
 
@@ -848,7 +856,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         }
     }
 
-
     /** {@inheritDoc} */
     @Override public int localSize(CachePeekMode... peekModes) {
         GridCacheGateway<K, V> gate = this.gate;
@@ -959,7 +966,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public Collection<CacheEntry<K, V>>  getEntries(Set<? extends K> keys) {
+    @Override public Collection<CacheEntry<K, V>> getEntries(Set<? extends K> keys) {
         try {
             GridCacheGateway<K, V> gate = this.gate;
 

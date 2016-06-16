@@ -52,10 +52,10 @@ class JavaIgniteContext[K, V](
     }
 
     def fromCache(cacheName: String): JavaIgniteRDD[K, V] =
-        JavaIgniteRDD.fromIgniteRDD(new IgniteRDD[K, V](ic, cacheName, null))
+        JavaIgniteRDD.fromIgniteRDD(new IgniteRDD[K, V](ic, cacheName, null, false))
 
     def fromCache(cacheCfg: CacheConfiguration[K, V]) =
-        JavaIgniteRDD.fromIgniteRDD(new IgniteRDD[K, V](ic, cacheCfg.getName, cacheCfg))
+        JavaIgniteRDD.fromIgniteRDD(new IgniteRDD[K, V](ic, cacheCfg.getName, cacheCfg, false))
 
     def ignite(): Ignite = ic.ignite()
 

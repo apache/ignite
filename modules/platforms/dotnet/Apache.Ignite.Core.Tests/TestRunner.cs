@@ -1,4 +1,4 @@
-﻿/*
+﻿﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -19,40 +19,28 @@ namespace Apache.Ignite.Core.Tests
 {
     using System;
     using System.Diagnostics;
-    using System.Linq;
     using System.Reflection;
-    using Apache.Ignite.Core.Tests.Binary;
+    using Apache.Ignite.Core.Tests.Cache.Query;
+    using Apache.Ignite.Core.Tests.Compute;
     using Apache.Ignite.Core.Tests.Memory;
+    using Apache.Ignite.Core.Tests.Services;
     using NUnit.ConsoleRunner;
 
     public static class TestRunner
     {
         [STAThread]
-        static void Main(string[] args)
+        static void Main()
         {
             Debug.Listeners.Add(new TextWriterTraceListener(Console.Out));
             Debug.AutoFlush = true;
 
-            if (args.Length == 2)
-            {
-                //Debugger.Launch();
-                var testClass = Type.GetType(args[0]);
-                var method = args[1];
+            //TestOne(typeof(CacheLinqTest), "TestExcept");
 
-                if (testClass == null || testClass.GetMethods().All(x => x.Name != method))
-                    throw new InvalidOperationException("Failed to find method: " + testClass + "." + method);
-
-                Environment.ExitCode = TestOne(testClass, method);
-                return;
-            }
-
-            TestOne(typeof(BinaryStringTest), "Test");
-
-            //TestAll(typeof (CacheQueriesCodeConfigurationTest));
+            TestAll(typeof (TaskAdapterTest));
             //TestAllInAssembly();
         }
 
-        private static int TestOne(Type testClass, string method)
+        private static void TestOne(Type testClass, string method)
         {
             string[] args = { "/run:" + testClass.FullName + "." + method, Assembly.GetAssembly(testClass).Location };
 
@@ -60,8 +48,6 @@ namespace Apache.Ignite.Core.Tests
 
             if (returnCode != 0)
                 Console.Beep();
-
-            return returnCode;
         }
 
         private static void TestAll(Type testClass)

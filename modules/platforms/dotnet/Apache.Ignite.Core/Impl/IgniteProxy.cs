@@ -190,6 +190,12 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public IClusterGroup ForServers()
+        {
+            return _ignite.GetCluster().ForServers();
+        }
+
+        /** <inheritdoc /> */
         public ICollection<IClusterNode> GetNodes()
         {
             return _ignite.GetCluster().GetNodes();

@@ -36,13 +36,15 @@ public class GridSqlJoin extends GridSqlElement {
      * @param on Join condition.
      */
     public GridSqlJoin(GridSqlElement leftTbl, GridSqlElement rightTbl, boolean leftOuter, @Nullable GridSqlElement on) {
-        super(new ArrayList<GridSqlElement>(on == null ? 2 : 3));
+        super(new ArrayList<GridSqlElement>(3));
 
         addChild(leftTbl);
         addChild(rightTbl);
 
-        if (on != null)
-            addChild(on);
+        if (on == null) // To avoid query nesting issues in FROM clause we need to always generate ON condition.
+            on = GridSqlConst.TRUE;
+
+        addChild(on);
 
         this.leftOuter = leftOuter;
     }
@@ -64,8 +66,8 @@ public class GridSqlJoin extends GridSqlElement {
     /**
      * @return {@code JOIN ON} condition.
      */
-    @Nullable public GridSqlElement on() {
-        return size() < 3 ? null : child(2);
+    public GridSqlElement on() {
+        return child(2);
     }
 
     /** {@inheritDoc} */
@@ -78,10 +80,7 @@ public class GridSqlJoin extends GridSqlElement {
 
         buff.append(rightTable().getSQL());
 
-        GridSqlElement on = on();
-
-        if (on != null)
-            buff.append(" \n ON ").append(StringUtils.unEnclose(on.getSQL()));
+        buff.append(" \n ON ").append(StringUtils.unEnclose(on().getSQL()));
 
         return buff.toString();
     }

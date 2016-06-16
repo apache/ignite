@@ -26,6 +26,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -89,6 +90,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.internal.binary.streams.BinaryMemoryAllocator.INSTANCE;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotEquals;
@@ -181,7 +183,21 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testString() throws Exception {
+    public void testStringVer1() throws Exception {
+        doTestString(false);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testStringVer2() throws Exception {
+        doTestString(true);
+    }
+
+    /**
+     * @throws Exception If failed
+     */
+    private void doTestString(boolean ver2) throws Exception {
         // Ascii check.
         String str = "ascii0123456789";
         assertEquals(str, marshalUnmarshal(str));
@@ -204,16 +220,32 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         // Special symbols check.
         str = new String(new char[] {0xD800, '的', 0xD800, 0xD800, 0xDC00, 0xDFFF});
-        assertEquals(str, marshalUnmarshal(str));
+        if (ver2) {
+            bytes = BinaryUtils.strToUtf8Bytes(str);
+            assertEquals(str, BinaryUtils.utf8BytesToStr(bytes, 0, bytes.length));
+        }
+        else
+            assertNotEquals(str, marshalUnmarshal(str));
 
         str = new String(new char[] {55296});
-        assertEquals(str, marshalUnmarshal(str));
+        if (ver2) {
+            bytes = BinaryUtils.strToUtf8Bytes(str);
+            assertEquals(str, BinaryUtils.utf8BytesToStr(bytes, 0, bytes.length));
+        }
+        else
+            assertNotEquals(str, marshalUnmarshal(str));
+
+        bytes = str.getBytes(UTF_8);
+        assertNotEquals(str, new String(bytes, UTF_8));
 
         bytes = str.getBytes(UTF_8);
         assertNotEquals(str, BinaryUtils.utf8BytesToStr(bytes, 0, bytes.length));
 
         str = new String(new char[] {0xD801, 0xDC37});
         assertEquals(str, marshalUnmarshal(str));
+
+        bytes = str.getBytes(UTF_8);
+        assertEquals(str, new String(bytes, UTF_8));
     }
 
     /**
@@ -799,6 +831,21 @@ public class BinaryMarshallerSelfTest extends GridCommonAbstractTest {
 
         assertEquals(obj, marshalUnmarshal(obj));
     }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testVoid() throws Exception {
+        Class clazz = Void.class;
+
+        assertEquals(clazz, marshalUnmarshal(clazz));
+
+        clazz = Void.TYPE;
+
+        assertEquals(clazz, marshalUnmarshal(clazz));
+    }
+
+
 
     /**
      *

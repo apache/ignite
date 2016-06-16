@@ -79,7 +79,7 @@ public class BinaryUtils {
 
     /** */
     public static final boolean USE_STR_SERIALIZATION_VER_2 = IgniteSystemProperties.getBoolean(
-        IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, true);
+        IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2, false);
 
     /** {@code true} if serialized value of this type cannot contain references to objects. */
     private static final boolean[] PLAIN_TYPE_FLAG = new boolean[102];
@@ -652,6 +652,22 @@ public class BinaryUtils {
             cls == ConcurrentSkipListSet.class ||
             cls == ArrayList.class ||
             cls == LinkedList.class;
+    }
+
+    /**
+     * @param arr Array to check.
+     * @return {@code true} if this array is of a known type.
+     */
+    public static boolean knownArray(Object arr) {
+        if (arr == null)
+            return false;
+
+        Class<?> cls =  arr.getClass();
+
+        return cls == byte[].class || cls == short[].class || cls == int[].class || cls == long[].class ||
+            cls == float[].class || cls == double[].class || cls == char[].class || cls == boolean[].class ||
+            cls == String[].class || cls == UUID[].class || cls == Date[].class || cls == Timestamp[].class ||
+            cls == BigDecimal[].class;
     }
 
     /**
