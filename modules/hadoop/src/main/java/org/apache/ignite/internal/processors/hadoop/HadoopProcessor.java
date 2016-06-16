@@ -31,9 +31,7 @@ import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffle;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopEmbeddedTaskExecutor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.hadoop.HadoopClassLoader.hadoopHome;
 import static org.apache.ignite.internal.processors.hadoop.HadoopClassLoader.hadoopUrls;
 
 /**
@@ -74,36 +72,23 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
 
         validate(cfg);
 
-        if (hadoopHome() != null)
-            U.quietAndInfo(log, "HADOOP_HOME is set to " + hadoopHome());
+        // Trigger lazy URIs initialization if not yet done:
+        hadoopUrls();
 
-        boolean ok = false;
-
-        try { // Check for Hadoop installation.
-            hadoopUrls();
-
-            ok = true;
-        }
-        catch (IgniteCheckedException e) {
-            U.quietAndWarn(log, e.getMessage());
-        }
-
-        if (ok) {
-            hctx = new HadoopContext(
-                ctx,
-                cfg,
-                new HadoopJobTracker(),
-                new HadoopEmbeddedTaskExecutor(),
-                // TODO: IGNITE-404: Uncomment when fixed.
-                //cfg.isExternalExecution() ? new HadoopExternalTaskExecutor() : new HadoopEmbeddedTaskExecutor(),
-                new HadoopShuffle());
+        hctx = new HadoopContext(
+            ctx,
+            cfg,
+            new HadoopJobTracker(),
+            new HadoopEmbeddedTaskExecutor(),
+            // TODO: IGNITE-404: Uncomment when fixed.
+            //cfg.isExternalExecution() ? new HadoopExternalTaskExecutor() : new HadoopEmbeddedTaskExecutor(),
+            new HadoopShuffle());
 
 
-            for (HadoopComponent c : hctx.components())
-                c.start(hctx);
+        for (HadoopComponent c : hctx.components())
+            c.start(hctx);
 
-            hadoop = new HadoopImpl(this);
-        }
+        hadoop = new HadoopImpl(this);
     }
 
     /** {@inheritDoc} */

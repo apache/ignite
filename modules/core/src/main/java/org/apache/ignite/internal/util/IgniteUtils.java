@@ -4045,7 +4045,7 @@ public abstract class IgniteUtils {
      * @param log Logger to use.
      * @param msg Message to log.
      */
-    public static void quietAndWarn(IgniteLogger log, Object msg) {
+    public static void quietAndWarn(@Nullable IgniteLogger log, Object msg) {
         quietAndWarn(log, msg, msg);
     }
 
@@ -4056,10 +4056,10 @@ public abstract class IgniteUtils {
      * @param shortMsg Short message.
      * @param msg Message to log.
      */
-    public static void quietAndWarn(IgniteLogger log, Object msg, Object shortMsg) {
+    public static void quietAndWarn(@Nullable IgniteLogger log, Object msg, Object shortMsg) {
         warn(log, msg);
 
-        if (log.isQuiet())
+        if (log != null && log.isQuiet())
             quiet(false, shortMsg);
     }
 

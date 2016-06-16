@@ -16,34 +16,41 @@
 # limitations under the License.
 #
 
-####################################################################
-#                 Hadoop class path resolver.
-#  Requires environment variables 'HADOOP_PREFIX' or 'HADOOP_HOME'
-#  to be set. If they are both undefined , tries to read them from
-#  from '/etc/default/hadoop' file. The final results are printed
-#  into standard output.
-####################################################################
-
 # Resolve constants.
 HADOOP_DEFAULTS="/etc/default/hadoop"
-HADOOP_PREFIX=${HADOOP_PREFIX:-$HADOOP_HOME}
-
-# Try get all variables from Hadoop default environment config
-# if they have not been passed into the script.
-if [[ -z "$HADOOP_PREFIX" && -f "$HADOOP_DEFAULTS" ]]; then
-    source "$HADOOP_DEFAULTS"
-fi
-
-# Return if Hadoop couldn't be found.
-[ -z "$HADOOP_PREFIX" ] && return
 
 #
 # Resolve the rest of Hadoop environment variables.
 #
+if [[ -z "${HADOOP_COMMON_HOME}" || -z "${HADOOP_HDFS_HOME}" || -z "${HADOOP_MAPRED_HOME}" ]]; then
+    if [ -f "$HADOOP_DEFAULTS" ]; then
+        source "$HADOOP_DEFAULTS"
+    fi
+fi
 
-HADOOP_COMMON_HOME=${HADOOP_COMMON_HOME-"${HADOOP_PREFIX}/share/hadoop/common"}
-HADOOP_HDFS_HOME=${HADOOP_HDFS_HOME-"${HADOOP_PREFIX}/share/hadoop/hdfs"}
-HADOOP_MAPRED_HOME=${HADOOP_MAPRED_HOME-"${HADOOP_PREFIX}/share/hadoop/mapreduce"}
+HADOOP_HOME="${HADOOP_HOME:-"${HADOOP_PREFIX}"}"
+
+if [ -n "${HADOOP_HOME}" ]; then
+    HADOOP_COMMON_HOME="${HADOOP_COMMON_HOME:-"${HADOOP_HOME}/share/hadoop/common"}"
+    HADOOP_HDFS_HOME="${HADOOP_HDFS_HOME:-"${HADOOP_HOME}/share/hadoop/hdfs"}"
+    HADOOP_MAPRED_HOME="${HADOOP_MAPRED_HOME:-"${HADOOP_HOME}/share/hadoop/mapreduce"}"
+fi
+
+if [ ! -d "${HADOOP_COMMON_HOME}" ]; then 
+    echo "Hadoop common folder not found: ${HADOOP_COMMON_HOME}. Please check HADOOP_COMMON_HOME environment variable."
+    exit 1
+fi 
+
+if [ ! -d "${HADOOP_HDFS_HOME}" ]; then 
+    echo "Hadoop HDFS folder not found: ${HADOOP_HDFS_HOME}. Please check HADOOP_HDFS_HOME environment variable."
+    exit 1
+fi 
+
+if [ ! -d "${HADOOP_MAPRED_HOME}" ]; then 
+    echo "Hadoop map-reduce folder not found: ${HADOOP_MAPRED_HOME}. Please check HADOOP_MAPRED_HOME environment variable."
+    exit 1
+fi 
+
 
 #
 # Calculate classpath string with required Hadoop libraries.

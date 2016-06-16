@@ -24,6 +24,9 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -502,7 +505,9 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
      * @return HADOOP_HOME Variable.
      */
     @Nullable public static String hadoopHome() {
-        return getEnv("HADOOP_PREFIX", getEnv("HADOOP_HOME", null));
+        String prefix = getEnv("HADOOP_PREFIX", null);
+
+        return getEnv("HADOOP_HOME", prefix);
     }
 
     /**
@@ -523,15 +528,11 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
 
             hadoopUrls = new ArrayList<>();
 
-            String hadoopPrefix = hadoopHome();
+            final String hadoopHome = hadoopHome();
 
-            if (F.isEmpty(hadoopPrefix))
-                throw new IgniteCheckedException("Failed resolve Hadoop installation location. Either HADOOP_PREFIX or " +
-                    "HADOOP_HOME environment variables must be set.");
-
-            String commonHome = getEnv("HADOOP_COMMON_HOME", hadoopPrefix + "/share/hadoop/common");
-            String hdfsHome = getEnv("HADOOP_HDFS_HOME", hadoopPrefix + "/share/hadoop/hdfs");
-            String mapredHome = getEnv("HADOOP_MAPRED_HOME", hadoopPrefix + "/share/hadoop/mapreduce");
+            String commonHome = resolveLocation("HADOOP_COMMON_HOME", hadoopHome, "/share/hadoop/common");
+            String hdfsHome = resolveLocation("HADOOP_HDFS_HOME", hadoopHome, "/share/hadoop/hdfs");
+            String mapredHome = resolveLocation("HADOOP_MAPRED_HOME", hadoopHome, "/share/hadoop/mapreduce");
 
             try {
                 addUrls(hadoopUrls, new File(commonHome + "/lib"), null);
@@ -555,6 +556,50 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
 
             return hadoopUrls;
         }
+    }
+
+    /**
+     * Checks if the variable is empty.
+     *
+     * @param envVarName Environment variable name.
+     * @param hadoopHome The current value.
+     * @param expHadoopHomeRelativePath The path relative to Hadoop home.
+     * @throws IgniteCheckedException If the value is empty.
+     */
+    private static String resolveLocation(String envVarName, @Nullable String hadoopHome,
+        String expHadoopHomeRelativePath) throws IgniteCheckedException {
+        String val = getEnv(envVarName, null);
+
+        if (val == null) {
+            // The env. variable is not set. Try to resolve the location relative HADOOP_HOME:
+            if (!isExistingDirectory(hadoopHome))
+                throw new IgniteCheckedException("Failed to resolve Hadoop installation location. " +
+                    envVarName + " or HADOOP_HOME environment variable should be set.");
+
+            val = hadoopHome + expHadoopHomeRelativePath;
+        }
+
+        if (!isExistingDirectory(val))
+            throw new IgniteCheckedException("Failed to resolve Hadoop location. [path=" + val + ']');
+
+        U.log(null, envVarName + " resolved to " + val);
+
+        return val;
+    }
+
+    /**
+     * Answers if the given path denotes existing directory.
+     *
+     * @param path The directory path.
+     * @return 'true' if the given path denotes an existing directory.
+     */
+    private static boolean isExistingDirectory(String path) {
+        if (path == null)
+            return false;
+
+        Path p = Paths.get(path);
+
+        return Files.exists(p) && Files.isDirectory(p) && Files.isReadable(p);
     }
 
     /** {@inheritDoc} */
