@@ -19,6 +19,7 @@ package org.apache.ignite.spi.discovery.tcp.messages;
 
 import java.util.UUID;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -55,6 +56,8 @@ public class TcpDiscoveryNodeFailedMessage extends TcpDiscoveryAbstractMessage {
 
         this.failedNodeId = failedNodeId;
         this.order = order;
+
+        U.dumpStack(null, "== Node failed");
     }
 
     /**
