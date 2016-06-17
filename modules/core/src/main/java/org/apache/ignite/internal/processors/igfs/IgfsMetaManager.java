@@ -150,8 +150,11 @@ public class IgfsMetaManager extends IgfsManager {
     /** Client flag. */
     private final boolean client;
 
+    /** Compute facade. */
+    private IgniteCompute compute;
+
     /** Compute facade for client tasks. */
-    private IgniteCompute cliCompute;
+    private IgniteCompute metaCompute;
 
     /**
      * Constructor.
@@ -248,7 +251,12 @@ public class IgfsMetaManager extends IgfsManager {
      */
     <T> T runClientTask(IgfsClientAbstractCallable<T> task) {
         try {
-            return clientCompute().call(task);
+            if (!task.isReadOnly() && cfg.isColocateMetadata())
+                // If task mutates state and co-location is enabled, we route request to primary node.
+                return compute().affinityCall(cfg.getMetaCacheName(), IgfsUtils.ROOT_ID, task);
+            else
+                // Otherwise we route to any available data node.
+                return metaCompute().call(task);
         }
         catch (ClusterTopologyException e) {
             throw new IgfsException("Failed to execute operation because there are no IGFS metadata nodes." , e);
@@ -260,24 +268,43 @@ public class IgfsMetaManager extends IgfsManager {
      *
      * @return Compute facade.
      */
-    private IgniteCompute clientCompute() {
+    private IgniteCompute compute() {
+        IgniteCompute compute0 = compute;
+
+        if (compute0 == null) {
+            compute0 = igfsCtx.kernalContext().grid().compute();
+
+            compute = compute0;
+        }
+
+        assert compute0 != null;
+
+        return compute0;
+    }
+
+    /**
+     * Get metadata compute facade for client tasks.
+     *
+     * @return Metadata compute facade.
+     */
+    private IgniteCompute metaCompute() {
         assert client;
 
-        IgniteCompute cliCompute0 = cliCompute;
+        IgniteCompute metaCompute0 = metaCompute;
 
-        if (cliCompute0 == null) {
+        if (metaCompute0 == null) {
             IgniteEx ignite = igfsCtx.kernalContext().grid();
 
             ClusterGroup cluster = ignite.cluster().forIgfsMetadataDataNodes(cfg.getName(), cfg.getMetaCacheName());
 
-            cliCompute0 = ignite.compute(cluster);
+            metaCompute0 = ignite.compute(cluster);
 
-            cliCompute = cliCompute0;
+            metaCompute = metaCompute0;
         }
 
-        assert cliCompute0 != null;
+        assert metaCompute0 != null;
 
-        return cliCompute0;
+        return metaCompute0;
     }
 
     /**

@@ -53,6 +53,11 @@ public class IgfsClientInfoCallable extends IgfsClientAbstractCallable<IgfsFile>
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isReadOnly() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgfsClientInfoCallable.class, this);
     }

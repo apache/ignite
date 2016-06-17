@@ -59,6 +59,11 @@ public class IgfsClientMetaIdsForPathCallable extends IgfsClientAbstractCallable
     }
 
     /** {@inheritDoc} */
+    @Override public boolean isReadOnly() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgfsClientMetaIdsForPathCallable.class, this);
     }
