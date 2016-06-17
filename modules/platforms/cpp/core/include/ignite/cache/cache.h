@@ -125,7 +125,7 @@ namespace ignite
              */
             bool ContainsKey(const K& key, IgniteError& err)
             {
-                impl::In1Operation<K> op(&key);
+                impl::In1Operation<K> op(key);
 
                 return impl.Get()->ContainsKey(op, &err);
             }
@@ -156,7 +156,7 @@ namespace ignite
              */
             bool ContainsKeys(const std::set<K>& keys, IgniteError& err)
             {
-                impl::InSetOperation<K> op(&keys);
+                impl::InSetOperation<K> op(keys);
 
                 return impl.Get()->ContainsKeys(op, &err);
             }
@@ -197,7 +197,7 @@ namespace ignite
              */
             V LocalPeek(const K& key, int32_t peekModes, IgniteError& err)
             {
-                impl::InCacheLocalPeekOperation<K> inOp(&key, peekModes);
+                impl::InCacheLocalPeekOperation<K> inOp(key, peekModes);
                 impl::Out1Operation<V> outOp;
 
                 impl.Get()->LocalPeek(inOp, outOp, peekModes, &err);
@@ -239,7 +239,7 @@ namespace ignite
              */
             V Get(const K& key, IgniteError& err)
             {
-                impl::In1Operation<K> inOp(&key);
+                impl::In1Operation<K> inOp(key);
                 impl::Out1Operation<V> outOp;
 
                 impl.Get()->Get(inOp, outOp, &err);
@@ -281,7 +281,7 @@ namespace ignite
              */
             std::map<K, V> GetAll(const std::set<K>& keys, IgniteError& err)
             {
-                impl::InSetOperation<K> inOp(&keys);
+                impl::InSetOperation<K> inOp(keys);
                 impl::OutMapOperation<K, V> outOp;
 
                 impl.Get()->GetAll(inOp, outOp, &err);
@@ -317,7 +317,7 @@ namespace ignite
              */
             void Put(const K& key, const V& val, IgniteError& err)
             {
-                impl::In2Operation<K, V> op(&key, &val);
+                impl::In2Operation<K, V> op(key, val);
 
                 impl.Get()->Put(op, &err);
             }
@@ -348,7 +348,7 @@ namespace ignite
              */
             void PutAll(const std::map<K, V>& vals, IgniteError& err)
             {
-                impl::InMapOperation<K, V> op(&vals);
+                impl::InMapOperation<K, V> op(vals);
 
                 impl.Get()->PutAll(op, &err);
             }
@@ -385,7 +385,7 @@ namespace ignite
              */
             V GetAndPut(const K& key, const V& val, IgniteError& err)
             {
-                impl::In2Operation<K, V> inOp(&key, &val);
+                impl::In2Operation<K, V> inOp(key, val);
                 impl::Out1Operation<V> outOp;
 
                 impl.Get()->GetAndPut(inOp, outOp, &err);
@@ -425,7 +425,7 @@ namespace ignite
              */
             V GetAndReplace(const K& key, const V& val, IgniteError& err)
             {
-                impl::In2Operation<K, V> inOp(&key, &val);
+                impl::In2Operation<K, V> inOp(key, val);
                 impl::Out1Operation<V> outOp;
 
                 impl.Get()->GetAndReplace(inOp, outOp, &err);
@@ -459,7 +459,7 @@ namespace ignite
              */
             V GetAndRemove(const K& key, IgniteError& err)
             {
-                impl::In1Operation<K> inOp(&key);
+                impl::In1Operation<K> inOp(key);
                 impl::Out1Operation<V> outOp;
 
                 impl.Get()->GetAndRemove(inOp, outOp, &err);
@@ -497,7 +497,7 @@ namespace ignite
              */
             bool PutIfAbsent(const K& key, const V& val, IgniteError& err)
             {
-                impl::In2Operation<K, V> op(&key, &val);
+                impl::In2Operation<K, V> op(key, val);
 
                 return impl.Get()->PutIfAbsent(op, &err);
             }
@@ -548,7 +548,7 @@ namespace ignite
              */
             V GetAndPutIfAbsent(const K& key, const V& val, IgniteError& err)
             {
-                impl::In2Operation<K, V> inOp(&key, &val);
+                impl::In2Operation<K, V> inOp(key, val);
                 impl::Out1Operation<V> outOp;
 
                 impl.Get()->GetAndPutIfAbsent(inOp, outOp, &err);
@@ -596,7 +596,7 @@ namespace ignite
              */
             bool Replace(const K& key, const V& val, IgniteError& err)
             {
-                impl::In2Operation<K, V> op(&key, &val);
+                impl::In2Operation<K, V> op(key, val);
 
                 return impl.Get()->Replace(op, &err);
             }
@@ -635,7 +635,7 @@ namespace ignite
              */
             bool Replace(const K& key, const V& oldVal, const V& newVal, IgniteError& err)
             {
-                impl::In3Operation<K, V, V> op(&key, &oldVal, &newVal);
+                impl::In3Operation<K, V, V> op(key, oldVal, newVal);
 
                 return impl.Get()->ReplaceIfEqual(op, &err);
             }
@@ -664,7 +664,7 @@ namespace ignite
              */
             void LocalEvict(const std::set<K>& keys, IgniteError& err)
             {
-                impl::InSetOperation<K> op(&keys);
+                impl::InSetOperation<K> op(keys);
 
                 impl.Get()->LocalEvict(op, &err);
             }
@@ -715,7 +715,7 @@ namespace ignite
              */
             void Clear(const K& key, IgniteError& err)
             {
-                impl::In1Operation<K> op(&key);
+                impl::In1Operation<K> op(key);
 
                 impl.Get()->Clear(op, &err);
             }
@@ -744,7 +744,7 @@ namespace ignite
              */
             void ClearAll(const std::set<K>& keys, IgniteError& err)
             {
-                impl::InSetOperation<K> op(&keys);
+                impl::InSetOperation<K> op(keys);
 
                 impl.Get()->ClearAll(op, &err);
             }
@@ -777,7 +777,7 @@ namespace ignite
              */
             void LocalClear(const K& key, IgniteError& err)
             {
-                impl::In1Operation<K> op(&key);
+                impl::In1Operation<K> op(key);
 
                 impl.Get()->LocalClear(op, &err);
             }
@@ -810,7 +810,7 @@ namespace ignite
              */
             void LocalClearAll(const std::set<K>& keys, IgniteError& err)
             {
-                impl::InSetOperation<K> op(&keys);
+                impl::InSetOperation<K> op(keys);
 
                 impl.Get()->LocalClearAll(op, &err);
             }
@@ -855,7 +855,7 @@ namespace ignite
              */
             bool Remove(const K& key, IgniteError& err)
             {
-                impl::In1Operation<K> op(&key);
+                impl::In1Operation<K> op(key);
 
                 return impl.Get()->Remove(op, &err);
             }
@@ -892,7 +892,7 @@ namespace ignite
              */
             bool Remove(const K& key, const V& val, IgniteError& err)
             {
-                impl::In2Operation<K, V> op(&key, &val);
+                impl::In2Operation<K, V> op(key, val);
 
                 return impl.Get()->RemoveIfEqual(op, &err);
             }
@@ -923,7 +923,7 @@ namespace ignite
              */
             void RemoveAll(const std::set<K>& keys, IgniteError& err)
             {
-                impl::InSetOperation<K> op(&keys);
+                impl::InSetOperation<K> op(keys);
 
                 impl.Get()->RemoveAll(op, &err);
             }
@@ -1203,7 +1203,7 @@ namespace ignite
 
                 ProcessorHolder procHolder(processor, arg);
 
-                impl::In2Operation<K, ProcessorHolder> inOp(&key, &procHolder);
+                impl::In3Operation<int64_t, K, ProcessorHolder> inOp(P::GetJobId(), key, procHolder);
                 impl::Out1Operation<R> outOp;
 
                 impl.Get()->Invoke(inOp, outOp, &err);

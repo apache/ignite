@@ -29,8 +29,8 @@ namespace ignite
         namespace cache
         {
             /**
-            * Mutable Cache entry state.
-            */
+             * Mutable Cache entry state.
+             */
             enum MutableCacheEntryState
             {
                 /** No changes have been committed to entry. */
@@ -49,15 +49,24 @@ namespace ignite
                 ENTRY_STATE_ERR_STRING = 4
             };
 
+            /**
+             * Get state of the mutable cache entry.
+             *
+             * @param valueBefore Cache entry value before mutation.
+             * @param existsBefore Flag for entry existence before mutation.
+             * @param valueBefore Cache entry value after mutation.
+             * @param existsBefore Flag for entry existence after mutation.
+             * @return Cache entry state.
+             */
             template<typename V>
-            MutableCacheEntryState GetMutableCacheEntryState(const V& value_before, bool exists_before, 
-                                                             const V& value_after, bool exists_after)
+            MutableCacheEntryState GetMutableCacheEntryState(const V& valueBefore, bool existsBefore, 
+                                                             const V& valueAfter, bool existsAfter)
             {
-                if ((!exists_before && exists_after) ||
-                    (exists_before && exists_after && value_before != value_after))
+                if ((!existsBefore && existsAfter) ||
+                    (existsBefore && existsAfter && valueBefore != valueAfter))
                     return ENTRY_STATE_VALUE_SET;
-                
-                if (exists_before && !exists_after)
+
+                if (existsBefore && !existsAfter)
                     return ENTRY_STATE_VALUE_REMOVED;
 
                 return ENTRY_STATE_INTACT;
@@ -183,10 +192,10 @@ namespace ignite
             std::string GetTypeName()
             {
                 BinaryType<P> p;
-                // TODO: implement GetTypeName for basic types?
-                //BinaryType<A> a;
 
-                std::string name = "CacheEntryProcessorHolder<" + p.GetTypeName() + ",int>";
+                // Processor name is enough for identification as it is forbidden to
+                // register the same processor type several times.
+                std::string name = "CacheEntryProcessorHolder<" + p.GetTypeName() + '>';
                 return name;
             }
 

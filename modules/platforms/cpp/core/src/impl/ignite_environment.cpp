@@ -225,10 +225,12 @@ namespace ignite
 
             ModuleManager &mm = ModuleManager::GetInstance();
 
-            // TODO: implement me.
-            std::string typeId = "CacheEntryModifier";
+            int64_t procId;
 
-            mm.InvokeJobById(typeId, reader, writer);
+            if (!reader.TryReadObject<int64_t>(procId))
+                throw IgniteError(IgniteError::IGNITE_ERR_BINARY, "C++ entry processor id is not specified.");
+
+            mm.InvokeJobById(procId, reader, writer);
 
             outStream.Synchronize();
         }

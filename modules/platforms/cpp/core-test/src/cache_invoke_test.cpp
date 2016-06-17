@@ -34,7 +34,7 @@ using namespace ignite::cache;
 using namespace ignite::common;
 
 /**
- * NumberSum class for compute tests.
+ * CacheEntryModifier class for invoke tests.
  */
 class CacheEntryModifier
 {
@@ -113,45 +113,49 @@ public:
         return num;
     }
 
+    /**
+     * Get Job Id.
+     *
+     * @return Job id.
+     */
+    static int64_t GetJobId()
+    {
+        return 2;
+    }
+
 private:
     /** Number to substract. */
     int num;
 };
 
-namespace ignite
-{
-    namespace binary
+/**
+ * Binary type definition for CacheEntryModifier.
+ */
+IGNITE_BINARY_TYPE_START(CacheEntryModifier)
+    IGNITE_BINARY_GET_TYPE_ID_AS_HASH(CacheEntryModifier)
+    IGNITE_BINARY_GET_TYPE_NAME_AS_IS(CacheEntryModifier)
+    IGNITE_BINARY_GET_FIELD_ID_AS_HASH
+    IGNITE_BINARY_GET_HASH_CODE_ZERO(CacheEntryModifier)
+    IGNITE_BINARY_IS_NULL_FALSE(CacheEntryModifier)
+    IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(CacheEntryModifier)
+
+    void Write(BinaryWriter& writer, CacheEntryModifier obj)
     {
-        /**
-         * Binary type definition for CacheEntryModifier.
-         */
-        IGNITE_BINARY_TYPE_START(CacheEntryModifier)
-            IGNITE_BINARY_GET_TYPE_ID_AS_HASH(CacheEntryModifier)
-            IGNITE_BINARY_GET_TYPE_NAME_AS_IS(CacheEntryModifier)
-            IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-            IGNITE_BINARY_GET_HASH_CODE_ZERO(CacheEntryModifier)
-            IGNITE_BINARY_IS_NULL_FALSE(CacheEntryModifier)
-            IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(CacheEntryModifier)
-
-            void Write(BinaryWriter& writer, CacheEntryModifier obj)
-            {
-                writer.WriteInt32("num", obj.GetNum());
-            }
-
-            CacheEntryModifier Read(BinaryReader& reader)
-            {
-                int num = reader.ReadInt32("num");
-
-                return CacheEntryModifier(num);
-            }
-
-        IGNITE_BINARY_TYPE_END
+        writer.WriteInt32("num", obj.GetNum());
     }
-}
 
-IGNITE_REMOTE_JOB_LIST_BEGIN
-    IGNITE_REMOTE_CACHE_ENTRY_PROCESSOR_DECLARE(CacheEntryModifier, int, int, int, int)
-IGNITE_REMOTE_JOB_LIST_END
+    CacheEntryModifier Read(BinaryReader& reader)
+    {
+        int num = reader.ReadInt32("num");
+
+        return CacheEntryModifier(num);
+    }
+IGNITE_BINARY_TYPE_END
+
+
+IGNITE_CACHE_ENTRY_PROCESSOR_LIST_BEGIN
+    IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE(CacheEntryModifier, int, int, int, int)
+IGNITE_CACHE_ENTRY_PROCESSOR_LIST_END
 
 /**
  * Test setup fixture.

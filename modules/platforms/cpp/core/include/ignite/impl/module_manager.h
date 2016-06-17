@@ -27,21 +27,21 @@
 #include "ignite/impl/cache/cache_entry_processor_holder.h"
 
 
-#define IGNITE_REMOTE_JOB_INVOKER_NAME "ignite_impl_InvokeRemoteJob"
+#define IGNITE_CACHE_ENTRY_PROCESSOR_INVOKER_NAME "ignite_impl_InvokeCacheProcessor"
 
-#define IGNITE_REMOTE_JOB_LIST_BEGIN \
+#define IGNITE_CACHE_ENTRY_PROCESSOR_LIST_BEGIN \
     extern "C" IGNITE_IMPORT_EXPORT \
-    bool ignite_impl_InvokeRemoteJob(const std::string& jobTypeId, \
-                                     ignite::impl::binary::BinaryReaderImpl& reader, \
-                                     ignite::impl::binary::BinaryWriterImpl& writer) \
+    bool ignite_impl_InvokeCacheProcessor(int64_t jobTypeId, \
+                                         ignite::impl::binary::BinaryReaderImpl& reader, \
+                                         ignite::impl::binary::BinaryWriterImpl& writer) \
     {
 
-#define IGNITE_REMOTE_JOB_LIST_END \
+#define IGNITE_CACHE_ENTRY_PROCESSOR_LIST_END \
         return false; \
     }
 
-#define IGNITE_REMOTE_CACHE_ENTRY_PROCESSOR_DECLARE(ProcessorType, KeyType, ValueType, ResultType, ArgumentType) \
-    if (jobTypeId == #ProcessorType) \
+#define IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE(ProcessorType, KeyType, ValueType, ResultType, ArgumentType) \
+    if (jobTypeId == ProcessorType::GetJobId()) \
     { \
         using ignite::impl::CallCacheEntryProcessor; \
         CallCacheEntryProcessor<ProcessorType, KeyType, ValueType, ResultType, ArgumentType>(reader, writer); \
@@ -79,11 +79,17 @@ namespace ignite
             writer.WriteTopObject(res);
         }
 
+        /**
+         * Module manager.
+         * Provides methods to manipulate loadable modules.
+         */
         class ModuleManager
         {
-            typedef bool (JobInvoker)(const std::string&,
-                                      ignite::impl::binary::BinaryReaderImpl&,
-                                      ignite::impl::binary::BinaryWriterImpl&);
+            typedef ignite::common::dynamic::Module Module;
+            typedef ignite::impl::binary::BinaryReaderImpl BinaryReaderImpl;
+            typedef ignite::impl::binary::BinaryWriterImpl BinaryWriterImpl;
+            typedef bool (JobInvoker)(int64_t, BinaryReaderImpl&, BinaryWriterImpl&);
+
         public:
             static ModuleManager& GetInstance()
             {
@@ -92,9 +98,7 @@ namespace ignite
                 return self;
             }
 
-            bool InvokeJobById(const std::string& id,
-                               impl::binary::BinaryReaderImpl& reader,
-                               impl::binary::BinaryWriterImpl& writer)
+            bool InvokeJobById(int64_t id, BinaryReaderImpl& reader, BinaryWriterImpl& writer)
             {
                 typedef std::vector<JobInvoker*> Invokers;
 
@@ -109,13 +113,7 @@ namespace ignite
                 return false;
             }
 
-        private:
-            JobInvoker* GetRemoteJobInvoker(common::dynamic::Module& module)
-            {
-                return reinterpret_cast<JobInvoker*>(module.FindSymbol(IGNITE_REMOTE_JOB_INVOKER_NAME));
-            }
-
-            void RegisterModule(common::dynamic::Module& module)
+            void RegisterModule(Module& module)
             {
                 loadedModules.push_back(module);
 
@@ -125,16 +123,22 @@ namespace ignite
                     jobInvokers.push_back(invoker);
             }
 
+        private:
+            JobInvoker* GetRemoteJobInvoker(Module& module)
+            {
+                return reinterpret_cast<JobInvoker*>(module.FindSymbol(IGNITE_CACHE_ENTRY_PROCESSOR_INVOKER_NAME));
+            }
+
             ModuleManager() : loadedModules(), jobInvokers()
             {
-                common::dynamic::Module current = common::dynamic::GetCurrent();
+                Module current = common::dynamic::GetCurrent();
 
                 RegisterModule(current);
             }
 
             IGNITE_NO_COPY_ASSIGNMENT(ModuleManager);
 
-            std::vector<common::dynamic::Module> loadedModules;
+            std::vector<Module> loadedModules;
 
             std::vector<JobInvoker*> jobInvokers;
         };

@@ -813,6 +813,7 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             return DoOutInOp((int)CacheOp.Invoke, writer =>
             {
+                writer.Write<object>(null);
                 writer.Write(key);
                 writer.Write(holder);
             },

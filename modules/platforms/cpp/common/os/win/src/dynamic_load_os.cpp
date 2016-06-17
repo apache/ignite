@@ -21,7 +21,7 @@
 
 namespace
 {
-    std::wstring stringToWstring(const std::string& str)
+    std::wstring StringToWstring(const std::string& str)
     {
         int wslen = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), static_cast<int>(str.size()), NULL, 0);
 
@@ -73,11 +73,6 @@ namespace ignite
                 return GetProcAddress(handle, name);
             }
 
-            void* Module::FindSymbol(const std::string& name)
-            {
-                return FindSymbol(name.c_str());
-            }
-
             bool Module::IsLoaded() const
             {
                 return handle != NULL;
@@ -92,7 +87,7 @@ namespace ignite
 
             Module LoadModule(std::string& path)
             {
-                std::wstring convertedPath = stringToWstring(path);
+                std::wstring convertedPath = StringToWstring(path);
 
                 HMODULE handle = LoadLibrary(convertedPath.c_str());
 
