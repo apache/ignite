@@ -317,13 +317,9 @@ public class IgfsInputStreamImpl extends IgfsInputStreamAdapter {
                         pendingFutsLock.unlock();
                     }
                 }
-
-                // Safety to ensure no orphaned data blocks exist in case file was concurrently deleted.
-               if (!meta.exists(fileInfo.id()))
-                    data.delete(fileInfo);
             }
         }
-        catch (IgniteCheckedException e) {
+        catch (Exception e) {
             throw new IOException("File to close the file: " + path, e);
         }
         finally {

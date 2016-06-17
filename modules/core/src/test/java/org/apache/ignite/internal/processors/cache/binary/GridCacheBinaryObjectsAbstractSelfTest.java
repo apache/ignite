@@ -17,13 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache.binary;
 
+import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import javax.cache.Cache;
 import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
@@ -60,6 +64,7 @@ import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
+import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 import org.apache.ignite.transactions.TransactionConcurrency;
@@ -422,6 +427,75 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
+    public void testBasicArrays() throws Exception {
+        IgniteCache<Integer, Object> cache = jcache(0);
+
+        checkArrayClass(cache, new String[] {"abc"});
+
+        checkArrayClass(cache, new byte[] {1});
+
+        checkArrayClass(cache, new short[] {1});
+
+        checkArrayClass(cache, new int[] {1});
+
+        checkArrayClass(cache, new long[] {1});
+
+        checkArrayClass(cache, new float[] {1});
+
+        checkArrayClass(cache, new double[] {1});
+
+        checkArrayClass(cache, new char[] {'a'});
+
+        checkArrayClass(cache, new boolean[] {false});
+
+        checkArrayClass(cache, new UUID[] {UUID.randomUUID()});
+
+        checkArrayClass(cache, new Date[] {new Date()});
+
+        checkArrayClass(cache, new Timestamp[] {new Timestamp(System.currentTimeMillis())});
+
+        checkArrayClass(cache, new BigDecimal[] {new BigDecimal(100)});
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCustomArrays() throws Exception {
+        fail("https://issues.apache.org/jira/browse/IGNITE-3244");
+
+        IgniteCache<Integer, TestObject[]> cache = jcache(0);
+
+        for (int i = 0; i < ENTRY_CNT; i++) {
+            TestObject[] arr = new TestObject[] {new TestObject(i)};
+
+            cache.put(0, arr);
+        }
+
+
+        for (int i = 0; i < ENTRY_CNT; i++) {
+            TestObject[] obj = cache.get(i);
+
+            assertEquals(1, obj.length);
+            assertEquals(i, obj[0].val);
+        }
+    }
+
+    /**
+     * @param cache Ignite cache.
+     * @param arr Array to check.
+     */
+    private void checkArrayClass(IgniteCache<Integer, Object> cache, Object arr) {
+        cache.put(0, arr);
+
+        Object res = cache.get(0);
+
+        assertEquals(arr.getClass(), res.getClass());
+        GridTestUtils.deepEquals(arr, res);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testGetTx1() throws Exception {
         checkGetTx(PESSIMISTIC, REPEATABLE_READ);
     }
@@ -650,7 +724,6 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
 
             for (int j = 0; j < 10; j++)
                 keys.add(i++);
-
 
             cacheBinaryAsync.getAll(keys);
 
@@ -1045,7 +1118,8 @@ public abstract class GridCacheBinaryObjectsAbstractSelfTest extends GridCommonA
      * No-op entry processor.
      */
     private static class ObjectEntryProcessor implements EntryProcessor<Integer, TestObject, Boolean> {
-        @Override public Boolean process(MutableEntry<Integer, TestObject> entry, Object... args) throws EntryProcessorException {
+        @Override
+        public Boolean process(MutableEntry<Integer, TestObject> entry, Object... args) throws EntryProcessorException {
             TestObject obj = entry.getValue();
 
             entry.setValue(new TestObject(obj.val));

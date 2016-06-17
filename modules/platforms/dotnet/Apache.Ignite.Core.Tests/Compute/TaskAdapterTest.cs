@@ -15,10 +15,13 @@
  * limitations under the License.
  */
 
+#pragma warning disable 649
+#pragma warning disable 169
 namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Compute;
     using Apache.Ignite.Core.Resource;
@@ -50,7 +53,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             HashSet<Guid> allNodes = new HashSet<Guid>(); 
 
-            for (int i = 0; i < 20 && allNodes.Count < 3; i++)
+            for (int i = 0; i < 20 && allNodes.Count < GetServerCount(); i++)
             {
                 HashSet<Guid> res = Grid1.GetCompute().Execute(new TestSplitTask(), 1);
 
@@ -59,7 +62,7 @@ namespace Apache.Ignite.Core.Tests.Compute
                 allNodes.UnionWith(res);
             }
 
-            Assert.AreEqual(3, allNodes.Count);
+            Assert.AreEqual(GetServerCount(), allNodes.Count);
 
             HashSet<Guid> res2 = Grid1.GetCompute().Execute<int, Guid, HashSet<Guid>>(typeof(TestSplitTask), 3);
 
@@ -67,7 +70,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 
             Grid1.GetCompute().Execute(new TestSplitTask(), 100);
 
-            Assert.AreEqual(3, allNodes.Count);
+            Assert.AreEqual(GetServerCount(), allNodes.Count);
         }
         
         /// <summary>
@@ -109,10 +112,13 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// </summary>
         public class TestSplitTask : ComputeTaskSplitAdapter<int, Guid, HashSet<Guid>>
         {
+            [InstanceResource]
+            private readonly IIgnite _ignite;
+
             /** <inheritDoc /> */
             override protected ICollection<IComputeJob<Guid>> Split(int gridSize, int arg)
             {
-                Assert.AreEqual(3, gridSize);
+                Assert.AreEqual(_ignite.GetCluster().GetNodes().Count(x => !x.IsClient), gridSize);
 
                 int jobsNum = arg;
 
@@ -241,7 +247,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         public class BinarizableJob : ComputeJobAdapter<bool>
         {
             [InstanceResource]
-            private IIgnite _grid = null;
+            private IIgnite _grid;
 
             public BinarizableJob(params object[] args) : base(args)
             {
