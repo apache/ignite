@@ -91,7 +91,7 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
     private static BenchmarkIgniteBiPredicate igniteBiPred = new BenchmarkIgniteBiPredicate();
 
     /** Amount partitions. */
-    private static final int SCAN_QUERY_PARTITIN_AMOUNT = 10;
+    private static final int SCAN_QUERY_PARTITION_AMOUNT = 10;
 
     /** List off all available cache. */
     private List<IgniteCache> availableCaches;
@@ -270,8 +270,9 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
                 valuesCacheClasses.put(cacheName, values.toArray(new Class[] {}));
             }
             else
-                keysCacheClasses.put(cacheName,
-                    new Class[] {randomKeyClass(cacheName)});
+                keysCacheClasses.put(cacheName, new Class[] {randomKeyClass(cacheName)});
+
+            valuesCacheClasses.put(cacheName, determineValueClasses(cacheName));
 
             if (configuration.getCacheMode() != CacheMode.LOCAL)
                 affCaches.add(cache);
@@ -399,11 +400,11 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
         // Building a list of all partitions numbers.
         List<Integer> randmPartitions = new ArrayList<>(10);
 
-        if (affinity.partitions() <= SCAN_QUERY_PARTITIN_AMOUNT)
+        if (affinity.partitions() <= SCAN_QUERY_PARTITION_AMOUNT)
             for (int i = 0; i < affinity.partitions(); i++)
                 randmPartitions.add(i);
         else {
-            for (int i = 0; i < SCAN_QUERY_PARTITIN_AMOUNT; i++) {
+            for (int i = 0; i < SCAN_QUERY_PARTITION_AMOUNT; i++) {
                 int partNum;
 
                 do
@@ -453,11 +454,19 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      * @return Random key class.
      */
     private Class randomKeyClass(String cacheName) {
-
         Class[] keys = keysCacheClasses.containsKey(cacheName)
             ? keysCacheClasses.get(cacheName) : ModelUtil.keyClasses();
 
         return keys[nextRandom(keys.length)];
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @return Set classes for cache.
+     */
+    private Class[] determineValueClasses(@NotNull String cacheName) {
+        return cacheName.toLowerCase().contains("fat-values") ? ModelUtil.fatValueClasses() :
+            ModelUtil.simpleValueClasses();
     }
 
     /**
@@ -476,7 +485,6 @@ public class IgniteCacheRandomOperationBenchmark extends IgniteAbstractBenchmark
      * @return Random value class.
      */
     private Class randomValueClass(String cacheName) {
-
         Class[] values = valuesCacheClasses.containsKey(cacheName)
             ? valuesCacheClasses.get(cacheName) : ModelUtil.valueClasses();
 
