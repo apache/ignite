@@ -164,7 +164,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Apache.Ignite.AspNet\Apache.Ignite.AspNet.csproj">
-      <Project>{13ea96fc-cc83-4164-a7c0-4f30ed797460}</Project>
+      <Project>{13EA96FC-CC83-4164-A7C0-4F30ED797460}</Project>
       <Name>Apache.Ignite.AspNet</Name>
     </ProjectReference>
     <ProjectReference Include="..\Apache.Ignite.Core\Apache.Ignite.Core.csproj">
