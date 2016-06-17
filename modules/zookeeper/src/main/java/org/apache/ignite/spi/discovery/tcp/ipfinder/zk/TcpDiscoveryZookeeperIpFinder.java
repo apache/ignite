@@ -17,7 +17,6 @@
 
 package org.apache.ignite.spi.discovery.tcp.ipfinder.zk;
 
-import com.google.common.collect.Sets;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.Collections;
@@ -26,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import com.google.common.collect.Sets;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -134,7 +134,8 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
         if (sysPropZkConnString != null && sysPropZkConnString.trim().length() > 0)
             zkConnectionString = sysPropZkConnString;
 
-        log.info("Initializing ZooKeeper IP Finder.");
+        if (log.isInfoEnabled())
+            log.info("Initializing ZooKeeper IP Finder.");
 
         if (curator == null) {
             A.notNullOrEmpty(zkConnectionString, String.format("ZooKeeper URL (or system property %s) cannot be null " +
@@ -162,7 +163,8 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
             return;
         }
 
-        log.info("Destroying ZooKeeper IP Finder.");
+        if (log.isInfoEnabled())
+            log.info("Destroying ZooKeeper IP Finder.");
 
         super.onSpiContextDestroyed();
 
@@ -193,7 +195,8 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
         for (ServiceInstance<IgniteInstanceDetails> si : serviceInstances)
             answer.add(new InetSocketAddress(si.getAddress(), si.getPort()));
 
-        log.info("ZooKeeper IP Finder resolved addresses: " + answer);
+        if (log.isInfoEnabled())
+            log.info("ZooKeeper IP Finder resolved addresses: " + answer);
 
         return answer;
     }
@@ -202,7 +205,8 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
     @Override public void registerAddresses(Collection<InetSocketAddress> addrs) throws IgniteSpiException {
         init();
 
-        log.info("Registering addresses with ZooKeeper IP Finder: " + addrs);
+        if (log.isInfoEnabled())
+            log.info("Registering addresses with ZooKeeper IP Finder: " + addrs);
 
         Set<InetSocketAddress> registrationsToIgnore = Sets.newHashSet();
         if (!allowDuplicateRegistrations) {
@@ -248,7 +252,8 @@ public class TcpDiscoveryZookeeperIpFinder extends TcpDiscoveryIpFinderAdapter {
         if (curator.getState() != CuratorFrameworkState.STARTED)
             return;
 
-        log.info("Unregistering addresses with ZooKeeper IP Finder: " + addrs);
+        if (log.isInfoEnabled())
+            log.info("Unregistering addresses with ZooKeeper IP Finder: " + addrs);
 
         for (InetSocketAddress addr : addrs) {
             ServiceInstance<IgniteInstanceDetails> si = ourInstances.get(addr);
