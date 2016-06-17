@@ -18,7 +18,6 @@
 namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
