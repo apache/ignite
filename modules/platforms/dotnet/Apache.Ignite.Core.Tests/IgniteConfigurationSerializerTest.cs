@@ -30,6 +30,7 @@ namespace Apache.Ignite.Core.Tests
     using System.Xml;
     using System.Xml.Schema;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Affinity.Fair;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Cache.Store;
@@ -436,6 +437,11 @@ namespace Apache.Ignite.Core.Tests
                         EvictionPolicy = new LruEvictionPolicy
                         {
                             BatchSize = 18, MaxMemorySize = 1023, MaxSize = 554
+                        },
+                        AffinityFunction = new FairAffinityFunction
+                        {
+                            ExcludeNeighbors = true,
+                            PartitionCount = 48
                         }
                     }
                 },
