@@ -17,11 +17,8 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
@@ -57,6 +54,7 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Remapper;
 import org.objectweb.asm.commons.RemappingClassAdapter;
+import static org.apache.ignite.internal.processors.hadoop.HadoopClasspathMain.*;
 
 /**
  * Class loader allowing explicitly load classes without delegation to parent class loader.
@@ -171,9 +169,9 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
                 ldr = ldr.getParent();
             }
         }
-        catch (Exception e) {
+        catch (Throwable t) {
             U.quietAndWarn(null, "Failed to initialize Hadoop native library " +
-                "(native Hadoop methods might not work properly): " + e);
+                "(native Hadoop methods might not work properly): " + t);
         }
     }
 
@@ -439,39 +437,19 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
         return hasDot;
     }
 
-    /**
-     * @param name Variable name.
-     * @param dflt Default.
-     * @return Value.
-     */
-    private static String getEnv(String name, String dflt) {
-        String res = System.getProperty(name);
-
-        if (F.isEmpty(res))
-            res = System.getenv(name);
-
-        return F.isEmpty(res) ? dflt : res;
-    }
-
-    /**
-     * @param res Result.
-     * @param dir Directory.
-     * @param startsWith Starts with prefix.
-     * @throws MalformedURLException If failed.
-     */
-    private static void addUrls(Collection<URL> res, File dir, final String startsWith) throws Exception {
-        File[] files = dir.listFiles(new FilenameFilter() {
-            @Override public boolean accept(File dir, String name) {
-                return startsWith == null || name.startsWith(startsWith);
-            }
-        });
-
-        if (files == null)
-            throw new IOException("Path is not a directory: " + dir);
-
-        for (File file : files)
-            res.add(file.toURI().toURL());
-    }
+//    /**
+//     * @param name Variable name.
+//     * @param dflt Default.
+//     * @return Value.
+//     */
+//    private static String getEnv(String name, String dflt) {
+//        String res = System.getProperty(name);
+//
+//        if (F.isEmpty(res))
+//            res = System.getenv(name);
+//
+//        return F.isEmpty(res) ? dflt : res;
+//    }
 
     /**
      * @param urls URLs.
@@ -499,13 +477,6 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
     }
 
     /**
-     * @return HADOOP_HOME Variable.
-     */
-    @Nullable public static String hadoopHome() {
-        return getEnv("HADOOP_PREFIX", getEnv("HADOOP_HOME", null));
-    }
-
-    /**
      * @return Collection of jar URLs.
      * @throws IgniteCheckedException If failed.
      */
@@ -521,33 +492,10 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
             if (hadoopUrls != null)
                 return hadoopUrls;
 
-            hadoopUrls = new ArrayList<>();
-
-            String hadoopPrefix = hadoopHome();
-
-            if (F.isEmpty(hadoopPrefix))
-                throw new IgniteCheckedException("Failed resolve Hadoop installation location. Either HADOOP_PREFIX or " +
-                    "HADOOP_HOME environment variables must be set.");
-
-            String commonHome = getEnv("HADOOP_COMMON_HOME", hadoopPrefix + "/share/hadoop/common");
-            String hdfsHome = getEnv("HADOOP_HDFS_HOME", hadoopPrefix + "/share/hadoop/hdfs");
-            String mapredHome = getEnv("HADOOP_MAPRED_HOME", hadoopPrefix + "/share/hadoop/mapreduce");
-
             try {
-                addUrls(hadoopUrls, new File(commonHome + "/lib"), null);
-                addUrls(hadoopUrls, new File(hdfsHome + "/lib"), null);
-                addUrls(hadoopUrls, new File(mapredHome + "/lib"), null);
-
-                addUrls(hadoopUrls, new File(hdfsHome), "hadoop-hdfs-");
-
-                addUrls(hadoopUrls, new File(commonHome), "hadoop-common-");
-                addUrls(hadoopUrls, new File(commonHome), "hadoop-auth-");
-                addUrls(hadoopUrls, new File(commonHome + "/lib"), "hadoop-auth-");
-
-                addUrls(hadoopUrls, new File(mapredHome), "hadoop-mapreduce-client-common");
-                addUrls(hadoopUrls, new File(mapredHome), "hadoop-mapreduce-client-core");
+                hadoopUrls = getAsUrlList();
             }
-            catch (Exception e) {
+            catch (IOException e) {
                 throw new IgniteCheckedException(e);
             }
 

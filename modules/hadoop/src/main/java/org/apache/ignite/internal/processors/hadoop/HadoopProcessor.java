@@ -33,8 +33,8 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.hadoop.HadoopClassLoader.hadoopHome;
 import static org.apache.ignite.internal.processors.hadoop.HadoopClassLoader.hadoopUrls;
+import static org.apache.ignite.internal.processors.hadoop.HadoopClasspathMain.hadoopHome;
 
 /**
  * Hadoop processor.

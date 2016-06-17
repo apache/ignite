@@ -72,9 +72,16 @@ if [ "${USER_LIBS}" != "" ]; then
 fi
 
 if [ "${HADOOP_EDITION}" == "1" ]; then
-    . "${SCRIPTS_HOME}"/include/hadoop-classpath.sh
+    #. "${SCRIPTS_HOME}"/include/hadoop-classpath.sh
+    IGNITE_HADOOP_CLASSPATH=$( "$JAVA" -cp "${IGNITE_HOME}"/libs/ignite-hadoop/'*' org.apache.ignite.internal.processors.hadoop.HadoopClasspathMain )
 
-    if [ "${IGNITE_HADOOP_CLASSPATH}" != "" ]; then
-        IGNITE_LIBS=${IGNITE_LIBS}${SEP}$IGNITE_HADOOP_CLASSPATH
+    # TODO: DEBUG:
+    echo "IGNITE_HADOOP_CLASSPATH=[${IGNITE_HADOOP_CLASSPATH}]"
+
+    if [ -z "${IGNITE_HADOOP_CLASSPATH}" ]; then
+        # Error already reported.
+        exit 1
+    else
+        IGNITE_LIBS=${IGNITE_LIBS}${SEP}${IGNITE_HADOOP_CLASSPATH}
     fi
 fi
