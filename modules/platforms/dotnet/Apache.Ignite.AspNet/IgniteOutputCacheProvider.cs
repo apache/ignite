@@ -15,8 +15,6 @@
  * limitations under the License.
  */
 
-using System.Web.Caching;
-
 namespace Apache.Ignite.AspNet
 {
     using System;
@@ -25,6 +23,7 @@ namespace Apache.Ignite.AspNet
     using System.Configuration;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
+    using System.Web.Caching;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Expiry;

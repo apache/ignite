@@ -45,13 +45,21 @@ namespace Apache.Ignite.Core.Binary
         /** In use flag. */
         private bool _isInUse;
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Write binary object.
+        /// </summary>
+        /// <param name="obj">Object.</param>
+        /// <param name="writer">Binary writer.</param>
         public void WriteBinary(object obj, IBinaryWriter writer)
         {
             throw new NotSupportedException(GetType() + ".WriteBinary should not be called directly.");
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Read binary object.
+        /// </summary>
+        /// <param name="obj">Instantiated empty object.</param>
+        /// <param name="reader">Binary reader.</param>
         public void ReadBinary(object obj, IBinaryReader reader)
         {
             throw new NotSupportedException(GetType() + ".ReadBinary should not be called directly.");

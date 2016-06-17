@@ -18,7 +18,6 @@
 namespace Apache.Ignite.AspNet
 {
     using System.Diagnostics.CodeAnalysis;
-    using System.IO;
     using System.Web;
 
     /// <summary>
