@@ -15,35 +15,48 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.igfs.client;
+package org.apache.ignite.internal.processors.igfs.client.meta;
 
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
-import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.binary.BinaryUtils;
 import org.apache.ignite.internal.processors.igfs.IgfsContext;
-import org.apache.ignite.internal.processors.igfs.IgfsUtils;
+import org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientAbstractCallable;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * IGFS client set times callable.
+ * Callable to unlock file info.
  */
-public class IgfsClientSetTimesCallable extends IgfsClientAbstractCallable<Void> {
+public class IgfsClientMetaFileUnlockCallable extends IgfsClientAbstractCallable<Void> {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Access time. */
-    private long accessTime;
+    /** File ID. */
+    private IgniteUuid fileId;
+
+    /** Lock ID. */
+    private IgniteUuid lockId;
 
     /** Modification time. */
     private long modificationTime;
 
+    /** Whether to update space. */
+    private boolean updateSpace;
+
+    /** Space. */
+    private long space;
+
+    /** Affinity range. */
+    private IgfsFileAffinityRange affRange;
+
     /**
      * Default constructor.
      */
-    public IgfsClientSetTimesCallable() {
+    public IgfsClientMetaFileUnlockCallable() {
         // NO-op.
     }
 
@@ -51,44 +64,67 @@ public class IgfsClientSetTimesCallable extends IgfsClientAbstractCallable<Void>
      * Constructor.
      *
      * @param igfsName IGFS name.
-     * @param path Path.
-     * @param accessTime Access time.
+     * @param fileId File ID.
+     * @param lockId Lock ID.
      * @param modificationTime Modification time.
      */
-    public IgfsClientSetTimesCallable(@Nullable String igfsName, IgfsPath path, long accessTime,
-        long modificationTime) {
-        super(igfsName, path);
+    public IgfsClientMetaFileUnlockCallable(@Nullable String igfsName, IgniteUuid fileId, IgniteUuid lockId,
+        long modificationTime, boolean updateSpace, long space, @Nullable IgfsFileAffinityRange affRange) {
+        super(igfsName, null);
 
-        this.accessTime = accessTime;
+        this.fileId = fileId;
+        this.lockId = lockId;
         this.modificationTime = modificationTime;
+        this.updateSpace = updateSpace;
+        this.space = space;
+        this.affRange = affRange;
     }
 
     /** {@inheritDoc} */
     @Override protected Void call0(IgfsContext ctx) throws Exception {
-        ctx.igfs().setTimes(path, accessTime, modificationTime);
+        ctx.meta().unlock(fileId, lockId, modificationTime, updateSpace, space, affRange);
 
         return null;
     }
 
     /** {@inheritDoc} */
     @Nullable @Override public IgniteUuid affinityKey() {
-        return IgfsUtils.ROOT_ID;
+        return fileId;
     }
 
     /** {@inheritDoc} */
     @Override public void writeBinary0(BinaryRawWriter writer) throws BinaryObjectException {
-        writer.writeLong(accessTime);
+        BinaryUtils.writeIgniteUuid(writer, fileId);
+        BinaryUtils.writeIgniteUuid(writer, lockId);
+
         writer.writeLong(modificationTime);
+
+        if (updateSpace) {
+            writer.writeBoolean(true);
+            writer.writeLong(space);
+            writer.writeObject(affRange);
+        }
+        else
+            writer.writeBoolean(false);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary0(BinaryRawReader reader) throws BinaryObjectException {
-        accessTime = reader.readLong();
+        fileId = BinaryUtils.readIgniteUuid(reader);
+        lockId = BinaryUtils.readIgniteUuid(reader);
+
         modificationTime = reader.readLong();
+
+        if (reader.readBoolean()) {
+            updateSpace = true;
+
+            space = reader.readLong();
+            affRange = reader.readObject();
+        }
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgfsClientSetTimesCallable.class, this);
+        return S.toString(IgfsClientMetaFileUnlockCallable.class, this);
     }
 }

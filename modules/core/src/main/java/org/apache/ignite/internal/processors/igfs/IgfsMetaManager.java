@@ -48,6 +48,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheInternal;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.igfs.client.IgfsClientAbstractCallable;
+import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaFileUnlockCallable;
 import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaIdsForPathCallable;
 import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaInfoForPathCallable;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryCreateProcessor;
@@ -251,9 +252,14 @@ public class IgfsMetaManager extends IgfsManager {
      */
     <T> T runClientTask(IgfsClientAbstractCallable<T> task) {
         try {
-            if (!task.isReadOnly() && cfg.isColocateMetadata())
+            if (task.isAffinityBased() && cfg.isColocateMetadata()) {
                 // If task mutates state and co-location is enabled, we route request to primary node.
-                return compute().affinityCall(cfg.getMetaCacheName(), IgfsUtils.ROOT_ID, task);
+                IgniteUuid affKey = task.affinityKey();
+
+                assert affKey != null;
+
+                return compute().affinityCall(cfg.getMetaCacheName(), affKey, task);
+            }
             else
                 // Otherwise we route to any available data node.
                 return metaCompute().call(task);
@@ -673,6 +679,13 @@ public class IgfsMetaManager extends IgfsManager {
     public void unlock(final IgniteUuid fileId, final IgniteUuid lockId, final long modificationTime,
         final boolean updateSpace, final long space, @Nullable final IgfsFileAffinityRange affRange)
         throws IgniteCheckedException {
+        if (isClient()) {
+            runClientTask(new IgfsClientMetaFileUnlockCallable(cfg.getName(), fileId, lockId, modificationTime,
+                updateSpace, space, affRange));
+
+            return;
+        }
+
         validTxState(false);
 
         if (busyLock.enterBusy()) {

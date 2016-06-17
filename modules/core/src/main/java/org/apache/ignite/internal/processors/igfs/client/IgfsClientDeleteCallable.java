@@ -22,7 +22,9 @@ import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.igfs.IgfsContext;
+import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -61,8 +63,8 @@ public class IgfsClientDeleteCallable extends IgfsClientAbstractCallable<Boolean
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isReadOnly() {
-        return false;
+    @Nullable @Override public IgniteUuid affinityKey() {
+        return IgfsUtils.ROOT_ID;
     }
 
     /** {@inheritDoc} */

@@ -53,11 +53,6 @@ public class IgfsClientSizeCallable extends IgfsClientAbstractCallable<Long> {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isReadOnly() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgfsClientSizeCallable.class, this);
     }

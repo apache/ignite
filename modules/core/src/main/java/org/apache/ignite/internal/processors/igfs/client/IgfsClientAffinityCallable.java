@@ -74,11 +74,6 @@ public class IgfsClientAffinityCallable extends IgfsClientAbstractCallable<Colle
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isReadOnly() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public void writeBinary0(BinaryRawWriter writer) throws BinaryObjectException {
         writer.writeLong(start);
         writer.writeLong(len);

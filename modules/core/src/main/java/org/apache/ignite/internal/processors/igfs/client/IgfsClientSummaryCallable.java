@@ -53,11 +53,6 @@ public class IgfsClientSummaryCallable extends IgfsClientAbstractCallable<IgfsPa
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isReadOnly() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgfsClientSummaryCallable.class, this);
     }
