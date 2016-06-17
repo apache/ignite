@@ -716,6 +716,16 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
             return DS_CHECK_SUCCESS;
         }
 
+        function compareSQLSchemaNames(firstCache, secondCache) {
+            const firstName = firstCache.sqlSchema;
+            const secondName = secondCache.sqlSchema;
+
+            if (firstName && secondName && (firstName === secondName))
+                return {checked: false, firstCache, secondCache};
+
+            return DS_CHECK_SUCCESS;
+        }
+
         function toJavaName(prefix, name) {
             const javaName = name ? name.replace(/[^A-Za-z_0-9]+/g, '_') : 'dflt';
 
@@ -965,6 +975,33 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
                     return _.find(caches, function(checkCache, checkIx) {
                         if (checkIx < curIx) {
                             res = compareDataSources(checkCache, curCache);
+
+                            return !res.checked;
+                        }
+
+                        return false;
+                    });
+                });
+
+                return res;
+            },
+            checkCacheSQLSchemas(caches, checkCacheExt) {
+                let res = DS_CHECK_SUCCESS;
+
+                _.find(caches, (curCache, curIx) => {
+                    if (isDefined(checkCacheExt)) {
+                        if (!isDefined(checkCacheExt._id) || checkCacheExt.id !== curCache._id) {
+                            res = compareSQLSchemaNames(checkCacheExt, curCache);
+
+                            return !res.checked;
+                        }
+
+                        return false;
+                    }
+
+                    return _.find(caches, function(checkCache, checkIx) {
+                        if (checkIx < curIx) {
+                            res = compareSQLSchemaNames(checkCache, curCache);
 
                             return !res.checked;
                         }
