@@ -155,7 +155,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Assert.AreEqual(1, Grid1.GetServices().GetServices<ITestIgniteService>(SvcName).Count);
             Assert.AreEqual(1, Grid2.GetServices().GetServices<ITestIgniteService>(SvcName).Count);
-            Assert.AreEqual(1, Grid3.GetServices().GetServices<ITestIgniteService>(SvcName).Count);
+            Assert.AreEqual(0, Grid3.GetServices().GetServices<ITestIgniteService>(SvcName).Count);
         }
 
         /// <summary>
@@ -204,7 +204,7 @@ namespace Apache.Ignite.Core.Tests.Services
 
             Services.DeployMultiple(SvcName, svc, Grids.Length * 5, 5);
 
-            foreach (var grid in Grids)
+            foreach (var grid in Grids.Where(x => !x.GetConfiguration().ClientMode))
                 CheckServiceStarted(grid, 5);
         }
 
@@ -250,15 +250,14 @@ namespace Apache.Ignite.Core.Tests.Services
                 ? new TestIgniteServiceBinarizable {TestProperty = 17}
                 : new TestIgniteServiceSerializable {TestProperty = 17};
 
-            Grid1.GetCluster().ForNodeIds(Grid2.GetCluster().GetLocalNode().Id, Grid3.GetCluster().GetLocalNode().Id).GetServices()
-                .DeployNodeSingleton(SvcName,
-                    svc);
+            Grid1.GetCluster().ForNodeIds(Grid2.GetCluster().GetLocalNode().Id, Grid1.GetCluster().GetLocalNode().Id)
+                .GetServices().DeployNodeSingleton(SvcName, svc);
 
-            // Make sure there is no local instance on grid1
-            Assert.IsNull(Services.GetService<ITestIgniteService>(SvcName));
+            // Make sure there is no local instance on grid3
+            Assert.IsNull(Grid3.GetServices().GetService<ITestIgniteService>(SvcName));
 
             // Get proxy
-            var prx = Services.GetServiceProxy<ITestIgniteService>(SvcName);
+            var prx = Grid3.GetServices().GetServiceProxy<ITestIgniteService>(SvcName);
 
             // Check proxy properties
             Assert.IsNotNull(prx);
@@ -282,7 +281,7 @@ namespace Apache.Ignite.Core.Tests.Services
             Assert.AreEqual(2, invokedIds.Count);
 
             // Check sticky = true: all calls should be to the same node
-            prx = Services.GetServiceProxy<ITestIgniteService>(SvcName, true);
+            prx = Grid3.GetServices().GetServiceProxy<ITestIgniteService>(SvcName, true);
             invokedIds = Enumerable.Range(1, 100).Select(x => prx.NodeId).Distinct().ToList();
             Assert.AreEqual(1, invokedIds.Count);
 
@@ -469,7 +468,7 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             var svc = new TestIgniteServiceSerializable { ThrowCancel = true };
 
-            Services.DeployMultiple(SvcName, svc, Grids.Length, 1);
+            Services.DeployMultiple(SvcName, svc, 2, 1);
 
             CheckServiceStarted(Grid1);
 
