@@ -66,6 +66,7 @@ import static org.apache.ignite.internal.processors.cache.database.tree.util.Pag
 /**
  * Abstract B+Tree.
  */
+@SuppressWarnings({"RedundantThrowsDeclaration", "ConstantValueVariableUse"})
 public abstract class BPlusTree<L, T extends L> {
     /** */
     public static Random rnd;
