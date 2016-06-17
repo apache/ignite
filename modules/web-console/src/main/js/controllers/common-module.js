@@ -963,7 +963,7 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
 
                 _.find(caches, function(curCache, curIx) {
                     if (isDefined(checkCacheExt)) {
-                        if (!isDefined(checkCacheExt._id) || checkCacheExt.id !== curCache._id) {
+                        if (checkCacheExt._id !== curCache._id) {
                             res = compareDataSources(checkCacheExt, curCache);
 
                             return !res.checked;
@@ -990,7 +990,7 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
 
                 _.find(caches, (curCache, curIx) => {
                     if (isDefined(checkCacheExt)) {
-                        if (!isDefined(checkCacheExt._id) || checkCacheExt.id !== curCache._id) {
+                        if (checkCacheExt._id !== curCache._id) {
                             res = compareSQLSchemaNames(checkCacheExt, curCache);
 
                             return !res.checked;
