@@ -24,7 +24,6 @@ import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -65,8 +64,8 @@ public class IgfsClientRenameCallable extends IgfsClientAbstractCallable<Void> {
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public IgniteUuid affinityKey() {
-        return IgfsUtils.ROOT_ID;
+    @Override public boolean isReadOnly() {
+        return false;
     }
 
     /** {@inheritDoc} */
