@@ -17,14 +17,26 @@
 
 namespace Apache.Ignite.Core.Cache.Affinity
 {
+    using System;
     using System.ComponentModel;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Affinity.Fair;
+    using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
 
     /// <summary>
     /// Base class for predefined affinity functions.
     /// </summary>
     public abstract class AffinityFunctionBase : IAffinityFunction
     {
+        /** */
+        private const byte TypeCodeNull = 0;
+
+        /** */
+        private const byte TypeCodeFair = 1;
+
+        /** */
+        private const byte TypeCodeRendezvous = 2;
+
         /// <summary> The default value for <see cref="PartitionCount"/> property. </summary>
         public const int DefaultPartitionCount = 1024;
 
@@ -52,16 +64,53 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// </summary>
         internal static IAffinityFunction Read(IBinaryRawReader reader)
         {
-            // TODO
-            return null;
+            AffinityFunctionBase fun;
+
+            var typeCode = reader.ReadByte();
+            switch (typeCode)
+            {
+                case TypeCodeNull:
+                    return null;
+                case TypeCodeFair:
+                    fun = new FairAffinityFunction();
+                    break;
+                case TypeCodeRendezvous:
+                    fun = new RendezvousAffinityFunction();
+                    break;
+                default:
+                    throw new InvalidOperationException("Invalid AffinityFunction type code: " + typeCode);
+            }
+
+            fun.PartitionCount = reader.ReadInt();
+            fun.ExcludeNeighbors = reader.ReadBoolean();
+
+            return fun;
         }
 
         /// <summary>
         /// Writes the instance.
         /// </summary>
-        internal static void Write(IBinaryRawWriter writer, IAffinityFunction affinityFunction)
+        internal static void Write(IBinaryRawWriter writer, IAffinityFunction fun)
         {
-            // TODO
+            if (fun == null)
+            {
+                writer.WriteByte(TypeCodeNull);
+                return;
+            }
+
+            var p = fun as AffinityFunctionBase;
+
+            if (p == null)
+            {
+                throw new NotSupportedException(
+                    string.Format("Unsupported AffinityFunction: {0}. Only predefined affinity function types " +
+                                  "are supported: {1}, {2}", fun.GetType(), typeof(FairAffinityFunction),
+                        typeof(RendezvousAffinityFunction)));
+            }
+
+            writer.WriteByte(p is FairAffinityFunction ? TypeCodeFair : TypeCodeRendezvous);
+            writer.WriteInt(p.PartitionCount);
+            writer.WriteBoolean(p.ExcludeNeighbors);
         }
     }
 }
