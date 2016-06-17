@@ -39,7 +39,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class IgfsDeleteWorker extends IgfsThread {
     /** Awake frequency, */
-    private static final long FREQUENCY = 100;
+    private static final long FREQUENCY = 1000;
 
     /** How many files/folders to delete at once (i.e in a single transaction). */
     private static final int MAX_DELETE_BATCH = 100;
