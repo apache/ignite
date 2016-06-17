@@ -88,6 +88,12 @@ namespace ignite
             /**
              * Check if the column is in valid state.
              *
+             * Invalid instance can be returned if some of the previous
+             * operations have resulted in a failure. For example invalid
+             * instance can be returned by not-throwing version of method
+             * in case of error. Invalid instances also often can be
+             * created using default constructor.
+             *
              * @return True if valid.
              */
             bool IsValid() const

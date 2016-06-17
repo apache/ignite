@@ -1327,7 +1327,7 @@ namespace ignite
                     else {
                         int32_t pos = stream->Position() - 1;
 
-                        IGNITE_ERROR_FORMATTED_3(IgniteError::IGNITE_ERR_BINARY, "Invalid header", "position", pos, "expected", expHdr, "actual", typeId)
+                        IGNITE_ERROR_FORMATTED_3(IgniteError::IGNITE_ERR_BINARY, "Invalid header", "position", pos, "expected", (int)expHdr, "actual", (int)typeId)
                     }
                 }
 
@@ -1350,7 +1350,7 @@ namespace ignite
                     else {
                         int32_t pos = stream->Position() - 1;
 
-                        IGNITE_ERROR_FORMATTED_3(IgniteError::IGNITE_ERR_BINARY, "Invalid header", "position", pos, "expected", expHdr, "actual", typeId)
+                        IGNITE_ERROR_FORMATTED_3(IgniteError::IGNITE_ERR_BINARY, "Invalid header", "position", pos, "expected", (int)expHdr, "actual", (int)typeId)
                     }
                 }
             };
@@ -1412,7 +1412,7 @@ namespace ignite
                 else {
                     int32_t pos = stream->Position() - 1;
 
-                    IGNITE_ERROR_FORMATTED_3(IgniteError::IGNITE_ERR_BINARY, "Invalid header", "position", pos, "expected", IGNITE_TYPE_STRING, "actual", typeId)
+                    IGNITE_ERROR_FORMATTED_3(IgniteError::IGNITE_ERR_BINARY, "Invalid header", "position", pos, "expected", (int)IGNITE_TYPE_STRING, "actual", (int)typeId)
                 }
             }
         }

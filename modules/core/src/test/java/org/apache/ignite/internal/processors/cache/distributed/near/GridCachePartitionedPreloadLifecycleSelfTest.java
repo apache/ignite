@@ -17,19 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.near;
 
-import java.util.Map;
-import javax.cache.CacheException;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
-import org.apache.ignite.internal.IgniteKernal;
-import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.distributed.GridCachePreloadLifecycleAbstractTest;
-import org.apache.ignite.internal.processors.cache.query.CacheQuery;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
-import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.lifecycle.LifecycleEventType;
 import org.apache.ignite.resources.IgniteInstanceResource;
@@ -164,34 +157,6 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
     }
 
     /**
-     * @param keys Keys.
-     * @throws Exception If failed.
-     */
-    public void checkScanQuery(Object[] keys) throws Exception {
-        preloadMode = SYNC;
-
-        lifecycleBean = lifecycleBean(keys);
-
-        for (int i = 0; i < gridCnt; i++) {
-            startGrid(i);
-
-            info("Checking '" + (i + 1) + "' nodes...");
-
-            for (int j = 0; j < G.allGrids().size(); j++) {
-                GridCacheAdapter<Object, MyValue> c2 = ((IgniteKernal)grid(j)).internalCache("two");
-
-                CacheQuery<Map.Entry<Object, MyValue>> qry = c2.context().queries().createScanQuery(null, null, false);
-
-                int totalCnt = F.sumInt(qry.execute(new EntryIntegerIgniteReducer()).get());
-
-                info("Total entry count [grid=" + j + ", totalCnt=" + totalCnt + ']');
-
-                assertEquals(keys.length / 2, totalCnt);
-            }
-        }
-    }
-
-    /**
      * @throws Exception If failed.
      */
     public void testLifecycleBean1() throws Exception {
@@ -217,70 +182,5 @@ public class GridCachePartitionedPreloadLifecycleSelfTest extends GridCachePrelo
      */
     public void testLifecycleBean4() throws Exception {
         checkCache(keys(false, 500));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testScanQuery1() throws Exception {
-        checkScanQuery(keys(true, DFLT_KEYS.length, DFLT_KEYS));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testScanQuery2() throws Exception {
-        checkScanQuery(keys(false, DFLT_KEYS.length, DFLT_KEYS));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testScanQuery3() throws Exception {
-        checkScanQuery(keys(true, 500));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
-    public void testScanQuery4() throws Exception {
-        checkScanQuery(keys(false, 500));
-    }
-
-    /**
-     *
-     */
-    private static class EntryIntegerIgniteReducer implements IgniteReducer<Map.Entry<Object, MyValue>, Integer> {
-        @IgniteInstanceResource
-        private Ignite grid;
-
-        private int cnt;
-
-        @Override public boolean collect(Map.Entry<Object, MyValue> e) {
-            Object key = e.getKey();
-
-            assertNotNull(e.getValue());
-
-            try {
-                Object v1 = e.getValue();
-                Object v2 = grid.cache("one").get(key);
-
-                assertNotNull(v2);
-                assertEquals(v1, v2);
-            }
-            catch (CacheException e1) {
-                e1.printStackTrace();
-
-                assert false;
-            }
-
-            cnt++;
-
-            return true;
-        }
-
-        @Override public Integer reduce() {
-            return cnt;
-        }
     }
 }

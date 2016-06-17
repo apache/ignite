@@ -233,6 +233,7 @@ namespace ignite
             JniMethod M_PLATFORM_CLUSTER_GRP_FOR_RANDOM = JniMethod("forRandom", "()Lorg/apache/ignite/internal/processors/platform/cluster/PlatformClusterGroup;", false);
             JniMethod M_PLATFORM_CLUSTER_GRP_FOR_OLDEST = JniMethod("forOldest", "()Lorg/apache/ignite/internal/processors/platform/cluster/PlatformClusterGroup;", false);
             JniMethod M_PLATFORM_CLUSTER_GRP_FOR_YOUNGEST = JniMethod("forYoungest", "()Lorg/apache/ignite/internal/processors/platform/cluster/PlatformClusterGroup;", false);
+            JniMethod M_PLATFORM_CLUSTER_GRP_FOR_SERVERS = JniMethod("forServers", "()Lorg/apache/ignite/internal/processors/platform/cluster/PlatformClusterGroup;", false);
             JniMethod M_PLATFORM_CLUSTER_GRP_RESET_METRICS = JniMethod("resetMetrics", "()V", false);
 
             const char* C_PLATFORM_MESSAGING = "org/apache/ignite/internal/processors/platform/messaging/PlatformMessaging";
@@ -615,6 +616,7 @@ namespace ignite
                 m_PlatformClusterGroup_forRandom = FindMethod(env, c_PlatformClusterGroup, M_PLATFORM_CLUSTER_GRP_FOR_RANDOM);
                 m_PlatformClusterGroup_forOldest = FindMethod(env, c_PlatformClusterGroup, M_PLATFORM_CLUSTER_GRP_FOR_OLDEST);
                 m_PlatformClusterGroup_forYoungest = FindMethod(env, c_PlatformClusterGroup, M_PLATFORM_CLUSTER_GRP_FOR_YOUNGEST);
+                m_PlatformClusterGroup_forServers = FindMethod(env, c_PlatformClusterGroup, M_PLATFORM_CLUSTER_GRP_FOR_SERVERS);
                 m_PlatformClusterGroup_resetMetrics = FindMethod(env, c_PlatformClusterGroup, M_PLATFORM_CLUSTER_GRP_RESET_METRICS);
 
                 c_PlatformCompute = FindClass(env, C_PLATFORM_COMPUTE);
@@ -992,7 +994,7 @@ namespace ignite
                         {
                             GetJniErrorMessage(errMsg, res);
 
-                            errMsgLen = errMsg.length();
+                            errMsgLen = static_cast<int>(errMsg.length());
                         }
                     }
 
@@ -1349,12 +1351,12 @@ namespace ignite
                 return LocalToGlobal(env, ldr);
             }
 
-            jobject JniContext::ProcessorTransactions(jobject obj) {
+            jobject JniContext::ProcessorTransactions(jobject obj, JniErrorInfo* errInfo) {
                 JNIEnv* env = Attach();
 
                 jobject tx = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_transactions);
 
-                ExceptionCheck(env);
+                ExceptionCheck(env, errInfo);
 
                 return LocalToGlobal(env, tx);
             }
@@ -1955,6 +1957,16 @@ namespace ignite
                 return LocalToGlobal(env, newPrj);
             }
 
+            jobject JniContext::ProjectionForServers(jobject obj) {
+                JNIEnv* env = Attach();
+
+                jobject newPrj = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformClusterGroup_forServers);
+
+                ExceptionCheck(env);
+
+                return LocalToGlobal(env, newPrj);
+            }
+
             void JniContext::ProjectionResetMetrics(jobject obj) {
                 JNIEnv* env = Attach();
 
@@ -2002,22 +2014,25 @@ namespace ignite
                 ExceptionCheck(env, errInfo);
             }
 
-            long long JniContext::TransactionsStart(jobject obj, int concurrency, int isolation, long long timeout, int txSize) {
+            long long JniContext::TransactionsStart(jobject obj, int concurrency,
+                int isolation, long long timeout, int txSize, JniErrorInfo* errInfo) {
                 JNIEnv* env = Attach();
 
-                long long id = env->CallLongMethod(obj, jvm->GetMembers().m_PlatformTransactions_txStart, concurrency, isolation, timeout, txSize);
+                long long id = env->CallLongMethod(obj,
+                    jvm->GetMembers().m_PlatformTransactions_txStart,
+                    concurrency, isolation, timeout, txSize);
 
-                ExceptionCheck(env);
+                ExceptionCheck(env, errInfo);
 
                 return id;
             }
 
-            int JniContext::TransactionsCommit(jobject obj, long long id) {
+            int JniContext::TransactionsCommit(jobject obj, long long id, JniErrorInfo* errInfo) {
                 JNIEnv* env = Attach();
 
                 int res = env->CallIntMethod(obj, jvm->GetMembers().m_PlatformTransactions_txCommit, id);
 
-                ExceptionCheck(env);
+                ExceptionCheck(env, errInfo);
 
                 return res;
             }
@@ -2030,12 +2045,12 @@ namespace ignite
                 ExceptionCheck(env);
             }
 
-            int JniContext::TransactionsRollback(jobject obj, long long id) {
+            int JniContext::TransactionsRollback(jobject obj, long long id, JniErrorInfo* errInfo) {
                 JNIEnv* env = Attach();
 
                 int res = env->CallIntMethod(obj, jvm->GetMembers().m_PlatformTransactions_txRollback, id);
 
-                ExceptionCheck(env);
+                ExceptionCheck(env, errInfo);
 
                 return res;
             }
@@ -2048,32 +2063,32 @@ namespace ignite
                 ExceptionCheck(env);
             }
 
-            int JniContext::TransactionsClose(jobject obj, long long id) {
+            int JniContext::TransactionsClose(jobject obj, long long id, JniErrorInfo* errInfo) {
                 JNIEnv* env = Attach();
 
                 jint state = env->CallIntMethod(obj, jvm->GetMembers().m_PlatformTransactions_txClose, id);
 
-                ExceptionCheck(env);
+                ExceptionCheck(env, errInfo);
 
                 return state;
             }
 
-            int JniContext::TransactionsState(jobject obj, long long id) {
+            int JniContext::TransactionsState(jobject obj, long long id, JniErrorInfo* errInfo) {
                 JNIEnv* env = Attach();
 
                 jint state = env->CallIntMethod(obj, jvm->GetMembers().m_PlatformTransactions_txState, id);
 
-                ExceptionCheck(env);
+                ExceptionCheck(env, errInfo);
 
                 return state;
             }
 
-            bool JniContext::TransactionsSetRollbackOnly(jobject obj, long long id) {
+            bool JniContext::TransactionsSetRollbackOnly(jobject obj, long long id, JniErrorInfo* errInfo) {
                 JNIEnv* env = Attach();
 
                 jboolean res = env->CallBooleanMethod(obj, jvm->GetMembers().m_PlatformTransactions_txSetRollbackOnly, id);
 
-                ExceptionCheck(env);
+                ExceptionCheck(env, errInfo);
 
                 return res != 0;
             }

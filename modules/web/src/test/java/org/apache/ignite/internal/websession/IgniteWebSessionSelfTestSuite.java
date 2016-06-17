@@ -38,6 +38,11 @@ public class IgniteWebSessionSelfTestSuite extends TestSuite {
         suite.addTestSuite(WebSessionTransactionalSelfTest.class);
         suite.addTestSuite(WebSessionReplicatedSelfTest.class);
 
+        // Old implementation tests.
+        suite.addTestSuite(WebSessionV1SelfTest.class);
+        suite.addTestSuite(WebSessionTransactionalV1SelfTest.class);
+        suite.addTestSuite(WebSessionReplicatedV1SelfTest.class);
+
         System.setProperty(IGNITE_OVERRIDE_MCAST_GRP,
             GridTestUtils.getNextMulticastGroup(IgniteWebSessionSelfTestSuite.class));
 
@@ -76,6 +81,36 @@ public class IgniteWebSessionSelfTestSuite extends TestSuite {
         /** {@inheritDoc} */
         @Override protected String getCacheName() {
             return "replicated";
+        }
+    }
+
+    /**
+     * Old version test.
+     */
+    public static class WebSessionV1SelfTest extends WebSessionSelfTest {
+        /** {@inheritDoc} */
+        @Override protected boolean keepBinary() {
+            return false;
+        }
+    }
+
+    /**
+     * Tests web sessions with TRANSACTIONAL cache in compatibility mode.
+     */
+    public static class WebSessionTransactionalV1SelfTest extends WebSessionTransactionalSelfTest {
+        /** {@inheritDoc} */
+        @Override protected boolean keepBinary() {
+            return false;
+        }
+    }
+
+    /**
+     * Tests web sessions with REPLICATED cache in compatibility mode.
+     */
+    public static class WebSessionReplicatedV1SelfTest extends WebSessionReplicatedSelfTest {
+        /** {@inheritDoc} */
+        @Override protected boolean keepBinary() {
+            return false;
         }
     }
 }

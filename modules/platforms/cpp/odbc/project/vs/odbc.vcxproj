@@ -223,7 +223,6 @@
     <ClInclude Include="..\..\include\ignite\odbc\system\socket_client.h" />
     <ClInclude Include="..\..\include\ignite\odbc\type_traits.h" />
     <ClInclude Include="..\..\include\ignite\odbc\utility.h" />
-    <ClInclude Include="result_page.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\binary\project\vs\binary.vcxproj">

@@ -94,7 +94,7 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
                     IgniteConfiguration cfg = optimize(getConfiguration(gridName));
 
                     if (i != CLIENT_NODE_IDX && i != CLIENT_NEAR_ONLY_IDX) {
-                        CacheConfiguration cc = testsCfg.configurationFactory().cacheConfiguration(gridName);
+                        CacheConfiguration cc = cacheConfiguration();
 
                         cc.setName(cacheName());
 
@@ -125,20 +125,20 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
             info("Grid " + i + ": " + grid(i).localNode().id());
 
         if (testsCfg.withClients()) {
-            boolean testedNodeNearEnabled = grid(testedNodeIdx).cachex(cacheName()).context().isNear();
-
             if (testedNodeIdx != SERVER_NODE_IDX)
-                assertEquals(testedNodeIdx == CLIENT_NEAR_ONLY_IDX, testedNodeNearEnabled);
+                assertEquals(testedNodeIdx == CLIENT_NEAR_ONLY_IDX, nearEnabled());
 
             info(">>> Starting set of tests [testedNodeIdx=" + testedNodeIdx
                 + ", id=" + grid(testedNodeIdx).localNode().id()
-                + ", isClient=" + grid(testedNodeIdx).configuration().isClientMode()
-                + ", nearEnabled=" + testedNodeNearEnabled + "]");
+                + ", isClient=" + isClientMode()
+                + ", nearEnabled=" + nearEnabled() + "]");
         }
     }
 
     /**
-     * Starts caches dinamically.
+     * Starts caches dynamically.
+     *
+     * @throws Exception If failed.
      */
     private void startCachesDinamically() throws Exception {
         for (int i = 0; i < gridCount(); i++) {
@@ -147,14 +147,14 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
             IgniteEx grid = grid(i);
 
             if (i != CLIENT_NODE_IDX && i != CLIENT_NEAR_ONLY_IDX) {
-                CacheConfiguration cc = testsCfg.configurationFactory().cacheConfiguration(grid.name());
+                CacheConfiguration cc = cacheConfiguration();
 
                 cc.setName(cacheName());
 
                 grid.getOrCreateCache(cc);
             }
 
-            if (testsCfg.withClients() && i == CLIENT_NEAR_ONLY_IDX)
+            if (testsCfg.withClients() && i == CLIENT_NEAR_ONLY_IDX && grid(i).configuration().isClientMode())
                 grid(CLIENT_NEAR_ONLY_IDX).createNearCache(cacheName(), new NearCacheConfiguration());
         }
 
@@ -198,7 +198,8 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
     @Override protected void beforeTest() throws Exception {
         super.beforeTest();
 
-        awaitPartitionMapExchange();
+        if (testsCfg.awaitPartitionMapExchange())
+            awaitPartitionMapExchange();
 
         assert jcache().unwrap(Ignite.class).transactions().tx() == null;
 

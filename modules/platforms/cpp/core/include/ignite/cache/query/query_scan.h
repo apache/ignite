@@ -41,7 +41,7 @@ namespace ignite
             {
             public:
                 /**
-                 * Constructor.
+                 * Default constructor.
                  */
                 ScanQuery() : part(-1), pageSize(1024), loc(false)
                 {

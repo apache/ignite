@@ -733,7 +733,7 @@ namespace ignite
                 else {
                     int32_t pos = stream->Position() - 1;
 
-                    IGNITE_ERROR_FORMATTED_3(IgniteError::IGNITE_ERR_BINARY, "Invalid header", "position", pos, "expected", IGNITE_TYPE_UUID, "actual", typeId)
+                    IGNITE_ERROR_FORMATTED_3(IgniteError::IGNITE_ERR_BINARY, "Invalid header", "position", pos, "expected", (int)IGNITE_TYPE_UUID, "actual", (int)typeId)
                 }
             }
 
@@ -893,7 +893,7 @@ namespace ignite
 
             void BinaryReaderImpl::ThrowOnInvalidHeader(int32_t pos, int8_t expHdr, int8_t hdr)
             {
-                IGNITE_ERROR_FORMATTED_3(IgniteError::IGNITE_ERR_BINARY, "Invalid header", "position", pos, "expected", expHdr, "actual", hdr)
+                IGNITE_ERROR_FORMATTED_3(IgniteError::IGNITE_ERR_BINARY, "Invalid header", "position", pos, "expected", (int)expHdr, "actual", (int)hdr)
             }
 
             void BinaryReaderImpl::ThrowOnInvalidHeader(int8_t expHdr, int8_t hdr) const

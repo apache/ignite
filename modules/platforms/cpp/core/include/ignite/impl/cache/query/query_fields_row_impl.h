@@ -42,12 +42,12 @@ namespace ignite
                 class QueryFieldsRowImpl
                 {
                 public:
-                    typedef common::concurrent::SharedPointer<interop::InteropMemory> InteropMemorySharedPtr;
+                    typedef common::concurrent::SharedPointer<interop::InteropMemory> SP_InteropMemory;
 
                     /**
                      * Default constructor.
                      */
-                    QueryFieldsRowImpl() : mem(NULL), stream(NULL), reader(NULL), size(0), 
+                    QueryFieldsRowImpl() : mem(0), stream(0), reader(0), size(0), 
                         processed(0)
                     {
                         // No-op.
@@ -58,7 +58,7 @@ namespace ignite
                      *
                      * @param mem Memory containig row data.
                      */
-                    QueryFieldsRowImpl(InteropMemorySharedPtr mem) : mem(mem), stream(mem.Get()), 
+                    QueryFieldsRowImpl(SP_InteropMemory mem) : mem(mem), stream(mem.Get()), 
                         reader(&stream), size(reader.ReadInt32()), processed(0)
                     {
                         // No-op.
@@ -141,16 +141,22 @@ namespace ignite
                     /**
                      * Check if the instance is valid.
                      *
+                     * Invalid instance can be returned if some of the previous
+                     * operations have resulted in a failure. For example invalid
+                     * instance can be returned by not-throwing version of method
+                     * in case of error. Invalid instances also often can be
+                     * created using default constructor.
+                     *
                      * @return True if the instance is valid and can be used.
                      */
                     bool IsValid()
                     {
-                        return mem.Get() != NULL;
+                        return mem.Get() != 0;
                     }
 
                 private:
                     /** Row memory. */
-                    InteropMemorySharedPtr mem;
+                    SP_InteropMemory mem;
 
                     /** Row data stream. */
                     interop::InteropInputStream stream;

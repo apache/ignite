@@ -40,14 +40,15 @@ public class GridCacheQueryJdbcValidationTask extends ComputeTaskSplitAdapter<St
     private static final long serialVersionUID = 0L;
 
     /** {@inheritDoc} */
-    @Override protected Collection<? extends ComputeJob> split(int gridSize,
-        @Nullable final String cacheName) {
-        // Register big data usage.
+    @Override protected Collection<? extends ComputeJob> split(int gridSize, @Nullable final String cacheName) {
         return Collections.singleton(new ComputeJobAdapter() {
             @IgniteInstanceResource
             private Ignite ignite;
 
             @Override public Object execute() {
+                if (cacheName == null)
+                    return true;
+
                 GridDiscoveryManager discoMgr = ((IgniteKernal)ignite).context().discovery();
 
                 for (ClusterNode n : ignite.cluster().nodes())

@@ -33,6 +33,7 @@
         <moduleSet>
             <includes>
                 <include>org.apache.ignite:ignite-schema-import</include>
+                <include>org.apache.ignite:ignite-schema-import-db</include>
             </includes>
             <sources>
                 <includeModuleDirectory>false</includeModuleDirectory>
