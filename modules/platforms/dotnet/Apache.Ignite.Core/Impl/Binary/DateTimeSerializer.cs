@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -18,39 +18,25 @@
 namespace Apache.Ignite.Core.Impl.Binary
 {
     using System;
-    using System.Diagnostics;
     using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
-    /// Binary serializer for system types.
+    /// DateTime serializer.
     /// </summary>
-    /// <typeparam name="T">Object type.</typeparam>
-    internal class BinarySystemTypeSerializer<T> : IBinarySerializerInternal where T : IBinaryWriteAware
+    internal class DateTimeSerializer : IBinarySerializerInternal
     {
-        /** Ctor delegate. */
-        private readonly Func<BinaryReader, T> _ctor;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="BinarySystemTypeSerializer{T}"/> class.
-        /// </summary>
-        /// <param name="ctor">Constructor delegate.</param>
-        public BinarySystemTypeSerializer(Func<BinaryReader, T> ctor)
+        /** <inheritdoc /> */
+        public void WriteBinary<T>(T obj, BinaryWriter writer)
         {
-            Debug.Assert(ctor != null);
-
-            _ctor = ctor;
+            TypeCaster<DateTimeHolder>.Cast(obj).WriteBinary(writer);
         }
 
-        /** <inheritDoc /> */
-        public void WriteBinary<T1>(T1 obj, BinaryWriter writer)
+        /** <inheritdoc /> */
+        public T ReadBinary<T>(BinaryReader reader, Type type, int pos)
         {
-            TypeCaster<T>.Cast(obj).WriteBinary(writer);
-        }
+            var holder = new DateTimeHolder(reader);
 
-        /** <inheritDoc /> */
-        public T1 ReadBinary<T1>(BinaryReader reader, Type type, int pos)
-        {
-            return TypeCaster<T1>.Cast(_ctor(reader));
+            return TypeCaster<T>.Cast(holder.Item);
         }
 
         /** <inheritdoc /> */

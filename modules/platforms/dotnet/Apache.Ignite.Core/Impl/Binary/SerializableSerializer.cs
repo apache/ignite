@@ -17,18 +17,32 @@
 
 namespace Apache.Ignite.Core.Impl.Binary
 {
-    using Apache.Ignite.Core.Binary;
+    using System;
+    using Apache.Ignite.Core.Impl.Common;
 
     /// <summary>
-    /// Serializer for system types that can create instances directly from a stream and does not support handles.
+    /// Serializable serializer.
     /// </summary>
-    internal interface IBinarySystemTypeSerializer : IBinarySerializer
+    internal class SerializableSerializer : IBinarySerializerInternal
     {
-        /// <summary>
-        /// Reads the instance from a reader.
-        /// </summary>
-        /// <param name="reader">The reader.</param>
-        /// <returns>Deserialized instance.</returns>
-        object ReadInstance(BinaryReader reader);
+        /** <inheritdoc /> */
+        public void WriteBinary<T>(T obj, BinaryWriter writer)
+        {
+            TypeCaster<SerializableObjectHolder>.Cast(obj).WriteBinary(writer);
+        }
+
+        /** <inheritdoc /> */
+        public T ReadBinary<T>(BinaryReader reader, Type type, int pos)
+        {
+            var holder = new SerializableObjectHolder(reader);
+
+            return TypeCaster<T>.Cast(holder.Item);
+        }
+
+        /** <inheritdoc /> */
+        public bool SupportsHandles
+        {
+            get { return false; }
+        }
     }
 }

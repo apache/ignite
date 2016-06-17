@@ -190,10 +190,10 @@ namespace Apache.Ignite.AspNet
                 return Cache;
 
             // Round up to seconds ([OutputCache] duration is in seconds).
-            var expirySeconds = (long) (utcExpiry - DateTime.UtcNow).TotalSeconds;
+            var expirySeconds = (long) Math.Round((utcExpiry - DateTime.UtcNow).TotalSeconds);
 
-            if (expirySeconds < 1)
-                expirySeconds = 1;
+            if (expirySeconds < 0)
+                expirySeconds = 0;
 
             ICache<string, object> expiryCache;
 

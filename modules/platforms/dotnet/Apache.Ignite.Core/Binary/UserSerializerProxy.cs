@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,48 +15,54 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Binary
+namespace Apache.Ignite.Core.Binary
 {
     using System;
     using System.Diagnostics;
-    using Apache.Ignite.Core.Impl.Common;
+    using System.Runtime.Serialization;
+    using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
-    /// Binary serializer for system types.
+    /// User-defined serializer wrapper.
     /// </summary>
-    /// <typeparam name="T">Object type.</typeparam>
-    internal class BinarySystemTypeSerializer<T> : IBinarySerializerInternal where T : IBinaryWriteAware
+    internal class UserSerializerProxy : IBinarySerializerInternal
     {
-        /** Ctor delegate. */
-        private readonly Func<BinaryReader, T> _ctor;
+        /** */
+        private readonly IBinarySerializer _serializer;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="BinarySystemTypeSerializer{T}"/> class.
+        /// Initializes a new instance of the <see cref="UserSerializerProxy"/> class.
         /// </summary>
-        /// <param name="ctor">Constructor delegate.</param>
-        public BinarySystemTypeSerializer(Func<BinaryReader, T> ctor)
+        /// <param name="serializer">The serializer.</param>
+        public UserSerializerProxy(IBinarySerializer serializer)
         {
-            Debug.Assert(ctor != null);
+            Debug.Assert(serializer != null);
 
-            _ctor = ctor;
+            _serializer = serializer;
         }
 
-        /** <inheritDoc /> */
-        public void WriteBinary<T1>(T1 obj, BinaryWriter writer)
+        /** <inheritdoc /> */
+        public void WriteBinary<T>(T obj, BinaryWriter writer)
         {
-            TypeCaster<T>.Cast(obj).WriteBinary(writer);
+            _serializer.WriteBinary(obj, writer);
         }
 
-        /** <inheritDoc /> */
-        public T1 ReadBinary<T1>(BinaryReader reader, Type type, int pos)
+        /** <inheritdoc /> */
+        public T ReadBinary<T>(BinaryReader reader, Type type, int pos)
         {
-            return TypeCaster<T1>.Cast(_ctor(reader));
+            var obj = FormatterServices.GetUninitializedObject(type);
+
+            reader.AddHandle(pos, obj);
+
+            _serializer.ReadBinary(obj, reader);
+
+            return (T) obj;
         }
 
         /** <inheritdoc /> */
         public bool SupportsHandles
         {
-            get { return false; }
+            get { return true; }
         }
     }
 }
