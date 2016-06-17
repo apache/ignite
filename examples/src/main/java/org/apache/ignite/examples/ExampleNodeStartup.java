@@ -17,8 +17,19 @@
 
 package org.apache.ignite.examples;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.binary.BinaryObject;
+import org.apache.ignite.binary.BinaryObjectBuilder;
+import org.apache.ignite.cache.QueryEntity;
+import org.apache.ignite.cache.query.QueryCursor;
+import org.apache.ignite.cache.query.SqlFieldsQuery;
+import org.apache.ignite.configuration.CacheConfiguration;
 
 /**
  * Starts up an empty node with example compute configuration.
@@ -31,6 +42,23 @@ public class ExampleNodeStartup {
      * @throws IgniteException If failed.
      */
     public static void main(String[] args) throws IgniteException {
-        Ignition.start("examples/config/example-ignite.xml");
+        Ignite start = Ignition.start("examples/config/example-ignite.xml");
+        CacheConfiguration<Integer, BinaryObject> cfg = new CacheConfiguration<>();
+        cfg.setQueryEntities(new ArrayList<QueryEntity>() {{
+            QueryEntity e = new QueryEntity();
+            e.setKeyType("java.lang.Integer");
+            e.setValueType("BinaryTest");
+            e.setFields(new LinkedHashMap<String, String>(){{
+                put("name", "java.lang.String");
+            }});
+            add(e);
+        }});
+        IgniteCache<Integer, BinaryObject> cache = start.getOrCreateCache(cfg).withKeepBinary();
+        BinaryObjectBuilder builder = start.binary().builder("BinaryTest");
+        builder.setField("name", "Test");
+        cache.put(1, builder.build());
+
+        QueryCursor<List<?>> query = cache.query(new SqlFieldsQuery("select name from BinaryTest"));
+        System.out.println(query.getAll());
     }
 }
