@@ -264,24 +264,19 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
     /** {@inheritDoc} */
     @Override public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner) {
-        if (isDone())
+        if (isDone() || timedOut)
             return false;
 
         if (log.isDebugEnabled())
             log.debug("Transaction future received owner changed callback: " + entry);
 
+        boolean rmv;
+
         synchronized (this) {
-            if (timedOut)
-                return false;
-
-            boolean rmv;
-
-            synchronized (lockKeys) {
-                rmv = lockKeys.remove(entry.txKey());
-            }
-
-            return rmv && mapIfLocked();
+            rmv = lockKeys.remove(entry.txKey());
         }
+
+        return rmv && mapIfLocked();
     }
 
     /** {@inheritDoc} */
@@ -308,7 +303,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         if (!locksReady)
             return false;
 
-        synchronized (lockKeys) {
+        synchronized (this) {
             return lockKeys.isEmpty();
         }
     }
@@ -491,19 +486,15 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
      * @param res Result.
      */
     public void onResult(UUID nodeId, GridDhtTxPrepareResponse res) {
-        if (isDone())
+        if (isDone() || timedOut)
             return;
 
-        synchronized (this) {
-            if (!timedOut) {
-                MiniFuture mini = miniFuture(res.miniId());
+        MiniFuture mini = miniFuture(res.miniId());
 
-                if (mini != null) {
-                    assert mini.node().id().equals(nodeId);
+        if (mini != null) {
+            assert mini.node().id().equals(nodeId);
 
-                    mini.onResult(res);
-                }
-            }
+            mini.onResult(res);
         }
     }
 
@@ -514,24 +505,22 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
      * @return Mini future.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    private MiniFuture miniFuture(IgniteUuid miniId) {
+    private synchronized MiniFuture miniFuture(IgniteUuid miniId) {
         // We iterate directly over the futs collection here to avoid copy.
-        synchronized (futs) {
-            // Avoid iterator creation.
-            for (int i = 0; i < futs.size(); i++) {
-                IgniteInternalFuture<IgniteInternalTx> fut = futs.get(i);
+        // Avoid iterator creation.
+        for (int i = 0; i < futs.size(); i++) {
+            IgniteInternalFuture<IgniteInternalTx> fut = futs.get(i);
 
-                if (!isMini(fut))
-                    continue;
+            if (!isMini(fut))
+                continue;
 
-                MiniFuture mini = (MiniFuture)fut;
+            MiniFuture mini = (MiniFuture)fut;
 
-                if (mini.futureId().equals(miniId)) {
-                    if (!mini.isDone())
-                        return mini;
-                    else
-                        return null;
-                }
+            if (mini.futureId().equals(miniId)) {
+                if (!mini.isDone())
+                    return mini;
+                else
+                    return null;
             }
         }
 
@@ -541,7 +530,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     /**
      * Marks all locks as ready for local transaction.
      */
-    private void readyLocks() {
+    private synchronized void readyLocks() {
         // Ready all locks.
         if (log.isDebugEnabled())
             log.debug("Marking all local candidates as ready: " + this);
@@ -572,11 +561,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 txEntry.cached(entry);
             }
 
-            if (tx.optimistic() && txEntry.explicitVersion() == null) {
-                synchronized (lockKeys) {
-                    lockKeys.add(txEntry.txKey());
-                }
-            }
+            if (tx.optimistic() && txEntry.explicitVersion() == null)
+                lockKeys.add(txEntry.txKey());
 
             while (true) {
                 try {
@@ -1139,51 +1125,76 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                     if (F.isEmpty(dhtWrites) && F.isEmpty(nearWrites))
                         continue;
 
+                    MiniFuture fut;
+
                     synchronized (this) {
                         if (timedOut)
                             return;
 
-                        MiniFuture fut = new MiniFuture(n.id(), dhtMapping, nearMapping);
+                        fut = new MiniFuture(n.id(), dhtMapping, nearMapping);
 
                         add(fut); // Append new future.
+                    }
 
-                        assert txNodes != null;
+                    assert txNodes != null;
 
-                        GridDhtTxPrepareRequest req = new GridDhtTxPrepareRequest(
-                            futId,
-                            fut.futureId(),
-                            tx.topologyVersion(),
-                            tx,
-                            timeout,
-                            dhtWrites,
-                            nearWrites,
-                            txNodes,
-                            tx.nearXidVersion(),
-                            true,
-                            tx.onePhaseCommit(),
-                            tx.subjectId(),
-                            tx.taskNameHash(),
-                            tx.activeCachesDeploymentEnabled());
+                    GridDhtTxPrepareRequest req = new GridDhtTxPrepareRequest(
+                        futId,
+                        fut.futureId(),
+                        tx.topologyVersion(),
+                        tx,
+                        timeout,
+                        dhtWrites,
+                        nearWrites,
+                        txNodes,
+                        tx.nearXidVersion(),
+                        true,
+                        tx.onePhaseCommit(),
+                        tx.subjectId(),
+                        tx.taskNameHash(),
+                        tx.activeCachesDeploymentEnabled());
 
-                        int idx = 0;
+                    int idx = 0;
 
-                        for (IgniteTxEntry entry : dhtWrites) {
+                    for (IgniteTxEntry entry : dhtWrites) {
+                        try {
+                            GridDhtCacheEntry cached = (GridDhtCacheEntry)entry.cached();
+
+                            GridCacheContext<?, ?> cacheCtx = cached.context();
+
+                            // Do not invalidate near entry on originating transaction node.
+                            req.invalidateNearEntry(idx, !tx.nearNodeId().equals(n.id()) &&
+                                cached.readerId(n.id()) != null);
+
+                            if (cached.isNewLocked()) {
+                                List<ClusterNode> owners = cacheCtx.topology().owners(cached.partition(),
+                                    tx != null ? tx.topologyVersion() : cacheCtx.affinity().affinityTopologyVersion());
+
+                                // Do not preload if local node is a partition owner.
+                                if (!owners.contains(cctx.localNode()))
+                                    req.markKeyForPreload(idx);
+                            }
+
+                            break;
+                        }
+                        catch (GridCacheEntryRemovedException ignore) {
+                            assert false : "Got removed exception on entry with dht local candidate: " + entry;
+                        }
+
+                        idx++;
+                    }
+
+                    if (!F.isEmpty(nearWrites)) {
+                        for (IgniteTxEntry entry : nearWrites) {
                             try {
-                                GridDhtCacheEntry cached = (GridDhtCacheEntry) entry.cached();
+                                if (entry.explicitVersion() == null) {
+                                    GridCacheMvccCandidate added = entry.cached().candidate(version());
 
-                                GridCacheContext<?, ?> cacheCtx = cached.context();
+                                    assert added != null : "Missing candidate for cache entry:" + entry;
+                                    assert added.dhtLocal();
 
-                                // Do not invalidate near entry on originating transaction node.
-                                req.invalidateNearEntry(idx, !tx.nearNodeId().equals(n.id()) &&
-                                        cached.readerId(n.id()) != null);
-
-                                if (cached.isNewLocked()) {
-                                    List<ClusterNode> owners = cacheCtx.topology().owners(cached.partition(),
-                                            tx != null ? tx.topologyVersion() : cacheCtx.affinity().affinityTopologyVersion());
-
-                                    // Do not preload if local node is a partition owner.
-                                    if (!owners.contains(cctx.localNode()))
-                                        req.markKeyForPreload(idx);
+                                    if (added.ownerVersion() != null)
+                                        req.owned(entry.txKey(), added.ownerVersion());
                                 }
 
                                 break;
@@ -1191,43 +1202,20 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                             catch (GridCacheEntryRemovedException ignore) {
                                 assert false : "Got removed exception on entry with dht local candidate: " + entry;
                             }
-
-                            idx++;
                         }
+                    }
 
-                        if (!F.isEmpty(nearWrites)) {
-                            for (IgniteTxEntry entry : nearWrites) {
-                                try {
-                                    if (entry.explicitVersion() == null) {
-                                        GridCacheMvccCandidate added = entry.cached().candidate(version());
+                    assert req.transactionNodes() != null;
 
-                                        assert added != null : "Missing candidate for cache entry:" + entry;
-                                        assert added.dhtLocal();
-
-                                        if (added.ownerVersion() != null)
-                                            req.owned(entry.txKey(), added.ownerVersion());
-                                    }
-
-                                    break;
-                                }
-                                catch (GridCacheEntryRemovedException ignore) {
-                                    assert false : "Got removed exception on entry with dht local candidate: " + entry;
-                                }
-                            }
-                        }
-
-                        assert req.transactionNodes() != null;
-
-                        try {
-                            cctx.io().send(n, req, tx.ioPolicy());
-                        }
-                        catch (ClusterTopologyCheckedException e) {
-                            fut.onNodeLeft(e);
-                        }
-                        catch (IgniteCheckedException e) {
-                            if (!cctx.kernalContext().isStopping())
-                                fut.onResult(e);
-                        }
+                    try {
+                        cctx.io().send(n, req, tx.ioPolicy());
+                    }
+                    catch (ClusterTopologyCheckedException e) {
+                        fut.onNodeLeft(e);
+                    }
+                    catch (IgniteCheckedException e) {
+                        if (!cctx.kernalContext().isStopping())
+                            fut.onResult(e);
                     }
                 }
 
@@ -1235,63 +1223,65 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                     if (!tx.dhtMap().containsKey(nearMapping.node().id())) {
                         assert nearMapping.writes() != null;
 
+                        MiniFuture fut;
+
                         synchronized (this) {
                             if (timedOut)
                                 return;
 
-                            MiniFuture fut = new MiniFuture(nearMapping.node().id(), null, nearMapping);
+                            fut = new MiniFuture(nearMapping.node().id(), null, nearMapping);
 
                             add(fut); // Append new future.
+                        }
 
-                            GridDhtTxPrepareRequest req = new GridDhtTxPrepareRequest(
-                                    futId,
-                                    fut.futureId(),
-                                    tx.topologyVersion(),
-                                    tx,
-                                    timeout,
-                                    null,
-                                    nearMapping.writes(),
-                                    tx.transactionNodes(),
-                                    tx.nearXidVersion(),
-                                    true,
-                                    tx.onePhaseCommit(),
-                                    tx.subjectId(),
-                                    tx.taskNameHash(),
-                                    tx.activeCachesDeploymentEnabled());
+                        GridDhtTxPrepareRequest req = new GridDhtTxPrepareRequest(
+                            futId,
+                            fut.futureId(),
+                            tx.topologyVersion(),
+                            tx,
+                            timeout,
+                            null,
+                            nearMapping.writes(),
+                            tx.transactionNodes(),
+                            tx.nearXidVersion(),
+                            true,
+                            tx.onePhaseCommit(),
+                            tx.subjectId(),
+                            tx.taskNameHash(),
+                            tx.activeCachesDeploymentEnabled());
 
-                            for (IgniteTxEntry entry : nearMapping.writes()) {
-                                try {
-                                    if (entry.explicitVersion() == null) {
-                                        GridCacheMvccCandidate added = entry.cached().candidate(version());
-
-                                        assert added != null : "Null candidate for non-group-lock entry " +
-                                                "[added=" + added + ", entry=" + entry + ']';
-                                        assert added.dhtLocal() : "Got non-dht-local candidate for prepare future" +
-                                                "[added=" + added + ", entry=" + entry + ']';
-
-                                        if (added != null && added.ownerVersion() != null)
-                                            req.owned(entry.txKey(), added.ownerVersion());
-                                    }
-
-                                    break;
-                                }
-                                catch (GridCacheEntryRemovedException ignore) {
-                                    assert false : "Got removed exception on entry with dht local candidate: " + entry;
-                                }
-                            }
-
-                            assert req.transactionNodes() != null;
-
+                        for (IgniteTxEntry entry : nearMapping.writes()) {
                             try {
-                                cctx.io().send(nearMapping.node(), req, tx.ioPolicy());
+                                if (entry.explicitVersion() == null) {
+                                    GridCacheMvccCandidate added = entry.cached().candidate(version());
+
+                                    assert added != null : "Null candidate for non-group-lock entry " +
+                                        "[added=" + added + ", entry=" + entry + ']';
+                                    assert added.dhtLocal() : "Got non-dht-local candidate for prepare future" +
+                                        "[added=" + added + ", entry=" + entry + ']';
+
+                                    if (added != null && added.ownerVersion() != null)
+                                        req.owned(entry.txKey(), added.ownerVersion());
+                                }
+
+                                break;
                             }
-                            catch (ClusterTopologyCheckedException e) {
-                                fut.onNodeLeft(e);
+                            catch (GridCacheEntryRemovedException ignore) {
+                                assert false : "Got removed exception on entry with dht local candidate: " + entry;
                             }
-                            catch (IgniteCheckedException e) {
-                                if (!cctx.kernalContext().isStopping())
-                                    fut.onResult(e);
-                            }
+                        }
+
+                        assert req.transactionNodes() != null;
+
+                        try {
+                            cctx.io().send(nearMapping.node(), req, tx.ioPolicy());
+                        }
+                        catch (ClusterTopologyCheckedException e) {
+                            fut.onNodeLeft(e);
+                        }
+                        catch (IgniteCheckedException e) {
+                            if (!cctx.kernalContext().isStopping())
+                                fut.onResult(e);
                         }
                     }
                 }
@@ -1666,6 +1656,10 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         @Override public void onTimeout() {
             synchronized (GridDhtTxPrepareFuture.this) {
                 timedOut = true;
+
+                futs.clear();
+
+                lockKeys.clear();
 
                 err.compareAndSet(null, new IgniteTxTimeoutCheckedException("Failed to acquire lock within " +
                         "provided timeout for transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']'));
