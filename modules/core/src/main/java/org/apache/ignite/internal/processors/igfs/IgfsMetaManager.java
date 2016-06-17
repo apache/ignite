@@ -22,6 +22,7 @@ import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cluster.ClusterGroup;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
@@ -52,14 +53,14 @@ import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaFile
 import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaIdsForPathCallable;
 import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaInfoForPathCallable;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryCreateProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingAddProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingRemoveProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingRenameProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingReplaceProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileCreateProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileLockProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileReserveSpaceProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileUnlockProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingAddProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingRemoveProcessor;
-import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingReplaceProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdatePropertiesProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaUpdateTimesProcessor;
 import org.apache.ignite.internal.util.GridLeanMap;
@@ -152,10 +153,13 @@ public class IgfsMetaManager extends IgfsManager {
     private final boolean client;
 
     /** Compute facade. */
-    private IgniteCompute compute;
+    private volatile IgniteCompute compute;
 
     /** Compute facade for client tasks. */
-    private IgniteCompute metaCompute;
+    private volatile IgniteCompute metaCompute;
+
+    /** Root partition. */
+    private volatile int rootPart = -1;
 
     /**
      * Constructor.
@@ -260,9 +264,14 @@ public class IgfsMetaManager extends IgfsManager {
 
                 return compute().affinityCall(cfg.getMetaCacheName(), affKey, task);
             }
-            else
-                // Otherwise we route to any available data node.
-                return metaCompute().call(task);
+            else {
+                if (metaCache.configuration().getCacheMode() == CacheMode.REPLICATED)
+                    // For replicated cache we do not bother much, just route to any data node.
+                    return metaCompute().call(task);
+                else
+                    // Otherwise we must route request to one of affinity nodes.
+                    return rootCompute().call(task);
+            }
         }
         catch (ClusterTopologyException e) {
             throw new IgfsException("Failed to execute operation because there are no IGFS metadata nodes." , e);
@@ -291,7 +300,7 @@ public class IgfsMetaManager extends IgfsManager {
     /**
      * Get metadata compute facade for client tasks.
      *
-     * @return Metadata compute facade.
+     * @return Compute facade.
      */
     private IgniteCompute metaCompute() {
         assert client;
@@ -311,6 +320,32 @@ public class IgfsMetaManager extends IgfsManager {
         assert metaCompute0 != null;
 
         return metaCompute0;
+    }
+
+    /**
+     * Get compute facade for root entry affinity nodes.
+     *
+     * @return Compute facade.
+     */
+    private IgniteCompute rootCompute() {
+        IgniteEx ignite = igfsCtx.kernalContext().grid();
+
+        int rootPart0 = rootPart;
+
+        if (rootPart0 == -1) {
+            rootPart0 = metaCache.affinity().partition(IgfsUtils.ROOT_ID);
+
+            rootPart = rootPart0;
+        }
+
+        Collection<ClusterNode> nodes = metaCache.affinity().mapPartitionToPrimaryAndBackups(rootPart0);
+
+        if (nodes.isEmpty())
+            throw new IgfsException("Failed to execute operation because there are no IGFS metadata nodes.");
+
+        ClusterGroup cluster = ignite.cluster().forNodes(nodes);
+
+        return ignite.compute(cluster);
     }
 
     /**
