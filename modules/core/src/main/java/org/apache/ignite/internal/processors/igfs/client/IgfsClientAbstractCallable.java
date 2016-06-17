@@ -85,11 +85,6 @@ public abstract class IgfsClientAbstractCallable<T> implements IgniteCallable<T>
      */
     protected abstract T call0(IgfsContext ctx) throws Exception;
 
-    /**
-     * @return {@code True} if task is read-only and does not change metadata.
-     */
-    public abstract boolean isReadOnly();
-
     /** {@inheritDoc} */
     @Override public final void writeBinary(BinaryWriter writer) throws BinaryObjectException {
         BinaryRawWriter rawWriter = writer.rawWriter();

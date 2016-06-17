@@ -65,11 +65,6 @@ public class IgfsClientUpdateCallable extends IgfsClientAbstractCallable<IgfsFil
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isReadOnly() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public void writeBinary0(BinaryRawWriter writer) throws BinaryObjectException {
         IgfsUtils.writeProperties(writer, props);
     }

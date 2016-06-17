@@ -52,11 +52,6 @@ public class IgfsClientExistsCallable extends IgfsClientAbstractCallable<Boolean
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isReadOnly() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(IgfsClientExistsCallable.class, this);
     }

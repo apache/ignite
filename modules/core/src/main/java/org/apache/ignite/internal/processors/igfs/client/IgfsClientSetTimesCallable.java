@@ -69,11 +69,6 @@ public class IgfsClientSetTimesCallable extends IgfsClientAbstractCallable<Void>
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isReadOnly() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public void writeBinary0(BinaryRawWriter writer) throws BinaryObjectException {
         writer.writeLong(accessTime);
         writer.writeLong(modificationTime);

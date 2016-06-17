@@ -61,11 +61,6 @@ public class IgfsClientDeleteCallable extends IgfsClientAbstractCallable<Boolean
     }
 
     /** {@inheritDoc} */
-    @Override public boolean isReadOnly() {
-        return false;
-    }
-
-    /** {@inheritDoc} */
     @Override public void writeBinary0(BinaryRawWriter writer) throws BinaryObjectException {
         writer.writeBoolean(recursive);
     }
