@@ -290,7 +290,7 @@ public class PlatformConfigurationUtils {
             out.writeBoolean(f0.isExcludeNeighbors());
         }
         else if (f instanceof RendezvousAffinityFunction) {
-            out.writeByte((byte)1);
+            out.writeByte((byte)2);
 
             RendezvousAffinityFunction f0 = (RendezvousAffinityFunction)f;
             out.writeInt(f0.getPartitions());
