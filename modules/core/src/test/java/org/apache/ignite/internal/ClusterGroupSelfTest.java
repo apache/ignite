@@ -143,6 +143,31 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
     /**
      * @throws Exception If failed.
      */
+    public void testForDaemons() throws Exception {
+        assertEquals(4, ignite.cluster().nodes().size());
+
+        ClusterGroup daemons = ignite.cluster().forDaemons();
+        ClusterGroup srvs = ignite.cluster().forServers();
+
+        assertEquals(0, daemons.nodes().size());
+        assertEquals(2, srvs.nodes().size());
+
+        Ignition.setDaemon(true);
+
+        try (Ignite g = startGrid(NODES_CNT)) {
+            Ignition.setDaemon(false);
+
+            try (Ignite g1 = startGrid(NODES_CNT + 1)) {
+                assertEquals(1, ignite.cluster().forDaemons().nodes().size());
+                assertEquals(3, srvs.nodes().size());
+                assertEquals(1, daemons.nodes().size());
+            }
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testNewNodes() throws Exception {
         ClusterGroup youngest = ignite.cluster().forYoungest();
         ClusterGroup oldest = ignite.cluster().forOldest();
@@ -195,8 +220,7 @@ public class ClusterGroupSelfTest extends ClusterGroupAbstractTest {
         assertEquals(grid(gridMaxOrder(clusterSize, false)).localNode().id(), oddYoungest.node().id());
         assertEquals(grid(2).localNode().id(), oddOldest.node().id());
 
-        try (Ignite g4 = startGrid(NODES_CNT); Ignite g5 = startGrid(NODES_CNT + 1))
-        {
+        try (Ignite g4 = startGrid(NODES_CNT); Ignite g5 = startGrid(NODES_CNT + 1)) {
             clusterSize = g4.cluster().nodes().size();
 
             assertEquals(grid(gridMaxOrder(clusterSize, true)).localNode().id(), evenYoungest.node().id());

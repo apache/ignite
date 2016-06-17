@@ -248,6 +248,7 @@ namespace ignite
                 jmethodID m_PlatformClusterGroup_forRandom;
                 jmethodID m_PlatformClusterGroup_forOldest;
                 jmethodID m_PlatformClusterGroup_forYoungest;
+                jmethodID m_PlatformClusterGroup_forServers;
                 jmethodID m_PlatformClusterGroup_resetMetrics;
 
                 jclass c_PlatformCompute;
@@ -594,6 +595,7 @@ namespace ignite
                 jobject ProjectionForRandom(jobject obj);
                 jobject ProjectionForOldest(jobject obj);
                 jobject ProjectionForYoungest(jobject obj);
+                jobject ProjectionForServers(jobject obj);
                 void ProjectionResetMetrics(jobject obj);
                 jobject ProjectionOutOpRet(jobject obj, int type, long long memPtr);
 

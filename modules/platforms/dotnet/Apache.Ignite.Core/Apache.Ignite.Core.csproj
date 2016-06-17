@@ -85,8 +85,12 @@
   <ItemGroup>
     <Compile Include="Binary\BinaryReflectiveSerializer.cs" />
     <Compile Include="Binary\Package-Info.cs" />
+    <Compile Include="Cache\Affinity\AffinityFunctionBase.cs" />
     <Compile Include="Cache\Affinity\AffinityKey.cs" />
     <Compile Include="Cache\Affinity\AffinityKeyMappedAttribute.cs" />
+    <Compile Include="Cache\Affinity\Fair\FairAffinityFunction.cs" />
+    <Compile Include="Cache\Affinity\IAffinityFunction.cs" />
+    <Compile Include="Cache\Affinity\Rendezvous\RendezvousAffinityFunction.cs" />
     <Compile Include="Cache\CacheAtomicUpdateTimeoutException.cs" />
     <Compile Include="Cache\CacheEntryProcessorException.cs" />
     <Compile Include="Cache\CacheException.cs" />
@@ -484,6 +488,7 @@
   <ItemGroup>
     <None Include="Apache.Ignite.Core.ruleset" />
     <None Include="Apache.Ignite.Core.nuspec" />
+    <None Include="Apache.Ignite.Core.Schema.nuspec" />
     <None Include="build-common.ps1" />
     <None Include="NuGet\Uninstall.ps1" />
     <None Include="NuGet\PostBuild.ps1" />
