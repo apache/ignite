@@ -122,12 +122,12 @@ export default () => {
                 {
                     test: /\.(woff2|woff|ttf|eot|svg)?(\?v=[0-9]\.[0-9]\.[0-9])?$/,
                     loaders: [
-                        'url-loader?name=fonts/[name]_[hash].[ext]'
+                        'file-loader?name=assets/fonts/[name].[ext]'
                     ]
                 },
                 {
                     test: /\.(jpe?g|png|gif)$/i,
-                    loaders: ['url-loader?name=images/[name]_[hash].[ext]']
+                    loaders: ['file-loader?name=assets/images/[name]_[hash].[ext]']
                 },
                 {
                     test: require.resolve("jquery"),
