@@ -21,6 +21,8 @@ namespace Apache.Ignite.Core.Tests.Cache
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Affinity;
+    using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Cache.Store;
@@ -240,6 +242,26 @@ namespace Apache.Ignite.Core.Tests.Cache
             AssertConfigsAreEqual(x.QueryEntities, y.QueryEntities);
             AssertConfigsAreEqual(x.NearConfiguration, y.NearConfiguration);
             AssertConfigsAreEqual(x.EvictionPolicy, y.EvictionPolicy);
+            AssertConfigsAreEqual(x.AffinityFunction, y.AffinityFunction);
+        }
+
+        /// <summary>
+        /// Asserts that two configurations have the same properties.
+        /// </summary>
+        private static void AssertConfigsAreEqual(IAffinityFunction x, IAffinityFunction y)
+        {
+            if (x == null)
+            {
+                Assert.IsNull(y);
+                return;
+            }
+
+            var px = (AffinityFunctionBase) x;
+            var py = (AffinityFunctionBase) y;
+
+            Assert.AreEqual(px.GetType(), py.GetType());
+            Assert.AreEqual(px.PartitionCount, py.PartitionCount);
+            Assert.AreEqual(px.ExcludeNeighbors, py.ExcludeNeighbors);
         }
 
         /// <summary>
@@ -516,6 +538,11 @@ namespace Apache.Ignite.Core.Tests.Cache
                     MaxSize = 26,
                     MaxMemorySize = 2501,
                     BatchSize = 33
+                },
+                AffinityFunction = new RendezvousAffinityFunction
+                {
+                    PartitionCount = 513,
+                    ExcludeNeighbors = true
                 }
             };
         }
