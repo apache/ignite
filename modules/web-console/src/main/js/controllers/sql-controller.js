@@ -214,7 +214,7 @@ consoleModule.controller('sqlController', [
                                 values.shift();
                         }
                         else {
-                            _.forEach(paragraph.chartHistory, function(history) {
+                            _.forEach(paragraph.chartHistory, (history) => {
                                 if (history.tm >= leftBound) {
                                     values.push({
                                         x: history.tm,
@@ -307,9 +307,7 @@ consoleModule.controller('sqlController', [
 
                     chartDatum.length = 0;
 
-                    _.forEach(newDatum, function(series) {
-                        chartDatum.push(series);
-                    });
+                    _.forEach(newDatum, (series) => chartDatum.push(series));
                 }
 
                 paragraph.charts[0].api.update();
@@ -381,13 +379,17 @@ consoleModule.controller('sqlController', [
                 paragraph.chartValCols.forEach(function(valCol) {
                     let index = paragraph.total;
 
-                    const values = _.map(paragraph.rows, function(row) {
+                    const values = _.map(paragraph.rows, (row) => {
                         const xCol = paragraph.chartKeyCols[0].value;
 
                         const v = {
                             x: xCol < 0 ? index : row[xCol],
                             y: _chartNumber(row, valCol.value, index)
                         };
+
+                        // Workaround for known problem with zero values on Pie chart.
+                        if (v.y === 0)
+                            v.y = 0.0001;
 
                         index++;
 
@@ -703,7 +705,7 @@ consoleModule.controller('sqlController', [
 
         const _setActiveCache = function() {
             if ($scope.caches.length > 0) {
-                _.forEach($scope.notebook.paragraphs, function(paragraph) {
+                _.forEach($scope.notebook.paragraphs, (paragraph) => {
                     if (!_.find($scope.caches, {name: paragraph.cacheName}))
                         paragraph.cacheName = $scope.caches[0].name;
                 });
@@ -758,7 +760,7 @@ consoleModule.controller('sqlController', [
             if (!$scope.notebook.paragraphs)
                 $scope.notebook.paragraphs = [];
 
-            _.forEach(notebook.paragraphs, function(paragraph) {
+            _.forEach(notebook.paragraphs, (paragraph) => {
                 paragraph.id = 'paragraph-' + paragraphId++;
 
                 enhanceParagraph(paragraph);
@@ -1151,9 +1153,7 @@ consoleModule.controller('sqlController', [
 
                 chartHistory.length = 0;
 
-                _.forEach(paragraph.charts, function(chart) {
-                    chart.data.length = 0;
-                });
+                _.forEach(paragraph.charts, (chart) => chart.data.length = 0);
             }
 
             // Add results to history.
@@ -1328,9 +1328,7 @@ consoleModule.controller('sqlController', [
                     });
                 });
 
-                _.forEach(paragraph.charts, function(chart) {
-                    chart.api.update();
-                });
+                _.forEach(paragraph.charts, (chart) => chart.api.update());
             });
         }
 
