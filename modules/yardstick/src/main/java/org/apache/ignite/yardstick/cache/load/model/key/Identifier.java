@@ -18,6 +18,7 @@
 package org.apache.ignite.yardstick.cache.load.model.key;
 
 import java.io.Serializable;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Key cache class
@@ -103,5 +104,10 @@ public class Identifier implements Comparable<Identifier>, Serializable {
     /** {@inheritDoc} */
     @Override public int compareTo(Identifier o) {
         return Integer.compare(id, o.id);
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(Identifier.class, this);
     }
 }

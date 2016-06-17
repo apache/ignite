@@ -18,6 +18,7 @@
 package org.apache.ignite.yardstick.cache.load.model.value;
 
 import java.io.Serializable;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Value cache class
@@ -116,5 +117,10 @@ public class Car implements Serializable {
      */
     public void setColor(Color color) {
         this.color = color;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(Car.class, this);
     }
 }
