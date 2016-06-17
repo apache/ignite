@@ -159,6 +159,8 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                             };
 
                             const _typeMapper = (meta, typeName) => {
+                                const maskedName = _.isEmpty(meta.cacheName) ? '<default>' : meta.cacheName;
+
                                 let fields = meta.fields[typeName];
 
                                 let columns = [];
@@ -173,7 +175,8 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                                             clazz: fieldClass,
                                             system: fieldName === '_KEY' || fieldName === '_VAL',
                                             cacheName: meta.cacheName,
-                                            typeName
+                                            typeName,
+                                            maskedName
                                         });
                                     }
                                 }
@@ -190,7 +193,8 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                                             order: index.descendings.indexOf(field) < 0,
                                             unique: index.unique,
                                             cacheName: meta.cacheName,
-                                            typeName
+                                            typeName,
+                                            maskedName
                                         });
                                     }
 
@@ -200,7 +204,8 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                                             name: index.name,
                                             children: fields,
                                             cacheName: meta.cacheName,
-                                            typeName
+                                            typeName,
+                                            maskedName
                                         });
                                     }
                                 }
@@ -213,6 +218,7 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                                         name: 'Indexes',
                                         cacheName: meta.cacheName,
                                         typeName,
+                                        maskedName,
                                         children: indexes
                                     });
                                 }
@@ -221,6 +227,7 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                                     type: 'type',
                                     cacheName: meta.cacheName || '',
                                     typeName,
+                                    maskedName,
                                     children: columns
                                 };
                             };
@@ -250,6 +257,32 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                         .catch((err) => cb(_errorToJson(err)));
                 });
 
+                // Swap backups specified caches on specified node and return result to browser.
+                socket.on('node:cache:swap:backups', (nid, cacheNames, cb) => {
+                    agentMgr.findAgent(user._id)
+                        .then((agent) => agent.cacheSwapBackups(demo, nid, cacheNames))
+                        .then((data) => {
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
+                // Reset metrics specified cache on specified node and return result to browser.
+                socket.on('node:cache:reset:metrics', (nid, cacheName, cb) => {
+                    agentMgr.findAgent(user._id)
+                        .then((agent) => agent.cacheResetMetrics(demo, nid, cacheName))
+                        .then((data) => {
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
                 // Clear specified cache on specified node and return result to browser.
                 socket.on('node:cache:clear', (nid, cacheName, cb) => {
                     agentMgr.findAgent(user._id)
@@ -263,10 +296,23 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                         .catch((err) => cb(_errorToJson(err)));
                 });
 
-                // Stop specified cache on specified node and return result to browser.
-                socket.on('node:cache:stop', (nids, cacheName, cb) => {
+                // Start specified cache and return result to browser.
+                socket.on('node:cache:start', (nids, near, cacheName, cfg, cb) => {
                     agentMgr.findAgent(user._id)
-                        .then((agent) => agent.cacheStop(demo, nids, cacheName))
+                        .then((agent) => agent.cacheStart(demo, nids, near, cacheName, cfg))
+                        .then((data) => {
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
+                // Stop specified cache on specified node and return result to browser.
+                socket.on('node:cache:stop', (nid, cacheName, cb) => {
+                    agentMgr.findAgent(user._id)
+                        .then((agent) => agent.cacheStop(demo, nid, cacheName))
                         .then((data) => {
                             if (data.finished)
                                 return cb(null, data.result);
@@ -278,9 +324,35 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
 
 
                 // Ping node and return result to browser.
-                socket.on('node:ping', (nid, cb) => {
+                socket.on('node:ping', (taskNid, nid, cb) => {
                     agentMgr.findAgent(user._id)
-                        .then((agent) => agent.ping(demo, nid))
+                        .then((agent) => agent.ping(demo, taskNid, nid))
+                        .then((data) => {
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
+                // GC node and return result to browser.
+                socket.on('node:gc', (nids, cb) => {
+                    agentMgr.findAgent(user._id)
+                        .then((agent) => agent.gc(demo, nids))
+                        .then((data) => {
+                            if (data.finished)
+                                return cb(null, data.result);
+
+                            cb(_errorToJson(data.error));
+                        })
+                        .catch((err) => cb(_errorToJson(err)));
+                });
+
+                // GC node and return result to browser.
+                socket.on('node:thread:dump', (nid, cb) => {
+                    agentMgr.findAgent(user._id)
+                        .then((agent) => agent.threadDump(demo, nid))
                         .then((data) => {
                             if (data.finished)
                                 return cb(null, data.result);

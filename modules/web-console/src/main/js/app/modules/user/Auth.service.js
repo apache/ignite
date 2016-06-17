@@ -41,11 +41,15 @@ export default ['Auth', ['$http', '$rootScope', '$state', '$window', '$common', 
             set authorized(auth) {
                 _authorized(auth);
             },
+            forgotPassword(userInfo) {
+                return $http.post('/api/v1/password/forgot', userInfo)
+                    .success(() => $state.go('password.send'))
+                    .error((err) => $common.showPopoverMessage(null, null, 'forgot_email', $common.errorMessage(err)));
+            },
             auth(action, userInfo) {
-                $http.post('/api/v1/' + action, userInfo)
-                    .then(User.read)
-                    .then((user) => {
-                        if (action !== 'password/forgot') {
+                return $http.post('/api/v1/' + action, userInfo)
+                    .success(() => {
+                        return User.read().then((user) => {
                             _authorized(true);
 
                             $root.$broadcast('user', user);
@@ -55,13 +59,12 @@ export default ['Auth', ['$http', '$rootScope', '$state', '$window', '$common', 
                             $root.gettingStarted.tryShow();
 
                             agentMonitor.init();
-                        } else
-                            $state.go('password.send');
+                        });
                     })
-                    .catch((errMsg) => $common.showPopoverMessage(null, null, action === 'signup' ? 'signup_email' : 'signin_email', errMsg.data));
+                    .error((err) => $common.showPopoverMessage(null, null, action + '_email', $common.errorMessage(err)));
             },
             logout() {
-                $http.post('/api/v1/logout')
+                return $http.post('/api/v1/logout')
                     .then(() => {
                         User.clean();
 

@@ -33,7 +33,7 @@ mixin td-ellipses-lbl(w, lbl)
                 | Domain model could not be imported
                 ul
                     li Agent failed to find JDBC drivers
-                    li Copy required JDBC drivers into agent '\jdbc-drivers' folder and try again
+                    li Copy required JDBC drivers into agent 'jdbc-drivers' folder and try again
                     li Refer to agent README.txt for more information
             .import-domain-model-wizard-page(ng-show='importDomain.action == "connect" && importDomain.demo' style='margin-bottom: 211px')
                 div(ng-if='demoConnection.db == "H2"')
@@ -47,7 +47,7 @@ mixin td-ellipses-lbl(w, lbl)
                     label Demo could not be started
                         ul
                             li Agent failed to resolve H2 database jar
-                            li Copy h2-x.x.x.jar into agent '\jdbc-drivers' folder and try again
+                            li Copy h2-x.x.x.jar into agent 'jdbc-drivers' folder and try again
                             li Refer to agent README.txt for more information
             .import-domain-model-wizard-page(ng-show='importDomain.action == "connect" && !importDomain.demo' style='margin-bottom: 90px')
                 form.form-horizontal(name='connectForm' novalidate)

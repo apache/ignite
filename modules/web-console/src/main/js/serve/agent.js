@@ -331,6 +331,27 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
 
         /**
          * @param {Boolean} demo Is need run command on demo node.
+         * @param {Array.<String>} nids Node ids.
+         * @param {Boolean} near true if near cache should be started.
+         * @param {String} cacheName Name for near cache.
+         * @param {String} cfg Cache XML configuration.
+         * @returns {Promise}
+         */
+        cacheStart(demo, nids, near, cacheName, cfg) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', nids)
+                .addParam('p2', 'org.apache.ignite.internal.visor.cache.VisorCacheStartTask')
+                .addParam('p3', 'org.apache.ignite.internal.visor.cache.VisorCacheStartTask$VisorCacheStartArg')
+                .addParam('p4', near)
+                .addParam('p5', cacheName)
+                .addParam('p6', cfg);
+
+            return this.executeRest(cmd);
+        }
+
+        /**
+         * @param {Boolean} demo Is need run command on demo node.
          * @param {String} nid Node id.
          * @param {String} cacheName Cache name.
          * @returns {Promise}
@@ -349,15 +370,81 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
         /**
          * @param {Boolean} demo Is need run command on demo node.
          * @param {String} nid Node id.
+         * @param {String} cacheName Cache name.
          * @returns {Promise}
          */
-        ping(demo, nid) {
+        cacheResetMetrics(demo, nid, cacheName) {
             const cmd = new Command(demo, 'exe')
                 .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
-                .addParam('p1', 'null')
+                .addParam('p1', nid)
+                .addParam('p2', 'org.apache.ignite.internal.visor.cache.VisorCacheResetMetricsTask')
+                .addParam('p3', 'java.lang.String')
+                .addParam('p4', cacheName);
+
+            return this.executeRest(cmd);
+        }
+
+        /**
+         * @param {Boolean} demo Is need run command on demo node.
+         * @param {String} nid Node id.
+         * @param {String} cacheNames Cache names separated by comma.
+         * @returns {Promise}
+         */
+        cacheSwapBackups(demo, nid, cacheNames) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', nid)
+                .addParam('p2', 'org.apache.ignite.internal.visor.cache.VisorCacheSwapBackupsTask')
+                .addParam('p3', 'java.util.Set')
+                .addParam('p4', 'java.lang.String')
+                .addParam('p5', cacheNames);
+
+            return this.executeRest(cmd);
+        }
+
+        /**
+         * @param {Boolean} demo Is need run command on demo node.
+         * @param {String} nids Node ids.
+         * @returns {Promise}
+         */
+        gc(demo, nids) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', nids)
+                .addParam('p2', 'org.apache.ignite.internal.visor.node.VisorNodeGcTask')
+                .addParam('p3', 'java.lang.Void');
+
+            return this.executeRest(cmd);
+        }
+
+        /**
+         * @param {Boolean} demo Is need run command on demo node.
+         * @param {String} taskNid node that is not node we want to ping.
+         * @param {String} nid Id of the node to ping.
+         * @returns {Promise}
+         */
+        ping(demo, taskNid, nid) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', taskNid)
                 .addParam('p2', 'org.apache.ignite.internal.visor.node.VisorNodePingTask')
                 .addParam('p3', 'java.util.UUID')
                 .addParam('p4', nid);
+
+            return this.executeRest(cmd);
+        }
+
+        /**
+         * @param {Boolean} demo Is need run command on demo node.
+         * @param {String} nid Id of the node to get thread dump.
+         * @returns {Promise}
+         */
+        threadDump(demo, nid) {
+            const cmd = new Command(demo, 'exe')
+                .addParam('name', 'org.apache.ignite.internal.visor.compute.VisorGatewayTask')
+                .addParam('p1', nid)
+                .addParam('p2', 'org.apache.ignite.internal.visor.debug.VisorThreadDumpTask')
+                .addParam('p3', 'java.lang.Void');
 
             return this.executeRest(cmd);
         }

@@ -16,6 +16,8 @@
 
 include ../../../../../../../app/helpers/jade/mixins.jade
 
+-var discoveryKind = 'ZooKeeper'
+-var required = 'backupItem.discovery.kind == "' + discoveryKind + '"'
 -var model = 'backupItem.discovery.ZooKeeper'
 
 div
@@ -25,7 +27,7 @@ div
             By default generates curator of org.apache.curator. framework.imps.CuratorFrameworkImpl\
             class with configured connect string, retry policy, and default session and connection timeouts')
     .details-row
-        +text('Connect string:', model + '.zkConnectionString', 'zkConnectionString', 'true', 'host:port[chroot][,host:port[chroot]]',
+        +text('Connect string:', model + '.zkConnectionString', ZooKeeper + 'ConnectionString', required, 'host:port[chroot][,host:port[chroot]]',
             'When "IGNITE_ZK_CONNECTION_STRING" system property is not configured this property will be used')
     .details-row
         +dropdown('Retry policy:', model + '.retryPolicy.kind', 'retryPolicy', 'true', 'Default',
@@ -50,16 +52,15 @@ div
                 <li>Custom - custom retry policy implementation</li>\
                 <li>Default - exponential backoff retry policy with configured base sleep time equal to 1000ms and max retry count equal to 10</li>\
             </ul>')
-    .details-row(ng-if='#{model}.retryPolicy.kind')
+    .details-row(ng-show='#{model}.retryPolicy.kind')
         .panel-details
-            div(ng-switch='#{model}.retryPolicy.kind')
-                ignite-configuration-clusters-general-discovery-zookeeper-exponential(ng-switch-when='ExponentialBackoff')
-                ignite-configuration-clusters-general-discovery-zookeeper-bounded-exponential(ng-switch-when='BoundedExponentialBackoff')
-                ignite-configuration-clusters-general-discovery-zookeeper-until-elapsed(ng-switch-when='UntilElapsed')
-                ignite-configuration-clusters-general-discovery-zookeeper-n-times(ng-switch-when='NTimes')
-                ignite-configuration-clusters-general-discovery-zookeeper-one-time(ng-switch-when='OneTime')
-                ignite-configuration-clusters-general-discovery-zookeeper-forever(ng-switch-when='Forever')
-                ignite-configuration-clusters-general-discovery-zookeeper-custom(ng-switch-when='Custom')
+            ignite-configuration-clusters-general-discovery-zookeeper-exponential(ng-show='#{model}.retryPolicy.kind === "ExponentialBackoff"')
+            ignite-configuration-clusters-general-discovery-zookeeper-bounded-exponential(ng-show='#{model}.retryPolicy.kind === "BoundedExponentialBackoff"')
+            ignite-configuration-clusters-general-discovery-zookeeper-until-elapsed(ng-show='#{model}.retryPolicy.kind === "UntilElapsed"')
+            ignite-configuration-clusters-general-discovery-zookeeper-n-times(ng-show='#{model}.retryPolicy.kind === "NTimes"')
+            ignite-configuration-clusters-general-discovery-zookeeper-one-time(ng-show='#{model}.retryPolicy.kind === "OneTime"')
+            ignite-configuration-clusters-general-discovery-zookeeper-forever(ng-show='#{model}.retryPolicy.kind === "Forever"')
+            ignite-configuration-clusters-general-discovery-zookeeper-custom(ng-show='#{model}.retryPolicy.kind === "Custom"')
     .details-row
         +text('Base path:', model + '.basePath', 'basePath', 'false', '/services', 'Base path for service registration')
     .details-row

@@ -47,7 +47,9 @@ form.panel.panel-default(name=form novalidate)
                 .settings-row
                     +number('Network timeout:', model + '.networkTimeout', 'discoNetworkTimeout', 'true', '5000', '1', 'Network timeout')
                 .settings-row
-                    +number('Join timeout:', model + '.joinTimeout', 'joinTimeout', 'true', '0', '0', 'Join timeout')
+                    +number('Join timeout:', model + '.joinTimeout', 'joinTimeout', 'true', '0', '0',
+                        'Join timeout<br/>' +
+                        '0 means wait forever')
                 .settings-row
                     +number('Thread priority:', model + '.threadPriority', 'threadPriority', 'true', '10', '1', 'Thread priority for all threads started by SPI')
                 .settings-row

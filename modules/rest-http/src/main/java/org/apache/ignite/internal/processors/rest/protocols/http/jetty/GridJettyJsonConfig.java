@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 import net.sf.json.JsonConfig;
 import net.sf.json.processors.JsonBeanProcessor;
@@ -72,37 +73,64 @@ class GridJettyJsonConfig extends JsonConfig {
     };
 
     /**
-     * Helper class for simple to-string conversion for {@link UUID}.
+     * Helper class for conversion to JSONObject.
      */
-    private static JsonValueProcessor UUID_PROCESSOR = new JsonValueProcessor() {
+    private static abstract class AbstractJsonValueProcessor implements JsonValueProcessor {
+        /**
+         * Processes the bean an returns a suitable JSONObject representation.
+         *
+         * @param bean the input bean
+         * @param jsonCfg the current configuration environment
+         */
+        protected abstract Object processBean(Object bean, JsonConfig jsonCfg);
+
         /** {@inheritDoc} */
         @Override public Object processArrayValue(Object val, JsonConfig jsonCfg) {
-            if (val == null)
-                return new JSONObject(true);
+            if (val instanceof Object[]) {
+                final JSONArray ret = new JSONArray();
 
-            if (val instanceof UUID)
-                return val.toString();
+                for (Object bean : (Object[])val)
+                    ret.add(processBean(bean, jsonCfg));
 
-            throw new UnsupportedOperationException("Serialize value to json is not supported: " + val);
+                return ret;
+            }
+
+            return processBean(val, jsonCfg);
         }
 
         /** {@inheritDoc} */
         @Override public Object processObjectValue(String key, Object val, JsonConfig jsonCfg) {
             return processArrayValue(val, jsonCfg);
         }
+    }
+
+    /**
+     * Helper class for simple to-string conversion for {@link UUID}.
+     */
+    private static JsonValueProcessor UUID_PROCESSOR = new AbstractJsonValueProcessor() {
+        /** {@inheritDoc} */
+        protected Object processBean(Object bean, JsonConfig jsonCfg) {
+            if (bean == null)
+                return new JSONObject(true);
+
+            if (bean instanceof UUID)
+                return bean.toString();
+
+            throw new UnsupportedOperationException("Serialize value to json is not supported: " + bean);
+        }
     };
 
     /**
      * Helper class for simple to-string conversion for {@link UUID}.
      */
-    private static JsonValueProcessor IGNITE_BI_TUPLE_PROCESSOR = new JsonValueProcessor() {
+    private static JsonValueProcessor IGNITE_BI_TUPLE_PROCESSOR = new AbstractJsonValueProcessor() {
         /** {@inheritDoc} */
-        @Override public Object processArrayValue(Object val, JsonConfig jsonCfg) {
-            if (val == null)
+        protected Object processBean(Object bean, JsonConfig jsonCfg) {
+            if (bean == null)
                 return new JSONObject(true);
 
-            if (val instanceof IgniteBiTuple) {
-                IgniteBiTuple t2 = (IgniteBiTuple)val;
+            if (bean instanceof IgniteBiTuple) {
+                IgniteBiTuple t2 = (IgniteBiTuple)bean;
 
                 final JSONObject ret = new JSONObject();
 
@@ -112,40 +140,30 @@ class GridJettyJsonConfig extends JsonConfig {
                 return ret;
             }
 
-            throw new UnsupportedOperationException("Serialize value to json is not supported: " + val);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object processObjectValue(String key, Object val, JsonConfig jsonCfg) {
-            return processArrayValue(val, jsonCfg);
+            throw new UnsupportedOperationException("Serialize value to json is not supported: " + bean);
         }
     };
 
     /**
      * Helper class for simple to-string conversion for {@link IgniteUuid}.
      */
-    private static JsonValueProcessor IGNITE_UUID_PROCESSOR = new JsonValueProcessor() {
+    private static JsonValueProcessor IGNITE_UUID_PROCESSOR = new AbstractJsonValueProcessor() {
         /** {@inheritDoc} */
-        @Override public Object processArrayValue(Object val, JsonConfig jsonCfg) {
-            if (val == null)
+        protected Object processBean(Object bean, JsonConfig jsonCfg) {
+            if (bean == null)
                 return new JSONObject(true);
 
-            if (val instanceof IgniteUuid)
-                return val.toString();
+            if (bean instanceof IgniteUuid)
+                return bean.toString();
 
-            throw new UnsupportedOperationException("Serialize value to json is not supported: " + val);
-        }
-
-        /** {@inheritDoc} */
-        @Override public Object processObjectValue(String key, Object val, JsonConfig jsonCfg) {
-            return processArrayValue(val, jsonCfg);
+            throw new UnsupportedOperationException("Serialize value to json is not supported: " + bean);
         }
     };
 
     /**
      * Helper class for simple to-string conversion for {@link Date}.
      */
-    private static JsonValueProcessor DATE_PROCESSOR = new JsonValueProcessor() {
+    private static JsonValueProcessor DATE_PROCESSOR = new AbstractJsonValueProcessor() {
         /** Thread local US date format. */
         private final ThreadLocal<DateFormat> dateFmt = new ThreadLocal<DateFormat>() {
             @Override protected DateFormat initialValue() {
@@ -154,19 +172,65 @@ class GridJettyJsonConfig extends JsonConfig {
         };
 
         /** {@inheritDoc} */
-        @Override public synchronized Object processArrayValue(Object val, JsonConfig jsonCfg) {
-            if (val == null)
+        protected Object processBean(Object bean, JsonConfig jsonCfg) {
+            if (bean == null)
                 return new JSONObject(true);
 
-            if (val instanceof Date)
-                return dateFmt.get().format(val);
+            if (bean instanceof Date)
+                return dateFmt.get().format(bean);
 
-            throw new UnsupportedOperationException("Serialize value to json is not supported: " + val);
+            throw new UnsupportedOperationException("Serialize value to json is not supported: " + bean);
         }
+    };
 
+    /**
+     * Helper class for replace null key in {@link Map}.
+     */
+    private static JsonValueProcessor NULL_MAP_PREPROCESSOR = new AbstractJsonValueProcessor() {
         /** {@inheritDoc} */
-        @Override public synchronized Object processObjectValue(String key, Object val, JsonConfig jsonCfg) {
-            return processArrayValue(val, jsonCfg);
+        @SuppressWarnings("unchecked")
+        protected Object processBean(Object bean, JsonConfig jsonCfg) {
+            if (bean == null)
+                return new JSONObject(true);
+
+            if (bean instanceof Map) {
+                Map m = (Map)bean;
+
+                if (m.containsKey(null))
+                    m.put("", m.remove(null));
+            }
+
+            return JSONObject.fromObject(bean, jsonCfg);
+        }
+    };
+
+    /**
+     * Workaround for false cycle detection in Spring exceptions.
+     *
+     * Cycle detection of json-lib is quite primitive.
+     * If some bean has more than one reference to same object false cycle will be detected.
+     */
+    private static JsonValueProcessor RUNTIME_EXCEPTION_PROCESSOR = new AbstractJsonValueProcessor() {
+        /** {@inheritDoc} */
+        protected Object processBean(Object bean, JsonConfig jsonCfg) {
+            if (bean == null)
+                return new JSONObject(true);
+
+            if (bean instanceof RuntimeException &&
+                bean.getClass().getCanonicalName().startsWith("org.springframework.")) {
+                RuntimeException e = (RuntimeException)bean;
+
+                final JSONObject ret = new JSONObject();
+
+                ret.element("message", e.getMessage(), jsonCfg);
+
+                if (e.getCause() != null)
+                    ret.element("cause", e.getCause(), jsonCfg);
+
+                return ret;
+            }
+
+            return JSONObject.fromObject(bean, jsonCfg);
         }
     };
 
@@ -183,6 +247,8 @@ class GridJettyJsonConfig extends JsonConfig {
         registerJsonValueProcessor(IgniteUuid.class, IGNITE_UUID_PROCESSOR);
         registerJsonValueProcessor(Date.class, DATE_PROCESSOR);
         registerJsonValueProcessor(java.sql.Date.class, DATE_PROCESSOR);
+        registerJsonValueProcessor(HashMap.class, NULL_MAP_PREPROCESSOR);
+        registerJsonValueProcessor(RuntimeException.class, RUNTIME_EXCEPTION_PROCESSOR);
 
         final LessNamingProcessor lessNamingProcessor = new LessNamingProcessor();
 
@@ -269,7 +335,7 @@ class GridJettyJsonConfig extends JsonConfig {
                         retType == void.class ||
                         retType == cls ||
                         exclMtds.contains(mtd.getName()) ||
-                        (retType == VisorCache.class && mtd.getName().equals("history")))
+                        (retType == VisorCache.class && "history".equals(mtd.getName())))
                         continue;
 
                     mtd.setAccessible(true);
@@ -306,6 +372,15 @@ class GridJettyJsonConfig extends JsonConfig {
 
         /** {@inheritDoc} */
         @Override public Object processArrayValue(Object val, JsonConfig jsonCfg) {
+            if (val instanceof Object[]) {
+                final JSONArray ret = new JSONArray();
+
+                for (Object bean : (Object[])val)
+                    ret.add(processBean(bean, jsonCfg));
+
+                return ret;
+            }
+
             return processBean(val, jsonCfg);
         }
 

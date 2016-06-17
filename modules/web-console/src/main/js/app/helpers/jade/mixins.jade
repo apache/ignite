@@ -353,7 +353,7 @@ mixin table-text-field(field, items, valid, save, placeholder, newItem)
     -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
 
     ignite-form-field-input-text(
-        data-name=field
+        data-name='#{field}{{ $index || "" }}'
         data-ng-model=field
         data-ng-required='true'
         data-placeholder=placeholder
@@ -376,7 +376,7 @@ mixin table-java-class-field(lbl, field, items, valid, save, newItem)
     -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
 
     ignite-form-field-input-text(
-        data-name=field
+        data-name='#{field}{{ $index || "" }}'
         data-ng-model=field
         data-ng-required='true'
         data-ignite-unique=items
@@ -411,7 +411,7 @@ mixin table-java-package-field(field, items, valid, save, newItem)
     -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
 
     ignite-form-field-input-text(
-        data-name=field
+        data-name='#{field}{{ $index || "" }}'
         data-ng-model=field
         data-ng-required='true'
         data-placeholder='Enter package name'
@@ -436,7 +436,7 @@ mixin table-address-field(field, items, valid, save, newItem, portRange)
     -var onBlur = valid + ' && ( ' + save + '); ' + resetOnBlur + ';'
 
     ignite-form-field-input-text(
-        data-name=field
+        data-name='#{field}{{ $index || "" }}'
         data-ng-model=field
         data-ng-required='true'
         data-placeholder='IP address:port'
@@ -466,8 +466,9 @@ mixin table-save-button(valid, save, newItem)
 //- Mixin for table remove button.
 mixin table-remove-conditional-button(items, show, tip)
     i.tipField.fa.fa-remove(
-        ng-show='#{show} && !field.edit'
-        bs-tooltip='"#{tip}"'
+        ng-hide='!#{show} || field.edit'
+        bs-tooltip
+        data-title=tip
         ng-click='#{items}.splice(#{items}.indexOf(model), 1)'
     )
 
@@ -519,12 +520,12 @@ mixin evictionPolicy(model, name, enabled, required, tip)
 
 //- Mixin for clusters dropdown.
 mixin clusters(model, tip)
-    +dropdown-multiple('<span>Clusters:</span>' + '<a ui-sref="base.configuration.clusters({id: ' + model + '._id})"> (add)</a>',
+    +dropdown-multiple('<span>Clusters:</span>' + '<a ui-sref="base.configuration.clusters({linkId: linkId()})"> (add)</a>',
         model + '.clusters', 'clusters', 'true', 'Choose clusters', 'No clusters configured', 'clusters', tip)
 
 //- Mixin for caches dropdown.
 mixin caches(model, tip)
-    +dropdown-multiple('<span>Caches:</span>' + '<a ui-sref="base.configuration.caches({id: ' + model + '._id})"> (add)</a>',
+    +dropdown-multiple('<span>Caches:</span>' + '<a ui-sref="base.configuration.caches({linkId: linkId()})"> (add)</a>',
         model + '.caches', 'caches', 'true', 'Choose caches', 'No caches configured', 'caches', tip)
 
 //- Mixin for XML and Java preview.
