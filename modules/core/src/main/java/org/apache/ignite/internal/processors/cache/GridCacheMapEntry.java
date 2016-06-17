@@ -125,7 +125,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
     /** Key. */
     @GridToStringInclude
-    protected KeyCacheObject key;
+    protected final KeyCacheObject key;
 
     /** Value. */
     @GridToStringInclude
@@ -160,7 +160,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /** Offheap link. */
     @GridToStringInclude
     private long link;
-
 
     /**
      * @param cctx Cache context.
@@ -2859,28 +2858,44 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         boolean rmv = false;
 
         try {
+            boolean deferred = false;
+            GridCacheVersion ver0 = null;
+
             synchronized (this) {
                 checkObsolete();
 
                 if (!valid(topVer))
                     return null;
 
-                if (checkExpired()) {
-                    rmv = markObsolete0(cctx.versions().next(this.ver), true, null);
-
-                    return null;
-                }
-
                 if (val == null && offheap)
-                    unswap(true);
+                    unswap(true, false);
 
-                CacheObject val = this.val;
+                if (checkExpired()) {
+                    if (cctx.deferredDelete()) {
+                        deferred = true;
+                        ver0 = ver;
+                    }
+                    else {
+                        rmv = markObsolete0(cctx.versions().next(this.ver), true, null);
+                        return null;
+                    }
+                } else {
+                    CacheObject val = this.val;
 
-                if (val != null && expiryPlc != null)
-                    updateTtl(expiryPlc);
+                    if (val != null && expiryPlc != null)
+                        updateTtl(expiryPlc);
 
-                return val;
+                    return val;
+                }
             }
+
+            if (deferred) {
+                assert ver0 != null;
+
+                cctx.onDeferredDelete(this, ver0);
+            }
+            return null;
+
         }
         finally {
             if (rmv) {

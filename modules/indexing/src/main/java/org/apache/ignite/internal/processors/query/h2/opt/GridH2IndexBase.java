@@ -243,7 +243,7 @@ public abstract class GridH2IndexBase extends BaseIndex {
         @SuppressWarnings("unchecked")
         @Override protected boolean accept(GridH2Row row) {
             if (row instanceof GridH2AbstractKeyValueRow) {
-                if (((GridH2AbstractKeyValueRow) row).expireTime() <= time)
+                if (row.expireTime() <= time)
                     return false;
             }
 

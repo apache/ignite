@@ -1141,7 +1141,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     }
 
     /**
-     *
+     * The class to store tracked entry on the paged memory.
+     * We have to store only link and expireTime because entry could be loaded from swap
+     * by link.
      */
     class PendingRow {
         private static final int SIZE = 8 + 4 + 8;
@@ -1182,7 +1184,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     }
 
     /**
-     *
+     * Implementation of tracked entries collection based on B+tree.
      */
     class PendingEntriesImpl extends BPlusTree<PendingRow, PendingRow> implements PendingEntries {
 
@@ -1202,6 +1204,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 initNew();
         }
 
+        /** {@inheritDoc} */
         @Override protected int compare(BPlusIO<PendingRow> io, ByteBuffer buf, int idx,
             PendingRow row) throws IgniteCheckedException {
             PendingRow row0 = io.getLookupRow(this, buf, idx);
@@ -1209,12 +1212,14 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             return (cmp != 0) ? cmp : Long.compare(row0.link, row.link);
         }
 
+        /** {@inheritDoc} */
         @Override
         protected PendingRow getRow(BPlusIO<PendingRow> io,
             ByteBuffer buf, int idx) throws IgniteCheckedException {
             return io.getLookupRow(this, buf, idx);
         }
 
+        /** {@inheritDoc} */
         @Override public void addTrackedEntry(GridCacheMapEntry entry) {
             try {
                 PendingRow r = new PendingRow(entry);
@@ -1225,6 +1230,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             }
         }
 
+        /** {@inheritDoc} */
         @Override public void removeTrackedEntry(GridCacheMapEntry entry) {
             try {
                 remove(new PendingRow(entry));
@@ -1234,6 +1240,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             }
         }
 
+        /** {@inheritDoc} */
         @Override public ExpiredEntriesCursor expired(final long time) {
             final GridCursor<PendingRow> cur;
             try {
@@ -1290,6 +1297,11 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             }
         }
 
+        /**
+         * @param expireTime Expire time.
+         * @param hash Hash.
+         * @param link Link.
+         */
         PendingRow createPendingRow(long expireTime, int hash, long link) {
             return new PendingRow(expireTime, hash, link);
         }
@@ -1319,10 +1331,16 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
     }
 
+    private interface PendingRowIO {
+        long getExpireTime(ByteBuffer buf, int idx);
+        long getLink(ByteBuffer buf, int idx);
+        int getHash(ByteBuffer buf, int idx);
+    }
+
     /**
      *
      */
-    private static class PendingEntryInnerIO extends BPlusInnerIO<PendingRow>  {
+    private static class PendingEntryInnerIO extends BPlusInnerIO<PendingRow> implements PendingRowIO {
         /** */
         public static final IOVersions<PendingEntryInnerIO> VERSIONS = new IOVersions<>(
             new PendingEntryInnerIO(1)
@@ -1335,34 +1353,62 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             super(T_PENDING_REF_INNER, ver, true, PendingRow.SIZE);
         }
 
+        /** {@inheritDoc} */
         @Override public void store(ByteBuffer buf, int idx,
             PendingRow row) throws IgniteCheckedException {
-            buf.putLong(offset(idx), row.expireTime);
-            buf.putInt(offset(idx) + 8, row.hash);
-            buf.putLong(offset(idx) + 12, row.link);
+            setExpireTime(row.expireTime, buf, idx);
+            setLink(row.link, buf, idx);
+            setHash(row.hash, buf, idx);
         }
 
+        /** {@inheritDoc} */
         @Override public void store(ByteBuffer dst, int dstIdx, BPlusIO<PendingRow> srcIo,
             ByteBuffer src, int srcIdx) throws IgniteCheckedException {
-            dst.putLong(offset(dstIdx), src.getLong(offset(srcIdx)));
-            dst.putInt(offset(dstIdx) + 8, src.getInt(offset(srcIdx) + 8));
-            dst.putLong(offset(dstIdx) + 12, src.getLong(offset(srcIdx) + 12));
+            System.out.println("+++ inner store src. srcidx " + srcIdx + ", offset: " + offset(srcIdx) + ", src buf: " + src.capacity());
+            setExpireTime(((PendingRowIO)srcIo).getExpireTime(src, srcIdx), dst, dstIdx);
+            setLink(((PendingRowIO)srcIo).getLink(src, srcIdx), dst, dstIdx);
+            setHash(((PendingRowIO)srcIo).getHash(src, srcIdx), dst, dstIdx);
         }
 
+        /** {@inheritDoc} */
         @Override public PendingRow getLookupRow(
             BPlusTree<PendingRow, ?> tree, ByteBuffer buf,
             int idx) throws IgniteCheckedException {
             return ((PendingEntriesImpl)tree).createPendingRow(
-                buf.getLong(offset(idx)),
-                buf.getInt(offset(idx) + 8),
-                buf.getLong(offset(idx) + 12));
+                getExpireTime(buf, idx),
+                getHash(buf, idx),
+                getLink(buf, idx));
+        }
+
+        @Override public long getExpireTime(ByteBuffer buf, int idx) {
+            return buf.getLong(offset(idx));
+        }
+
+        private void setExpireTime(long expireTime, ByteBuffer buf, int idx) {
+            buf.putLong(offset(idx), expireTime);
+        }
+
+        @Override public long getLink(ByteBuffer buf, int idx) {
+            return buf.getLong(offset(idx) + 8);
+        }
+
+        private void setLink(long link, ByteBuffer buf, int idx) {
+            buf.putLong(offset(idx), link);
+        }
+
+        @Override public int getHash(ByteBuffer buf, int idx) {
+            return buf.getInt(offset(idx) + 16);
+        }
+
+        private void setHash(int hash, ByteBuffer buf, int idx) {
+            buf.putInt(offset(idx) + 16, hash);
         }
     }
 
     /**
      *
      */
-    private static class PendingEntryLeafIO extends BPlusLeafIO<PendingRow> {
+    private static class PendingEntryLeafIO extends BPlusLeafIO<PendingRow> implements PendingRowIO {
         /** */
         public static final IOVersions<PendingEntryLeafIO> VERSIONS = new IOVersions<>(
             new PendingEntryLeafIO(1)
@@ -1375,27 +1421,54 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             super(T_PENDING_REF_LEAF, ver, PendingRow.SIZE);
         }
 
+        /** {@inheritDoc} */
         @Override public void store(ByteBuffer buf, int idx,
             PendingRow row) throws IgniteCheckedException {
-            buf.putLong(offset(idx), row.expireTime);
-            buf.putInt(offset(idx) + 8, row.hash);
-            buf.putLong(offset(idx) + 12, row.link);
+            setExpireTime(row.expireTime, buf, idx);
+            setLink(row.link, buf, idx);
+            setHash(row.hash, buf, idx);
         }
 
+        /** {@inheritDoc} */
         @Override public void store(ByteBuffer dst, int dstIdx, BPlusIO<PendingRow> srcIo,
             ByteBuffer src, int srcIdx) throws IgniteCheckedException {
-            dst.putLong(offset(dstIdx), src.getLong(offset(srcIdx)));
-            dst.putInt(offset(dstIdx) + 8, src.getInt(offset(srcIdx) + 8));
-            dst.putLong(offset(dstIdx) + 12, src.getLong(offset(srcIdx) + 12));
+            setExpireTime(((PendingRowIO)srcIo).getExpireTime(src, srcIdx), dst, dstIdx);
+            setLink(((PendingRowIO)srcIo).getLink(src, srcIdx), dst, dstIdx);
+            setHash(((PendingRowIO)srcIo).getHash(src, srcIdx), dst, dstIdx);
         }
 
+        /** {@inheritDoc} */
         @Override public PendingRow getLookupRow(
             BPlusTree<PendingRow, ?> tree, ByteBuffer buf,
             int idx) throws IgniteCheckedException {
             return ((PendingEntriesImpl)tree).createPendingRow(
-                buf.getLong(offset(idx)),
-                buf.getInt(offset(idx) + 8),
-                buf.getLong(offset(idx) + 12));
+                getExpireTime(buf, idx),
+                getHash(buf, idx),
+                getLink(buf, idx));
+        }
+
+        @Override public long getExpireTime(ByteBuffer buf, int idx) {
+            return buf.getLong(offset(idx));
+        }
+
+        private void setExpireTime(long expireTime, ByteBuffer buf, int idx) {
+            buf.putLong(offset(idx), expireTime);
+        }
+
+        @Override public long getLink(ByteBuffer buf, int idx) {
+            return buf.getLong(offset(idx) + 8);
+        }
+
+        private void setLink(long link, ByteBuffer buf, int idx) {
+            buf.putLong(offset(idx), link);
+        }
+
+        @Override public int getHash(ByteBuffer buf, int idx) {
+            return buf.getInt(offset(idx) + 16);
+        }
+
+        private void setHash(int hash, ByteBuffer buf, int idx) {
+            buf.putInt(offset(idx) + 16, hash);
         }
     }
 }

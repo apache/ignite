@@ -17,26 +17,17 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.nio.ByteBuffer;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
-import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
-import org.apache.ignite.internal.util.typedef.internal.U;
 
 /**
  *
@@ -196,6 +187,10 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
     // TODO GG-10884: moved from GridCacheSwapManager.
     void writeAll(Iterable<GridCacheBatchSwapEntry> swapped) throws IgniteCheckedException;
 
+    /**
+     * @return PendingEntries container that is used by TTL manager.
+     * @throws IgniteCheckedException If failed.
+     */
     PendingEntries createPendingEntries() throws IgniteCheckedException;
 
     /**
@@ -253,6 +248,7 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
     }
 
     /**
+     * The wrapper to return data loaded from paged memory
      */
     class CacheObjectEntry {
         /** Object. */
@@ -310,7 +306,10 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
     }
 
     /**
-     *
+     * The container to store entries with expiration time.
+     * It is used by TTL manager but implemented on the offhep manager because B+tree is
+     * used to store entries. Also the implementation uses features of paged memory
+     * storage of entries
      */
     interface PendingEntries {
 

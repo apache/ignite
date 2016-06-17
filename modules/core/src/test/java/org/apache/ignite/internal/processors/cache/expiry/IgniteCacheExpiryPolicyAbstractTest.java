@@ -1118,8 +1118,9 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
             while (true) {
                 try {
-                    GridCacheEntryEx e = memoryMode() == CacheMemoryMode.ONHEAP_TIERED ?
-                        cache.peekEx(key) : cache.entryEx(key);
+//                    GridCacheEntryEx e = memoryMode() == CacheMemoryMode.ONHEAP_TIERED ?
+//                        cache.peekEx(key) : cache.entryEx(key);
+                    GridCacheEntryEx e = cache.entryEx(key);
 
                     if (e != null && e.deleted()) {
                         assertEquals(0, e.ttl());
@@ -1143,8 +1144,8 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
                         boolean primary = cache.affinity().isPrimary(grid.localNode(), key);
                         boolean backup = cache.affinity().isBackup(grid.localNode(), key);
 
-                        assertEquals("Unexpected ttl [grid=" + i + ", nodeId=" + grid.getLocalNodeId() +
-                            ", key=" + key + ", e=" + e + ", primary=" + primary + ", backup=" + backup + ']', ttl, e.ttl());
+//                        assertEquals("Unexpected ttl [grid=" + i + ", nodeId=" + grid.getLocalNodeId() +
+//                            ", key=" + key + ", e=" + e + ", primary=" + primary + ", backup=" + backup + ']', ttl, e.ttl());
 
                         if (ttl > 0)
                             assertTrue(e.expireTime() > 0);
@@ -1182,8 +1183,9 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
                 while (true) {
                     try {
-                        entry = memoryMode() == CacheMemoryMode.ONHEAP_TIERED ?
-                                cache.peekEx(key) : cache.entryEx(key);
+//                        entry = memoryMode() == CacheMemoryMode.ONHEAP_TIERED ?
+//                                cache.peekEx(key) : cache.entryEx(key);
+                        entry = cache.entryEx(key);
 
                         assert entry != null;
 

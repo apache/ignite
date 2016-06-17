@@ -43,7 +43,6 @@ public class GridCacheObsoleteTtlEntryExtras extends GridCacheEntryExtrasAdapter
      */
     public GridCacheObsoleteTtlEntryExtras(GridCacheVersion obsoleteVer, long ttl, long expireTime) {
         assert obsoleteVer != null;
-        assert ttl != 0;
 
         this.obsoleteVer = obsoleteVer;
         this.ttl = ttl;

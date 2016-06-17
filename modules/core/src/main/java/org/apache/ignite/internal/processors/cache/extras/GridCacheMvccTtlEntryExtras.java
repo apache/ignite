@@ -43,7 +43,7 @@ public class GridCacheMvccTtlEntryExtras extends GridCacheEntryExtrasAdapter {
      */
     public GridCacheMvccTtlEntryExtras(GridCacheMvcc mvcc, long ttl, long expireTime) {
         assert mvcc != null;
-        assert ttl != 0;
+//        assert ttl != 0;
 
         this.mvcc = mvcc;
         this.ttl = ttl;
@@ -84,7 +84,7 @@ public class GridCacheMvccTtlEntryExtras extends GridCacheEntryExtrasAdapter {
 
     /** {@inheritDoc} */
     @Override public GridCacheEntryExtras ttlAndExpireTime(long ttl, long expireTime) {
-        if (ttl != 0) {
+        if (expireTime != 0) {
             this.ttl = ttl;
             this.expireTime = expireTime;
 
