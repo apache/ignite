@@ -27,21 +27,19 @@ namespace Apache.Ignite.AspNet
     public static class IgniteWebUtils
     {
         /// <summary>
-        /// Gets the classpath from default location in web deployment (application_root\bin\Libs).
-        /// Ignite can not detect classpath in a standard way because IIS uses temporary folders for dlls.
+        /// Gets the Ignite home directory from default location in web deployment (application_root\bin).
+        /// Ignite can not detect home directory in a standard way because IIS uses temporary folders for dlls.
         /// </summary>
         [SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", 
             Justification = "Not appropriate: uses IO")]
-        public static string GetDefaultWebClasspath()
+        public static string GetWebIgniteHome()
         {
             var ctx = HttpContext.Current;
 
             if (ctx == null)
                 return null;
 
-            var dir = ctx.Server.MapPath(@"~\bin\libs");
-
-            return Directory.Exists(dir) ? string.Join(";", Directory.GetFiles(dir, "*.jar")) : null;
+            return ctx.Server.MapPath(@"~\bin");
         }
     }
 }

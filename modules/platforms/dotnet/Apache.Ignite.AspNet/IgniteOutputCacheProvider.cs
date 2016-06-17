@@ -25,8 +25,6 @@ namespace Apache.Ignite.AspNet
     using System.Configuration;
     using System.Diagnostics.CodeAnalysis;
     using System.Globalization;
-    using System.IO;
-    using System.Web;
     using Apache.Ignite.Core;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Expiry;
@@ -156,10 +154,10 @@ namespace Apache.Ignite.AspNet
 
             var config = section.IgniteConfiguration;
 
-            if (string.IsNullOrWhiteSpace(config.JvmClasspath))
+            if (string.IsNullOrWhiteSpace(config.IgniteHome))
             {
-                // Classpath not set by user: populate from default directory
-                config = new IgniteConfiguration(config) {JvmClasspath = IgniteWebUtils.GetDefaultWebClasspath()};
+                // IgniteHome not set by user: populate from default directory
+                config = new IgniteConfiguration(config) {IgniteHome = IgniteWebUtils.GetWebIgniteHome()};
             }
 
             return Ignition.Start(config);
