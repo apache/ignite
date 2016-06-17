@@ -37,17 +37,17 @@ if [ -n "${HADOOP_HOME}" ]; then
 fi
 
 if [ ! -d "${HADOOP_COMMON_HOME}" ]; then 
-    echo "Hadoop common folder not found: ${HADOOP_COMMON_HOME}. Please check HADOOP_COMMON_HOME environment variable."
+    echo "Hadoop common folder ${HADOOP_COMMON_HOME} not found. Please check HADOOP_COMMON_HOME or HADOOP_HOME environment variable."
     exit 1
 fi 
 
 if [ ! -d "${HADOOP_HDFS_HOME}" ]; then 
-    echo "Hadoop HDFS folder not found: ${HADOOP_HDFS_HOME}. Please check HADOOP_HDFS_HOME environment variable."
+    echo "Hadoop HDFS folder ${HADOOP_HDFS_HOME} not found. Please check HADOOP_HDFS_HOME or HADOOP_HOME environment variable."
     exit 1
 fi 
 
 if [ ! -d "${HADOOP_MAPRED_HOME}" ]; then 
-    echo "Hadoop map-reduce folder not found: ${HADOOP_MAPRED_HOME}. Please check HADOOP_MAPRED_HOME environment variable."
+    echo "Hadoop map-reduce folder ${HADOOP_MAPRED_HOME} not found. Please check HADOOP_MAPRED_HOME or HADOOP_HOME environment variable."
     exit 1
 fi 
 

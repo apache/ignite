@@ -21,34 +21,31 @@
 :: Check if environment passes HADOOP_PREFIX:
 if not defined HADOOP_HOME set HADOOP_HOME=%HADOOP_PREFIX%
 
-:: Trim quotes.
-set HADOOP_HOME=%HADOOP_HOME:"=%
+if not [%HADOOP_HOME%] == [] (
+   :: Trim quotes.
+   set HADOOP_HOME=%HADOOP_HOME:"=%
 
-:: Trim slashes.
-if %HADOOP_HOME:~-1,1% == \ (
-    set HADOOP_HOME=%HADOOP_HOME:~0,-1%
+   ::
+   :: Setting the rest of Hadoop environment variables.
+   ::
+   if not defined HADOOP_COMMON_HOME set HADOOP_COMMON_HOME=%HADOOP_HOME%\share\hadoop\common
+   if not defined HADOOP_HDFS_HOME set HADOOP_HDFS_HOME=%HADOOP_HOME%\share\hadoop\hdfs
+   if not defined HADOOP_MAPRED_HOME set HADOOP_MAPRED_HOME=%HADOOP_HOME%\share\hadoop\mapreduce
 )
 
-::
-:: Setting the rest of Hadoop environment variables.
-::
-if not defined HADOOP_COMMON_HOME set HADOOP_COMMON_HOME=%HADOOP_HOME%\share\hadoop\common
-if not defined HADOOP_HDFS_HOME set HADOOP_HDFS_HOME=%HADOOP_HOME%\share\hadoop\hdfs
-if not defined HADOOP_MAPRED_HOME set HADOOP_MAPRED_HOME=%HADOOP_HOME%\share\hadoop\mapreduce
-
 if not exist "%HADOOP_COMMON_HOME%" (  
-   echo "Hadoop common folder not found: %HADOOP_COMMON_HOME%. Please check HADOOP_COMMON_HOME environment variable."
-   exit /b 1
+   echo Hadoop common folder %HADOOP_COMMON_HOME% not found. Please check HADOOP_COMMON_HOME or HADOOP_HOME environment variable.
+   exit 1
 ) 
 
 if not exist "%HADOOP_HDFS_HOME%" (
-   echo "Hadoop HDFS folder not found: %HADOOP_HDFS_HOME%. Please check HADOOP_HDFS_HOME environment variable."
-   exit /b 1
+   echo Hadoop HDFS folder %HADOOP_HDFS_HOME% not found. Please check HADOOP_HDFS_HOME or HADOOP_HOME environment variable.
+   exit 1
 ) 
 
 if not exist "%HADOOP_MAPRED_HOME%" (
-   echo "Hadoop map-reduce folder not found: %HADOOP_MAPRED_HOME%. Please check HADOOP_MAPRED_HOME environment variable."
-   exit /b 1
+   echo Hadoop map-reduce folder %HADOOP_MAPRED_HOME% not found. Please check HADOOP_MAPRED_HOME or HADOOP_HOME environment variable.
+   exit 1
 ) 
 
 ::

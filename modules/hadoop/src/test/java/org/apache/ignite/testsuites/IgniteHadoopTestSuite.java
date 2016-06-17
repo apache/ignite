@@ -28,7 +28,6 @@ import org.apache.ignite.hadoop.cache.HadoopTxConfigCacheTest;
 import org.apache.ignite.hadoop.fs.KerberosHadoopFileSystemFactorySelfTest;
 import org.apache.ignite.hadoop.util.BasicUserNameMapperSelfTest;
 import org.apache.ignite.hadoop.util.ChainedUserNameMapperSelfTest;
-import org.apache.ignite.hadoop.util.KerberosUserNameMapper;
 import org.apache.ignite.hadoop.util.KerberosUserNameMapperSelfTest;
 import org.apache.ignite.igfs.Hadoop1OverIgfsDualAsyncTest;
 import org.apache.ignite.igfs.Hadoop1OverIgfsDualSyncTest;
