@@ -246,7 +246,11 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
 
             int curTopVer = topCntr.get();
 
-            preloader.addFuture(this);
+            if (!preloader.addFuture(this)) {
+                assert isDone() : this;
+
+                return false;
+            }
 
             trackable = true;
 
@@ -548,7 +552,8 @@ public final class GridDhtForceKeysFuture<K, V> extends GridCompoundFuture<Objec
                             info.expireTime(),
                             true,
                             topVer,
-                            replicate ? DR_PRELOAD : DR_NONE
+                            replicate ? DR_PRELOAD : DR_NONE,
+                            false
                         )) {
                             if (rec && !entry.isInternal())
                                 cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),

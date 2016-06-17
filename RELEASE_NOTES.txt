@@ -1,6 +1,95 @@
 Apache Ignite Release Notes
 ===========================
 
+Apache Ignite In-Memory Data Fabric 1.6
+---------------------------------------
+Ignite .NET:
+* Added LINQ Provider for cache SQL queries
+* Added native configuration mechanism (C#, app.config, web.config - instead of Spring XML)
+* Added NuGet distribution
+* Added AtomicSequence and AtomicReference data structures
+* Binaries are now AnyCPU (instead of separate x64/x86)
+* Java-based services can be called the same way as .NET service are called
+* Added java-based continuous query filters
+* Added automatic Java detection: no need for JAVA_HOME
+* Added ability to use Java-based remote filters in continuous queries.
+
+Ignite C++:
+* Added Transactions API for C++ client.
+* Added Date and Timestamp types implementation for C++ client.
+* Simplified Autotools build process for C++ client.
+
+Ignite:
+* Added ability to get partition 'updateCntr' with continuous query public API.
+* Added asynchronous execution of ContinuousQuery's remote filter and local listener.
+* Added backup partitions storing to local store default behavior.
+* Added cache deadlock detection.
+* Added Cache Store implementation backed by Cassandra DB.
+* Added method to get versioned cache entry.
+* Added ODBC driver for Ignite.
+* Added support for join timeout while registering local addresses with IP finder in TcpDiscoverySpi.
+* Added support for JTA transactions via synchronization callback.
+* Added Web Console for Ignite.
+* Fixed a bug causing object deserialization when local store is configured for cache.
+* Fixed a problem with incorrect classloader picked in OSGI environment.
+* Fixed a race condition when evicted offheap data was not delivered to query engine leading to query timeout.
+* Fixed an issue in ContinuousQueries that caused missing of notifications.
+* Fixed background cache partition map exchange not to flood network.
+* Fixed BinaryContext to honor custom loader set through IgniteConfiguration.
+* Fixed BinaryObjectOffHeapImpl leak to public code.
+* Fixed cluster stability with 500+ clients.
+* Fixed continuous queries to send filter factory instead of filter.
+* Fixed continuous query deployment in case originating node has left.
+* Fixed issues with continuous query.
+* Fixed deadlock in services deployment when Spring is used.
+* Fixed discovery and node start procedure issues that may cause slowdowns during larger topologies start (>100 nodes).
+* Fixed eviction policy notification if swap or off heap is enabled and an entry is not loaded during preloading.
+* Fixed excessive thread stack usage in case of high contention on cache entries.
+* Fixed execution of Splunk MapReduce jobs on top of Ignite MR.
+* Fixed GridClosureProcessor internal closures to be deserialized by BinaryMarshaller.
+* Fixed issue with AWS dependencies.
+* Fixed java proxies deserialization with optimized marshaller.
+* Fixed local store behavior at cross cache transactions.
+* Fixed marshalling of Java collection and maps for BinaryMarshaller.
+* Fixed memory leak in IgniteH2Indexing.
+* Fixed NPE during rebalancing.
+* Fixed NPE in GridMergeIndex.
+* Fixed OOME when OFFHEAP_TIERED mode is used.
+* Fixed potential thread starvation during cache rebalancing.
+* Fixed race condition on load cache on changing topology.
+* Fixed race in marshalling logic that could arise when several nodes are running on the same host.
+* Fixed redeployment issues happened with ScanQueries filters.
+* Fixed service proxy not to make remote call for methods declared in java.lang.Object.
+* Fixed several ClassNotFoundException in OSGi environment.
+* Fixed SKIP_STORE flag behavior for transaction entry.
+* Fixed support for classes with equal simple name for binary marshaller.
+* Fixed system caches not to use user-defined TransactionConfiguration.
+* Fixed the issue when CacheStore was updated even if EntryProcessor didn't update an entry.
+* Fixed thread safety for TcpDiscoveryMulticastIpFinder.
+* Fixed unintentional deserialization of BinaryObjects in OFFHEAP mode with peer class loading enabled.
+* Fixed UTF-16 surrogate pairs marshalling.
+* Fixed value copying in entry processor with OptimizedMarshaller.
+* Fixed web session clustering with WebLogic.
+* Hadoop: fixed a bug causing exception during MR planning when input split file doesn't exist.
+* IGFS: Added configuration flag to disable default path modes under "/ignite" folder.
+* IGFS: Added pluggable factory interface for Hadoop FileSystem creation.
+* IGFS: Fixed file properties when running over secondary file system.
+* IGFS: Fixed issues with Kerberized HDFS.
+* IGFS: Massive performance and stability fixes.
+* Improved marshaller behavior during cluster topology change.
+* Mesos integration: added possibility to load Ignite package from file system.
+* Optimized cache 'get' operations on affinity node.
+* Optimized memory usage on server nodes to allow more client connections.
+* Passed update notifier flag to discovery data to be sure that all cluster nodes have the same notifier status as the first node.
+* Performance optimization for transactions that do not acquire locks.
+* ScanQueries over local partitions performance optimisation.
+* Support of package-private implementations for Ignite Services.
+* Supported Ignite Compute tasks cancellation for Ignite.NET.
+* Visor CMD: Added ability to attach custom scripts to alerts.
+* Web sessions: minor fix to prevent NullPointerException in some special case.
+* Web sessions: user session classes are no longer needed on server nodes.
+* A lot of stability and fault-tolerance fixes.
+
 Apache Ignite In-Memory Data Fabric 1.5
 ---------------------------------------
 * Ignite.NET: Initial Release.

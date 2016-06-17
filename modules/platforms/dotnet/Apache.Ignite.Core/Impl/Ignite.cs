@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-#pragma warning disable 618   // SpringConfigUrl
 namespace Apache.Ignite.Core.Impl
 {
     using System;
@@ -202,7 +201,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public ICompute GetCompute()
         {
-            return _prj.GetCompute();
+            return _prj.ForServers().GetCompute();
         }
 
         /** <inheritdoc /> */
@@ -306,6 +305,12 @@ namespace Apache.Ignite.Core.Impl
         }
 
         /** <inheritdoc /> */
+        public IClusterGroup ForServers()
+        {
+            return _prj.ForServers();
+        }
+
+        /** <inheritdoc /> */
         public ICollection<IClusterNode> GetNodes()
         {
             return _prj.GetNodes();
@@ -348,7 +353,13 @@ namespace Apache.Ignite.Core.Impl
             UU.IgnitionStop(_proc.Context, Name, cancel);
 
             _cbs.Cleanup();
+        }
 
+        /// <summary>
+        /// Called after node has stopped.
+        /// </summary>
+        internal void AfterNodeStop()
+        {
             foreach (var bean in _lifecycleBeans)
                 bean.OnLifecycleEvent(LifecycleEventType.AfterNodeStop);
         }
@@ -531,7 +542,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IServices GetServices()
         {
-            return _prj.GetServices();
+            return _prj.ForServers().GetServices();
         }
 
         /** <inheritdoc /> */

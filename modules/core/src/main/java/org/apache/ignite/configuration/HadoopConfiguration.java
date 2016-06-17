@@ -25,7 +25,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
  */
 public class HadoopConfiguration {
     /** Default finished job info time-to-live. */
-    public static final long DFLT_FINISHED_JOB_INFO_TTL = 10_000;
+    public static final long DFLT_FINISHED_JOB_INFO_TTL = 30_000;
 
     /** Default value for external execution flag. */
     public static final boolean DFLT_EXTERNAL_EXECUTION = false;

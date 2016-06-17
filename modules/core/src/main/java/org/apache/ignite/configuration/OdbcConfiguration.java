@@ -17,56 +17,24 @@
 
 package org.apache.ignite.configuration;
 
-import java.net.Socket;
-
 /**
  * ODBC configuration.
  */
 public class OdbcConfiguration {
-    /** Default TCP server port. */
-    public static final int DFLT_TCP_PORT = 11443;
+    /** Default TCP host. */
+    public static final String DFLT_TCP_HOST = "0.0.0.0";
 
-    /** Default TCP_NODELAY flag. */
-    public static final boolean DFLT_TCP_NODELAY = true;
+    /** Default minimum TCP port range value. */
+    public static final int DFLT_TCP_PORT_FROM = 10800;
 
-    /** Default TCP direct buffer flag. */
-    public static final boolean DFLT_TCP_DIRECT_BUF = false;
-
-    /** Default ODBC idle timeout. */
-    public static final int DFLT_IDLE_TIMEOUT = 7000;
-
-    /** Default socket send and receive buffer size. */
-    public static final int DFLT_SOCK_BUF_SIZE = 32 * 1024;
+    /** Default maximum TCP port range value. */
+    public static final int DFLT_TCP_PORT_TO = 10810;
 
     /** Default max number of open cursors per connection. */
     public static final int DFLT_MAX_OPEN_CURSORS = 128;
 
-    /** TCP port. */
-    private int port = DFLT_TCP_PORT;
-
-    /** TCP host. */
-    private String host;
-
-    /** TCP no delay flag. */
-    private boolean noDelay = DFLT_TCP_NODELAY;
-
-    /** ODBC TCP direct buffer flag. */
-    private boolean directBuf = DFLT_TCP_DIRECT_BUF;
-
-    /** ODBC TCP send buffer size. */
-    private int sndBufSize = DFLT_SOCK_BUF_SIZE;
-
-    /** ODBC TCP receive buffer size. */
-    private int rcvBufSize = DFLT_SOCK_BUF_SIZE;
-
-    /** ODBC TCP send queue limit. */
-    private int sndQueueLimit;
-
-    /** ODBC TCP selector count. */
-    private int selectorCnt = Math.min(4, Runtime.getRuntime().availableProcessors());
-
-    /** Idle timeout. */
-    private long idleTimeout = DFLT_IDLE_TIMEOUT;
+    /** Endpoint address. */
+    private String endpointAddr;
 
     /** Max number of opened cursors per connection. */
     private int maxOpenCursors = DFLT_MAX_OPEN_CURSORS;
@@ -87,214 +55,42 @@ public class OdbcConfiguration {
     public OdbcConfiguration(OdbcConfiguration cfg) {
         assert cfg != null;
 
-        directBuf = cfg.isDirectBuffer();
-        host = cfg.getHost();
-        idleTimeout = cfg.getIdleTimeout();
+        endpointAddr = cfg.getEndpointAddress();
         maxOpenCursors = cfg.getMaxOpenCursors();
-        noDelay = cfg.isNoDelay();
-        port = cfg.getPort();
-        rcvBufSize = cfg.getReceiveBufferSize();
-        selectorCnt = cfg.getSelectorCount();
-        sndBufSize = cfg.getSendBufferSize();
-        sndQueueLimit = cfg.getSendQueueLimit();
     }
 
     /**
-     * Gets port for TCP ODBC server.
+     * Get ODBC endpoint address. Ignite will listen for incoming TCP connections on this address. Either single port
+     * or port range could be used. In the latter case Ignite will start listening on the first available port
+     * form the range.
      * <p>
-     * Default is {@link #DFLT_TCP_PORT}.
-     *
-     * @return TCP port.
-     */
-    public int getPort() {
-        return port;
-    }
-
-    /**
-     * Sets port for TCP ODBC server.
-     *
-     * @param port TCP port.
-     */
-    public void setPort(int port) {
-        this.port = port;
-    }
-
-    /**
-     * Gets host for TCP ODBC server. This can be either an
-     * IP address or a domain name.
+     * The following address formats are permitted:
+     * <ul>
+     *     <li>{@code hostname} - will use provided hostname and default port range;</li>
+     *     <li>{@code hostname:port} - will use provided hostname and port;</li>
+     *     <li>{@code hostname:port_from..port_to} - will use provided hostname and port range.</li>
+     * </ul>
      * <p>
-     * If not defined, system-wide local address will be used
-     * (see {@link IgniteConfiguration#getLocalHost()}.
+     * When set to {@code null}, ODBC processor will be bound to {@link #DFLT_TCP_HOST} host and default port range.
      * <p>
-     * You can also use {@code 0.0.0.0} value to bind to all
-     * locally-available IP addresses.
+     * Default port range is from {@link #DFLT_TCP_PORT_FROM} to {@link #DFLT_TCP_PORT_TO}.
      *
-     * @return TCP host.
+     * @return ODBC endpoint address.
      */
-    public String getHost() {
-        return host;
+    public String getEndpointAddress() {
+        return endpointAddr;
     }
 
     /**
-     * Sets host for TCP ODBC server.
+     * Set ODBC endpoint address. See {@link #getEndpointAddress()} for more information.
      *
-     * @param host TCP host.
+     * @param addr ODBC endpoint address.
+     * @return This instance for chaining.
      */
-    public void setHost(String host) {
-        this.host = host;
-    }
+    public OdbcConfiguration setEndpointAddress(String addr) {
+        this.endpointAddr = addr;
 
-    /**
-     * Gets flag indicating whether {@code TCP_NODELAY} option should be set for accepted client connections.
-     * Setting this option reduces network latency and should be set to {@code true} in majority of cases.
-     * For more information, see {@link Socket#setTcpNoDelay(boolean)}
-     * <p/>
-     * If not specified, default value is {@link #DFLT_TCP_NODELAY}.
-     *
-     * @return Whether {@code TCP_NODELAY} option should be enabled.
-     */
-    public boolean isNoDelay() {
-        return noDelay;
-    }
-
-    /**
-     * Sets whether {@code TCP_NODELAY} option should be set for all accepted ODBC client connections.
-     *
-     * @param noDelay {@code True} if option should be enabled.
-     * @see #isNoDelay()
-     */
-    public void setNoDelay(boolean noDelay) {
-        this.noDelay = noDelay;
-    }
-
-    /**
-     * Gets flag indicating whether ODBC TCP server should use direct buffers. A direct buffer is a buffer
-     * that is allocated and accessed using native system calls, without using JVM heap. Enabling direct
-     * buffer <em>may</em> improve performance and avoid memory issues (long GC pauses due to huge buffer
-     * size).
-     * <p/>
-     * If not specified, default value is {@link #DFLT_TCP_DIRECT_BUF}.
-     *
-     * @return Whether direct buffer should be used.
-     */
-    public boolean isDirectBuffer() {
-        return directBuf;
-    }
-
-    /**
-     * Sets whether to use direct buffer for ODBC TCP server.
-     *
-     * @param directBuf {@code True} if option should be enabled.
-     * @see #isDirectBuffer()
-     */
-    public void setDirectBuffer(boolean directBuf) {
-        this.directBuf = directBuf;
-    }
-
-    /**
-     * Gets ODBC TCP server send buffer size.
-     * <p/>
-     * If not specified, default value is {@link #DFLT_SOCK_BUF_SIZE}.
-     *
-     * @return ODBC TCP server send buffer size (0 for default).
-     */
-    public int getSendBufferSize() {
-        return sndBufSize;
-    }
-
-    /**
-     * Sets ODBC TCP server send buffer size.
-     *
-     * @param sndBufSize Send buffer size.
-     * @see #getSendBufferSize()
-     */
-    public void setSendBufferSize(int sndBufSize) {
-        this.sndBufSize = sndBufSize;
-    }
-
-    /**
-     * Gets ODBC TCP server receive buffer size.
-     * <p/>
-     * If not specified, default value is {@link #DFLT_SOCK_BUF_SIZE}.
-     *
-     * @return ODBC TCP server receive buffer size (0 for default).
-     */
-    public int getReceiveBufferSize() {
-        return rcvBufSize;
-    }
-
-    /**
-     * Sets ODBC TCP server receive buffer size.
-     *
-     * @param rcvBufSize Receive buffer size.
-     * @see #getReceiveBufferSize()
-     */
-    public void setReceiveBufferSize(int rcvBufSize) {
-        this.rcvBufSize = rcvBufSize;
-    }
-
-    /**
-     * Gets ODBC TCP server send queue limit. If the limit exceeds, all successive writes will
-     * block until the queue has enough capacity.
-     *
-     * @return ODBC TCP server send queue limit (0 for unlimited).
-     */
-    public int getSendQueueLimit() {
-        return sndQueueLimit;
-    }
-
-    /**
-     * Sets ODBC TCP server send queue limit.
-     *
-     * @param sndQueueLimit ODBC TCP server send queue limit (0 for unlimited).
-     * @see #getSendQueueLimit()
-     */
-    public void setSendQueueLimit(int sndQueueLimit) {
-        this.sndQueueLimit = sndQueueLimit;
-    }
-
-    /**
-     * Gets number of selector threads in ODBC TCP server. Higher value for this parameter
-     * may increase throughput, but also increases context switching.
-     *
-     * @return Number of selector threads for ODBC TCP server.
-     */
-    public int getSelectorCount() {
-        return selectorCnt;
-    }
-
-    /**
-     * Sets number of selector threads for ODBC TCP server.
-     *
-     * @param selectorCnt Number of selector threads for ODBC TCP server.
-     * @see #getSelectorCount()
-     */
-    public void setSelectorCount(int selectorCnt) {
-        this.selectorCnt = selectorCnt;
-    }
-
-    /**
-     * Gets idle timeout for ODBC TCP server.
-     * <p>
-     * This setting is used to reject half-opened sockets. If no packets
-     * come within idle timeout, the connection is closed.
-     * <p/>
-     * If not specified, default value is {@link #DFLT_IDLE_TIMEOUT}.
-     *
-     * @return Idle timeout in milliseconds.
-     */
-    public long getIdleTimeout() {
-        return idleTimeout;
-    }
-
-    /**
-     * Sets idle timeout for ODBC TCP server.
-     *
-     * @param idleTimeout Idle timeout in milliseconds.
-     * @see #getIdleTimeout()
-     */
-    public void setIdleTimeout(long idleTimeout) {
-        this.idleTimeout = idleTimeout;
+        return this;
     }
 
     /**
@@ -312,8 +108,11 @@ public class OdbcConfiguration {
      * Sets maximum number of opened cursors per connection. See {@link #getMaxOpenCursors()}.
      *
      * @param maxOpenCursors Maximum number of opened cursors.
+     * @return This instance for chaining.
      */
-    public void setMaxOpenCursors(int maxOpenCursors) {
+    public OdbcConfiguration setMaxOpenCursors(int maxOpenCursors) {
         this.maxOpenCursors = maxOpenCursors;
+
+        return this;
     }
 }

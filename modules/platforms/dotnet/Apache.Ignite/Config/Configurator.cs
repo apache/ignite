@@ -62,6 +62,9 @@ namespace Apache.Ignite.Config
         /** Command line argument: Config file name to read config section from. */
         private const string CmdConfigFile = "ConfigFileName";
 
+        /** Hidden command line argument: Force test classpath. */
+        private const string CmdForceTestClasspath = "ForceTestClasspath";
+
         /** <inheritDoc /> */
         public static IgniteConfiguration GetConfiguration(Tuple<string, string>[] args)
         {
@@ -94,6 +97,8 @@ namespace Apache.Ignite.Config
                     jvmOpts.Add(arg.Item2);
                 else if (argIs(CmdAssembly))
                     assemblies.Add(arg.Item2);
+                else if (argIs(CmdForceTestClasspath) && arg.Item2 == "true")
+                    Environment.SetEnvironmentVariable("IGNITE_NATIVE_TEST_CLASSPATH", "true");
             }
 
             if (jvmOpts.Count > 0)

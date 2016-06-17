@@ -15,31 +15,52 @@
 ## limitations under the License.
 ##
 
-ACLOCAL_AMFLAGS = "-Im4"
-
-SUBDIRS = . include
-DIST_SUBDIRS = . include
-
-AM_CPPFLAGS = -I$(srcdir)/include -I$(JAVA_HOME)/include -I$(JAVA_HOME)/include/linux -DIGNITE_IMPL
-AM_CXXFLAGS = -Wall -std=c++0x
+ACLOCAL_AMFLAGS =-I m4
 
 noinst_PROGRAMS = ignite-tests
 
-ignite_tests_SOURCES = src/cache_test.cpp \
-                         src/cache_query_test.cpp \
-                         src/concurrent_test.cpp \
-                         src/ignition_test.cpp \
-                         src/interop_memory_test.cpp \
-                         src/handle_registry_test.cpp \
-                         src/ignite_error_test.cpp \
-                         src/binary_test_defs.cpp \
-                         src/binary_reader_writer_raw_test.cpp \
-                         src/binary_reader_writer_test.cpp \
-                         src/binary_session_test.cpp \
-                         src/teamcity_messages.cpp \
-                         src/teamcity_boost.cpp
+SUBDIRS = \
+    include
 
-ignite_tests_LDFLAGS = -static-libtool-libs -L/usr/local/lib -lignite
+AM_CPPFLAGS = \
+    -I$(srcdir)/include \
+    -I@top_srcdir@/core/include \
+    -I@top_srcdir@/core/os/linux/include \
+    -I@top_srcdir@/common/include \
+    -I@top_srcdir@/common/os/linux/include \
+    -I@top_srcdir@/binary/include \
+    -I@top_srcdir@/jni/include \
+    -I@top_srcdir@/jni/os/linux/include \
+    -I$(JAVA_HOME)/include \
+    -I$(JAVA_HOME)/include/linux \
+    -DIGNITE_IMPL
+
+AM_CXXFLAGS = \
+    -Wall \
+    -std=c++0x
+
+ignite_tests_LDADD = \
+    @top_srcdir@/core/libignite.la \
+    -lpthread
+
+ignite_tests_LDFLAGS = \
+    -static-libtool-libs
+
+ignite_tests_SOURCES = \
+    src/cache_test.cpp \
+    src/cache_query_test.cpp \
+    src/concurrent_test.cpp \
+    src/ignition_test.cpp \
+    src/interop_memory_test.cpp \
+    src/handle_registry_test.cpp \
+	src/ignite_error_test.cpp \
+    src/binary_test_defs.cpp \
+    src/binary_reader_writer_raw_test.cpp \
+    src/binary_reader_writer_test.cpp \
+    src/binary_session_test.cpp \
+    src/transactions_test.cpp \
+    src/teamcity_messages.cpp \
+    src/teamcity_boost.cpp
 
 run-check: check
 	./ignite-tests -p

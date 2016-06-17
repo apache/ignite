@@ -26,16 +26,7 @@ import org.jetbrains.annotations.Nullable;
  * Cache query future returned by query execution.
  * Refer to {@link CacheQuery} documentation for more information.
  */
-public interface CacheQueryFuture<T> extends IgniteInternalFuture<Collection<T>> {
-    /**
-     * Returns number of elements that are already fetched and can
-     * be returned from {@link #next()} method without blocking.
-     *
-     * @return Number of fetched elements which are available immediately.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public int available() throws IgniteCheckedException;
-
+public interface CacheQueryFuture<T> extends IgniteInternalFuture<Collection<T>>, AutoCloseable {
     /**
      * Returns next element from result set.
      * <p>

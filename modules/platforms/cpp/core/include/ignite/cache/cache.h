@@ -20,14 +20,15 @@
  * Declares ignite::cache::Cache class.
  */
 
-#ifndef _IGNITE_CACHE
-#define _IGNITE_CACHE
+#ifndef _IGNITE_CACHE_CACHE
+#define _IGNITE_CACHE_CACHE
 
 #include <map>
 #include <set>
 
 #include <ignite/common/common.h>
 #include <ignite/common/concurrent.h>
+#include <ignite/ignite_error.h>
 
 #include "ignite/cache/cache_peek_mode.h"
 #include "ignite/cache/query/query_cursor.h"
@@ -38,7 +39,6 @@
 #include "ignite/cache/query/query_sql_fields.h"
 #include "ignite/impl/cache/cache_impl.h"
 #include "ignite/impl/operations.h"
-#include "ignite/ignite_error.h"
 
 namespace ignite
 {
@@ -1184,9 +1184,15 @@ namespace ignite
             /**
              * Check if the instance is valid.
              *
+             * Invalid instance can be returned if some of the previous
+             * operations have resulted in a failure. For example invalid
+             * instance can be returned by not-throwing version of method
+             * in case of error. Invalid instances also often can be
+             * created using default constructor.
+             *
              * @return True if the instance is valid and can be used.
              */
-            bool IsValid()
+            bool IsValid() const
             {
                 return impl.IsValid();
             }
@@ -1198,4 +1204,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_CACHE_CACHE

@@ -72,5 +72,17 @@ namespace Apache.Ignite.Core.Transactions
         /// </summary>
         [DefaultValue(typeof(TimeSpan), "00:00:10")]
         public TimeSpan PessimisticTransactionLogLinger { get; set; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="TransactionConfiguration" /> class.
+        /// </summary>
+        public TransactionConfiguration()
+        {
+            DefaultTransactionConcurrency = DefaultDefaultTransactionConcurrency;
+            DefaultTransactionIsolation = DefaultDefaultTransactionIsolation;
+            DefaultTimeout = DefaultDefaultTimeout;
+            PessimisticTransactionLogSize = DefaultPessimisticTransactionLogSize;
+            PessimisticTransactionLogLinger = DefaultPessimisticTransactionLogLinger;
+        }
     }
 }

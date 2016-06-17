@@ -21,8 +21,8 @@
  * ignite::cache::query::QueryArgumentBase interface.
  */
 
-#ifndef _IGNITE_CACHE_QUERY_ARGUMENT
-#define _IGNITE_CACHE_QUERY_ARGUMENT
+#ifndef _IGNITE_CACHE_QUERY_QUERY_ARGUMENT
+#define _IGNITE_CACHE_QUERY_QUERY_ARGUMENT
 
 #include "ignite/binary/binary_raw_writer.h"
 
@@ -128,4 +128,4 @@ namespace ignite
     }    
 }
 
-#endif
+#endif //_IGNITE_CACHE_QUERY_QUERY_ARGUMENT

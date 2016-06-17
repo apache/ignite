@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.odbc;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
-import org.apache.ignite.configuration.OdbcConfiguration;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.processors.cache.QueryCursorImpl;
 import org.apache.ignite.internal.processors.query.GridQueryFieldMetadata;
@@ -49,6 +48,9 @@ public class OdbcRequestHandler {
     /** Busy lock. */
     private final GridSpinBusyLock busyLock;
 
+    /** Maximum allowed cursors. */
+    private final int maxCursors;
+
     /** Current queries cursors. */
     private final ConcurrentHashMap<Long, IgniteBiTuple<QueryCursor, Iterator>> qryCursors = new ConcurrentHashMap<>();
 
@@ -57,10 +59,12 @@ public class OdbcRequestHandler {
      *
      * @param ctx Context.
      * @param busyLock Shutdown latch.
+     * @param maxCursors Maximum allowed cursors.
      */
-    public OdbcRequestHandler(final GridKernalContext ctx, final GridSpinBusyLock busyLock) {
+    public OdbcRequestHandler(GridKernalContext ctx, GridSpinBusyLock busyLock, int maxCursors) {
         this.ctx = ctx;
         this.busyLock = busyLock;
+        this.maxCursors = maxCursors;
     }
 
     /**
@@ -133,16 +137,12 @@ public class OdbcRequestHandler {
      * @return Response.
      */
     private OdbcResponse executeQuery(OdbcQueryExecuteRequest req) {
-        OdbcConfiguration cfg = ctx.config().getOdbcConfiguration();
-
-        assert cfg != null;
-
         int cursorCnt = qryCursors.size();
 
-        if (cursorCnt >= cfg.getMaxOpenCursors())
+        if (maxCursors > 0 && cursorCnt >= maxCursors)
             return new OdbcResponse(OdbcResponse.STATUS_FAILED, "Too many opened cursors (either close other " +
                 "opened cursors or increase the limit through OdbcConfiguration.setMaxOpenCursors()) " +
-                "[maximum=" + cfg.getMaxOpenCursors() + ", current=" + cursorCnt + ']');
+                "[maximum=" + maxCursors + ", current=" + cursorCnt + ']');
 
         long qryId = QRY_ID_GEN.getAndIncrement();
 

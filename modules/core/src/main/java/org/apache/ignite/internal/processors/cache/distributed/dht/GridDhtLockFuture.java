@@ -1048,7 +1048,14 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                             try {
                                 CacheObject val0 = cctx.toCacheObject(val);
 
-                                entry0.initialValue(val0, ver, 0, 0, false, topVer, GridDrType.DR_LOAD);
+                                entry0.initialValue(val0,
+                                    ver,
+                                    0,
+                                    0,
+                                    false,
+                                    topVer,
+                                    GridDrType.DR_LOAD,
+                                    true);
                             }
                             catch (GridCacheEntryRemovedException e) {
                                 assert false : "Should not get removed exception while holding lock on entry " +
@@ -1205,8 +1212,13 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                     try {
                         GridCacheEntryEx entry = cctx.cache().entryEx(info.key(), topVer);
 
-                        if (entry.initialValue(info.value(), info.version(), info.ttl(),
-                            info.expireTime(), true, topVer, replicate ? DR_PRELOAD : DR_NONE)) {
+                        if (entry.initialValue(info.value(),
+                            info.version(),
+                            info.ttl(),
+                            info.expireTime(),
+                            true, topVer,
+                            replicate ? DR_PRELOAD : DR_NONE,
+                            false)) {
                             if (rec && !entry.isInternal())
                                 cctx.events().addEvent(entry.partition(), entry.key(), cctx.localNodeId(),
                                     (IgniteUuid)null, null, EVT_CACHE_REBALANCE_OBJECT_LOADED, info.value(), true, null,
