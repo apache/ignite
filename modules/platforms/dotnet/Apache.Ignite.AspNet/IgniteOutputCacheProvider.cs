@@ -191,11 +191,11 @@ namespace Apache.Ignite.AspNet
             if (utcExpiry == DateTime.MaxValue)
                 return Cache;
 
-            // Round up to seconds
+            // Round up to seconds ([OutputCache] duration is in seconds).
             var expirySeconds = (long) (utcExpiry - DateTime.UtcNow).TotalSeconds;
 
             if (expirySeconds < 1)
-                expirySeconds = 0;
+                expirySeconds = 1;
 
             ICache<string, object> expiryCache;
 
