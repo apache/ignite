@@ -501,6 +501,123 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testPartitionSize() throws Exception {
+        checkEmpty();
+        int partition = 0;
+        if (cacheMode() == LOCAL) {
+            IgniteCache<Integer, String> cache0 = jcache(0);
+
+            IgniteCache<Integer, String> cacheAsync0 = cache0.withAsync();
+
+            for (int i = 0; i < HEAP_ENTRIES; i++) {
+                cache0.put(i, String.valueOf(i));
+
+                final int size = i + 1;
+
+                assertEquals(size, cache0.localSize());
+                assertEquals(size, cache0.localSize(partition, PRIMARY));
+                assertEquals(size, cache0.localSize(partition, BACKUP));
+                assertEquals(size, cache0.localSize(partition, NEAR));
+                assertEquals(size, cache0.localSize(partition, ALL));
+
+                assertEquals(size, cache0.size());
+                assertEquals(size, cache0.size(partition, PRIMARY));
+                assertEquals(size, cache0.size(partition, BACKUP));
+                assertEquals(size, cache0.size(partition, NEAR));
+                assertEquals(size, cache0.size(partition, ALL));
+
+                cacheAsync0.size();
+
+                assertEquals(size, cacheAsync0.future().get());
+
+                cacheAsync0.size(partition, PRIMARY);
+
+                assertEquals(size, cacheAsync0.future().get());
+            }
+
+            for (int i = 0; i < HEAP_ENTRIES; i++) {
+                cache0.remove(i, String.valueOf(i));
+
+                final int size = HEAP_ENTRIES - i - 1;
+
+                assertEquals(size, cache0.localSize());
+                assertEquals(size, cache0.localSize(partition, PRIMARY));
+                assertEquals(size, cache0.localSize(partition, BACKUP));
+                assertEquals(size, cache0.localSize(partition, NEAR));
+                assertEquals(size, cache0.localSize(partition, ALL));
+
+                assertEquals(size, cache0.size());
+                assertEquals(size, cache0.size(partition, PRIMARY));
+                assertEquals(size, cache0.size(partition, BACKUP));
+                assertEquals(size, cache0.size(partition, NEAR));
+                assertEquals(size, cache0.size(partition, ALL));
+
+                cacheAsync0.size();
+
+                assertEquals(size, cacheAsync0.future().get());
+            }
+
+            checkEmpty();
+
+            Set<Integer> keys = new HashSet<>();
+
+            for (int i = 0; i < 200; i++) {
+                cache0.put(i, "test_val");
+
+                keys.add(i);
+            }
+
+            try {
+                int totalKeys = 200;
+
+                T2<Integer, Integer> swapKeys = swapKeysCount(0);
+
+                T2<Integer, Integer> offheapKeys = offheapKeysCount(0);
+
+                int totalSwap = swapKeys.get1() + swapKeys.get2();
+                int totalOffheap = offheapKeys.get1() + offheapKeys.get2();
+
+                log.info("Keys [total=" + totalKeys + ", offheap=" + offheapKeys + ", swap=" + swapKeys + ']');
+
+                assertTrue(totalSwap + totalOffheap < totalKeys);
+
+                assertEquals(totalKeys, cache0.localSize());
+                assertEquals(totalKeys, cache0.localSize(partition, ALL));
+
+                assertEquals(totalOffheap, cache0.localSize(partition, OFFHEAP));
+                assertEquals(totalSwap, cache0.localSize(partition, SWAP));
+                assertEquals(totalKeys - (totalSwap + totalOffheap), cache0.localSize(partition, ONHEAP));
+
+                assertEquals(totalOffheap, cache0.size(partition, OFFHEAP));
+                assertEquals(totalSwap, cache0.size(partition, SWAP));
+                assertEquals(totalKeys - (totalSwap + totalOffheap), cache0.size(partition, ONHEAP));
+
+                assertEquals(totalOffheap, cache0.localSize(partition, OFFHEAP, PRIMARY));
+                assertEquals(totalSwap, cache0.localSize(partition, SWAP, PRIMARY));
+                assertEquals(totalKeys - (totalSwap + totalOffheap), cache0.localSize(partition, ONHEAP, PRIMARY));
+
+                assertEquals(totalOffheap, cache0.localSize(partition, OFFHEAP, BACKUP));
+                assertEquals(totalSwap, cache0.localSize(partition, SWAP, BACKUP));
+                assertEquals(totalKeys - (totalSwap + totalOffheap), cache0.localSize(partition, ONHEAP, BACKUP));
+            }
+            finally {
+                cache0.removeAll(keys);
+            }
+        }
+        else {
+            checkSizeAffinityFilter(0);
+
+            checkSizeAffinityFilter(1);
+
+            checkSizeStorageFilter(0);
+
+            checkSizeStorageFilter(1);
+        }
+    }
+
+    /**
      * @param nodeIdx Node index.
      * @throws Exception If failed.
      */
