@@ -200,6 +200,22 @@ public class CacheContinuousQueryEntry implements GridCacheDeployable, Message {
     }
 
     /**
+     * @return If entry filtered then will return light-weight <i><b>new entry</b></i> without values and key
+     * (avoid to huge memory consumption), otherwise {@code this}.
+     */
+    CacheContinuousQueryEntry forBackupQueue() {
+        if (!isFiltered())
+            return this;
+
+        CacheContinuousQueryEntry e =
+            new CacheContinuousQueryEntry(cacheId, evtType, null, null, null, keepBinary, part, updateCntr, topVer);
+
+        e.flags = flags;
+
+        return e;
+    }
+
+    /**
      * @return {@code True} if entry sent by backup node.
      */
     boolean isBackup() {

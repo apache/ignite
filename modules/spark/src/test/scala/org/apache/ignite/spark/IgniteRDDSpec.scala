@@ -18,7 +18,7 @@
 package org.apache.ignite.spark
 
 import org.apache.ignite.Ignition
-import org.apache.ignite.cache.query.annotations.{QueryTextField, QuerySqlField}
+import org.apache.ignite.cache.query.annotations.{QuerySqlField, QueryTextField}
 import org.apache.ignite.configuration.{CacheConfiguration, IgniteConfiguration}
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder
@@ -26,9 +26,10 @@ import org.apache.spark.SparkContext
 import org.junit.runner.RunWith
 import org.scalatest._
 import org.scalatest.junit.JUnitRunner
-import scala.collection.JavaConversions._
 
+import scala.collection.JavaConversions._
 import IgniteRDDSpec._
+import org.apache.ignite.binary.BinaryObject
 
 import scala.annotation.meta.field
 
@@ -289,6 +290,26 @@ class IgniteRDDSpec extends FunSpec with Matchers with BeforeAndAfterAll with Be
 
                 assert(cache.count() == 0)
                 assert(cache.isEmpty())
+            }
+            finally {
+                sc.stop()
+            }
+        }
+
+        it("should properly work with binary objects") {
+            val sc = new SparkContext("local[*]", "test")
+
+            try {
+                val ic = new IgniteContext[String, Entity](sc, () ⇒ configuration("client", client = true))
+
+                val cache = ic.fromCache(PARTITIONED_CACHE_NAME)
+
+                cache.savePairs(sc.parallelize(0 until 10, 2).map(i ⇒ (String.valueOf(i),
+                    new Entity(i, "name" + i, i * 100))))
+
+                val res = cache.withKeepBinary[String, BinaryObject]().map(t ⇒ t._2.field[Int]("salary")).collect()
+
+                println(res)
             }
             finally {
                 sc.stop()

@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,20 +15,21 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Binary
+namespace Apache.Ignite.Core.Cache.Affinity
 {
-    using Apache.Ignite.Core.Binary;
+    using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Cache.Affinity.Fair;
+    using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
 
     /// <summary>
-    /// Serializer for system types that can create instances directly from a stream and does not support handles.
+    /// Represents a function that maps cache keys to cluster nodes.
+    /// <para />
+    /// Only predefined implementations are supported now: 
+    /// <see cref="RendezvousAffinityFunction"/>, <see cref="FairAffinityFunction"/>.
     /// </summary>
-    internal interface IBinarySystemTypeSerializer : IBinarySerializer
+    [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
+    public interface IAffinityFunction
     {
-        /// <summary>
-        /// Reads the instance from a reader.
-        /// </summary>
-        /// <param name="reader">The reader.</param>
-        /// <returns>Deserialized instance.</returns>
-        object ReadInstance(BinaryReader reader);
+        // No-op.
     }
 }

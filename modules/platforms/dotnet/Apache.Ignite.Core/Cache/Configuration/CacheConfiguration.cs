@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
@@ -272,6 +273,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             NearConfiguration = reader.ReadBoolean() ? new NearCacheConfiguration(reader) : null;
 
             EvictionPolicy = EvictionPolicyBase.Read(reader);
+            AffinityFunction = AffinityFunctionBase.Read(reader);
         }
 
         /// <summary>
@@ -344,6 +346,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
                 writer.WriteBoolean(false);
 
             EvictionPolicyBase.Write(writer, EvictionPolicy);
+            AffinityFunctionBase.Write(writer, AffinityFunction);
         }
 
         /// <summary>
@@ -659,5 +662,10 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Null value means disabled evictions.
         /// </summary>
         public IEvictionPolicy EvictionPolicy { get; set; }
+
+        /// <summary>
+        /// Gets or sets the affinity function to provide mapping from keys to nodes.
+        /// </summary>
+        public IAffinityFunction AffinityFunction { get; set; }
     }
 }
