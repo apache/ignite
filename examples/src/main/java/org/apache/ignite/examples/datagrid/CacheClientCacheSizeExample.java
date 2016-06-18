@@ -50,8 +50,8 @@ public class CacheClientCacheSizeExample {
                 // Individual puts and gets.
                 putGet(cache);
                 System.out.println(">>> cache size is " +cache.size());
-                System.out.println(">>> cache size in partition 1 is "+cache.size(1, CachePeekMode.ONHEAP));
-                System.out.println(">>> cache size in partition 5 is "+cache.size(5, CachePeekMode.ONHEAP));
+                System.out.println(">>> cache size in partition 1 is "+cache.size(1, CachePeekMode.ALL));
+                System.out.println(">>> cache size in partition 2 is "+cache.size(2, CachePeekMode.ALL));
 
             }
         }
