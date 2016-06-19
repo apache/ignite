@@ -395,8 +395,12 @@ public abstract class BPlusTree<L, T extends L> {
                     r.needMergeEmptyBranch = TRUE;
 
                 // If we have backId then we've already locked back page, nothing to do here.
-                if (r.fwdId != 0 && r.backId == 0)
-                    r.lockForward(0);
+                if (r.fwdId != 0 && r.backId == 0) {
+                    Result res = r.lockForward(0);
+
+                    if (res != FOUND)
+                        return res; // Retry.
+                }
 
                 r.addTail(leafId, leaf, buf, io, 0, Tail.EXACT, -1);
             }
@@ -490,8 +494,12 @@ public abstract class BPlusTree<L, T extends L> {
             }
 
             // We don't have a back page, need to lock our forward and become a back for it.
-            if (r.fwdId != 0 && r.backId == 0)
-                r.lockForward(lvl);
+            if (r.fwdId != 0 && r.backId == 0) {
+                Result res = r.lockForward(lvl);
+
+                if (res != FOUND)
+                    return res; // Retry.
+            }
 
             r.addTail(pageId, page, buf, io, lvl, Tail.EXACT, idx);
 
@@ -2243,16 +2251,14 @@ public abstract class BPlusTree<L, T extends L> {
 
         /**
          * @param lvl Level.
+         * @return Result code.
          * @throws IgniteCheckedException If failed.
          */
-        private void lockForward(int lvl) throws IgniteCheckedException {
+        private Result lockForward(int lvl) throws IgniteCheckedException {
             assert fwdId != 0;
             assert backId == 0;
 
-            Result res = writePage(fwdId, page(fwdId), lockTailForward, this, lvl);
-
-            // Must always be called from lock on back page, thus we should never fail here.
-            assert res == FOUND: res;
+            return writePage(fwdId, page(fwdId), lockTailForward, this, lvl);
         }
 
         /**
