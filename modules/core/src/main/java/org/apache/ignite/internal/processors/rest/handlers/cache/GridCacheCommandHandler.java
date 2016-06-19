@@ -962,14 +962,14 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
             Collection<GridCacheSqlMetadata> metas = new ArrayList<>(map.size());
 
-            // Metadata for current cache must be first in list.
+            // If cache name is provided metadata for current cache must be returned else all cache metadata will be returned.
             GridCacheSqlMetadata cacheMeta = map.remove(cacheName);
 
-            if (cacheMeta != null)
+            if (cacheMeta != null) {
                 metas.add(cacheMeta);
-
-            metas.addAll(map.values());
-
+            } else {
+                metas.addAll(map.values());
+            }
             return new GridRestResponse(metas);
         }
 
