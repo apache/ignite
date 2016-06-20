@@ -30,7 +30,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         [Test]
         public void Test()
         {
-            var cfg = new IgniteConfiguration
+            var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 BinaryConfiguration = new BinaryConfiguration(typeof (PredefinedAffinityFunction)),
                 CacheConfiguration = new[]
