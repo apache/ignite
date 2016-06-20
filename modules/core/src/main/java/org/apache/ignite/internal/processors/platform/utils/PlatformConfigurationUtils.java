@@ -41,6 +41,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.*;
+import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactoryNative;
@@ -242,7 +243,8 @@ public class PlatformConfigurationUtils {
 
         switch (plcTyp) {
             case 0:
-                break;
+                // TODO: TEST
+                return new PlatformAffinityFunction();
             case 1: {
                 FairAffinityFunction f = new FairAffinityFunction();
                 f.setPartitions(in.readInt());
