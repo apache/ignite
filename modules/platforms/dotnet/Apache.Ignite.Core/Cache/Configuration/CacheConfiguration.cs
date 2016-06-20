@@ -32,6 +32,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Handle;
 
     /// <summary>
     /// Defines grid cache configuration.
@@ -280,7 +281,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Writes this instane to the specified writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
-        internal void Write(IBinaryRawWriter writer)
+        /// <param name="handleRegistry"></param>
+        internal void Write(IBinaryRawWriter writer, HandleRegistry handleRegistry)
         {
             writer.WriteInt((int) AtomicityMode);
             writer.WriteInt((int) AtomicWriteOrderMode);
@@ -346,7 +348,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
                 writer.WriteBoolean(false);
 
             EvictionPolicyBase.Write(writer, EvictionPolicy);
-            AffinityFunctionBase.Write(writer, AffinityFunction);
+            AffinityFunctionBase.Write(writer, AffinityFunction, handleRegistry);
         }
 
         /// <summary>

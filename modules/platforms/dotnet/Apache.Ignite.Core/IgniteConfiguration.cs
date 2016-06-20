@@ -37,6 +37,7 @@
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Handle;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Transactions;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
@@ -150,7 +151,7 @@
             {
                 var marsh = new Marshaller(configuration.BinaryConfiguration);
 
-                configuration.Write(marsh.StartMarshal(stream));
+                configuration.Write(marsh.StartMarshal(stream), null);
 
                 stream.SynchronizeOutput();
 
@@ -173,7 +174,8 @@
         /// Writes this instance to a writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
-        internal void Write(BinaryWriter writer)
+        /// <param name="handleRegistry">Registry.</param>
+        internal void Write(BinaryWriter writer, HandleRegistry handleRegistry)
         {
             Debug.Assert(writer != null);
 
@@ -203,7 +205,7 @@
                 writer.WriteInt(caches.Count);
 
                 foreach (var cache in caches)
-                    cache.Write(writer);
+                    cache.Write(writer, handleRegistry);
             }
 
             // Discovery config

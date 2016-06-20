@@ -22,6 +22,7 @@ namespace Apache.Ignite.Core.Cache.Affinity
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity.Fair;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
+    using Apache.Ignite.Core.Impl.Handle;
 
     /// <summary>
     /// Base class for predefined affinity functions.
@@ -36,6 +37,9 @@ namespace Apache.Ignite.Core.Cache.Affinity
 
         /** */
         private const byte TypeCodeRendezvous = 2;
+
+        /** */
+        private const byte TypeCodeUser = 3;
 
         /// <summary> The default value for <see cref="PartitionCount"/> property. </summary>
         public const int DefaultPartitionCount = 1024;
@@ -90,7 +94,7 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// <summary>
         /// Writes the instance.
         /// </summary>
-        internal static void Write(IBinaryRawWriter writer, IAffinityFunction fun)
+        internal static void Write(IBinaryRawWriter writer, IAffinityFunction fun, HandleRegistry handleRegistry)
         {
             if (fun == null)
             {
@@ -100,17 +104,20 @@ namespace Apache.Ignite.Core.Cache.Affinity
 
             var p = fun as AffinityFunctionBase;
 
-            if (p == null)
+            if (p != null)
             {
-                throw new NotSupportedException(
-                    string.Format("Unsupported AffinityFunction: {0}. Only predefined affinity function types " +
-                                  "are supported: {1}, {2}", fun.GetType(), typeof(FairAffinityFunction),
-                        typeof(RendezvousAffinityFunction)));
+                writer.WriteByte(p is FairAffinityFunction ? TypeCodeFair : TypeCodeRendezvous);
+                writer.WriteInt(p.PartitionCount);
+                writer.WriteBoolean(p.ExcludeNeighbors);
             }
+            else
+            {
+                // User-defined function
+                writer.WriteByte(TypeCodeUser);
 
-            writer.WriteByte(p is FairAffinityFunction ? TypeCodeFair : TypeCodeRendezvous);
-            writer.WriteInt(p.PartitionCount);
-            writer.WriteBoolean(p.ExcludeNeighbors);
+                // TODO: Deal with handle. It is possible that handle already exists.
+                // Wrap user func in something else to pair it with handle id.
+            }
         }
     }
 }
