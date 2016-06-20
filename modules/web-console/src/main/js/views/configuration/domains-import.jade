@@ -14,6 +14,8 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 
+include ../../app/helpers/jade/mixins.jade
+
 mixin chk(mdl, change, tip)
     input(type='checkbox' ng-model=mdl ng-change=change bs-tooltip='' data-title=tip data-trigger='hover' data-placement='top')
 
@@ -164,7 +166,18 @@ mixin td-ellipses-lbl(w, lbl)
                         .col-xs-9.col-sm-10.col-md-10
                             i.tipField.fa.fa-question-circle(bs-tooltip='' data-title='Package that will be used for POJOs generation')
                             .input-tip
-                                input.form-control(id='domainPackageName' type='text' ng-model='ui.packageName' placeholder='Package for POJOs generation')
+                                ignite-form-field-input-text(
+                                    data-name='domainPackageName'
+                                    data-ng-model='ui.packageName'
+                                    data-ng-required='true'
+                                    data-placeholder='Enter package name'
+                                    data-java-keywords='true'
+                                    data-java-package-name='true'
+                                    data-java-package-specified='package-only'
+                                    data-ignite-form-field-input-autofocus='true'
+                                )
+                                    +error-feedback('optionsForm.$error.javaPackageName', 'javaPackageName', 'Package name is invalid')
+                                    +error-feedback('optionsForm.$error.javaKeywords', 'javaKeywords', 'Package name could not contains reserved java keyword')
                     .settings-row
                         .checkbox
                             label
