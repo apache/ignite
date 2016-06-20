@@ -145,10 +145,126 @@ IGNITE_BINARY_TYPE_START(CacheEntryModifier)
 IGNITE_BINARY_TYPE_END
 
 /**
+ * Divisor class for invoke tests.
+ */
+class Divisor
+{
+public:
+    /**
+     * Constructor.
+     */
+    Divisor() : scale(1.0)
+    {
+        // No-op.
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param scale Scale.
+     */
+    Divisor(double scale) : scale(scale)
+    {
+        // No-op.
+    }
+
+    /**
+     * Copy constructor.
+     *
+     * @param other Other instance.
+     */
+    Divisor(const Divisor& other) : scale(other.scale)
+    {
+        // No-op.
+    }
+
+    /**
+     * Assignment operator.
+     *
+     * @param other Other instance.
+     * @return This instance.
+     */
+    Divisor& operator=(const Divisor& other)
+    {
+        scale = other.scale;
+
+        return *this;
+    }
+
+    /**
+     * Call instance.
+     *
+     * @return New value before cast to int.
+     */
+    double Process(MutableCacheEntry<int, int>& entry, const double& arg)
+    {
+        double res = 0.0;
+
+        if (entry.IsExists())
+        {
+            res = (entry.GetValue() / arg) * scale;
+
+            entry.SetValue(static_cast<int>(res));
+        }
+
+        return res;
+    }
+
+    /**
+     * Get scale.
+     *
+     * @return Scale.
+     */
+    double GetScale() const
+    {
+        return scale;
+    }
+
+    /**
+     * Get Job Id.
+     *
+     * @return Job id.
+     */
+    static int64_t GetJobId()
+    {
+        return 42;
+    }
+
+private:
+    /** Number to substract. */
+    double scale;
+};
+
+/**
+ * Binary type definition for Divisor.
+ */
+IGNITE_BINARY_TYPE_START(Divisor)
+    IGNITE_BINARY_GET_TYPE_ID_AS_HASH(Divisor)
+    IGNITE_BINARY_GET_TYPE_NAME_AS_IS(Divisor)
+    IGNITE_BINARY_GET_FIELD_ID_AS_HASH
+    IGNITE_BINARY_GET_HASH_CODE_ZERO(Divisor)
+    IGNITE_BINARY_IS_NULL_FALSE(Divisor)
+    IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(Divisor)
+
+    void Write(BinaryWriter& writer, Divisor obj)
+    {
+        writer.WriteDouble("scale", obj.GetScale());
+    }
+
+    Divisor Read(BinaryReader& reader)
+    {
+        double scale = reader.ReadDouble("scale");
+
+        return Divisor(scale);
+    }
+IGNITE_BINARY_TYPE_END
+
+/**
  * List CacheEntryModifier as a cache entry processor.
  */
 IGNITE_CACHE_ENTRY_PROCESSOR_LIST_BEGIN
     IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE(CacheEntryModifier, int, int, int, int)
+    IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE(Divisor, int, int, double, double)
 IGNITE_CACHE_ENTRY_PROCESSOR_LIST_END
 
 /**
@@ -239,6 +355,41 @@ BOOST_AUTO_TEST_CASE(TestNonExisting)
     BOOST_CHECK_EQUAL(res, 84);
 
     BOOST_CHECK_EQUAL(cache.Get(4), 42);
+}
+
+/**
+ * Test cache invoke on non-existing entry.
+ */
+BOOST_AUTO_TEST_CASE(TestSeveral)
+{
+    Cache<int, int> cache = grid.GetOrCreateCache<int, int>("TestCache");
+
+    CacheEntryModifier ced(2);
+    Divisor div(10.0);
+
+    int res1 = cache.Invoke<int>(100, ced, 0);
+
+    BOOST_CHECK_EQUAL(res1, 84);
+
+    BOOST_CHECK_EQUAL(cache.Get(100), 42);
+
+    double res2 = cache.Invoke<double>(100, div, 200.0);
+
+    BOOST_CHECK_CLOSE(res2, 2.1, 1E-6);
+
+    BOOST_CHECK_EQUAL(cache.Get(100), 2);
+
+    res2 = cache.Invoke<double>(100, div, 3.0);
+
+    BOOST_CHECK_CLOSE(res2, 6.6666666, 1E-6);
+
+    BOOST_CHECK_EQUAL(cache.Get(100), 6);
+
+    res1 = cache.Invoke<int>(100, ced, -12);
+
+    BOOST_CHECK_EQUAL(res1, 32);
+
+    BOOST_CHECK_EQUAL(cache.Get(100), 16);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
