@@ -78,8 +78,12 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
     /** {@inheritDoc} */
     @Override public int partitions() {
         // TODO: JNI
-        // TODO: Looks like this can be called before setIgnite
-        // We can calculate this and send from .NET
+        // TODO: This can be called before setIgnite from "validate" method
+        // We should calculate this and send from .NET
+        if (ctx == null) {
+            return 512;
+        }
+
         return 1024;
     }
 
