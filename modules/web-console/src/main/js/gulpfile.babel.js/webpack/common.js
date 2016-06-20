@@ -90,10 +90,6 @@ export default () => {
                 },
                 {
                     test: /\.js$/,
-                    loaders: ['baggage-loader?[file].html&[file].css']
-                },
-                {
-                    test: /\.js$/,
                     exclude: [node_modules_path],
                     loaders: ['ng-annotate-loader']
                 },
