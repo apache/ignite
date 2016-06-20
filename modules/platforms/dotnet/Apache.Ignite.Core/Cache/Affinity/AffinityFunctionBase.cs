@@ -19,11 +19,10 @@ namespace Apache.Ignite.Core.Cache.Affinity
 {
     using System;
     using System.ComponentModel;
-    using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity.Fair;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
-    using Apache.Ignite.Core.Impl.Handle;
+    using Apache.Ignite.Core.Common;
 
     /// <summary>
     /// Base class for predefined affinity functions.
@@ -121,6 +120,24 @@ namespace Apache.Ignite.Core.Cache.Affinity
                 // TODO: This won't work on startup?
                 writer.WriteObject(fun);
             }
+        }
+
+        /// <summary>
+        /// Resets cache affinity to its initial state. This method will be called by the system any time
+        /// the affinity has been sent to remote node where it has to be reinitialized.
+        /// If your implementation of affinity function has no initialization logic, leave this method empty.
+        /// </summary>
+        public void Reset()
+        {
+            throw GetDirectUsageError();
+        }
+
+        /// <summary>
+        /// Gets the direct usage error.
+        /// </summary>
+        private Exception GetDirectUsageError()
+        {
+            return new IgniteException(GetType() + " can not be used directly.");
         }
     }
 }

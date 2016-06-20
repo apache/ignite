@@ -63,7 +63,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
         private class PredefinedAffinityFunction : IAffinityFunction 
         {
-            
+            public void Reset()
+            {
+                // No-op.
+            }
         }
     }
 }
