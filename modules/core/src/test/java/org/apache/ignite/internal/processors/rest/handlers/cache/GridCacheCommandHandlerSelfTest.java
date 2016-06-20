@@ -214,7 +214,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
 
         req = new GridRestCacheRequest();
         req.command(GridRestCommand.CACHE_METADATA);
-        req.cacheName("null");
+        req.cacheName(null);
 
         resp = cmdHandler.handleAsync(req);
 
