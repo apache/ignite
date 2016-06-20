@@ -98,7 +98,10 @@ namespace ignite
             R res = procHolder.Process<R, K, V>(key, value, exists, entryState);
 
             writer.WriteInt8(static_cast<int8_t>(entryState));
-            writer.WriteTopObject(value);
+
+            if (entryState == cache::ENTRY_STATE_VALUE_SET)
+                writer.WriteTopObject(value);
+
             writer.WriteTopObject(res);
         }
 

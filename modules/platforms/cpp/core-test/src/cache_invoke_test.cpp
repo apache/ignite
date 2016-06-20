@@ -20,6 +20,7 @@
 #endif
 
 #include <sstream>
+#include <algorithm>
 
 #include <boost/test/unit_test.hpp>
 
@@ -231,7 +232,7 @@ public:
     }
 
 private:
-    /** Number to substract. */
+    /** Scale. */
     double scale;
 };
 
@@ -260,11 +261,137 @@ IGNITE_BINARY_TYPE_START(Divisor)
 IGNITE_BINARY_TYPE_END
 
 /**
+ * Character remover class for invoke tests.
+ */
+class CharRemover
+{
+public:
+    /**
+     * Constructor.
+     */
+    CharRemover() : toRemove(0)
+    {
+        // No-op.
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param toRemove Char to remove.
+     */
+    CharRemover(char toRemove) : toRemove(toRemove)
+    {
+        // No-op.
+    }
+
+    /**
+     * Copy constructor.
+     *
+     * @param other Other instance.
+     */
+    CharRemover(const CharRemover& other) : toRemove(other.toRemove)
+    {
+        // No-op.
+    }
+
+    /**
+     * Assignment operator.
+     *
+     * @param other Other instance.
+     * @return This instance.
+     */
+    CharRemover& operator=(const CharRemover& other)
+    {
+        toRemove = other.toRemove;
+
+        return *this;
+    }
+
+    /**
+     * Call instance.
+     *
+     * @return New value before cast to int.
+     */
+    int Process(MutableCacheEntry<std::string, std::string>& entry, const bool& replaceWithSpace)
+    {
+        int res = 0;
+
+        if (entry.IsExists())
+        {
+            std::string val(entry.GetValue());
+
+            res = static_cast<int>(std::count(val.begin(), val.end(), toRemove));
+
+            if (replaceWithSpace)
+                std::replace(val.begin(), val.end(), toRemove, ' ');
+            else
+                val.erase(std::remove(val.begin(), val.end(), toRemove), val.end());
+
+            if (val.empty())
+                entry.Remove();
+            else
+                entry.SetValue(val);
+        }
+
+        return res;
+    }
+
+    /**
+     * Get scale.
+     *
+     * @return Scale.
+     */
+    char GetCharToRemove() const
+    {
+        return toRemove;
+    }
+
+    /**
+     * Get Job Id.
+     *
+     * @return Job id.
+     */
+    static int64_t GetJobId()
+    {
+        return 1337;
+    }
+
+private:
+    /** Char to remove. */
+    char toRemove;
+};
+
+/**
+ * Binary type definition for CharRemover.
+ */
+IGNITE_BINARY_TYPE_START(CharRemover)
+    IGNITE_BINARY_GET_TYPE_ID_AS_HASH(CharRemover)
+    IGNITE_BINARY_GET_TYPE_NAME_AS_IS(CharRemover)
+    IGNITE_BINARY_GET_FIELD_ID_AS_HASH
+    IGNITE_BINARY_GET_HASH_CODE_ZERO(CharRemover)
+    IGNITE_BINARY_IS_NULL_FALSE(CharRemover)
+    IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(CharRemover)
+
+    void Write(BinaryWriter& writer, CharRemover obj)
+    {
+        writer.WriteInt8("toRemove", obj.GetCharToRemove());
+    }
+
+    CharRemover Read(BinaryReader& reader)
+    {
+        char toRemove = static_cast<char>(reader.ReadInt8("toRemove"));
+
+        return CharRemover(toRemove);
+    }
+IGNITE_BINARY_TYPE_END
+
+/**
  * List CacheEntryModifier as a cache entry processor.
  */
 IGNITE_CACHE_ENTRY_PROCESSOR_LIST_BEGIN
     IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE(CacheEntryModifier, int, int, int, int)
     IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE(Divisor, int, int, double, double)
+    IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE(CharRemover, std::string, std::string, int, bool)
 IGNITE_CACHE_ENTRY_PROCESSOR_LIST_END
 
 /**
@@ -358,7 +485,7 @@ BOOST_AUTO_TEST_CASE(TestNonExisting)
 }
 
 /**
- * Test cache invoke on non-existing entry.
+ * Test cache several invokes on the same entry.
  */
 BOOST_AUTO_TEST_CASE(TestSeveral)
 {
@@ -390,6 +517,42 @@ BOOST_AUTO_TEST_CASE(TestSeveral)
     BOOST_CHECK_EQUAL(res1, 32);
 
     BOOST_CHECK_EQUAL(cache.Get(100), 16);
+}
+
+/**
+ * Test cache several invokes on the same entry.
+ */
+BOOST_AUTO_TEST_CASE(TestStrings)
+{
+    Cache<std::string, std::string> cache = grid.GetOrCreateCache<std::string, std::string>("TestCache");
+
+    CharRemover cr('.');
+
+    int res = cache.Invoke<int>("some key", cr, false);
+
+    BOOST_CHECK_EQUAL(res, 0);
+    BOOST_CHECK(!cache.ContainsKey("some key"));
+
+    cache.Put("some key", "Some.Value.Separated.By.Dots");
+
+    res = cache.Invoke<int>("some key", cr, false);
+
+    BOOST_CHECK_EQUAL(res, 4);
+    BOOST_CHECK_EQUAL(cache.Get("some key"), std::string("SomeValueSeparatedByDots"));
+
+    cache.Put("some key", "Some.Other.Weird.Value");
+
+    res = cache.Invoke<int>("some key", cr, true);
+
+    BOOST_CHECK_EQUAL(res, 3);
+    BOOST_CHECK_EQUAL(cache.Get("some key"), std::string("Some Other Weird Value"));
+
+    cache.Put("some key", "...........");
+
+    res = cache.Invoke<int>("some key", cr, false);
+
+    BOOST_CHECK_EQUAL(res, 11);
+    BOOST_CHECK(!cache.ContainsKey("some key"));
 }
 
 BOOST_AUTO_TEST_SUITE_END()

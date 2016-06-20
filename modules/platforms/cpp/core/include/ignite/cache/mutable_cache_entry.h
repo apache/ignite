@@ -35,7 +35,7 @@ namespace ignite
          * the value type.
          */
         template<typename K, typename V>
-        class IGNITE_IMPORT_EXPORT MutableCacheEntry
+        class MutableCacheEntry
         {
         public:
             /**
