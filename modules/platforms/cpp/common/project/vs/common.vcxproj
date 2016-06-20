@@ -178,9 +178,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\os\win\src\common\concurrent_os.cpp" />
+    <ClCompile Include="..\..\os\win\src\common\dynamic_load_os.cpp" />
     <ClCompile Include="..\..\os\win\src\common\utils.cpp" />
     <ClCompile Include="..\..\src\common\concurrent.cpp" />
-    <ClCompile Include="..\..\os\win\src\dynamic_load_os.cpp" />
     <ClCompile Include="..\..\src\date.cpp" />
     <ClCompile Include="..\..\src\guid.cpp" />
     <ClCompile Include="..\..\src\ignite_error.cpp" />

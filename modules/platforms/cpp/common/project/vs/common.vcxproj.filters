@@ -41,7 +41,7 @@
       <Filter>Code</Filter>
     </ClInclude>
     <ClInclude Include="..\..\os\win\include\ignite\common\dynamic_load_os.h">
-      <Filter>Code</Filter>
+      <Filter>Code\common</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -66,8 +66,8 @@
     <ClCompile Include="..\..\src\ignite_error.cpp">
       <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\os\win\src\dynamic_load_os.cpp">
-      <Filter>Code</Filter>
+    <ClCompile Include="..\..\os\win\src\common\dynamic_load_os.cpp">
+      <Filter>Code\common</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
