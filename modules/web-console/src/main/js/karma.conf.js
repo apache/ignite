@@ -77,7 +77,7 @@ module.exports = function(config) {
     // Test results reporter to use
     // possible values: 'dots', 'progress'
     // available reporters: https://npmjs.org/browse/keyword/karma-reporter.
-    reporters: ['progress'],
+    reporters: ['teamcity'],
 
     // web server port
     port: 9876,
@@ -104,4 +104,4 @@ module.exports = function(config) {
     // how many browser should be started simultaneous
     concurrency: Infinity
   });
-}
+};
