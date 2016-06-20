@@ -299,6 +299,12 @@ public class PlatformConfigurationUtils {
             out.writeInt(f0.getPartitions());
             out.writeBoolean(f0.isExcludeNeighbors());
         }
+        else if (f instanceof PlatformAffinityFunction) {
+            out.writeByte((byte)3);
+
+            PlatformAffinityFunction f0 = (PlatformAffinityFunction)f;
+            out.writeObject(f0.getUserFunc());
+        }
         else {
             out.writeByte((byte)0);
         }

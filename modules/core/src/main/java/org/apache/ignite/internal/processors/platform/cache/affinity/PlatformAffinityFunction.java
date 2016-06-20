@@ -37,7 +37,7 @@ import java.util.UUID;
  */
 public class PlatformAffinityFunction implements AffinityFunction, Externalizable {
     /** */
-    private Object func;
+    private Object userFunc;
 
     /** */
     private transient PlatformContext ctx;
@@ -48,7 +48,12 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
      * @param func User fun object.
      */
     public PlatformAffinityFunction(Object func) {
-        this.func = func;
+        userFunc = func;
+    }
+
+    /** {@inheritDoc} */
+    public Object getUserFunc() {
+        return userFunc;
     }
 
     /** {@inheritDoc} */
@@ -81,12 +86,12 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(func);
+        out.writeObject(userFunc);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        func = in.readObject();
+        userFunc = in.readObject();
     }
 
     /**
