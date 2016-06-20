@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.InteropServices;
     using System.Threading;
-
+    using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
@@ -165,6 +165,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void OnClientDisconnectedDelegate(void* target);
         private delegate void OnClientReconnectedDelegate(void* target, bool clusterRestarted);
 
+        private delegate void AffinityFunctionResetDelegate(void* target, long memPtr);
+
         /// <summary>
         /// constructor.
         /// </summary>
@@ -248,6 +250,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                 onClientDisconnected = CreateFunctionPointer((OnClientDisconnectedDelegate)OnClientDisconnected),
                 ocClientReconnected = CreateFunctionPointer((OnClientReconnectedDelegate)OnClientReconnected),
+
+                affinityFunctionReset = CreateFunctionPointer((AffinityFunctionResetDelegate)AffinityFunctionReset)
             };
 
             _cbsPtr = Marshal.AllocHGlobal(UU.HandlersSize());
@@ -1084,6 +1088,20 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             SafeCall(() =>
             {
                 _ignite.OnClientReconnected(clusterRestarted);
+            });
+        }
+
+        #endregion
+
+        #region AffinityFunction
+
+        private void AffinityFunctionReset(void* target, long hnd)
+        {
+            SafeCall(() =>
+            {
+                var fun = _handleRegistry.Get<IAffinityFunction>(hnd);
+
+                fun.Reset();
             });
         }
 

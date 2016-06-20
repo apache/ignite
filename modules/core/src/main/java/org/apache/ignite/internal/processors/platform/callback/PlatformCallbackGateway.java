@@ -952,13 +952,13 @@ public class PlatformCallbackGateway {
     /**
      * Resets affinity function.
      *
-     * @param memPtr Affinity function pointer.
+     * @param hnd Affinity function handle.
      */
-    public void affinityFunctionReset(long memPtr) {
+    public void affinityFunctionReset(long hnd) {
         enter();
 
         try {
-            PlatformCallbackUtils.affinityFunctionReset(envPtr, memPtr);
+            PlatformCallbackUtils.affinityFunctionReset(envPtr, hnd);
         }
         finally {
             leave();

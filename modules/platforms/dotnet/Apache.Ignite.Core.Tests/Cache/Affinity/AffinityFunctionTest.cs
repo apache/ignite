@@ -49,6 +49,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             }
         }
 
+        [Test]
+        public void TestInject()
+        {
+            
+        }
+
+        [Test]
+        public void TestLifetime()
+        {
+            // TODO: check handle removal on DestroyCache
+        }
+
         private class PredefinedAffinityFunction : IAffinityFunction 
         {
             

@@ -499,9 +499,9 @@ public class PlatformCallbackUtils {
      * Resets affinity function.
      *
      * @param envPtr Environment pointer.
-     * @param memPtr Affinity function pointer.
+     * @param hnd Affinity function handle.
      */
-    static native void affinityFunctionReset(long envPtr, long memPtr);
+    static native void affinityFunctionReset(long envPtr, long hnd);
 
     /**
      * Private constructor.

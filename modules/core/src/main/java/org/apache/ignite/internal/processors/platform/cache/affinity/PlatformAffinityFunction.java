@@ -105,5 +105,7 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
     @IgniteInstanceResource
     private void setIgnite(Ignite ignite) {
         ctx = PlatformUtils.platformContext(ignite);
+
+        // TODO: Init ptr
     }
 }

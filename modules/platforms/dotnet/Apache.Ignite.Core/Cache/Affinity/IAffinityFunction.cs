@@ -24,12 +24,16 @@ namespace Apache.Ignite.Core.Cache.Affinity
     /// <summary>
     /// Represents a function that maps cache keys to cluster nodes.
     /// <para />
-    /// Only predefined implementations are supported now: 
+    /// Predefined implementations: 
     /// <see cref="RendezvousAffinityFunction"/>, <see cref="FairAffinityFunction"/>.
     /// </summary>
-    [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
     public interface IAffinityFunction
     {
-        // No-op.
+        /// <summary>
+        ///  Resets cache affinity to its initial state. This method will be called by the system any time 
+        /// the affinity has been sent to remote node where it has to be reinitialized.
+        /// If your implementation of affinity function has no initialization logic, leave this method empty.
+        /// </summary>
+        void Reset();
     }
 }
