@@ -966,6 +966,23 @@ public class PlatformCallbackGateway {
     }
 
     /**
+     * Initializes affinity function.
+     *
+     * @param memPtr Pointer to a stream with serialized affinity function.
+     * @return Affinity function pointer.
+     */
+    public long affinityFunctionInit(long memPtr) {
+        enter();
+
+        try {
+            return PlatformCallbackUtils.affinityFunctionInit(envPtr, memPtr);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
      * Enter gateway.
      */
     protected void enter() {

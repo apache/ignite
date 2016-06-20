@@ -496,6 +496,15 @@ public class PlatformCallbackUtils {
     static native void onClientReconnected(long envPtr, boolean clusterRestarted);
 
     /**
+     * Initializes affinity function.
+     *
+     * @param envPtr Environment pointer.
+     * @param memPtr Pointer to a stream with serialized affinity function.
+     * @return Affinity function pointer.
+     */
+    static native long affinityFunctionInit(long envPtr, long memPtr);
+
+    /**
      * Resets affinity function.
      *
      * @param envPtr Environment pointer.
