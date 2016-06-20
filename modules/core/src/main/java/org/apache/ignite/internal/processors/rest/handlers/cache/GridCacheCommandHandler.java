@@ -912,13 +912,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         @IgniteInstanceResource
         private IgniteEx ignite;
 
-        /** */
-        private String cacheName;
-
         /** {@inheritDoc} */
         @Nullable @Override public Map<? extends ComputeJob, ClusterNode> map(List<ClusterNode> subgrid,
             @Nullable String cacheName) throws IgniteException {
-            this.cacheName = cacheName;
 
             GridDiscoveryManager discovery = ignite.context().discovery();
 
@@ -962,14 +958,8 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
 
             Collection<GridCacheSqlMetadata> metas = new ArrayList<>(map.size());
 
-            // If cache name is provided metadata for current cache must be returned else all cache metadata will be returned.
-            GridCacheSqlMetadata cacheMeta = map.remove(cacheName);
+            metas.addAll(map.values());
 
-            if (cacheMeta != null) {
-                metas.add(cacheMeta);
-            } else {
-                metas.addAll(map.values());
-            }
             return new GridRestResponse(metas);
         }
 

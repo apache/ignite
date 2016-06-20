@@ -197,43 +197,6 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testHandleMetadataForSingleCache() throws Exception {
-        GridCacheCommandHandler cmdHandler = new GridCacheCommandHandler(((IgniteKernal)grid()).context());
-        GridRestCacheRequest req = new GridRestCacheRequest();
-
-        req.command(GridRestCommand.GET_OR_CREATE_CACHE);
-        req.cacheName("partitioned_cache");
-
-        IgniteInternalFuture<GridRestResponse> resp = cmdHandler.handleAsync(req);
-
-        req.command(GridRestCommand.GET_OR_CREATE_CACHE);
-        req.cacheName("replicated_cache");
-
-        resp = cmdHandler.handleAsync(req);
-
-        req.command(GridRestCommand.CACHE_METADATA);
-        req.cacheName("replicated_cache");
-
-        resp = cmdHandler.handleAsync(req);
-
-        assertNull(resp.result().getError());
-        assertEquals(GridRestResponse.STATUS_SUCCESS, resp.result().getSuccessStatus());
-        assertEquals("[CacheSqlMetadata [cacheName=replicated_cache]]",resp.result().getResponse().toString());
-
-
-        req.command(GridRestCommand.CACHE_METADATA);
-        req.cacheName("partitioned_cache");
-
-        resp = cmdHandler.handleAsync(req);
-
-        assertNull(resp.result().getError());
-        assertEquals(GridRestResponse.STATUS_SUCCESS, resp.result().getSuccessStatus());
-        assertEquals("[CacheSqlMetadata [cacheName=partitioned_cache]]",resp.result().getResponse().toString());
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testHandleMetadataForAllCache() throws Exception {
         GridCacheCommandHandler cmdHandler = new GridCacheCommandHandler(((IgniteKernal)grid()).context());
         GridRestCacheRequest req = new GridRestCacheRequest();
@@ -251,7 +214,7 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
 
         req = new GridRestCacheRequest();
         req.command(GridRestCommand.CACHE_METADATA);
-        req.cacheName("all");
+        req.cacheName("null");
 
         resp = cmdHandler.handleAsync(req);
 
