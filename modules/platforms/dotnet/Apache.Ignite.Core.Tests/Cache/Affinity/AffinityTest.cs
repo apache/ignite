@@ -15,36 +15,35 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Tests.Cache
+namespace Apache.Ignite.Core.Tests.Cache.Affinity
 {
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cluster;
-    using Apache.Ignite.Core.Impl;
     using NUnit.Framework;
 
     /// <summary>
     /// Affinity key tests.
     /// </summary>
-    public class CacheAffinityTest
+    public sealed class AffinityTest
     {
         /// <summary>
         ///
         /// </summary>
         [TestFixtureSetUp]
-        public virtual void StartGrids()
+        public void StartGrids()
         {
             TestUtils.KillProcesses();
 
-            IgniteConfiguration cfg = new IgniteConfiguration();
-
-            cfg.JvmClasspath = TestUtils.CreateTestClasspath();
-            cfg.JvmOptions = TestUtils.TestJavaOptions();
-            cfg.SpringConfigUrl = "config\\native-client-test-cache-affinity.xml";
-
             for (int i = 0; i < 3; i++)
             {
-                cfg.GridName = "grid-" + i;
+                var cfg = new IgniteConfiguration
+                {
+                    JvmClasspath = TestUtils.CreateTestClasspath(),
+                    JvmOptions = TestUtils.TestJavaOptions(),
+                    SpringConfigUrl = "config\\native-client-test-cache-affinity.xml",
+                    GridName = "grid-" + i
+                };
 
                 Ignition.Start(cfg);
             }
@@ -54,10 +53,9 @@ namespace Apache.Ignite.Core.Tests.Cache
         /// Tear-down routine.
         /// </summary>
         [TestFixtureTearDown]
-        public virtual void StopGrids()
+        public void StopGrids()
         {
-            for (int i = 0; i < 3; i++)
-                Ignition.Stop("grid-" + i, true);
+            Ignition.StopAll(true);
         }
 
         /// <summary>
@@ -105,10 +103,11 @@ namespace Apache.Ignite.Core.Tests.Cache
         public class AffinityTestKey
         {
             /** ID. */
-            private int _id;
+            private readonly int _id;
 
             /** Affinity key. */
-            private int _affKey;
+            // ReSharper disable once NotAccessedField.Local
+            private readonly int _affKey;
 
             /// <summary>
             /// Constructor.
@@ -124,7 +123,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             /** <inheritdoc /> */
             public override bool Equals(object obj)
             {
-                AffinityTestKey other = obj as AffinityTestKey;
+                var other = obj as AffinityTestKey;
 
                 return other != null && _id == other._id;
             }
