@@ -7629,6 +7629,26 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Initializes logger into/from log reference passed in.
+     *
+     * @param ctx Context.
+     * @param logRef Log reference.
+     * @param ctgr Log category.
+     * @return Logger for the object.
+     */
+    public static IgniteLogger logger(GridKernalContext ctx, AtomicReference<IgniteLogger> logRef, String ctgr) {
+        IgniteLogger log = logRef.get();
+
+        if (log == null) {
+            logRef.compareAndSet(null, ctx.log(ctgr));
+
+            log = logRef.get();
+        }
+
+        return log;
+    }
+
+    /**
      * @param hash Hash code of the object to put.
      * @param concurLvl Concurrency level.
      * @return Segment index.

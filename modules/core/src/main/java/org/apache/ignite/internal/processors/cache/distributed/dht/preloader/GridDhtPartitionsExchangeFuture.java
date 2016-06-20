@@ -87,7 +87,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityTopologyVersion>
     implements Comparable<GridDhtPartitionsExchangeFuture>, GridDhtTopologyFuture {
     /** */
-    private static final int DUMP_PENDING_OBJECTS_THRESHOLD =
+    public static final int DUMP_PENDING_OBJECTS_THRESHOLD =
         IgniteSystemProperties.getInteger(IgniteSystemProperties.IGNITE_DUMP_PENDING_OBJECTS_THRESHOLD, 10);
 
     /** */
@@ -786,7 +786,15 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                     catch (IgniteFutureTimeoutCheckedException ignored) {
                         // Print pending transactions and locks that might have led to hang.
                         if (dumpedObjects < DUMP_PENDING_OBJECTS_THRESHOLD) {
-                            dumpPendingObjects();
+                            U.warn(log, "Failed to wait for partition release future [topVer=" + topologyVersion() +
+                                    ", node=" + cctx.localNodeId() + "]. Dumping pending objects that might be the cause: ");
+
+                            try {
+                                cctx.exchange().dumpDebugInfo();
+                            }
+                            catch (Exception e) {
+                                U.error(log, "Failed to dump debug information: " + e, e);
+                            }
 
                             dumpedObjects++;
                         }
@@ -920,16 +928,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      */
     private boolean clientCacheClose() {
         return reqs != null && reqs.size() == 1 && reqs.iterator().next().close();
-    }
-
-    /**
-     *
-     */
-    private void dumpPendingObjects() {
-        U.warn(log, "Failed to wait for partition release future [topVer=" + topologyVersion() +
-            ", node=" + cctx.localNodeId() + "]. Dumping pending objects that might be the cause: ");
-
-        cctx.exchange().dumpDebugInfo();
     }
 
     /**

@@ -100,10 +100,23 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             if (f != null) {
                 assert f.node().id().equals(nodeId);
 
-                if (log.isDebugEnabled())
-                    log.debug("Remote node left grid while sending or waiting for reply (will not retry): " + f);
-
                 f.onResult(res);
+            }
+            else {
+                if (txMsgLog.isDebugEnabled()) {
+                    txMsgLog.debug("Near prepare pessimistic, failed to find mini future [txId=" + tx.nearXidVersion() +
+                        ", nodeId=" + nodeId +
+                        ", res=" + res +
+                        ", fut=" + this + ']');
+                }
+            }
+        }
+        else {
+            if (txMsgLog.isDebugEnabled()) {
+                txMsgLog.debug("Near prepare pessimistic, response for finished future [txId=" + tx.nearXidVersion() +
+                    ", nodeId=" + nodeId +
+                    ", res=" + res +
+                    ", fut=" + this + ']');
             }
         }
     }
@@ -240,6 +253,11 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             add(fut);
 
             if (node.isLocal()) {
+                if (txMsgLog.isDebugEnabled()) {
+                    txMsgLog.debug("Near prepare pessimistic, prepare local [txId=" + tx.nearXidVersion() +
+                        ", nodeId=" + node.id() + ']');
+                }
+
                 IgniteInternalFuture<GridNearTxPrepareResponse> prepFut = cctx.tm().txHandler().prepareTx(node.id(),
                     tx,
                     req);
@@ -258,6 +276,11 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             else {
                 try {
                     cctx.io().send(node, req, tx.ioPolicy());
+
+                    if (txMsgLog.isDebugEnabled()) {
+                        txMsgLog.debug("Near prepare pessimistic, sent request [txId=" + tx.nearXidVersion() +
+                            ", nodeId=" + node.id() + ']');
+                    }
                 }
                 catch (ClusterTopologyCheckedException e) {
                     e.retryReadyFuture(cctx.nextAffinityReadyFuture(topVer));
@@ -265,6 +288,11 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                     fut.onNodeLeft(e);
                 }
                 catch (IgniteCheckedException e) {
+                    if (txMsgLog.isDebugEnabled()) {
+                        txMsgLog.debug("Near prepare pessimistic, failed send request [txId=" + tx.nearXidVersion() +
+                            ", nodeId=" + node.id() + ", err=" + e + ']');
+                    }
+
                     fut.onError(e);
                 }
             }
@@ -363,6 +391,11 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
          * @param e Error.
          */
         void onNodeLeft(ClusterTopologyCheckedException e) {
+            if (txMsgLog.isDebugEnabled()) {
+                txMsgLog.debug("Near prepare pessimistic, mini future node left [txId=" + tx.nearXidVersion() +
+                    ", nodeId=" + m.node().id() + ']');
+            }
+
             if (tx.onePhaseCommit()) {
                 tx.markForBackupCheck();
 

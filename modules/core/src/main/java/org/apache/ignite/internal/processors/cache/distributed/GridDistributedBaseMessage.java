@@ -147,6 +147,11 @@ public abstract class GridDistributedBaseMessage extends GridCacheMessage implem
     }
 
     /** {@inheritDoc} */
+    @Override public boolean txMessage() {
+        return true;
+    }
+
+    /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
 

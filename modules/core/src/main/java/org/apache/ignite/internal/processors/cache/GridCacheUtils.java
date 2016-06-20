@@ -128,6 +128,9 @@ public class GridCacheUtils {
     /** Marshaller system cache name. */
     public static final String MARSH_CACHE_NAME = "ignite-marshaller-sys-cache";
 
+    /** */
+    public static final String TX_MSG_LOG_CATEGORY = "org.apache.ignite.cache.tx.msg";
+
     /** Default mask name. */
     private static final String DEFAULT_MASK_NAME = "<default>";
 

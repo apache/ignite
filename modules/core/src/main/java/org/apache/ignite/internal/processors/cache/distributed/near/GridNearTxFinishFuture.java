@@ -140,6 +140,13 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         return false;
     }
 
+    /**
+     * @return Transaction.
+     */
+    public GridNearTxLocal tx() {
+        return tx;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean trackable() {
         return trackable;

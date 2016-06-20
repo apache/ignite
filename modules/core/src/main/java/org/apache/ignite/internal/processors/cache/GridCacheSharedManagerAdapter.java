@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.cache;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteFuture;
 
@@ -32,6 +33,9 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
 
     /** Logger. */
     protected IgniteLogger log;
+
+    /** */
+    protected IgniteLogger txMsgLog;
 
     /** Starting flag. */
     private final AtomicBoolean starting = new AtomicBoolean(false);
@@ -49,6 +53,8 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
         this.cctx = cctx;
 
         log = cctx.logger(getClass());
+
+        txMsgLog = cctx.logger(CU.TX_MSG_LOG_CATEGORY);
 
         start0();
 

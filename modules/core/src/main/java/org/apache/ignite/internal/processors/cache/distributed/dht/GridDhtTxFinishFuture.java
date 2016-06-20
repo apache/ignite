@@ -107,6 +107,13 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
             log = U.logger(cctx.kernalContext(), logRef, GridDhtTxFinishFuture.class);
     }
 
+    /**
+     * @return Transaction.
+     */
+    public GridDhtTxLocalAdapter tx() {
+        return tx;
+    }
+
     /** {@inheritDoc} */
     @Override public IgniteUuid futureId() {
         return futId;

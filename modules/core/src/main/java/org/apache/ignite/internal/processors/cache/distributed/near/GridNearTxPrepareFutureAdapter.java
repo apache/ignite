@@ -53,6 +53,9 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     /** Logger reference. */
     protected static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
+    /** Logger reference. */
+    protected static final AtomicReference<IgniteLogger> txMsgLogRef = new AtomicReference<>();
+
     /** */
     private static final IgniteReducer<GridNearTxPrepareResponse, IgniteInternalTx> REDUCER =
         new IgniteReducer<GridNearTxPrepareResponse, IgniteInternalTx>() {
@@ -68,6 +71,9 @@ public abstract class GridNearTxPrepareFutureAdapter extends
 
     /** Logger. */
     protected static IgniteLogger log;
+
+    /** Logger. */
+    protected static IgniteLogger txMsgLog;
 
     /** Context. */
     protected GridCacheSharedContext<?, ?> cctx;
@@ -105,8 +111,11 @@ public abstract class GridNearTxPrepareFutureAdapter extends
 
         futId = IgniteUuid.randomUuid();
 
-        if (log == null)
+        if (log == null) {
+            txMsgLog = U.logger(cctx.kernalContext(), txMsgLogRef, CU.TX_MSG_LOG_CATEGORY);
+
             log = U.logger(cctx.kernalContext(), logRef, GridNearTxPrepareFutureAdapter.class);
+        }
     }
 
     /** {@inheritDoc} */

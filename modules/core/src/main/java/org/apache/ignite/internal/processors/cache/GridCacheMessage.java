@@ -613,6 +613,13 @@ public abstract class GridCacheMessage implements Message {
         return col;
     }
 
+    /**
+     * @return {@code True} if this is transaction message.
+     */
+    public boolean txMessage() {
+        return false;
+    }
+
     /** {@inheritDoc} */
     @Override public boolean writeTo(ByteBuffer buf, MessageWriter writer) {
         writer.setBuffer(buf);
