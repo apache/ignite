@@ -87,20 +87,25 @@ namespace ignite
             ptr->Get()->CacheInvokeCallback(inMemPtr, outMemPtr);
         }
 
-        IgniteEnvironment::IgniteEnvironment() : ctx(SharedPointer<JniContext>()), latch(new SingleLatch), name(NULL),
-            proc(0), metaMgr(new BinaryTypeManager())
+        IgniteEnvironment::IgniteEnvironment() :
+            ctx(SharedPointer<JniContext>()),
+            latch(new SingleLatch),
+            name(0),
+            proc(0),
+            metaMgr(new BinaryTypeManager()),
+            invokeMgr(new InvokeManager()),
+            moduleMgr(new ModuleManager(invokeMgr))
         {
             // No-op.
         }
 
         IgniteEnvironment::~IgniteEnvironment()
         {
-            delete latch;
-
-            if (name)
-                delete name;
-
+            delete moduleMgr;
+            delete invokeMgr;
             delete metaMgr;
+            delete name;
+            delete latch;
         }
 
         JniHandlers IgniteEnvironment::GetJniHandlers(SharedPointer<IgniteEnvironment>* target)
@@ -116,7 +121,7 @@ namespace ignite
 
             hnds.cacheInvoke = CacheInvoke;
 
-            hnds.error = NULL;
+            hnds.error = 0;
 
             return hnds;
         }
@@ -202,7 +207,7 @@ namespace ignite
 
             BinaryReaderImpl reader(&stream);
 
-            int32_t nameLen = reader.ReadString(NULL, 0);
+            int32_t nameLen = reader.ReadString(0, 0);
 
             if (nameLen >= 0)
             {
@@ -210,11 +215,14 @@ namespace ignite
                 reader.ReadString(name, nameLen + 1);
             }
             else
-                name = NULL;
+                name = 0;
         }
 
         void IgniteEnvironment::CacheInvokeCallback(long long inMemPtr, long long outMemPtr)
         {
+            if (!invokeMgr)
+                throw IgniteError(IgniteError::IGNITE_ERR_UNKNOWN, "InvokeManager is not initialized.");
+
             InteropExternalMemory inMem(reinterpret_cast<int8_t*>(inMemPtr));
             InteropInputStream inStream(&inMem);
             BinaryReaderImpl reader(&inStream);
@@ -222,15 +230,13 @@ namespace ignite
             InteropExternalMemory outMem(reinterpret_cast<int8_t*>(outMemPtr));
             InteropOutputStream outStream(&outMem);
             BinaryWriterImpl writer(&outStream, GetTypeManager());
-
-            ModuleManager &mm = ModuleManager::GetInstance();
-
+            
             int64_t procId;
 
             if (!reader.TryReadObject<int64_t>(procId))
                 throw IgniteError(IgniteError::IGNITE_ERR_BINARY, "C++ entry processor id is not specified.");
 
-            mm.InvokeJobById(procId, reader, writer);
+            invokeMgr->InvokeCacheEntryProcessorById(procId, reader, writer);
 
             outStream.Synchronize();
         }

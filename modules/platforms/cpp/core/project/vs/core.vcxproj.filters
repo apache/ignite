@@ -147,6 +147,9 @@
     <ClInclude Include="..\..\include\ignite\impl\module_manager.h">
       <Filter>Code\impl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\invoke_manager.h">
+      <Filter>Code\impl</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Code">

@@ -23,6 +23,7 @@
 
 #include "ignite/impl/interop/interop_memory.h"
 #include "ignite/impl/binary/binary_type_manager.h"
+#include "ignite/impl/module_manager.h"
 
 namespace ignite 
 {
@@ -137,6 +138,7 @@ namespace ignite
              * Notify processor that Ignite instance has started.
              */
             void ProcessorReleaseStart();
+
         private:
             /** Context to access Java. */
             ignite::common::concurrent::SharedPointer<ignite::jni::java::JniContext> ctx;
@@ -152,6 +154,12 @@ namespace ignite
 
             /** Type manager. */
             binary::BinaryTypeManager* metaMgr;
+
+            /** Invoke manager */
+            InvokeManager* invokeMgr;
+
+            /** Module manager. */
+            ModuleManager* moduleMgr;
 
             IGNITE_NO_COPY_ASSIGNMENT(IgniteEnvironment);
         };
