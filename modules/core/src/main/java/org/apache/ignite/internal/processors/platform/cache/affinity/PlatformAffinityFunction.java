@@ -49,6 +49,14 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
     private transient long ptr;
 
     /**
+     * Ctor for serialization.
+     *
+     */
+    public PlatformAffinityFunction() {
+        // No-op.
+    }
+
+    /**
      * Ctor.
      *
      * @param func User fun object.
