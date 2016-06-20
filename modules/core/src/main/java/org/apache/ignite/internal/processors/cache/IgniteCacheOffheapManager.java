@@ -28,6 +28,7 @@ import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  *
@@ -89,7 +90,7 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * @return offheap link
      * @throws IgniteCheckedException If failed.
      */
-    public long update(
+    public UpdateInfo update(
             KeyCacheObject key,
             CacheObject val,
             GridCacheVersion ver,
@@ -206,7 +207,7 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
          * @return off heap link
          * @throws IgniteCheckedException If failed.
          */
-        long update(KeyCacheObject key,
+        UpdateInfo update(KeyCacheObject key,
             int part,
             CacheObject val,
             GridCacheVersion ver,
@@ -252,6 +253,9 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      */
     class CacheObjectEntry {
         /** Object. */
+        private final KeyCacheObject key;
+
+        /** Object. */
         private final CacheObject val;
 
         /** Version. */
@@ -269,7 +273,8 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
          * @param expireTime Expire time.
          * @param link
          */
-        public CacheObjectEntry(CacheObject val, GridCacheVersion ver, long expireTime, long link) {
+        public CacheObjectEntry(KeyCacheObject key, CacheObject val, GridCacheVersion ver, long expireTime, long link) {
+            this.key = key;
             this.val = val;
             this.ver = ver;
             this.expireTime = expireTime;
@@ -303,6 +308,17 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
         public long getLink() {
             return link;
         }
+
+        /**
+         *
+         */
+        public KeyCacheObject getKey() {
+            return key;
+        }
+
+        @Override public String toString() {
+            return S.toString(CacheObjectEntry.class, this);
+        }
     }
 
     /**
@@ -322,6 +338,11 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
          * @param entry Entry.
          */
         void removeTrackedEntry(GridCacheMapEntry entry);
+
+        /**
+         * @param entry Entry.
+         */
+        void removeTrackedEntry(IgniteCacheOffheapManager.CacheObjectEntry entry);
 
         /**
          *
@@ -348,4 +369,16 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
          */
         void removeAll();
     }
+
+    class UpdateInfo {
+
+        final long newLink;
+        final CacheObjectEntry oldEntry;
+
+        public UpdateInfo(long link, CacheObjectEntry entry) {
+            newLink = link;
+            oldEntry = entry;
+        }
+    }
+
 }

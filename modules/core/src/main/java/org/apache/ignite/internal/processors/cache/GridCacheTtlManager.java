@@ -90,6 +90,16 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     }
 
     /**
+     * @param entry Entry to remove.
+     */
+    public void removeTrackedEntry(GridCacheMapEntry entry, IgniteCacheOffheapManager.CacheObjectEntry remEntry) {
+        assert Thread.holdsLock(entry);
+        assert cleanupWorker != null;
+
+        pentries.removeTrackedEntry(remEntry);
+    }
+
+    /**
      * @return The size of pending entries.
      */
     public int pendingSize() {
@@ -108,7 +118,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
      */
     public synchronized void expire() {
         // TTL manager not started
-        if(pentries == null)
+        if (pentries == null)
             return;
 
         long now = U.currentTimeMillis();

@@ -161,6 +161,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     @GridToStringInclude
     private long link;
 
+    /** Old entry. Used to remove the entry from TTL manager. */
+    @GridToStringInclude
+    private IgniteCacheOffheapManager.CacheObjectEntry oldEntry;
+
     /**
      * @param cctx Cache context.
      * @param key Cache key.
@@ -2708,10 +2712,15 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert Thread.holdsLock(this);
         assert ttl != CU.TTL_ZERO && ttl != CU.TTL_NOT_CHANGED && ttl >= 0 : ttl;
 
+        if (oldEntry != null)
+            cctx.ttl().removeTrackedEntry(this, oldEntry);
+
         long oldExpireTime = expireTimeExtras();
 
-        if (addTracked && oldExpireTime != 0 && (expireTime != oldExpireTime || isStartVersion()) && cctx.config().isEagerTtl())
+        if (oldEntry == null && addTracked && oldExpireTime != 0 && (expireTime != oldExpireTime || isStartVersion()) && cctx.config().isEagerTtl())
             cctx.ttl().removeTrackedEntry(this);
+
+        oldEntry = null;
 
         value(val);
 
@@ -2719,7 +2728,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         this.ver = ver;
 
-        if (addTracked && expireTime != 0 && (expireTime != oldExpireTime || isStartVersion()) && cctx.config().isEagerTtl())
+        if (addTracked && expireTime != 0 && cctx.config().isEagerTtl())
+//            if (addTracked && expireTime != 0 && (expireTime != oldExpireTime || isStartVersion()) && cctx.config().isEagerTtl())
             cctx.ttl().addTrackedEntry(this);
     }
 
@@ -3565,7 +3575,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert Thread.holdsLock(this);
         assert val != null : "null values in update for key: " + key;
 
-        link = cctx.offheap().update(key, val, ver, expireTime, partition(), localPartition());
+        IgniteCacheOffheapManager.UpdateInfo updInfo = cctx.offheap().update(key, val, ver, expireTime,
+            partition(), localPartition());
+
+        link = updInfo.newLink;
+        oldEntry = updInfo.oldEntry;
     }
 
     /**
