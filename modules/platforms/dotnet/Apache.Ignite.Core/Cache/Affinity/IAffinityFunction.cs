@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Cache.Affinity
 {
-    using System.Diagnostics.CodeAnalysis;
     using Apache.Ignite.Core.Cache.Affinity.Fair;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
 
@@ -35,5 +34,14 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// If your implementation of affinity function has no initialization logic, leave this method empty.
         /// </summary>
         void Reset();
+
+        /// <summary>
+        /// Gets the total number of partitions.
+        /// <para />
+        /// All caches should always provide correct partition count which should be the same on all 
+        /// participating nodes. Note that partitions should always be numbered from 0 inclusively 
+        /// to N exclusively without any gaps.
+        /// </summary>
+        int PartitionCount { get; }
     }
 }

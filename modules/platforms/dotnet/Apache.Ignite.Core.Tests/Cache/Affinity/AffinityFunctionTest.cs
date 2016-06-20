@@ -32,12 +32,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                BinaryConfiguration = new BinaryConfiguration(typeof (PredefinedAffinityFunction)),
+                BinaryConfiguration = new BinaryConfiguration(typeof (SimpleAffinityFunction)),
                 CacheConfiguration = new[]
                 {
                     new CacheConfiguration("cache")
                     {
-                        AffinityFunction = new PredefinedAffinityFunction()
+                        AffinityFunction = new SimpleAffinityFunction()
                     }
                 }
             };
@@ -45,7 +45,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             using (var ignite = Ignition.Start(cfg))
             {
                 var cache = ignite.GetCache<int, int>("cache");
-                Assert.IsNotInstanceOf<PredefinedAffinityFunction>(cache.GetConfiguration().AffinityFunction);
+                Assert.IsNotInstanceOf<SimpleAffinityFunction>(cache.GetConfiguration().AffinityFunction);
             }
         }
 
@@ -61,11 +61,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             // TODO: check handle removal on DestroyCache
         }
 
-        private class PredefinedAffinityFunction : IAffinityFunction 
+        private class SimpleAffinityFunction : IAffinityFunction
         {
             public void Reset()
             {
                 // No-op.
+            }
+
+            public int PartitionCount
+            {
+                get { return 10; }
             }
         }
     }
