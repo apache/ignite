@@ -22,13 +22,17 @@ import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.List;
 import java.util.UUID;
 
 /**
  * Platform AffinityFunction.
  */
-public class PlatformAffinityFunction implements AffinityFunction {
+public class PlatformAffinityFunction implements AffinityFunction, Externalizable {
     private final AffinityFunction _aff = new FairAffinityFunction();
 
     @Override public void reset() {
@@ -49,5 +53,13 @@ public class PlatformAffinityFunction implements AffinityFunction {
 
     @Override public void removeNode(UUID nodeId) {
         _aff.removeNode(nodeId);
+    }
+
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        // No-op.
+    }
+
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        // No-op.
     }
 }
