@@ -42,6 +42,9 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
     /** */
     private transient PlatformContext ctx;
 
+    /** */
+    private transient long ptr;
+
     /**
      * Ctor.
      *
@@ -58,7 +61,7 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
 
     /** {@inheritDoc} */
     @Override public void reset() {
-        // TODO
+        ctx.gateway().affinityFunctionReset(ptr);
     }
 
     /** {@inheritDoc} */

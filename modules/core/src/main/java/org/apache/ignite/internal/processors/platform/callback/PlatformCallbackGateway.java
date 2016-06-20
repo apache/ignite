@@ -950,6 +950,22 @@ public class PlatformCallbackGateway {
     }
 
     /**
+     * Resets affinity function.
+     *
+     * @param memPtr Affinity function pointer.
+     */
+    public void affinityFunctionReset(long memPtr) {
+        enter();
+
+        try {
+            PlatformCallbackUtils.affinityFunctionReset(envPtr, memPtr);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
      * Enter gateway.
      */
     protected void enter() {
