@@ -106,7 +106,7 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * @param part Partition.
      * @throws IgniteCheckedException If failed.
      */
-    public void remove(
+    public CacheObjectEntry remove(
             KeyCacheObject key,
             CacheObject prevVal,
             GridCacheVersion prevVer,
@@ -217,7 +217,7 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
          * @param key Key.
          * @throws IgniteCheckedException If failed.
          */
-        public void remove(KeyCacheObject key) throws IgniteCheckedException;
+        public CacheObjectEntry remove(KeyCacheObject key) throws IgniteCheckedException;
 
         /**
          * @param key Key.

@@ -249,14 +249,14 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     }
 
     /** {@inheritDoc} */
-    @Override public void remove(
+    @Override public CacheObjectEntry remove(
             KeyCacheObject key,
             CacheObject prevVal,
             GridCacheVersion prevVer,
             int partId,
             GridDhtLocalPartition part
     ) throws IgniteCheckedException {
-        dataStore(part).remove(key);
+        CacheObjectEntry removed = dataStore(part).remove(key);
 
         if (indexingEnabled) {
             GridCacheQueryManager qryMgr = cctx.queries();
@@ -265,6 +265,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
             qryMgr.remove(key, partId, prevVal, prevVer);
         }
+        return removed;
     }
 
     /** {@inheritDoc} */
@@ -586,6 +587,12 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             rootPage.isAllocated());
     }
 
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IgniteCacheOffheapManagerImpl.class, this);
+    }
+
+
     /**
      *
      */
@@ -633,20 +640,28 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 rowStore.removeRow(old.link);
             }
 
+            DataRow dr = new DataRow(0, dataRow.link);
+            dr.initData();
+
             return new UpdateInfo(dataRow.link(), oldEntry);
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(KeyCacheObject key) throws IgniteCheckedException {
+        @Override public CacheObjectEntry remove(KeyCacheObject key) throws IgniteCheckedException {
             DataRow dataRow = dataTree.remove(new KeySearchRow(key.hashCode(), key, 0));
+            CacheObjectEntry removed = null;
 
             if (dataRow != null) {
                 assert dataRow.link != 0 : dataRow;
+
+                removed = new CacheObjectEntry(key, null, dataRow.version(), dataRow.expireTime(),
+                    dataRow.link());
 
                 rowStore.removeRow(dataRow.link);
 
                 lsnr.onRemove();
             }
+            return removed;
         }
 
         /** {@inheritDoc} */
@@ -1164,14 +1179,13 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         /** Expire time. */
         long expireTime;
 
-        /** Hash. */
-        int hash;
-
         /** Link. */
         long link;
 
+        /**
+         * @param entry Entry.
+         */
         PendingRow(GridCacheMapEntry entry) {
-            hash = entry.hash();
             link = entry.link();
             expireTime = entry.expireTimeExtras();
 
@@ -1179,8 +1193,10 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             assert expireTime > 0;
         }
 
+        /**
+         * @param entry Entry.
+         */
         PendingRow(CacheObjectEntry entry) {
-            hash = 0;
             link = entry.getLink();
             expireTime = entry.getExpireTime();
 
@@ -1188,26 +1204,35 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             assert expireTime > 0;
         }
 
+        /**
+         * @param time Time.
+         */
         PendingRow(long time) {
             expireTime = time;
         }
 
-        PendingRow(long expireTime, int hash, long link) {
+        /**
+         * @param expireTime Expire time.
+         * @param link Link.
+         */
+        PendingRow(long expireTime, long link) {
             this.expireTime = expireTime;
-            this.hash= hash;
             this.link= link;
         }
 
+        /**
+         *
+         */
         GridCacheEntryEx entryEx() {
-            DataRow dr = new DataRow(hash, link);
+            DataRow dr = new DataRow(0, link);
             dr.initData();
             return cctx.cache().entryEx(dr.key());
         }
 
+        /** {@inheritDoc} */
         @Override public String toString() {
             return "PendingRow{" +
                 "expireTime=" + expireTime +
-                ", hash=" + hash +
                 ", link=" + link +
                 '}';
         }
@@ -1253,6 +1278,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         @Override public void addTrackedEntry(GridCacheMapEntry entry) {
             try {
                 PendingRow r = new PendingRow(entry);
+                System.out.println("+++ add " + r);
                 put(r);
             }
             catch (IgniteCheckedException e) {
@@ -1273,6 +1299,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         /** {@inheritDoc} */
         private void removeTrackedEntry(PendingRow r) {
             try {
+                System.out.println("+++ del " + r);
                 remove(r);
             }
             catch (IgniteCheckedException e) {
@@ -1339,11 +1366,10 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
         /**
          * @param expireTime Expire time.
-         * @param hash Hash.
          * @param link Link.
          */
-        PendingRow createPendingRow(long expireTime, int hash, long link) {
-            return new PendingRow(expireTime, hash, link);
+        PendingRow createPendingRow(long expireTime, long link) {
+            return new PendingRow(expireTime, link);
         }
 
         /** {@inheritDoc} */
@@ -1374,7 +1400,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     private interface PendingRowIO {
         long getExpireTime(ByteBuffer buf, int idx);
         long getLink(ByteBuffer buf, int idx);
-        int getHash(ByteBuffer buf, int idx);
     }
 
     /**
@@ -1398,7 +1423,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             PendingRow row) throws IgniteCheckedException {
             setExpireTime(row.expireTime, buf, idx);
             setLink(row.link, buf, idx);
-            setHash(row.hash, buf, idx);
         }
 
         /** {@inheritDoc} */
@@ -1406,7 +1430,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             ByteBuffer src, int srcIdx) throws IgniteCheckedException {
             setExpireTime(((PendingRowIO)srcIo).getExpireTime(src, srcIdx), dst, dstIdx);
             setLink(((PendingRowIO)srcIo).getLink(src, srcIdx), dst, dstIdx);
-            setHash(((PendingRowIO)srcIo).getHash(src, srcIdx), dst, dstIdx);
         }
 
         /** {@inheritDoc} */
@@ -1415,7 +1438,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             int idx) throws IgniteCheckedException {
             return ((PendingEntriesImpl)tree).createPendingRow(
                 getExpireTime(buf, idx),
-                getHash(buf, idx),
                 getLink(buf, idx));
         }
 
@@ -1433,14 +1455,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
         private void setLink(long link, ByteBuffer buf, int idx) {
             buf.putLong(offset(idx) + 8, link);
-        }
-
-        @Override public int getHash(ByteBuffer buf, int idx) {
-            return buf.getInt(offset(idx) + 16);
-        }
-
-        private void setHash(int hash, ByteBuffer buf, int idx) {
-            buf.putInt(offset(idx) + 16, hash);
         }
     }
 
@@ -1465,7 +1479,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             PendingRow row) throws IgniteCheckedException {
             setExpireTime(row.expireTime, buf, idx);
             setLink(row.link, buf, idx);
-            setHash(row.hash, buf, idx);
         }
 
         /** {@inheritDoc} */
@@ -1473,7 +1486,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             ByteBuffer src, int srcIdx) throws IgniteCheckedException {
             setExpireTime(((PendingRowIO)srcIo).getExpireTime(src, srcIdx), dst, dstIdx);
             setLink(((PendingRowIO)srcIo).getLink(src, srcIdx), dst, dstIdx);
-            setHash(((PendingRowIO)srcIo).getHash(src, srcIdx), dst, dstIdx);
         }
 
         /** {@inheritDoc} */
@@ -1482,7 +1494,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             int idx) throws IgniteCheckedException {
             return ((PendingEntriesImpl)tree).createPendingRow(
                 getExpireTime(buf, idx),
-                getHash(buf, idx),
                 getLink(buf, idx));
         }
 
@@ -1500,14 +1511,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
         private void setLink(long link, ByteBuffer buf, int idx) {
             buf.putLong(offset(idx) + 8, link);
-        }
-
-        @Override public int getHash(ByteBuffer buf, int idx) {
-            return buf.getInt(offset(idx) + 16);
-        }
-
-        private void setHash(int hash, ByteBuffer buf, int idx) {
-            buf.putInt(offset(idx) + 16, hash);
         }
     }
 }

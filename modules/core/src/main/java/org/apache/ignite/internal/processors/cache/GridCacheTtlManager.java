@@ -46,7 +46,9 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
             CU.isAtomicsCache(cctx.name()) ||
             CU.isMarshallerCache(cctx.name()) ||
             CU.isUtilityCache(cctx.name()) ||
-            (cctx.kernalContext().clientNode() && cctx.config().getNearConfiguration() == null);
+            (cctx.kernalContext().clientNode() && cctx.config().getNearConfiguration() == null) ||
+            !cctx.affinityNode()
+            ;
 
         if (cleanupDisabled)
             return;
@@ -74,7 +76,11 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
      */
     public void addTrackedEntry(GridCacheMapEntry entry) {
         assert Thread.holdsLock(entry);
-        assert cleanupWorker != null;
+//        assert cleanupWorker != null;
+
+        if(cleanupWorker == null)
+            return;
+
 
         pentries.addTrackedEntry(entry);
     }
@@ -84,7 +90,10 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
      */
     public void removeTrackedEntry(GridCacheMapEntry entry) {
         assert Thread.holdsLock(entry);
-        assert cleanupWorker != null;
+//        assert cleanupWorker != null;
+
+        if(cleanupWorker == null)
+            return;
 
         pentries.removeTrackedEntry(entry);
     }
@@ -94,7 +103,10 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
      */
     public void removeTrackedEntry(GridCacheMapEntry entry, IgniteCacheOffheapManager.CacheObjectEntry remEntry) {
         assert Thread.holdsLock(entry);
-        assert cleanupWorker != null;
+//        assert cleanupWorker != null;
+
+        if(cleanupWorker == null)
+            return;
 
         pentries.removeTrackedEntry(remEntry);
     }

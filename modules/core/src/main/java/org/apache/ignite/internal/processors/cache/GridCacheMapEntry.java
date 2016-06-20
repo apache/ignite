@@ -161,10 +161,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     @GridToStringInclude
     private long link;
 
-    /** Old entry. Used to remove the entry from TTL manager. */
-    @GridToStringInclude
-    private IgniteCacheOffheapManager.CacheObjectEntry oldEntry;
-
     /**
      * @param cctx Cache context.
      * @param key Cache key.
@@ -2712,15 +2708,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert Thread.holdsLock(this);
         assert ttl != CU.TTL_ZERO && ttl != CU.TTL_NOT_CHANGED && ttl >= 0 : ttl;
 
-        if (oldEntry != null)
-            cctx.ttl().removeTrackedEntry(this, oldEntry);
-
         long oldExpireTime = expireTimeExtras();
 
-        if (oldEntry == null && addTracked && oldExpireTime != 0 && (expireTime != oldExpireTime || isStartVersion()) && cctx.config().isEagerTtl())
+        if (addTracked && oldExpireTime != 0 && (expireTime != oldExpireTime || isStartVersion())
+            && cctx.config().isEagerTtl())
             cctx.ttl().removeTrackedEntry(this);
-
-        oldEntry = null;
 
         value(val);
 
@@ -2728,8 +2720,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         this.ver = ver;
 
-        if (addTracked && expireTime != 0 && cctx.config().isEagerTtl())
-//            if (addTracked && expireTime != 0 && (expireTime != oldExpireTime || isStartVersion()) && cctx.config().isEagerTtl())
+        if (addTracked && expireTime != 0 &&
+            (expireTime != oldExpireTime || isStartVersion()) &&
+            cctx.config().isEagerTtl())
             cctx.ttl().addTrackedEntry(this);
     }
 
@@ -2738,7 +2731,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      *
      * @param expiryPlc Expiry policy.
      */
-    private void updateTtl(ExpiryPolicy expiryPlc) {
+    private void updateTtl(ExpiryPolicy expiryPlc) throws IgniteCheckedException, GridCacheEntryRemovedException {
         long ttl = CU.toTtl(expiryPlc.getExpiryForAccess());
 
         if (ttl != CU.TTL_NOT_CHANGED)
@@ -2751,7 +2744,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
      * @param expiryPlc Expiry policy.
      * @throws GridCacheEntryRemovedException If failed.
      */
-    private void updateTtl(IgniteCacheExpiryPolicy expiryPlc) throws GridCacheEntryRemovedException {
+    private void updateTtl(IgniteCacheExpiryPolicy expiryPlc) throws GridCacheEntryRemovedException,
+        IgniteCheckedException {
         long ttl = expiryPlc.forAccess();
 
         if (ttl != CU.TTL_NOT_CHANGED) {
@@ -2766,7 +2760,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     /**
      * @param ttl Time to live.
      */
-    protected void updateTtl(long ttl) {
+    protected void updateTtl(long ttl) throws IgniteCheckedException, GridCacheEntryRemovedException {
         assert ttl >= 0 || ttl == CU.TTL_ZERO : ttl;
         assert Thread.holdsLock(this);
 
@@ -2779,17 +2773,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         else
             expireTime = CU.toExpireTime(ttl);
 
-        long oldExpireTime = expireTimeExtras();
-
-        if (oldExpireTime != 0 && expireTime != oldExpireTime && cctx.config().isEagerTtl())
-            cctx.ttl().removeTrackedEntry(this);
-
-        ttlAndExpireTimeExtras(ttl, expireTime);
-
-        flags |= IS_SWAPPING_REQUIRED;
-
-        if (expireTime != 0 && expireTime != oldExpireTime && cctx.config().isEagerTtl())
-            cctx.ttl().addTrackedEntry(this);
+        unswap(true, false);
+        storeValue(val, expireTime, ver);
+        update(val, expireTime, ttl, ver, expireTime > 0);
     }
 
     /**
@@ -3524,7 +3510,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             checkObsolete();
 
             if (hasValueUnlocked())
-                updateTtl(ttl);
+                try {
+                    updateTtl(ttl);
+                }
+                catch (IgniteCheckedException e) {
+                    log.error("Unexpected exception", e);
+                }
 
             /*
             TODO IGNITE-305.
@@ -3579,7 +3570,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             partition(), localPartition());
 
         link = updInfo.newLink;
-        oldEntry = updInfo.oldEntry;
+
+        if (cctx.config().isEagerTtl() && updInfo.oldEntry != null && updInfo.oldEntry.getExpireTime() > 0)
+            cctx.ttl().removeTrackedEntry(this, updInfo.oldEntry);
     }
 
     /**
@@ -3620,7 +3613,12 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     protected void removeValue(CacheObject prevVal, GridCacheVersion prevVer) throws IgniteCheckedException {
         assert Thread.holdsLock(this);
 
-        cctx.offheap().remove(key, prevVal, prevVer, partition(), localPartition());
+        IgniteCacheOffheapManager.CacheObjectEntry oldEntry = cctx.offheap().remove(key, prevVal, prevVer, partition(), localPartition());
+
+        if (cctx.config().isEagerTtl() && oldEntry != null && oldEntry.getExpireTime() > 0) {
+            cctx.ttl().removeTrackedEntry(this, oldEntry);
+            oldEntry = null;
+        }
     }
 
     /**
