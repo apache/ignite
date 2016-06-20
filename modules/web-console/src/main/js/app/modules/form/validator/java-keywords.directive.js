@@ -20,7 +20,7 @@ export default ['javaKeywords', ['JavaTypes', (JavaTypes) => {
         if (_.isUndefined(attrs.javaKeywords) || !attrs.javaKeywords)
             return;
 
-        const packageOnly = attrs.javaPackageSpecified === 'package-only';
+        const packageOnly = attrs.javaPackageName === 'package-only';
 
         ngModel.$validators.javaKeywords = (value) => {
             if (value) {
