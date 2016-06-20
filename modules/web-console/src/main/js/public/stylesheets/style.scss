@@ -2141,3 +2141,11 @@ html,body,.splash-screen {
         padding: 0 $padding-small-horizontal;
     }
 }
+
+.domains-import-dialog {
+    .modal-body {
+        height: 325px;
+        margin: 0;
+        padding: 0;
+    }
+}
