@@ -1099,9 +1099,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             SafeCall(() =>
             {
-                var fun = _handleRegistry.Get<IAffinityFunction>(hnd);
-
-                fun.Reset();
+                _handleRegistry.Get<IAffinityFunction>(hnd).Reset();
             });
         }
 
