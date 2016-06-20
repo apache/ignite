@@ -101,6 +101,9 @@ namespace ignite
             typedef void(JNICALL *OnClientDisconnectedHandler)(void* target);
             typedef void(JNICALL *OnClientReconnectedHandler)(void* target, unsigned char clusterRestarted);
 
+            typedef long long(JNICALL *AffinityFunctionInitHandler)(void* target, long long memPtr);
+            typedef void(JNICALL *AffinityFunctionResetHandler)(void* target, long long ptr);
+
             /**
              * JNI handlers holder.
              */
@@ -178,6 +181,9 @@ namespace ignite
 
                 OnClientDisconnectedHandler onClientDisconnected;
                 OnClientReconnectedHandler onClientReconnected;
+                
+                AffinityFunctionInitHandler affinityFunctionInit;
+                AffinityFunctionResetHandler affinityFunctionReset;
             };
 
             /**
@@ -740,6 +746,9 @@ namespace ignite
 
             JNIEXPORT void JNICALL JniOnClientDisconnected(JNIEnv *env, jclass cls, jlong envPtr);
             JNIEXPORT void JNICALL JniOnClientReconnected(JNIEnv *env, jclass cls, jlong envPtr, jboolean clusterRestarted);
+
+            JNIEXPORT jlong JNICALL JniAffinityFunctionInit(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr);
+            JNIEXPORT void JNICALL JniAffinityFunctionReset(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr);
         }
     }
 }
