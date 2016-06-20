@@ -2135,3 +2135,9 @@ html,body,.splash-screen {
 [ng-show].ng-hide-add.ng-hide-animate {
     display: none;
 }
+
+@media only screen and (max-width: 767px) {
+    .container{
+        padding: 0 $padding-small-horizontal;
+    }
+}
