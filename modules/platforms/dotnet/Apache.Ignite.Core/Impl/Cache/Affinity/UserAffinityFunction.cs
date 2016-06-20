@@ -43,5 +43,13 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
         /// Gets or sets the handle. 
         /// </summary>
         public long Handle { get; set; }
+
+        /// <summary>
+        /// Gets the user function.
+        /// </summary>
+        public IAffinityFunction UserFunction
+        {
+            get { return _function; }
+        }
     }
 }

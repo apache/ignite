@@ -32,6 +32,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Cache.Affinity;
     using Apache.Ignite.Core.Impl.Handle;
 
     /// <summary>
@@ -128,6 +129,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
         /// <summary> Default timeout after which long query warning will be printed. </summary>
         public static readonly TimeSpan DefaultLongQueryWarningTimeout = TimeSpan.FromMilliseconds(3000);
+
+        private IAffinityFunction _affinityFunction;
 
         /// <summary> Default size for onheap SQL row cache size. </summary>
         public const int DefaultSqlOnheapRowCacheSize = 10*1024;
@@ -668,6 +671,22 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// <summary>
         /// Gets or sets the affinity function to provide mapping from keys to nodes.
         /// </summary>
-        public IAffinityFunction AffinityFunction { get; set; }
+        public IAffinityFunction AffinityFunction
+        {
+            get
+            {
+                var userFunc = _affinityFunction as UserAffinityFunction;
+
+                return userFunc != null ? userFunc.UserFunction : _affinityFunction;
+            }
+            set
+            {
+                if (value != null && !(value is AffinityFunctionBase))
+                    // Wrap user-defined function to track it's handle
+                    _affinityFunction = new UserAffinityFunction(value);
+                else
+                    _affinityFunction = value;
+            }
+        }
     }
 }

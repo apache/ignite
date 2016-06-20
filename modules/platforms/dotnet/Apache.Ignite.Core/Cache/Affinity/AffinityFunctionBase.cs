@@ -19,9 +19,11 @@ namespace Apache.Ignite.Core.Cache.Affinity
 {
     using System;
     using System.ComponentModel;
+    using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity.Fair;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
+    using Apache.Ignite.Core.Impl.Cache.Affinity;
     using Apache.Ignite.Core.Impl.Handle;
 
     /// <summary>
@@ -66,7 +68,7 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// <summary>
         /// Reads the instance.
         /// </summary>
-        internal static IAffinityFunction Read(IBinaryRawReader reader)
+        internal static IAffinityFunction Read(IBinaryRawReader reader, HandleRegistry handleRegistry)
         {
             AffinityFunctionBase fun;
 
@@ -81,6 +83,14 @@ namespace Apache.Ignite.Core.Cache.Affinity
                 case TypeCodeRendezvous:
                     fun = new RendezvousAffinityFunction();
                     break;
+                case TypeCodeUser:
+                    var hnd = reader.ReadLong();
+                    // TODO: This handle may be missing on remote nodes! Wtf??
+                    var userFun = new UserAffinityFunction(handleRegistry.Get<IAffinityFunction>(hnd, true))
+                    {
+                        Handle = hnd
+                    };
+                    return userFun;
                 default:
                     throw new InvalidOperationException("Invalid AffinityFunction type code: " + typeCode);
             }
@@ -112,11 +122,20 @@ namespace Apache.Ignite.Core.Cache.Affinity
             }
             else
             {
-                // User-defined function
+                // User-defined function: allocate handle only once
+                // `Write` can be called multiple times (when cloning, etc)
                 writer.WriteByte(TypeCodeUser);
 
-                // TODO: Deal with handle. It is possible that handle already exists.
-                // Wrap user func in something else to pair it with handle id.
+                var userFun = fun as UserAffinityFunction;
+                Debug.Assert(userFun != null);
+
+                if (userFun.Handle == 0)
+                {
+                    Debug.Assert(handleRegistry != null);
+                    userFun.Handle = handleRegistry.Allocate(userFun.UserFunction);
+                }
+
+                writer.WriteLong(userFun.Handle);
             }
         }
     }
