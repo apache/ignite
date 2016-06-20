@@ -392,7 +392,7 @@ namespace Apache.Ignite.Core.Impl
             {
                 var writer = Marshaller.StartMarshal(stream);
 
-                configuration.Write(writer, HandleRegistry);
+                configuration.Write(writer);
 
                 if (nearConfiguration != null)
                 {
@@ -430,7 +430,7 @@ namespace Apache.Ignite.Core.Impl
             {
                 var writer = Marshaller.StartMarshal(stream);
 
-                configuration.Write(writer, HandleRegistry);
+                configuration.Write(writer);
 
                 if (nearConfiguration != null)
                 {

@@ -17,10 +17,12 @@
 
 package org.apache.ignite.internal.processors.platform.cache.affinity;
 
+import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.resources.IgniteInstanceResource;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -33,26 +35,28 @@ import java.util.UUID;
  * Platform AffinityFunction.
  */
 public class PlatformAffinityFunction implements AffinityFunction, Externalizable {
-    private final AffinityFunction _aff = new FairAffinityFunction();
+    private final AffinityFunction aff = new FairAffinityFunction();
+
+    private int cnt;
 
     @Override public void reset() {
-        _aff.reset();
+        aff.reset();
     }
 
     @Override public int partitions() {
-        return _aff.partitions();
+        return aff.partitions();
     }
 
     @Override public int partition(Object key) {
-        return _aff.partition(key);
+        return aff.partition(key);
     }
 
     @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext affCtx) {
-        return _aff.assignPartitions(affCtx);
+        return aff.assignPartitions(affCtx);
     }
 
     @Override public void removeNode(UUID nodeId) {
-        _aff.removeNode(nodeId);
+        aff.removeNode(nodeId);
     }
 
     @Override public void writeExternal(ObjectOutput out) throws IOException {
@@ -61,5 +65,14 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
 
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         // No-op.
+    }
+
+    @IgniteInstanceResource
+    private void setIgnite(Ignite ignite) {
+        cnt++;
+
+        if (cnt > 1) {
+            assert  ignite != null;
+        }
     }
 }

@@ -23,7 +23,6 @@ namespace Apache.Ignite.Core.Cache.Affinity
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity.Fair;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
-    using Apache.Ignite.Core.Impl.Cache.Affinity;
     using Apache.Ignite.Core.Impl.Handle;
 
     /// <summary>
@@ -84,13 +83,8 @@ namespace Apache.Ignite.Core.Cache.Affinity
                     fun = new RendezvousAffinityFunction();
                     break;
                 case TypeCodeUser:
-                    var hnd = reader.ReadLong();
-                    // TODO: This handle may be missing on remote nodes! Wtf??
-                    var userFun = new UserAffinityFunction(handleRegistry.Get<IAffinityFunction>(hnd, true))
-                    {
-                        Handle = hnd
-                    };
-                    return userFun;
+                    // TODO: Deserialize
+                    return null;
                 default:
                     throw new InvalidOperationException("Invalid AffinityFunction type code: " + typeCode);
             }
@@ -104,7 +98,7 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// <summary>
         /// Writes the instance.
         /// </summary>
-        internal static void Write(IBinaryRawWriter writer, IAffinityFunction fun, HandleRegistry handleRegistry)
+        internal static void Write(IBinaryRawWriter writer, IAffinityFunction fun)
         {
             if (fun == null)
             {
@@ -122,20 +116,10 @@ namespace Apache.Ignite.Core.Cache.Affinity
             }
             else
             {
-                // User-defined function: allocate handle only once
-                // `Write` can be called multiple times (when cloning, etc)
                 writer.WriteByte(TypeCodeUser);
 
-                var userFun = fun as UserAffinityFunction;
-                Debug.Assert(userFun != null);
-
-                if (userFun.Handle == 0)
-                {
-                    Debug.Assert(handleRegistry != null);
-                    userFun.Handle = handleRegistry.Allocate(userFun.UserFunction);
-                }
-
-                writer.WriteLong(userFun.Handle);
+                // TODO: This won't work on startup?
+                writer.WriteObject(fun);
             }
         }
     }

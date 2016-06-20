@@ -298,7 +298,7 @@ namespace Apache.Ignite.Core
             _startup.Marshaller = new Marshaller(cfg.BinaryConfiguration);
 
             // 3. Send configuration details to Java
-            cfg.Write(_startup.Marshaller.StartMarshal(outStream), handleRegistry);
+            cfg.Write(_startup.Marshaller.StartMarshal(outStream));
         }
 
         /// <summary>

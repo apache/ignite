@@ -151,7 +151,7 @@
             {
                 var marsh = new Marshaller(configuration.BinaryConfiguration);
 
-                configuration.Write(marsh.StartMarshal(stream), null);
+                configuration.Write(marsh.StartMarshal(stream));
 
                 stream.SynchronizeOutput();
 
@@ -174,8 +174,7 @@
         /// Writes this instance to a writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
-        /// <param name="handleRegistry">Registry.</param>
-        internal void Write(BinaryWriter writer, HandleRegistry handleRegistry)
+        internal void Write(BinaryWriter writer)
         {
             Debug.Assert(writer != null);
 
@@ -205,7 +204,7 @@
                 writer.WriteInt(caches.Count);
 
                 foreach (var cache in caches)
-                    cache.Write(writer, handleRegistry);
+                    cache.Write(writer);
             }
 
             // Discovery config
