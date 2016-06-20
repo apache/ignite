@@ -60,6 +60,7 @@
     <Compile Include="Binary\BinarySelfTestFullFooter.cs" />
     <Compile Include="Binary\BinaryStringTest.cs" />
     <Compile Include="Cache\Affinity\AffinityFieldTest.cs" />
+    <Compile Include="Cache\Affinity\AffinityFunctionTest.cs" />
     <Compile Include="Cache\CacheConfigurationTest.cs" />
     <Compile Include="Cache\CacheDynamicStartTest.cs" />
     <Compile Include="Cache\CacheNearTest.cs" />
