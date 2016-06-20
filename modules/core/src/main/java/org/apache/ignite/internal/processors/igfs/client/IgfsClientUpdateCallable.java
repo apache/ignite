@@ -25,7 +25,6 @@ import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
@@ -63,11 +62,6 @@ public class IgfsClientUpdateCallable extends IgfsClientAbstractCallable<IgfsFil
     /** {@inheritDoc} */
     @Override protected IgfsFile call0(IgfsContext ctx) throws Exception {
         return ctx.igfs().update(path, props);
-    }
-
-    /** {@inheritDoc} */
-    @Nullable @Override public IgniteUuid affinityKey() {
-        return IgfsUtils.ROOT_ID;
     }
 
     /** {@inheritDoc} */
