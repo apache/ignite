@@ -63,7 +63,7 @@ namespace ignite
                                                              const V& valueAfter, bool existsAfter)
             {
                 if ((!existsBefore && existsAfter) ||
-                    (existsBefore && existsAfter && valueBefore != valueAfter))
+                    (existsBefore && existsAfter && !(valueBefore == valueAfter)))
                     return ENTRY_STATE_VALUE_SET;
 
                 if (existsBefore && !existsAfter)
@@ -75,27 +75,47 @@ namespace ignite
             /**
              * Holder for the Cache Entry Processor and its argument. Used as a convenient way to
              * transmit Cache Entry Processor between nodes.
+             *
+             * Both key and value types should be default-constructable,
+             * copy-constructable and assignable.
+             *
+             * Additionally, for the processor class public methods with the
+             * following signatures should be defined:
+             * @code{.cpp}
+             * // Should return unique ID for every class.
+             * static int64_t GetJobId();
+             *
+             * // Main processing method. Takes cache entry and argument and 
+             * // returns processing result.
+             * R Process(ignite::cache::MutableCacheEntry<K, V>&, const A&);
+             * @endcode
              */
             template<typename P, typename A>
             class CacheEntryProcessorHolder
             {
             public:
-
                 typedef P ProcessorType;
                 typedef A ArgumentType;
 
                 /**
                  * Default constructor.
                  */
-                CacheEntryProcessorHolder() : proc(), arg()
+                CacheEntryProcessorHolder() :
+                    proc(),
+                    arg()
                 {
                     // No-op.
                 }
 
                 /**
                  * Constructor.
+                 *
+                 * @param proc Processor.
+                 * @param arg Argument.
                  */
-                CacheEntryProcessorHolder(const P& proc, const A& arg) : proc(proc), arg(arg)
+                CacheEntryProcessorHolder(const P& proc, const A& arg) :
+                    proc(proc),
+                    arg(arg)
                 {
                     // No-op.
                 }
@@ -131,6 +151,8 @@ namespace ignite
                 /**
                  * Process key-value pair by the underlying Cache Entry Processor
                  * using binded argument.
+                 *
+                 * Equality operator should be defined for the value type.
                  *
                  * @param key Cache entry key.
                  * @param value Cache entry value. New value is stored here upon completion.

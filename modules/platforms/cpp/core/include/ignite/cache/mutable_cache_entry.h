@@ -30,6 +30,9 @@ namespace ignite
          *
          * Both key and value types should be default-constructable,
          * copy-constructable and assignable.
+         *
+         * Additionally, equality operator should be defined for
+         * the value type.
          */
         template<typename K, typename V>
         class IGNITE_IMPORT_EXPORT MutableCacheEntry

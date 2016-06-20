@@ -1241,7 +1241,8 @@ namespace ignite
              * IGNITE_CACHE_ENTRY_PROCESSOR_LIST_END
              * @endcode
              *
-             * Additionally, for the processor class public methods with the
+             * Additionally, equality operator should be defined for the cache
+             * value type, and for the processor class public methods with the
              * following signatures should be defined:
              * @code{.cpp}
              * // Should return unique ID for every class.
@@ -1295,7 +1296,8 @@ namespace ignite
              * IGNITE_CACHE_ENTRY_PROCESSOR_LIST_END
              * @endcode
              *
-             * Additionally, for the processor class public methods with the
+             * Additionally, equality operator should be defined for the cache
+             * value type, and for the processor class public methods with the
              * following signatures should be defined:
              * @code{.cpp}
              * // Should return unique ID for every class.
