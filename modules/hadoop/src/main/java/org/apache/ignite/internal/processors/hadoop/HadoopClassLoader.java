@@ -54,7 +54,6 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Remapper;
 import org.objectweb.asm.commons.RemappingClassAdapter;
-import static org.apache.ignite.internal.processors.hadoop.HadoopClasspathMain.*;
 
 /**
  * Class loader allowing explicitly load classes without delegation to parent class loader.
@@ -437,20 +436,6 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
         return hasDot;
     }
 
-//    /**
-//     * @param name Variable name.
-//     * @param dflt Default.
-//     * @return Value.
-//     */
-//    private static String getEnv(String name, String dflt) {
-//        String res = System.getProperty(name);
-//
-//        if (F.isEmpty(res))
-//            res = System.getenv(name);
-//
-//        return F.isEmpty(res) ? dflt : res;
-//    }
-
     /**
      * @param urls URLs.
      * @return URLs.
@@ -493,7 +478,7 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
                 return hadoopUrls;
 
             try {
-                hadoopUrls = getAsUrlList();
+                hadoopUrls = HadoopClasspathUtils.getAsUrlList();
             }
             catch (IOException e) {
                 throw new IgniteCheckedException(e);

@@ -23,7 +23,7 @@
 :: in other scripts to set classpath using exported IGNITE_LIBS variable.
 ::
 
-@echo off
+:: @echo off
 
 :: USER_LIBS variable can optionally contain user's JARs/libs.
 :: set USER_LIBS=
@@ -47,11 +47,9 @@ if exist %IGNITE_HOME%\libs\ignite-hadoop set HADOOP_EDITION=1
 
 if defined USER_LIBS set IGNITE_LIBS=%USER_LIBS%;%IGNITE_LIBS%
 
-if "%HADOOP_EDITION%" == "1" call "%SCRIPTS_HOME%\include\hadoop-classpath.bat"
+FOR /F "delims=" %%i IN ('%JAVA_HOME%\bin\java.exe -cp %IGNITE_HOME%\libs\ignite-hadoop\* org.apache.ignite.internal.processors.hadoop.HadoopClasspathMain ";"' ) DO set IGNITE_HADOOP_CLASSPATH=%%i
 
-set COMMON_HOME_LIB=%HADOOP_COMMON_HOME%\lib
-
-if "%IGNITE_HADOOP_CLASSPATH%" == "" goto :eof
+if "[%IGNITE_HADOOP_CLASSPATH%]" == "[]" exit 1
 
 set IGNITE_LIBS=%IGNITE_LIBS%;%IGNITE_HADOOP_CLASSPATH%
 

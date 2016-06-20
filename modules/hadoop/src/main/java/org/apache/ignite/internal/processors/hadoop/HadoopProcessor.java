@@ -33,9 +33,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.hadoop.HadoopClassLoader.hadoopUrls;
-import static org.apache.ignite.internal.processors.hadoop.HadoopClasspathMain.hadoopHome;
-
 /**
  * Hadoop processor.
  */
@@ -74,13 +71,13 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
 
         validate(cfg);
 
-        if (hadoopHome() != null)
-            U.quietAndInfo(log, "HADOOP_HOME is set to " + hadoopHome());
+        if (HadoopClasspathUtils.hadoopHome() != null)
+            U.quietAndInfo(log, "HADOOP_HOME is set to " + HadoopClasspathUtils.hadoopHome());
 
         boolean ok = false;
 
         try { // Check for Hadoop installation.
-            hadoopUrls();
+            HadoopClassLoader.hadoopUrls();
 
             ok = true;
         }
