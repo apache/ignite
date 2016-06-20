@@ -17,7 +17,9 @@
 
 namespace Apache.Ignite.Core.Tests.Cache.Affinity
 {
+    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity;
+    using Apache.Ignite.Core.Cache.Configuration;
     using NUnit.Framework;
 
     /// <summary>
@@ -28,7 +30,23 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         [Test]
         public void Test()
         {
-            // TODO
+            var cfg = new IgniteConfiguration
+            {
+                BinaryConfiguration = new BinaryConfiguration(typeof (PredefinedAffinityFunction)),
+                CacheConfiguration = new[]
+                {
+                    new CacheConfiguration("cache")
+                    {
+                        AffinityFunction = new PredefinedAffinityFunction()
+                    }
+                }
+            };
+
+            using (var ignite = Ignition.Start(cfg))
+            {
+                var cache = ignite.GetCache<int, int>("cache");
+                Assert.IsNotInstanceOf<PredefinedAffinityFunction>(cache.GetConfiguration().AffinityFunction);
+            }
         }
 
         private class PredefinedAffinityFunction : IAffinityFunction 
