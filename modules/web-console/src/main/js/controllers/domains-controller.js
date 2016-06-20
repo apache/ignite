@@ -677,6 +677,8 @@ consoleModule.controller('domainsController', [
             $scope.importDomain.action = 'options';
             $scope.importDomain.button = 'Save';
             $scope.importDomain.info = INFO_SELECT_OPTIONS;
+
+            $focus('domainPackageName');
         }
 
         function _saveBatch(batch) {
@@ -736,7 +738,7 @@ consoleModule.controller('domainsController', [
 
         function _saveDomainModel() {
             if ($common.isEmptyString($scope.ui.packageName))
-                return $common.showPopoverMessage(null, null, 'domainPackageName', 'Package should be not empty');
+                return $common.showPopoverMessage(null, null, 'domainPackageName', 'Package could not be empty');
 
             if (!$common.isValidJavaClass('Package', $scope.ui.packageName, false, 'domainPackageName', true))
                 return false;

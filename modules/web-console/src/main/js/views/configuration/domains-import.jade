@@ -168,13 +168,15 @@ mixin td-ellipses-lbl(w, lbl)
                                 i.tipField.fa.fa-question-circle(bs-tooltip='' data-title='Package that will be used for POJOs generation')
                                 .input-tip
                                     ignite-form-field-input-text(
+                                        data-id='domainPackageName'
                                         data-name='domainPackageName'
                                         data-ng-model='ui.packageName'
+                                        data-ignite-label-name='Package'
                                         data-ng-required='true'
                                         data-placeholder='Enter package name'
                                         data-java-keywords='true'
                                         data-java-package-name='package-only'
-                                        data-ignite-form-field-input-autofocus='true'
+                                        ng-model-options='{allowInvalid: true}'
                                     )
                                         +error-feedback('optionsForm.$error.javaPackageName', 'javaPackageName', 'Package name is invalid')
                                         +error-feedback('optionsForm.$error.javaKeywords', 'javaKeywords', 'Package name could not contains reserved java keyword')

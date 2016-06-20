@@ -37,11 +37,14 @@ export default ['igniteFormFieldInputText', ['IgniteFormGUID', '$table', (guid, 
             label.for = scope.id;
 
             scope.label = label;
+            scope.labelName = label.name;
 
             scope.$watch('required', (required) => {
                 label.required = required || false;
             });
         }
+        else
+            scope.labelName = attrs.igniteLabelName || 'Value';
 
         form.$defaults = form.$defaults || {};
 
