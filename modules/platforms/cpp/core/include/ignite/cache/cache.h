@@ -43,6 +43,39 @@
 #include "ignite/impl/module_manager.h"
 #include "ignite/ignite_error.h"
 
+/**
+ * @def IGNITE_CACHE_ENTRY_PROCESSOR_LIST_BEGIN
+ * Begin declaration of the cache entry processor list. Should be placed in
+ * the global namespace. Only one cache entry processor list per binary is
+ * allowed.
+ */
+#define IGNITE_CACHE_ENTRY_PROCESSOR_LIST_BEGIN \
+    IGNITE_CACHE_ENTRY_PROCESSOR_LIST_BEGIN_IMPL
+
+/**
+ * @def IGNITE_CACHE_ENTRY_PROCESSOR_LIST_END
+ * End declaration of the cache entry processor list. Should be placed in
+ * the global namespace. Only one cache entry processor list per binary is
+ * allowed.
+ */
+#define IGNITE_CACHE_ENTRY_PROCESSOR_LIST_END \
+    IGNITE_CACHE_ENTRY_PROCESSOR_LIST_END_IMPL
+
+/**
+ * @def IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE
+ * Declare cache entry processor. Should be placed in the global namespace
+ * between #IGNITE_CACHE_ENTRY_PROCESSOR_LIST_BEGIN and
+ * #IGNITE_CACHE_ENTRY_PROCESSOR_LIST_END.
+ *
+ * @param ProcessorType Class to be declared as a processor.
+ * @param KeyType Type of the cache key.
+ * @param ValueType Type of the cache value.
+ * @param ResultType Type of the resulting value.
+ * @param ArgumentType Type of the argument.
+ */
+#define IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE(ProcessorType, KeyType, ValueType, ResultType, ArgumentType) \
+    IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE_IMPL(ProcessorType, KeyType, ValueType, ResultType, ArgumentType)
+
 namespace ignite
 {
     namespace cache
@@ -1185,37 +1218,41 @@ namespace ignite
             }
 
             /**
-             * Invokes an CacheEntryProcessor against the MutableCacheEntry specified by the
-             * provided key. If an entry does not exist for the specified key, an attempt is made
-             * to load it (if a loader is configured) or a surrogate entry, consisting of the key
-             * with a null value is used instead.
+             * Invokes an CacheEntryProcessor against the MutableCacheEntry
+             * specified by the provided key. If an entry does not exist for the
+             * specified key, an attempt is made to load it (if a loader is
+             * configured) or a surrogate entry, consisting of the key with a
+             * null value is used instead.
              *
-             * @param key The key.
-             * @param processor The processor.
-             * @param arg The argument.
-             * @param err Error.
-             * @return Result of the processing.
-             */
-            template<typename R, typename P, typename A>
-            R Invoke(const K& key, const P& processor, const A& arg, IgniteError& err)
-            {
-                typedef impl::cache::CacheEntryProcessorHolder<P, A> ProcessorHolder;
-
-                ProcessorHolder procHolder(processor, arg);
-
-                impl::In3Operation<int64_t, K, ProcessorHolder> inOp(P::GetJobId(), key, procHolder);
-                impl::Out1Operation<R> outOp;
-
-                impl.Get()->Invoke(inOp, outOp, &err);
-
-                return outOp.GetResult();
-            }
-
-            /**
-             * Invokes an CacheEntryProcessor against the MutableCacheEntry specified by the
-             * provided key. If an entry does not exist for the specified key, an attempt is made
-             * to load it (if a loader is configured) or a surrogate entry, consisting of the key
-             * with a null value is used instead.
+             * Return value, processor and argument classes should all be
+             * default-constructable, copy-constructable and assignable. Also,
+             * BinaryType template should be specialized for every class.
+             *
+             * Processor class should be listed as a cache entry processor using
+             * macros #IGNITE_CACHE_ENTRY_PROCESSOR_LIST_BEGIN,
+             * #IGNITE_CACHE_ENTRY_PROCESSOR_LIST_END and
+             * #IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE. See the example below for
+             * details:
+             * @code{.cpp}
+             * IGNITE_CACHE_ENTRY_PROCESSOR_LIST_BEGIN
+             *     IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE(MyProcessor1, KeyType1, ValueType1, ResType1, ArgType1)
+             *     IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE(MyProcessor2, KeyType2, ValueType2, ResType2, ArgType2)
+             *     IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE(MyProcessor3, KeyType1, ValueType2, ResType1, ArgType3)
+             * IGNITE_CACHE_ENTRY_PROCESSOR_LIST_END
+             * @endcode
+             *
+             * Additionally, for the processor class public methods with the
+             * following signatures should be defined:
+             * @code{.cpp}
+             * // Should return unique ID for every class.
+             * static int64_t GetJobId();
+             *
+             * // Main processing method. Takes cache entry and argument and 
+             * // returns processing result.
+             * R Process(ignite::cache::MutableCacheEntry<K, V>&, const A&);
+             * @endcode
+             *
+             * @throw IgniteError on fail.
              *
              * @param key The key.
              * @param processor The processor.
@@ -1232,6 +1269,64 @@ namespace ignite
                 IgniteError::ThrowIfNeeded(err);
 
                 return res;
+            }
+
+            /**
+             * Invokes an CacheEntryProcessor against the MutableCacheEntry
+             * specified by the provided key. If an entry does not exist for the
+             * specified key, an attempt is made to load it (if a loader is
+             * configured) or a surrogate entry, consisting of the key with a
+             * null value is used instead.
+             *
+             * Return value, processor and argument classes should all be
+             * default-constructable, copy-constructable and assignable. Also,
+             * BinaryType template should be specialized for every class.
+             *
+             * Processor class should be listed as a cache entry processor using
+             * macros #IGNITE_CACHE_ENTRY_PROCESSOR_LIST_BEGIN,
+             * #IGNITE_CACHE_ENTRY_PROCESSOR_LIST_END and
+             * #IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE. See the example below for
+             * details:
+             * @code{.cpp}
+             * IGNITE_CACHE_ENTRY_PROCESSOR_LIST_BEGIN
+             *     IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE(MyProcessor1, KeyType1, ValueType1, ResType1, ArgType1)
+             *     IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE(MyProcessor2, KeyType2, ValueType2, ResType2, ArgType2)
+             *     IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE(MyProcessor3, KeyType1, ValueType2, ResType1, ArgType3)
+             * IGNITE_CACHE_ENTRY_PROCESSOR_LIST_END
+             * @endcode
+             *
+             * Additionally, for the processor class public methods with the
+             * following signatures should be defined:
+             * @code{.cpp}
+             * // Should return unique ID for every class.
+             * static int64_t GetJobId();
+             *
+             * // Main processing method. Takes cache entry and argument and 
+             * // returns processing result.
+             * R Process(ignite::cache::MutableCacheEntry<K, V>&, const A&);
+             * @endcode
+             *
+             * Sets err param which should be checked for the operation result.
+             *
+             * @param key The key.
+             * @param processor The processor.
+             * @param arg The argument.
+             * @param err Error.
+             * @return Result of the processing. Default-constructed value on error.
+             */
+            template<typename R, typename P, typename A>
+            R Invoke(const K& key, const P& processor, const A& arg, IgniteError& err)
+            {
+                typedef impl::cache::CacheEntryProcessorHolder<P, A> ProcessorHolder;
+
+                ProcessorHolder procHolder(processor, arg);
+
+                impl::In3Operation<int64_t, K, ProcessorHolder> inOp(P::GetJobId(), key, procHolder);
+                impl::Out1Operation<R> outOp;
+
+                impl.Get()->Invoke(inOp, outOp, &err);
+
+                return outOp.GetResult();
             }
 
             /**

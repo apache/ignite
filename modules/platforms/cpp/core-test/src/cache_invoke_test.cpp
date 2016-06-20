@@ -81,21 +81,13 @@ public:
     }
 
     /**
-     * Destructor.
-     */
-    ~CacheEntryModifier()
-    {
-        // No-op.
-    }
-
-    /**
      * Call instance.
      *
      * @return New value of entry multiplied by two.
      */
     int Process(MutableCacheEntry<int, int>& entry, const int& arg)
     {
-        if (entry.Exists())
+        if (entry.IsExists())
             entry.SetValue(entry.GetValue() - arg - num);
         else
             entry.SetValue(42);
@@ -120,7 +112,7 @@ public:
      */
     static int64_t GetJobId()
     {
-        return 2;
+        return 100500;
     }
 
 private:
@@ -152,7 +144,9 @@ IGNITE_BINARY_TYPE_START(CacheEntryModifier)
     }
 IGNITE_BINARY_TYPE_END
 
-
+/**
+ * List CacheEntryModifier as a cache entry processor.
+ */
 IGNITE_CACHE_ENTRY_PROCESSOR_LIST_BEGIN
     IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE(CacheEntryModifier, int, int, int, int)
 IGNITE_CACHE_ENTRY_PROCESSOR_LIST_END

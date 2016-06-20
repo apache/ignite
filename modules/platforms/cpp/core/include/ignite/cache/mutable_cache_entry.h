@@ -26,7 +26,10 @@ namespace ignite
     namespace cache
     {
         /**
-         * Mutable representation of CacheEntry
+         * Mutable representation of CacheEntry class template.
+         *
+         * Both key and value types should be default-constructable,
+         * copy-constructable and assignable.
          */
         template<typename K, typename V>
         class IGNITE_IMPORT_EXPORT MutableCacheEntry
@@ -35,7 +38,10 @@ namespace ignite
             /**
              * Default constructor.
              */
-            MutableCacheEntry() : key(K()), val(V()), exists(false)
+            MutableCacheEntry() :
+                key(),
+                val(),
+                exists(false)
             {
                 // No-op.
             }
@@ -45,7 +51,10 @@ namespace ignite
              *
              * @param key Key.
              */
-            MutableCacheEntry(const K& key) : key(key), val(), exists(false)
+            MutableCacheEntry(const K& key) :
+                key(key),
+                val(),
+                exists(false)
             {
                 // No-op.
             }
@@ -56,7 +65,9 @@ namespace ignite
              * @param key Key.
              * @param val Value.
              */
-            MutableCacheEntry(const K& key, const V& val) : key(key), val(val), 
+            MutableCacheEntry(const K& key, const V& val) :
+                key(key),
+                val(val), 
                 exists(true)
             {
                 // No-op.
@@ -67,7 +78,9 @@ namespace ignite
              *
              * @param other Other instance.
              */
-            MutableCacheEntry(const MutableCacheEntry& other) : key(other.key), val(other.val), 
+            MutableCacheEntry(const MutableCacheEntry& other) : 
+                key(other.key),
+                val(other.val), 
                 exists(other.exists)
             {
                 // No-op.
@@ -77,6 +90,7 @@ namespace ignite
              * Assignment operator.
              *
              * @param other Other instance.
+             * @return *this.
              */
             MutableCacheEntry& operator=(const MutableCacheEntry& other)
             {
@@ -91,9 +105,12 @@ namespace ignite
             }
 
             /**
-             * Gets a value indicating whether cache entry exists in cache.
+             * Check whether cache entry exists in cache.
+             *
+             * @return True if the cache entry exists in cache and false
+             *     otherwise.
              */
-            bool Exists() const
+            bool IsExists() const
             {
                 return exists;
             }
@@ -108,10 +125,10 @@ namespace ignite
 
             /**
              * Get key.
-             * 
+             *
              * @return Key.
              */
-            K GetKey() const
+            const K& GetKey() const
             {
                 return key;
             }
@@ -121,7 +138,7 @@ namespace ignite
              *
              * @return Value.
              */
-            V GetValue() const
+            const V& GetValue() const
             {
                 return val;
             }
@@ -129,7 +146,9 @@ namespace ignite
             /**
              * Sets or replaces the value associated with the key.
              *
-             * After setter invocation "Exists" will return true.
+             * After setter invocation "IsExists" will return true.
+             *
+             * @param val Value to set.
              */
             void SetValue(const V& val)
             {
@@ -151,4 +170,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_CACHE_MUTABLE_CACHE_ENTRY

@@ -152,7 +152,7 @@ namespace ignite
 
                     R res = proc.Process(entry, arg);
 
-                    state = GetMutableCacheEntryState(value, exists, entry.GetValue(), entry.Exists());
+                    state = GetMutableCacheEntryState(value, exists, entry.GetValue(), entry.IsExists());
 
                     value = entry.GetValue();
 

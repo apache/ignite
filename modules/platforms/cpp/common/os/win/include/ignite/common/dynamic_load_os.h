@@ -30,6 +30,10 @@ namespace ignite
     {
         namespace dynamic
         {
+            /**
+             * Represents dynamically loadable program module such as dymanic
+             * or shared library.
+             */
             class IGNITE_IMPORT_EXPORT Module
             {
             public:
