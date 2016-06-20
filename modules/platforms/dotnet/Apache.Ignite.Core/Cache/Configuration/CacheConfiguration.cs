@@ -273,7 +273,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             NearConfiguration = reader.ReadBoolean() ? new NearCacheConfiguration(reader) : null;
 
             EvictionPolicy = EvictionPolicyBase.Read(reader);
-            AffinityFunction = AffinityFunctionBase.Read(reader, null);
+            AffinityFunction = AffinityFunctionBase.Read(reader);
         }
 
         /// <summary>

@@ -243,6 +243,7 @@ public class PlatformConfigurationUtils {
 
         switch (plcTyp) {
             case 0:
+                break;
             case 1: {
                 FairAffinityFunction f = new FairAffinityFunction();
                 f.setPartitions(in.readInt());

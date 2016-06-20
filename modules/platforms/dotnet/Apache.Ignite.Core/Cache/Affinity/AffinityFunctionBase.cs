@@ -67,7 +67,7 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// <summary>
         /// Reads the instance.
         /// </summary>
-        internal static IAffinityFunction Read(IBinaryRawReader reader, HandleRegistry handleRegistry)
+        internal static IAffinityFunction Read(IBinaryRawReader reader)
         {
             AffinityFunctionBase fun;
 
