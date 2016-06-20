@@ -21,7 +21,10 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
+import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
@@ -106,6 +109,16 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
     private void setIgnite(Ignite ignite) {
         ctx = PlatformUtils.platformContext(ignite);
 
-        // TODO: Init ptr
+        try (PlatformMemory mem = ctx.memory().allocate()) {
+            PlatformOutputStream out = mem.output();
+
+            BinaryRawWriterEx writer = ctx.writer(out);
+
+            writer.writeObject(userFunc);
+
+            out.synchronize();
+
+            ptr = ctx.gateway().affinityFunctionInit(mem.pointer());
+        }
     }
 }
