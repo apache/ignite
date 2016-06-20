@@ -20,8 +20,9 @@ package org.apache.ignite.internal.processors.platform.cache.affinity;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
-import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
 import java.io.Externalizable;
@@ -35,44 +36,66 @@ import java.util.UUID;
  * Platform AffinityFunction.
  */
 public class PlatformAffinityFunction implements AffinityFunction, Externalizable {
-    private final AffinityFunction aff = new FairAffinityFunction();
+    /** */
+    private Object func;
 
-    private int cnt;
+    /** */
+    private transient PlatformContext ctx;
 
+    /**
+     * Ctor.
+     *
+     * @param func User fun object.
+     */
+    public PlatformAffinityFunction(Object func) {
+        this.func = func;
+    }
+
+    /** {@inheritDoc} */
     @Override public void reset() {
-        aff.reset();
+        // TODO
     }
 
+    /** {@inheritDoc} */
     @Override public int partitions() {
-        return aff.partitions();
+        // TODO: JNI
+        return 1024;
     }
 
+    /** {@inheritDoc} */
     @Override public int partition(Object key) {
-        return aff.partition(key);
+        // TODO: JNI
+        return 0;
     }
 
+    /** {@inheritDoc} */
     @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext affCtx) {
-        return aff.assignPartitions(affCtx);
+        // TODO: JNI
+        return null;
     }
 
+    /** {@inheritDoc} */
     @Override public void removeNode(UUID nodeId) {
-        aff.removeNode(nodeId);
+        // TODO: JNI
     }
 
+    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        // No-op.
+        out.writeObject(func);
     }
 
+    /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        // No-op.
+        func = in.readObject();
     }
 
+    /**
+     * Injects the Ignite.
+     *
+     * @param ignite Ignite.
+     */
     @IgniteInstanceResource
     private void setIgnite(Ignite ignite) {
-        cnt++;
-
-        if (cnt > 1) {
-            assert  ignite != null;
-        }
+        ctx = PlatformUtils.platformContext(ignite);
     }
 }

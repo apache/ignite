@@ -243,8 +243,6 @@ public class PlatformConfigurationUtils {
 
         switch (plcTyp) {
             case 0:
-                // TODO: TEST
-                return new PlatformAffinityFunction();
             case 1: {
                 FairAffinityFunction f = new FairAffinityFunction();
                 f.setPartitions(in.readInt());
@@ -256,6 +254,9 @@ public class PlatformConfigurationUtils {
                 f.setPartitions(in.readInt());
                 f.setExcludeNeighbors(in.readBoolean());
                 return f;
+            }
+            case 3: {
+                return new PlatformAffinityFunction(in.readObject());
             }
             default:
                 assert false;
