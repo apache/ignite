@@ -137,7 +137,6 @@ public class HadoopClasspathUtils {
 
         c.add(new DirAndMask(new File(commonHome), "hadoop-common-"));
         c.add(new DirAndMask(new File(commonHome), "hadoop-auth-"));
-        c.add(new DirAndMask(new File(commonHome, "lib"), "hadoop-auth-"));
 
         c.add(new DirAndMask(new File(hdfsHome), "hadoop-hdfs-"));
 

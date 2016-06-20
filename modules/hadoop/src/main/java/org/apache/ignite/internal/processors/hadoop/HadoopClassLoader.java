@@ -168,9 +168,9 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
                 ldr = ldr.getParent();
             }
         }
-        catch (Throwable t) {
+        catch (Exception e) {
             U.quietAndWarn(null, "Failed to initialize Hadoop native library " +
-                "(native Hadoop methods might not work properly): " + t);
+                "(native Hadoop methods might not work properly): " + e);
         }
     }
 

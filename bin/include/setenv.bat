@@ -23,7 +23,7 @@
 :: in other scripts to set classpath using exported IGNITE_LIBS variable.
 ::
 
-:: @echo off
+@echo off
 
 :: USER_LIBS variable can optionally contain user's JARs/libs.
 :: set USER_LIBS=
