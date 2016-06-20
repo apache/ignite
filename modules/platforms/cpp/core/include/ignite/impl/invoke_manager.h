@@ -95,7 +95,7 @@ namespace ignite
 
             ProcessorHolder procHolder = reader.ReadObject<ProcessorHolder>();
 
-            R res = procHolder.Process<R, K, V>(key, value, exists, entryState);
+            R res = procHolder.template Process<R, K, V>(key, value, exists, entryState);
 
             writer.WriteInt8(static_cast<int8_t>(entryState));
 

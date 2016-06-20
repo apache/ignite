@@ -36,7 +36,7 @@
  */
 #define IGNITE_BINARY_TYPE_START(T) \
 template<> \
-struct ::ignite::binary::BinaryType<T> \
+struct BinaryType<T> \
 {
 
 /**

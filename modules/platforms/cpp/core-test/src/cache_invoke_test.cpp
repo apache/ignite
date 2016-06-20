@@ -121,29 +121,35 @@ private:
     int num;
 };
 
-/**
- * Binary type definition for CacheEntryModifier.
- */
-IGNITE_BINARY_TYPE_START(CacheEntryModifier)
-    IGNITE_BINARY_GET_TYPE_ID_AS_HASH(CacheEntryModifier)
-    IGNITE_BINARY_GET_TYPE_NAME_AS_IS(CacheEntryModifier)
-    IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-    IGNITE_BINARY_GET_HASH_CODE_ZERO(CacheEntryModifier)
-    IGNITE_BINARY_IS_NULL_FALSE(CacheEntryModifier)
-    IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(CacheEntryModifier)
-
-    void Write(BinaryWriter& writer, CacheEntryModifier obj)
+namespace ignite
+{
+    namespace binary
     {
-        writer.WriteInt32("num", obj.GetNum());
-    }
+        /**
+         * Binary type definition for CacheEntryModifier.
+         */
+        IGNITE_BINARY_TYPE_START(CacheEntryModifier)
+            IGNITE_BINARY_GET_TYPE_ID_AS_HASH(CacheEntryModifier)
+            IGNITE_BINARY_GET_TYPE_NAME_AS_IS(CacheEntryModifier)
+            IGNITE_BINARY_GET_FIELD_ID_AS_HASH
+            IGNITE_BINARY_GET_HASH_CODE_ZERO(CacheEntryModifier)
+            IGNITE_BINARY_IS_NULL_FALSE(CacheEntryModifier)
+            IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(CacheEntryModifier)
 
-    CacheEntryModifier Read(BinaryReader& reader)
-    {
-        int num = reader.ReadInt32("num");
+            void Write(BinaryWriter& writer, CacheEntryModifier obj)
+            {
+                writer.WriteInt32("num", obj.GetNum());
+            }
 
-        return CacheEntryModifier(num);
+            CacheEntryModifier Read(BinaryReader& reader)
+            {
+                int num = reader.ReadInt32("num");
+
+                return CacheEntryModifier(num);
+            }
+        IGNITE_BINARY_TYPE_END
     }
-IGNITE_BINARY_TYPE_END
+}
 
 /**
  * Divisor class for invoke tests.
@@ -236,29 +242,35 @@ private:
     double scale;
 };
 
-/**
- * Binary type definition for Divisor.
- */
-IGNITE_BINARY_TYPE_START(Divisor)
-    IGNITE_BINARY_GET_TYPE_ID_AS_HASH(Divisor)
-    IGNITE_BINARY_GET_TYPE_NAME_AS_IS(Divisor)
-    IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-    IGNITE_BINARY_GET_HASH_CODE_ZERO(Divisor)
-    IGNITE_BINARY_IS_NULL_FALSE(Divisor)
-    IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(Divisor)
-
-    void Write(BinaryWriter& writer, Divisor obj)
+namespace ignite
+{
+    namespace binary
     {
-        writer.WriteDouble("scale", obj.GetScale());
-    }
+        /**
+         * Binary type definition for Divisor.
+         */
+        IGNITE_BINARY_TYPE_START(Divisor)
+            IGNITE_BINARY_GET_TYPE_ID_AS_HASH(Divisor)
+            IGNITE_BINARY_GET_TYPE_NAME_AS_IS(Divisor)
+            IGNITE_BINARY_GET_FIELD_ID_AS_HASH
+            IGNITE_BINARY_GET_HASH_CODE_ZERO(Divisor)
+            IGNITE_BINARY_IS_NULL_FALSE(Divisor)
+            IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(Divisor)
 
-    Divisor Read(BinaryReader& reader)
-    {
-        double scale = reader.ReadDouble("scale");
+            void Write(BinaryWriter& writer, Divisor obj)
+            {
+                writer.WriteDouble("scale", obj.GetScale());
+            }
 
-        return Divisor(scale);
+            Divisor Read(BinaryReader& reader)
+            {
+                double scale = reader.ReadDouble("scale");
+
+                return Divisor(scale);
+            }
+        IGNITE_BINARY_TYPE_END
     }
-IGNITE_BINARY_TYPE_END
+}
 
 /**
  * Character remover class for invoke tests.
@@ -361,29 +373,35 @@ private:
     char toRemove;
 };
 
-/**
- * Binary type definition for CharRemover.
- */
-IGNITE_BINARY_TYPE_START(CharRemover)
-    IGNITE_BINARY_GET_TYPE_ID_AS_HASH(CharRemover)
-    IGNITE_BINARY_GET_TYPE_NAME_AS_IS(CharRemover)
-    IGNITE_BINARY_GET_FIELD_ID_AS_HASH
-    IGNITE_BINARY_GET_HASH_CODE_ZERO(CharRemover)
-    IGNITE_BINARY_IS_NULL_FALSE(CharRemover)
-    IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(CharRemover)
-
-    void Write(BinaryWriter& writer, CharRemover obj)
+namespace ignite
+{
+    namespace binary
     {
-        writer.WriteInt8("toRemove", obj.GetCharToRemove());
-    }
+        /**
+         * Binary type definition for CharRemover.
+         */
+        IGNITE_BINARY_TYPE_START(CharRemover)
+            IGNITE_BINARY_GET_TYPE_ID_AS_HASH(CharRemover)
+            IGNITE_BINARY_GET_TYPE_NAME_AS_IS(CharRemover)
+            IGNITE_BINARY_GET_FIELD_ID_AS_HASH
+            IGNITE_BINARY_GET_HASH_CODE_ZERO(CharRemover)
+            IGNITE_BINARY_IS_NULL_FALSE(CharRemover)
+            IGNITE_BINARY_GET_NULL_DEFAULT_CTOR(CharRemover)
 
-    CharRemover Read(BinaryReader& reader)
-    {
-        char toRemove = static_cast<char>(reader.ReadInt8("toRemove"));
+            void Write(BinaryWriter& writer, CharRemover obj)
+            {
+                writer.WriteInt8("toRemove", obj.GetCharToRemove());
+            }
 
-        return CharRemover(toRemove);
+            CharRemover Read(BinaryReader& reader)
+            {
+                char toRemove = static_cast<char>(reader.ReadInt8("toRemove"));
+
+                return CharRemover(toRemove);
+            }
+        IGNITE_BINARY_TYPE_END
     }
-IGNITE_BINARY_TYPE_END
+}
 
 /**
  * List CacheEntryModifier as a cache entry processor.

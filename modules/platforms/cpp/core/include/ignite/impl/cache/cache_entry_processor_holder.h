@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_CACHE_CACHE_ENTRY_PROCESSOR_HOLDER
-#define _IGNITE_CACHE_CACHE_ENTRY_PROCESSOR_HOLDER
+#ifndef _IGNITE_IMPL_CACHE_CACHE_ENTRY_PROCESSOR_HOLDER
+#define _IGNITE_IMPL_CACHE_CACHE_ENTRY_PROCESSOR_HOLDER
 
 #include <ignite/common/common.h>
 #include <ignite/cache/mutable_cache_entry.h>
@@ -238,4 +238,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_IMPL_CACHE_CACHE_ENTRY_PROCESSOR_HOLDER
