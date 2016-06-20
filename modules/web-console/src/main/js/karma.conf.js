@@ -15,13 +15,18 @@
  * limitations under the License.
  */
 
+var path = require('path');
+var webpack = require('webpack');
+
+var basePath = path.resolve('./');
+
 module.exports = function(config) {
   config.set({
     // Base path that will be used to resolve all patterns (eg. files, exclude).
-    basePath: '',
+    basePath: basePath,
 
     // Frameworks to use available frameworks: https://npmjs.org/browse/keyword/karma-adapter
-    frameworks: ['jasmine'],
+    frameworks: ['mocha'],
 
     // List of files / patterns to load in the browser.
     files: [
@@ -29,11 +34,10 @@ module.exports = function(config) {
     ],
 
     plugins: [
-      require('karma-teamcity-reporter'),
-      require('karma-jasmine'),
-      require('karma-babel-preprocessor'),
       require('karma-phantomjs-launcher'),
-      require('karma-webpack')
+      require('karma-teamcity-reporter'),
+      require('karma-webpack'),
+      require('karma-mocha')
     ],
 
     // Preprocess matching files before serving them to the browser
@@ -43,21 +47,37 @@ module.exports = function(config) {
     },
 
     webpack: {
-      devtool: 'inline-source-map',
-      module: {
-        loaders: [
-          {test: /\.js/, loaders: ['babel'], exclude: /node_modules/}
+        module: {
+            loaders: [
+                {
+                    test: /\.json$/,
+                    loader: 'json'
+                },
+                {
+                    test: /\.js$/, 
+                    loader: 'babel', 
+                    exclude: /node_modules/
+                }
+            ]
+        },
+        resolve: {
+            extensions: ["", ".js"]
+        },
+        plugins: [
+            new webpack.ProvidePlugin({
+                _: 'lodash'
+            })
         ]
-      },
-      resolve: {
-        extensions: ["", ".js"]
-      }
+    },
+
+    webpackMiddleware: {
+      noInfo: true
     },
 
     // Test results reporter to use
     // possible values: 'dots', 'progress'
     // available reporters: https://npmjs.org/browse/keyword/karma-reporter.
-    reporters: ['teamcity'],
+    reporters: ['progress'],
 
     // web server port
     port: 9876,
@@ -83,5 +103,5 @@ module.exports = function(config) {
     // Concurrency level
     // how many browser should be started simultaneous
     concurrency: Infinity
-  })
-};
+  });
+}
