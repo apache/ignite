@@ -238,7 +238,7 @@ public class PlatformConfigurationUtils {
      * @param in Stream.
      * @return Affinity function.
      */
-    private static AffinityFunction readAffinityFunction(BinaryRawReader in) {
+    private static AffinityFunction readAffinityFunction(BinaryRawReaderEx in) {
         byte plcTyp = in.readByte();
 
         switch (plcTyp) {
@@ -257,7 +257,7 @@ public class PlatformConfigurationUtils {
                 return f;
             }
             case 3: {
-                return new PlatformAffinityFunction(in.readObject());
+                return new PlatformAffinityFunction(in.readObjectDetached());
             }
             default:
                 assert false;
