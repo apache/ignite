@@ -165,7 +165,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void OnClientDisconnectedDelegate(void* target);
         private delegate void OnClientReconnectedDelegate(void* target, bool clusterRestarted);
 
-        private delegate void AffinityFunctionResetDelegate(void* target, long memPtr);
+        private delegate long AffinityFunctionInitDelegate(void* target, long memPtr);
+        private delegate void AffinityFunctionResetDelegate(void* target, long ptr);
 
         /// <summary>
         /// constructor.
@@ -251,6 +252,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 onClientDisconnected = CreateFunctionPointer((OnClientDisconnectedDelegate)OnClientDisconnected),
                 ocClientReconnected = CreateFunctionPointer((OnClientReconnectedDelegate)OnClientReconnected),
 
+                affinityFunctionInit = CreateFunctionPointer((AffinityFunctionInitDelegate)AffinityFunctionInit),
                 affinityFunctionReset = CreateFunctionPointer((AffinityFunctionResetDelegate)AffinityFunctionReset)
             };
 
@@ -1095,11 +1097,24 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region AffinityFunction
 
-        private void AffinityFunctionReset(void* target, long hnd)
+        private long AffinityFunctionInit(void* target, long memPtr)
+        {
+            return SafeCall(() =>
+            {
+                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                {
+                    var func = _ignite.Marshaller.Unmarshal<IAffinityFunction>(stream);
+
+                    return _handleRegistry.Allocate(func);
+                }
+            });
+        }
+
+        private void AffinityFunctionReset(void* target, long ptr)
         {
             SafeCall(() =>
             {
-                _handleRegistry.Get<IAffinityFunction>(hnd).Reset();
+                _handleRegistry.Get<IAffinityFunction>(ptr).Reset();
             });
         }
 
