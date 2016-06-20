@@ -1036,6 +1036,11 @@ button.form-control {
     border: thin dotted $ignite-border-color;
 }
 
+.panel-details-noborder {
+    margin-top: 5px;
+    padding: 10px 5px;
+}
+
 .group {
     border-radius: 5px;
     border: thin dotted $ignite-border-color;
