@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Cache.Affinity
 {
+    using System;
     using Apache.Ignite.Core.Cache.Affinity.Fair;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
 
@@ -43,5 +44,27 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// to N exclusively without any gaps.
         /// </summary>
         int PartitionCount { get; }
+
+        /// <summary>
+        /// Gets partition number for a given key starting from 0. Partitioned caches
+        /// should make sure that keys are about evenly distributed across all partitions
+        /// from 0 to <see cref="PartitionCount"/> for best performance.
+        /// <para />
+        /// Note that for fully replicated caches it is possible to segment key sets among different
+        /// grid node groups. In that case each node group should return a unique partition
+        /// number. However, unlike partitioned cache, mappings of keys to nodes in
+        /// replicated caches are constant and a node cannot migrate from one partition
+        /// to another.
+        /// </summary>
+        /// <param name="key">Key to get partition for.</param>
+        /// <returns>Partition number for a given key.</returns>
+        int GetPartition(object key);
+
+        /// <summary>
+        /// Removes node from affinity. This method is called when it is safe to remove 
+        /// disconnected node from affinity mapping.
+        /// </summary>
+        /// <param name="nodeId">The node identifier.</param>
+        void RemoveNode(Guid nodeId);
     }
 }
