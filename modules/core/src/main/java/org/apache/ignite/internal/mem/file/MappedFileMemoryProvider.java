@@ -22,6 +22,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
@@ -50,13 +51,10 @@ public class MappedFileMemoryProvider implements DirectMemoryProvider, Lifecycle
     private final File allocationPath;
 
     /** Clean flag. If true, existing files will be deleted on start. */
-    private final boolean clean;
+    private boolean clean;
 
-    /** Allocation limit. */
-    private final long limit;
-
-    /** Allocation chunk size. */
-    private final long chunkSize;
+    /** */
+    private final long[] sizes;
 
     /** */
     private boolean restored;
@@ -68,14 +66,13 @@ public class MappedFileMemoryProvider implements DirectMemoryProvider, Lifecycle
      * @param allocationPath Allocation path.
      * @param clean Clean flag. If true, restore procedure will be ignored even if
      *      allocation folder contains valid files.
-     * @param limit Allocation limit.
+     * @param sizes Sizes of memory chunks to allocate.
      */
-    public MappedFileMemoryProvider(IgniteLogger log, File allocationPath, boolean clean, long limit, long chunkSize) {
+    public MappedFileMemoryProvider(IgniteLogger log, File allocationPath, boolean clean, long[] sizes) {
         this.log = log;
         this.allocationPath = allocationPath;
         this.clean = clean;
-        this.limit = limit;
-        this.chunkSize = chunkSize;
+        this.sizes = sizes;
     }
 
     /** {@inheritDoc} */
@@ -90,6 +87,27 @@ public class MappedFileMemoryProvider implements DirectMemoryProvider, Lifecycle
             throw new IgniteException("Failed to initialize allocation path (path is a file): " + allocationPath);
 
         File[] files = allocationPath.listFiles(ALLOCATOR_FILTER);
+
+        Arrays.sort(files, new Comparator<File>() {
+            /** {@inheritDoc} */
+            @Override public int compare(File o1, File o2) {
+                return o1.getName().compareTo(o2.getName());
+            }
+        });
+
+        if (files.length == sizes.length) {
+            for (int i = 0; i < files.length; i++) {
+                File file = files[i];
+
+                if (file.length() != sizes[i]) {
+                    clean = true;
+
+                    break;
+                }
+            }
+        }
+        else
+            clean = true;
 
         if (files.length == 0 || clean) {
             if (files.length != 0) {
@@ -138,22 +156,17 @@ public class MappedFileMemoryProvider implements DirectMemoryProvider, Lifecycle
      * Allocates clear memory state.
      */
     private void allocateClean() {
-        mappedFiles = new ArrayList<>((int)((limit + (chunkSize / 2)) / chunkSize));
+        mappedFiles = new ArrayList<>(sizes.length);
 
         try {
-            long allocated = 0;
             int idx = 0;
 
-            while (allocated < limit) {
-                long size = Math.min(chunkSize, limit - allocated);
-
-                File file = new File(allocationPath, ALLOCATOR_FILE_PREFIX + idx);
+            for (long size : sizes) {
+                File file = new File(allocationPath, ALLOCATOR_FILE_PREFIX + alignInt(idx));
 
                 MappedFile mappedFile = new MappedFile(file, size);
 
                 mappedFiles.add(mappedFile);
-
-                allocated += size;
 
                 idx++;
             }
@@ -191,5 +204,22 @@ public class MappedFileMemoryProvider implements DirectMemoryProvider, Lifecycle
     @SuppressWarnings("unchecked")
     @Override public DirectMemory memory() {
         return new DirectMemory(restored, (List)mappedFiles);
+    }
+
+    /**
+     * @param idx Index.
+     * @return 0-aligned string.
+     */
+    private static String alignInt(int idx) {
+        String idxStr = String.valueOf(idx);
+
+        StringBuilder res = new StringBuilder();
+
+        for (int i = 0; i < 8 - idxStr.length(); i++)
+            res.append('0');
+
+        res.append(idxStr);
+
+        return res.toString();
     }
 }

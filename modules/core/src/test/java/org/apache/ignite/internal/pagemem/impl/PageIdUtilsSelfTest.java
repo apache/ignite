@@ -34,12 +34,12 @@ public class PageIdUtilsSelfTest extends GridCommonAbstractTest {
      */
     public void testPageIdConstruction() throws Exception {
         assertEquals(0x00000001L, PageIdUtils.pageId(0, 1));
-        assertEquals(0x40000001L, PageIdUtils.pageId(1, 1));
+        assertEquals(0x1000000001L, PageIdUtils.pageId(1, 1));
         assertEquals(0x3FFFFFFFL, PageIdUtils.pageId(0, 0x3FFFFFFF));
-        assertEquals(0x7FFFFFFFL, PageIdUtils.pageId(1, 0x3FFFFFFF));
+        assertEquals(0x103FFFFFFFL, PageIdUtils.pageId(1, 0x3FFFFFFF));
 
-        assertEquals(0xFFFFFC0000001L, PageIdUtils.pageId(0x3FFFFF, 1));
-        assertEquals(0xFFFFFFFFFFFFFL, PageIdUtils.pageId(0x3FFFFF, 0x3FFFFFFF));
+        assertEquals(0xFFFF000000001L, PageIdUtils.pageId(0xFFFF, 1));
+        assertEquals(0xFFFF03FFFFFFFL, PageIdUtils.pageId(0xFFFF, 0x3FFFFFFF));
     }
 
     /**
@@ -82,20 +82,20 @@ public class PageIdUtilsSelfTest extends GridCommonAbstractTest {
      */
     public void testFileIdExtraction() throws Exception {
         assertEquals(0, PageIdUtils.fileId(0x00000001L));
-        assertEquals(1, PageIdUtils.fileId(0x40000001L));
+        assertEquals(1, PageIdUtils.fileId(0x1000000001L));
         assertEquals(0, PageIdUtils.fileId(0x3FFFFFFFL));
-        assertEquals(1, PageIdUtils.fileId(0x7FFFFFFFL));
+        assertEquals(1, PageIdUtils.fileId(0x10FFFFFFFFL));
 
-        assertEquals(0x3FFFFF, PageIdUtils.fileId(0xFFFFFC0000001L));
-        assertEquals(0x3FFFFF, PageIdUtils.fileId(0xFFFFFFFFFFFFFL));
+        assertEquals(0xFFFF, PageIdUtils.fileId(0xFFFF000000001L));
+        assertEquals(0xFFFF, PageIdUtils.fileId(0xFFFF0FFFFFFFFL));
 
-        assertEquals(0, PageIdUtils.fileId(0xFFF0000000000001L));
-        assertEquals(1, PageIdUtils.fileId(0xFFF0000040000001L));
-        assertEquals(0, PageIdUtils.fileId(0xFFF000003FFFFFFFL));
-        assertEquals(1, PageIdUtils.fileId(0xFFF000007FFFFFFFL));
+        assertEquals(0, PageIdUtils.fileId(0xFFF00000_00000001L));
+        assertEquals(1, PageIdUtils.fileId(0xFFF00010_00000001L));
+        assertEquals(0, PageIdUtils.fileId(0xFFF00000_FFFFFFFFL));
+        assertEquals(1, PageIdUtils.fileId(0xFFF00010_FFFFFFFFL));
 
-        assertEquals(0x3FFFFF, PageIdUtils.fileId(0xFFFFFFFFC0000001L));
-        assertEquals(0x3FFFFF, PageIdUtils.fileId(0xFFFFFFFFFFFFFFFFL));
+        assertEquals(0xFFFF, PageIdUtils.fileId(0xFFFFFFF0_00000001L));
+        assertEquals(0xFFFF, PageIdUtils.fileId(0xFFFFFFF0_FFFFFFFFL));
     }
 
     /**
@@ -166,7 +166,7 @@ public class PageIdUtilsSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 50_000; i++) {
             int offset = rnd.nextInt(PageIdUtils.MAX_OFFSET_DWORDS + 1);
             int partId = rnd.nextInt(PageIdUtils.MAX_PART_ID + 1);
-            int pageNum = rnd.nextInt(PageIdUtils.MAX_PAGE_NUM + 1);
+            int pageNum = rnd.nextInt();
 
             long pageId = PageIdUtils.pageId(partId, PageMemory.FLAG_DATA, pageNum);
 
@@ -180,7 +180,7 @@ public class PageIdUtilsSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 50_000; i++) {
             int offset = rnd.nextInt(PageIdUtils.MAX_OFFSET_DWORDS + 1);
             int partId = rnd.nextInt(PageIdUtils.MAX_PART_ID + 1);
-            int pageNum = rnd.nextInt(PageIdUtils.MAX_PAGE_NUM + 1);
+            int pageNum = rnd.nextInt();
 
             long pageId1 = PageIdUtils.pageId(partId, PageMemory.FLAG_IDX, pageNum);
             long pageId2 = PageIdUtils.pageId(1, PageMemory.FLAG_IDX, pageNum);
@@ -201,11 +201,11 @@ public class PageIdUtilsSelfTest extends GridCommonAbstractTest {
         for (int i = 0; i < 50_000; i++) {
             int offset = rnd.nextInt(PageIdUtils.MAX_OFFSET_DWORDS + 1);
             int fileId = rnd.nextInt(PageIdUtils.MAX_FILE_ID + 1);
-            int pageNum = rnd.nextInt(PageIdUtils.MAX_PAGE_NUM + 1);
+            int pageNum = rnd.nextInt();
 
             long pageId = PageIdUtils.pageId(fileId, pageNum);
 
-            String msg = "For vals [offset=" + U.hexLong(offset) + ", fileId=" + U.hexLong(fileId) +
+            String msg = "For values [offset=" + U.hexLong(offset) + ", fileId=" + U.hexLong(fileId) +
                 ", pageNum=" + U.hexLong(pageNum) + ']';
 
             assertEquals(msg, pageId, PageIdUtils.pageId(pageId));

@@ -22,10 +22,10 @@ import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.mem.DirectMemory;
-import org.apache.ignite.internal.mem.DirectMemoryFragment;
+import org.apache.ignite.internal.mem.DirectMemoryRegion;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
+import org.apache.ignite.internal.mem.UnsafeChunk;
 import org.apache.ignite.internal.util.GridUnsafe;
-import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lifecycle.LifecycleAware;
 
 /**
@@ -33,53 +33,43 @@ import org.apache.ignite.lifecycle.LifecycleAware;
  */
 public class UnsafeMemoryProvider implements DirectMemoryProvider, LifecycleAware {
     /** */
-    private final long limit;
+    private final long[] sizes;
 
     /** */
-    private final long chunkSize;
-
-    /** */
-    private List<DirectMemoryFragment> chunks;
+    private List<DirectMemoryRegion> regions;
 
     /**
-     * @param limit Memory limit.
-     * @param chunkSize Chunk size.
+     * @param sizes Sizes of segments.
      */
-    public UnsafeMemoryProvider(long limit, long chunkSize) {
-        this.limit = limit;
-        this.chunkSize = chunkSize;
+    public UnsafeMemoryProvider(long[] sizes) {
+        this.sizes = sizes;
     }
 
     /** {@inheritDoc} */
     @Override public DirectMemory memory() {
-        return new DirectMemory(false, chunks);
+        return new DirectMemory(false, regions);
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
-        chunks = new ArrayList<>();
+        regions = new ArrayList<>();
 
         long allocated = 0;
 
-        while (allocated < limit) {
-            long size = Math.min(chunkSize, limit - allocated);
-
+        for (long size : sizes) {
             long ptr = GridUnsafe.allocateMemory(size);
 
             if (ptr <= 0) {
-                for (DirectMemoryFragment chunk : chunks) {
-                    UnsafeChunk uc = (UnsafeChunk)chunk;
-
-                    GridUnsafe.freeMemory(uc.ptr);
-                }
+                for (DirectMemoryRegion region : regions)
+                    GridUnsafe.freeMemory(region.address());
 
                 throw new IgniteException("Failed to allocate memory [allocated=" + allocated +
-                    ", requested=" + limit + ']');
+                    ", requested=" + size + ']');
             }
 
-            DirectMemoryFragment chunk = new UnsafeChunk(ptr, size);
+            DirectMemoryRegion chunk = new UnsafeChunk(ptr, size);
 
-            chunks.add(chunk);
+            regions.add(chunk);
 
             allocated += size;
         }
@@ -87,50 +77,13 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider, LifecycleAwar
 
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteException {
-        for (Iterator<DirectMemoryFragment> it = chunks.iterator(); it.hasNext(); ) {
-            DirectMemoryFragment chunk = it.next();
+        for (Iterator<DirectMemoryRegion> it = regions.iterator(); it.hasNext(); ) {
+            DirectMemoryRegion chunk = it.next();
 
-            UnsafeChunk uc = (UnsafeChunk)chunk;
-
-            GridUnsafe.freeMemory(uc.ptr);
+            GridUnsafe.freeMemory(chunk.address());
 
             // Safety.
             it.remove();
-        }
-    }
-
-    /**
-     *
-     */
-    private static class UnsafeChunk implements DirectMemoryFragment {
-        /** */
-        private long ptr;
-
-        /** */
-        private long len;
-
-        /**
-         * @param ptr Pointer to the memory start.
-         * @param len Memory length.
-         */
-        private UnsafeChunk(long ptr, long len) {
-            this.ptr = ptr;
-            this.len = len;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long address() {
-            return ptr;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long size() {
-            return len;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String toString() {
-            return S.toString(UnsafeChunk.class, this);
         }
     }
 }

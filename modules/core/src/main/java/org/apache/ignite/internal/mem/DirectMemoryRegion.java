@@ -15,41 +15,27 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.pagemem.wal.record;
-
-import org.apache.ignite.internal.pagemem.FullPageId;
-
-import java.nio.ByteBuffer;
+package org.apache.ignite.internal.mem;
 
 /**
- *
+ * Interface for a direct memory region allocated by provider.
  */
-public class PageWrapperRecord extends PageAbstractRecord {
-    /** */
-    private FullPageId fullId;
-
-    /** */
-    private ByteBuffer pageBuf;
+public interface DirectMemoryRegion {
+    /**
+     * @return Region start address.
+     */
+    public long address();
 
     /**
-     * @param pageBuf Page buf.
+     * @return Region size.
      */
-    public PageWrapperRecord(FullPageId fullId, ByteBuffer pageBuf) {
-        this.fullId = fullId;
-        this.pageBuf = pageBuf;
-    }
+    public long size();
 
     /**
-     * @return Page start pointer.
+     * Gets a sub-region of this region starting from the given offset.
+     *
+     * @param offset Offset within this region.
+     * @return Sub-region.
      */
-    public ByteBuffer buffer() {
-        return pageBuf;
-    }
-
-    /**
-     * @return Full page ID.
-     */
-    public FullPageId fullId() {
-        return fullId;
-    }
+    public DirectMemoryRegion slice(long offset);
 }

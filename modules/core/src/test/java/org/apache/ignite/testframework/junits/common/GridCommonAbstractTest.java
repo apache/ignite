@@ -74,6 +74,7 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.Gri
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.local.GridLocalCache;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
+import org.apache.ignite.internal.util.IgniteUtils;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.PA;
@@ -1267,7 +1268,7 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
 
         if (ok)
             info("Deleted OK: " + file.getAbsolutePath() +
-                (size >=0 ? "(" + GridTestUtils.readableSize(size, false) + ")" : ""));
+                (size >=0 ? "(" + IgniteUtils.readableSize(size, false) + ")" : ""));
 
         return ok;
     }

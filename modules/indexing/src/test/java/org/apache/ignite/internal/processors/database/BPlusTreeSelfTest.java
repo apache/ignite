@@ -26,7 +26,7 @@ import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.pagemem.impl.PageMemoryImpl;
+import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.database.MetaStore;
 import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
@@ -37,6 +37,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.typedef.X;
+import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -49,13 +50,13 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     private static final short LONG_LEAF_IO = 30001;
 
     /** */
-    private static final int PAGE_SIZE = 256;
+    protected static final int PAGE_SIZE = 256;
 
     /** */
-    private static final long MB = 1024 * 1024;
+    protected static final long MB = 1024 * 1024;
 
     /** */
-    private static final int CPUS = Runtime.getRuntime().availableProcessors();
+    protected static final int CPUS = Runtime.getRuntime().availableProcessors();
 
     /** */
     private static final int CACHE_ID = 100500;
@@ -73,7 +74,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
     private static int RMV_INC = 1;
 
     /** */
-    private PageMemory pageMem;
+    protected PageMemory pageMem;
 
     /** */
     private ReuseList reuseList;
@@ -91,9 +92,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
 
         TestTree.rnd = new Random(seed);
 
-        pageMem = new PageMemoryImpl(log, new UnsafeMemoryProvider(64 * MB, 32 * MB), null, PAGE_SIZE, CPUS);
-
-        pageMem.start();
+        pageMem = createPageMemory();
 
         reuseList = createReuseList(CACHE_ID, pageMem, 2, new MetaStore() {
             @Override public RootPage getOrAllocateForTree(final int cacheId, final String idxName)
@@ -130,7 +129,14 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             assertTrue("Reuse size: " + size, size < 2000);
         }
 
-        assertEquals(0, ((PageMemoryImpl)pageMem).acquiredPages());
+        for (int i = 0; i < 10; i++) {
+            if (acquiredPages() != 0) {
+                System.out.println("!!!");
+                U.sleep(10);
+            }
+        }
+
+        assertEquals(0, acquiredPages());
 
         pageMem.stop();
 
@@ -632,6 +638,29 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             throws IgniteCheckedException {
             return buf.getLong(offset(idx));
         }
+    }
+
+    /**
+     * @return Page memory.
+     */
+    protected PageMemory createPageMemory() throws Exception {
+        long[] sizes = new long[CPUS];
+
+        for (int i = 0; i < sizes.length; i++)
+            sizes[i] = 64 * MB / CPUS;
+
+        PageMemory pageMem = new PageMemoryNoStoreImpl(log, new UnsafeMemoryProvider(sizes), null, PAGE_SIZE);
+
+        pageMem.start();
+
+        return pageMem;
+    }
+
+    /**
+     * @return Number of acquired pages.
+     */
+    protected long acquiredPages() {
+        return ((PageMemoryNoStoreImpl)pageMem).acquiredPages();
     }
 
     /**

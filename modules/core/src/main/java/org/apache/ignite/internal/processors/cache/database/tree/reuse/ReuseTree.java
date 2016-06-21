@@ -55,7 +55,8 @@ public final class ReuseTree extends BPlusTree<Number, Long> {
             PageIdUtils.pageIndex(((ReuseLeafIO)io).getPageId(buf, idx)) :
             (((ReuseInnerIO)io).getPageIndex(buf, idx));
 
-        return Integer.compare(pageIdx, toPageIndex(row));
+        // Compare as unsigned int.
+        return Long.compare(pageIdx & 0xFFFFFFFFL, toPageIndex(row) & 0xFFFFFFFFL);
     }
 
     /**

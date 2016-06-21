@@ -18,11 +18,7 @@
 package org.apache.ignite.internal.pagemem;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.lifecycle.LifecycleAware;
-
-import java.nio.ByteBuffer;
-import java.util.Collection;
 
 /**
  */
@@ -56,31 +52,4 @@ public interface PageMemory extends LifecycleAware, PageIdAllocator {
      * @return Page size with system overhead, in bytes.
      */
     public int systemPageSize();
-
-    /**
-     * Gets a collection of dirty page IDs since the last checkpoint. If a dirty page is being written after
-     * the checkpointing operation begun, the modifications will be written to a temporary buffer which will
-     * be flushed to the main memory after the checkpointing finished. This method must be called when no
-     * concurrent operations on pages are performed.
-     *
-     * @return Collection of dirty page IDs.
-     * @throws IgniteException If checkpoint has been already started and was not finished.
-     */
-    public Collection<FullPageId> beginCheckpoint() throws IgniteException;
-
-    /**
-     * Finishes checkpoint operation.
-     */
-    public void finishCheckpoint();
-
-    /**
-     * Gets page byte buffer for the checkpoint procedure.
-     *
-     * @param pageId Page ID to get byte buffer for. The page ID must be present in the collection returned by
-     *      the {@link #beginCheckpoint()} method call.
-     * @param tmpBuf Temporary buffer to write changes into.
-     * @return {@code True} if data were read, {@code false} otherwise (data already saved to storage).
-     * @throws IgniteException If failed to obtain page data.
-     */
-    public boolean getForCheckpoint(FullPageId pageId, ByteBuffer tmpBuf);
 }
