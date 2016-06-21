@@ -18,10 +18,12 @@
 namespace Apache.Ignite.Core.Cache.Affinity
 {
     using System;
+    using System.Collections.Generic;
     using System.ComponentModel;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity.Fair;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
+    using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
 
     /// <summary>
@@ -49,6 +51,66 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// </summary>
         [DefaultValue(DefaultPartitionCount)]
         public int PartitionCount { get; set; }
+
+        /// <summary>
+        /// Gets partition number for a given key starting from 0. Partitioned caches
+        /// should make sure that keys are about evenly distributed across all partitions
+        /// from 0 to <see cref="PartitionCount" /> for best performance.
+        /// <para />
+        /// Note that for fully replicated caches it is possible to segment key sets among different
+        /// grid node groups. In that case each node group should return a unique partition
+        /// number. However, unlike partitioned cache, mappings of keys to nodes in
+        /// replicated caches are constant and a node cannot migrate from one partition
+        /// to another.
+        /// </summary>
+        /// <param name="key">Key to get partition for.</param>
+        /// <returns>
+        /// Partition number for a given key.
+        /// </returns>
+        public int GetPartition(object key)
+        {
+            throw GetDirectUsageError();
+        }
+
+        /// <summary>
+        /// Removes node from affinity. This method is called when it is safe to remove
+        /// disconnected node from affinity mapping.
+        /// </summary>
+        /// <param name="nodeId">The node identifier.</param>
+        public void RemoveNode(Guid nodeId)
+        {
+            throw GetDirectUsageError();
+        }
+
+        /// <summary>
+        /// Gets affinity nodes for a partition. In case of replicated cache, all returned
+        /// nodes are updated in the same manner. In case of partitioned cache, the returned
+        /// list should contain only the primary and back up nodes with primary node being
+        /// always first.
+        /// <pare />
+        /// Note that partitioned affinity must obey the following contract: given that node
+        /// <code>N</code> is primary for some key <code>K</code>, if any other node(s) leave
+        /// grid and no node joins grid, node <code>N</code> will remain primary for key <code>K</code>.
+        /// </summary>
+        /// <param name="context">The affinity function context.</param>
+        /// <returns>
+        /// A collection of partitions, where each partition is a collection of nodes,
+        /// where first node is a primary node, and other nodes are backup nodes.
+        /// </returns>
+        public IEnumerable<IEnumerable<IClusterNode>> AssignPartitions(IAffinityFunctionContext context)
+        {
+            throw GetDirectUsageError();
+        }
+
+        /// <summary>
+        /// Resets cache affinity to its initial state. This method will be called by the system any time
+        /// the affinity has been sent to remote node where it has to be reinitialized.
+        /// If your implementation of affinity function has no initialization logic, leave this method empty.
+        /// </summary>
+        public void Reset()
+        {
+            throw GetDirectUsageError();
+        }
 
         /// <summary>
         /// Gets or sets a value indicating whether to exclude same-host-neighbors from being backups of each other.
@@ -120,16 +182,6 @@ namespace Apache.Ignite.Core.Cache.Affinity
                 // TODO: This won't work on startup?
                 writer.WriteObject(fun);
             }
-        }
-
-        /// <summary>
-        /// Resets cache affinity to its initial state. This method will be called by the system any time
-        /// the affinity has been sent to remote node where it has to be reinitialized.
-        /// If your implementation of affinity function has no initialization logic, leave this method empty.
-        /// </summary>
-        public void Reset()
-        {
-            throw GetDirectUsageError();
         }
 
         /// <summary>
