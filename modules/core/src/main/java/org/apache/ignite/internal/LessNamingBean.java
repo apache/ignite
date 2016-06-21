@@ -15,40 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.cache.model;
+package org.apache.ignite.internal;
 
-import java.io.Serializable;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 
 /**
- * Value used for indexed put test.
+ * Marker interface for beans with less naming conventions i.e., without "get" and "set" prefixes.
  */
-public class Person1 implements Serializable {
-    /** Value. */
-    @QuerySqlField(index = true)
-    private int val1;
-
-    /**
-     * Constructs.
-     *
-     * @param val Indexed value.
-     */
-    public Person1(int val) {
-        this.val1 = val;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        return this == o || (o instanceof Person1) && val1 == ((Person1)o).val1;
-    }
-
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return val1;
-    }
-
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return "Person1 [val1=" + val1 + ']';
-    }
+@GridToStringExclude
+public interface LessNamingBean {
+    // No-op.
 }

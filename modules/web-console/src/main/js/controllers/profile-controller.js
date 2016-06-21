@@ -43,6 +43,12 @@ consoleModule.controller('profileController', [
             }
         };
 
+        const _passwordValid = () => {
+            const cur = $scope.user;
+
+            return !$scope.expandedPassword || (cur.password && cur.confirm && cur.password === cur.confirm);
+        };
+
         const _profileChanged = () => {
             _cleanup();
 
@@ -52,11 +58,14 @@ consoleModule.controller('profileController', [
             return !_.isEqual(old, cur);
         };
 
-        $scope.profileCouldBeSaved = () => _profileChanged() && $scope.profileForm && $scope.profileForm.$valid;
+        $scope.profileCouldBeSaved = () => _profileChanged() && $scope.profileForm && $scope.profileForm.$valid && _passwordValid();
 
         $scope.saveBtnTipText = () => {
             if (!_profileChanged())
                 return 'Nothing to save';
+
+            if (!_passwordValid())
+                return 'Invalid password';
 
             return $scope.profileForm && $scope.profileForm.$valid ? 'Save profile' : 'Invalid profile settings';
         };
