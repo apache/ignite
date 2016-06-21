@@ -52,6 +52,15 @@ namespace ignite
                 RegisterModule(current);
             }
 
+            /**
+             * Destructor.
+             */
+            ~ModuleManager()
+            {
+                for (std::vector<Module>::iterator it = loadedModules.begin(); it != loadedModules.end(); ++it)
+                    it->Unload();
+            }
+
         private:
             IGNITE_NO_COPY_ASSIGNMENT(ModuleManager);
 

@@ -93,6 +93,11 @@ namespace ignite
                  */
                 bool IsLoaded() const;
 
+                /**
+                 * Unload module.
+                 */
+                void Unload();
+
             private:
                 void* handle;
             };

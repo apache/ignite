@@ -78,6 +78,12 @@ namespace ignite
                 return handle != NULL;
             }
 
+            void Module::Unload()
+            {
+                if (IsLoaded())
+                    FreeLibrary(handle);
+            }
+
             Module LoadModule(const char* path)
             {
                 std::string strPath(path);

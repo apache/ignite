@@ -63,6 +63,12 @@ namespace ignite
                 return handle != NULL;
             }
 
+            void Module::Unload()
+            {
+                if (IsLoaded())
+                    dlclose(handle);
+            }
+
             Module LoadModule(const char* path)
             {
                 void* handle = dlopen(path, RTLD_NOW);
