@@ -130,10 +130,10 @@ import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryStatusCheckMessa
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_DISCOVERY_HISTORY_SIZE;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_OPTIMIZED_MARSHALLER_USE_DEFAULT_SUID;
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_SERVICES_COMPATIBILITY_MODE;
-import static org.apache.ignite.IgniteSystemProperties.IGNITE_BINARY_MARSHALLER_USE_STRING_SERIALIZATION_VER_2;
 import static org.apache.ignite.IgniteSystemProperties.getInteger;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
@@ -4081,7 +4081,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 if (msg.verified() || !ring.hasRemoteNodes() || msg.senderNodeId() != null) {
                     if (spi.ipFinder.isShared() && !ring.hasRemoteNodes()) {
                         try {
-                            spi.ipFinder.unregisterAddresses(locNode.socketAddresses());
+                            spi.ipFinder.unregisterAddresses(
+                                U.resolveAddresses(spi.getAddressResolver(), locNode.socketAddresses()));
                         }
                         catch (IgniteSpiException e) {
                             U.error(log, "Failed to unregister local node address from IP finder.", e);
