@@ -29,7 +29,6 @@ import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.processors.igfs.IgfsUtils;
 import org.apache.ignite.lang.IgniteCallable;
-import org.apache.ignite.lang.IgniteUuid;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.jetbrains.annotations.Nullable;
 
@@ -85,22 +84,6 @@ public abstract class IgfsClientAbstractCallable<T> implements IgniteCallable<T>
      * @throws Exception If failed.
      */
     protected abstract T call0(IgfsContext ctx) throws Exception;
-
-    /**
-     * @return {@code True} if task is read-only and does not change metadata.
-     */
-    @Nullable public IgniteUuid affinityKey() {
-        return null;
-    }
-
-    /**
-     * Whether this callable is affinity-based.
-     *
-     * @return {@code True} if affinity based.
-     */
-    public boolean isAffinityBased() {
-        return affinityKey() != null;
-    }
 
     /** {@inheritDoc} */
     @Override public final void writeBinary(BinaryWriter writer) throws BinaryObjectException {

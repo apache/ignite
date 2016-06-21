@@ -19,13 +19,14 @@ package org.apache.ignite.internal.visor.log;
 
 import java.io.Serializable;
 import java.util.UUID;
+import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Result for log search operation.
  * Contains found line and several lines before and after, plus other info.
  */
-public class VisorLogSearchResult implements Serializable {
+public class VisorLogSearchResult implements Serializable, LessNamingBean {
     /** */
     private static final long serialVersionUID = 0L;
 
