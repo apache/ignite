@@ -305,7 +305,7 @@ public class PlatformConfigurationUtils {
 
             PlatformAffinityFunction f0 = (PlatformAffinityFunction)f;
             out.writeObject(f0.getUserFunc());
-            out.writeInt(0);   // write partition count for symmetry; not really used.
+            out.writeInt(f.partitions());
         }
         else {
             out.writeByte((byte)0);

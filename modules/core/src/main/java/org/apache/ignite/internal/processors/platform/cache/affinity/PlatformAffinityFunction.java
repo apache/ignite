@@ -82,10 +82,9 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
 
     /** {@inheritDoc} */
     @Override public int partitions() {
-        if (ctx == null)
-            return partitions;
-
-        return 1024;
+        // Affinity function can not return different number of partitions,
+        // so we pass this value once from the platform.
+        return partitions;
     }
 
     /** {@inheritDoc} */

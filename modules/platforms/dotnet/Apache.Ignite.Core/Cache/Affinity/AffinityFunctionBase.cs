@@ -182,7 +182,7 @@ namespace Apache.Ignite.Core.Cache.Affinity
                 writer.WriteByte(TypeCodeUser);
 
                 writer.WriteObject(fun);
-                writer.WriteInt(fun.PartitionCount);  // write partition count for initial validation
+                writer.WriteInt(fun.PartitionCount);  // partition count is written once and can not be changed.
             }
         }
 
