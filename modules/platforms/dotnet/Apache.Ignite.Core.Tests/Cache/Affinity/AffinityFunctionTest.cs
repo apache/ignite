@@ -31,6 +31,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
     /// </summary>
     public class AffinityFunctionTest
     {
+        /** */
+        private const string CacheName = "cache";
+
         [Test]
         public void Test()
         {
@@ -39,7 +42,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                 BinaryConfiguration = new BinaryConfiguration(typeof (SimpleAffinityFunction)),
                 CacheConfiguration = new[]
                 {
-                    new CacheConfiguration("cache")
+                    new CacheConfiguration(CacheName)
                     {
                         AffinityFunction = new SimpleAffinityFunction()
                     }
@@ -48,8 +51,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
             using (var ignite = Ignition.Start(cfg))
             {
-                var cache = ignite.GetCache<int, int>("cache");
-                Assert.IsNotInstanceOf<SimpleAffinityFunction>(cache.GetConfiguration().AffinityFunction);
+                var cache = ignite.GetCache<int, int>(CacheName);
+                Assert.IsInstanceOf<SimpleAffinityFunction>(cache.GetConfiguration().AffinityFunction);
+
+                var aff = ignite.GetAffinity(CacheName);
+                Assert.AreEqual(10, aff.Partitions);
+
+                for (int i = 0; i < 7; i++)
+                    Assert.AreEqual(i, aff.GetPartition(i));
             }
         }
 
