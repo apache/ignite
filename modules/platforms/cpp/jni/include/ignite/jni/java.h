@@ -57,7 +57,7 @@ namespace ignite
             typedef void(JNICALL *ContinuousQueryFilterReleaseHandler)(void* target, long long filterPtr);
 
             typedef void(JNICALL *DataStreamerTopologyUpdateHandler)(void* target, long long ldrPtr, long long topVer, int topSize);
-            typedef void(JNICALL *DataStreamerStreamReceiverInvokeHandler)(void* target, long long ptr, void* cache, long long memPtr, unsigned char keepBinary);
+            typedef void(JNICALL *DataStreamerStreamReceiverInvokeHandler)(void* target, long long ptr, void* cache, long long memPtr, unsigned char keepPortable);
 
             typedef void(JNICALL *FutureByteResultHandler)(void* target, long long futAddr, int res);
             typedef void(JNICALL *FutureBoolResultHandler)(void* target, long long futAddr, int res);
@@ -224,7 +224,7 @@ namespace ignite
                 jmethodID m_PlatformCache_withNoRetries;
                 jmethodID m_PlatformCache_withExpiryPolicy;
                 jmethodID m_PlatformCache_withAsync;
-                jmethodID m_PlatformCache_withKeepBinary;
+                jmethodID m_PlatformCache_withKeepPortable;
                 jmethodID m_PlatformCache_clear;
                 jmethodID m_PlatformCache_removeAll;
                 jmethodID m_PlatformCache_iterator;
@@ -279,7 +279,7 @@ namespace ignite
 
                 jclass c_PlatformServices;
                 jmethodID m_PlatformServices_withAsync;
-                jmethodID m_PlatformServices_withServerKeepBinary;
+                jmethodID m_PlatformServices_withServerKeepPortable;
                 jmethodID m_PlatformServices_cancel;
                 jmethodID m_PlatformServices_cancelAll;
                 jmethodID m_PlatformServices_serviceProxy;
@@ -523,7 +523,7 @@ namespace ignite
                 void ProcessorDestroyCache(jobject obj, const char* name);
                 void ProcessorDestroyCache(jobject obj, const char* name, JniErrorInfo* errInfo);
                 jobject ProcessorAffinity(jobject obj, const char* name);
-                jobject ProcessorDataStreamer(jobject obj, const char* name, bool keepBinary);
+                jobject ProcessorDataStreamer(jobject obj, const char* name, bool keepPortable);
                 jobject ProcessorTransactions(jobject obj, JniErrorInfo* errInfo = NULL);
                 jobject ProcessorCompute(jobject obj, jobject prj);
                 jobject ProcessorMessage(jobject obj, jobject prj);
@@ -554,7 +554,7 @@ namespace ignite
                 jobject CacheWithNoRetries(jobject obj);
                 jobject CacheWithExpiryPolicy(jobject obj, long long create, long long update, long long access);
                 jobject CacheWithAsync(jobject obj);
-                jobject CacheWithKeepBinary(jobject obj);
+                jobject CacheWithKeepPortable(jobject obj);
                 void CacheClear(jobject obj, JniErrorInfo* errInfo = NULL);
                 void CacheRemoveAll(jobject obj, JniErrorInfo* errInfo = NULL);
                 jobject CacheOutOpQueryCursor(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
@@ -619,7 +619,7 @@ namespace ignite
                 bool EventsIsEnabled(jobject obj, int type);
                 
                 jobject ServicesWithAsync(jobject obj);
-                jobject ServicesWithServerKeepBinary(jobject obj);
+                jobject ServicesWithServerKeepPortable(jobject obj);
                 void ServicesCancel(jobject obj, char* name);
                 void ServicesCancelAll(jobject obj);
                 void* ServicesGetServiceProxy(jobject obj, char* name, bool sticky);
@@ -698,7 +698,7 @@ namespace ignite
             JNIEXPORT void JNICALL JniContinuousQueryFilterRelease(JNIEnv *env, jclass cls, jlong envPtr, jlong filterPtr);
 
             JNIEXPORT void JNICALL JniDataStreamerTopologyUpdate(JNIEnv *env, jclass cls, jlong envPtr, jlong ldrPtr, jlong topVer, jint topSize);
-            JNIEXPORT void JNICALL JniDataStreamerStreamReceiverInvoke(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jobject cache, jlong memPtr, jboolean keepBinary);
+            JNIEXPORT void JNICALL JniDataStreamerStreamReceiverInvoke(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jobject cache, jlong memPtr, jboolean keepPortable);
 
             JNIEXPORT void JNICALL JniFutureByteResult(JNIEnv *env, jclass cls, jlong envPtr, jlong futPtr, jint res);
             JNIEXPORT void JNICALL JniFutureBoolResult(JNIEnv *env, jclass cls, jlong envPtr, jlong futPtr, jint res);

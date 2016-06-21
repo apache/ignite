@@ -28,7 +28,7 @@ IgniteCacheWithSkipStore @25
 IgniteCacheWithNoRetries @26 
 IgniteCacheWithExpiryPolicy @27 
 IgniteCacheWithAsync @28 
-IgniteCacheWithKeepBinary @29 
+IgniteCacheWithKeepPortable @29 
 IgniteCacheClear @30 
 IgniteCacheRemoveAll @31 
 IgniteCacheOutOpQueryCursor @32 
@@ -92,7 +92,7 @@ IgniteEventsLocalListen @89
 IgniteEventsIsEnabled @90 
 IgniteTargetOutObject @91 
 IgniteServicesWithAsync @92
-IgniteServicesWithServerKeepBinary @93
+IgniteServicesWithServerKeepPortable @93
 IgniteServicesCancel @94
 IgniteServicesCancelAll @95
 IgniteServicesGetServiceProxy @96

@@ -90,8 +90,8 @@ extern "C" {
         return ctx->ProcessorAffinity(static_cast<jobject>(obj), name);
     }
 
-    void*IGNITE_CALL IgniteProcessorDataStreamer(gcj::JniContext* ctx, void* obj, char* name, bool keepBinary) {
-        return ctx->ProcessorDataStreamer(static_cast<jobject>(obj), name, keepBinary);
+    void*IGNITE_CALL IgniteProcessorDataStreamer(gcj::JniContext* ctx, void* obj, char* name, bool keepPortable) {
+        return ctx->ProcessorDataStreamer(static_cast<jobject>(obj), name, keepPortable);
     }
     
     void* IGNITE_CALL IgniteProcessorTransactions(gcj::JniContext* ctx, void* obj) {
@@ -202,9 +202,9 @@ extern "C" {
         return ctx->CacheWithAsync(static_cast<jobject>(obj));
     }
 
-    void* IGNITE_CALL IgniteCacheWithKeepBinary(gcj::JniContext* ctx, void* obj)
+    void* IGNITE_CALL IgniteCacheWithKeepPortable(gcj::JniContext* ctx, void* obj)
     {
-        return ctx->CacheWithKeepBinary(static_cast<jobject>(obj));
+        return ctx->CacheWithKeepPortable(static_cast<jobject>(obj));
     }
 
     void IGNITE_CALL IgniteCacheClear(gcj::JniContext* ctx, void* obj) {
@@ -447,8 +447,8 @@ extern "C" {
 		return ctx->ServicesWithAsync(static_cast<jobject>(obj));
     }
 
-    void* IGNITE_CALL IgniteServicesWithServerKeepBinary(gcj::JniContext* ctx, void* obj) {
-        return ctx->ServicesWithServerKeepBinary(static_cast<jobject>(obj));
+    void* IGNITE_CALL IgniteServicesWithServerKeepPortable(gcj::JniContext* ctx, void* obj) {
+        return ctx->ServicesWithServerKeepPortable(static_cast<jobject>(obj));
     }
 
 	void IGNITE_CALL IgniteServicesCancel(gcj::JniContext* ctx, void* obj, char* name) {

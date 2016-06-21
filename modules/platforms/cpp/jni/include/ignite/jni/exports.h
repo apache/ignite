@@ -42,7 +42,7 @@ extern "C" {
     void* IGNITE_CALL IgniteProcessorGetOrCreateNearCache(gcj::JniContext* ctx, void* obj, char* name, long long memPtr);
     void IGNITE_CALL IgniteProcessorDestroyCache(gcj::JniContext* ctx, void* obj, char* name);
     void* IGNITE_CALL IgniteProcessorAffinity(gcj::JniContext* ctx, void* obj, char* name);
-    void* IGNITE_CALL IgniteProcessorDataStreamer(gcj::JniContext* ctx, void* obj, char* name, bool keepBinary);
+    void* IGNITE_CALL IgniteProcessorDataStreamer(gcj::JniContext* ctx, void* obj, char* name, bool keepPortable);
     void* IGNITE_CALL IgniteProcessorTransactions(gcj::JniContext* ctx, void* obj);
     void* IGNITE_CALL IgniteProcessorCompute(gcj::JniContext* ctx, void* obj, void* prj);
     void* IGNITE_CALL IgniteProcessorMessage(gcj::JniContext* ctx, void* obj, void* prj);
@@ -73,7 +73,7 @@ extern "C" {
     void* IGNITE_CALL IgniteCacheWithNoRetries(gcj::JniContext* ctx, void* obj);
     void* IGNITE_CALL IgniteCacheWithExpiryPolicy(gcj::JniContext* ctx, void* obj, long long create, long long update, long long access);
     void* IGNITE_CALL IgniteCacheWithAsync(gcj::JniContext* ctx, void* obj);
-    void* IGNITE_CALL IgniteCacheWithKeepBinary(gcj::JniContext* ctx, void* obj);
+    void* IGNITE_CALL IgniteCacheWithKeepPortable(gcj::JniContext* ctx, void* obj);
     void IGNITE_CALL IgniteCacheClear(gcj::JniContext* ctx, void* obj);
     void IGNITE_CALL IgniteCacheRemoveAll(gcj::JniContext* ctx, void* obj);
     void* IGNITE_CALL IgniteCacheOutOpQueryCursor(gcj::JniContext* ctx, void* obj, int type, long long memPtr);
@@ -149,7 +149,7 @@ extern "C" {
     bool IGNITE_CALL IgniteEventsIsEnabled(gcj::JniContext* ctx, void* obj, int type);
         
 	void* IGNITE_CALL IgniteServicesWithAsync(gcj::JniContext* ctx, void* obj);
-	void* IGNITE_CALL IgniteServicesWithServerKeepBinary(gcj::JniContext* ctx, void* obj);
+	void* IGNITE_CALL IgniteServicesWithServerKeepPortable(gcj::JniContext* ctx, void* obj);
 	void IGNITE_CALL IgniteServicesCancel(gcj::JniContext* ctx, void* obj, char* name);
 	void IGNITE_CALL IgniteServicesCancelAll(gcj::JniContext* ctx, void* obj);
 	void* IGNITE_CALL IgniteServicesGetServiceProxy(gcj::JniContext* ctx, void* obj, char* name, bool sticky);
