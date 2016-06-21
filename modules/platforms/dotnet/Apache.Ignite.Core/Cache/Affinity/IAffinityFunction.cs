@@ -18,8 +18,10 @@
 namespace Apache.Ignite.Core.Cache.Affinity
 {
     using System;
+    using System.Collections.Generic;
     using Apache.Ignite.Core.Cache.Affinity.Fair;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
+    using Apache.Ignite.Core.Cluster;
 
     /// <summary>
     /// Represents a function that maps cache keys to cluster nodes.
@@ -66,5 +68,22 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// </summary>
         /// <param name="nodeId">The node identifier.</param>
         void RemoveNode(Guid nodeId);
+
+        /// <summary>
+        /// Gets affinity nodes for a partition. In case of replicated cache, all returned
+        /// nodes are updated in the same manner. In case of partitioned cache, the returned
+        /// list should contain only the primary and back up nodes with primary node being
+        /// always first.
+        /// <pare />
+        /// Note that partitioned affinity must obey the following contract: given that node
+        /// <code>N</code> is primary for some key <code>K</code>, if any other node(s) leave
+        /// grid and no node joins grid, node <code>N</code> will remain primary for key <code>K</code>.
+        /// </summary>
+        /// <param name="context">The affinity function context.</param>
+        /// <returns>
+        /// A collection of partitions, where each partition is a collection of nodes, 
+        /// where first node is a primary node, and other nodes are backup nodes.
+        /// </returns>
+        IEnumerable<IEnumerable<IClusterNode>> AssignPartitions(IAffinityFunctionContext context);
     }
 }
