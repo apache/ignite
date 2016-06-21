@@ -93,7 +93,7 @@ public class OffheapReadWriteLock {
      * @param lock Lock address.
      */
     public void readLock(long lock) {
-        long state = GridUnsafe.getLong(lock);
+        long state = GridUnsafe.getLongVolatile(null, lock);
 
         // Check write waiters first.
         int writeWaitCnt = writersWaitCount(state);
@@ -108,7 +108,7 @@ public class OffheapReadWriteLock {
                         i--;
                 }
 
-                state = GridUnsafe.getLong(lock);
+                state = GridUnsafe.getLongVolatile(null, lock);
             }
         }
 
@@ -140,7 +140,7 @@ public class OffheapReadWriteLock {
      */
     public void readUnlock(long lock) {
         while (true) {
-            long state = GridUnsafe.getLong(lock);
+            long state = GridUnsafe.getLongVolatile(null, lock);
 
             assert state > 0;
 
@@ -173,7 +173,7 @@ public class OffheapReadWriteLock {
      */
     public void writeLock(long lock) {
         for (int i = 0; i < SPIN_CNT; i++) {
-            long state = GridUnsafe.getLong(lock);
+            long state = GridUnsafe.getLongVolatile(null, lock);
 
             if (canWriteLock(state)) {
                 if (GridUnsafe.compareAndSwapLong(null, lock, state, updateState(state, -1, 0, 0)))
@@ -213,7 +213,7 @@ public class OffheapReadWriteLock {
         long updated;
 
         while (true) {
-            long state = GridUnsafe.getLong(lock);
+            long state = GridUnsafe.getLongVolatile(null, lock);
 
             assert lockCount(state) == -1;
 
@@ -271,7 +271,7 @@ public class OffheapReadWriteLock {
      */
     public boolean upgradeToWriteLock(long lock) {
         for (int i = 0; i < SPIN_CNT; i++) {
-            long state = GridUnsafe.getLong(lock);
+            long state = GridUnsafe.getLongVolatile(null, lock);
 
             if (lockCount(state) == 1) {
                 if (GridUnsafe.compareAndSwapLong(null, lock, state, updateState(state, -2, 0, 0)))
@@ -282,8 +282,38 @@ public class OffheapReadWriteLock {
             }
         }
 
-        readUnlock(lock);
-        writeLock(lock);
+        int idx = lockIndex(lock);
+
+        ReentrantLock lockObj = locks[idx];
+
+        lockObj.lock();
+
+        try {
+            // First, add write waiter.
+            while (true) {
+                long state = GridUnsafe.getLongVolatile(null, lock);
+
+                if (lockCount(state) == 1) {
+                    if (GridUnsafe.compareAndSwapLong(null, lock, state, updateState(state, -2, 0, 0)))
+                        return true;
+                }
+
+                // Remove read lock and add write waiter simultaneously.
+                if (GridUnsafe.compareAndSwapLong(null, lock, state, updateState(state, -1, 0, 1)))
+                    break;
+            }
+
+            while (true) {
+                long state = waitCanLock(lock, lockObj, writeConditions[idx], false);
+
+                // Update lock and write wait count simultaneously.
+                if (GridUnsafe.compareAndSwapLong(null, lock, state, updateState(state, -1, 0, -1)))
+                    break;
+            }
+        }
+        finally {
+            lockObj.unlock();
+        }
 
         return false;
     }
@@ -404,7 +434,8 @@ public class OffheapReadWriteLock {
         assert lockObj.isHeldByCurrentThread();
 
         while (true) {
-            long state = GridUnsafe.getLong(lock);
+            // Safe to do non-volatile read because of CAS below.
+            long state = GridUnsafe.getLongVolatile(null, lock);
 
             long updated = updateState(state, 0, delta, 0);
 
@@ -423,7 +454,7 @@ public class OffheapReadWriteLock {
         assert lockObj.isHeldByCurrentThread();
 
         while (true) {
-            long state = GridUnsafe.getLong(lock);
+            long state = GridUnsafe.getLongVolatile(null, lock);
 
             long updated = updateState(state, 0, 0, delta);
 
