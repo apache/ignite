@@ -25,9 +25,11 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.Lock;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
@@ -201,7 +203,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                 File file = new File(workDir, fileName);
 
                 try (FileInputStream in = new FileInputStream(file)) {
-                    FileLock fileLock = in.getChannel().lock(0L, Long.MAX_VALUE, true);
+                    FileLock fileLock = fileLock(in.getChannel(), true);
 
                     assert fileLock != null : fileName;
 
@@ -232,6 +234,26 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
      */
     private static Lock fileLock(String fileName) {
         return fileLock.getLock(fileName.hashCode());
+    }
+
+    /**
+     * @param ch File channel.
+     * @param shared Shared.
+     */
+    private static FileLock fileLock(
+        FileChannel ch,
+        boolean shared
+    ) throws IOException, IgniteInterruptedCheckedException {
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        while (true) {
+            FileLock fileLock = ch.tryLock(0L, Long.MAX_VALUE, shared);
+
+            if (fileLock == null)
+                U.sleep(rnd.nextLong(50));
+            else
+                return fileLock;
+        }
     }
 
     /**
@@ -270,7 +292,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                         File file = new File(workDir, fileName);
 
                         try (FileOutputStream out = new FileOutputStream(file)) {
-                            FileLock fileLock = out.getChannel().lock(0L, Long.MAX_VALUE, false);
+                            FileLock fileLock = fileLock(out.getChannel(), false);
 
                             assert fileLock != null : fileName;
 
@@ -283,6 +305,9 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                         catch (IOException e) {
                             U.error(log, "Failed to write class name to file [id=" + evt.getKey() +
                                 ", clsName=" + evt.getValue() + ", file=" + file.getAbsolutePath() + ']', e);
+                        }
+                        catch (IgniteInterruptedCheckedException e) {
+                            U.error(log, "Interrupted while waiting for acquiring file lock: " + file, e);
                         }
                     }
                     finally {
