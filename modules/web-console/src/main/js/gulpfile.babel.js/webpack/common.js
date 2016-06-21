@@ -21,7 +21,6 @@ import autoprefixer from 'autoprefixer-core';
 import jade from 'jade';
 import progressPlugin from './plugins/progress';
 
-//import  Manifest from 'manifest-revision-webpack-plugin';
 import ExtractTextPlugin from 'extract-text-webpack-plugin';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 

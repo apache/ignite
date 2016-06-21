@@ -80,7 +80,6 @@
     "socket.io-client": "^1.4.6",
     "ui-router-metatags": "^1.0.3",
     "url": "^0.11.0",
-    "webpack-dev-server": "^1.14.1",
     "ws": "^0.8.0"
   },
   "devDependencies": {
@@ -109,7 +108,7 @@
     "gulp-sequence": "^0.4.1",
     "gulp-util": "^3.0.7",
     "html-loader": "^0.4.3",
-    "html-webpack-plugin": "^1.7.0",
+    "html-webpack-plugin": "^2.21.0",
     "jade": "^1.11.0",
     "jade-html-loader": "0.0.3",
     "json-loader": "^0.5.4",
