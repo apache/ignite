@@ -143,13 +143,17 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 AffinityTopologyVersion rmtAffVer = cacheMsg.topologyVersion();
 
                 if (locAffVer.compareTo(rmtAffVer) < 0) {
-                    if (cacheMsg.txMessage() && txMsgLog.isDebugEnabled()) {
-                        txMsgLog.debug("Received message has higher affinity topology version [" +
-                            "txId=" + txId(cacheMsg) +
-                            ", dhtTxId=" + dhtTxId(cacheMsg) +
-                            ", locTopVer=" + locAffVer +
-                            ", rmtTopVer=" + rmtAffVer +
-                            ", msg=" + cacheMsg + ']');
+                    if (cacheMsg.txMessage()) {
+                        IgniteLogger log = cacheMsg.messageLogger(cctx);
+
+                        if (log.isDebugEnabled()) {
+                            log.debug("Received message has higher affinity topology version [" +
+                                "txId=" + txId(cacheMsg) +
+                                ", dhtTxId=" + dhtTxId(cacheMsg) +
+                                ", locTopVer=" + locAffVer +
+                                ", rmtTopVer=" + rmtAffVer +
+                                ", msg=" + cacheMsg + ']');
+                        }
                     }
                     else if (log.isDebugEnabled())
                         log.debug("Received message has higher affinity topology version [msg=" + msg +
@@ -164,11 +168,15 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     @Override public void apply(IgniteInternalFuture<?> t) {
                         cctx.kernalContext().closure().runLocalSafe(new Runnable() {
                             @Override public void run() {
-                                if (cacheMsg.txMessage() && txMsgLog.isDebugEnabled()) {
-                                    txMsgLog.debug("Process cache message after wait for affinity topology version [" +
-                                        "txId=" + txId(cacheMsg) +
-                                        ", dhtTxId=" + dhtTxId(cacheMsg) +
-                                        ", msg=" + cacheMsg + ']');
+                                if (cacheMsg.txMessage()) {
+                                    IgniteLogger log = cacheMsg.messageLogger(cctx);
+
+                                    if (log.isDebugEnabled()) {
+                                        log.debug("Process cache message after wait for affinity topology version [" +
+                                            "txId=" + txId(cacheMsg) +
+                                            ", dhtTxId=" + dhtTxId(cacheMsg) +
+                                            ", msg=" + cacheMsg + ']');
+                                    }
                                 }
 
                                 handleMessage(nodeId, cacheMsg);
@@ -242,11 +250,15 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
         if (c == null) {
             if (cctx.kernalContext().isStopping()) {
-                if (cacheMsg.txMessage() && txMsgLog.isDebugEnabled()) {
-                    txMsgLog.debug("Received message without registered handler (will ignore) [msg=" + cacheMsg +
-                        ", txId=" + txId(cacheMsg) +
-                        ", dhtTxId=" + dhtTxId(cacheMsg) +
-                        ", nodeId=" + nodeId + ']');
+                if (cacheMsg.txMessage()) {
+                    IgniteLogger log = cacheMsg.messageLogger(cctx);
+
+                    if (log.isDebugEnabled()) {
+                        log.debug("Received message without registered handler (will ignore) [msg=" + cacheMsg +
+                            ", txId=" + txId(cacheMsg) +
+                            ", dhtTxId=" + dhtTxId(cacheMsg) +
+                            ", nodeId=" + nodeId + ']');
+                    }
                 }
                 else if (log.isDebugEnabled()) {
                     log.debug("Received message without registered handler (will ignore) [msg=" + cacheMsg +

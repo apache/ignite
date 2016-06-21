@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.processor.EntryProcessor;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.GridDirectTransient;
 import org.apache.ignite.internal.managers.deployment.GridDeployment;
 import org.apache.ignite.internal.managers.deployment.GridDeploymentInfo;
@@ -618,6 +619,14 @@ public abstract class GridCacheMessage implements Message {
      */
     public boolean txMessage() {
         return false;
+    }
+
+    /**
+     * @param ctx Context.
+     * @return Logger.
+     */
+    public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
+        return ctx.txMessageLogger();
     }
 
     /** {@inheritDoc} */

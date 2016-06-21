@@ -34,9 +34,6 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
     /** Logger. */
     protected IgniteLogger log;
 
-    /** */
-    protected IgniteLogger txMsgLog;
-
     /** Starting flag. */
     private final AtomicBoolean starting = new AtomicBoolean(false);
 
@@ -53,8 +50,6 @@ public class GridCacheSharedManagerAdapter<K, V> implements GridCacheSharedManag
         this.cctx = cctx;
 
         log = cctx.logger(getClass());
-
-        txMsgLog = cctx.logger(CU.TX_MSG_LOG_CATEGORY);
 
         start0();
 
