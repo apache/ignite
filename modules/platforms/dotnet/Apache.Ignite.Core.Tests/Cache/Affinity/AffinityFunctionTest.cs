@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -78,17 +79,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
             public int GetPartition(object key)
             {
-                throw new NotImplementedException();
+                return ((int) key) % PartitionCount;
             }
 
             public void RemoveNode(Guid nodeId)
             {
-                throw new NotImplementedException();
+                // No-op.
             }
 
             public IEnumerable<IEnumerable<IClusterNode>> AssignPartitions(IAffinityFunctionContext context)
             {
-                throw new NotImplementedException();
+                // All partitions are the same
+                return Enumerable.Range(0, PartitionCount).Select(x => context.CurrentTopologySnapshot);
             }
         }
     }
