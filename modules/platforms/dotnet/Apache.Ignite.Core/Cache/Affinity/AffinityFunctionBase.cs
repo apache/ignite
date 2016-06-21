@@ -144,8 +144,10 @@ namespace Apache.Ignite.Core.Cache.Affinity
                     fun = new RendezvousAffinityFunction();
                     break;
                 case TypeCodeUser:
-                    // TODO: Deserialize
-                    return null;
+                    var f = reader.ReadObject<IAffinityFunction>();
+                    reader.ReadInt(); // skip partition count
+
+                    return f;
                 default:
                     throw new InvalidOperationException("Invalid AffinityFunction type code: " + typeCode);
             }
@@ -179,8 +181,8 @@ namespace Apache.Ignite.Core.Cache.Affinity
             {
                 writer.WriteByte(TypeCodeUser);
 
-                // TODO: This won't work on startup?
                 writer.WriteObject(fun);
+                writer.WriteInt(fun.PartitionCount);  // write partition count for initial validation
             }
         }
 

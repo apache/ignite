@@ -257,7 +257,7 @@ public class PlatformConfigurationUtils {
                 return f;
             }
             case 3: {
-                return new PlatformAffinityFunction(in.readObjectDetached());
+                return new PlatformAffinityFunction(in.readObjectDetached(), in.readInt());
             }
             default:
                 assert false;
@@ -305,6 +305,7 @@ public class PlatformConfigurationUtils {
 
             PlatformAffinityFunction f0 = (PlatformAffinityFunction)f;
             out.writeObject(f0.getUserFunc());
+            out.writeInt(0);   // write partition count for symmetry; not really used.
         }
         else {
             out.writeByte((byte)0);

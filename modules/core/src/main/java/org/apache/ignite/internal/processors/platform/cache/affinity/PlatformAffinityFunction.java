@@ -43,6 +43,9 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
     private Object userFunc;
 
     /** */
+    private final int partitions;
+
+    /** */
     private transient PlatformContext ctx;
 
     /** */
@@ -53,16 +56,18 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
      *
      */
     public PlatformAffinityFunction() {
-        // No-op.
+        partitions = -1;
     }
 
     /**
      * Ctor.
      *
      * @param func User fun object.
+     * @param partitions Initial number of partitions.
      */
-    public PlatformAffinityFunction(Object func) {
+    public PlatformAffinityFunction(Object func, int partitions) {
         userFunc = func;
+        this.partitions = partitions;
     }
 
     /** {@inheritDoc} */
@@ -77,12 +82,8 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
 
     /** {@inheritDoc} */
     @Override public int partitions() {
-        // TODO: JNI
-        // TODO: This can be called before setIgnite from "validate" method
-        // We should calculate this and send from .NET
-        if (ctx == null) {
-            return 512;
-        }
+        if (ctx == null)
+            return partitions;
 
         return 1024;
     }
