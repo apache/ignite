@@ -18,12 +18,13 @@
 package org.apache.ignite.internal.visor.cache;
 
 import java.io.Serializable;
+import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Data transfer object for information about keys in cache partition.
  */
-public class VisorCachePartition implements Serializable {
+public class VisorCachePartition implements Serializable, LessNamingBean {
     /** */
     private static final long serialVersionUID = 0L;
 
