@@ -1278,7 +1278,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         @Override public void addTrackedEntry(GridCacheMapEntry entry) {
             try {
                 PendingRow r = new PendingRow(entry);
-                System.out.println("+++ add " + r);
                 put(r);
             }
             catch (IgniteCheckedException e) {
@@ -1299,7 +1298,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         /** {@inheritDoc} */
         private void removeTrackedEntry(PendingRow r) {
             try {
-                System.out.println("+++ del " + r);
                 remove(r);
             }
             catch (IgniteCheckedException e) {
