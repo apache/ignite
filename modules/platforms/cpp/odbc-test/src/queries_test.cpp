@@ -98,7 +98,7 @@ struct QueriesTestSuiteFixture
 
         char* cfgPath = getenv("IGNITE_NATIVE_TEST_ODBC_CONFIG_PATH");
 
-        cfg.springCfgPath = std::string(cfgPath).append("/").append("queries-test.xml");
+        cfg.springCfgPath = std::string(cfgPath).append("/queries-test.xml");
 
         IgniteError err;
 

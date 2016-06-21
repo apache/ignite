@@ -68,7 +68,8 @@ namespace ignite
                 {
                     InvokersRegisterCallback* callback = GetProcessorsRegisterCallback(module);
 
-                    callback(*invokeMgr);
+                    if (callback)
+                        callback(*invokeMgr);
                 }
             }
 
