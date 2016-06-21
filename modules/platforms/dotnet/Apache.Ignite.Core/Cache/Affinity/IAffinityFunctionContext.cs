@@ -19,18 +19,44 @@ namespace Apache.Ignite.Core.Cache.Affinity
 {
     using System.Collections.Generic;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Events;
 
     /// <summary>
-    /// Affinity function context to be passed to <see cref="IAffinityFunction"/>.
+    /// Affinity function context to be passed to <see cref="IAffinityFunction" />.
     /// </summary>
     public interface IAffinityFunctionContext
     {
-        ICollection<IClusterNode>  PreviousAssignment { get; }
+        /// <summary>
+        /// Gets the affinity assignment for given partition on previous topology version.
+        /// First node in returned list is a primary node, other nodes are backups.
+        /// </summary>
+        /// <param name="partition">The partition to get previous assignment for.</param>
+        /// <returns>
+        /// List of nodes assigned to a given partition on previous topology version or <code>null</code> 
+        /// if this information is not available.
+        /// </returns>
+        ICollection<IClusterNode> GetPreviousAssignment(int partition);
 
+        /// <summary>
+        /// Gets number of backups for new assignment.
+        /// </summary>
         int Backups { get; }
 
+        /// <summary>
+        /// Gets the current topology snapshot. Snapshot will contain only nodes on which the particular 
+        /// cache is configured. List of passed nodes is guaranteed to be sorted in a same order 
+        /// on all nodes on which partition assignment is performed.
+        /// </summary>
         ICollection<IClusterNode> CurrentTopologySnapshot { get; }
 
+        /// <summary>
+        /// Gets the current topology version.
+        /// </summary>
+        AffinityTopologyVersion CurrentTopologyVersion { get; }
 
+        /// <summary>
+        /// Gets the discovery event that caused the topology change.
+        /// </summary>
+        DiscoveryEvent DiscoveryEvent { get; }
     }
 }
