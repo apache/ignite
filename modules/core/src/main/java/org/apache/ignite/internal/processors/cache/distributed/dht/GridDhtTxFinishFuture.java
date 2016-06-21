@@ -58,9 +58,6 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
-    /** Logger reference. */
-    private static final AtomicReference<IgniteLogger> txMsgLogRef = new AtomicReference<>();
-
     /** Logger. */
     private static IgniteLogger log;
 
@@ -112,7 +109,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
 
         if (log == null) {
             log = U.logger(cctx.kernalContext(), logRef, GridDhtTxFinishFuture.class);
-            txMsgLog = U.logger(cctx.kernalContext(), txMsgLogRef, CU.TX_MSG_FINISH_LOG_CATEGORY);;
+            txMsgLog = cctx.txFinishLogger();
         }
     }
 

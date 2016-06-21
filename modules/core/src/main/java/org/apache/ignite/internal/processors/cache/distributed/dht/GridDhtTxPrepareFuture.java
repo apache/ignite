@@ -101,9 +101,6 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
-    /** Logger reference. */
-    protected static final AtomicReference<IgniteLogger> txMsgLogRef = new AtomicReference<>();
-
     /** */
     private static final IgniteReducer<IgniteInternalTx, GridNearTxPrepareResponse> REDUCER =
         new IgniteReducer<IgniteInternalTx, GridNearTxPrepareResponse>() {
@@ -219,8 +216,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         this.nearMiniId = nearMiniId;
 
         if (log == null) {
-            txMsgLog = U.logger(cctx.kernalContext(), txMsgLogRef, CU.TX_MSG_PREPARE_LOG_CATEGORY);
-
+            txMsgLog = cctx.txPrepareLogger();
             log = U.logger(cctx.kernalContext(), logRef, GridDhtTxPrepareFuture.class);
         }
 

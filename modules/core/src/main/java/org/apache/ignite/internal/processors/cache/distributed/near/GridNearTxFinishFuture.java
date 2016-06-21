@@ -69,9 +69,6 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
     /** Logger reference. */
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
-    /** Logger reference. */
-    private static final AtomicReference<IgniteLogger> txMsgLogRef = new AtomicReference<>();
-
     /** Logger. */
     private static IgniteLogger log;
 
@@ -119,8 +116,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         futId = IgniteUuid.randomUuid();
 
         if (log == null) {
+            txMsgLog = cctx.txFinishLogger();
             log = U.logger(cctx.kernalContext(), logRef, GridNearTxFinishFuture.class);
-            txMsgLog = U.logger(cctx.kernalContext(), txMsgLogRef, CU.TX_MSG_FINISH_LOG_CATEGORY);
         }
     }
 
