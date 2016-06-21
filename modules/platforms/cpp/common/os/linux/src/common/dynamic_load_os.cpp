@@ -18,9 +18,7 @@
 #include <dlfcn.h>
 
 #include <sstream>
-
 #include "ignite/common/dynamic_load_os.h"
-
 
 namespace ignite
 {
@@ -67,7 +65,7 @@ namespace ignite
 
             Module LoadModule(const char* path)
             {
-                void* handle = dlopen(path, 0);
+                void* handle = dlopen(path, RTLD_NOW);
 
                 return Module(handle);
             }
@@ -79,9 +77,7 @@ namespace ignite
 
             Module GetCurrent()
             {
-                void* handle = dlopen(0, 0);
-
-                return Module(handle);
+                return LoadModule(NULL);
             }
         }
     }

@@ -230,13 +230,17 @@ namespace ignite
             InteropExternalMemory outMem(reinterpret_cast<int8_t*>(outMemPtr));
             InteropOutputStream outStream(&outMem);
             BinaryWriterImpl writer(&outStream, GetTypeManager());
-            
+
             int64_t procId;
 
             if (!reader.TryReadObject<int64_t>(procId))
                 throw IgniteError(IgniteError::IGNITE_ERR_BINARY, "C++ entry processor id is not specified.");
 
-            invokeMgr->InvokeCacheEntryProcessorById(procId, reader, writer);
+            bool invoked = invokeMgr->InvokeCacheEntryProcessorById(procId, reader, writer);
+
+            if (!invoked)
+                throw IgniteError(IgniteError::IGNITE_ERR_COMPUTE_USER_UNDECLARED_EXCEPTION,
+                    "C++ entry processor is not found on the node (did you compile your program with -rdynamic?).");
 
             outStream.Synchronize();
         }

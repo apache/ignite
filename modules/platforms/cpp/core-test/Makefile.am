@@ -44,7 +44,8 @@ ignite_tests_LDADD = \
     -lpthread
 
 ignite_tests_LDFLAGS = \
-    -static-libtool-libs
+    -static-libtool-libs \
+    -rdynamic
 
 ignite_tests_SOURCES = \
     src/cache_test.cpp \
@@ -54,7 +55,7 @@ ignite_tests_SOURCES = \
     src/interop_memory_test.cpp \
     src/cache_invoke_test.cpp \
     src/handle_registry_test.cpp \
-	src/ignite_error_test.cpp \
+    src/ignite_error_test.cpp \
     src/binary_test_defs.cpp \
     src/binary_reader_writer_raw_test.cpp \
     src/binary_reader_writer_test.cpp \
