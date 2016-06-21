@@ -19,8 +19,8 @@
 import consoleModule from 'controllers/common-module';
 
 consoleModule.controller('sqlController', [
-    '$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$modal', '$popover', '$loading', '$common', '$confirm', 'IgniteAgentMonitor', 'IgniteChartColors', 'QueryNotebooks', 'uiGridExporterConstants',
-    function($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $modal, $popover, $loading, $common, $confirm, agentMonitor, IgniteChartColors, QueryNotebooks, uiGridExporterConstants) {
+    '$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$modal', '$popover', '$loading', '$common', '$confirm', 'IgniteAgentMonitor', 'IgniteChartColors', 'QueryNotebooks', 'uiGridConstants', 'uiGridExporterConstants',
+    function($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $modal, $popover, $loading, $common, $confirm, agentMonitor, IgniteChartColors, QueryNotebooks, uiGridConstants, uiGridExporterConstants) {
         let stopTopology = null;
 
         const _tryStopRefresh = function(paragraph) {
@@ -110,7 +110,7 @@ consoleModule.controller('sqlController', [
         function _min(rows, idx, dflt) {
             let min = _chartNumber(rows[0], idx, dflt);
 
-            _.forEach(rows, function(row) {
+            _.forEach(rows, (row) => {
                 const v = _chartNumber(row, idx, dflt);
 
                 if (v < min)
@@ -123,7 +123,7 @@ consoleModule.controller('sqlController', [
         function _max(rows, idx, dflt) {
             let max = _chartNumber(rows[0], idx, dflt);
 
-            _.forEach(rows, function(row) {
+            _.forEach(rows, (row) => {
                 const v = _chartNumber(row, idx, dflt);
 
                 if (v > max)
@@ -136,9 +136,7 @@ consoleModule.controller('sqlController', [
         function _sum(rows, idx) {
             let sum = 0;
 
-            _.forEach(rows, function(row) {
-                sum += _chartNumber(row, idx, 0);
-            });
+            _.forEach(rows, (row) => sum += _chartNumber(row, idx, 0));
 
             return sum;
         }
@@ -216,7 +214,7 @@ consoleModule.controller('sqlController', [
                                 values.shift();
                         }
                         else {
-                            _.forEach(paragraph.chartHistory, function(history) {
+                            _.forEach(paragraph.chartHistory, (history) => {
                                 if (history.tm >= leftBound) {
                                     values.push({
                                         x: history.tm,
@@ -303,15 +301,13 @@ consoleModule.controller('sqlController', [
         }
 
         function _updateChartsWithData(paragraph, newDatum) {
-            $timeout(function() {
+            $timeout(() => {
                 if (!paragraph.chartTimeLineEnabled()) {
                     const chartDatum = paragraph.charts[0].data;
 
                     chartDatum.length = 0;
 
-                    _.forEach(newDatum, function(series) {
-                        chartDatum.push(series);
-                    });
+                    _.forEach(newDatum, (series) => chartDatum.push(series));
                 }
 
                 paragraph.charts[0].api.update();
@@ -383,13 +379,17 @@ consoleModule.controller('sqlController', [
                 paragraph.chartValCols.forEach(function(valCol) {
                     let index = paragraph.total;
 
-                    const values = _.map(paragraph.rows, function(row) {
+                    const values = _.map(paragraph.rows, (row) => {
                         const xCol = paragraph.chartKeyCols[0].value;
 
                         const v = {
                             x: xCol < 0 ? index : row[xCol],
                             y: _chartNumber(row, valCol.value, index)
                         };
+
+                        // Workaround for known problem with zero values on Pie chart.
+                        if (v.y === 0)
+                            v.y = 0.0001;
 
                         index++;
 
@@ -633,6 +633,20 @@ consoleModule.controller('sqlController', [
 
         let paragraphId = 0;
 
+        const _fullColName = function(col) {
+            const res = [];
+
+            if (col.schemaName)
+                res.push(col.schemaName);
+
+            if (col.typeName)
+                res.push(col.typeName);
+
+            res.push(col.fieldName);
+
+            return res.join('.');
+        };
+
         function enhanceParagraph(paragraph) {
             paragraph.nonEmpty = function() {
                 return this.rows && this.rows.length > 0;
@@ -666,17 +680,40 @@ consoleModule.controller('sqlController', [
             };
 
             Object.defineProperty(paragraph, 'gridOptions', { value: {
+                enableGridMenu: false,
+                enableColumnMenus: false,
+                flatEntityAccess: true,
+                fastWatch: true,
+                updateColumns(cols) {
+                    this.columnDefs = _.map(cols, (col) => {
+                        return {
+                            displayName: col.fieldName,
+                            headerTooltip: _fullColName(col),
+                            field: col.field,
+                            minWidth: 50
+                        };
+                    });
+
+                    $timeout(() => this.api.core.notifyDataChange(uiGridConstants.dataChange.COLUMN));
+                },
+                updateRows(rows) {
+                    const sizeChanged = this.data.length !== rows.length;
+
+                    this.data = rows;
+
+                    if (sizeChanged) {
+                        const height = Math.min(rows.length, 15) * 30 + 47;
+
+                        // Remove header height.
+                        this.api.grid.element.css('height', height + 'px');
+
+                        $timeout(() => this.api.core.handleWindowResize());
+                    }
+                },
                 onRegisterApi(api) {
                     $animate.enabled(api.grid.element, false);
 
                     this.api = api;
-                },
-                enableGridMenu: false,
-                enableColumnMenus: false,
-                setRows(rows) {
-                    this.height = Math.min(rows.length, 15) * 30 + 42 + 'px';
-
-                    this.data = rows;
                 }
             }});
 
@@ -705,7 +742,7 @@ consoleModule.controller('sqlController', [
 
         const _setActiveCache = function() {
             if ($scope.caches.length > 0) {
-                _.forEach($scope.notebook.paragraphs, function(paragraph) {
+                _.forEach($scope.notebook.paragraphs, (paragraph) => {
                     if (!_.find($scope.caches, {name: paragraph.cacheName}))
                         paragraph.cacheName = $scope.caches[0].name;
                 });
@@ -760,7 +797,7 @@ consoleModule.controller('sqlController', [
             if (!$scope.notebook.paragraphs)
                 $scope.notebook.paragraphs = [];
 
-            _.forEach(notebook.paragraphs, function(paragraph) {
+            _.forEach(notebook.paragraphs, (paragraph) => {
                 paragraph.id = 'paragraph-' + paragraphId++;
 
                 enhanceParagraph(paragraph);
@@ -926,6 +963,8 @@ consoleModule.controller('sqlController', [
 
             if (paragraph.chart())
                 _chartApplySettings(paragraph, true);
+            else
+                $timeout(() => paragraph.gridOptions.api.core.handleWindowResize());
         };
 
         $scope.resultEq = function(paragraph, result) {
@@ -1013,23 +1052,7 @@ consoleModule.controller('sqlController', [
             return retainedCols;
         }
 
-        const _fullColName = function(col) {
-            const res = [];
-
-            if (col.schemaName)
-                res.push(col.schemaName);
-
-            if (col.typeName)
-                res.push(col.typeName);
-
-            res.push(col.fieldName);
-
-            return res.join('.');
-        };
-
         const _rebuildColumns = function(paragraph) {
-            const columnDefs = [];
-
             _.forEach(_.groupBy(paragraph.meta, 'fieldName'), function(colsByName, fieldName) {
                 const colsByTypes = _.groupBy(colsByName, 'typeName');
 
@@ -1042,21 +1065,30 @@ consoleModule.controller('sqlController', [
                 });
             });
 
-            _.forEach(paragraph.meta, function(col, idx) {
-                if (paragraph.columnFilter(col)) {
-                    if (_notObjectType(col.fieldTypeName))
-                        paragraph.chartColumns.push({value: idx, type: col.fieldTypeName, label: col.fieldName, aggFx: $scope.aggregateFxs[0]});
+            const cols = [];
 
-                    columnDefs.push({
-                        displayName: col.fieldName,
-                        headerTooltip: _fullColName(col),
-                        field: paragraph.queryArgs.query ? String(idx) : col.fieldName,
-                        minWidth: 50
-                    });
+            _.forEach(paragraph.meta, (col, idx) => {
+                if (paragraph.columnFilter(col)) {
+                    col.field = paragraph.queryArgs.query ? idx.toString() : col.fieldName;
+
+                    cols.push(col);
                 }
             });
 
-            paragraph.gridOptions.columnDefs = columnDefs;
+            paragraph.gridOptions.updateColumns(cols);
+
+            paragraph.chartColumns = _.reduce(cols, (acc, col) => {
+                if (_notObjectType(col.fieldTypeName)) {
+                    acc.push({
+                        label: col.fieldName,
+                        type: col.fieldTypeName,
+                        aggFx: $scope.aggregateFxs[0],
+                        value: col.field
+                    });
+                }
+
+                return acc;
+            }, []);
 
             if (paragraph.chartColumns.length > 0) {
                 paragraph.chartColumns.push(TIME_LINE);
@@ -1141,7 +1173,7 @@ consoleModule.controller('sqlController', [
             else
                 paragraph.rows = res.items;
 
-            paragraph.gridOptions.setRows(paragraph.rows);
+            paragraph.gridOptions.updateRows(paragraph.rows);
 
             const chartHistory = paragraph.chartHistory;
 
@@ -1153,9 +1185,7 @@ consoleModule.controller('sqlController', [
 
                 chartHistory.length = 0;
 
-                _.forEach(paragraph.charts, function(chart) {
-                    chart.data.length = 0;
-                });
+                _.forEach(paragraph.charts, (chart) => chart.data.length = 0);
             }
 
             // Add results to history.
@@ -1318,7 +1348,7 @@ consoleModule.controller('sqlController', [
         };
 
         function _updatePieChartsWithData(paragraph, newDatum) {
-            $timeout(function() {
+            $timeout(() => {
                 _.forEach(paragraph.charts, function(chart) {
                     const chartDatum = chart.data;
 
@@ -1330,9 +1360,7 @@ consoleModule.controller('sqlController', [
                     });
                 });
 
-                _.forEach(paragraph.charts, function(chart) {
-                    chart.api.update();
-                });
+                _.forEach(paragraph.charts, (chart) => chart.api.update());
             });
         }
 
@@ -1356,7 +1384,7 @@ consoleModule.controller('sqlController', [
                             _updateChartsWithData(paragraph, _chartDatum(paragraph));
                     }
 
-                    paragraph.gridOptions.setRows(paragraph.rows);
+                    paragraph.gridOptions.updateRows(paragraph.rows);
 
                     _showLoading(paragraph, false);
 
@@ -1430,6 +1458,7 @@ consoleModule.controller('sqlController', [
 
             agentMonitor.queryGetAll(args.cacheName, args.query)
                 .then((res) => _export(paragraph.name + '-all.csv', paragraph.columnFilter, res.fieldsMetadata, res.items))
+                .catch((err) => $common.showError(err))
                 .finally(() => paragraph.ace.focus());
         };
 

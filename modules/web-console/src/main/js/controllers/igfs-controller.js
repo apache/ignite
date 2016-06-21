@@ -146,7 +146,7 @@ consoleModule.controller('igfsController', [
                 $scope.igfss = data.igfss || [];
 
                 // For backward compatibility set colocateMetadata and relaxedConsistency default values.
-                _.forEach($scope.igfss, function(igfs) {
+                _.forEach($scope.igfss, (igfs) => {
                     if (_.isUndefined(igfs.colocateMetadata))
                         igfs.colocateMetadata = true;
 
@@ -161,8 +161,8 @@ consoleModule.controller('igfsController', [
                     };
                 });
 
-                if ($state.params.id)
-                    $scope.createItem($state.params.id);
+                if ($state.params.linkId)
+                    $scope.createItem($state.params.linkId);
                 else {
                     const lastSelectedIgfs = angular.fromJson(sessionStorage.lastSelectedIgfs);
 
@@ -240,26 +240,26 @@ consoleModule.controller('igfsController', [
             $common.confirmUnsavedChanges($scope.backupItem && $scope.ui.inputForm.$dirty, selectItem);
         };
 
-        function prepareNewItem(id) {
+        $scope.linkId = () => $scope.backupItem._id ? $scope.backupItem._id : 'create';
+
+        function prepareNewItem(linkId) {
             return {
                 space: $scope.spaces[0]._id,
                 ipcEndpointEnabled: true,
                 fragmentizerEnabled: true,
                 colocateMetadata: true,
                 relaxedConsistency: true,
-                clusters: id && _.find($scope.clusters, {value: id}) ? [id] :
+                clusters: linkId && _.find($scope.clusters, {value: linkId}) ? [linkId] :
                     (_.isEmpty($scope.clusters) ? [] : [$scope.clusters[0].value])
             };
         }
 
         // Add new IGFS.
-        $scope.createItem = function(id) {
+        $scope.createItem = function(linkId) {
             if ($scope.tableReset(true)) { // TODO LEGACY
-                $timeout(function() {
-                    $common.ensureActivePanel($scope.ui, 'general', 'igfsName');
-                });
+                $timeout(() => $common.ensureActivePanel($scope.ui, 'general', 'igfsName'));
 
-                $scope.selectItem(null, prepareNewItem(id));
+                $scope.selectItem(null, prepareNewItem(linkId));
             }
         };
 

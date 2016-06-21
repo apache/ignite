@@ -304,9 +304,8 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
 
                 popover = newPopover;
 
-                $timeout(function() { newPopover.$promise.then(newPopover.show); }, 400);
-
-                $timeout(function() { newPopover.hide(); }, showTime || 5000);
+                $timeout(() => newPopover.$promise.then(newPopover.show), 400);
+                $timeout(() => newPopover.hide(), showTime || 5000);
             }
         };
 
@@ -717,6 +716,16 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
             return DS_CHECK_SUCCESS;
         }
 
+        function compareSQLSchemaNames(firstCache, secondCache) {
+            const firstName = firstCache.sqlSchema;
+            const secondName = secondCache.sqlSchema;
+
+            if (firstName && secondName && (firstName === secondName))
+                return {checked: false, firstCache, secondCache};
+
+            return DS_CHECK_SUCCESS;
+        }
+
         function toJavaName(prefix, name) {
             const javaName = name ? name.replace(/[^A-Za-z_0-9]+/g, '_') : 'dflt';
 
@@ -954,7 +963,7 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
 
                 _.find(caches, function(curCache, curIx) {
                     if (isDefined(checkCacheExt)) {
-                        if (!isDefined(checkCacheExt._id) || checkCacheExt.id !== curCache._id) {
+                        if (checkCacheExt._id !== curCache._id) {
                             res = compareDataSources(checkCacheExt, curCache);
 
                             return !res.checked;
@@ -966,6 +975,33 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
                     return _.find(caches, function(checkCache, checkIx) {
                         if (checkIx < curIx) {
                             res = compareDataSources(checkCache, curCache);
+
+                            return !res.checked;
+                        }
+
+                        return false;
+                    });
+                });
+
+                return res;
+            },
+            checkCacheSQLSchemas(caches, checkCacheExt) {
+                let res = DS_CHECK_SUCCESS;
+
+                _.find(caches, (curCache, curIx) => {
+                    if (isDefined(checkCacheExt)) {
+                        if (checkCacheExt._id !== curCache._id) {
+                            res = compareSQLSchemaNames(checkCacheExt, curCache);
+
+                            return !res.checked;
+                        }
+
+                        return false;
+                    }
+
+                    return _.find(caches, function(checkCache, checkIx) {
+                        if (checkIx < curIx) {
+                            res = compareSQLSchemaNames(checkCache, curCache);
 
                             return !res.checked;
                         }
@@ -1512,7 +1548,7 @@ consoleModule.directive('retainSelection', ['$timeout', ($timeout) => {
             if (promise)
                 $timeout.cancel(promise);
 
-            promise = $timeout(function() {
+            promise = $timeout(() => {
                 let setCursor = false;
 
                 // Handle Backspace[8].
@@ -1555,7 +1591,7 @@ consoleModule.factory('$focus', ['$timeout', ($timeout) => {
         // Timeout makes sure that is invoked after any other event has been triggered.
         // E.g. click events that need to run before the focus or inputs elements that are
         // in a disabled state but are enabled when those events are triggered.
-        $timeout(function() {
+        $timeout(() => {
             const elem = $('#' + id);
 
             if (elem.length > 0)

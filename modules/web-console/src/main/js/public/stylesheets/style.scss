@@ -1035,6 +1035,11 @@ button.form-control {
     border: thin dotted $ignite-border-color;
 }
 
+.panel-details-noborder {
+    margin-top: 5px;
+    padding: 10px 5px;
+}
+
 .group {
     border-radius: 5px;
     border: thin dotted $ignite-border-color;
@@ -2133,4 +2138,18 @@ html,body,.splash-screen {
 
 [ng-show].ng-hide-add.ng-hide-animate {
     display: none;
+}
+
+@media only screen and (max-width: 767px) {
+    .container{
+        padding: 0 $padding-small-horizontal;
+    }
+}
+
+.domains-import-dialog {
+    .modal-body {
+        height: 325px;
+        margin: 0;
+        padding: 0;
+    }
 }
