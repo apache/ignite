@@ -114,6 +114,7 @@ extern "C" {
     void* IGNITE_CALL IgniteProjectionForRandom(gcj::JniContext* ctx, void* obj);
     void* IGNITE_CALL IgniteProjectionForOldest(gcj::JniContext* ctx, void* obj);
     void* IGNITE_CALL IgniteProjectionForYoungest(gcj::JniContext* ctx, void* obj);
+    void* IGNITE_CALL IgniteProjectionForServers(gcj::JniContext* ctx, void* obj);
     void IGNITE_CALL IgniteProjectionResetMetrics(gcj::JniContext* ctx, void* obj);
     void* IGNITE_CALL IgniteProjectionOutOpRet(gcj::JniContext* ctx, void* obj, int type, long long memPtr);
 

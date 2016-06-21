@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             int res = Grid1.GetCompute().Execute(new InjectionTask(), 0);
 
-            Assert.AreEqual(Grid1.GetCluster().GetNodes().Count, res);
+            Assert.AreEqual(GetServerCount(), res);
         }
 
         /// <summary>
@@ -61,7 +61,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             var res = Grid1.GetCompute().Broadcast(new InjectionClosure(), 1);
 
-            Assert.AreEqual(Grid1.GetCluster().GetNodes().Count, res.Sum());
+            Assert.AreEqual(GetServerCount(), res.Sum());
         }
 
         /// <summary>
@@ -72,7 +72,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             int res = Grid1.GetCompute().Apply(new InjectionClosure(), new List<int> { 1, 1, 1 }, new InjectionReducer());
 
-            Assert.AreEqual(Grid1.GetCluster().GetNodes().Count, res);
+            Assert.AreEqual(3, res);
         }
 
         /// <summary>
@@ -83,7 +83,7 @@ namespace Apache.Ignite.Core.Tests.Compute
         {
             int res = Grid1.GetCompute().Execute(new NoResultCacheTask(), 0);
 
-            Assert.AreEqual(Grid1.GetCluster().GetNodes().Count, res);
+            Assert.AreEqual(GetServerCount(), res);
         }
 
         /// <summary>

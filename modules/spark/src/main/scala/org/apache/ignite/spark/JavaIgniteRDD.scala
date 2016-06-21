@@ -98,6 +98,8 @@ class JavaIgniteRDD[K, V](override val rdd: IgniteRDD[K, V])
         savePairs(jrdd, f, overwrite = false)
 
     def clear(): Unit = rdd.clear()
+
+    def withKeepBinary[K1, V1](): JavaIgniteRDD[K1, V1] = new JavaIgniteRDD[K1, V1](rdd.withKeepBinary[K1, V1]())
 }
 
 object JavaIgniteRDD {

@@ -1621,7 +1621,8 @@ public class DataStreamerImpl<K, V> implements IgniteDataStreamer<K, V>, Delayed
                         expiryTime,
                         false,
                         topVer,
-                        GridDrType.DR_LOAD);
+                        GridDrType.DR_LOAD,
+                        false);
 
                     cctx.evicts().touch(entry, topVer);
 

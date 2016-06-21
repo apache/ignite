@@ -343,6 +343,10 @@ extern "C" {
         return ctx->ProjectionForYoungest(static_cast<jobject>(obj));
     }
 
+    void* IGNITE_CALL IgniteProjectionForServers(gcj::JniContext* ctx, void* obj) {
+        return ctx->ProjectionForServers(static_cast<jobject>(obj));
+    }
+
     void IGNITE_CALL IgniteProjectionResetMetrics(gcj::JniContext* ctx, void* obj) {
         ctx->ProjectionResetMetrics(static_cast<jobject>(obj));
     }

@@ -189,6 +189,13 @@
                                                 <xs:attribute name="type" type="xs:string" use="required" />
                                             </xs:complexType>
                                         </xs:element>
+                                        <xs:element name="affinityFunction" minOccurs="0">
+                                            <xs:complexType>
+                                                <xs:attribute name="partitionCount" type="xs:int" />
+                                                <xs:attribute name="excludeNeighbors" type="xs:boolean" />
+                                                <xs:attribute name="type" type="xs:string" use="required" />
+                                            </xs:complexType>
+                                        </xs:element>
                                     </xs:all>
                                     <xs:attribute name="name" type="xs:string" />
                                     <xs:attribute name="cacheMode" type="xs:string" />
