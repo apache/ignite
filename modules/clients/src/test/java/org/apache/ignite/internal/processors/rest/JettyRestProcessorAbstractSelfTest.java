@@ -339,6 +339,39 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     /**
      * @throws Exception If failed.
      */
+    public void testNullMapKeyAndValue()  throws Exception {
+        Map<String, String> map1 = new HashMap<>();
+        map1.put(null, null);
+        map1.put("key", "value");
+
+        jcache().put("mapKey1", map1);
+
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_GET.key(), "key", "mapKey1"));
+
+        info("Get command result: " + ret);
+
+        JsonNode res = jsonResponse(ret);
+
+        assertEquals(F.asMap("", null, "key", "value"), JSON_MAPPER.treeToValue(res, HashMap.class));
+
+        Map<String, String> map2 = new HashMap<>();
+        map2.put(null, "value");
+        map2.put("key", null);
+
+        jcache().put("mapKey2", map2);
+
+        ret = content(F.asMap("cmd", GridRestCommand.CACHE_GET.key(), "key", "mapKey2"));
+
+        info("Get command result: " + ret);
+
+        res = jsonResponse(ret);
+
+        assertEquals(F.asMap("", "value", "key", null), JSON_MAPPER.treeToValue(res, HashMap.class));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
     public void testSimpleObject()  throws Exception {
         SimplePerson p = new SimplePerson(1, "Test", java.sql.Date.valueOf("1977-01-26"), 1000.55, 39, "CIO", 25);
 
