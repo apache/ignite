@@ -17,20 +17,11 @@
 
 namespace Apache.Ignite.Core.Cache.Affinity
 {
-    using System.Collections.Generic;
-    using Apache.Ignite.Core.Cluster;
-
     /// <summary>
-    /// Affinity function context to be passed to <see cref="IAffinityFunction"/>.
+    /// 
     /// </summary>
-    public interface IAffinityFunctionContext
+    public struct AffinityTopologyVersion
     {
-        ICollection<IClusterNode>  PreviousAssignment { get; }
-
-        int Backups { get; }
-
-        ICollection<IClusterNode> CurrentTopologySnapshot { get; }
-
-
+        
     }
 }

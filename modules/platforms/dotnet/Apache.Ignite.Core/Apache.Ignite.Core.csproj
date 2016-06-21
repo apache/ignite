@@ -84,6 +84,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Binary\BinaryReflectiveSerializer.cs" />
+    <Compile Include="Cache\Affinity\AffinityTopologyVersion.cs" />
     <Compile Include="Cache\Affinity\IAffinityFunctionContext.cs" />
     <Compile Include="Impl\Binary\BinaryReflectiveSerializerInternal.cs" />
     <Compile Include="Impl\Binary\IBinarySerializerInternal.cs" />

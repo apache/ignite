@@ -81,7 +81,7 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// </summary>
         /// <param name="context">The affinity function context.</param>
         /// <returns>
-        /// A collection of partitions, where each partition is a collection of nodes, 
+        /// A collection of partitions, where each partition is a collection of nodes,
         /// where first node is a primary node, and other nodes are backup nodes.
         /// </returns>
         IEnumerable<IEnumerable<IClusterNode>> AssignPartitions(IAffinityFunctionContext context);
