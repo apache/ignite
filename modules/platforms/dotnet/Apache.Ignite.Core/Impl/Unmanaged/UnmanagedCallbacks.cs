@@ -1128,8 +1128,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             return SafeCall(() =>
             {
-                // TODO: unmarshal key
-                return _handleRegistry.Get<IAffinityFunction>(ptr).GetPartition(null);
+                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                {
+                    var key = _ignite.Marshaller.Unmarshal<object>(stream);
+
+                    return _handleRegistry.Get<IAffinityFunction>(ptr).GetPartition(key);
+                }
             });
         }
 
@@ -1146,8 +1150,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             SafeCall(() =>
             {
-                // TODO: unmarshal
-                _handleRegistry.Get<IAffinityFunction>(ptr).RemoveNode(new Guid());
+                using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
+                {
+                    var nodeId = _ignite.Marshaller.Unmarshal<Guid>(stream);
+
+                    _handleRegistry.Get<IAffinityFunction>(ptr).RemoveNode(nodeId);
+                }
             });
         }
 
