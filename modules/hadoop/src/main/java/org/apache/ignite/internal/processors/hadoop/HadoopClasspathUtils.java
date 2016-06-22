@@ -169,12 +169,12 @@ public class HadoopClasspathUtils {
     }
 
     /**
-     * Checks if the variable is empty.
+     * Resolves a Hadoop location directory.
      *
-     * @param envVarName Environment variable name.
-     * @param hadoopHome The current value.
-     * @param expHadoopHomeRelativePath The path relative to Hadoop home.
-     * @throws FileNotFoundException If the value is empty.
+     * @param envVarName Environment variable name. The value denotes the location path.
+     * @param hadoopHome Hadoop home location, may be null.
+     * @param expHadoopHomeRelativePath The path relative to Hadoop home, expected to start with path separator.
+     * @throws FileNotFoundException If the value cannot be resolved to an existing directory.
      */
     private static String resolveLocation(String envVarName, String hadoopHome,
                                           String expHadoopHomeRelativePath) throws FileNotFoundException {
