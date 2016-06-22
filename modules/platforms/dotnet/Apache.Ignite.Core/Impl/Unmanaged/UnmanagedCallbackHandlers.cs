@@ -104,5 +104,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         internal void* affinityFunctionPartition;
         internal void* affinityFunctionAssignPartitions;
         internal void* affinityFunctionRemoveNode;
+        internal void* affinityFunctionDestroy;
     }
 }
