@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.platform.cache.affinity;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
@@ -30,6 +31,7 @@ import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
+import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
 import java.io.Externalizable;
@@ -43,7 +45,7 @@ import java.util.UUID;
 /**
  * Platform AffinityFunction.
  */
-public class PlatformAffinityFunction implements AffinityFunction, Externalizable {
+public class PlatformAffinityFunction implements AffinityFunction, Externalizable, LifecycleAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -183,6 +185,16 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         userFunc = in.readObject();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() throws IgniteException {
+        // No-op.
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop() throws IgniteException {
+        // TODO: destroy
     }
 
     /**
