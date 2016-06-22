@@ -22,6 +22,7 @@ import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
@@ -105,14 +106,29 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
     /** {@inheritDoc} */
     @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext affCtx) {
         assert ctx != null;
+        assert affCtx != null;
 
         try (PlatformMemory outMem = ctx.memory().allocate()) {
             try (PlatformMemory inMem = ctx.memory().allocate()) {
                 PlatformOutputStream out = outMem.output();
                 BinaryRawWriterEx writer = ctx.writer(out);
 
-                // TODO
-                //writer.writeObject(key);
+                List<List<ClusterNode>> prevAssignment = ((GridAffinityFunctionContextImpl)affCtx).prevAssignment();
+                if (prevAssignment == null)
+                    writer.writeInt(-1);
+                else
+                {
+                    writer.writeInt(prevAssignment.size());
+
+                    for (List<ClusterNode> part : prevAssignment)
+                        ctx.writeNodes(writer, part);
+                }
+
+                writer.writeInt(affCtx.backups());
+                ctx.writeNodes(writer, affCtx.currentTopologySnapshot());
+                writer.writeLong(affCtx.currentTopologyVersion().topologyVersion());
+                writer.writeInt(affCtx.currentTopologyVersion().minorTopologyVersion());
+                ctx.writeEvent(writer, affCtx.discoveryEvent());
 
                 out.synchronize();
 
