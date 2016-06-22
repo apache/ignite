@@ -572,8 +572,10 @@ consoleModule.controller('clustersController', [
 
                                 if (clusters.length > 0)
                                     $scope.selectItem(clusters[0]);
-                                else
+                                else {
                                     $scope.backupItem = emptyCluster;
+                                    $scope.ui.inputForm.$setPristine();
+                                }
                             }
                         })
                         .error(function(errMsg) {

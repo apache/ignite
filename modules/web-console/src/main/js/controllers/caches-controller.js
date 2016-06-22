@@ -413,8 +413,10 @@ consoleModule.controller('cachesController', [
 
                                 if (caches.length > 0)
                                     $scope.selectItem(caches[0]);
-                                else
+                                else {
                                     $scope.backupItem = emptyCache;
+                                    $scope.ui.inputForm.$setPristine();
+                                }
                             }
                         })
                         .error(function(errMsg) {

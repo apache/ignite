@@ -1378,8 +1378,10 @@ consoleModule.controller('domainsController', [
 
                                 if (domains.length > 0)
                                     $scope.selectItem(domains[0]);
-                                else
+                                else {
                                     $scope.backupItem = emptyDomain;
+                                    $scope.ui.inputForm.$setPristine();
+                                }
                             }
 
                             _checkShowValidPresentation();

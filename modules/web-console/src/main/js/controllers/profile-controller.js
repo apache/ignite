@@ -19,8 +19,8 @@
 import consoleModule from 'controllers/common-module';
 
 consoleModule.controller('profileController', [
-    '$rootScope', '$scope', '$http', '$common', '$focus', '$confirm', 'IgniteCountries',
-    function($root, $scope, $http, $common, $focus, $confirm, Countries) {
+    '$rootScope', '$scope', '$http', '$common', '$focus', '$confirm', 'IgniteCountries', 'User',
+    function($root, $scope, $http, $common, $focus, $confirm, Countries, User) {
         $scope.user = angular.copy($root.user);
 
         $scope.countries = Countries.getAll();
@@ -30,19 +30,6 @@ consoleModule.controller('profileController', [
                 .then(() => $scope.user.token = $common.randomString(20));
         };
 
-        const _cleanup = () => {
-            const _user = $scope.user;
-
-            if (!$scope.expandedToken)
-                _user.token = $root.user.token;
-
-            if (!$scope.expandedPassword) {
-                delete _user.password;
-
-                delete _user.confirm;
-            }
-        };
-
         const _passwordValid = () => {
             const cur = $scope.user;
 
@@ -50,12 +37,27 @@ consoleModule.controller('profileController', [
         };
 
         const _profileChanged = () => {
-            _cleanup();
-
             const old = $root.user;
             const cur = $scope.user;
 
             return !_.isEqual(old, cur);
+        };
+
+        $scope.toggleToken = () => {
+            $scope.expandedToken = !$scope.expandedToken;
+
+            if (!$scope.expandedToken)
+                $scope.user.token = $root.user.token;
+        };
+
+        $scope.togglePassword = () => {
+            $scope.expandedPassword = !$scope.expandedPassword;
+
+            if (!$scope.expandedPassword) {
+                delete $scope.user.password;
+
+                delete $scope.user.confirm;
+            }
         };
 
         $scope.profileCouldBeSaved = () => _profileChanged() && $scope.profileForm && $scope.profileForm.$valid && _passwordValid();
@@ -71,23 +73,20 @@ consoleModule.controller('profileController', [
         };
 
         $scope.saveUser = () => {
-            _cleanup();
-
             $http.post('/api/v1/profile/save', $scope.user)
-                .success(() => {
-                    $scope.expandedPassword = false;
+                .then(User.read)
+                .then(() => {
+                    if ($scope.expandedPassword)
+                        $scope.togglePassword();
 
-                    _cleanup();
-
-                    $scope.expandedToken = false;
-
-                    $root.user = angular.copy($scope.user);
+                    if ($scope.expandedToken)
+                        $scope.toggleToken();
 
                     $common.showInfo('Profile saved.');
 
                     $focus('profile-username');
                 })
-                .error((err) => $common.showError('Failed to save profile: ' + $common.errorMessage(err)));
+                .catch((err) => $common.showError('Failed to save profile: ' + $common.errorMessage(err)));
         };
     }]
 );
