@@ -1113,6 +1113,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 {
                     var func = _ignite.Marshaller.Unmarshal<IAffinityFunction>(stream);
 
+                    ResourceProcessor.Inject(func, _ignite);
+
                     return _handleRegistry.Allocate(func);
                 }
             });
