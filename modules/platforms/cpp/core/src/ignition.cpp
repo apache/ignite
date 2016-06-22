@@ -234,6 +234,8 @@ namespace ignite
                     failed = true;
                 }
 
+                env.Get()->SetContext(ctx);
+
                 // 5. Start Ignite.
                 if (!failed)
                 {
@@ -263,7 +265,7 @@ namespace ignite
                     }
                     else {
                         // 6. Ignite is started at this point.
-                        env.Get()->Initialize(ctx);
+                        env.Get()->Initialize();
 
                         started = true;
                     }

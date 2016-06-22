@@ -20,6 +20,7 @@
 
 #include <ignite/common/concurrent.h>
 #include <ignite/jni/java.h>
+#include <ignite/jni/utils.h>
 
 #include "ignite/impl/interop/interop_memory.h"
 #include "ignite/impl/binary/binary_type_manager.h"
@@ -59,11 +60,16 @@ namespace ignite
             ignite::jni::java::JniHandlers GetJniHandlers(ignite::common::concurrent::SharedPointer<IgniteEnvironment>* target);
 
             /**
-             * Perform initialization on successful start.
+             * Set context.
              *
              * @param ctx Context.
              */
-            void Initialize(ignite::common::concurrent::SharedPointer<ignite::jni::java::JniContext> ctx);
+            void SetContext(ignite::common::concurrent::SharedPointer<ignite::jni::java::JniContext> ctx);
+
+            /**
+             * Perform initialization on successful start.
+             */
+            void Initialize();
 
             /**
              * Start callback.
@@ -150,7 +156,7 @@ namespace ignite
             char* name;
 
             /** Processor instance. */
-            void* proc;
+            ignite::jni::JavaGlobalRef proc;
 
             /** Type manager. */
             binary::BinaryTypeManager* metaMgr;

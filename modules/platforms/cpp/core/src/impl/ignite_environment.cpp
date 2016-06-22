@@ -91,7 +91,7 @@ namespace ignite
             ctx(SharedPointer<JniContext>()),
             latch(new SingleLatch),
             name(0),
-            proc(0),
+            proc(),
             metaMgr(new BinaryTypeManager()),
             invokeMgr(new InvokeManager()),
             moduleMgr(new ModuleManager(invokeMgr))
@@ -126,10 +126,13 @@ namespace ignite
             return hnds;
         }
 
-        void IgniteEnvironment::Initialize(SharedPointer<JniContext> ctx)
+        void IgniteEnvironment::SetContext(SharedPointer<JniContext> ctx)
         {
             this->ctx = ctx;
+        }
 
+        void IgniteEnvironment::Initialize()
+        {
             latch->CountDown();
         }
 
@@ -140,7 +143,7 @@ namespace ignite
 
         void* IgniteEnvironment::GetProcessor()
         {
-            return proc;
+            return (void*)proc.Get();
         }
 
         JniContext* IgniteEnvironment::Context()
@@ -194,13 +197,13 @@ namespace ignite
 
         void IgniteEnvironment::ProcessorReleaseStart()
         {
-            if (proc)
-                ctx.Get()->ProcessorReleaseStart(reinterpret_cast<jobject>(proc));
+            if (proc.Get())
+                ctx.Get()->ProcessorReleaseStart(proc.Get());
         }
 
         void IgniteEnvironment::OnStartCallback(long long memPtr, void* proc)
         {
-            this->proc = proc;
+            this->proc = ignite::jni::JavaGlobalRef(*ctx.Get(), (jobject)proc);
 
             InteropExternalMemory mem(reinterpret_cast<int8_t*>(memPtr));
             InteropInputStream stream(&mem);
