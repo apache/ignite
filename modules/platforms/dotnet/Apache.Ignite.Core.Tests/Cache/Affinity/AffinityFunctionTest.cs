@@ -60,6 +60,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         {
             // Destroy all caches
             _ignite.GetCacheNames().ToList().ForEach(_ignite.DestroyCache);
+            Assert.AreEqual(0, _ignite.GetCacheNames().Count);
 
             // Check that all affinity functions got released
             TestUtils.AssertHandleRegistryIsEmpty(1000, _ignite);
