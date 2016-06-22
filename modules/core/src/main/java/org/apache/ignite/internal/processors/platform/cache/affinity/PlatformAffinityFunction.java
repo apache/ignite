@@ -45,6 +45,9 @@ import java.util.UUID;
  */
 public class PlatformAffinityFunction implements AffinityFunction, Externalizable {
     /** */
+    private static final long serialVersionUID = 0L;
+
+    /** */
     private Object userFunc;
 
     /** */
