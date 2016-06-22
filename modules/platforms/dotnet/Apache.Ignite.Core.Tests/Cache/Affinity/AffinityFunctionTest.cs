@@ -32,10 +32,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
     public class AffinityFunctionTest
     {
         /** */
+        private IIgnite _ignite;
+
+        /** */
         private const string CacheName = "cache";
 
-        [Test]
-        public void Test()
+        [TestFixtureSetUp]
+        public void FixtureSetUp()
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
@@ -49,21 +52,48 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                 }
             };
 
-            using (var ignite = Ignition.Start(cfg))
-            {
-                var cache = ignite.GetCache<int, int>(CacheName);
-                Assert.IsInstanceOf<SimpleAffinityFunction>(cache.GetConfiguration().AffinityFunction);
+            _ignite = Ignition.Start(cfg);
+        }
 
-                var aff = ignite.GetAffinity(CacheName);
-                Assert.AreEqual(10, aff.Partitions);
+        [TestFixtureTearDown]
+        public void FixtureTearDown()
+        {
+            // Destroy all caches
+            _ignite.GetCacheNames().ToList().ForEach(_ignite.DestroyCache);
 
-                for (int i = 0; i < 7; i++)
-                    Assert.AreEqual(i, aff.GetPartition(i));
-            }
+            // Check that all affinity functions got released
+            TestUtils.AssertHandleRegistryIsEmpty(5000, _ignite);
+
+            Ignition.StopAll(true);
         }
 
         [Test]
         public void TestInject()
+        {
+            
+        }
+
+        [Test]
+        public void TestStaticCache()
+        {
+            var cache = _ignite.GetCache<int, int>(CacheName);
+            Assert.IsInstanceOf<SimpleAffinityFunction>(cache.GetConfiguration().AffinityFunction);
+
+            var aff = _ignite.GetAffinity(CacheName);
+            Assert.AreEqual(10, aff.Partitions);
+
+            for (int i = 0; i < 7; i++)
+                Assert.AreEqual(i, aff.GetPartition(i));
+        }
+
+        [Test]
+        public void TestDynamicCache()
+        {
+            
+        }
+
+        [Test]
+        public void TestRemoveNode()
         {
             
         }
