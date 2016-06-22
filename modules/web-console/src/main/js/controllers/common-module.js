@@ -100,7 +100,7 @@ consoleModule.config(['$alertProvider', ($alertProvider) => {
         container: 'body',
         placement: 'top-right',
         duration: '5',
-        template: alertTemplateUrl,
+        templateUrl: alertTemplateUrl,
         type: 'danger'
     });
 }]);
