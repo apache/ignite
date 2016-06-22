@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.rest.protocols.http.jetty;
 
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.BeanProperty;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -67,8 +68,16 @@ public class GridJettyObjectMapper extends ObjectMapper {
         registerModule(module);
     }
 
+    /** Custom {@code null} key serializer. */
+    private static final JsonSerializer<Object> NULL_KEY_SERIALIZER = new JsonSerializer<Object>() {
+        /** {@inheritDoc} */
+        @Override public void serialize(Object val, JsonGenerator gen, SerializerProvider ser) throws IOException {
+            gen.writeFieldName("");
+        }
+    };
+
     /** Custom {@code null} value serializer. */
-    private static final JsonSerializer<Object> NULL_SERIALIZER = new JsonSerializer<Object>() {
+    private static final JsonSerializer<Object> NULL_VALUE_SERIALIZER = new JsonSerializer<Object>() {
         /** {@inheritDoc} */
         @Override public void serialize(Object val, JsonGenerator gen, SerializerProvider ser) throws IOException {
             gen.writeNull();
@@ -76,7 +85,7 @@ public class GridJettyObjectMapper extends ObjectMapper {
     };
 
     /** Custom {@code null} string serializer. */
-    private static final JsonSerializer<Object> NULL_STRING_SERIALIZER = new JsonSerializer<Object>() {
+    private static final JsonSerializer<Object> NULL_STRING_VALUE_SERIALIZER = new JsonSerializer<Object>() {
         /** {@inheritDoc} */
         @Override public void serialize(Object val, JsonGenerator gen, SerializerProvider ser) throws IOException {
             gen.writeString("");
@@ -111,11 +120,17 @@ public class GridJettyObjectMapper extends ObjectMapper {
         }
 
         /** {@inheritDoc} */
+        @Override public JsonSerializer<Object> findNullKeySerializer(JavaType serializationType,
+            BeanProperty prop) throws JsonMappingException {
+            return NULL_KEY_SERIALIZER;
+        }
+
+        /** {@inheritDoc} */
         @Override public JsonSerializer<Object> findNullValueSerializer(BeanProperty prop) throws JsonMappingException {
             if (prop.getType().getRawClass() == String.class)
-                return NULL_STRING_SERIALIZER;
+                return NULL_STRING_VALUE_SERIALIZER;
 
-            return NULL_SERIALIZER;
+            return NULL_VALUE_SERIALIZER;
         }
     }
 
