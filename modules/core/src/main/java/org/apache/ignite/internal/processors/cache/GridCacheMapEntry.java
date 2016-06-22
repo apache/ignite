@@ -3615,10 +3615,8 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         IgniteCacheOffheapManager.CacheObjectEntry oldEntry = cctx.offheap().remove(key, prevVal, prevVer, partition(), localPartition());
 
-        if (cctx.config().isEagerTtl() && oldEntry != null && oldEntry.getExpireTime() > 0) {
+        if (cctx.config().isEagerTtl() && oldEntry != null && oldEntry.getExpireTime() > 0)
             cctx.ttl().removeTrackedEntry(this, oldEntry);
-            oldEntry = null;
-        }
     }
 
     /**

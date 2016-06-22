@@ -81,7 +81,6 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         if(cleanupWorker == null)
             return;
 
-
         pentries.addTrackedEntry(entry);
     }
 

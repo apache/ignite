@@ -334,6 +334,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
             ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);
 
             try {
+                // Always unswap with value because the value is checked below.
                 cached.unswap(true);
 
                 if ((txEntry.op() == CREATE || txEntry.op() == UPDATE) &&

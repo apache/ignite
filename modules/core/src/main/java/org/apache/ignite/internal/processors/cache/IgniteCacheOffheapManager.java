@@ -87,7 +87,8 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * @param ver  Version.
      * @param expireTime Expire time.
      * @param part Partition.
-     * @return offheap link
+     * @return UpdateInfo object that contains the info about the old entry and the offheap link to new
+     *          entry.
      * @throws IgniteCheckedException If failed.
      */
     public UpdateInfo update(
@@ -104,6 +105,7 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * @param prevVal Previous value.
      * @param prevVer Previous version.
      * @param part Partition.
+     * @return removed entry info
      * @throws IgniteCheckedException If failed.
      */
     public CacheObjectEntry remove(
@@ -204,7 +206,8 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
          * @param val Value.
          * @param ver Version.
          * @param expireTime Expire time.
-         * @return off heap link
+         * @return UpdateInfo object that contains the info about the old entry and the offheap link to new
+         *          entry.
          * @throws IgniteCheckedException If failed.
          */
         UpdateInfo update(KeyCacheObject key,
@@ -215,6 +218,7 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
 
         /**
          * @param key Key.
+         * @return removed entry
          * @throws IgniteCheckedException If failed.
          */
         public CacheObjectEntry remove(KeyCacheObject key) throws IgniteCheckedException;
@@ -252,10 +256,10 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * The wrapper to return data loaded from paged memory
      */
     class CacheObjectEntry {
-        /** Object. */
+        /** Key object. */
         private final KeyCacheObject key;
 
-        /** Object. */
+        /** Value object. */
         private final CacheObject val;
 
         /** Version. */
