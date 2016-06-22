@@ -167,6 +167,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private delegate long AffinityFunctionInitDelegate(void* target, long memPtr);
         private delegate void AffinityFunctionResetDelegate(void* target, long ptr);
+        private delegate int AffinityFunctionPartitionDelegate(void* target, long ptr, long memPtr);
+        private delegate void AffinityFunctionAssignPartitionsDelegate(void* target, long ptr, long inMemPtr, long outMemPtr);
+        private delegate void AffinityFunctionRemoveNodeDelegate(void* target, long ptr, long memPtr);
 
         /// <summary>
         /// constructor.
@@ -253,7 +256,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 ocClientReconnected = CreateFunctionPointer((OnClientReconnectedDelegate)OnClientReconnected),
 
                 affinityFunctionInit = CreateFunctionPointer((AffinityFunctionInitDelegate)AffinityFunctionInit),
-                affinityFunctionReset = CreateFunctionPointer((AffinityFunctionResetDelegate)AffinityFunctionReset)
+                affinityFunctionReset = CreateFunctionPointer((AffinityFunctionResetDelegate)AffinityFunctionReset),
+                affinityFunctionPartition = CreateFunctionPointer((AffinityFunctionPartitionDelegate)AffinityFunctionPartition),
+                affinityFunctionAssignPartitions = CreateFunctionPointer((AffinityFunctionAssignPartitionsDelegate)AffinityFunctionAssignPartitions),
+                affinityFunctionRemoveNode = CreateFunctionPointer((AffinityFunctionRemoveNodeDelegate)AffinityFunctionRemoveNode)
             };
 
             _cbsPtr = Marshal.AllocHGlobal(UU.HandlersSize());
@@ -1115,6 +1121,33 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             SafeCall(() =>
             {
                 _handleRegistry.Get<IAffinityFunction>(ptr).Reset();
+            });
+        }
+
+        private int AffinityFunctionPartition(void* target, long ptr, long memPtr)
+        {
+            return SafeCall(() =>
+            {
+                // TODO: unmarshal key
+                return _handleRegistry.Get<IAffinityFunction>(ptr).GetPartition(null);
+            });
+        }
+
+        private void AffinityFunctionAssignPartitions(void* target, long ptr, long inMemPtr, long outMemPtr)
+        {
+            SafeCall(() =>
+            {
+                // TODO: unmarshal
+                _handleRegistry.Get<IAffinityFunction>(ptr).AssignPartitions(null);
+            });
+        }
+
+        private void AffinityFunctionRemoveNode(void* target, long ptr, long memPtr)
+        {
+            SafeCall(() =>
+            {
+                // TODO: unmarshal
+                _handleRegistry.Get<IAffinityFunction>(ptr).RemoveNode(new Guid());
             });
         }
 
