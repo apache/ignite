@@ -416,6 +416,7 @@
     <Compile Include="Impl\Unmanaged\UnmanagedTarget.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedUtils.cs" />
     <Compile Include="Interop\JavaObject.cs" />
+    <Compile Include="Lifecycle\ClientReconnectEventArgs.cs" />
     <Compile Include="Lifecycle\Package-Info.cs" />
     <Compile Include="Messaging\Package-Info.cs" />
     <Compile Include="Package-Info.cs" />
