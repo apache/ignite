@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
     /// <summary>
@@ -36,6 +37,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
         /** */
         private const string CacheName = "cache";
+
+        /** */
+        private const int Partitions = 10;
 
         [TestFixtureSetUp]
         public void FixtureSetUp()
@@ -69,22 +73,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         }
 
         [Test]
-        public void TestInject()
-        {
-            
-        }
-
-        [Test]
         public void TestStaticCache()
         {
             var cache = _ignite.GetCache<int, int>(CacheName);
-            Assert.IsInstanceOf<SimpleAffinityFunction>(cache.GetConfiguration().AffinityFunction);
+            var func = cache.GetConfiguration().AffinityFunction;
+            Assert.IsNotNull(((SimpleAffinityFunction)func).Ignite);
 
             var aff = _ignite.GetAffinity(CacheName);
-            Assert.AreEqual(10, aff.Partitions);
+            Assert.AreEqual(Partitions, aff.Partitions);
 
-            for (int i = 0; i < 7; i++)
-                Assert.AreEqual(i, aff.GetPartition(i));
+            for (int i = 0; i < 100; i++)
+                Assert.AreEqual(i % Partitions, aff.GetPartition(i));
         }
 
         [Test]
@@ -107,6 +106,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
         private class SimpleAffinityFunction : IAffinityFunction
         {
+            #pragma warning disable 649  // field is never assigned
+            [InstanceResource] public readonly IIgnite Ignite;
+
             public void Reset()
             {
                 // No-op.
@@ -114,7 +116,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
             public int PartitionCount
             {
-                get { return 10; }
+                get { return Partitions; }
             }
 
             public int GetPartition(object key)
