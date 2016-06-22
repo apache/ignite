@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.cache;
 
 import java.util.Collections;
 import java.util.Set;
+import java.util.UUID;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
@@ -253,8 +254,11 @@ public class GridCacheClearSelfTest extends GridCommonAbstractTest {
         Ignite client1 = client1();
         Ignite client2 = client2();
 
+        // TODO GG-11220 (use the same name when fixed).
+        String cacheName = "cache-" + UUID.randomUUID();
+
         try {
-            CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>("cache");
+            CacheConfiguration<Integer, Integer> cfg = new CacheConfiguration<>(cacheName);
 
             cfg.setCacheMode(cacheMode);
             cfg.setMemoryMode(memMode);
@@ -264,8 +268,8 @@ public class GridCacheClearSelfTest extends GridCommonAbstractTest {
                 client1.createCache(cfg);
 
             IgniteCache<Integer, Integer> cache2 = near ?
-                client2.createNearCache("cache", new NearCacheConfiguration<Integer, Integer>()) :
-                client2.<Integer, Integer>cache("cache");
+                client2.createNearCache(cacheName, new NearCacheConfiguration<Integer, Integer>()) :
+                client2.<Integer, Integer>cache(cacheName);
 
             for (int i = 0; i < 10; i++)
                 cache1.put(i, i);
@@ -293,7 +297,7 @@ public class GridCacheClearSelfTest extends GridCommonAbstractTest {
             assertEquals(near ? expSize : 0, cache2.localSize(CachePeekMode.NEAR));
         }
         finally {
-            client1.destroyCache("cache");
+            client1.destroyCache(cacheName);
         }
     }
 

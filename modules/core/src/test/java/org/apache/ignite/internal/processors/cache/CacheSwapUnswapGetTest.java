@@ -90,7 +90,7 @@ public class CacheSwapUnswapGetTest extends GridCommonAbstractTest {
             ccfg.setEvictionPolicy(plc);
         }
 
-        // TODO GG-10884.
+        // TODO GG-11148.
 //        if (swap) {
 //            ccfg.setSwapEnabled(true);
 //
@@ -260,7 +260,6 @@ public class CacheSwapUnswapGetTest extends GridCommonAbstractTest {
 
                 log.info("Cache size [heap=" + cache.localSize(CachePeekMode.ONHEAP) +
                     ", offheap=" + cache.localSize(CachePeekMode.OFFHEAP) +
-                    ", swap=" + cache.localSize(CachePeekMode.SWAP) +
                     ", total=" + cache.localSize() +
                     ", offheapMem=" + cache.localMetrics().getOffHeapAllocatedSize() + ']');
             }

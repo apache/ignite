@@ -17,6 +17,9 @@
 
 package org.apache.ignite.internal.pagemem.wal.record;
 
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.internal.S;
+
 /**
  * Log entry abstract class.
  */
@@ -38,7 +41,10 @@ public abstract class WALRecord {
         STORE_OPERATION_RECORD,
 
         /** */
-        CHECKPOINT_RECORD;
+        CHECKPOINT_RECORD,
+
+        /** */
+        HEADER_RECORD;
 
         /** */
         private static final RecordType[] VALS = RecordType.values();
@@ -49,8 +55,86 @@ public abstract class WALRecord {
         }
     }
 
+    /** */
+    private int size;
+
+    /** */
+    private int chainSize;
+
+    /** */
+    @GridToStringExclude
+    private WALRecord prev;
+
+    /** */
+    private long pos;
+
+    /**
+     * @param chainSize Chain size in bytes.
+     */
+    public void chainSize(int chainSize) {
+        this.chainSize = chainSize;
+    }
+
+    /**
+     * @return Get chain size in bytes.
+     */
+    public int chainSize() {
+        return chainSize;
+    }
+
+    /**
+     * @return Previous record in chain.
+     */
+    public WALRecord previous() {
+        return prev;
+    }
+
+    /**
+     * @param prev Previous record in chain.
+     */
+    public void previous(WALRecord prev) {
+        this.prev = prev;
+    }
+
+    /**
+     * @return Position in file.
+     */
+    public long position() {
+        return pos;
+    }
+
+    /**
+     * @param pos Position in file.
+     */
+    public void position(long pos) {
+        assert pos >= 0: pos;
+
+        this.pos = pos;
+    }
+
+    /**
+     * @return Size of this record in bytes.
+     */
+    public int size() {
+        return size;
+    }
+
+    /**
+     * @param size Size of this record in bytes.
+     */
+    public void size(int size) {
+        assert size >= 0: size;
+
+        this.size = size;
+    }
+
     /**
      * @return Entry type.
      */
     public abstract RecordType type();
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(WALRecord.class, this, "type", type());
+    }
 }

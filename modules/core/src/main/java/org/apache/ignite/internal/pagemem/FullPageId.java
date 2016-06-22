@@ -56,6 +56,32 @@ public class FullPageId {
     private final int cacheId;
 
     /**
+     * @param cacheId Cache ID.
+     * @param pageId Page ID.
+     * @return Hash code.
+     */
+    public static int hashCode(int cacheId, long pageId) {
+        long effectiveId = PageIdUtils.effectivePageId(pageId);
+
+        return hashCode0(cacheId, effectiveId);
+    }
+
+    /**
+     * Will not clear link bits.
+     *
+     * @param cacheId Cache ID.
+     * @param effectivePageId Effective page ID.
+     * @return Hash code.
+     */
+    private static int hashCode0(int cacheId, long effectivePageId) {
+        int result = (int)(effectivePageId ^ (effectivePageId >>> 32));
+
+        result = 31 * result + cacheId;
+
+        return result;
+    }
+
+    /**
      * @param pageId Page ID.
      * @param cacheId Cache ID.
      */
@@ -95,11 +121,7 @@ public class FullPageId {
 
     /** {@inheritDoc} */
     @Override public int hashCode() {
-        int result = (int)(effectivePageId ^ (effectivePageId >>> 32));
-
-        result = 31 * result + cacheId;
-
-        return result;
+        return hashCode0(cacheId, effectivePageId);
     }
 
     /** {@inheritDoc} */

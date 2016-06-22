@@ -315,9 +315,7 @@ public abstract class GridCacheSwapScanQueryAbstractSelfTest extends GridCommonA
     /**
      * @throws Exception If failed.
      */
-    public void _testQueryValueByteArray() throws Exception {
-        fail("http://atlassian.gridgain.com/jira/browse/GG-11216");
-
+    public void testQueryValueByteArray() throws Exception {
         checkQueryValueByteArray(grid(0).cache(ATOMIC_BYTREARR_CACHE_NAME));
         checkQueryValueByteArray(grid(0).cache(TRANSACTIONAL_BYTEARR_CACHE_NAME));
     }

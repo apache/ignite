@@ -49,13 +49,13 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
         mem.start();
 
         try {
-            FullPageId page1Handle = allocatePage(mem);
-            FullPageId page2Handle = allocatePage(mem);
+            FullPageId fullId1 = allocatePage(mem);
+            FullPageId fullId2 = allocatePage(mem);
 
-            Page page1 = mem.page(page1Handle);
+            Page page1 = mem.page(fullId1.cacheId(), fullId1.pageId());
 
             try {
-                Page page2 = mem.page(page2Handle);
+                Page page2 = mem.page(fullId2.cacheId(), fullId2.pageId());
 
                 info("Allocated pages [page1=" + page1 + ", page2=" + page2 + ']');
 
@@ -97,11 +97,11 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
             List<FullPageId> pages = new ArrayList<>(pagesCnt);
 
             for (int i = 0; i < pagesCnt; i++) {
-                FullPageId pageHandle = allocatePage(mem);
+                FullPageId fullId = allocatePage(mem);
 
-                pages.add(pageHandle);
+                pages.add(fullId);
 
-                Page page = mem.page(pageHandle);
+                Page page = mem.page(fullId.cacheId(), fullId.pageId());
 
                 try {
                     if (i % 64 == 0)
@@ -115,9 +115,9 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
             }
 
             for (int i = 0; i < pagesCnt; i++) {
-                FullPageId pageHandle = pages.get(i);
+                FullPageId fullId = pages.get(i);
 
-                Page page = mem.page(pageHandle);
+                Page page = mem.page(fullId.cacheId(), fullId.pageId());
 
                 try {
                     if (i % 64 == 0)
@@ -144,12 +144,12 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
         mem.start();
 
         try {
-            FullPageId pageHandle = allocatePage(mem);
+            FullPageId fullId = allocatePage(mem);
 
-            Page page = mem.page(pageHandle);
+            Page page = mem.page(fullId.cacheId(), fullId.pageId());
 
             try {
-                Page other = mem.page(pageHandle);
+                Page other = mem.page(fullId.cacheId(), fullId.pageId());
 
                 try {
                     assertSame(other, page);
@@ -189,8 +189,8 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
             for (int i = 0; i < pages; i++)
                 handles.add(allocatePage(mem));
 
-            for (FullPageId handle : handles)
-                mem.freePage(handle);
+            for (FullPageId fullId : handles)
+                mem.freePage(fullId.cacheId(), fullId.pageId());
 
             for (int i = 0; i < pages; i++)
                 assertFalse(handles.add(allocatePage(mem)));
@@ -252,6 +252,6 @@ public class PageMemoryNoLoadSelfTest extends GridCommonAbstractTest {
      * @return Page.
      */
     public static FullPageId allocatePage(PageIdAllocator mem) throws IgniteCheckedException {
-        return mem.allocatePage(0, -1, PageIdAllocator.FLAG_DATA);
+        return new FullPageId(mem.allocatePage(0, -1, PageIdAllocator.FLAG_DATA), 0);
     }
 }

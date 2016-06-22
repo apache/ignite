@@ -66,6 +66,7 @@ import static org.apache.ignite.internal.processors.cache.database.tree.util.Pag
 /**
  * Abstract B+Tree.
  */
+@SuppressWarnings({"RedundantThrowsDeclaration", "ConstantValueVariableUse"})
 public abstract class BPlusTree<L, T extends L> {
     /** */
     public static Random rnd;
@@ -263,7 +264,8 @@ public abstract class BPlusTree<L, T extends L> {
                 else {
                     Result res = askNeighbor(fwdId, g, false);
 
-                    assert res == FOUND; // We keep lock on current page, our forward can't be removed.
+                    if (res != FOUND)
+                        return res; // Retry.
                 }
 
                 if (cnt != 0) // It is not a routing page and we are going to the right, can get backId here.
@@ -373,6 +375,26 @@ public abstract class BPlusTree<L, T extends L> {
                 assert idx < cnt;
             }
 
+            // Before modifying state we have to make sure that we will not go for retry.
+
+            // We may need to replace inner key or want to merge this leaf with sibling after the remove -> keep lock.
+            if (r.needReplaceInner == TRUE ||
+                // We need to make sure that we have back or forward to be able to merge.
+                ((r.fwdId != 0 || r.backId != 0) && mayMerge(cnt - 1, io.getMaxCount(buf)))) {
+                // If we have backId then we've already locked back page, nothing to do here.
+                if (r.fwdId != 0 && r.backId == 0) {
+                    Result res = r.lockForward(0);
+
+                    if (res != FOUND)
+                        return res; // Retry.
+                }
+
+                if (cnt == 1) // It was the last item.
+                    r.needMergeEmptyBranch = TRUE;
+
+                r.addTail(leafId, leaf, buf, io, 0, Tail.EXACT, -1);
+            }
+
             r.removed = getRow(io, buf, idx);
 
             r.doRemove(io, buf, cnt, idx);
@@ -384,20 +406,6 @@ public abstract class BPlusTree<L, T extends L> {
                 // and releases the locks only when the inner key is updated and the successor saw the updated removeId,
                 // then after retry from root, he will see updated inner key.
                 io.setRemoveId(buf, globalRmvId.incrementAndGet());
-            }
-
-            // We may need to replace inner key or want to merge this leaf with sibling after the remove -> keep lock.
-            if (r.needReplaceInner == TRUE ||
-                // We need to make sure that we have back or forward to be able to merge.
-                ((r.fwdId != 0 || r.backId != 0) && mayMerge(cnt - 1, io.getMaxCount(buf)))) {
-                if (cnt == 1) // It was the last item.
-                    r.needMergeEmptyBranch = TRUE;
-
-                // If we have backId then we've already locked back page, nothing to do here.
-                if (r.fwdId != 0 && r.backId == 0)
-                    r.lockForward(0);
-
-                r.addTail(leafId, leaf, buf, io, 0, Tail.EXACT, -1);
             }
 
             return FOUND;
@@ -462,18 +470,7 @@ public abstract class BPlusTree<L, T extends L> {
 
             boolean found = idx >= 0;
 
-            if (found) {
-                if (io.canGetRow()) {
-                    // We can not miss the inner value on down move because of `triangle` invariant, thus it must be TRUE.
-                    assert r.needReplaceInner == TRUE : r.needReplaceInner;
-                    assert idx <= Short.MAX_VALUE : idx;
-
-                    r.innerIdx = (short)idx;
-
-                    r.needReplaceInner = READY;
-                }
-            }
-            else {
+            if (!found) {
                 idx = -idx - 1;
 
                 // Check that we have a correct view of the world.
@@ -489,8 +486,23 @@ public abstract class BPlusTree<L, T extends L> {
             }
 
             // We don't have a back page, need to lock our forward and become a back for it.
-            if (r.fwdId != 0 && r.backId == 0)
-                r.lockForward(lvl);
+            if (r.fwdId != 0 && r.backId == 0) {
+                Result res = r.lockForward(lvl);
+
+                if (res != FOUND)
+                    return res; // Retry.
+            }
+
+            // Update state only when we are sure that we will not go for retry.
+            if (found && io.canGetRow()) {
+                // We can not miss the inner value on down move because of `triangle` invariant, thus it must be TRUE.
+                assert r.needReplaceInner == TRUE : r.needReplaceInner;
+                assert idx <= Short.MAX_VALUE : idx;
+
+                r.innerIdx = (short)idx;
+
+                r.needReplaceInner = READY;
+            }
 
             r.addTail(pageId, page, buf, io, lvl, Tail.EXACT, idx);
 
@@ -499,8 +511,8 @@ public abstract class BPlusTree<L, T extends L> {
     };
 
     /** */
-    private final PageHandler<Long, Bool> updateFirst = new PageHandler<Long, Bool>() {
-        @Override public Bool run(long metaId, Page meta, ByteBuffer buf, Long pageId, int lvl)
+    private final PageHandler<Long, Void> updateFirst = new PageHandler<Long, Void>() {
+        @Override public Void run(long metaId, Page meta, ByteBuffer buf, Long pageId, int lvl)
             throws IgniteCheckedException {
             assert pageId != null;
 
@@ -516,13 +528,13 @@ public abstract class BPlusTree<L, T extends L> {
             else
                 io.setFirstPageId(buf, lvl, pageId);
 
-            return TRUE;
+            return null;
         }
     };
 
     /** */
-    private final PageHandler<Long, Bool> newRoot = new PageHandler<Long, Bool>() {
-        @Override public Bool run(long metaId, Page meta, ByteBuffer buf, Long rootPageId, int lvl)
+    private final PageHandler<Long, Void> newRoot = new PageHandler<Long, Void>() {
+        @Override public Void run(long metaId, Page meta, ByteBuffer buf, Long rootPageId, int lvl)
             throws IgniteCheckedException {
             assert rootPageId != null;
 
@@ -533,7 +545,7 @@ public abstract class BPlusTree<L, T extends L> {
             io.setLevelsCount(buf, lvl + 1);
             io.setFirstPageId(buf, lvl, rootPageId);
 
-            return TRUE;
+            return null;
         }
     };
 
@@ -1909,9 +1921,7 @@ public abstract class BPlusTree<L, T extends L> {
                             }
                         }
 
-                        Bool res = writePage(metaPageId, meta, newRoot, newRootId, lvl + 1);
-
-                        assert res == TRUE : "failed to update meta page";
+                        writePage(metaPageId, meta, newRoot, newRootId, lvl + 1);
 
                         return null; // We've just moved link up to root, nothing to return here.
                     }
@@ -2242,16 +2252,14 @@ public abstract class BPlusTree<L, T extends L> {
 
         /**
          * @param lvl Level.
+         * @return Result code.
          * @throws IgniteCheckedException If failed.
          */
-        private void lockForward(int lvl) throws IgniteCheckedException {
+        private Result lockForward(int lvl) throws IgniteCheckedException {
             assert fwdId != 0;
             assert backId == 0;
 
-            Result res = writePage(fwdId, page(fwdId), lockTailForward, this, lvl);
-
-            // Must always be called from lock on back page, thus we should never fail here.
-            assert res == FOUND: res;
+            return writePage(fwdId, page(fwdId), lockTailForward, this, lvl);
         }
 
         /**
@@ -2358,9 +2366,7 @@ public abstract class BPlusTree<L, T extends L> {
                 // This logic will handle root as well.
                 long fwdId = io.getForward(buf);
 
-                Bool res = writePage(metaPageId, meta, updateFirst, fwdId, lvl);
-
-                assert res == TRUE: res;
+                writePage(metaPageId, meta, updateFirst, fwdId, lvl);
             }
 
             // Mark removed.
@@ -2737,7 +2743,7 @@ public abstract class BPlusTree<L, T extends L> {
         if (PageIdUtils.flag(pageId) == PageIdAllocator.FLAG_IDX)
             pageId = PageIdUtils.maskPartId(pageId);
 
-        return pageMem.page(new FullPageId(pageId, cacheId));
+        return pageMem.page(cacheId, pageId);
     }
 
     /**
@@ -2763,8 +2769,7 @@ public abstract class BPlusTree<L, T extends L> {
      * @throws IgniteCheckedException
      */
     protected long allocatePage0() throws IgniteCheckedException {
-        // TODO make pageMem.allocatePage return long
-        return pageMem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_IDX).pageId();
+        return pageMem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_IDX);
     }
 
     /**

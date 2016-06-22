@@ -558,7 +558,7 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
      * @throws IgniteCheckedException If failed.
      */
     private FullPageId allocateMetaPage() throws IgniteCheckedException {
-        return pageMem.allocatePage(CACHE_ID, 0, PageIdAllocator.FLAG_META);
+        return new FullPageId(pageMem.allocatePage(CACHE_ID, 0, PageIdAllocator.FLAG_META), CACHE_ID);
     }
 
     /**

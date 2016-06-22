@@ -293,8 +293,6 @@ public class GridDhtPreloader extends GridCachePreloaderAdapter {
                 assert part != null;
                 assert part.id() == p;
 
-                top.ownIfUpToDate(part);
-
                 if (part.state() != MOVING) {
                     if (log.isDebugEnabled())
                         log.debug("Skipping partition assignment (state is not MOVING): " + part);

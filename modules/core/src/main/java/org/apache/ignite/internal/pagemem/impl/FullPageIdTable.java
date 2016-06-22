@@ -21,7 +21,6 @@ package org.apache.ignite.internal.pagemem.impl;
 import org.apache.ignite.internal.pagemem.DirectMemoryUtils;
 import org.apache.ignite.internal.mem.OutOfMemoryException;
 import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.IgniteSystemProperties.*;
@@ -145,15 +144,18 @@ public class FullPageIdTable {
     /**
      * Gets value associated with the given key.
      *
-     * @param fullId Key to get value for. Key cannot be equal to {@code EMPTY_PAGE_ID} and key cannot be equal
-     * to {@code 0x8000000000000000}.
+     * @param cacheId Cache ID.
+     * @param pageId Page ID.
      *
      * @return A value associated with the given key.
      */
-    public long get(FullPageId fullId, long absent) {
-        assert assertKey(fullId);
+    public long get(int cacheId, long pageId, long absent) {
+        assert assertKey(cacheId, pageId);
 
-        int index = getKey(fullId);
+        if (pageId == 0x000020000000001bL && cacheId == 689859866)
+            U.debug("Read value at: ");
+
+        int index = getKey(cacheId, pageId);
 
         if (index < 0)
             return absent;
@@ -164,14 +166,17 @@ public class FullPageIdTable {
     /**
      * Associates the given key with the given value.
      *
-     * @param key Key to set value for. Key cannot be equal to {@code 0} and key cannot be equal
-     *      to {@code 0x8000000000000000}.
+     * @param cacheId Cache ID
+     * @param pageId Page ID.
      * @param value Value to set.
      */
-    public void put(FullPageId key, long value) {
-        assert assertKey(key);
+    public void put(int cacheId, long pageId, long value) {
+        assert assertKey(cacheId, pageId);
 
-        int index = putKey(key);
+        if (pageId == 0x000020000000001bL && cacheId == 689859866)
+            U.debug("Set page pointer at: ");
+
+        int index = putKey(cacheId, pageId);
 
         setValueAt(index, value);
     }
@@ -179,12 +184,16 @@ public class FullPageIdTable {
     /**
      * Removes key-value association for the given key.
      *
-     * @param key Key to remove from the map.
+     * @param cacheId Cache ID.
+     * @param pageId Page ID.
      */
-    public void remove(FullPageId key) {
-        assert assertKey(key);
+    public void remove(int cacheId, long pageId) {
+        assert assertKey(cacheId, pageId);
 
-        int index = removeKey(key);
+        int index = removeKey(cacheId, pageId);
+
+        if (pageId == 0x000020000000001bL && cacheId == 689859866)
+            U.debug("Remove value at: " + index);
 
         if (index >= 0)
             setValueAt(index, 0);
@@ -209,19 +218,20 @@ public class FullPageIdTable {
     }
 
     /**
-     * @param key Key.
+     * @param cacheId Cache ID.
+     * @param pageId Page ID.
      * @return Key index.
      */
-    private int putKey(FullPageId key) {
+    private int putKey(int cacheId, long pageId) {
         int step = 1;
 
-        int index = U.safeAbs(key.hashCode()) % capacity;
+        int index = U.safeAbs(FullPageId.hashCode(cacheId, pageId)) % capacity;
 
         do {
-            int res = testKeyAt(index, key);
+            int res = testKeyAt(index, cacheId, pageId);
 
             if (res == EMPTY || res == REMOVED) {
-                setKeyAt(index, key.pageId(), key.cacheId());
+                setKeyAt(index, cacheId, pageId);
 
                 incrementSize();
 
@@ -246,16 +256,17 @@ public class FullPageIdTable {
     }
 
     /**
-     * @param key Key.
+     * @param cacheId Cache ID.
+     * @param pageId Page ID.
      * @return Key index.
      */
-    private int getKey(FullPageId key) {
+    private int getKey(int cacheId, long pageId) {
         int step = 1;
 
-        int index = U.safeAbs(key.hashCode()) % capacity;
+        int index = U.safeAbs(FullPageId.hashCode(cacheId, pageId)) % capacity;
 
         do {
-            long res = testKeyAt(index, key);
+            long res = testKeyAt(index, cacheId, pageId);
 
             if (res == EQUAL)
                 return index;
@@ -277,19 +288,20 @@ public class FullPageIdTable {
     }
 
     /**
-     * @param key Key.
+     * @param cacheId Cache ID.
+     * @param pageId Page ID.
      * @return Key index.
      */
-    private int removeKey(FullPageId key) {
+    private int removeKey(int cacheId, long pageId) {
         int step = 1;
 
-        int index = U.safeAbs(key.hashCode()) % capacity;
+        int index = U.safeAbs(FullPageId.hashCode(cacheId, pageId)) % capacity;
 
         do {
-            long res = testKeyAt(index, key);
+            long res = testKeyAt(index, cacheId, pageId);
 
             if (res == EQUAL) {
-                setKeyAt(index, REMOVED_PAGE_ID, REMOVED_CACHE_ID);
+                setKeyAt(index, REMOVED_CACHE_ID, REMOVED_PAGE_ID);
 
                 decrementSize();
 
@@ -317,8 +329,7 @@ public class FullPageIdTable {
      * @param index Entry index.
      * @return Key value.
      */
-    @SuppressWarnings("IfStatementWithIdenticalBranches")
-    private int testKeyAt(int index, FullPageId fullId) {
+    private int testKeyAt(int index, int testCacheId, long testPageId) {
         long base = valPtr + 4 + (long)index * BYTES_PER_ENTRY;
 
         long pageId = mem.readLong(base);
@@ -326,7 +337,7 @@ public class FullPageIdTable {
 
         if (pageId == REMOVED_PAGE_ID && cacheId == REMOVED_CACHE_ID)
             return REMOVED;
-        else if (pageId == fullId.pageId() && cacheId == fullId.cacheId())
+        else if (pageId == testPageId && cacheId == testCacheId)
             return EQUAL;
         else if(pageId == EMPTY_PAGE_ID && cacheId == EMPTY_CACHE_ID)
             return EMPTY;
@@ -349,21 +360,23 @@ public class FullPageIdTable {
     }
 
     /**
-     * @param fullId Full page ID to check.
+     * @param cacheId Cache ID.
+     * @param pageId Page ID.
      * @return {@code True} if checks succeeded.
      */
-    private boolean assertKey(FullPageId fullId) {
-        assert !F.eq(fullId, EMPTY_FULL_PAGE_ID) : "fullId != EMPTY";
+    private boolean assertKey(int cacheId, long pageId) {
+        assert cacheId != EMPTY_CACHE_ID || pageId != EMPTY_PAGE_ID :
+            "cacheId=" + cacheId + ", pageId=" + U.hexLong(pageId);
 
         return true;
     }
 
     /**
      * @param index Entry index.
-     * @param pageId Page ID to write.
      * @param cacheId Cache ID to write.
+     * @param pageId Page ID to write.
      */
-    private void setKeyAt(int index, long pageId, int cacheId) {
+    private void setKeyAt(int index, int cacheId, long pageId) {
         long base = valPtr + 4 + (long)index * BYTES_PER_ENTRY;
 
         mem.writeLong(base, pageId);

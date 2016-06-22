@@ -272,18 +272,19 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     @SuppressWarnings("unchecked")
     @Nullable public CacheObjectEntry read(GridCacheMapEntry entry)
         throws IgniteCheckedException {
-        KeyCacheObject key = entry.key();
+        try {
+            KeyCacheObject key = entry.key();
 
-//        if (indexingEnabled) {
-//            IgniteBiTuple<CacheObject, GridCacheVersion> t = cctx.queries().read(key, part);
-//
-//            if (t != null)
-//                return t.get1() != null ? t : null;
-//        }
+            assert cctx.isLocal() || entry.localPartition() != null : entry;
 
-        assert cctx.isLocal() || entry.localPartition() != null : entry;
-
-        return dataStore(entry.localPartition()).find(key);
+            return dataStore(entry.localPartition()).find(key);
+        }
+        catch (IgniteCheckedException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException("Failed to read entry: " + entry.key(), e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -539,7 +540,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
      * @throws IgniteCheckedException If failed.
      */
     private Page page(long pageId) throws IgniteCheckedException {
-        return cctx.shared().database().pageMemory().page(new FullPageId(pageId, cctx.cacheId()));
+        return cctx.shared().database().pageMemory().page(cctx.cacheId(), pageId);
     }
 
     /** {@inheritDoc} */

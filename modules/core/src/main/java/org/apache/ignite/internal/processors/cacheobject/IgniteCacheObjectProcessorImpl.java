@@ -163,8 +163,7 @@ public class IgniteCacheObjectProcessorImpl extends GridProcessorAdapter impleme
     @Override public CacheObject toCacheObject(CacheObjectContext ctx, ByteBuffer buf) {
         int len = buf.getInt();
 
-        if (len == 0)
-            return null;
+        assert len >= 0 : len;
 
         byte type = buf.get();
 

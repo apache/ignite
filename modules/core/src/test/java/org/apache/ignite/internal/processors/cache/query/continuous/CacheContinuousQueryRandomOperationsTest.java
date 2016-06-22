@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
@@ -1631,6 +1632,7 @@ public class CacheContinuousQueryRandomOperationsTest extends GridCommonAbstract
         boolean store) {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
 
+        ccfg.setName("cache-" + UUID.randomUUID()); // TODO GG-11220 (remove setName when fixed).
         ccfg.setAtomicityMode(atomicityMode);
         ccfg.setCacheMode(cacheMode);
         ccfg.setMemoryMode(memoryMode);

@@ -67,23 +67,32 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         c.setDiscoverySpi(disco);
 
-        // Cache.
+        c.setCacheConfiguration(
+            cacheConfiguration(null, String.class, Person.class),
+            cacheConfiguration("addr", String.class, Address.class));
+
+        return c;
+    }
+
+    /**
+     * @param name Cache name.
+     * @param clsK Key class.
+     * @param clsV Value class.
+     * @return Cache configuration.
+     */
+    private CacheConfiguration cacheConfiguration(String name, Class<?> clsK, Class<?> clsV) {
         CacheConfiguration cc = defaultCacheConfiguration();
 
+        cc.setName(name);
         cc.setCacheMode(CacheMode.PARTITIONED);
         cc.setAtomicityMode(CacheAtomicityMode.ATOMIC);
         cc.setNearConfiguration(null);
         cc.setWriteSynchronizationMode(FULL_SYNC);
         cc.setRebalanceMode(SYNC);
         cc.setSqlFunctionClasses(GridQueryParsingTest.class);
-        cc.setIndexedTypes(
-            String.class, Address.class,
-            String.class, Person.class
-        );
+        cc.setIndexedTypes(clsK, clsV);
 
-        c.setCacheConfiguration(cc);
-
-        return c;
+        return cc;
     }
 
     /** */
@@ -138,16 +147,16 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("select * from table0('aaa', 100) x left join table0('bbb', 100) y on x.a=y.a where x.b = 'bbb'");
         checkQuery("select * from table0('aaa', 100) x left join table0('bbb', 100) y where x.b = 'bbb'");
 
-        checkQuery("select avg(old) from Person left join Address on Person.addrId = Address.id " +
+        checkQuery("select avg(old) from Person left join \"addr\".Address on Person.addrId = Address.id " +
             "where lower(Address.street) = lower(?)");
 
-        checkQuery("select avg(old) from Person join Address on Person.addrId = Address.id " +
+        checkQuery("select avg(old) from Person join \"addr\".Address on Person.addrId = Address.id " +
             "where lower(Address.street) = lower(?)");
 
-        checkQuery("select avg(old) from Person left join Address where Person.addrId = Address.id " +
+        checkQuery("select avg(old) from Person left join \"addr\".Address where Person.addrId = Address.id " +
             "and lower(Address.street) = lower(?)");
 
-        checkQuery("select avg(old) from Person, Address where Person.addrId = Address.id " +
+        checkQuery("select avg(old) from Person, \"addr\".Address where Person.addrId = Address.id " +
             "and lower(Address.street) = lower(?)");
 
         checkQuery("select name, date from Person");
@@ -157,18 +166,18 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("select distinct * from Person");
         checkQuery("select p.name, date from Person p");
 
-        checkQuery("select * from Person p, Address a");
-        checkQuery("select * from Person, Address");
-        checkQuery("select p.* from Person p, Address a");
-        checkQuery("select person.* from Person, Address a");
-        checkQuery("select p.*, street from Person p, Address a");
-        checkQuery("select p.name, a.street from Person p, Address a");
-        checkQuery("select distinct p.name, a.street from Person p, Address a");
-        checkQuery("select distinct name, street from Person, Address group by old");
-        checkQuery("select distinct name, street from Person, Address");
-        checkQuery("select p1.name, a2.street from Person p1, Address a1, Person p2, Address a2");
+        checkQuery("select * from Person p, \"addr\".Address a");
+        checkQuery("select * from Person, \"addr\".Address");
+        checkQuery("select p.* from Person p, \"addr\".Address a");
+        checkQuery("select person.* from Person, \"addr\".Address a");
+        checkQuery("select p.*, street from Person p, \"addr\".Address a");
+        checkQuery("select p.name, a.street from Person p, \"addr\".Address a");
+        checkQuery("select distinct p.name, a.street from Person p, \"addr\".Address a");
+        checkQuery("select distinct name, street from Person, \"addr\".Address group by old");
+        checkQuery("select distinct name, street from Person, \"addr\".Address");
+        checkQuery("select p1.name, a2.street from Person p1, \"addr\".Address a1, Person p2, \"addr\".Address a2");
 
-        checkQuery("select p.name n, a.street s from Person p, Address a");
+        checkQuery("select p.name n, a.street s from Person p, \"addr\".Address a");
         checkQuery("select p.name, 1 as i, 'aaa' s from Person p");
 
         checkQuery("select p.name + 'a', 1 * 3 as i, 'aaa' s, -p.old, -p.old as old from Person p");
@@ -180,7 +189,8 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("select p.name from Person p where name <> 'ivan'");
         checkQuery("select p.name from Person p where name like 'i%'");
         checkQuery("select p.name from Person p where name regexp 'i%'");
-        checkQuery("select p.name from Person p, Address a where p.name <> 'ivan' and a.id > 10 or not (a.id = 100)");
+        checkQuery("select p.name from Person p, \"addr\".Address a " +
+            "where p.name <> 'ivan' and a.id > 10 or not (a.id = 100)");
 
         checkQuery("select case p.name when 'a' then 1 when 'a' then 2 end as a from Person p");
         checkQuery("select case p.name when 'a' then 1 when 'a' then 2 else -1 end as a from Person p");
@@ -192,9 +202,11 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
 
         checkQuery("select * from Person p where p.name in ('a', 'b', '_' + RAND())"); // test ConditionIn
         checkQuery("select * from Person p where p.name in ('a', 'b', 'c')"); // test ConditionInConstantSet
-        checkQuery("select * from Person p where p.name in (select a.street from Address a)"); // test ConditionInConstantSet
+        // test ConditionInConstantSet
+        checkQuery("select * from Person p where p.name in (select a.street from \"addr\".Address a)");
 
-        checkQuery("select (select a.street from Address a where a.id = p.addrId) from Person p"); // test ConditionInConstantSet
+        // test ConditionInConstantSet
+        checkQuery("select (select a.street from \"addr\".Address a where a.id = p.addrId) from Person p");
 
         checkQuery("select p.name, ? from Person p where name regexp ? and p.old < ?");
 
@@ -210,42 +222,52 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
         checkQuery("select p.name n, avg(p.old) a, max(p.old) m from Person p group by p.addrId, p.name");
         checkQuery("select p.name n, avg(p.old) a, max(p.old) m from Person p group by p.name, p.addrId");
         checkQuery("select p.name n, max(p.old) + min(p.old) / count(distinct p.old) from Person p group by p.name");
-        checkQuery("select p.name n, max(p.old) maxOld, min(p.old) minOld from Person p group by p.name having maxOld > 10 and min(p.old) < 1");
+        checkQuery("select p.name n, max(p.old) maxOld, min(p.old) minOld from Person p " +
+            "group by p.name having maxOld > 10 and min(p.old) < 1");
 
         checkQuery("select p.name n, avg(p.old) a, max(p.old) m from Person p group by p.name order by n");
         checkQuery("select p.name n, avg(p.old) a, max(p.old) m from Person p group by p.name order by p.name");
         checkQuery("select p.name n, avg(p.old) a, max(p.old) m from Person p group by p.name order by p.name, m");
-        checkQuery("select p.name n, avg(p.old) a, max(p.old) m from Person p group by p.name order by p.name, max(p.old) desc");
-        checkQuery("select p.name n, avg(p.old) a, max(p.old) m from Person p group by p.name order by p.name nulls first");
-        checkQuery("select p.name n, avg(p.old) a, max(p.old) m from Person p group by p.name order by p.name nulls last");
+        checkQuery("select p.name n, avg(p.old) a, max(p.old) m from Person p " +
+            "group by p.name order by p.name, max(p.old) desc");
+        checkQuery("select p.name n, avg(p.old) a, max(p.old) m from Person p " +
+            "group by p.name order by p.name nulls first");
+        checkQuery("select p.name n, avg(p.old) a, max(p.old) m from Person p " +
+            "group by p.name order by p.name nulls last");
         checkQuery("select p.name n from Person p order by p.old + 10");
         checkQuery("select p.name n from Person p order by p.old + 10, p.name");
         checkQuery("select p.name n from Person p order by p.old + 10, p.name desc");
 
-        checkQuery("select p.name n from Person p, (select a.street from Address a where a.street is not null) ");
-        checkQuery("select street from Person p, (select a.street from Address a where a.street is not null) ");
-        checkQuery("select addr.street from Person p, (select a.street from Address a where a.street is not null) addr");
+        checkQuery("select p.name n from Person p, (select a.street from \"addr\".Address a " +
+            "where a.street is not null) ");
+        checkQuery("select street from Person p, (select a.street from \"addr\".Address a " +
+            "where a.street is not null) ");
+        checkQuery("select addr.street from Person p, (select a.street from \"addr\".Address a " +
+            "where a.street is not null) addr");
 
         checkQuery("select p.name n from \"\".Person p order by p.old + 10");
 
         checkQuery("select case when p.name is null then 'Vasya' end x from \"\".Person p");
         checkQuery("select case when p.name like 'V%' then 'Vasya' else 'Other' end x from \"\".Person p");
-        checkQuery("select case when upper(p.name) = 'VASYA' then 'Vasya' when p.name is not null then p.name else 'Other' end x from \"\".Person p");
+        checkQuery("select case when upper(p.name) = 'VASYA' then 'Vasya' " +
+            "when p.name is not null then p.name else 'Other' end x from \"\".Person p");
 
         checkQuery("select case p.name when 'Vasya' then 1 end z from \"\".Person p");
         checkQuery("select case p.name when 'Vasya' then 1 when 'Petya' then 2 end z from \"\".Person p");
         checkQuery("select case p.name when 'Vasya' then 1 when 'Petya' then 2 else 3 end z from \"\".Person p");
         checkQuery("select case p.name when 'Vasya' then 1 else 3 end z from \"\".Person p");
 
-        checkQuery("select count(*) as a from Person union select count(*) as a from Address");
-        checkQuery("select old, count(*) as a from Person group by old union select 1, count(*) as a from Address");
-        checkQuery("select name from Person MINUS select street from Address");
-        checkQuery("select name from Person EXCEPT select street from Address");
-        checkQuery("select name from Person INTERSECT select street from Address");
-        checkQuery("select name from Person UNION select street from Address limit 5");
-        checkQuery("select name from Person UNION select street from Address limit ?");
-        checkQuery("select name from Person UNION select street from Address limit ? offset ?");
-        checkQuery("(select name from Person limit 4) UNION (select street from Address limit 1) limit ? offset ?");
+        checkQuery("select count(*) as a from Person union select count(*) as a from \"addr\".Address");
+        checkQuery("select old, count(*) as a from Person group by old union select 1, count(*) as a " +
+            "from \"addr\".Address");
+        checkQuery("select name from Person MINUS select street from \"addr\".Address");
+        checkQuery("select name from Person EXCEPT select street from \"addr\".Address");
+        checkQuery("select name from Person INTERSECT select street from \"addr\".Address");
+        checkQuery("select name from Person UNION select street from \"addr\".Address limit 5");
+        checkQuery("select name from Person UNION select street from \"addr\".Address limit ?");
+        checkQuery("select name from Person UNION select street from \"addr\".Address limit ? offset ?");
+        checkQuery("(select name from Person limit 4) " +
+            "UNION (select street from \"addr\".Address limit 1) limit ? offset ?");
         checkQuery("(select 2 a) union all (select 1) order by 1");
         checkQuery("(select 2 a) union all (select 1) order by a desc nulls first limit ? offset ?");
     }
@@ -254,7 +276,8 @@ public class GridQueryParsingTest extends GridCommonAbstractTest {
      *
      */
     public void testExample1() throws Exception {
-        Query select = parse("select p.name n, max(p.old) maxOld, min(p.old) minOld from Person p group by p.name having maxOld > 10 and min(p.old) < 1");
+        Query select = parse("select p.name n, max(p.old) maxOld, min(p.old) minOld from Person p " +
+            "group by p.name having maxOld > 10 and min(p.old) < 1");
 
         GridSqlQueryParser ses = new GridSqlQueryParser();
 

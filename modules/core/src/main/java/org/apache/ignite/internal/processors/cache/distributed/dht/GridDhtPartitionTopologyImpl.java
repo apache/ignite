@@ -499,12 +499,17 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                 }
             }
 
-            if (affReady)
-                initPartitions0(exchFut, updateSeq);
-            else {
-                List<List<ClusterNode>> aff = cctx.affinity().idealAssignment();
+            synchronized (cctx.shared().exchange().interruptLock()) {
+                if (Thread.currentThread().isInterrupted())
+                    throw new IgniteCheckedException("Thread is interrupted: " + Thread.currentThread());
 
-                createPartitions(aff, updateSeq);
+                if (affReady)
+                    initPartitions0(exchFut, updateSeq);
+                else {
+                    List<List<ClusterNode>> aff = cctx.affinity().idealAssignment();
+
+                    createPartitions(aff, updateSeq);
+                }
             }
 
             consistencyCheck();
@@ -1456,37 +1461,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             }
 
             consistencyCheck();
-
-            return false;
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    @Override public boolean ownIfUpToDate(GridDhtLocalPartition part) {
-        ClusterNode loc = cctx.localNode();
-
-        long partCntr = part.updateCounter();
-
-        lock.writeLock().lock();
-
-        try {
-            Long cntr = cntrMap.get(part.id());
-
-            if (cntr == null || partCntr < cntr) {
-                if (part.own()) {
-                    updateLocal(part.id(), loc.id(), part.state(), updateSeq.incrementAndGet());
-
-                    consistencyCheck();
-
-                    return true;
-                }
-
-                consistencyCheck();
-
-                return false;
-            }
 
             return false;
         }

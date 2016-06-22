@@ -251,8 +251,6 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
                                         + jcache(fi).localSize(CachePeekMode.BACKUP));
                                     info(">>>>> Debug NEAR    localSize for grid: " + fi + " is "
                                         + jcache(fi).localSize(CachePeekMode.NEAR));
-                                    info(">>>>> Debug SWAP    localSize for grid: " + fi + " is "
-                                        + jcache(fi).localSize(CachePeekMode.SWAP));
                                 }
 
                                 return locSize == 0;
@@ -303,9 +301,6 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
 
             if (cacheIsNotEmptyMsg != null)
                 break;
-
-            for (Cache.Entry entry : jcache(i).localEntries(CachePeekMode.SWAP))
-                jcache(i).remove(entry.getKey());
         }
 
         assert jcache().unwrap(Ignite.class).transactions().tx() == null;
@@ -429,7 +424,7 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
      */
     protected boolean swapEnabled() {
         return false;
-        // TODO GG-10884.
+        // TODO GG-11148.
         // return cacheConfiguration().isSwapEnabled();
     }
 
@@ -550,18 +545,6 @@ public abstract class IgniteCacheConfigVariationsAbstractTest extends IgniteConf
      */
     protected static <K, V> boolean offheapTiered(IgniteCache<K, V> cache) {
         return cache.getConfiguration(CacheConfiguration.class).getMemoryMode() == OFFHEAP_TIERED;
-    }
-
-    /**
-     * Executes regular peek or peek from swap.
-     *
-     * @param cache Cache projection.
-     * @param key Key.
-     * @return Value.
-     */
-    @Nullable protected static <K, V> V peek(IgniteCache<K, V> cache, K key) {
-        return offheapTiered(cache) ? cache.localPeek(key, CachePeekMode.SWAP, CachePeekMode.OFFHEAP) :
-            cache.localPeek(key, CachePeekMode.ONHEAP);
     }
 
     /**

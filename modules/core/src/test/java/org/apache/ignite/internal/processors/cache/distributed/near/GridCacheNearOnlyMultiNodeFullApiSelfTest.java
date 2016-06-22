@@ -208,16 +208,20 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
     }
 
     /**
+     * TODO GG-11133.
+
      * @throws Exception If failed.
      */
-    public void testReaderTtlTx() throws Exception {
+    public void _testReaderTtlTx() throws Exception {
         checkReaderTtl(true);
     }
 
     /**
+     * TODO GG-11133.
+
      * @throws Exception If failed.
      */
-    public void testReaderTtlNoTx() throws Exception {
+    public void _testReaderTtlNoTx() throws Exception {
         checkReaderTtl(false);
     }
 

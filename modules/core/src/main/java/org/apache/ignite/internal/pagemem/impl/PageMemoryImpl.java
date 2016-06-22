@@ -246,7 +246,7 @@ public class PageMemoryImpl implements PageMemory {
     }
 
     /** {@inheritDoc} */
-    @Override public FullPageId allocatePage(int cacheId, int partId, byte flags) throws IgniteCheckedException {
+    @Override public long allocatePage(int cacheId, int partId, byte flags) throws IgniteCheckedException {
         if (storeMgr != null)
             return storeMgr.allocatePage(cacheId, partId, flags);
 
@@ -290,33 +290,31 @@ public class PageMemoryImpl implements PageMemory {
         // TODO pass an argument to decide whether the page should be cleaned.
         mem.setMemory(absPtr + PAGE_OVERHEAD, sysPageSize - PAGE_OVERHEAD, (byte)0);
 
-        FullPageId fullId = new FullPageId(pageId, cacheId);
-
-        Segment seg = segment(fullId);
+        Segment seg = segment(cacheId, pageId);
 
         seg.writeLock().lock();
 
         try {
-            seg.loadedPages.put(fullId, relPtr);
+            seg.loadedPages.put(cacheId, pageId, relPtr);
         }
         finally {
             seg.writeLock().unlock();
         }
 
-        return fullId;
+        return pageId;
     }
 
     /** {@inheritDoc} */
-    @Override public boolean freePage(FullPageId fullId) throws IgniteCheckedException {
-        Segment seg = segment(fullId);
+    @Override public boolean freePage(int cacheId, long pageId) throws IgniteCheckedException {
+        Segment seg = segment(cacheId, pageId);
 
         seg.writeLock().lock();
 
         try {
-            if (seg.acquiredPages.get(fullId) != null)
+            if (seg.acquiredPages.get(new FullPageId(pageId, cacheId)) != null)
                 return false;
 
-            long relPtr = seg.loadedPages.get(fullId, INVALID_REL_PTR);
+            long relPtr = seg.loadedPages.get(cacheId, pageId, INVALID_REL_PTR);
 
             if (relPtr == INVALID_REL_PTR)
                 return false;
@@ -324,7 +322,7 @@ public class PageMemoryImpl implements PageMemory {
             if (isDirty(absolute(relPtr)))
                 return false;
 
-            seg.loadedPages.remove(fullId);
+            seg.loadedPages.remove(cacheId, pageId);
 
             releaseFreePage(relPtr);
         }
@@ -337,17 +335,19 @@ public class PageMemoryImpl implements PageMemory {
 
     /** {@inheritDoc} */
     @Override public Page metaPage() throws IgniteCheckedException {
-        return page(new FullPageId(mem.readLong(dbMetaPageIdPtr), 0));
+        return page(0, mem.readLong(dbMetaPageIdPtr));
     }
 
     /** {@inheritDoc} */
-    @Override public Page page(FullPageId fullId) throws IgniteCheckedException {
-        Segment seg = segment(fullId);
+    @Override public Page page(int cacheId, long pageId) throws IgniteCheckedException {
+        FullPageId fullId = new FullPageId(pageId, cacheId);
+
+        Segment seg = segment(cacheId, pageId);
 
         seg.readLock().lock();
 
         try {
-            long relPtr = seg.loadedPages.get(fullId, INVALID_REL_PTR);
+            long relPtr = seg.loadedPages.get(cacheId, pageId, INVALID_REL_PTR);
 
             // The page is loaded to the memory.
             if (relPtr != INVALID_REL_PTR) {
@@ -394,7 +394,7 @@ public class PageMemoryImpl implements PageMemory {
                     seg.acquiredPages.remove(fullId, page);
             }
 
-            long relPtr = seg.loadedPages.get(fullId, INVALID_REL_PTR);
+            long relPtr = seg.loadedPages.get(cacheId, pageId, INVALID_REL_PTR);
 
             if (relPtr == INVALID_REL_PTR) {
                 if (storeMgr == null)
@@ -414,7 +414,7 @@ public class PageMemoryImpl implements PageMemory {
                 // We can clear dirty flag after the page has been allocated.
                 setDirty(fullId, absPtr, false, false);
 
-                seg.loadedPages.put(fullId, relPtr);
+                seg.loadedPages.put(cacheId, pageId, relPtr);
 
                 page = new PageImpl(fullId, absPtr, this);
 
@@ -441,7 +441,7 @@ public class PageMemoryImpl implements PageMemory {
     @Override public void releasePage(Page p) {
         PageImpl page = (PageImpl)p;
 
-        Segment seg = segment(page.fullId());
+        Segment seg = segment(page.fullId().cacheId(), page.fullId().pageId());
 
         seg.readLock().lock();
 
@@ -484,8 +484,8 @@ public class PageMemoryImpl implements PageMemory {
         // Split page IDs by segment.
         Collection<FullPageId>[] segCols = new Collection[segments.length];
 
-        for (FullPageId pageId : checkpointPages) {
-            int segIdx = segmentIndex(pageId);
+        for (FullPageId fullId : checkpointPages) {
+            int segIdx = segmentIndex(fullId.cacheId(), fullId.pageId());
 
             Collection<FullPageId> col = segCols[segIdx];
 
@@ -495,7 +495,7 @@ public class PageMemoryImpl implements PageMemory {
                 segCols[segIdx] = col;
             }
 
-            col.add(pageId);
+            col.add(fullId);
         }
 
         // Lock segment by segment and flush changes.
@@ -515,8 +515,8 @@ public class PageMemoryImpl implements PageMemory {
                 if (!seg.acquiredPages.isEmpty())
                     activePages = new ArrayList<>(seg.acquiredPages.size());
 
-                for (FullPageId pageId : col) {
-                    PageImpl page = seg.acquiredPages.get(pageId);
+                for (FullPageId fullId : col) {
+                    PageImpl page = seg.acquiredPages.get(fullId);
 
                     if (page != null) {
                         // We are in the segment write lock, so we can assert that the reference is acquired.
@@ -530,13 +530,13 @@ public class PageMemoryImpl implements PageMemory {
                     }
                     // else page was not modified since the checkpoint started.
                     else {
-                        clearCheckpoint(pageId);
+                        clearCheckpoint(fullId);
 
-                        long relPtr = seg.loadedPages.get(pageId, INVALID_REL_PTR);
+                        long relPtr = seg.loadedPages.get(fullId.cacheId(), fullId.pageId(), INVALID_REL_PTR);
 
                         assert relPtr != INVALID_REL_PTR;
 
-                        setDirty(pageId, absolute(relPtr), false, true);
+                        setDirty(fullId, absolute(relPtr), false, true);
                     }
                 }
             }
@@ -560,18 +560,18 @@ public class PageMemoryImpl implements PageMemory {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean getForCheckpoint(FullPageId pageId, ByteBuffer tmpBuf) {
+    @Override public boolean getForCheckpoint(FullPageId fullId, ByteBuffer tmpBuf) {
         assert tmpBuf.remaining() == pageSize();
 
-        Segment seg = segment(pageId);
+        Segment seg = segment(fullId.cacheId(), fullId.pageId());
 
         seg.readLock().lock();
 
         try {
-            long relPtr = seg.loadedPages.get(pageId, INVALID_REL_PTR);
+            long relPtr = seg.loadedPages.get(fullId.cacheId(), fullId.pageId(), INVALID_REL_PTR);
 
             assert relPtr != INVALID_REL_PTR : "Failed to get page checkpoint data (page has been evicted) " +
-                "[pageId=" + pageId + ']';
+                "[pageId=" + fullId + ']';
 
             long absPtr = absolute(relPtr);
 
@@ -832,7 +832,15 @@ public class PageMemoryImpl implements PageMemory {
             assert buf.remaining() == sysPageSize : "remaining=" + buf.remaining() + ", sysPageSize=" + sysPageSize;
 
             try {
-                walMgr.log(new PageWrapperRecord(pageId, buf));
+                byte[] pageCp = new byte[sysPageSize];
+
+                ByteBuffer pageCpBuf = ByteBuffer.wrap(pageCp);
+
+                pageCpBuf.put(buf);
+
+                pageCpBuf.rewind();
+
+                walMgr.log(new PageWrapperRecord(pageId, pageCpBuf));
             }
             catch (IgniteCheckedException | StorageException e) {
                 // TODO ignite-db.
@@ -1003,7 +1011,7 @@ public class PageMemoryImpl implements PageMemory {
         }
 
         if (storeMgr == null) {
-            mem.writeLong(dbMetaPageIdPtr, allocatePage(0, -1, FLAG_META).pageId());
+            mem.writeLong(dbMetaPageIdPtr, allocatePage(0, -1, FLAG_META));
 
             Page dbMetaPage = metaPage();
 
@@ -1054,11 +1062,12 @@ public class PageMemoryImpl implements PageMemory {
     }
 
     /**
-     * @param fullId Page ID to get segment for.
+     * @param cacheId Cache ID.
+     * @param pageId Page ID.
      * @return Segment.
      */
-    private Segment segment(FullPageId fullId) {
-        int idx = segmentIndex(fullId);
+    private Segment segment(int cacheId, long pageId) {
+        int idx = segmentIndex(cacheId, pageId);
 
         return segments[idx];
     }
@@ -1067,8 +1076,8 @@ public class PageMemoryImpl implements PageMemory {
      * @param pageId Page ID.
      * @return Segment index.
      */
-    private int segmentIndex(FullPageId pageId) {
-        return U.safeAbs(U.hash(pageId)) % segments.length;
+    private int segmentIndex(int cacheId, long pageId) {
+        return U.safeAbs(U.hash(FullPageId.hashCode(cacheId, pageId))) % segments.length;
     }
 
     /**
@@ -1212,7 +1221,7 @@ public class PageMemoryImpl implements PageMemory {
                 continue;
             }
 
-            seg.loadedPages.remove(fullPageId);
+            seg.loadedPages.remove(fullPageId.cacheId(), fullPageId.pageId());
 
             return relEvictAddr;
         }
