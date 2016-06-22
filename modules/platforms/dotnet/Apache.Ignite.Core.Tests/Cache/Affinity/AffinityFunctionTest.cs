@@ -82,13 +82,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         [Test]
         public void TestDynamicCache()
         {
-            VerifyCacheAffinity(_ignite.CreateCache<int, int>("dynCache"));
+            VerifyCacheAffinity(_ignite.CreateCache<int, int>(new CacheConfiguration("dynCache")
+            {
+                AffinityFunction = new SimpleAffinityFunction()
+            }));
         }
 
+        /// <summary>
+        /// Verifies the cache affinity.
+        /// </summary>
         private static void VerifyCacheAffinity(ICache<int, int> cache)
         {
-            var func = cache.GetConfiguration().AffinityFunction;
-            Assert.IsNotNull(((SimpleAffinityFunction)func).Ignite);
+            Assert.IsInstanceOf<SimpleAffinityFunction>(cache.GetConfiguration().AffinityFunction);
 
             var aff = cache.Ignite.GetAffinity(cache.Name);
             Assert.AreEqual(PartitionCount, aff.Partitions);
@@ -126,6 +131,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
             public int GetPartition(object key)
             {
+                Assert.IsNotNull(Ignite);
+
                 return ((int) key) % Partitions;
             }
 
@@ -136,6 +143,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
             public IEnumerable<IEnumerable<IClusterNode>> AssignPartitions(IAffinityFunctionContext context)
             {
+                Assert.IsNotNull(Ignite);
+
                 // All partitions are the same
                 return Enumerable.Range(0, Partitions).Select(x => context.CurrentTopologySnapshot);
             }
