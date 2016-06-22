@@ -21,7 +21,6 @@
 #include <jni.h>
 
 #include "ignite/common/common.h"
-#include "ignite/ignite_error.h"
 
 namespace ignite
 {
@@ -103,6 +102,9 @@ namespace ignite
 
             typedef long long(JNICALL *AffinityFunctionInitHandler)(void* target, long long memPtr);
             typedef void(JNICALL *AffinityFunctionResetHandler)(void* target, long long ptr);
+            typedef int(JNICALL *AffinityFunctionPartitionHandler)(void* target, long long ptr, long long memPtr);
+            typedef void(JNICALL *AffinityFunctionAssignPartitionsHandler)(void* target, long long ptr, long long inMemPtr, long long outMemPtr);
+            typedef void(JNICALL *AffinityFunctionRemoveNodeHandler)(void* target, long long ptr, long long memPtr);
 
             /**
              * JNI handlers holder.
@@ -184,6 +186,9 @@ namespace ignite
                 
                 AffinityFunctionInitHandler affinityFunctionInit;
                 AffinityFunctionResetHandler affinityFunctionReset;
+                AffinityFunctionPartitionHandler affinityFunctionPartition;
+                AffinityFunctionAssignPartitionsHandler affinityFunctionAssignPartitions;
+                AffinityFunctionRemoveNodeHandler affinityFunctionRemoveNode;
             };
 
             /**
@@ -749,6 +754,9 @@ namespace ignite
 
             JNIEXPORT jlong JNICALL JniAffinityFunctionInit(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr);
             JNIEXPORT void JNICALL JniAffinityFunctionReset(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr);
+            JNIEXPORT jint JNICALL JniAffinityFunctionPartition(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jlong memPtr);
+            JNIEXPORT void JNICALL JniAffinityFunctionAssignPartitions(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jlong inMemPtr, jlong outMemPtr);
+            JNIEXPORT void JNICALL JniAffinityFunctionRemoveNode(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jlong memPtr);
         }
     }
 }
