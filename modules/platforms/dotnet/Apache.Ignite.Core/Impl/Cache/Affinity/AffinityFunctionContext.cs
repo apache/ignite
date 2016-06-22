@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
             _backups = reader.ReadInt();
             _currentTopologySnapshot = IgniteUtils.ReadNodes(reader);
             _currentTopologyVersion = new AffinityTopologyVersion(reader.ReadLong(), reader.ReadInt());
-            _discoveryEvent = new DiscoveryEvent(reader);
+            _discoveryEvent = EventReader.Read<DiscoveryEvent>(reader);
         }
 
         /** <inheritdoc /> */
