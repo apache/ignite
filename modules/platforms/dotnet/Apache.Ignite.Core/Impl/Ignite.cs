@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-#pragma warning disable 618   // SpringConfigUrl
 namespace Apache.Ignite.Core.Impl
 {
     using System;
@@ -784,7 +783,7 @@ namespace Apache.Ignite.Core.Impl
         /// <summary>
         /// Called when local client node has been disconnected from the cluster.
         /// </summary>
-        public void OnClientDisconnected()
+        internal void OnClientDisconnected()
         {
             _clientReconnectTaskCompletionSource = new TaskCompletionSource<bool>();
 
@@ -797,7 +796,7 @@ namespace Apache.Ignite.Core.Impl
         /// Called when local client node has been reconnected to the cluster.
         /// </summary>
         /// <param name="clusterRestarted">Cluster restarted flag.</param>
-        public void OnClientReconnected(bool clusterRestarted)
+        internal void OnClientReconnected(bool clusterRestarted)
         {
             _clientReconnectTaskCompletionSource.TrySetResult(clusterRestarted);
 
