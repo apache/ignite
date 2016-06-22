@@ -21,7 +21,9 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
@@ -34,6 +36,7 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -134,9 +137,23 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
 
                 ctx.gateway().affinityFunctionAssignPartitions(ptr, outMem.pointer(), inMem.pointer());
                 PlatformInputStream in = inMem.input();
+                BinaryRawReaderEx reader = ctx.reader(in);
 
-                // TODO: Read result
-                return null;
+                int partCnt = in.readInt();
+                List<List<ClusterNode>> res = new ArrayList<>(partCnt);
+                IgniteClusterEx cluster = ctx.kernalContext().grid().cluster();
+
+                for (int i = 0; i < partCnt; i++) {
+                    int partSize = in.readInt();
+                    List<ClusterNode> part = new ArrayList<>(partSize);
+
+                    for (int j = 0; j < partSize; j++)
+                        part.add(cluster.node(reader.readUuid()));
+
+                    res.add(part);
+                }
+
+                return res;
             }
         }
     }

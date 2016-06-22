@@ -55,7 +55,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
             {
                 _previousAssignment = new List<List<IClusterNode>>(cnt);
 
-                for (int i = 0; i < cnt; i++)
+                for (var i = 0; i < cnt; i++)
                     _previousAssignment.Add(IgniteUtils.ReadNodes(reader));
             }
 
