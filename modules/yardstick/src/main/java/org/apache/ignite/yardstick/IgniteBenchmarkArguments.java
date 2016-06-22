@@ -126,6 +126,20 @@ public class IgniteBenchmarkArguments {
     private String jdbcUrl;
 
     /** */
+    @Parameter(names = {"-sch", "--schema"}, description = "File with SQL schema definition")
+    private String schemaDefinition = null;
+
+    /** */
+    @Parameter(names = {"-jdbcDrv", "--jdbcDriver"}, description = "FQN of driver class for JDBC native benchmarks " +
+        "(must be on classpath)")
+    private String jdbcDriver = null;
+
+    /** */
+    @Parameter(names = {"-tempDb", "--temporaryDatabase"}, description = "Whether it's needed to create and drop " +
+        "temporary database for JDBC benchmarks dummy data")
+    private boolean createTempDatabase = false;
+
+    /** */
     @Parameter(names = {"-rd", "--restartdelay"}, description = "Restart delay in seconds")
     private int restartDelay = 20;
 
@@ -180,6 +194,18 @@ public class IgniteBenchmarkArguments {
      */
     public String jdbcUrl() {
         return jdbcUrl;
+    }
+
+    public String jdbcDriver() {
+        return jdbcDriver;
+    }
+
+    public String schemaDefinition() {
+        return schemaDefinition;
+    }
+
+    public boolean createTempDatabase() {
+        return createTempDatabase;
     }
 
     /**
