@@ -172,7 +172,7 @@ namespace Apache.Ignite.Core.Tests
 
             var af = cacheCfg.AffinityFunction as RendezvousAffinityFunction;
             Assert.IsNotNull(af);
-            Assert.AreEqual(99, af.PartitionCount);
+            Assert.AreEqual(99, af.Partitions);
             Assert.IsTrue(af.ExcludeNeighbors);
 
             Assert.AreEqual(new Dictionary<string, object> {{"myNode", "true"}}, cfg.UserAttributes);
@@ -448,7 +448,7 @@ namespace Apache.Ignite.Core.Tests
                         AffinityFunction = new FairAffinityFunction
                         {
                             ExcludeNeighbors = true,
-                            PartitionCount = 48
+                            Partitions = 48
                         }
                     }
                 },

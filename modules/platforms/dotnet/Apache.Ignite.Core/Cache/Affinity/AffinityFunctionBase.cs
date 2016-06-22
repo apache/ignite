@@ -43,19 +43,19 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /** */
         private const byte TypeCodeUser = 3;
 
-        /// <summary> The default value for <see cref="PartitionCount"/> property. </summary>
-        public const int DefaultPartitionCount = 1024;
+        /// <summary> The default value for <see cref="Partitions"/> property. </summary>
+        public const int DefaultPartitions = 1024;
 
         /// <summary>
         /// Gets or sets the total number of partitions.
         /// </summary>
-        [DefaultValue(DefaultPartitionCount)]
-        public int PartitionCount { get; set; }
+        [DefaultValue(DefaultPartitions)]
+        public int Partitions { get; set; }
 
         /// <summary>
         /// Gets partition number for a given key starting from 0. Partitioned caches
         /// should make sure that keys are about evenly distributed across all partitions
-        /// from 0 to <see cref="PartitionCount" /> for best performance.
+        /// from 0 to <see cref="Partitions" /> for best performance.
         /// <para />
         /// Note that for fully replicated caches it is possible to segment key sets among different
         /// grid node groups. In that case each node group should return a unique partition
@@ -122,7 +122,7 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// </summary>
         internal AffinityFunctionBase()
         {
-            PartitionCount = DefaultPartitionCount;
+            Partitions = DefaultPartitions;
         }
 
         /// <summary>
@@ -152,7 +152,7 @@ namespace Apache.Ignite.Core.Cache.Affinity
                     throw new InvalidOperationException("Invalid AffinityFunction type code: " + typeCode);
             }
 
-            fun.PartitionCount = reader.ReadInt();
+            fun.Partitions = reader.ReadInt();
             fun.ExcludeNeighbors = reader.ReadBoolean();
 
             return fun;
@@ -174,7 +174,7 @@ namespace Apache.Ignite.Core.Cache.Affinity
             if (p != null)
             {
                 writer.WriteByte(p is FairAffinityFunction ? TypeCodeFair : TypeCodeRendezvous);
-                writer.WriteInt(p.PartitionCount);
+                writer.WriteInt(p.Partitions);
                 writer.WriteBoolean(p.ExcludeNeighbors);
             }
             else
@@ -182,7 +182,7 @@ namespace Apache.Ignite.Core.Cache.Affinity
                 writer.WriteByte(TypeCodeUser);
 
                 writer.WriteObject(fun);
-                writer.WriteInt(fun.PartitionCount);  // partition count is written once and can not be changed.
+                writer.WriteInt(fun.Partitions);  // partition count is written once and can not be changed.
             }
         }
 

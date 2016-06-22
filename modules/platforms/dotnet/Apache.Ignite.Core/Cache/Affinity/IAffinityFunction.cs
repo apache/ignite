@@ -45,12 +45,12 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// participating nodes. Note that partitions should always be numbered from 0 inclusively 
         /// to N exclusively without any gaps.
         /// </summary>
-        int PartitionCount { get; }
+        int Partitions { get; }
 
         /// <summary>
         /// Gets partition number for a given key starting from 0. Partitioned caches
         /// should make sure that keys are about evenly distributed across all partitions
-        /// from 0 to <see cref="PartitionCount"/> for best performance.
+        /// from 0 to <see cref="Partitions"/> for best performance.
         /// <para />
         /// Note that for fully replicated caches it is possible to segment key sets among different
         /// grid node groups. In that case each node group should return a unique partition

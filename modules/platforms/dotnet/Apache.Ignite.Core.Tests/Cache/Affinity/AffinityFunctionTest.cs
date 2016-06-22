@@ -114,14 +114,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                 // No-op.
             }
 
-            public int PartitionCount
+            public int Partitions
             {
-                get { return Partitions; }
+                get { return AffinityFunctionTest.Partitions; }
             }
 
             public int GetPartition(object key)
             {
-                return ((int) key) % PartitionCount;
+                return ((int) key) % Partitions;
             }
 
             public void RemoveNode(Guid nodeId)
@@ -132,7 +132,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             public IEnumerable<IEnumerable<IClusterNode>> AssignPartitions(IAffinityFunctionContext context)
             {
                 // All partitions are the same
-                return Enumerable.Range(0, PartitionCount).Select(x => context.CurrentTopologySnapshot);
+                return Enumerable.Range(0, Partitions).Select(x => context.CurrentTopologySnapshot);
             }
         }
     }
