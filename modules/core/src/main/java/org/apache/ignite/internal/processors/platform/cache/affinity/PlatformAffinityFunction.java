@@ -23,6 +23,7 @@ import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
@@ -89,19 +90,53 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
 
     /** {@inheritDoc} */
     @Override public int partition(Object key) {
-        // TODO: JNI
-        return 0;
+        assert ctx != null;
+
+        try (PlatformMemory mem = ctx.memory().allocate()) {
+            PlatformOutputStream out = mem.output();
+            BinaryRawWriterEx writer = ctx.writer(out);
+            writer.writeObject(key);
+            out.synchronize();
+
+            return ctx.gateway().affinityFunctionPartition(ptr, mem.pointer());
+        }
     }
 
     /** {@inheritDoc} */
     @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext affCtx) {
-        // TODO: JNI
-        return null;
+        assert ctx != null;
+
+        try (PlatformMemory outMem = ctx.memory().allocate()) {
+            try (PlatformMemory inMem = ctx.memory().allocate()) {
+                PlatformOutputStream out = outMem.output();
+                BinaryRawWriterEx writer = ctx.writer(out);
+
+                // TODO
+                //writer.writeObject(key);
+
+                out.synchronize();
+
+                ctx.gateway().affinityFunctionAssignPartitions(ptr, outMem.pointer(), inMem.pointer());
+                PlatformInputStream in = inMem.input();
+
+                // TODO: Read result
+                return null;
+            }
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void removeNode(UUID nodeId) {
-        // TODO: JNI
+        assert ctx != null;
+
+        try (PlatformMemory mem = ctx.memory().allocate()) {
+            PlatformOutputStream out = mem.output();
+            BinaryRawWriterEx writer = ctx.writer(out);
+            writer.writeUuid(nodeId);
+            out.synchronize();
+
+            ctx.gateway().affinityFunctionRemoveNode(ptr, mem.pointer());
+        }
     }
 
     /** {@inheritDoc} */
@@ -125,11 +160,8 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
 
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
-
             BinaryRawWriterEx writer = ctx.writer(out);
-
             writer.writeObject(userFunc);
-
             out.synchronize();
 
             ptr = ctx.gateway().affinityFunctionInit(mem.pointer());
