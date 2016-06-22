@@ -1175,7 +1175,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
      * by link.
      */
     class PendingRow {
-        private static final int SIZE = 8 + 4 + 8;
+        private static final int SIZE = 8 + 8;
 
         /** Expire time. */
         long expireTime;
@@ -1396,8 +1396,19 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
     }
 
+    /**
+     *
+     */
     private interface PendingRowIO {
+        /**
+         * @param buf Buffer.
+         * @param idx Index.
+         */
         long getExpireTime(ByteBuffer buf, int idx);
+        /**
+         * @param buf Buffer.
+         * @param idx Index.
+         */
         long getLink(ByteBuffer buf, int idx);
     }
 
@@ -1440,18 +1451,30 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 getLink(buf, idx));
         }
 
+        /** {@inheritDoc} */
         @Override public long getExpireTime(ByteBuffer buf, int idx) {
             return buf.getLong(offset(idx));
         }
 
+        /**
+         * @param expireTime Expire time.
+         * @param buf Buffer.
+         * @param idx Index.
+         */
         private void setExpireTime(long expireTime, ByteBuffer buf, int idx) {
             buf.putLong(offset(idx), expireTime);
         }
 
+        /** {@inheritDoc} */
         @Override public long getLink(ByteBuffer buf, int idx) {
             return buf.getLong(offset(idx) + 8);
         }
 
+        /**
+         * @param link Link.
+         * @param buf Buffer.
+         * @param idx Index.
+         */
         private void setLink(long link, ByteBuffer buf, int idx) {
             buf.putLong(offset(idx) + 8, link);
         }
@@ -1496,18 +1519,30 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 getLink(buf, idx));
         }
 
+        /** {@inheritDoc} */
         @Override public long getExpireTime(ByteBuffer buf, int idx) {
             return buf.getLong(offset(idx));
         }
 
+        /**
+         * @param expireTime Expire time.
+         * @param buf Buffer.
+         * @param idx Index.
+         */
         private void setExpireTime(long expireTime, ByteBuffer buf, int idx) {
             buf.putLong(offset(idx), expireTime);
         }
 
+        /** {@inheritDoc} */
         @Override public long getLink(ByteBuffer buf, int idx) {
             return buf.getLong(offset(idx) + 8);
         }
 
+        /**
+         * @param link Link.
+         * @param buf Buffer.
+         * @param idx Index.
+         */
         private void setLink(long link, ByteBuffer buf, int idx) {
             buf.putLong(offset(idx) + 8, link);
         }

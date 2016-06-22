@@ -1118,8 +1118,6 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
             while (true) {
                 try {
-//                    GridCacheEntryEx e = memoryMode() == CacheMemoryMode.ONHEAP_TIERED ?
-//                        cache.peekEx(key) : cache.entryEx(key);
                     GridCacheEntryEx e = cache.entryEx(key);
 
                     if (e != null && e.deleted()) {
@@ -1138,14 +1136,8 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
 
                         found = true;
 
-//                        if (wait)
-//                            waitTtl(cache, key, ttl);
-
                         boolean primary = cache.affinity().isPrimary(grid.localNode(), key);
                         boolean backup = cache.affinity().isBackup(grid.localNode(), key);
-
-//                        assertEquals("Unexpected ttl [grid=" + i + ", nodeId=" + grid.getLocalNodeId() +
-//                            ", key=" + key + ", e=" + e + ", primary=" + primary + ", backup=" + backup + ']', ttl, e.ttl());
 
                         if (ttl > 0)
                             assertTrue(e.expireTime() > 0);
@@ -1156,7 +1148,7 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
                     break;
                 }
                 catch (GridCacheEntryRemovedException ignore) {
-                    error("RETRY", ignore);
+                    info("RETRY");
                     // Retry.
                 }
                 catch (GridDhtInvalidPartitionException ignore) {
@@ -1167,41 +1159,6 @@ public abstract class IgniteCacheExpiryPolicyAbstractTest extends IgniteCacheAbs
         }
 
         assertTrue(found);
-    }
-
-    /**
-     * @param cache Cache.
-     * @param key Key.
-     * @param ttl TTL to wait.
-     * @throws IgniteInterruptedCheckedException If wait has been interrupted.
-     */
-    private void waitTtl(final GridCacheAdapter<Object, Object> cache, final Object key, final long ttl)
-        throws IgniteInterruptedCheckedException {
-        GridTestUtils.waitForCondition(new PAX() {
-            @Override public boolean applyx() throws IgniteCheckedException {
-                GridCacheEntryEx entry = null;
-
-                while (true) {
-                    try {
-//                        entry = memoryMode() == CacheMemoryMode.ONHEAP_TIERED ?
-//                                cache.peekEx(key) : cache.entryEx(key);
-                        entry = cache.entryEx(key);
-
-                        assert entry != null;
-
-                        entry.unswap();
-
-                        return entry.ttl() == ttl;
-                    }
-                    catch (GridCacheEntryRemovedException ignore) {
-                        // Retry.
-                    }
-                    catch (GridDhtInvalidPartitionException ignore) {
-                        return true;
-                    }
-                }
-            }
-        }, 3000);
     }
 
     /**
