@@ -62,7 +62,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             _ignite.GetCacheNames().ToList().ForEach(_ignite.DestroyCache);
 
             // Check that all affinity functions got released
-            TestUtils.AssertHandleRegistryIsEmpty(5000, _ignite);
+            TestUtils.AssertHandleRegistryIsEmpty(1000, _ignite);
 
             Ignition.StopAll(true);
         }
