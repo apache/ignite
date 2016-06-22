@@ -128,7 +128,26 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
                 if (log.isTraceEnabled())
                     log.trace("Trying to remove expired entry from cache: " + e);
 
-                e.entry.onTtlExpired(obsoleteVer);
+                GridCacheEntryEx entry = e.entry;
+
+                boolean touch = false;
+
+                while (true) {
+                    try {
+                        if (entry.onTtlExpired(obsoleteVer))
+                            touch = false;
+
+                        break;
+                    }
+                    catch (GridCacheEntryRemovedException e0) {
+                        entry = entry.context().cache().entryEx(entry.key());
+
+                        touch = true;
+                    }
+                }
+
+                if (touch)
+                    entry.context().evicts().touch(entry, null);
             }
         }
     }

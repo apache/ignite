@@ -313,6 +313,81 @@ public class IgniteSqlSplitterSelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     *
+     */
+    public void testImplicitJoinConditionGeneration() {
+        IgniteCache<Integer, Person> p = ignite(0).createCache(cacheConfig("P", true, Integer.class, Person.class));
+        IgniteCache<Integer, Department> d = ignite(0).createCache(cacheConfig("D", true, Integer.class, Department.class));
+        IgniteCache<Integer, Org> o = ignite(0).createCache(cacheConfig("O", true, Integer.class, Org.class));
+
+        try {
+            info("Plan: " + p.query(new SqlFieldsQuery(
+                "explain select P.Person.*,dep.*,org.* " +
+                    "from P.Person inner join D.Department dep ON dep.id=P.Person.depId " +
+                    "left join O.Org org ON org.id=dep.orgId"
+            )).getAll());
+
+            assertEquals(0, p.query(new SqlFieldsQuery(
+                "select P.Person.*,dep.*,org.* " +
+                    "from P.Person inner join D.Department dep ON dep.id=P.Person.depId " +
+                    "left join O.Org org ON org.id=dep.orgId"
+            )).getAll().size());
+        }
+        finally {
+            p.destroy();
+            d.destroy();
+            o.destroy();
+        }
+    }
+
+    /**
+     *
+     */
+    public static class Person {
+        /** */
+        @QuerySqlField
+        private int id;
+
+        /** */
+        @QuerySqlField
+        private String name;
+
+        /** */
+        @QuerySqlField
+        private int depId;
+    }
+
+    /**
+     *
+     */
+    public static class Org {
+        /** */
+        @QuerySqlField(index = true)
+        private int id;
+
+        /** */
+        @QuerySqlField
+        private String name;
+    }
+
+    /**
+     *
+     */
+    public static class Department {
+        /** */
+        @QuerySqlField(index = true)
+        private int id;
+
+        /** */
+        @QuerySqlField(index = true)
+        private int orgId;
+
+        /** */
+        @QuerySqlField
+        private String name;
+    }
+
+    /**
      * Test value.
      */
     private static class GroupIndexTestValue implements Serializable {

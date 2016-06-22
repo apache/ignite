@@ -21,7 +21,6 @@ import autoprefixer from 'autoprefixer-core';
 import jade from 'jade';
 import progressPlugin from './plugins/progress';
 
-//import  Manifest from 'manifest-revision-webpack-plugin';
 import ExtractTextPlugin from 'extract-text-webpack-plugin';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 
@@ -90,10 +89,6 @@ export default () => {
                 },
                 {
                     test: /\.js$/,
-                    loaders: ['baggage-loader?[file].html&[file].css']
-                },
-                {
-                    test: /\.js$/,
                     exclude: [node_modules_path],
                     loaders: ['ng-annotate-loader']
                 },
@@ -122,12 +117,12 @@ export default () => {
                 {
                     test: /\.(woff2|woff|ttf|eot|svg)?(\?v=[0-9]\.[0-9]\.[0-9])?$/,
                     loaders: [
-                        'url-loader?name=fonts/[name]_[hash].[ext]'
+                        'file-loader?name=assets/fonts/[name].[ext]'
                     ]
                 },
                 {
                     test: /\.(jpe?g|png|gif)$/i,
-                    loaders: ['url-loader?name=images/[name]_[hash].[ext]']
+                    loaders: ['file-loader?name=assets/images/[name]_[hash].[ext]']
                 },
                 {
                     test: require.resolve("jquery"),

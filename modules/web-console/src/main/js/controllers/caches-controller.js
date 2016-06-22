@@ -87,12 +87,9 @@ consoleModule.controller('cachesController', [
                 const validFilter = $filter('domainsValidation');
 
                 $scope.spaces = data.spaces;
-
-                _.forEach(data.caches, function(cache) {
-                    cache.label = _cacheLbl(cache);
-                });
-
                 $scope.caches = data.caches;
+
+                _.forEach($scope.caches, (cache) => cache.label = _cacheLbl(cache));
 
                 $scope.clusters = _.map(data.clusters, function(cluster) {
                     return {
@@ -111,8 +108,8 @@ consoleModule.controller('cachesController', [
                     };
                 }), 'label');
 
-                if ($state.params.id)
-                    $scope.createItem($state.params.id);
+                if ($state.params.linkId)
+                    $scope.createItem($state.params.linkId);
                 else {
                     const lastSelectedCache = angular.fromJson(sessionStorage.lastSelectedCache);
 
@@ -188,44 +185,49 @@ consoleModule.controller('cachesController', [
             $common.confirmUnsavedChanges($scope.backupItem && $scope.ui.inputForm.$dirty, selectItem);
         };
 
-        function prepareNewItem(id) {
+        $scope.linkId = () => $scope.backupItem._id ? $scope.backupItem._id : 'create';
+
+        function prepareNewItem(linkId) {
             return {
                 space: $scope.spaces[0]._id,
                 cacheMode: 'PARTITIONED',
                 atomicityMode: 'ATOMIC',
                 readFromBackup: true,
                 copyOnRead: true,
-                clusters: id && _.find($scope.clusters, {value: id})
-                    ? [id] : _.map($scope.clusters, function(cluster) { return cluster.value; }),
-                domains: id && _.find($scope.domains, { value: id }) ? [id] : [],
+                clusters: linkId && _.find($scope.clusters, {value: linkId})
+                    ? [linkId] : _.map($scope.clusters, function(cluster) { return cluster.value; }),
+                domains: linkId && _.find($scope.domains, { value: linkId }) ? [linkId] : [],
                 cacheStoreFactory: {CacheJdbcBlobStoreFactory: {connectVia: 'DataSource'}}
             };
         }
 
         // Add new cache.
-        $scope.createItem = function(id) {
-            $timeout(function() {
-                $common.ensureActivePanel($scope.ui, 'general', 'cacheName');
-            });
+        $scope.createItem = function(linkId) {
+            $timeout(() => $common.ensureActivePanel($scope.ui, 'general', 'cacheName'));
 
-            $scope.selectItem(null, prepareNewItem(id));
+            $scope.selectItem(null, prepareNewItem(linkId));
         };
 
+        function cacheClusters() {
+            return _.filter($scope.clusters, (cluster) => _.includes($scope.backupItem.clusters, cluster.value));
+        }
+
+        function clusterCaches(cluster) {
+            const caches = _.filter($scope.caches,
+                (cache) => cache._id !== $scope.backupItem._id && _.includes(cluster.caches, cache._id));
+
+            caches.push($scope.backupItem);
+
+            return caches;
+        }
+
         function checkDataSources() {
-            const clusters = _.filter($scope.clusters, function(cluster) {
-                return _.includes($scope.backupItem.clusters, cluster.value);
-            });
+            const clusters = cacheClusters();
 
             let checkRes = {checked: true};
 
-            const failCluster = _.find(clusters, function(cluster) {
-                const caches = _.filter($scope.caches, function(cache) {
-                    return cache._id !== $scope.backupItem._id && _.find(cluster.caches, function(clusterCache) {
-                        return clusterCache === cache._id;
-                    });
-                });
-
-                caches.push($scope.backupItem);
+            const failCluster = _.find(clusters, (cluster) => {
+                const caches = clusterCaches(cluster);
 
                 checkRes = $common.checkCachesDataSources(caches, $scope.backupItem);
 
@@ -238,6 +240,28 @@ consoleModule.controller('cachesController', [
                     'with the same data source bean name "' + checkRes.firstCache.cacheStoreFactory[checkRes.firstCache.cacheStoreFactory.kind].dataSourceBean +
                     '" and different database: "' + $common.cacheStoreJdbcDialectsLabel(checkRes.firstDB) + '" in current cache and "' +
                     $common.cacheStoreJdbcDialectsLabel(checkRes.secondDB) + '" in "' + checkRes.secondCache.name + '"', 10000);
+            }
+
+            return true;
+        }
+
+        function checkSQLSchemas() {
+            const clusters = cacheClusters();
+
+            let checkRes = {checked: true};
+
+            const failCluster = _.find(clusters, (cluster) => {
+                const caches = clusterCaches(cluster);
+
+                checkRes = $common.checkCacheSQLSchemas(caches, $scope.backupItem);
+
+                return !checkRes.checked;
+            });
+
+            if (!checkRes.checked) {
+                return showPopoverMessage($scope.ui, 'query', 'sqlSchema',
+                    'Found cache "' + checkRes.secondCache.name + '" in cluster "' + failCluster.label + '" ' +
+                    'with the same SQL schema name "' + checkRes.firstCache.sqlSchema + '"', 10000);
             }
 
             return true;
@@ -294,6 +318,9 @@ consoleModule.controller('cachesController', [
 
             if (item.memoryMode === 'OFFHEAP_TIERED' && (!$common.isDefined(item.offHeapMaxMemory) || item.offHeapMaxMemory < 0))
                 return showPopoverMessage($scope.ui, 'memory', 'offHeapMaxMemory', 'Off-heap max memory should be specified!');
+
+            if (!checkSQLSchemas())
+                return false;
 
             if (!checkStoreFactory(item))
                 return false;
@@ -386,8 +413,10 @@ consoleModule.controller('cachesController', [
 
                                 if (caches.length > 0)
                                     $scope.selectItem(caches[0]);
-                                else
+                                else {
                                     $scope.backupItem = emptyCache;
+                                    $scope.ui.inputForm.$setPristine();
+                                }
                             }
                         })
                         .error(function(errMsg) {

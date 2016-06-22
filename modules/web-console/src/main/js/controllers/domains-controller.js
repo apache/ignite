@@ -242,7 +242,7 @@ consoleModule.controller('domainsController', [
             try {
                 const restoredPresets = JSON.parse(localStorage.dbPresets);
 
-                _.forEach(restoredPresets, function(restoredPreset) {
+                _.forEach(restoredPresets, (restoredPreset) => {
                     const preset = _.find(_dbPresets, {jdbcDriverClass: restoredPreset.jdbcDriverClass});
 
                     if (preset) {
@@ -327,9 +327,7 @@ consoleModule.controller('domainsController', [
         $scope.selectAllSchemas = function() {
             const allSelected = $scope.importDomain.allSchemasSelected;
 
-            _.forEach($scope.importDomain.displayedSchemas, function(schema) {
-                schema.use = allSelected;
-            });
+            _.forEach($scope.importDomain.displayedSchemas, (schema) => schema.use = allSelected);
         };
 
         $scope.selectSchema = function() {
@@ -364,6 +362,8 @@ consoleModule.controller('domainsController', [
 
             hideImportDomain();
         };
+
+        $scope.linkId = () => $scope.backupItem._id ? $scope.backupItem._id : 'create';
 
         function prepareNewItem(cacheId) {
             return {
@@ -677,6 +677,8 @@ consoleModule.controller('domainsController', [
             $scope.importDomain.action = 'options';
             $scope.importDomain.button = 'Save';
             $scope.importDomain.info = INFO_SELECT_OPTIONS;
+
+            $focus('domainPackageName');
         }
 
         function _saveBatch(batch) {
@@ -736,7 +738,7 @@ consoleModule.controller('domainsController', [
 
         function _saveDomainModel() {
             if ($common.isEmptyString($scope.ui.packageName))
-                return $common.showPopoverMessage(null, null, 'domainPackageName', 'Package should be not empty');
+                return $common.showPopoverMessage(null, null, 'domainPackageName', 'Package could not be empty');
 
             if (!$common.isValidJavaClass('Package', $scope.ui.packageName, false, 'domainPackageName', true))
                 return false;
@@ -1095,8 +1097,8 @@ consoleModule.controller('domainsController', [
 
                 $scope.importCommon.action = IMPORT_DM_NEW_CACHE;
 
-                if ($state.params.id)
-                    $scope.createItem($state.params.id);
+                if ($state.params.linkId)
+                    $scope.createItem($state.params.linkId);
                 else {
                     const lastSelectedDomain = angular.fromJson(sessionStorage.lastSelectedDomain);
 
@@ -1194,7 +1196,7 @@ consoleModule.controller('domainsController', [
         // Add new domain model.
         $scope.createItem = function(cacheId) {
             if ($scope.tableReset(true)) {
-                $timeout(function() {
+                $timeout(() => {
                     $common.ensureActivePanel($scope.ui, 'query');
                     $common.ensureActivePanel($scope.ui, 'general', 'keyType');
                 });
@@ -1376,8 +1378,10 @@ consoleModule.controller('domainsController', [
 
                                 if (domains.length > 0)
                                     $scope.selectItem(domains[0]);
-                                else
+                                else {
                                     $scope.backupItem = emptyDomain;
+                                    $scope.ui.inputForm.$setPristine();
+                                }
                             }
 
                             _checkShowValidPresentation();

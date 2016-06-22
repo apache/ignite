@@ -86,7 +86,14 @@ module.exports.factory = function(_, express, mongo, agentMgr) {
 
                     return user.save();
                 })
-                .then(() => res.sendStatus(200))
+                .then((user) => {
+                    const becomeUsed = req.session.viewedUser && req.user.admin;
+
+                    if (becomeUsed)
+                        req.session.viewedUser = user;
+
+                    res.sendStatus(200);
+                })
                 .catch((err) => mongo.handleError(res, err));
         });
 

@@ -26,7 +26,6 @@ import io.socket.emitter.Emitter;
 import java.io.File;
 import java.io.IOException;
 import java.net.ConnectException;
-import java.net.SocketException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -198,7 +197,7 @@ public class AgentLauncher {
         System.out.println(cfg);
         System.out.println();
 
-        if (cfg.token() == null) {
+        if (cfg.tokens() == null) {
             String webHost;
 
             try {
@@ -213,9 +212,9 @@ public class AgentLauncher {
             System.out.println("Security token is required to establish connection to the web console.");
             System.out.println(String.format("It is available on the Profile page: https://%s/profile", webHost));
 
-            System.out.print("Enter security token: ");
+            System.out.print("Enter security tokens separated by comma: ");
 
-            cfg.token(System.console().readLine().trim());
+            cfg.tokens(Arrays.asList(System.console().readLine().trim().split(",")));
         }
 
         final RestHandler restHnd = new RestHandler(cfg);
@@ -258,7 +257,7 @@ public class AgentLauncher {
                         JSONObject authMsg = new JSONObject();
 
                         try {
-                            authMsg.put("token", cfg.token());
+                            authMsg.put("tokens", cfg.tokens());
 
                             String clsName = AgentLauncher.class.getSimpleName() + ".class";
 
@@ -278,14 +277,28 @@ public class AgentLauncher {
 
                             client.emit("agent:auth", authMsg, new Ack() {
                                 @Override public void call(Object... args) {
-                                    // Authentication failed if response contains args.
-                                    if (args != null && args.length > 0) {
-                                        onDisconnect.call("Authentication failed: " + args[0]);
+                                    if (args == null || args.length == 0 || args.length > 2) {
+                                        onDisconnect.call("Authentication failed, wrong server response: " +
+                                            Arrays.toString(args));
 
                                         System.exit(1);
                                     }
 
-                                    log.info("Authentication success.");
+                                    String err = (String)args[0];
+                                    boolean isSuccess = args.length > 1 ? (boolean)args[1] : err == null;
+
+                                    // Authentication failed if response contains args.
+                                    if (isSuccess) {
+                                        if (err != null)
+                                            log.warn(err);
+
+                                        log.info("Authentication success.");
+                                    }
+                                    else {
+                                        onDisconnect.call("Authentication failed. " + args[0]);
+
+                                        System.exit(1);
+                                    }
                                 }
                             });
                         }

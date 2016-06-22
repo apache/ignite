@@ -39,7 +39,6 @@ import 'brace/mode/sql';
 import 'brace/mode/java';
 import 'brace/mode/dockerfile';
 import 'brace/theme/chrome';
-import 'font-awesome-webpack';
 import 'file-saver';
 import 'jszip';
 import 'nvd3';

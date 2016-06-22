@@ -16,7 +16,6 @@
  */
 
 import gulp from 'gulp';
-import cache from 'gulp-cached';
 import sequence from 'gulp-sequence';
 
 import { destDir, rootDir, jsModulePaths, resourcePaths, resourceModulePaths, igniteModulesTemp } from '../paths';

@@ -193,15 +193,6 @@ consoleModule.controller('clustersController', [
                 $scope.selectItem($scope.clusters[0]);
         }
 
-        function clusterCaches(item) {
-            return _.reduce($scope.caches, (memo, cache) => {
-                if (item && _.includes(item.caches, cache.value))
-                    memo.push(cache.cache);
-
-                return memo;
-            }, []);
-        }
-
         $loading.start('loadingClustersScreen');
 
         // When landing on the page, get clusters and show them.
@@ -225,8 +216,8 @@ consoleModule.controller('clustersController', [
                         cluster.logger = {Log4j: { mode: 'Default'}};
                 });
 
-                if ($state.params.id)
-                    $scope.createItem($state.params.id);
+                if ($state.params.linkId)
+                    $scope.createItem($state.params.linkId);
                 else {
                     const lastSelectedCluster = angular.fromJson(sessionStorage.lastSelectedCluster);
 
@@ -306,7 +297,9 @@ consoleModule.controller('clustersController', [
             $common.confirmUnsavedChanges($scope.backupItem && $scope.ui.inputForm.$dirty, selectItem);
         };
 
-        function prepareNewItem(id) {
+        $scope.linkId = () => $scope.backupItem._id ? $scope.backupItem._id : 'create';
+
+        function prepareNewItem(linkId) {
             return angular.merge({}, blank, {
                 space: $scope.spaces[0]._id,
                 discovery: {kind: 'Multicast', Vm: {addresses: ['127.0.0.1:47500..47510']}, Multicast: {addresses: ['127.0.0.1:47500..47510']}},
@@ -316,27 +309,29 @@ consoleModule.controller('clustersController', [
                 collision: {kind: 'Noop', JobStealing: {stealingEnabled: true}, PriorityQueue: {starvationPreventionEnabled: true}},
                 failoverSpi: [],
                 logger: {Log4j: { mode: 'Default'}},
-                caches: id && _.find($scope.caches, {value: id}) ? [id] : [],
-                igfss: id && _.find($scope.igfss, {value: id}) ? [id] : []
+                caches: linkId && _.find($scope.caches, {value: linkId}) ? [linkId] : [],
+                igfss: linkId && _.find($scope.igfss, {value: linkId}) ? [linkId] : []
             });
         }
 
         // Add new cluster.
-        $scope.createItem = function(id) {
-            $timeout(function() {
-                $common.ensureActivePanel($scope.ui, 'general', 'clusterName');
-            });
+        $scope.createItem = function(linkId) {
+            $timeout(() => $common.ensureActivePanel($scope.ui, 'general', 'clusterName'));
 
-            $scope.selectItem(null, prepareNewItem(id));
+            $scope.selectItem(null, prepareNewItem(linkId));
         };
 
         $scope.indexOfCache = function(cacheId) {
             return _.findIndex($scope.caches, (cache) => cache.value === cacheId);
         };
 
-        function checkCacheDatasources(item) {
-            const caches = _.filter(_.map($scope.caches, (scopeCache) => scopeCache.cache),
+        function clusterCaches(item) {
+            return _.filter(_.map($scope.caches, (scopeCache) => scopeCache.cache),
                 (cache) => _.includes(item.caches, cache._id));
+        }
+
+        function checkCacheDatasources(item) {
+            const caches = clusterCaches(item);
 
             const checkRes = $common.checkCachesDataSources(caches);
 
@@ -346,6 +341,20 @@ consoleModule.controller('clustersController', [
                     'with the same data source bean name "' + checkRes.firstCache.cacheStoreFactory[checkRes.firstCache.cacheStoreFactory.kind].dataSourceBean +
                     '" and different databases: "' + $common.cacheStoreJdbcDialectsLabel(checkRes.firstDB) + '" in "' + checkRes.firstCache.name + '" and "' +
                     $common.cacheStoreJdbcDialectsLabel(checkRes.secondDB) + '" in "' + checkRes.secondCache.name + '"', 10000);
+            }
+
+            return true;
+        }
+
+        function checkCacheSQLSchemas(item) {
+            const caches = clusterCaches(item);
+
+            const checkRes = $common.checkCacheSQLSchemas(caches);
+
+            if (!checkRes.checked) {
+                return showPopoverMessage($scope.ui, 'general', 'caches',
+                    'Found caches "' + checkRes.firstCache.name + '" and "' + checkRes.secondCache.name + '" ' +
+                    'with the same SQL schema name "' + checkRes.firstCache.sqlSchema + '"', 10000);
             }
 
             return true;
@@ -460,6 +469,9 @@ consoleModule.controller('clustersController', [
             if (!$common.checkFieldValidators($scope.ui))
                 return false;
 
+            if (!checkCacheSQLSchemas(item))
+                return false;
+
             if (!checkCacheDatasources(item))
                 return false;
 
@@ -560,8 +572,10 @@ consoleModule.controller('clustersController', [
 
                                 if (clusters.length > 0)
                                     $scope.selectItem(clusters[0]);
-                                else
+                                else {
                                     $scope.backupItem = emptyCluster;
+                                    $scope.ui.inputForm.$setPristine();
+                                }
                             }
                         })
                         .error(function(errMsg) {
