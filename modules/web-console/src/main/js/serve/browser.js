@@ -134,7 +134,7 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
 
                                 return agent.queryFetch(demo, acc.queryId, pageSize)
                                     .then((res) => {
-                                        acc.rows = acc.rows.concat(res.rows);
+                                        acc.items = acc.items.concat(res.items);
 
                                         acc.last = res.last;
 
