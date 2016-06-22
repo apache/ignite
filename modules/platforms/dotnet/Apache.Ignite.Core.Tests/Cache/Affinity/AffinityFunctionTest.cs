@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
@@ -39,7 +40,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         private const string CacheName = "cache";
 
         /** */
-        private const int Partitions = 10;
+        private const int PartitionCount = 10;
 
         [TestFixtureSetUp]
         public void FixtureSetUp()
@@ -75,21 +76,25 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         [Test]
         public void TestStaticCache()
         {
-            var cache = _ignite.GetCache<int, int>(CacheName);
-            var func = cache.GetConfiguration().AffinityFunction;
-            Assert.IsNotNull(((SimpleAffinityFunction)func).Ignite);
-
-            var aff = _ignite.GetAffinity(CacheName);
-            Assert.AreEqual(Partitions, aff.Partitions);
-
-            for (int i = 0; i < 100; i++)
-                Assert.AreEqual(i % Partitions, aff.GetPartition(i));
+            VerifyCacheAffinity(_ignite.GetCache<int, int>(CacheName));
         }
 
         [Test]
         public void TestDynamicCache()
         {
-            
+            VerifyCacheAffinity(_ignite.CreateCache<int, int>("dynCache"));
+        }
+
+        private static void VerifyCacheAffinity(ICache<int, int> cache)
+        {
+            var func = cache.GetConfiguration().AffinityFunction;
+            Assert.IsNotNull(((SimpleAffinityFunction)func).Ignite);
+
+            var aff = cache.Ignite.GetAffinity(cache.Name);
+            Assert.AreEqual(PartitionCount, aff.Partitions);
+
+            for (int i = 0; i < 100; i++)
+                Assert.AreEqual(i % PartitionCount, aff.GetPartition(i));
         }
 
         [Test]
@@ -116,7 +121,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
             public int Partitions
             {
-                get { return AffinityFunctionTest.Partitions; }
+                get { return PartitionCount; }
             }
 
             public int GetPartition(object key)
