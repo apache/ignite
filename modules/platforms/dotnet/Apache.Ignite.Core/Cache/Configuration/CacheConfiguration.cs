@@ -28,6 +28,8 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Affinity;
+    using Apache.Ignite.Core.Cache.Affinity.Fair;
+    using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
@@ -665,6 +667,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
 
         /// <summary>
         /// Gets or sets the affinity function to provide mapping from keys to nodes.
+        /// <para />
+        /// Predefined implementations: 
+        /// <see cref="RendezvousAffinityFunction"/>, <see cref="FairAffinityFunction"/>.
         /// </summary>
         public IAffinityFunction AffinityFunction { get; set; }
     }
