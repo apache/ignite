@@ -983,6 +983,59 @@ public class PlatformCallbackGateway {
     }
 
     /**
+     * Gets the partition from affinity function.
+     *
+     * @param ptr Affinity function pointer.
+     * @param memPtr Pointer to a stream with key object.
+     * @return Partition number for a given key.
+     */
+    public int affinityFunctionPartition(long ptr, long memPtr) {
+        enter();
+
+        try {
+            return PlatformCallbackUtils.affinityFunctionPartition(envPtr, ptr, memPtr);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Assigns the affinity partitions.
+     *
+     * @param ptr Affinity function pointer.
+     * @param outMemPtr Pointer to a stream with affinity context.
+     * @param inMemPtr Pointer to a stream with result.
+     */
+    public void affinityFunctionAssignPartitions(long ptr, long outMemPtr, long inMemPtr){
+        enter();
+
+        try {
+            PlatformCallbackUtils.affinityFunctionAssignPartitions(envPtr, ptr, outMemPtr, inMemPtr);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Removes the node from affinity function.
+     *
+     * @param ptr Affinity function pointer.
+     * @param memPtr Pointer to a stream with node id.
+     */
+    public void affinityFunctionRemoveNode(long ptr, long memPtr) {
+        enter();
+
+        try {
+            PlatformCallbackUtils.affinityFunctionRemoveNode(envPtr, ptr, memPtr);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
      * Enter gateway.
      */
     protected void enter() {
