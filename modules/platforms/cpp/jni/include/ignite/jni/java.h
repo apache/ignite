@@ -105,6 +105,7 @@ namespace ignite
             typedef int(JNICALL *AffinityFunctionPartitionHandler)(void* target, long long ptr, long long memPtr);
             typedef void(JNICALL *AffinityFunctionAssignPartitionsHandler)(void* target, long long ptr, long long inMemPtr, long long outMemPtr);
             typedef void(JNICALL *AffinityFunctionRemoveNodeHandler)(void* target, long long ptr, long long memPtr);
+            typedef void(JNICALL *AffinityFunctionDestroyHandler)(void* target, long long ptr);
 
             /**
              * JNI handlers holder.
@@ -189,6 +190,7 @@ namespace ignite
                 AffinityFunctionPartitionHandler affinityFunctionPartition;
                 AffinityFunctionAssignPartitionsHandler affinityFunctionAssignPartitions;
                 AffinityFunctionRemoveNodeHandler affinityFunctionRemoveNode;
+                AffinityFunctionDestroyHandler affinityFunctionDestroy;
             };
 
             /**
@@ -757,6 +759,7 @@ namespace ignite
             JNIEXPORT jint JNICALL JniAffinityFunctionPartition(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jlong memPtr);
             JNIEXPORT void JNICALL JniAffinityFunctionAssignPartitions(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jlong inMemPtr, jlong outMemPtr);
             JNIEXPORT void JNICALL JniAffinityFunctionRemoveNode(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jlong memPtr);
+            JNIEXPORT void JNICALL JniAffinityFunctionDestroy(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr);
         }
     }
 }
