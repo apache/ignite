@@ -97,7 +97,7 @@ namespace Apache.Ignite.Core.Tests
                                     <nearConfiguration nearStartSize='7'>
                                         <evictionPolicy type='FifoEvictionPolicy' batchSize='10' maxSize='20' maxMemorySize='30' />
                                     </nearConfiguration>
-                                    <affinityFunction type='RendezvousAffinityFunction' partitionCount='99' excludeNeighbors='true' />
+                                    <affinityFunction type='RendezvousAffinityFunction' partitions='99' excludeNeighbors='true' />
                                 </cacheConfiguration>
                                 <cacheConfiguration name='secondCache' />
                             </cacheConfiguration>
