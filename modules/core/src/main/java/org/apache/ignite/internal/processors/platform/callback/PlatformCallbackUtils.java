@@ -542,6 +542,14 @@ public class PlatformCallbackUtils {
     static native void affinityFunctionRemoveNode(long envPtr, long ptr, long memPtr);
 
     /**
+     * Destroys the affinity function.
+     *
+     * @param envPtr Environment pointer.
+     * @param ptr Affinity function pointer.
+     */
+    static native void affinityFunctionDestroy(long envPtr, long ptr);
+
+    /**
      * Private constructor.
      */
     private PlatformCallbackUtils() {

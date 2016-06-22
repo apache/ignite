@@ -1036,6 +1036,22 @@ public class PlatformCallbackGateway {
     }
 
     /**
+     * Destroys the affinity function.
+     *
+     * @param ptr Affinity function pointer.
+     */
+    public void affinityFunctionDestroy(long ptr) {
+        enter();
+
+        try {
+            PlatformCallbackUtils.affinityFunctionDestroy(envPtr, ptr);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
      * Enter gateway.
      */
     protected void enter() {

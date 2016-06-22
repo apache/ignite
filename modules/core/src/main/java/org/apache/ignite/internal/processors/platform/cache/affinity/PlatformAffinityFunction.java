@@ -194,7 +194,9 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
 
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteException {
-        // TODO: destroy
+        assert ctx != null;
+
+        ctx.gateway().affinityFunctionDestroy(ptr);
     }
 
     /**
