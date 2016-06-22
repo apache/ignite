@@ -368,8 +368,10 @@ consoleModule.controller('igfsController', [
 
                                 if (igfss.length > 0)
                                     $scope.selectItem(igfss[0]);
-                                else
+                                else {
                                     $scope.backupItem = emptyIgfs;
+                                    $scope.ui.inputForm.$setPristine();
+                                }
                             }
                         })
                         .error(function(errMsg) {
