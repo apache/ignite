@@ -186,7 +186,7 @@ public class IgniteCacheExpireAndUpdateConsistencyTest extends GridCommonAbstrac
                             }
 
                             synchronized (keyEvts) {
-                                keyEvts.add(new T2<>(e.getValue(), e.getOldValue()));
+                                keyEvts.add(new T2<TestValue, TestValue>(e.getValue(), e.getOldValue()));
                             }
                         }
                     }
@@ -204,13 +204,14 @@ public class IgniteCacheExpireAndUpdateConsistencyTest extends GridCommonAbstrac
 
                 log.info("Test with node: " + ignite.name());
 
-                updateAndEventConsistencyTest(ignite, ccfg.getName(), keyVal, nodesEvts, false);
-
-                if (ccfg.getAtomicityMode() == TRANSACTIONAL)
-                    updateAndEventConsistencyTest(ignite, ccfg.getName(), keyVal, nodesEvts, true);
+                updateAndEventConsistencyTest(ignite, ccfg.getName(), keyVal, nodesEvts,
+                    ccfg.getAtomicityMode() == TRANSACTIONAL);
             }
         }
         finally {
+            // Temporary workaround  for ignite-db-x branch
+            ignite(0).cache(ccfg.getName()).clear();
+
             ignite(0).destroyCache(ccfg.getName());
         }
     }
