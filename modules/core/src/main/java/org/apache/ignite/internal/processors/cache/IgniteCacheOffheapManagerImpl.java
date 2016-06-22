@@ -1198,8 +1198,8 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
          * @param entry Entry.
          */
         PendingRow(CacheObjectEntry entry) {
-            link = entry.getLink();
-            expireTime = entry.getExpireTime();
+            link = entry.link();
+            expireTime = entry.expireTime();
 
             assert link != 0;
             assert expireTime > 0;

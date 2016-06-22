@@ -288,35 +288,35 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
         /**
          *
          */
-        public CacheObject getValue() {
+        public CacheObject value() {
             return val;
         }
 
         /**
          *
          */
-        public GridCacheVersion getVersion() {
+        public GridCacheVersion version() {
             return ver;
         }
 
         /**
          *
          */
-        public long getExpireTime() {
+        public long expireTime() {
             return expireTime;
         }
 
         /**
          *
          */
-        public long getLink() {
+        public long link() {
             return link;
         }
 
         /**
          *
          */
-        public KeyCacheObject getKey() {
+        public KeyCacheObject key() {
             return key;
         }
 
@@ -376,12 +376,20 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
 
     class UpdateInfo {
 
-        final long newLink;
-        final CacheObjectEntry oldEntry;
+        private final long newLink;
+        private final CacheObjectEntry oldEntry;
 
         public UpdateInfo(long link, CacheObjectEntry entry) {
             newLink = link;
             oldEntry = entry;
+        }
+
+        public long newLink() {
+            return newLink;
+        }
+
+        public CacheObjectEntry oldEntry() {
+            return oldEntry;
         }
     }
 
