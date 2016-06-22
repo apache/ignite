@@ -273,10 +273,12 @@ namespace Apache.Ignite.Core.Tests
         {
             var handleRegistry = ((Ignite)grid).HandleRegistry;
 
+            expectedCount++;  // Skip default lifecycle bean
+
             if (WaitForCondition(() => handleRegistry.Count == expectedCount, timeout))
                 return;
 
-            var items = handleRegistry.GetItems();
+            var items = handleRegistry.GetItems().Where(x => !(x.Value is LifecycleBeanHolder)).ToList();
 
             if (items.Any())
                 Assert.Fail("HandleRegistry is not empty in grid '{0}':\n '{1}'", grid.Name,
