@@ -216,7 +216,7 @@ namespace ignite
                  */
                 T* Get()
                 {
-                    return impl ? static_cast<T*>(impl->Pointer()) : NULL;
+                    return impl ? static_cast<T*>(impl->Pointer()) : 0;
                 }
 
                 /**
@@ -226,18 +226,25 @@ namespace ignite
                  */
                 const T* Get() const
                 {
-                    return impl ? static_cast<T*>(impl->Pointer()) : NULL;
+                    return impl ? static_cast<T*>(impl->Pointer()) : 0;
                 }
 
                 /**
                  * Check whether underlying raw pointer is valid.
                  *
+                 * Invalid instance can be returned if some of the previous
+                 * operations have resulted in a failure. For example invalid
+                 * instance can be returned by not-throwing version of method
+                 * in case of error. Invalid instances also often can be
+                 * created using default constructor.
+                 *
                  * @return True if valid.
                  */
                 bool IsValid() const
                 {
-                    return impl != NULL;
+                    return impl != 0;
                 }
+
             private:
                 /** Implementation. */
                 SharedPointerImpl* impl;
@@ -354,4 +361,4 @@ namespace ignite
     }
 }
 
-#endif
+#endif //_IGNITE_COMMON_CONCURRENT

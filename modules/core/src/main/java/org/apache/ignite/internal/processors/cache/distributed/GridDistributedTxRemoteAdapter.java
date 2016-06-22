@@ -455,6 +455,8 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
 
                     AffinityTopologyVersion topVer = topologyVersion();
 
+                    batchStoreCommit(writeMap().values());
+
                     // Node that for near transactions we grab all entries.
                     for (IgniteTxEntry txEntry : (near() ? allEntries() : writeEntries())) {
                         GridCacheContext cacheCtx = txEntry.context();
@@ -771,6 +773,11 @@ public class GridDistributedTxRemoteAdapter extends IgniteTxAdapter
     /** {@inheritDoc} */
     @Override public Collection<GridCacheVersion> alternateVersions() {
         return explicitVers == null ? Collections.<GridCacheVersion>emptyList() : explicitVers;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void commitError(Throwable e) {
+        // No-op.
     }
 
     /**

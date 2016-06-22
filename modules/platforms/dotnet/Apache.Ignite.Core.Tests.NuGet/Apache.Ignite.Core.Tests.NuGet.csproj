@@ -80,6 +80,11 @@
       <HintPath>packages\Apache.Ignite.Linq.1.6.0\lib\net40\Apache.Ignite.Linq.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Apache.Ignite.AspNet">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>packages\Apache.Ignite.AspNet.1.6.0\lib\net40\Apache.Ignite.AspNet.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="nunit-console-runner">
       <HintPath>..\libs\nunit-console-runner.dll</HintPath>
     </Reference>
@@ -92,10 +97,15 @@
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AspNetTest.cs" />
     <Compile Include="ComputeTest.cs" />
+    <Compile Include="SchemaTest.cs" />
     <Compile Include="StartupTest.cs" />
     <Compile Include="CacheTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -109,6 +119,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Apache.Ignite.Core.Tests.NuGet.sln.DotSettings" />
+    <Content Include="IgniteConfigurationSection.xsd">
+      <SubType>Designer</SubType>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <None Include="install-package.ps1" />
     <None Include="NuGet.config" />
     <None Include="packages.config">

@@ -28,6 +28,9 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
@@ -42,6 +45,9 @@ import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactoryNative;
 import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
+import org.apache.ignite.spi.communication.CommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
+import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiMBean;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
@@ -171,6 +177,9 @@ public class PlatformConfigurationUtils {
         if (in.readBoolean())
             ccfg.setNearConfiguration(readNearConfiguration(in));
 
+        ccfg.setEvictionPolicy(readEvictionPolicy(in));
+        ccfg.setAffinity(readAffinityFunction(in));
+
         return ccfg;
     }
 
@@ -182,8 +191,20 @@ public class PlatformConfigurationUtils {
      */
     public static NearCacheConfiguration readNearConfiguration(BinaryRawReader in) {
         NearCacheConfiguration cfg = new NearCacheConfiguration();
-        cfg.setNearStartSize(in.readInt());
 
+        cfg.setNearStartSize(in.readInt());
+        cfg.setNearEvictionPolicy(readEvictionPolicy(in));
+
+        return cfg;
+    }
+
+    /**
+     * Reads the eviction policy.
+     *
+     * @param in Stream.
+     * @return Eviction policy.
+     */
+    public static EvictionPolicy readEvictionPolicy(BinaryRawReader in) {
         byte plcTyp = in.readByte();
 
         switch (plcTyp) {
@@ -194,22 +215,51 @@ public class PlatformConfigurationUtils {
                 p.setBatchSize(in.readInt());
                 p.setMaxSize(in.readInt());
                 p.setMaxMemorySize(in.readLong());
-                cfg.setNearEvictionPolicy(p);
-                break;
+                return p;
             }
             case 2: {
                 LruEvictionPolicy p = new LruEvictionPolicy();
                 p.setBatchSize(in.readInt());
                 p.setMaxSize(in.readInt());
                 p.setMaxMemorySize(in.readLong());
-                cfg.setNearEvictionPolicy(p);
-                break;
+                return p;
             }
             default:
                 assert false;
         }
 
-        return cfg;
+        return null;
+    }
+
+    /**
+     * Reads the eviction policy.
+     *
+     * @param in Stream.
+     * @return Affinity function.
+     */
+    private static AffinityFunction readAffinityFunction(BinaryRawReader in) {
+        byte plcTyp = in.readByte();
+
+        switch (plcTyp) {
+            case 0:
+                break;
+            case 1: {
+                FairAffinityFunction f = new FairAffinityFunction();
+                f.setPartitions(in.readInt());
+                f.setExcludeNeighbors(in.readBoolean());
+                return f;
+            }
+            case 2: {
+                RendezvousAffinityFunction f = new RendezvousAffinityFunction();
+                f.setPartitions(in.readInt());
+                f.setExcludeNeighbors(in.readBoolean());
+                return f;
+            }
+            default:
+                assert false;
+        }
+
+        return null;
     }
 
     /**
@@ -223,9 +273,40 @@ public class PlatformConfigurationUtils {
         assert cfg != null;
 
         out.writeInt(cfg.getNearStartSize());
+        writeEvictionPolicy(out, cfg.getNearEvictionPolicy());
+    }
 
-        EvictionPolicy p = cfg.getNearEvictionPolicy();
+    /**
+     * Writes the eviction policy.
+     * @param out Stream.
+     * @param f Affinity.
+     */
+    private static void writeAffinityFunction(BinaryRawWriter out, AffinityFunction f) {
+        if (f instanceof FairAffinityFunction) {
+            out.writeByte((byte)1);
 
+            FairAffinityFunction f0 = (FairAffinityFunction)f;
+            out.writeInt(f0.getPartitions());
+            out.writeBoolean(f0.isExcludeNeighbors());
+        }
+        else if (f instanceof RendezvousAffinityFunction) {
+            out.writeByte((byte)2);
+
+            RendezvousAffinityFunction f0 = (RendezvousAffinityFunction)f;
+            out.writeInt(f0.getPartitions());
+            out.writeBoolean(f0.isExcludeNeighbors());
+        }
+        else {
+            out.writeByte((byte)0);
+        }
+    }
+
+    /**
+     * Writes the eviction policy.
+     * @param out Stream.
+     * @param p Policy.
+     */
+    private static void writeEvictionPolicy(BinaryRawWriter out, EvictionPolicy p) {
         if (p instanceof FifoEvictionPolicy) {
             out.writeByte((byte)1);
 
@@ -330,25 +411,46 @@ public class PlatformConfigurationUtils {
      * @param cfg Configuration.
      */
     public static void readIgniteConfiguration(BinaryRawReaderEx in, IgniteConfiguration cfg) {
-        if (!in.readBoolean())
-            return;  // there is no config
-
-        cfg.setClientMode(in.readBoolean());
-        cfg.setIncludeEventTypes(in.readIntArray());
-        cfg.setMetricsExpireTime(in.readLong());
-        cfg.setMetricsHistorySize(in.readInt());
-        cfg.setMetricsLogFrequency(in.readLong());
-        cfg.setMetricsUpdateFrequency(in.readLong());
-        cfg.setNetworkSendRetryCount(in.readInt());
-        cfg.setNetworkSendRetryDelay(in.readLong());
-        cfg.setNetworkTimeout(in.readLong());
-        cfg.setWorkDirectory(in.readString());
-        cfg.setLocalHost(in.readString());
-        cfg.setDaemon(in.readBoolean());
-        cfg.setLateAffinityAssignment(in.readBoolean());
+        if (in.readBoolean()) cfg.setClientMode(in.readBoolean());
+        int[] eventTypes = in.readIntArray(); if (eventTypes != null) cfg.setIncludeEventTypes(eventTypes);
+        if (in.readBoolean()) cfg.setMetricsExpireTime(in.readLong());
+        if (in.readBoolean()) cfg.setMetricsHistorySize(in.readInt());
+        if (in.readBoolean()) cfg.setMetricsLogFrequency(in.readLong());
+        if (in.readBoolean()) cfg.setMetricsUpdateFrequency(in.readLong());
+        if (in.readBoolean()) cfg.setNetworkSendRetryCount(in.readInt());
+        if (in.readBoolean()) cfg.setNetworkSendRetryDelay(in.readLong());
+        if (in.readBoolean()) cfg.setNetworkTimeout(in.readLong());
+        String workDir = in.readString(); if (workDir != null) cfg.setWorkDirectory(workDir);
+        String localHost = in.readString(); if (localHost != null) cfg.setLocalHost(localHost);
+        if (in.readBoolean()) cfg.setDaemon(in.readBoolean());
+        if (in.readBoolean()) cfg.setLateAffinityAssignment(in.readBoolean());
 
         readCacheConfigurations(in, cfg);
         readDiscoveryConfiguration(in, cfg);
+
+        if (in.readBoolean()) {
+            TcpCommunicationSpi comm = new TcpCommunicationSpi();
+
+            comm.setAckSendThreshold(in.readInt());
+            comm.setConnectTimeout(in.readLong());
+            comm.setDirectBuffer(in.readBoolean());
+            comm.setDirectSendBuffer(in.readBoolean());
+            comm.setIdleConnectionTimeout(in.readLong());
+            comm.setLocalAddress(in.readString());
+            comm.setLocalPort(in.readInt());
+            comm.setLocalPortRange(in.readInt());
+            comm.setMaxConnectTimeout(in.readLong());
+            comm.setMessageQueueLimit(in.readInt());
+            comm.setReconnectCount(in.readInt());
+            comm.setSelectorsCount(in.readInt());
+            comm.setSlowClientQueueLimit(in.readInt());
+            comm.setSocketReceiveBuffer(in.readInt());
+            comm.setSocketSendBuffer(in.readInt());
+            comm.setTcpNoDelay(in.readBoolean());
+            comm.setUnacknowledgedMessagesBufferSize(in.readInt());
+
+            cfg.setCommunicationSpi(comm);
+        }
 
         if (in.readBoolean()) {
             if (cfg.getBinaryConfiguration() == null)
@@ -488,6 +590,20 @@ public class PlatformConfigurationUtils {
         disco.setNetworkTimeout(in.readLong());
         disco.setJoinTimeout(in.readLong());
 
+        disco.setForceServerMode(in.readBoolean());
+        disco.setClientReconnectDisabled(in.readBoolean());
+        disco.setLocalAddress(in.readString());
+        disco.setReconnectCount(in.readInt());
+        disco.setLocalPort(in.readInt());
+        disco.setLocalPortRange(in.readInt());
+        disco.setMaxMissedHeartbeats(in.readInt());
+        disco.setMaxMissedClientHeartbeats(in.readInt());
+        disco.setStatisticsPrintFrequency(in.readLong());
+        disco.setIpFinderCleanFrequency(in.readLong());
+        disco.setThreadPriority(in.readInt());
+        disco.setHeartbeatFrequency(in.readLong());
+        disco.setTopHistorySize(in.readInt());
+
         cfg.setDiscoverySpi(disco);
     }
 
@@ -569,6 +685,9 @@ public class PlatformConfigurationUtils {
         }
         else
             writer.writeBoolean(false);
+
+        writeEvictionPolicy(writer, ccfg.getEvictionPolicy());
+        writeAffinityFunction(writer, ccfg.getAffinity());
     }
 
     /**
@@ -660,19 +779,19 @@ public class PlatformConfigurationUtils {
         assert w != null;
         assert cfg != null;
 
-        w.writeBoolean(cfg.isClientMode());
+        w.writeBoolean(true); w.writeBoolean(cfg.isClientMode());
         w.writeIntArray(cfg.getIncludeEventTypes());
-        w.writeLong(cfg.getMetricsExpireTime());
-        w.writeInt(cfg.getMetricsHistorySize());
-        w.writeLong(cfg.getMetricsLogFrequency());
-        w.writeLong(cfg.getMetricsUpdateFrequency());
-        w.writeInt(cfg.getNetworkSendRetryCount());
-        w.writeLong(cfg.getNetworkSendRetryDelay());
-        w.writeLong(cfg.getNetworkTimeout());
+        w.writeBoolean(true); w.writeLong(cfg.getMetricsExpireTime());
+        w.writeBoolean(true); w.writeInt(cfg.getMetricsHistorySize());
+        w.writeBoolean(true); w.writeLong(cfg.getMetricsLogFrequency());
+        w.writeBoolean(true); w.writeLong(cfg.getMetricsUpdateFrequency());
+        w.writeBoolean(true); w.writeInt(cfg.getNetworkSendRetryCount());
+        w.writeBoolean(true); w.writeLong(cfg.getNetworkSendRetryDelay());
+        w.writeBoolean(true); w.writeLong(cfg.getNetworkTimeout());
         w.writeString(cfg.getWorkDirectory());
         w.writeString(cfg.getLocalHost());
-        w.writeBoolean(cfg.isDaemon());
-        w.writeBoolean(cfg.isLateAffinityAssignment());
+        w.writeBoolean(true); w.writeBoolean(cfg.isDaemon());
+        w.writeBoolean(true); w.writeBoolean(cfg.isLateAffinityAssignment());
 
         CacheConfiguration[] cacheCfg = cfg.getCacheConfiguration();
 
@@ -686,6 +805,33 @@ public class PlatformConfigurationUtils {
             w.writeInt(0);
 
         writeDiscoveryConfiguration(w, cfg.getDiscoverySpi());
+
+        CommunicationSpi comm = cfg.getCommunicationSpi();
+
+        if (comm instanceof TcpCommunicationSpi) {
+            w.writeBoolean(true);
+            TcpCommunicationSpiMBean tcp = (TcpCommunicationSpiMBean) comm;
+
+            w.writeInt(tcp.getAckSendThreshold());
+            w.writeLong(tcp.getConnectTimeout());
+            w.writeBoolean(tcp.isDirectBuffer());
+            w.writeBoolean(tcp.isDirectSendBuffer());
+            w.writeLong(tcp.getIdleConnectionTimeout());
+            w.writeString(tcp.getLocalAddress());
+            w.writeInt(tcp.getLocalPort());
+            w.writeInt(tcp.getLocalPortRange());
+            w.writeLong(tcp.getMaxConnectTimeout());
+            w.writeInt(tcp.getMessageQueueLimit());
+            w.writeInt(tcp.getReconnectCount());
+            w.writeInt(tcp.getSelectorsCount());
+            w.writeInt(tcp.getSlowClientQueueLimit());
+            w.writeInt(tcp.getSocketReceiveBuffer());
+            w.writeInt(tcp.getSocketSendBuffer());
+            w.writeBoolean(tcp.isTcpNoDelay());
+            w.writeInt(tcp.getUnacknowledgedMessagesBufferSize());
+        }
+        else
+            w.writeBoolean(false);
 
         BinaryConfiguration bc = cfg.getBinaryConfiguration();
         w.writeBoolean(bc != null);
@@ -798,6 +944,20 @@ public class PlatformConfigurationUtils {
         w.writeLong(tcp.getMaxAckTimeout());
         w.writeLong(tcp.getNetworkTimeout());
         w.writeLong(tcp.getJoinTimeout());
+
+        w.writeBoolean(tcp.isForceServerMode());
+        w.writeBoolean(tcp.isClientReconnectDisabled());
+        w.writeString(tcp.getLocalAddress());
+        w.writeInt(tcp.getReconnectCount());
+        w.writeInt(tcp.getLocalPort());
+        w.writeInt(tcp.getLocalPortRange());
+        w.writeInt(tcp.getMaxMissedHeartbeats());
+        w.writeInt(tcp.getMaxMissedClientHeartbeats());
+        w.writeLong(tcp.getStatisticsPrintFrequency());
+        w.writeLong(tcp.getIpFinderCleanFrequency());
+        w.writeInt(tcp.getThreadPriority());
+        w.writeLong(tcp.getHeartbeatFrequency());
+        w.writeInt((int)tcp.getTopHistorySize());
     }
 
     /**

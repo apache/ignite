@@ -8,50 +8,60 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
+    <Filter Include="Code\common">
+      <UniqueIdentifier>{9d664b8a-3a09-460b-9d53-c1a7f08217c0}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\os\win\include\ignite\common\common.h">
-      <Filter>Code</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\os\win\include\ignite\common\concurrent_os.h">
-      <Filter>Code</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\common\exports.h">
-      <Filter>Code</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\common\java.h">
-      <Filter>Code</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\include\ignite\common\concurrent.h">
-      <Filter>Code</Filter>
-    </ClInclude>
     <ClInclude Include="targetver.h">
       <Filter>Misc</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\os\win\include\ignite\common\common.h">
+      <Filter>Code\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\common\concurrent.h">
+      <Filter>Code\common</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\include\ignite\common\utils.h">
+      <Filter>Code\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\os\win\include\ignite\common\concurrent_os.h">
+      <Filter>Code\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\date.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\guid.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\timestamp.h">
+      <Filter>Code</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\ignite_error.h">
       <Filter>Code</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\os\win\src\common.cpp">
+    <ClCompile Include="..\..\src\date.cpp">
       <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\concurrent.cpp">
+    <ClCompile Include="..\..\src\guid.cpp">
       <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\os\win\src\concurrent_os.cpp">
+    <ClCompile Include="..\..\src\timestamp.cpp">
       <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\exports.cpp">
+    <ClCompile Include="..\..\os\win\src\common\concurrent_os.cpp">
+      <Filter>Code\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\os\win\src\common\utils.cpp">
+      <Filter>Code\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\concurrent.cpp">
+      <Filter>Code\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\ignite_error.cpp">
       <Filter>Code</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\java.cpp">
-      <Filter>Code</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="module.def">
-      <Filter>Misc</Filter>
-    </None>
   </ItemGroup>
 </Project>

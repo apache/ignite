@@ -202,7 +202,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public ICompute GetCompute()
         {
-            return _prj.GetCompute();
+            return _prj.ForServers().GetCompute();
         }
 
         /** <inheritdoc /> */
@@ -303,6 +303,12 @@ namespace Apache.Ignite.Core.Impl
         public IClusterGroup ForDotNet()
         {
             return _prj.ForDotNet();
+        }
+
+        /** <inheritdoc /> */
+        public IClusterGroup ForServers()
+        {
+            return _prj.ForServers();
         }
 
         /** <inheritdoc /> */
@@ -551,7 +557,7 @@ namespace Apache.Ignite.Core.Impl
         /** <inheritdoc /> */
         public IServices GetServices()
         {
-            return _prj.GetServices();
+            return _prj.ForServers().GetServices();
         }
 
         /** <inheritdoc /> */

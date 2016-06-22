@@ -62,6 +62,9 @@ public class BinaryClassDescriptor {
     /** Configured serializer. */
     private final BinarySerializer serializer;
 
+    /** Serializer that is passed during BinaryClassDescriptor construction. Can differ from {@link #serializer}. */
+    private final BinarySerializer initialSerializer;
+
     /** ID mapper. */
     private final BinaryInternalMapper mapper;
 
@@ -141,6 +144,8 @@ public class BinaryClassDescriptor {
         assert ctx != null;
         assert cls != null;
         assert mapper != null;
+
+        initialSerializer = serializer;
 
         // If serializer is not defined at this point, then we have to user OptimizedMarshaller.
         useOptMarshaller = serializer == null;
@@ -383,9 +388,45 @@ public class BinaryClassDescriptor {
     }
 
     /**
+     * @return Type name.
+     */
+    String typeName() {
+        return typeName;
+    }
+
+    /**
+     * @return Type mapper.
+     */
+    BinaryInternalMapper mapper() {
+        return mapper;
+    }
+
+    /**
+     * @return Serializer.
+     */
+    BinarySerializer serializer() {
+        return serializer;
+    }
+
+    /**
+     * @return Initial serializer that is passed during BinaryClassDescriptor construction.
+     * Can differ from {@link #serializer}.
+     */
+    BinarySerializer initialSerializer() {
+        return initialSerializer;
+    }
+
+    /**
+     * @return Affinity field key name.
+     */
+    String affFieldKeyName() {
+        return affKeyFieldName;
+    }
+
+    /**
      * @return User type flag.
      */
-    public boolean userType() {
+    boolean userType() {
         return userType;
     }
 

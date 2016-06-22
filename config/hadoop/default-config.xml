@@ -50,54 +50,32 @@
     </bean>
 
     <!--
-        Abstract IGFS file system configuration to be used as a template.
-    -->
-    <bean id="igfsCfgBase" class="org.apache.ignite.configuration.FileSystemConfiguration" abstract="true">
-        <!-- Must correlate with cache affinity mapper. -->
-        <property name="blockSize" value="#{128 * 1024}"/>
-        <property name="perNodeBatchSize" value="512"/>
-        <property name="perNodeParallelBatchCount" value="16"/>
-
-        <property name="prefetchBlocks" value="32"/>
-    </bean>
-
-    <!--
-        Abstract cache configuration for IGFS file data to be used as a template.
-    -->
-    <bean id="dataCacheCfgBase" class="org.apache.ignite.configuration.CacheConfiguration" abstract="true">
-        <property name="cacheMode" value="PARTITIONED"/>
-        <property name="atomicityMode" value="TRANSACTIONAL"/>
-        <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-        <property name="backups" value="0"/>
-        <property name="affinityMapper">
-            <bean class="org.apache.ignite.igfs.IgfsGroupDataBlocksKeyMapper">
-                <!-- How many sequential blocks will be stored on the same node. -->
-                <constructor-arg value="512"/>
-            </bean>
-        </property>
-    </bean>
-
-    <!--
-        Abstract cache configuration for IGFS metadata to be used as a template.
-    -->
-    <bean id="metaCacheCfgBase" class="org.apache.ignite.configuration.CacheConfiguration" abstract="true">
-        <property name="cacheMode" value="REPLICATED"/>
-        <property name="atomicityMode" value="TRANSACTIONAL"/>
-        <property name="writeSynchronizationMode" value="FULL_SYNC"/>
-    </bean>
-
-    <!--
         Configuration of Ignite node.
     -->
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <!--
-            Apache Hadoop Accelerator configuration.
+            Configure caches where IGFS will store data.
         -->
-        <property name="hadoopConfiguration">
-            <bean class="org.apache.ignite.configuration.HadoopConfiguration">
-                <!-- Information about finished jobs will be kept for 30 seconds. -->
-                <property name="finishedJobInfoTtl" value="30000"/>
-            </bean>
+        <property name="cacheConfiguration">
+            <list>
+                <!--
+                    Configure metadata cache where file system structure will be stored. It must be TRANSACTIONAL,
+                    and must have backups to maintain file system consistency in case of node crash.
+                -->
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="igfs-meta"/>
+                    <property name="cacheMode" value="REPLICATED"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                </bean>
+
+                <!--
+                    Configure data cache where file's data will be stored.
+                -->
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="igfs-data"/>
+                    <property name="atomicityMode" value="TRANSACTIONAL"/>
+                </bean>
+            </list>
         </property>
 
         <!--
@@ -114,7 +92,8 @@
         -->
         <property name="fileSystemConfiguration">
             <list>
-                <bean class="org.apache.ignite.configuration.FileSystemConfiguration" parent="igfsCfgBase">
+                <bean class="org.apache.ignite.configuration.FileSystemConfiguration">
+                    <!-- IGFS name you will use to access IGFS through Hadoop API. -->
                     <property name="name" value="igfs"/>
 
                     <!-- Caches with these names must be configured. -->
@@ -130,51 +109,21 @@
                         </bean>
                     </property>
 
-                    <!-- Sample secondary file system configuration.
-                        'uri'      - the URI of the secondary file system.
-                        'cfgPath'  - optional configuration path of the secondary file system,
-                            e.g. /opt/foo/core-site.xml. Typically left to be null.
-                        'userName' - optional user name to access the secondary file system on behalf of. Use it
-                            if Hadoop client and the Ignite node are running on behalf of different users.
+                    <!--
+                        Configure secondary file system if needed.
                     -->
                     <!--
                     <property name="secondaryFileSystem">
                         <bean class="org.apache.ignite.hadoop.fs.IgniteHadoopIgfsSecondaryFileSystem">
-                            <constructor-arg name="uri" value="hdfs://localhost:9000"/>
-                            <constructor-arg name="cfgPath"><null/></constructor-arg>
-                            <constructor-arg name="userName" value="client-user-name"/>
+                            <property name="fileSystemFactory">
+                                <bean class="org.apache.ignite.hadoop.fs.CachingHadoopFileSystemFactory">
+                                    <property name="uri" value="hdfs://your_hdfs_host:9000"/>
+                                </bean>
+                            </property>
                         </bean>
                     </property>
                     -->
                 </bean>
-            </list>
-        </property>
-
-        <!--
-            Caches needed by IGFS.
-        -->
-        <property name="cacheConfiguration">
-            <list>
-                <!-- File system metadata cache. -->
-                <bean class="org.apache.ignite.configuration.CacheConfiguration" parent="metaCacheCfgBase">
-                    <property name="name" value="igfs-meta"/>
-                </bean>
-
-                <!-- File system files data cache. -->
-                <bean class="org.apache.ignite.configuration.CacheConfiguration" parent="dataCacheCfgBase">
-                    <property name="name" value="igfs-data"/>
-                </bean>
-            </list>
-        </property>
-
-        <!--
-            Disable events.
-        -->
-        <property name="includeEventTypes">
-            <list>
-                <util:constant static-field="org.apache.ignite.events.EventType.EVT_TASK_FAILED"/>
-                <util:constant static-field="org.apache.ignite.events.EventType.EVT_TASK_FINISHED"/>
-                <util:constant static-field="org.apache.ignite.events.EventType.EVT_JOB_MAPPED"/>
             </list>
         </property>
 

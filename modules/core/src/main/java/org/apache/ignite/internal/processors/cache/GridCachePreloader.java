@@ -140,11 +140,6 @@ public interface GridCachePreloader {
     public IgniteInternalFuture<Object> request(Collection<KeyCacheObject> keys, AffinityTopologyVersion topVer);
 
     /**
-     * @return Future completed when rebalance on node start topology finished.
-     */
-    public IgniteInternalFuture<?> initialRebalanceFuture();
-
-    /**
      * Force preload process.
      */
     public void forcePreload();

@@ -20,7 +20,8 @@ package org.apache.ignite.transactions;
 import org.apache.ignite.IgniteException;
 
 /**
- * Exception thrown whenever grid transactions time out.
+ * Exception thrown whenever transactions time out. Because transaction can be timed out due to a deadlock
+ * this exception can contain {@link TransactionDeadlockException} as cause.
  */
 public class TransactionTimeoutException extends IgniteException {
     /** */
@@ -39,7 +40,7 @@ public class TransactionTimeoutException extends IgniteException {
      * Creates new timeout exception with given error message and optional nested exception.
      *
      * @param msg Error message.
-     * @param cause Optional nested exception (can be <tt>null</tt>).
+     * @param cause Optional nested exception (can be {@code null}).
      */
     public TransactionTimeoutException(String msg, Throwable cause) {
         super(msg, cause);

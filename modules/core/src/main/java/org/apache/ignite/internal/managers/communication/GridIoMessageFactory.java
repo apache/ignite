@@ -99,6 +99,10 @@ import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinu
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxEntry;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
 import org.apache.ignite.internal.processors.cache.transactions.TxEntryValueHolder;
+import org.apache.ignite.internal.processors.cache.transactions.TxLock;
+import org.apache.ignite.internal.processors.cache.transactions.TxLockList;
+import org.apache.ignite.internal.processors.cache.transactions.TxLocksRequest;
+import org.apache.ignite.internal.processors.cache.transactions.TxLocksResponse;
 import org.apache.ignite.internal.processors.cache.version.GridCacheRawVersionedEntry;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersionEx;
@@ -156,6 +160,26 @@ public class GridIoMessageFactory implements MessageFactory {
         Message msg = null;
 
         switch (type) {
+            case -26:
+                msg = new TxLockList();
+
+                break;
+
+            case -25:
+                msg = new TxLock();
+
+                break;
+
+            case -24:
+                msg = new TxLocksRequest();
+
+                break;
+
+            case -23:
+                msg = new TxLocksResponse();
+
+                break;
+
             case TcpCommunicationSpi.NODE_ID_MSG_TYPE:
                 msg = new TcpCommunicationSpi.NodeIdMessage();
 

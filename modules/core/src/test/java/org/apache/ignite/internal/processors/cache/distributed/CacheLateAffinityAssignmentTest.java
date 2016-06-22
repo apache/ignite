@@ -1280,7 +1280,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         client.destroyCache(CACHE_NAME2);
 
-        checkAffinity(4, topVer(4, 2), true);
+        checkAffinity(4, topVer(4, 3), true);
     }
 
     /**
