@@ -17,13 +17,13 @@ Configuration file:
   Should be a file with simple line-oriented format as described here: http://docs.oracle.com/javase/7/docs/api/java/util/Properties.html#load(java.io.Reader)
 
   Available entries names:
-    token
+    tokens
     server-uri
     node-uri
     driver-folder
 
   Example configuration file:
-    token=1a2b3c4d5f
+    tokens=1a2b3c4d5f,2j1s134d12
     serverURI=http://console.example.com:3001
 
 Security token:
@@ -47,8 +47,8 @@ Options:
   -s, --server-uri
      URI for connect to Ignite Web Console via web-socket protocol, default
      value: http://localhost:3001
-  -t, --token
-     User's security token
+  -t, --tokens
+     User's security tokens
 
 How to build:
   To build from sources run following command in Ignite project root folder:

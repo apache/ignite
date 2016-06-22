@@ -569,66 +569,72 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
                             return cb('You are using an older version of the agent. Please reload agent archive');
                     }
 
-                    mongo.Account.findOne({token: data.token}, (err, account) => {
-                        // TODO IGNITE-1379 send error to web master.
-                        if (err)
-                            cb('Failed to authorize user');
-                        else if (!account)
-                            cb('Invalid token, user not found');
-                        else {
+                    const tokens = data.tokens;
+
+                    mongo.Account.find({token: {$in: tokens}}, '_id token').lean().exec()
+                        .then((accounts) => {
+                            if (!accounts)
+                                return cb('Invalid token(s), user(s) not found', false);
+
                             const agent = new Agent(socket);
 
-                            socket.on('disconnect', () => {
-                                this._removeAgent(account._id, agent);
-                            });
+                            const accountIds = _.map(accounts, (account) => account._id);
 
-                            this._addAgent(account._id, agent);
+                            socket.on('disconnect', () => this._agentDisconnected(accountIds, agent));
 
-                            cb();
-                        }
-                    });
+                            this._agentConnected(accountIds, agent);
+
+                            const missedTokens = _.difference(tokens, _.map(accounts, (account) => account.token));
+
+                            if (_.isEmpty(missedTokens))
+                                return cb(null, true);
+
+                            cb('Failed to find users with token(s): ' + missedTokens.join(', '), true)
+                        })
+                        // TODO IGNITE-1379 send error to web master.
+                        .catch((err) => cb('Failed to authorize agent by token(s)', false));
                 });
             });
         }
 
         /**
-         * @param {ObjectId} userId
-         * @param {Socket} user
-         * @returns {int} connected agent count.
+         * @param {ObjectId} accountId
+         * @param {Socket} socket
+         * @returns {int} Connected agent count.
          */
-        addAgentListener(userId, user) {
-            let users = this._browsers[userId];
+        addAgentListener(accountId, socket) {
+            let sockets = this._browsers[accountId];
 
-            if (!users)
-                this._browsers[userId] = users = [];
+            if (!sockets)
+                this._browsers[accountId] = sockets = [];
 
-            users.push(user);
+            sockets.push(socket);
 
-            const agents = this._agents[userId];
+            const agents = this._agents[accountId];
 
             return agents ? agents.length : 0;
         }
 
         /**
-         * @param {ObjectId} userId
-         * @param {Socket} user
+         * @param {ObjectId} accountId
+         * @param {Socket} socket
          * @returns {int} connected agent count.
          */
-        removeAgentListener(userId, user) {
-            const users = this._browsers[userId];
+        removeAgentListener(accountId, socket) {
+            const sockets = this._browsers[accountId];
 
-            _.remove(users, (_user) => _user === user);
+            _.pull(sockets, socket);
         }
 
         /**
-         * @param {ObjectId} userId
+         * @param {ObjectId} accountId
          * @returns {Promise.<Agent>}
          */
-        findAgent(userId) {
+        findAgent(accountId) {
             if (!this._server)
                 return Promise.reject(new Error('Agent server not started yet!'));
 
-            const agents = this._agents[userId];
+            const agents = this._agents[accountId];
 
             if (!agents || agents.length === 0)
                 return Promise.reject(new Error('Failed to connect to agent'));
@@ -638,49 +644,57 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
 
         /**
          * Close connections for all user agents.
-         * @param {ObjectId} userId
+         * @param {ObjectId} accountId
          */
-        close(userId) {
+        close(accountId) {
             if (!this._server)
                 return;
 
-            const agents = this._agents[userId];
+            const socketsForClose = this._agents[accountId];
 
-            this._agents[userId] = [];
+            this._agents[accountId] = [];
 
-            for (const agent of agents)
-                agent._emit('agent:close', 'Security token was changed for user');
+            _.forEach(this._agents, (sockets) => _.pullAll(socketsForClose, sockets));
+
+            _.forEach(socketsForClose, (socket) => socket._emit('agent:close', 'Security token was changed for user'));
+
+            _.forEach(this._browsers[accountId], (socket) => socket.emit('agent:count', {count: 0}));
         }
 
         /**
-         * @param userId
+         * @param {ObjectId} accountIds
          * @param {Agent} agent
          */
-        _removeAgent(userId, agent) {
-            const agents = this._agents[userId];
+        _agentConnected(accountIds, agent) {
+            _.forEach(accountIds, (accountId) => {
+                let agents = this._agents[accountId];
 
-            _.remove(agents, (_agent) => _agent === agent);
+                if (!agents)
+                    this._agents[accountId] = agents = [];
 
-            const users = this._browsers[userId];
+                agents.push(agent);
 
-            _.forEach(users, (user) => user.emit('agent:count', {count: agents.length}));
+                const sockets = this._browsers[accountId];
+
+                _.forEach(sockets, (socket) => socket.emit('agent:count', {count: agents.length}));
+            });
         }
 
         /**
-         * @param {ObjectId} userId
+         * @param {ObjectId} accountIds
          * @param {Agent} agent
          */
-        _addAgent(userId, agent) {
-            let agents = this._agents[userId];
+        _agentDisconnected(accountIds, agent) {
+            _.forEach(accountIds, (accountId) => {
+                const agents = this._agents[accountId];
 
-            if (!agents)
-                this._agents[userId] = agents = [];
+                if (!agents)
+                    _.pull(agents, agent);
 
-            agents.push(agent);
+                const sockets = this._browsers[accountId];
 
-            const users = this._browsers[userId];
-
-            _.forEach(users, (user) => user.emit('agent:count', {count: agents.length}));
+                _.forEach(sockets, (socket) => socket.emit('agent:count', {count: agents.length}));
+            });
         }
     }
 
