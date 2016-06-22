@@ -689,7 +689,8 @@ public class GridDhtPartitionDemander {
                         entry.expireTime(),
                         true,
                         topVer,
-                        cctx.isDrEnabled() ? DR_PRELOAD : DR_NONE
+                        cctx.isDrEnabled() ? DR_PRELOAD : DR_NONE,
+                        false
                     )) {
                         cctx.evicts().touch(cached, topVer); // Start tracking.
 

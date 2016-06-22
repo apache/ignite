@@ -564,8 +564,14 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                     entry = entryEx(key, false);
 
-                    entry.initialValue(cacheVal, ver, ttl, CU.EXPIRE_TIME_CALCULATE, false, topVer,
-                        replicate ? DR_LOAD : DR_NONE);
+                    entry.initialValue(cacheVal,
+                        ver,
+                        ttl,
+                        CU.EXPIRE_TIME_CALCULATE,
+                        false,
+                        topVer,
+                        replicate ? DR_LOAD : DR_NONE,
+                        false);
                 }
                 catch (IgniteCheckedException e) {
                     throw new IgniteException("Failed to put cache value: " + entry, e);

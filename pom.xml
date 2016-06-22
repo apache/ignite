@@ -84,6 +84,7 @@
         <module>modules/osgi-karaf</module>
         <module>modules/osgi</module>
         <module>modules/web/ignite-weblogic-test</module>
+        <module>modules/cassandra</module>
     </modules>
 
     <profiles>
@@ -183,7 +184,7 @@
                                     <reportOutputDirectory>${basedir}/target/javadoc</reportOutputDirectory>
                                     <destDir>core</destDir>
                                     <stylesheetfile>${basedir}/assembly/docfiles/javadoc.css</stylesheetfile>
-                                    <subpackages>org.apache.ignite -exclude org.apache.ignite.client:org.apache.ignite.codegen:org.apache.ignite.examples:org.apache.ignite.internal:org.apache.ignite.schema:org.apache.ignite.tests:org.apache.ignite.tools:org.apache.ignite.util:org.apache.ignite.spi.discovery.tcp.messages:org.apache.ignite.spi.discovery.tcp.internal:org.apache.ignite.spi.deployment.uri.scanners:org.apache.ignite.spi.deployment.uri.tasks:org.apache.ignite.yardstick</subpackages>
+                                    <subpackages>org.apache.ignite -exclude org.apache.ignite.client:org.apache.ignite.codegen:org.apache.ignite.examples:org.apache.ignite.internal:org.apache.ignite.schema:org.apache.ignite.tests:org.apache.ignite.tools:org.apache.ignite.util:org.apache.ignite.spi.discovery.tcp.messages:org.apache.ignite.spi.discovery.tcp.internal:org.apache.ignite.spi.deployment.uri.scanners:org.apache.ignite.spi.deployment.uri.tasks:org.apache.ignite.yardstick:org.apache.ignite.cache.store.cassandra.common:org.apache.ignite.cache.store.cassandra.session:org.apache.ignite.cache.store.cassandra.session.pool</subpackages>
                                 </configuration>
                             </execution>
                         </executions>
@@ -321,6 +322,14 @@
                                         </replaceregexp>
 
                                         <chmod dir="${basedir}/target/release-package" perm="755" includes="**/*.sh" />
+
+                                        <!--
+                                        Line ending bugfix for builds packaged in MS Windows machine to adjust Linux based
+                                        end-of-line characters for Linux shell scripts
+                                        -->
+                                        <fixcrlf srcdir="${basedir}/target/release-package" eol="lf" eof="remove">
+                                            <include name="**/*.sh" />
+                                        </fixcrlf>
 
                                         <zip destfile="${basedir}/target/bin/${ignite.zip.pattern}.zip" encoding="UTF-8">
                                             <zipfileset dir="${basedir}/target/release-package" prefix="${ignite.zip.pattern}" filemode="755">

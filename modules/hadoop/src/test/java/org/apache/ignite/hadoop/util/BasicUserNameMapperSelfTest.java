@@ -28,13 +28,30 @@ import java.util.Map;
  */
 public class BasicUserNameMapperSelfTest extends GridCommonAbstractTest {
     /**
+     * Test null mappings.
+     *
+     * @throws Exception If failed.
+     */
+    public void testNullMappings() throws Exception {
+        checkNullOrEmptyMappings(null);
+    }
+
+    /**
      * Test empty mappings.
      *
      * @throws Exception If failed.
      */
     public void testEmptyMappings() throws Exception {
-        Map<String, String> map = new HashMap<>();
+        checkNullOrEmptyMappings(new HashMap<String, String>());
+    }
 
+    /**
+     * Check null or empty mappings.
+     *
+     * @param map Mappings.
+     * @throws Exception If failed.
+     */
+    private void checkNullOrEmptyMappings(@Nullable Map<String, String> map) throws Exception {
         BasicUserNameMapper mapper = create(map, false, null);
 
         assertNull(mapper.map(null));

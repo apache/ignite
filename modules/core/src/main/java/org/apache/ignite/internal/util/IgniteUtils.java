@@ -149,6 +149,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteInterruptedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cluster.ClusterGroupEmptyException;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
@@ -4710,6 +4712,44 @@ public abstract class IgniteUtils {
     }
 
     /**
+     * Writes UUID to binary writer.
+     *
+     * @param out Output Binary writer.
+     * @param uid UUID to write.
+     * @throws IOException If write failed.
+     */
+    public static void writeUuid(BinaryRawWriter out, UUID uid) {
+        // Write null flag.
+        if (uid != null) {
+            out.writeBoolean(true);
+
+            out.writeLong(uid.getMostSignificantBits());
+            out.writeLong(uid.getLeastSignificantBits());
+        }
+        else
+            out.writeBoolean(false);
+    }
+
+    /**
+     * Reads UUID from binary reader.
+     *
+     * @param in Binary reader.
+     * @return Read UUID.
+     * @throws IOException If read failed.
+     */
+    @Nullable public static UUID readUuid(BinaryRawReader in) {
+        // If UUID is not null.
+        if (in.readBoolean()) {
+            long most = in.readLong();
+            long least = in.readLong();
+
+            return new UUID(most, least);
+        }
+        else
+            return null;
+    }
+
+    /**
      * Writes {@link org.apache.ignite.lang.IgniteUuid} to output stream. This method is meant to be used by
      * implementations of {@link Externalizable} interface.
      *
@@ -8510,7 +8550,7 @@ public abstract class IgniteUtils {
      */
     public static Collection<InetAddress> toInetAddresses(Collection<String> addrs,
         Collection<String> hostNames) throws IgniteCheckedException {
-        List<InetAddress> res = new ArrayList<>(addrs.size());
+        Set<InetAddress> res = new HashSet<>(addrs.size());
 
         Iterator<String> hostNamesIt = hostNames.iterator();
 
@@ -8543,7 +8583,7 @@ public abstract class IgniteUtils {
             throw new IgniteCheckedException("Addresses can not be resolved [addr=" + addrs +
                 ", hostNames=" + hostNames + ']');
 
-        return F.viewListReadOnly(res, F.<InetAddress>identity());
+        return res;
     }
 
     /**
@@ -8569,7 +8609,7 @@ public abstract class IgniteUtils {
      */
     public static Collection<InetSocketAddress> toSocketAddresses(Collection<String> addrs,
         Collection<String> hostNames, int port) {
-        List<InetSocketAddress> res = new ArrayList<>(addrs.size());
+        Set<InetSocketAddress> res = new HashSet<>(addrs.size());
 
         Iterator<String> hostNamesIt = hostNames.iterator();
 
@@ -8590,7 +8630,7 @@ public abstract class IgniteUtils {
             res.add(new InetSocketAddress(addr, port));
         }
 
-        return F.viewListReadOnly(res, F.<InetSocketAddress>identity());
+        return res;
     }
 
     /**
@@ -8615,20 +8655,47 @@ public abstract class IgniteUtils {
             InetSocketAddress sockAddr = new InetSocketAddress(addr, port);
 
             if (!sockAddr.isUnresolved()) {
-                try {
-                    Collection<InetSocketAddress> extAddrs0 = addrRslvr.getExternalAddresses(sockAddr);
+                Collection<InetSocketAddress> extAddrs0 = resolveAddress(addrRslvr, sockAddr);
 
-                    if (extAddrs0 != null)
-                        extAddrs.addAll(extAddrs0);
-                }
-                catch (IgniteCheckedException e) {
-                    throw new IgniteSpiException("Failed to get mapped external addresses " +
-                        "[addrRslvr=" + addrRslvr + ", addr=" + addr + ']', e);
-                }
+                if (extAddrs0 != null)
+                    extAddrs.addAll(extAddrs0);
             }
         }
 
         return extAddrs;
+    }
+
+    /**
+     * @param addrRslvr Address resolver.
+     * @param sockAddr Addresses.
+     * @return Resolved addresses.
+     */
+    public static Collection<InetSocketAddress> resolveAddresses(AddressResolver addrRslvr,
+        Collection<InetSocketAddress> sockAddr) {
+        if (addrRslvr == null)
+            return sockAddr;
+
+        Collection<InetSocketAddress> resolved = new HashSet<>();
+
+        for (InetSocketAddress address :sockAddr)
+            resolved.addAll(resolveAddress(addrRslvr, address));
+
+        return resolved;
+    }
+
+    /**
+     * @param addrRslvr Address resolver.
+     * @param sockAddr Addresses.
+     * @return Resolved addresses.
+     */
+    private static Collection<InetSocketAddress> resolveAddress(AddressResolver addrRslvr, InetSocketAddress sockAddr) {
+        try {
+            return addrRslvr.getExternalAddresses(sockAddr);
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteSpiException("Failed to get mapped external addresses " +
+                "[addrRslvr=" + addrRslvr + ", addr=" + sockAddr + ']', e);
+        }
     }
 
     /**

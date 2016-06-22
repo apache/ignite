@@ -178,7 +178,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             rnd.nextBytes(data);
 
-            IgniteInternalFuture<Boolean> fut = mgr.writeStart(info);
+            IgniteInternalFuture<Boolean> fut = mgr.writeStart(info.id());
 
             expectsStoreFail(info, data, "Not enough space reserved to store data");
 
@@ -195,7 +195,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             assert remainder == null;
 
-            mgr.writeClose(info);
+            mgr.writeClose(info.id(), false);
 
             fut.get(3000);
 
@@ -269,7 +269,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             info = info.length(info.length() + data.length + remainder.length);
 
-            IgniteInternalFuture<Boolean> fut = mgr.writeStart(info);
+            IgniteInternalFuture<Boolean> fut = mgr.writeStart(info.id());
 
             IgfsFileAffinityRange range = new IgfsFileAffinityRange();
 
@@ -287,7 +287,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             assert left2 == null;
 
-            mgr.writeClose(info);
+            mgr.writeClose(info.id(), false);
 
             fut.get(3000);
 
@@ -358,7 +358,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             info = info.length(info.length() + data.length * writesCnt);
 
-            IgniteInternalFuture<Boolean> fut = mgr.writeStart(info);
+            IgniteInternalFuture<Boolean> fut = mgr.writeStart(info.id());
 
             for (int j = 0; j < 64; j++) {
                 Arrays.fill(data, (byte)(j / 4));
@@ -369,7 +369,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
                 assert left == null : "No remainder should be returned if flush is true: " + Arrays.toString(left);
             }
 
-            mgr.writeClose(info);
+            mgr.writeClose(info.id(), false);
 
             assertTrue(range.regionEqual(new IgfsFileAffinityRange(0, writesCnt * chunkSize - 1, null)));
 

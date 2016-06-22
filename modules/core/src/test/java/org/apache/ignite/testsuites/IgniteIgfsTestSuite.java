@@ -27,7 +27,9 @@ import org.apache.ignite.internal.processors.igfs.IgfsBackupsPrimarySelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsBlockMessageSystemPoolStarvationSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsCachePerBlockLruEvictionPolicySelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsCacheSelfTest;
-import org.apache.ignite.internal.processors.igfs.IgfsClientCacheSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsDualAsyncClientSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsDualSyncClientSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsPrimaryClientSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsDataManagerSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsDualAsyncSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsDualSyncSelfTest;
@@ -42,6 +44,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsOneClientNodeTest;
 import org.apache.ignite.internal.processors.igfs.IgfsPrimaryOffheapTieredSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsPrimaryOffheapValuesSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsPrimaryOptimziedMarshallerSelfTest;
+import org.apache.ignite.internal.processors.igfs.IgfsPrimaryRelaxedClientSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsPrimaryRelaxedSelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsPrimarySelfTest;
 import org.apache.ignite.internal.processors.igfs.IgfsProcessorSelfTest;
@@ -95,7 +98,11 @@ public class IgniteIgfsTestSuite extends TestSuite {
         suite.addTest(new TestSuite(IgfsModesSelfTest.class));
         suite.addTest(new TestSuite(IgfsMetricsSelfTest.class));
 
-        suite.addTest(new TestSuite(IgfsClientCacheSelfTest.class));
+        suite.addTest(new TestSuite(IgfsPrimaryClientSelfTest.class));
+        suite.addTest(new TestSuite(IgfsPrimaryRelaxedClientSelfTest.class));
+        suite.addTest(new TestSuite(IgfsDualSyncClientSelfTest.class));
+        suite.addTest(new TestSuite(IgfsDualAsyncClientSelfTest.class));
+
         suite.addTest(new TestSuite(IgfsOneClientNodeTest.class));
 
         suite.addTest(new TestSuite(IgfsModeResolverSelfTest.class));
