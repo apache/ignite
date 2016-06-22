@@ -589,7 +589,7 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
                             if (_.isEmpty(missedTokens))
                                 return cb(null, true);
 
-                            cb('Failed to find users with token(s): ' + missedTokens.join(', '), true)
+                            cb('Failed to find users with token(s): ' + missedTokens.join(', '), true);
                         })
                         // TODO IGNITE-1379 send error to web master.
                         .catch((err) => cb('Failed to authorize agent by token(s)', false));

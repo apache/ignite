@@ -79,4 +79,3 @@ module.exports.factory = function(_, express, fs, JSZip, settings, agentMgr) {
         resolveFactory(router);
     });
 };
-
