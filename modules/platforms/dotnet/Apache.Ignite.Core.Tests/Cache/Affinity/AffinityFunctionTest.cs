@@ -127,7 +127,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
             using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                GridName = "myGrid"
+                GridName = "myGrid",
+                BinaryConfiguration = new BinaryConfiguration(typeof(SimpleAffinityFunction))
             }))
             {
 

@@ -87,6 +87,9 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
 
     /** {@inheritDoc} */
     @Override public void reset() {
+        assert ctx != null;
+        assert ptr != 0;
+
         ctx.gateway().affinityFunctionReset(ptr);
     }
 
@@ -100,6 +103,7 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
     /** {@inheritDoc} */
     @Override public int partition(Object key) {
         assert ctx != null;
+        assert ptr != 0;
 
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
@@ -114,6 +118,7 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
     /** {@inheritDoc} */
     @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext affCtx) {
         assert ctx != null;
+        assert ptr != 0;
         assert affCtx != null;
 
         try (PlatformMemory outMem = ctx.memory().allocate()) {
@@ -166,6 +171,7 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
     /** {@inheritDoc} */
     @Override public void removeNode(UUID nodeId) {
         assert ctx != null;
+        assert ptr != 0;
 
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
@@ -189,7 +195,16 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
-        // No-op.
+        assert ctx != null;
+
+        try (PlatformMemory mem = ctx.memory().allocate()) {
+            PlatformOutputStream out = mem.output();
+            BinaryRawWriterEx writer = ctx.writer(out);
+            writer.writeObject(userFunc);
+            out.synchronize();
+
+            ptr = ctx.gateway().affinityFunctionInit(mem.pointer());
+        }
     }
 
     /** {@inheritDoc} */
@@ -207,14 +222,5 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
     @IgniteInstanceResource
     private void setIgnite(Ignite ignite) {
         ctx = PlatformUtils.platformContext(ignite);
-
-        try (PlatformMemory mem = ctx.memory().allocate()) {
-            PlatformOutputStream out = mem.output();
-            BinaryRawWriterEx writer = ctx.writer(out);
-            writer.writeObject(userFunc);
-            out.synchronize();
-
-            ptr = ctx.gateway().affinityFunctionInit(mem.pointer());
-        }
     }
 }
