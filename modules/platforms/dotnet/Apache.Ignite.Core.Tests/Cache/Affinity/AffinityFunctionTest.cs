@@ -42,6 +42,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         /** */
         private const int PartitionCount = 10;
 
+        /// <summary>
+        /// Fixture set up.
+        /// </summary>
         [TestFixtureSetUp]
         public void FixtureSetUp()
         {
@@ -60,6 +63,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             _ignite = Ignition.Start(cfg);
         }
 
+        /// <summary>
+        /// Fixture tear down.
+        /// </summary>
         [TestFixtureTearDown]
         public void FixtureTearDown()
         {
@@ -76,12 +82,18 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             Ignition.StopAll(true);
         }
 
+        /// <summary>
+        /// Tests the static cache.
+        /// </summary>
         [Test]
         public void TestStaticCache()
         {
             VerifyCacheAffinity(_ignite.GetCache<int, int>(CacheName));
         }
 
+        /// <summary>
+        /// Tests the dynamic cache.
+        /// </summary>
         [Test]
         public void TestDynamicCache()
         {
@@ -105,16 +117,22 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                 Assert.AreEqual(i % PartitionCount, aff.GetPartition(i));
         }
 
+        /// <summary>
+        /// Tests Reset and RemoveNode methods.
+        /// </summary>
         [Test]
-        public void TestRemoveNode()
+        public void TestResetRemoveNode()
         {
-            
-        }
+            // Start another node and verify that Reset is called on start and RemoveNode on stop
 
-        [Test]
-        public void TestLifetime()
-        {
-            // TODO: check handle removal on DestroyCache
+            using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            {
+                GridName = "myGrid"
+            }))
+            {
+
+            }
+
         }
 
         private class SimpleAffinityFunction : IAffinityFunction
