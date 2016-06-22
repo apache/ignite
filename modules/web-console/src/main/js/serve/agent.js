@@ -573,7 +573,7 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
 
                     mongo.Account.find({token: {$in: tokens}}, '_id token').lean().exec()
                         .then((accounts) => {
-                            if (!accounts)
+                            if (!accounts.length)
                                 return cb('Invalid token(s), user(s) not found', false);
 
                             const agent = new Agent(socket);
