@@ -17,13 +17,29 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.StringReader;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.cache.Cache;
 import javax.cache.configuration.Factory;
+import javax.cache.configuration.FactoryBuilder;
+import javax.cache.integration.CacheLoaderException;
+import javax.cache.integration.CacheWriterException;
+import org.apache.commons.io.IOUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteTransactions;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -31,6 +47,9 @@ import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.cache.store.CacheStoreAdapter;
+import org.apache.ignite.cache.store.CacheStoreSession;
+import org.apache.ignite.cache.store.CacheStoreSessionListener;
+import org.apache.ignite.cache.store.jdbc.CacheJdbcStoreSessionListener;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
@@ -45,12 +64,16 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
+import org.apache.ignite.resources.CacheStoreSessionResource;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.TcpDiscoveryIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.testframework.GridTestUtils;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
+import org.h2.jdbcx.JdbcConnectionPool;
+import org.h2.tools.RunScript;
+import org.h2.tools.Server;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
@@ -66,20 +89,10 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /** Test timeout */
     private static final long TEST_TIMEOUT = 30 * 1000;
 
-    /** Store map. */
-    protected static final Map<Object, Object> map = new ConcurrentHashMap8<>();
-
-    /** Reads counter. */
-    protected static final AtomicInteger reads = new AtomicInteger();
-
-    /** Writes counter. */
-    protected static final AtomicInteger writes = new AtomicInteger();
-
-    /** Removes counter. */
-    protected static final AtomicInteger removes = new AtomicInteger();
-
     /** VM ip finder for TCP discovery. */
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
+
+    protected static TestCacheStoreStrategy storeStrategy;
 
     /**
      * @return Grids count to start.
@@ -97,6 +110,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
         assert cnt >= 1 : "At least one grid must be started";
 
+        initStoreStrategy();
+
         startGrids(cnt);
 
         awaitPartitionMapExchange();
@@ -106,7 +121,13 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
 
-        map.clear();
+        storeStrategy.resetStore();
+    }
+
+    /** Initialize {@link #storeStrategy} with respect to the nature of the test */
+    void initStoreStrategy() throws IgniteCheckedException {
+        if (storeStrategy == null)
+            storeStrategy = isMultiJvm() ? new H2CacheStoreStrategy() : new MapCacheStoreStrategy();
     }
 
     /** {@inheritDoc} */
@@ -188,28 +209,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         assert jcache().unwrap(Ignite.class).transactions().tx() == null;
         assertEquals("Cache is not empty", 0, jcache().localSize(CachePeekMode.ALL));
 
-        resetStore();
-    }
-
-    /**
-     * Cleans up cache store.
-     */
-    protected void resetStore() {
-        map.clear();
-
-        reads.set(0);
-        writes.set(0);
-        removes.set(0);
-    }
-
-    /**
-     * Put entry to cache store.
-     *
-     * @param key Key.
-     * @param val Value.
-     */
-    protected void putToStore(Object key, Object val) {
-        map.put(key, val);
+        storeStrategy.resetStore();
     }
 
     /** {@inheritDoc} */
@@ -241,13 +241,15 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
-        CacheStore<?, ?> store = cacheStore();
+        Factory<? extends CacheStore<Object, Object>> storeFactory = storeStrategy.getStoreFactory();
+        CacheStore<?, ?> store = storeFactory.create();
 
         if (store != null) {
-            cfg.setCacheStoreFactory(new TestStoreFactory());
+            cfg.setCacheStoreFactory(storeFactory);
             cfg.setReadThrough(true);
             cfg.setWriteThrough(true);
             cfg.setLoadPreviousValue(true);
+            storeStrategy.updateCacheConfiguration(cfg);
         }
 
         cfg.setSwapEnabled(swapEnabled());
@@ -300,37 +302,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
      */
     protected CacheWriteSynchronizationMode writeSynchronization() {
         return FULL_SYNC;
-    }
-
-    /**
-     * @return Write through storage emulator.
-     */
-    protected static CacheStore<?, ?> cacheStore() {
-        return new CacheStoreAdapter<Object, Object>() {
-            @Override public void loadCache(IgniteBiInClosure<Object, Object> clo,
-                Object... args) {
-                for (Map.Entry<Object, Object> e : map.entrySet())
-                    clo.apply(e.getKey(), e.getValue());
-            }
-
-            @Override public Object load(Object key) {
-                reads.incrementAndGet();
-
-                return map.get(key);
-            }
-
-            @Override public void write(javax.cache.Cache.Entry<? extends Object, ? extends Object> e) {
-                writes.incrementAndGet();
-
-                map.put(e.getKey(), e.getValue());
-            }
-
-            @Override public void delete(Object key) {
-                removes.incrementAndGet();
-
-                map.remove(key);
-            }
-        };
     }
 
     /**
@@ -575,12 +546,517 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         }
     }
 
-    /**
-     * Serializable factory.
-     */
-    protected static class TestStoreFactory implements Factory<CacheStore> {
-        @Override public CacheStore create() {
-            return cacheStore();
+    /** Interface for cache store backend manipulation and stats routines */
+    protected interface TestCacheStoreStrategy {
+
+        /** */
+        void afterTestsStopped();
+
+        /** */
+        int getReads();
+
+        /** */
+        int getWrites();
+
+        /** */
+        int getRemoves();
+
+        /** */
+        int getStoreSize();
+
+        /** */
+        void resetStore();
+
+        /**
+         * Put entry to cache store
+         *
+         * @param key Key.
+         * @param val Value.
+         */
+        void putToStore(Object key, Object val);
+
+        /** */
+        void putAllToStore(Map<?, ?> data);
+
+        /** */
+        Object getFromStore(Object key);
+
+        /** */
+        void removeFromStore(Object key);
+
+        /** */
+        boolean isInStore(Object key);
+
+        /** */
+        void updateCacheConfiguration(CacheConfiguration<Object, Object> configuration);
+
+        /**
+         * @return Factory for write-through storage emulator
+         */
+        Factory<? extends CacheStore<Object, Object>> getStoreFactory();
+    }
+
+    /** {@link TestCacheStoreStrategy} implemented as a wrapper around {@link #map} */
+    protected static class MapCacheStoreStrategy implements TestCacheStoreStrategy {
+
+        /** Removes counter. */
+        private final static AtomicInteger removes = new AtomicInteger();
+
+        /** Writes counter. */
+        private final static AtomicInteger writes = new AtomicInteger();
+
+        /** Reads counter. */
+        private final static AtomicInteger reads = new AtomicInteger();
+
+        /** Store map. */
+        private final static Map<Object, Object> map = new ConcurrentHashMap8<>();
+
+        /** {@inheritDoc} */
+        @Override public void afterTestsStopped() {
+            resetStore();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getReads() {
+            return reads.get();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getWrites() {
+            return writes.get();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getRemoves() {
+            return removes.get();
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getStoreSize() {
+            return map.size();
+        }
+
+        /** {@inheritDoc} */
+        @Override public void resetStore() {
+            map.clear();
+
+            reads.set(0);
+            writes.set(0);
+            removes.set(0);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void putToStore(Object key, Object val) {
+            map.put(key, val);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void putAllToStore(Map<?, ?> data) {
+            map.putAll(data);
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object getFromStore(Object key) {
+            return map.get(key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void removeFromStore(Object key) {
+            map.remove(key);
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isInStore(Object key) {
+            return map.containsKey(key);
+        }
+
+        @Override
+        public void updateCacheConfiguration(CacheConfiguration<Object, Object> configuration) {
+            // No-op.
+        }
+
+        /** {@inheritDoc} */
+        @Override public Factory<? extends CacheStore<Object, Object>> getStoreFactory() {
+            return FactoryBuilder.factoryOf(MapCacheStore.class);
+        }
+
+        /** Serializable {@link #map} backed cache store factory */
+        private static class MapStoreFactory implements Factory<CacheStore<Object, Object>> {
+            /** {@inheritDoc} */
+            @Override public CacheStore<Object, Object> create() {
+                return new MapCacheStore();
+            }
+        }
+
+        /** {@link CacheStore} backed by {@link #map} */
+        public static class MapCacheStore extends CacheStoreAdapter<Object, Object> {
+
+            /** {@inheritDoc} */
+            @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, Object... args) {
+                for (Map.Entry<Object, Object> e : map.entrySet())
+                    clo.apply(e.getKey(), e.getValue());
+            }
+
+            /** {@inheritDoc} */
+            @Override public Object load(Object key) {
+                reads.incrementAndGet();
+                return map.get(key);
+            }
+
+            /** {@inheritDoc} */
+            @Override public void write(Cache.Entry<?, ?> e) {
+                writes.incrementAndGet();
+                map.put(e.getKey(), e.getValue());
+            }
+
+            /** {@inheritDoc} */
+            @Override public void delete(Object key) {
+                removes.incrementAndGet();
+                map.remove(key);
+            }
+        }
+    }
+
+    protected static class H2CacheStoreStrategy implements TestCacheStoreStrategy {
+        private final JdbcConnectionPool dataSrc;
+
+        /** Create table script. */
+        private static final String CREATE_CACHE_TABLE =
+            "create table if not exists CACHE(k binary not null, v binary not null, PRIMARY KEY(k));";
+
+        private static final String CREATE_STATS_TABLE =
+            "create table if not exists STATS(id bigint not null, reads int not null, writes int not null, " +
+                "removes int not null, PRIMARY KEY(id));";
+
+        private static final String POPULATE_STATS_TABLE =
+            "delete from STATS;\n" +
+            "insert into STATS(id, reads, writes, removes) values(1, 0, 0, 0);";
+
+        /** */
+        public H2CacheStoreStrategy() throws IgniteCheckedException {
+            try {
+                Server.createTcpServer("-tcpDaemon").start();
+                dataSrc = createDataSource();
+
+                try (Connection conn = connection()) {
+                    RunScript.execute(conn, new StringReader(CREATE_CACHE_TABLE));
+                    RunScript.execute(conn, new StringReader(CREATE_STATS_TABLE));
+                    RunScript.execute(conn, new StringReader(POPULATE_STATS_TABLE));
+                }
+            }
+            catch (SQLException e) {
+                throw new IgniteCheckedException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void afterTestsStopped() {
+
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getReads() {
+            return querySingleInt("select reads from STATS limit 0,1;", "Failed to query number of reads from STATS table");
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getWrites() {
+            return querySingleInt("select writes from STATS limit 0,1;", "Failed to query number of writes from STATS table");
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getRemoves() {
+            return querySingleInt("select removes from STATS limit 0,1;", "Failed to query number of removals from STATS table");
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getStoreSize() {
+            return querySingleInt("select count(*) from CACHE;", "Failed to query number of rows from CACHE table");
+        }
+
+        /** {@inheritDoc} */
+        @Override public void resetStore() {
+            try (Connection conn = connection()) {
+                RunScript.execute(conn, new StringReader("delete from CACHE;"));
+                RunScript.execute(conn, new StringReader(POPULATE_STATS_TABLE));
+            }
+            catch (SQLException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void putToStore(Object key, Object val) {
+            try {
+                H2CacheStore.putToDb(connection(), key, val);
+            }
+            catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void putAllToStore(Map<?, ?> data) {
+            Connection conn = null;
+            PreparedStatement stmt = null;
+            try {
+                conn = connection();
+                stmt = conn.prepareStatement(H2CacheStore.INSERT);
+                for (Map.Entry<?, ?> e : data.entrySet()) {
+                    byte[] v = H2CacheStore.serialize(e.getValue());
+                    stmt.setBinaryStream(1, new ByteArrayInputStream(H2CacheStore.serialize(e.getKey())));
+                    stmt.setBinaryStream(2, new ByteArrayInputStream(v));
+                    stmt.setBinaryStream(3, new ByteArrayInputStream(v));
+                    stmt.addBatch();
+                }
+                stmt.executeBatch();
+            }
+            catch (SQLException e) {
+                throw new IgniteException(e);
+            }
+            finally {
+                H2CacheStore.end(stmt, conn);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public Object getFromStore(Object key) {
+            try {
+                return H2CacheStore.getFromDb(connection(), key);
+            }
+            catch (SQLException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void removeFromStore(Object key) {
+            try {
+                H2CacheStore.removeFromDb(connection(), key);
+            }
+            catch (SQLException e) {
+                throw new IgniteException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean isInStore(Object key) {
+            return getFromStore(key) != null;
+        }
+
+        private Connection connection() throws SQLException {
+            return dataSrc.getConnection();
+        }
+
+        private int querySingleInt(String query, String errorMsg) {
+            Connection conn = null;
+            PreparedStatement stmt = null;
+            try {
+                conn = connection();
+                stmt = conn.prepareStatement(query);
+                ResultSet rs = stmt.executeQuery();
+                if (rs.next())
+                    return rs.getInt(1);
+                else
+                    throw new IgniteException(errorMsg);
+            }
+            catch (SQLException e) {
+                throw new IgniteException(e);
+            }
+            finally {
+                H2CacheStore.end(stmt, conn);
+            }
+        }
+
+        /** */
+        private static JdbcConnectionPool createDataSource() {
+            return JdbcConnectionPool.create("jdbc:h2:tcp://localhost/mem:TestDb;mode=MySQL", "sa", "");
+        }
+
+        /** {@inheritDoc} */
+        @Override public void updateCacheConfiguration(CacheConfiguration<Object, Object> configuration) {
+            configuration.setCacheStoreSessionListenerFactories(new H2CacheStoreSessionListenerFactory());
+        }
+
+        /** {@inheritDoc} */
+        @Override public Factory<? extends CacheStore<Object, Object>> getStoreFactory() {
+            return new H2StoreFactory();
+        }
+
+    }
+
+    /** Serializable H2 backed cache store factory */
+    private static class H2StoreFactory implements Factory<CacheStore<Object, Object>> {
+        /** {@inheritDoc} */
+        @Override public CacheStore<Object, Object> create() {
+            return new H2CacheStore();
+        }
+    }
+
+    private static class H2CacheStoreSessionListenerFactory implements Factory<CacheStoreSessionListener> {
+        @Override public CacheStoreSessionListener create() {
+            CacheJdbcStoreSessionListener lsnr = new CacheJdbcStoreSessionListener();
+            lsnr.setDataSource(JdbcConnectionPool.create("jdbc:h2:tcp://localhost/mem:TestDb;mode=MySQL;DB_CLOSE_DELAY=-1", "sa", ""));
+            return lsnr;
+        }
+    }
+
+
+    public static class H2CacheStore extends CacheStoreAdapter<Object, Object> {
+        /** Store session */
+        @CacheStoreSessionResource
+        private CacheStoreSession ses;
+
+        /** Template for an insert statement */
+        private static final String INSERT =
+            "insert into CACHE(k, v) values(?, ?) on duplicate key update v = ?;";
+
+        /** {@inheritDoc} */
+        @Override public Object load(Object key) throws CacheLoaderException {
+            try {
+                Object res = getFromDb(ses.attachment(), key);
+                updateStats("reads");
+                return res;
+            }
+            catch (SQLException e) {
+                throw new CacheLoaderException("Failed to load object [key=" + key + ']', e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void write(Cache.Entry<?, ?> entry) throws CacheWriterException {
+            try {
+                putToDb(ses.attachment(), entry.getKey(), entry.getValue());
+                updateStats("writes");
+            }
+            catch (SQLException e) {
+                throw new CacheWriterException("Failed to write object [key=" + entry.getKey() + ", " +
+                    "val=" + entry.getValue() + ']', e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public void delete(Object key) throws CacheWriterException {
+            try {
+                removeFromDb(ses.attachment(), key);
+                updateStats("removes");
+            }
+            catch (SQLException e) {
+                throw new CacheWriterException("Failed to delete object [key=" + key + ']', e);
+            }
+        }
+
+        /**
+         * Select from H2 and deserialize from bytes the value pointed at by <tt>key</tt>
+         * @param conn {@link Connection} to use
+         * @param key key to llok for the value by
+         * @return Stored object or null if the key is missing from DB
+         * @throws SQLException
+         */
+        static Object getFromDb(Connection conn, Object key) throws SQLException {
+            PreparedStatement stmt = null;
+            try {
+                stmt = conn.prepareStatement("select v from CACHE where k = ?");
+                stmt.setBinaryStream(1, new ByteArrayInputStream(H2CacheStore.serialize(key)));
+                ResultSet rs = stmt.executeQuery();
+                return rs.next() ? H2CacheStore.deserialize(IOUtils.toByteArray(rs.getBinaryStream(1))) : null;
+            }
+            catch (IOException e) {
+                throw new IgniteException(e);
+            }
+            finally {
+                end(stmt, conn);
+            }
+        }
+
+        static void putToDb(Connection conn, Object key, Object val) throws SQLException {
+            PreparedStatement stmt = null;
+            try {
+                stmt = conn.prepareStatement(H2CacheStore.INSERT);
+                byte[] v = H2CacheStore.serialize(val);
+                stmt.setBinaryStream(1, new ByteArrayInputStream(H2CacheStore.serialize(key)));
+                stmt.setBinaryStream(2, new ByteArrayInputStream(v));
+                stmt.setBinaryStream(3, new ByteArrayInputStream(v));
+                stmt.executeUpdate();
+            }
+            finally {
+                end(stmt, conn);
+            }
+        }
+
+        static void removeFromDb(Connection conn, Object key) throws SQLException {
+            PreparedStatement stmt = null;
+            try {
+                stmt = conn.prepareStatement("delete from CACHE where k = ?");
+                stmt.setBinaryStream(1, new ByteArrayInputStream(H2CacheStore.serialize(key)));
+                stmt.executeUpdate();
+            }
+            finally {
+                end(stmt, conn);
+            }
+        }
+
+        /**
+         * Increment stored stats for given field
+         * @param field field name
+         */
+        private void updateStats(String field) {
+            Connection conn = ses.attachment();
+            assert conn != null;
+            Statement stmt = null;
+            try {
+                stmt = conn.createStatement();
+                stmt.executeUpdate("update STATS set " + field + " = " + field + " + 1;");
+            }
+            catch (SQLException e) {
+                throw new IgniteException("Failed to update H2 store usage stats", e);
+            }
+            finally {
+                end(stmt, conn);
+            }
+        }
+
+        /**
+         * Quietly close statement and connection
+         * @param stmt {@link Statement} to close
+         * @param conn {@link Connection} to close
+         */
+        private static void end(Statement stmt, Connection conn) {
+            U.closeQuiet(stmt);
+            U.closeQuiet(conn);
+        }
+
+        /**
+         * Turn given arbitrary {@link Object} to byte array
+         * @param obj {@link Object} to serialize
+         * @return bytes representation of given {@link Object}
+         */
+        static byte[] serialize(Object obj) {
+            try (ByteArrayOutputStream b = new ByteArrayOutputStream()) {
+                try (ObjectOutputStream o = new ObjectOutputStream(b)) {
+                    o.writeObject(obj);
+                }
+                return b.toByteArray();
+            }
+            catch (Exception e) {
+                throw new IgniteException("Failed to serialize object to byte array [obj=" + obj, e);
+            }
+        }
+
+        /**
+         * Deserialize an object from its byte array representation
+         * @param bytes byte array representation of the {@link Object}
+         * @return deserialized {@link Object}
+         */
+        public static Object deserialize(byte[] bytes) {
+            try (ByteArrayInputStream b = new ByteArrayInputStream(bytes)) {
+                try (ObjectInputStream o = new ObjectInputStream(b)) {
+                    return o.readObject();
+                }
+            }
+            catch (Exception e) {
+                throw new IgniteException("Failed to deserialize object from byte array", e);
+            }
         }
     }
 }
