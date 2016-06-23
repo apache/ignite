@@ -1795,24 +1795,6 @@ public final class GridTestUtils {
     }
 
     /**
-     * @param bytes Number of bytes to display.
-     * @param si If {@code true}, then unit base is 1000, otherwise unit base is 1024.
-     * @return Formatted size.
-     */
-    public static String readableSize(long bytes, boolean si) {
-        int unit = si ? 1000 : 1024;
-
-        if (bytes < unit)
-            return bytes + " B";
-
-        int exp = (int)(Math.log(bytes) / Math.log(unit));
-
-        String pre = (si ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (si ? "" : "i");
-
-        return String.format("%.1f %sB", bytes / Math.pow(unit, exp), pre);
-    }
-
-    /**
      *
      */
     public enum TestMemoryMode {

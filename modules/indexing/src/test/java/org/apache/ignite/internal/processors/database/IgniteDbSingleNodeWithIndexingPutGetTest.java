@@ -68,8 +68,8 @@ public class IgniteDbSingleNodeWithIndexingPutGetTest extends IgniteDbSingleNode
         assertEquals(Long.valueOf(cnt / 10), queryOne(cache, "select count(*) from Abc where b = 1"));
 
         assertEquals(100, querySize(cache, "select count(*) from Abc group by c"));
-        assertEquals(Long.valueOf(cnt / 10), queryOne(cache, "select count(*) from Abc group by c"));
-        assertEquals(Long.valueOf(cnt / 10), queryOne(cache, "select count(*) from Abc where c = 1"));
+        assertEquals(Long.valueOf(cnt / 100), queryOne(cache, "select count(*) from Abc group by c"));
+        assertEquals(Long.valueOf(cnt / 100), queryOne(cache, "select count(*) from Abc where c = 1"));
     }
 
     /**

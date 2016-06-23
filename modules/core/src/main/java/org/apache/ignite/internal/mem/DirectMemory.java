@@ -27,15 +27,15 @@ public class DirectMemory {
     private boolean restored;
 
     /** */
-    private List<DirectMemoryFragment> fragments;
+    private List<DirectMemoryRegion> regions;
 
     /**
      * @param restored Restored flag.
-     * @param fragments Memory fragments.
+     * @param regions Memory fragments.
      */
-    public DirectMemory(boolean restored, List<DirectMemoryFragment> fragments) {
+    public DirectMemory(boolean restored, List<DirectMemoryRegion> regions) {
         this.restored = restored;
-        this.fragments = fragments;
+        this.regions = regions;
     }
 
     /**
@@ -49,7 +49,7 @@ public class DirectMemory {
     /**
      * @return Memory fragments.
      */
-    public List<DirectMemoryFragment> fragments() {
-        return fragments;
+    public List<DirectMemoryRegion> regions() {
+        return regions;
     }
 }

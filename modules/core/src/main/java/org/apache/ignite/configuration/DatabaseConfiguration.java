@@ -41,9 +41,6 @@ public class DatabaseConfiguration implements Serializable {
     /** Amount of memory allocated for the page cache. */
     private long pageCacheSize = DFLT_PAGE_CACHE_SIZE;
 
-    /** Fragment size. */
-    private long fragmentSize;
-
     /** Concurrency level. */
     private int concLvl;
 
@@ -87,20 +84,6 @@ public class DatabaseConfiguration implements Serializable {
      */
     public void setPageCacheSize(long pageCacheSize) {
         this.pageCacheSize = pageCacheSize;
-    }
-
-    /**
-     * @return Page cache fragment size.
-     */
-    public long getFragmentSize() {
-        return fragmentSize;
-    }
-
-    /**
-     * @param fragmentSize Page cache fragment size.
-     */
-    public void setFragmentSize(long fragmentSize) {
-        this.fragmentSize = fragmentSize;
     }
 
     /**

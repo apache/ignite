@@ -24,7 +24,7 @@ import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.pagemem.impl.PageMemoryImpl;
+import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -48,7 +48,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
             if (dbCfg == null)
                 dbCfg = new DatabaseConfiguration();
 
-            pageMem = createPageMemory(dbCfg);
+            pageMem = initMemory(dbCfg);
 
             pageMem.start();
 
@@ -101,13 +101,18 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param dbCfg Database configuration.
      * @return Page memory instance.
      */
-    protected PageMemory createPageMemory(DatabaseConfiguration dbCfg) {
+    protected PageMemory initMemory(DatabaseConfiguration dbCfg) {
         String path = dbCfg.getFileCacheAllocationPath();
 
-        long fragmentSize = dbCfg.getFragmentSize();
+        int concLvl = dbCfg.getConcurrencyLevel();
 
-        if (fragmentSize == 0)
-            fragmentSize = dbCfg.getPageCacheSize();
+        if (concLvl < 2)
+            concLvl = Runtime.getRuntime().availableProcessors();
+
+        long fragmentSize = dbCfg.getPageCacheSize() / concLvl;
+
+        if (fragmentSize < 1024 * 1024)
+            fragmentSize = 1024 * 1024;
 
         String consId = String.valueOf(cctx.discovery().consistentId());
 
@@ -115,26 +120,20 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
         File allocPath = path == null ? null : buildPath(path, consId);
 
-        boolean clean = true;
+        long[] sizes = new long[concLvl];
 
-        if (allocPath != null) {
-            allocPath.mkdirs();
-
-            File[] files = allocPath.listFiles();
-
-            clean = files == null || files.length == 0;
-        }
+        for (int i = 0; i < concLvl; i++)
+            sizes[i] = fragmentSize;
 
         DirectMemoryProvider memProvider = path == null ?
-            new UnsafeMemoryProvider(dbCfg.getPageCacheSize(), fragmentSize) :
+            new UnsafeMemoryProvider(sizes) :
             new MappedFileMemoryProvider(
                 log,
                 allocPath,
-                clean,
-                dbCfg.getPageCacheSize(),
-                fragmentSize);
+                true,
+                sizes);
 
-        return new PageMemoryImpl(log, memProvider, cctx, dbCfg.getPageSize(), dbCfg.getConcurrencyLevel());
+        return new PageMemoryNoStoreImpl(log, memProvider, cctx, dbCfg.getPageSize());
     }
 
     /**
@@ -142,7 +141,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      * @param consId Consistent ID of the local node.
      * @return DB storage path.
      */
-    private File buildPath(String path, String consId) {
+    protected File buildPath(String path, String consId) {
         String igniteHomeStr = U.getIgniteHome();
 
         File igniteHome = igniteHomeStr != null ? new File(igniteHomeStr) : null;

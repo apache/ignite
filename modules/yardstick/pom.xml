@@ -36,6 +36,8 @@
 
     <properties>
         <yardstick.version>0.8.0</yardstick.version>
+        <mysql.connector.version>5.1.39</mysql.connector.version>
+        <postgres.connector.version>9.4.1208.jre7</postgres.connector.version>
     </properties>
 
     <dependencies>
@@ -103,6 +105,18 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-aop</artifactId>
             <version>${spring.version}</version>
+        </dependency>
+
+        <!-- Connectors for JDBC benchmarking -->
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>${mysql.connector.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>${postgres.connector.version}</version>
         </dependency>
     </dependencies>
 

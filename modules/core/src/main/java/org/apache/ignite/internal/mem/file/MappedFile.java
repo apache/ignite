@@ -23,11 +23,12 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import org.apache.ignite.internal.mem.DirectMemoryFragment;
+import org.apache.ignite.internal.mem.DirectMemoryRegion;
+import org.apache.ignite.internal.mem.UnsafeChunk;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import sun.nio.ch.FileChannelImpl;
 
-public class MappedFile implements Closeable, DirectMemoryFragment {
+public class MappedFile implements Closeable, DirectMemoryRegion {
     /** */
     private static final Method map0 = U.findNonPublicMethod(FileChannelImpl.class, "map0", int.class, long.class, long.class);
 
@@ -97,6 +98,15 @@ public class MappedFile implements Closeable, DirectMemoryFragment {
     /** {@inheritDoc} */
     @Override public final long size() {
         return size;
+    }
+
+    /** {@inheritDoc} */
+    @Override public DirectMemoryRegion slice(long offset) {
+        if (offset < 0 || offset >= size)
+            throw new IllegalArgumentException("Failed to create a memory region slice [ptr=" + U.hexLong(addr) +
+                ", len=" + size + ", offset=" + offset + ']');
+
+        return new UnsafeChunk(addr + offset, size - offset);
     }
 
     /**

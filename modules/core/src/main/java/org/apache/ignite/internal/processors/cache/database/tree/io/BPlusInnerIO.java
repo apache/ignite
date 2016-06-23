@@ -29,7 +29,7 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
     private static final int SHIFT_LEFT = ITEMS_OFF;
 
     /** */
-    protected static final int SHIFT_LINK = SHIFT_LEFT + 8;
+    private static final int SHIFT_LINK = SHIFT_LEFT + 8;
 
     /** */
     private final int SHIFT_RIGHT = SHIFT_LINK + itemSize;
@@ -118,7 +118,7 @@ public abstract class BPlusInnerIO<L> extends BPlusIO<L> {
      * @param shift It can be either link itself or left or right page ID.
      * @return Offset from byte buffer begin in bytes.
      */
-    protected final int offset(int idx, int shift) {
+    private int offset(int idx, int shift) {
         return shift + (8 + itemSize) * idx;
     }
 

@@ -119,7 +119,7 @@ public abstract class IgniteAbstractBenchmark extends BenchmarkDriverAdapter {
      * @param max Key range.
      * @return Next key.
      */
-    protected int nextRandom(int max) {
+    public static int nextRandom(int max) {
         return ThreadLocalRandom.current().nextInt(max);
     }
 
