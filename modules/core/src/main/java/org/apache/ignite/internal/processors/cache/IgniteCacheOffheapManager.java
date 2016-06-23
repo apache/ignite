@@ -255,7 +255,7 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
     /**
      * The wrapper to return data loaded from paged memory
      */
-    class CacheObjectEntry {
+    class CacheObjectEntry implements AutoCloseable {
         /** Key object. */
         private final KeyCacheObject key;
 
@@ -320,8 +320,14 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
             return key;
         }
 
+        /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(CacheObjectEntry.class, this);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void close() throws Exception {
+            //No-op.
         }
     }
 
@@ -374,7 +380,7 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
         void removeAll();
     }
 
-    class UpdateInfo {
+    class UpdateInfo implements AutoCloseable {
 
         private final long newLink;
         private final CacheObjectEntry oldEntry;
@@ -390,6 +396,11 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
 
         public CacheObjectEntry oldEntry() {
             return oldEntry;
+        }
+
+        @Override public void close() throws Exception {
+            if (oldEntry != null)
+                oldEntry.close();
         }
     }
 

@@ -637,8 +637,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 lsnr.onInsert();
             else {
                 assert old.link != 0 : old;
-                oldEntry = createEntry(key, old);
-                rowStore.removeRow(old.link);
+                oldEntry = createClosableEntry(key, old);
             }
 
             DataRow dr = new DataRow(0, dataRow.link);
@@ -655,10 +654,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             if (dataRow != null) {
                 assert dataRow.link != 0 : dataRow;
 
-                removed = new CacheObjectEntry(key, null, dataRow.version(), dataRow.expireTime(),
-                    dataRow.link());
-
-                rowStore.removeRow(dataRow.link);
+                removed = createClosableEntry(key, dataRow);
 
                 lsnr.onRemove();
             }
@@ -680,9 +676,14 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             return dataTree.find(null, null);
         }
 
-        private CacheObjectEntry createEntry(KeyCacheObject key, DataRow dataRow) {
+        private CacheObjectEntry createClosableEntry(KeyCacheObject key, DataRow dataRow) {
             return dataRow != null && dataRow.link() != 0 ?
-                new CacheObjectEntry(key, dataRow.value(), dataRow.version(), dataRow.expireTime(), dataRow.link())
+                new CacheObjectEntry(key, dataRow.value(), dataRow.version(), dataRow.expireTime(), dataRow.link()) {
+                    @Override public void close() throws Exception {
+                        if(link() != 0)
+                            rowStore.removeRow(link());
+                    }
+                }
                 : null;
         }
     }
@@ -1186,6 +1187,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         /** Link. */
         long link;
 
+        /** Key  */
+        KeyCacheObject key;
+
         /**
          * @param entry Entry.
          */
@@ -1222,15 +1226,19 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         PendingRow(long expireTime, long link) {
             this.expireTime = expireTime;
             this.link= link;
+
+            // We can not init data row lazily because underlying buffer can be concurrently cleared.
+            DataRow dr = new DataRow(0, link);
+            key = dr.key();
         }
 
         /**
          *
          */
         GridCacheEntryEx entryEx() {
-            DataRow dr = new DataRow(0, link);
-            dr.initData();
-            return cctx.cache().entryEx(dr.key());
+            assert key != null;
+
+            return  cctx.cache().entryEx(key);
         }
 
         /** {@inheritDoc} */

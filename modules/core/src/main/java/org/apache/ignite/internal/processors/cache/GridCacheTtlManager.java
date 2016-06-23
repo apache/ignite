@@ -127,7 +127,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     /**
      * Expires entries by TTL.
      */
-    public synchronized void expire() {
+    public void expire() {
         // TTL manager not started
         if (pentries == null)
             return;

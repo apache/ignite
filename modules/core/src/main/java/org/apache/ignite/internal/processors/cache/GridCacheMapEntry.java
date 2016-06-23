@@ -3566,13 +3566,18 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert Thread.holdsLock(this);
         assert val != null : "null values in update for key: " + key;
 
-        IgniteCacheOffheapManager.UpdateInfo updInfo = cctx.offheap().update(key, val, ver, expireTime,
-            partition(), localPartition());
 
-        link = updInfo.newLink();
+        try (IgniteCacheOffheapManager.UpdateInfo updInfo = cctx.offheap().update(key, val, ver, expireTime,
+            partition(), localPartition())) {
 
-        if (cctx.config().isEagerTtl() && updInfo.oldEntry() != null && updInfo.oldEntry().expireTime() > 0)
-            cctx.ttl().removeTrackedEntry(this, updInfo.oldEntry());
+            link = updInfo.newLink();
+
+            if (cctx.config().isEagerTtl() && updInfo.oldEntry() != null && updInfo.oldEntry().expireTime() > 0)
+                cctx.ttl().removeTrackedEntry(this, updInfo.oldEntry());
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException(e);
+        }
     }
 
     /**
@@ -3613,10 +3618,15 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     protected void removeValue(CacheObject prevVal, GridCacheVersion prevVer) throws IgniteCheckedException {
         assert Thread.holdsLock(this);
 
-        IgniteCacheOffheapManager.CacheObjectEntry oldEntry = cctx.offheap().remove(key, prevVal, prevVer, partition(), localPartition());
+        try (IgniteCacheOffheapManager.CacheObjectEntry oldEntry = cctx.offheap().remove(key,
+            prevVal, prevVer, partition(), localPartition())) {
 
-        if (cctx.config().isEagerTtl() && oldEntry != null && oldEntry.expireTime() > 0)
-            cctx.ttl().removeTrackedEntry(this, oldEntry);
+            if (cctx.config().isEagerTtl() && oldEntry != null && oldEntry.expireTime() > 0)
+                cctx.ttl().removeTrackedEntry(this, oldEntry);
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException(e);
+        }
     }
 
     /**
