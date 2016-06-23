@@ -144,6 +144,54 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             Assert.AreEqual(new[] {expectedNodeId, expectedNodeId}, _removedNodes.ToArray());
         }
 
+        /// <summary>
+        /// Tests the error on non-serializable function.
+        /// </summary>
+        [Test]
+        public void TestNonSerializableFunction()
+        {
+            _ignite.CreateCache<int, int>(new CacheConfiguration("failCache")
+            {
+                AffinityFunction = new NonSerializableAffinityFunction()
+            });
+        }
+
+        /// <summary>
+        /// Tests the exception propagation.
+        /// </summary>
+        [Test]
+        public void TestExceptionInFunction()
+        {
+            //_ignite.CreateCache<int, int>(new CacheConfiguration("failCache")
+            //{
+            //    AffinityFunction = new NonSerializableAffinityFunction()
+            //});
+        }
+
+        /// <summary>
+        /// Tests invalid partition assignment.
+        /// </summary>
+        [Test]
+        public void TestInvalidAssignment()
+        {
+            //_ignite.CreateCache<int, int>(new CacheConfiguration("failCache")
+            //{
+            //    AffinityFunction = new NonSerializableAffinityFunction()
+            //});
+        }
+
+        /// <summary>
+        /// Tests invalid return of GetPartition.
+        /// </summary>
+        [Test]
+        public void TestInvalidGetPatition()
+        {
+            //_ignite.CreateCache<int, int>(new CacheConfiguration("failCache")
+            //{
+            //    AffinityFunction = new NonSerializableAffinityFunction()
+            //});
+        }
+
         [Serializable]
         private class SimpleAffinityFunction : IAffinityFunction
         {
@@ -174,6 +222,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                 // All partitions are the same
                 return Enumerable.Range(0, Partitions).Select(x => context.CurrentTopologySnapshot);
             }
+        }
+
+        private class NonSerializableAffinityFunction : SimpleAffinityFunction
+        {
+            // No-op.
         }
     }
 }
