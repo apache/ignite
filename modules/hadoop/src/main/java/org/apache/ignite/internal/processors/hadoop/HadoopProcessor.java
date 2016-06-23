@@ -17,6 +17,7 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -32,6 +33,7 @@ import org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopEmbeddedT
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.internal.processors.hadoop.HadoopClasspathUtils.HadoopLocations;
 
 /**
  * Hadoop processor.
@@ -71,36 +73,35 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
 
         validate(cfg);
 
-        if (HadoopClasspathUtils.hadoopHome() != null)
-            U.quietAndInfo(log, "HADOOP_HOME is set to " + HadoopClasspathUtils.hadoopHome());
+        try {
+            HadoopLocations loc = HadoopClasspathUtils.getHadoopLocations();
 
-        boolean ok = false;
+            if (loc.home != null)
+                U.quietAndInfo(log, "HADOOP_HOME is set to " + loc.home);
 
-        try { // Check for Hadoop installation.
-            HadoopClassLoader.hadoopUrls();
-
-            ok = true;
+            U.quietAndInfo(log, "HADOOP_COMMON_HOME is set to " + loc.common);
+            U.quietAndInfo(log, "HADOOP_HDFS_HOME is set to " + loc.hdfs);
+            U.quietAndInfo(log, "HADOOP_MAPRED_HOME is set to " + loc.mapred);
         }
-        catch (IgniteCheckedException e) {
-            U.quietAndWarn(log, e.getMessage());
+        catch (IOException ioe) {
+            throw new IgniteCheckedException(ioe);
         }
 
-        if (ok) {
-            hctx = new HadoopContext(
-                ctx,
-                cfg,
-                new HadoopJobTracker(),
-                new HadoopEmbeddedTaskExecutor(),
-                // TODO: IGNITE-404: Uncomment when fixed.
-                //cfg.isExternalExecution() ? new HadoopExternalTaskExecutor() : new HadoopEmbeddedTaskExecutor(),
-                new HadoopShuffle());
+        HadoopClassLoader.hadoopUrls();
 
+        hctx = new HadoopContext(
+            ctx,
+            cfg,
+            new HadoopJobTracker(),
+            new HadoopEmbeddedTaskExecutor(),
+            // TODO: IGNITE-404: Uncomment when fixed.
+            //cfg.isExternalExecution() ? new HadoopExternalTaskExecutor() : new HadoopEmbeddedTaskExecutor(),
+            new HadoopShuffle());
 
-            for (HadoopComponent c : hctx.components())
-                c.start(hctx);
+        for (HadoopComponent c : hctx.components())
+            c.start(hctx);
 
-            hadoop = new HadoopImpl(this);
-        }
+        hadoop = new HadoopImpl(this);
     }
 
     /** {@inheritDoc} */

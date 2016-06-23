@@ -130,10 +130,54 @@ public class HadoopClasspathUtils {
     /**
      * @return HADOOP_HOME Variable.
      */
-    public static String hadoopHome() {
+    private static String hadoopHome() {
         String prefix = getEnv("HADOOP_PREFIX", null);
 
         return getEnv("HADOOP_HOME", prefix);
+    }
+
+    /**
+     * Simple structure to hold Hadoop directory locations.
+     */
+    public static class HadoopLocations {
+        /** HADOOP_HOME, may be null. */
+        public final String home;
+        /** HADOOP_COMMON_HOME */
+        public final String common;
+        /** HADOOP_HDFS_HOME */
+        public final String hdfs;
+        /** HADOOP_MAPRED_HOME */
+        public final String mapred;
+
+        /**
+         * Constructor.
+         *
+         * @param home HADOOP_HOME
+         * @param common HADOOP_COMMON_HOME
+         * @param hdfs HADOOP_HDFS_HOME
+         * @param mapred HADOOP_MAPRED_HOME
+         */
+        HadoopLocations(String home, String common, String hdfs, String mapred) {
+            this.home = home;
+            this.common = common;
+            this.hdfs = hdfs;
+            this.mapred = mapred;
+        }
+    }
+
+    /**
+     * Gets Hadoop locations.
+     *
+     * @return The Hadoop locations, never null.
+     */
+    public static HadoopLocations getHadoopLocations() throws IOException {
+        final String hadoopHome = hadoopHome();
+
+        String commonHome = resolveLocation("HADOOP_COMMON_HOME", hadoopHome, "/share/hadoop/common");
+        String hdfsHome = resolveLocation("HADOOP_HDFS_HOME", hadoopHome, "/share/hadoop/hdfs");
+        String mapredHome = resolveLocation("HADOOP_MAPRED_HOME", hadoopHome, "/share/hadoop/mapreduce");
+
+        return new HadoopLocations(hadoopHome, commonHome, hdfsHome, mapredHome);
     }
 
     /**
@@ -143,25 +187,21 @@ public class HadoopClasspathUtils {
      * @throws IOException if a mandatory classpath location is not found.
      */
     private static Collection<DirAndMask> getClasspathBaseDirectories() throws IOException {
-        final String hadoopHome = hadoopHome();
-
-        String commonHome = resolveLocation("HADOOP_COMMON_HOME", hadoopHome, "/share/hadoop/common");
-        String hdfsHome = resolveLocation("HADOOP_HDFS_HOME", hadoopHome, "/share/hadoop/hdfs");
-        String mapredHome = resolveLocation("HADOOP_MAPRED_HOME", hadoopHome, "/share/hadoop/mapreduce");
+        HadoopLocations loc = getHadoopLocations();
 
         Collection<DirAndMask> c = new ArrayList<>();
 
-        c.add(new DirAndMask(new File(commonHome, "lib"), null));
-        c.add(new DirAndMask(new File(hdfsHome, "lib"), null));
-        c.add(new DirAndMask(new File(mapredHome, "lib"), null));
+        c.add(new DirAndMask(new File(loc.common, "lib"), null));
+        c.add(new DirAndMask(new File(loc.hdfs, "lib"), null));
+        c.add(new DirAndMask(new File(loc.mapred, "lib"), null));
 
-        c.add(new DirAndMask(new File(commonHome), "hadoop-common-"));
-        c.add(new DirAndMask(new File(commonHome), "hadoop-auth-"));
+        c.add(new DirAndMask(new File(loc.common), "hadoop-common-"));
+        c.add(new DirAndMask(new File(loc.common), "hadoop-auth-"));
 
-        c.add(new DirAndMask(new File(hdfsHome), "hadoop-hdfs-"));
+        c.add(new DirAndMask(new File(loc.hdfs), "hadoop-hdfs-"));
 
-        c.add(new DirAndMask(new File(mapredHome), "hadoop-mapreduce-client-common"));
-        c.add(new DirAndMask(new File(mapredHome), "hadoop-mapreduce-client-core"));
+        c.add(new DirAndMask(new File(loc.mapred), "hadoop-mapreduce-client-common"));
+        c.add(new DirAndMask(new File(loc.mapred), "hadoop-mapreduce-client-core"));
 
         return c;
     }

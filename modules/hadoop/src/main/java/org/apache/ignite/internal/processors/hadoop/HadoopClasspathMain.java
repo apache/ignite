@@ -31,23 +31,16 @@ public class HadoopClasspathMain {
      * @param args The 1st argument should be the path separator character (":" on Linux, ";" on Windows).
      */
     public static void main(String[] args) throws Exception {
-        if (args.length < 1) {
-            // TODO: TO exception.
-            System.err.println("Path separator must be passed as the 1st argument.");
-
-            System.exit(1);
-        }
+        if (args.length < 1)
+            throw new IllegalArgumentException("Path separator must be passed as the 1st argument.");
 
         final String sep = args[0];
 
         List<String> cp = HadoopClasspathUtils.getAsProcessClasspath();
 
         for (String s: cp) {
-            // TODO: Move null-checks to getAsProcessClasspath().
-            if (s != null && s.length() > 0) {
-                System.out.print(s);
-                System.out.print(sep);
-            }
+            System.out.print(s);
+            System.out.print(sep);
         }
 
         System.out.println();
