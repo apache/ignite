@@ -1140,7 +1140,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 using (var inStream = IgniteManager.Memory.Get(inMemPtr).GetStream())
                 {
                     var ctx = new AffinityFunctionContext(_ignite.Marshaller.StartUnmarshal(inStream));
-                    var parts = _handleRegistry.Get<IAffinityFunction>(ptr, true).AssignPartitions(ctx);
+                    var func = _handleRegistry.Get<IAffinityFunction>(ptr, true);
+                    var parts = func.AssignPartitions(ctx);
+
+                    if (parts == null)
+                        throw new IgniteException(func.GetType() + ".AssignPartitions() returned invalid result: null");
 
                     using (var outStream = IgniteManager.Memory.Get(outMemPtr).GetStream())
                     {
@@ -1151,6 +1155,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                         foreach (var part in parts)
                         {
+                            if (part == null)
+                                throw new IgniteException(func.GetType() +
+                                                          ".AssignPartitions() returned invalid partition: null");
+
                             partCnt++;
 
                             var nodeCnt = 0;
