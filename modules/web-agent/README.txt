@@ -24,15 +24,16 @@ Configuration file:
 
   Example configuration file:
     tokens=1a2b3c4d5f,2j1s134d12
-    serverURI=http://console.example.com:3001
+    serverURI=https://console.example.com:3001
 
-Security token:
-  1) By default token will be included into downloaded agent zip.
-  2) You can get/change token in your profile.
+Security tokens:
+  1) By default security token of current user will be included into "default.properties" inside downloaded "ignite-web-agent-x.x.x.zip".
+  2) One can get/reset token in Web Console profile (https://<your_console_address>/settings/profile).
+  3) One may specify several comma separated tokens using configuration file or command line arguments of web agent.
 
 Ignite Web agent requirements:
-  1) Ignite node should be started with REST server (move ignite-rest-http folder from lib/optional/ to lib/).
-  2) Pass Ignite node REST server URI to agent.
+  1) In order to communicate with web agent Ignite node should be started with REST server (move ignite-rest-http folder from lib/optional/ to lib/).
+  2) Configure web agent serverURI property by Ignite node REST server URI.
 
 Options:
   -h, --help
