@@ -181,6 +181,8 @@ namespace Apache.Ignite.Core.Cache.Affinity
             {
                 writer.WriteByte(TypeCodeUser);
 
+                // TODO: Force full footer somehow?
+                // Otherwise remote node can't read it during cache startup
                 writer.WriteObject(fun);
                 writer.WriteInt(fun.Partitions);  // partition count is written once and can not be changed.
             }
