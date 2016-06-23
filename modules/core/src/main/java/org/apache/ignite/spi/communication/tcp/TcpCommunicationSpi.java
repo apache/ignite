@@ -1393,6 +1393,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                     .append(", msgsSent=").append(desc.sent())
                     .append(", msgsAckedByRmt=").append(desc.acked())
                     .append(", msgsRcvd=").append(desc.received())
+                    .append(", reserveCnt=").append(desc.reserveCount())
                     .append(", descIdHash=").append(System.identityHashCode(desc))
                     .append(']').append(U.nl());
             }
