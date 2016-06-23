@@ -38,6 +38,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         private IIgnite _ignite;
 
         /** */
+        private IIgnite _ignite2;
+
+        /** */
         private const string CacheName = "cache";
 
         /** */
@@ -64,6 +67,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             };
 
             _ignite = Ignition.Start(cfg);
+
+            _ignite2 = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration()) {GridName = "grid2"});
         }
 
         /// <summary>
@@ -74,13 +79,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         {
             // Check that affinity handles are present
             TestUtils.AssertHandleRegistryHasItems(_ignite, _ignite.GetCacheNames().Count, 0);
+            TestUtils.AssertHandleRegistryHasItems(_ignite2, _ignite.GetCacheNames().Count, 0);
 
             // Destroy all caches
             _ignite.GetCacheNames().ToList().ForEach(_ignite.DestroyCache);
             Assert.AreEqual(0, _ignite.GetCacheNames().Count);
 
             // Check that all affinity functions got released
-            TestUtils.AssertHandleRegistryIsEmpty(1000, _ignite);
+            TestUtils.AssertHandleRegistryIsEmpty(1000, _ignite, _ignite2);
 
             Ignition.StopAll(true);
         }
@@ -92,6 +98,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         public void TestStaticCache()
         {
             VerifyCacheAffinity(_ignite.GetCache<int, int>(CacheName));
+            VerifyCacheAffinity(_ignite2.GetCache<int, int>(CacheName));
         }
 
         /// <summary>
@@ -100,10 +107,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         [Test]
         public void TestDynamicCache()
         {
-            VerifyCacheAffinity(_ignite.CreateCache<int, int>(new CacheConfiguration("dynCache")
+            const string cacheName = "dynCache";
+
+            VerifyCacheAffinity(_ignite.CreateCache<int, int>(new CacheConfiguration(cacheName)
             {
                 AffinityFunction = new SimpleAffinityFunction()
             }));
+
+            VerifyCacheAffinity(_ignite2.GetCache<int, int>(cacheName));
         }
 
         /// <summary>
@@ -132,7 +143,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
             using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                GridName = "myGrid",
+                GridName = "grid3",
             }))
             {
                 expectedNodeId = ignite.GetCluster().GetLocalNode().Id;
@@ -166,10 +177,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         [Test]
         public void TestExceptionInFunction()
         {
-            //_ignite.CreateCache<int, int>(new CacheConfiguration("failCache")
-            //{
-            //    AffinityFunction = new NonSerializableAffinityFunction()
-            //});
+            var cache = _ignite.CreateCache<int, int>(new CacheConfiguration("failCache2")
+            {
+                AffinityFunction = new FailInGetPartitionAffinityFunction()
+            });
+
+            var ex = Assert.Throws<CacheException>(() => cache.Put(1, 2));
+            Assert.AreEqual("User error", ex.InnerException.Message);
         }
 
         /// <summary>
@@ -231,6 +245,30 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         private class NonSerializableAffinityFunction : SimpleAffinityFunction
         {
             // No-op.
+        }
+
+        [Serializable]
+        private class FailInGetPartitionAffinityFunction : IAffinityFunction
+        {
+            public int Partitions
+            {
+                get { return 5; }
+            }
+
+            public int GetPartition(object key)
+            {
+                throw new ArithmeticException("User error");
+            }
+
+            public void RemoveNode(Guid nodeId)
+            {
+                // No-op.
+            }
+
+            public IEnumerable<IEnumerable<IClusterNode>> AssignPartitions(IAffinityFunctionContext context)
+            {
+                return Enumerable.Range(0, Partitions).Select(x => context.CurrentTopologySnapshot);
+            }
         }
     }
 }
