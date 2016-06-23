@@ -53,7 +53,7 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
     private Object userFunc;
 
     /** */
-    private final int partitions;
+    private int partitions;
 
     /** */
     private transient PlatformContext ctx;
@@ -97,6 +97,8 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
     @Override public int partitions() {
         // Affinity function can not return different number of partitions,
         // so we pass this value once from the platform.
+        assert partitions > 0;
+
         return partitions;
     }
 
@@ -186,11 +188,13 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(userFunc);
+        out.writeInt(partitions);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         userFunc = in.readObject();
+        partitions = in.readInt();
     }
 
     /** {@inheritDoc} */
