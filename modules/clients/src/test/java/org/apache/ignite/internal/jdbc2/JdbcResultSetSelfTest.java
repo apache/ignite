@@ -61,7 +61,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
     private static final String SQL =
         "select id, boolVal, byteVal, shortVal, intVal, longVal, floatVal, " +
             "doubleVal, bigVal, strVal, arrVal, dateVal, timeVal, tsVal, urlVal, f1, f2, f3, _val, " +
-            "boolVal2, boolVal3 " +
+            "boolVal2, boolVal3, boolVal4 " +
             "from TestObject where id = 1";
 
     /** Statement. */
@@ -145,6 +145,7 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         o.boolVal = true;
         o.boolVal2 = true;
         o.boolVal3 = true;
+        o.boolVal4 = true;
         o.byteVal = 1;
         o.shortVal = 1;
         o.intVal = 1;
@@ -214,6 +215,26 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
             if (cnt == 0) {
                 assert rs.getBoolean("boolVal3");
                 assert rs.getBoolean(21);
+            }
+
+            cnt++;
+        }
+
+        assert cnt == 1;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testBoolean4() throws Exception {
+        ResultSet rs = stmt.executeQuery(SQL);
+
+        int cnt = 0;
+
+        while (rs.next()) {
+            if (cnt == 0) {
+                assert rs.getBoolean("boolVal4");
+                assert rs.getBoolean(22);
             }
 
             cnt++;
@@ -610,8 +631,18 @@ public class JdbcResultSetSelfTest extends GridCommonAbstractTest {
         @QuerySqlField(index = false)
         protected Boolean boolVal2;
 
+        /** */
         @QuerySqlField(index = false)
         protected boolean boolVal3;
+
+        /** */
+        protected boolean boolVal4;
+
+        /** */
+        @QuerySqlField(index = false)
+        public boolean isBoolVal4() {
+            return boolVal4;
+        }
     }
 
     /**

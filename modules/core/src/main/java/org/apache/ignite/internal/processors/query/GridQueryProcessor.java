@@ -1680,6 +1680,21 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 // No-op.
             }
 
+            if (tmp == null) { // Boolean getter can be defined as is###().
+                bld = new StringBuilder("is");
+
+                bld.append(prop);
+
+                bld.setCharAt(2, Character.toUpperCase(bld.charAt(2)));
+
+                try {
+                    tmp = new ClassProperty(cls.getMethod(bld.toString()), key, alias, coCtx);
+                }
+                catch (NoSuchMethodException ignore) {
+                    // No-op.
+                }
+            }
+
             Class cls0 = cls;
 
             while (tmp == null && cls0 != null)
