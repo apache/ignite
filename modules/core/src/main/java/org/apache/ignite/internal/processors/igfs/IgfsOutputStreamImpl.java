@@ -23,6 +23,7 @@ import org.apache.ignite.igfs.IgfsException;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsOutputStream;
 import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.eventstorage.GridEventStorageManager;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -63,6 +64,9 @@ class IgfsOutputStreamImpl extends IgfsOutputStream {
 
     /** Mutex for synchronization. */
     private final Object mux = new Object();
+
+    /** Write completion future. */
+    private final IgniteInternalFuture<Boolean> writeFut;
 
     /** Flag for this stream open/closed state. */
     private boolean closed;
@@ -120,7 +124,7 @@ class IgfsOutputStreamImpl extends IgfsOutputStream {
 
             streamRange = initialStreamRange(fileInfo);
 
-            igfsCtx.data().writeStart(fileInfo.id());
+            writeFut = igfsCtx.data().writeStart(fileInfo.id());
         }
 
         igfsCtx.igfs().localMetrics().incrementFilesOpenedForWrite();
@@ -300,7 +304,9 @@ class IgfsOutputStreamImpl extends IgfsOutputStream {
 
                 flushRemainder();
 
-                igfsCtx.data().writeClose(fileInfo.id(), true);
+                igfsCtx.data().writeClose(fileInfo.id());
+
+                writeFut.get();
 
                 flushSuccess = true;
             }
