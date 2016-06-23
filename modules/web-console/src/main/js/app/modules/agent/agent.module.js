@@ -22,6 +22,10 @@ class IgniteAgentMonitor {
     constructor(socketFactory, $root, $q, $state, $modal, $common) {
         this._scope = $root.$new();
 
+        $root.$watch('user', () => {
+            this._scope.user = $root.user;
+        });
+
         $root.$on('$stateChangeStart', () => {
             this.stopWatch();
         });
