@@ -38,7 +38,6 @@ public class JdbcSqlQueryJoinBenchmark extends JdbcAbstractBenchmark {
                 stmt.addBatch();
             }
             stmt.executeBatch();
-            conn.get().commit();
         }
 
         try (PreparedStatement stmt = conn.get().prepareStatement("insert into PERSON(id, org_id, first_name, last_name," +
@@ -56,7 +55,6 @@ public class JdbcSqlQueryJoinBenchmark extends JdbcAbstractBenchmark {
                     println(cfg, "Populated persons: " + i);
             }
             stmt.executeBatch();
-            conn.get().commit();
         }
 
         println(cfg, "Finished populating join query data in " + ((System.nanoTime() - start) / 1_000_000) + " ms.");

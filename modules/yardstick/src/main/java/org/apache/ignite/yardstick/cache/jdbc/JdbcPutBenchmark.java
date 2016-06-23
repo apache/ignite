@@ -17,7 +17,6 @@ public class JdbcPutBenchmark extends JdbcAbstractBenchmark {
                 try {
                     stmt.setInt(1, newKey);
                     success = (stmt.executeUpdate() > 0);
-                    conn.get().commit();
                 }
                 catch (SQLException e) {
                     // No-op

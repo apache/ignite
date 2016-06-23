@@ -19,7 +19,6 @@ public class JdbcPutGetBenchmark extends JdbcAbstractBenchmark {
                 try {
                     stmt.setInt(1, newKey);
                     success = (stmt.executeUpdate() > 0);
-                    conn.get().commit();
                 }
                 catch (SQLException e) {
                     // No-op.
@@ -29,8 +28,6 @@ public class JdbcPutGetBenchmark extends JdbcAbstractBenchmark {
         try (PreparedStatement stmt = conn.get().prepareStatement("select id from SAMPLE where id = ?")) {
             stmt.setInt(1, newKey);
             ResultSet rs = stmt.executeQuery();
-            conn.get().commit();
-            //noinspection AssertWithSideEffects
             if (rs.next())
                 rs.getInt(1);
             else

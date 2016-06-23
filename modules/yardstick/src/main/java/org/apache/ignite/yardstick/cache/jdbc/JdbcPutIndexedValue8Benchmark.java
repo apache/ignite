@@ -21,7 +21,6 @@ public class JdbcPutIndexedValue8Benchmark extends JdbcAbstractBenchmark {
                     for (int i = 0; i < 8; i++)
                         stmt.setInt(i + 1, newKey + i);
                     success = (stmt.executeUpdate() > 0);
-                    conn.get().commit();
                 }
                 catch (SQLException e) {
                     // No-op
