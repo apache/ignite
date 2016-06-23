@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Tests.Cache.Affinity
 {
     using System;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
     using Apache.Ignite.Core.Cache;
@@ -42,7 +43,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         private const int PartitionCount = 10;
 
         /** */
-        private static volatile int _removeNodeCount;
+        private static ConcurrentBag<Guid> _removedNodes = new ConcurrentBag<Guid>();
 
         /// <summary>
         /// Fixture set up.
@@ -124,19 +125,23 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         [Test]
         public void TestRemoveNode()
         {
-            Assert.AreEqual(0, _removeNodeCount);
+            Assert.AreEqual(0, _removedNodes.Count);
 
-            using (Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            Guid expectedNodeId;
+
+            using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 GridName = "myGrid",
             }))
             {
-                Assert.AreEqual(0, _removeNodeCount);
+                expectedNodeId = ignite.GetCluster().GetLocalNode().Id;
+                Assert.AreEqual(0, _removedNodes.Count);
+                VerifyCacheAffinity(ignite.GetCache<int, int>(CacheName));
             }
 
             // Called on both nodes
-            TestUtils.WaitForCondition(() => _removeNodeCount == 2, 3000);
-            Assert.AreEqual(2, _removeNodeCount);
+            TestUtils.WaitForCondition(() => _removedNodes.Count == 2, 3000);
+            Assert.AreEqual(new[] {expectedNodeId, expectedNodeId}, _removedNodes.ToArray());
         }
 
         [Serializable]
@@ -159,7 +164,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
             public void RemoveNode(Guid nodeId)
             {
-                _removeNodeCount++;
+                _removedNodes.Add(nodeId);
             }
 
             public IEnumerable<IEnumerable<IClusterNode>> AssignPartitions(IAffinityFunctionContext context)
