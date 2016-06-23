@@ -20,7 +20,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Configuration;
@@ -50,16 +49,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         {
             var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
-                BinaryConfiguration = new BinaryConfiguration(typeof (BinarizableAffinityFunction)),
                 CacheConfiguration = new[]
                 {
                     new CacheConfiguration(CacheName)
                     {
                         AffinityFunction = new SimpleAffinityFunction()
-                    },
-                    new CacheConfiguration(CacheName + "1")
-                    {
-                        AffinityFunction = new BinarizableAffinityFunction()
                     }
                 }
             };
@@ -132,7 +126,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 GridName = "myGrid",
-                BinaryConfiguration = new BinaryConfiguration(typeof(BinarizableAffinityFunction))
             }))
             {
 
@@ -175,11 +168,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                 // All partitions are the same
                 return Enumerable.Range(0, Partitions).Select(x => context.CurrentTopologySnapshot);
             }
-        }
-
-        private class BinarizableAffinityFunction : SimpleAffinityFunction
-        {
-            // No-op.
         }
     }
 }
