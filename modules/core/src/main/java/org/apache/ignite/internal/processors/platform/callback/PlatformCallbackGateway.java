@@ -88,7 +88,8 @@ public class PlatformCallbackGateway {
      * @param objPtr Object pointer.
      */
     public void cacheStoreDestroy(long objPtr) {
-        enter();
+        if (!lock.enterBusy())
+            return;  // no need to destroy stores on grid stop
 
         try {
             PlatformCallbackUtils.cacheStoreDestroy(envPtr, objPtr);
