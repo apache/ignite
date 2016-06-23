@@ -688,7 +688,7 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
             _.forEach(accountIds, (accountId) => {
                 const agents = this._agents[accountId];
 
-                if (!agents)
+                if (agents && agents.length)
                     _.pull(agents, agent);
 
                 const sockets = this._browsers[accountId];
