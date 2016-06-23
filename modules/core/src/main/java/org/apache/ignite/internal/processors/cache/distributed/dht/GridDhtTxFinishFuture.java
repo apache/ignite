@@ -40,7 +40,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.C1;
 import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
@@ -108,8 +107,8 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
         futId = IgniteUuid.randomUuid();
 
         if (log == null) {
+            txMsgLog = cctx.txFinishMessageLogger();
             log = U.logger(cctx.kernalContext(), logRef, GridDhtTxFinishFuture.class);
-            txMsgLog = cctx.txFinishLogger();
         }
     }
 
@@ -212,7 +211,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 if (txMsgLog.isDebugEnabled()) {
                     txMsgLog.debug("DTH finish fut, failed to find mini future [txId=" + tx.nearXidVersion() +
                         ", dhtTxId=" + tx.xidVersion() +
-                        ", nodeId=" + nodeId +
+                        ", node=" + nodeId +
                         ", res=" + res +
                         ", fut=" + this + ']');
                 }
@@ -222,7 +221,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
             if (txMsgLog.isDebugEnabled()) {
                 txMsgLog.debug("DTH finish fut, failed to find mini future [txId=" + tx.nearXidVersion() +
                     ", dhtTxId=" + tx.xidVersion() +
-                    ", nodeId=" + nodeId +
+                    ", node=" + nodeId +
                     ", res=" + res +
                     ", fut=" + this + ']');
             }
@@ -351,7 +350,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 if (txMsgLog.isDebugEnabled()) {
                     txMsgLog.debug("DTH finish fut, sent request lock tx [txId=" + tx.nearXidVersion() +
                         ", dhtTxId=" + tx.xidVersion() +
-                        ", nodeId=" + n.id() + ']');
+                        ", node=" + n.id() + ']');
                 }
 
                 if (sync)
@@ -367,7 +366,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                     if (txMsgLog.isDebugEnabled()) {
                         txMsgLog.debug("DTH finish fut, failed to send request lock tx [txId=" + tx.nearXidVersion() +
                             ", dhtTxId=" + tx.xidVersion() +
-                            ", nodeId=" + n.id() +
+                            ", node=" + n.id() +
                             ", err=" + e + ']');
                     }
 
@@ -451,7 +450,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                 if (txMsgLog.isDebugEnabled()) {
                     txMsgLog.debug("DTH finish fut, sent request dht [txId=" + tx.nearXidVersion() +
                         ", dhtTxId=" + tx.xidVersion() +
-                        ", nodeId=" + n.id() + ']');
+                        ", node=" + n.id() + ']');
                 }
 
                 if (sync)
@@ -467,7 +466,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                     if (txMsgLog.isDebugEnabled()) {
                         txMsgLog.debug("DTH finish fut, failed to send request dht [txId=" + tx.nearXidVersion() +
                             ", dhtTxId=" + tx.xidVersion() +
-                            ", nodeId=" + n.id() +
+                            ", node=" + n.id() +
                             ", err=" + e + ']');
                     }
 
@@ -519,7 +518,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                     if (txMsgLog.isDebugEnabled()) {
                         txMsgLog.debug("DTH finish fut, sent request near [txId=" + tx.nearXidVersion() +
                             ", dhtTxId=" + tx.xidVersion() +
-                            ", nodeId=" + nearMapping.node().id() + ']');
+                            ", node=" + nearMapping.node().id() + ']');
                     }
 
                     if (sync)
@@ -534,9 +533,9 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
                     else {
                         if (txMsgLog.isDebugEnabled()) {
                             txMsgLog.debug("DTH finish fut, failed to send request near [txId=" + tx.nearXidVersion() +
-                                    ", dhtTxId=" + tx.xidVersion() +
-                                    ", nodeId=" + nearMapping.node().id() +
-                                    ", err=" + e + ']');
+                                ", dhtTxId=" + tx.xidVersion() +
+                                ", node=" + nearMapping.node().id() +
+                                ", err=" + e + ']');
                         }
 
                         fut.onResult(e);
@@ -638,7 +637,7 @@ public final class GridDhtTxFinishFuture<K, V> extends GridCompoundIdentityFutur
             if (txMsgLog.isDebugEnabled()) {
                 txMsgLog.debug("DTH finish fut, mini future node left [txId=" + tx.nearXidVersion() +
                     ", dhtTxId=" + tx.xidVersion() +
-                    ", nodeId=" + node().id() + ']');
+                    ", node=" + node().id() + ']');
             }
 
             // If node left, then there is nothing to commit on it.

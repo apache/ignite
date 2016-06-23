@@ -311,7 +311,7 @@ public class GridDistributedLockRequest extends GridDistributedBaseMessage {
 
     /** {@inheritDoc} */
     @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
-        return ctx.txLockLogger();
+        return ctx.txLockMessageLogger();
     }
 
     /** {@inheritDoc}

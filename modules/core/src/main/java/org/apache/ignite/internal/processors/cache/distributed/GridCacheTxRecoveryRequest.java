@@ -131,7 +131,7 @@ public class GridCacheTxRecoveryRequest extends GridDistributedBaseMessage {
 
     /** {@inheritDoc} */
     @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
-        return ctx.txRecoveryLogger();
+        return ctx.txRecoveryMessageLogger();
     }
 
     /** {@inheritDoc} */

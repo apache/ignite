@@ -105,7 +105,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             else {
                 if (txMsgLog.isDebugEnabled()) {
                     txMsgLog.debug("Near pessimistic prepare, failed to find mini future [txId=" + tx.nearXidVersion() +
-                        ", nodeId=" + nodeId +
+                        ", node=" + nodeId +
                         ", res=" + res +
                         ", fut=" + this + ']');
                 }
@@ -114,7 +114,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
         else {
             if (txMsgLog.isDebugEnabled()) {
                 txMsgLog.debug("Near pessimistic prepare, response for finished future [txId=" + tx.nearXidVersion() +
-                    ", nodeId=" + nodeId +
+                    ", node=" + nodeId +
                     ", res=" + res +
                     ", fut=" + this + ']');
             }
@@ -253,11 +253,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             add(fut);
 
             if (node.isLocal()) {
-                if (txMsgLog.isDebugEnabled()) {
-                    txMsgLog.debug("Near pessimistic prepare, prepare local [txId=" + tx.nearXidVersion() +
-                        ", nodeId=" + node.id() + ']');
-                }
-
                 IgniteInternalFuture<GridNearTxPrepareResponse> prepFut = cctx.tm().txHandler().prepareTx(node.id(),
                     tx,
                     req);
@@ -279,7 +274,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
                     if (txMsgLog.isDebugEnabled()) {
                         txMsgLog.debug("Near pessimistic prepare, sent request [txId=" + tx.nearXidVersion() +
-                            ", nodeId=" + node.id() + ']');
+                            ", node=" + node.id() + ']');
                     }
                 }
                 catch (ClusterTopologyCheckedException e) {
@@ -290,7 +285,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                 catch (IgniteCheckedException e) {
                     if (txMsgLog.isDebugEnabled()) {
                         txMsgLog.debug("Near pessimistic prepare, failed send request [txId=" + tx.nearXidVersion() +
-                            ", nodeId=" + node.id() + ", err=" + e + ']');
+                            ", node=" + node.id() + ", err=" + e + ']');
                     }
 
                     fut.onError(e);

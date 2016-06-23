@@ -1093,10 +1093,12 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
         if (fut != null)
             fut.onResult(nodeId, res);
-        else if (txLockMsgLog.isDebugEnabled()) {
-            txLockMsgLog.debug("Received near lock response for unknown future [txId=" + res.version() +
-                ", node=" + nodeId +
-                ", res=" + res + ']');
+        else {
+            if (txLockMsgLog.isDebugEnabled()) {
+                txLockMsgLog.debug("Received near lock response for unknown future [txId=" + res.version() +
+                    ", node=" + nodeId +
+                    ", res=" + res + ']');
+            }
         }
     }
 

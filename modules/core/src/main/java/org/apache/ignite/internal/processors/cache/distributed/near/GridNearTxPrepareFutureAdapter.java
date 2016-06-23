@@ -109,7 +109,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
         futId = IgniteUuid.randomUuid();
 
         if (log == null) {
-            txMsgLog = cctx.txFinishLogger();
+            txMsgLog = cctx.txFinishMessageLogger();
             log = U.logger(cctx.kernalContext(), logRef, GridNearTxPrepareFutureAdapter.class);
         }
     }

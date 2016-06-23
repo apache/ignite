@@ -202,7 +202,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         futId = IgniteUuid.randomUuid();
 
         if (log == null) {
-            txMsgLog = cctx.shared().txLockLogger();
+            txMsgLog = cctx.shared().txLockMessageLogger();
             log = U.logger(cctx.kernalContext(), logRef, GridDhtColocatedLockFuture.class);
         }
 
@@ -440,6 +440,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
 
             U.warn(txMsgLog, "Collocated lock fut, failed to find mini future [txId=" + lockVer +
                 ", inTx=" + inTx() +
+                ", node=" + nodeId +
                 ", res=" + res +
                 ", fut=" + this + ']');
         }
@@ -447,7 +448,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
             if (txMsgLog.isDebugEnabled()) {
                 txMsgLog.debug("Collocated lock fut, response for finished future [txId=" + lockVer +
                     ", inTx=" + inTx() +
-                    ", nodeId=" + nodeId + ']');
+                    ", node=" + nodeId + ']');
             }
         }
     }
@@ -1060,7 +1061,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                     if (txMsgLog.isDebugEnabled()) {
                         txMsgLog.debug("Collocated lock fut, sent request [txId=" + lockVer +
                             ", inTx=" + inTx() +
-                            ", nodeId=" + node.id() + ']');
+                            ", node=" + node.id() + ']');
                     }
                 }
                 catch (ClusterTopologyCheckedException ex) {
@@ -1078,7 +1079,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                             if (txMsgLog.isDebugEnabled()) {
                                 txMsgLog.debug("Collocated lock fut, sent request [txId=" + lockVer +
                                     ", inTx=" + inTx() +
-                                    ", nodeId=" + node.id() + ']');
+                                    ", node=" + node.id() + ']');
                             }
                         }
                         catch (ClusterTopologyCheckedException ex) {
@@ -1090,7 +1091,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                             if (txMsgLog.isDebugEnabled()) {
                                 txMsgLog.debug("Collocated lock fut, failed to send request [txId=" + lockVer +
                                     ", inTx=" + inTx() +
-                                    ", nodeId=" + node.id() +
+                                    ", node=" + node.id() +
                                     ", err=" + e + ']');
                             }
 

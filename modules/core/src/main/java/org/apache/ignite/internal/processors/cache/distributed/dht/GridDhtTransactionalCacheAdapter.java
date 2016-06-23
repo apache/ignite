@@ -379,7 +379,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             txLockMsgLog.debug("Received dht lock request [txId=" + req.nearXidVersion() +
                 ", dhtTxId=" + req.version() +
                 ", inTx=" + req.inTx() +
-                ", nodeId=" + nodeId + ']');
+                ", node=" + nodeId + ']');
         }
 
         IgniteInternalFuture<Object> keyFut = F.isEmpty(req.keys()) ? null :
@@ -539,7 +539,7 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
                 }
             }
             catch (ClusterTopologyCheckedException ignored) {
-                U.warn(txLockMsgLog, "Failed to send dht lock response, node left grid [" +
+                U.warn(txLockMsgLog, "Failed to send dht lock response, node failed [" +
                     "txId=" + req.nearXidVersion() +
                     ", dhtTxId=" + req.version() +
                     ", inTx=" + req.inTx() +

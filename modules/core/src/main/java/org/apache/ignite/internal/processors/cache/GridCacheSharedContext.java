@@ -154,10 +154,10 @@ public class GridCacheSharedContext<K, V> {
 
         locStoreCnt = new AtomicInteger();
 
-        txMsgLog = kernalCtx.log(CU.TX_MSG_LOCK_LOG_CATEGORY);
+        txMsgLog = kernalCtx.log(CU.TX_MSG_LOG_CATEGORY);
         txPrepareMsgLog = kernalCtx.log(CU.TX_MSG_PREPARE_LOG_CATEGORY);
         txFinishMsgLog = kernalCtx.log(CU.TX_MSG_FINISH_LOG_CATEGORY);
-        txLockMsgLog = kernalCtx.log(CU.TX_MSG_FINISH_LOG_CATEGORY);
+        txLockMsgLog = kernalCtx.log(CU.TX_MSG_LOCK_LOG_CATEGORY);
         txRecoveryMsgLog = kernalCtx.log(CU.TX_MSG_RECOVERY_LOG_CATEGORY);
     }
 
@@ -171,28 +171,28 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Logger.
      */
-    public IgniteLogger txPrepareLogger() {
+    public IgniteLogger txPrepareMessageLogger() {
         return txPrepareMsgLog;
     }
 
     /**
      * @return Logger.
      */
-    public IgniteLogger txFinishLogger() {
+    public IgniteLogger txFinishMessageLogger() {
         return txFinishMsgLog;
     }
 
     /**
      * @return Logger.
      */
-    public IgniteLogger txLockLogger() {
+    public IgniteLogger txLockMessageLogger() {
         return txLockMsgLog;
     }
 
     /**
      * @return Logger.
      */
-    public IgniteLogger txRecoveryLogger() {
+    public IgniteLogger txRecoveryMessageLogger() {
         return txRecoveryMsgLog;
     }
 

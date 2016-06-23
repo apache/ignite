@@ -163,7 +163,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
             else {
                 if (txMsgLog.isDebugEnabled()) {
                     txMsgLog.debug("Near optimistic prepare fut, failed to find mini future [txId=" + tx.nearXidVersion() +
-                        ", nodeId=" + nodeId +
+                        ", node=" + nodeId +
                         ", res=" + res +
                         ", fut=" + this + ']');
                 }
@@ -172,7 +172,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         else {
             if (txMsgLog.isDebugEnabled()) {
                 txMsgLog.debug("Near optimistic prepare fut, response for finished future [txId=" + tx.nearXidVersion() +
-                    ", nodeId=" + nodeId +
+                    ", node=" + nodeId +
                     ", res=" + res +
                     ", fut=" + this + ']');
             }
@@ -499,7 +499,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
                     if (txMsgLog.isDebugEnabled()) {
                         txMsgLog.debug("Near optimistic prepare fut, sent request [txId=" + tx.nearXidVersion() +
-                            ", nodeId=" + n.id() + ']');
+                            ", node=" + n.id() + ']');
                     }
                 }
                 catch (ClusterTopologyCheckedException e) {
@@ -510,7 +510,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                 catch (IgniteCheckedException e) {
                     if (txMsgLog.isDebugEnabled()) {
                         txMsgLog.debug("Near optimistic prepare fut, failed to sent request [txId=" + tx.nearXidVersion() +
-                            ", nodeId=" + n.id() +
+                            ", node=" + n.id() +
                             ", err=" + e + ']');
                     }
 
@@ -716,7 +716,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
         void onResult(ClusterTopologyCheckedException e) {
             if (txMsgLog.isDebugEnabled()) {
                 txMsgLog.debug("Near optimistic prepare fut, mini future node left [txId=" + tx.nearXidVersion() +
-                    ", nodeId=" + m.node().id() + ']');
+                    ", node=" + m.node().id() + ']');
             }
 
             if (isDone())

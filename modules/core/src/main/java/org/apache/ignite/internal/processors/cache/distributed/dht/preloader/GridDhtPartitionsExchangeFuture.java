@@ -788,7 +788,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                         // Print pending transactions and locks that might have led to hang.
                         if (dumpedObjects < DUMP_PENDING_OBJECTS_THRESHOLD) {
                             U.warn(log, "Failed to wait for partition release future [topVer=" + topologyVersion() +
-                                    ", node=" + cctx.localNodeId() + "]. Dumping pending objects that might be the cause: ");
+                                ", node=" + cctx.localNodeId() + "]. Dumping pending objects that might be the cause: ");
 
                             try {
                                 cctx.exchange().dumpDebugInfo();

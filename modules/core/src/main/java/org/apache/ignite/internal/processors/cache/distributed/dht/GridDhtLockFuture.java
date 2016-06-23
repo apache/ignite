@@ -239,7 +239,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
         pendingLocks = U.newHashSet(cnt);
 
         if (log == null) {
-            txMsgLog = cctx.shared().txLockLogger();
+            txMsgLog = cctx.shared().txLockMessageLogger();
             log = U.logger(cctx.kernalContext(), logRef, GridDhtLockFuture.class);
         }
 
@@ -533,7 +533,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
             U.warn(txMsgLog, "DHT lock fut, failed to find mini future [txId=" + nearLockVer +
                 ", dhtTxId=" + lockVer +
                 ", inTx=" + inTx() +
-                ", nodeId=" + nodeId +
+                ", node=" + nodeId +
                 ", res=" + res +
                 ", fut=" + this + ']');
         }
@@ -969,7 +969,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                                 txMsgLog.debug("DHT lock fut, failed to send request [txId=" + nearLockVer +
                                     ", dhtTxId=" + lockVer +
                                     ", inTx=" + inTx() +
-                                    ", nodeId=" + n.id() +
+                                    ", node=" + n.id() +
                                     ", err=" + e + ']');
                             }
 
@@ -1183,7 +1183,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                 txMsgLog.debug("DHT lock fut, mini future node left [txId=" + nearLockVer +
                     ", dhtTxId=" + lockVer +
                     ", inTx=" + inTx() +
-                    ", nodeId=" + node.id() + ']');
+                    ", node=" + node.id() + ']');
             }
 
             if (tx != null)

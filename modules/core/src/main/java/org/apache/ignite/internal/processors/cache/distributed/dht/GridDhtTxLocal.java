@@ -665,15 +665,15 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             try {
                 cctx.io().send(nearNodeId, res, ioPolicy());
 
-                if (cctx.txFinishLogger().isDebugEnabled()) {
-                    cctx.txFinishLogger().debug("Sent near finish response [txId=" + nearXidVersion() +
+                if (cctx.txFinishMessageLogger().isDebugEnabled()) {
+                    cctx.txFinishMessageLogger().debug("Sent near finish response [txId=" + nearXidVersion() +
                         ", dhtTxId=" + xidVersion() +
                         ", node=" + nearNodeId + ']');
                 }
             }
             catch (ClusterTopologyCheckedException ignored) {
-                if (cctx.txFinishLogger().isDebugEnabled()) {
-                    cctx.txFinishLogger().debug("Failed to send near finish response, node left [txId=" + nearXidVersion() +
+                if (cctx.txFinishMessageLogger().isDebugEnabled()) {
+                    cctx.txFinishMessageLogger().debug("Failed to send near finish response, node left [txId=" + nearXidVersion() +
                         ", dhtTxId=" + xidVersion() +
                         ", node=" + nearNodeId() + ']');
                 }
@@ -690,8 +690,8 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             }
         }
         else {
-            if (cctx.txFinishLogger().isDebugEnabled()) {
-                cctx.txFinishLogger().debug("Will not send finish reply because sender node has not sent finish " +
+            if (cctx.txFinishMessageLogger().isDebugEnabled()) {
+                cctx.txFinishMessageLogger().debug("Will not send finish reply because sender node has not sent finish " +
                     "request yet [txId=" + nearXidVersion() +
                     ", dhtTxId=" + xidVersion() +
                     ", node=" + nearNodeId() + ']');

@@ -150,6 +150,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                             log.debug("Received message has higher affinity topology version [" +
                                 "txId=" + txId(cacheMsg) +
                                 ", dhtTxId=" + dhtTxId(cacheMsg) +
+                                ", node=" + nodeId +
                                 ", locTopVer=" + locAffVer +
                                 ", rmtTopVer=" + rmtAffVer +
                                 ", msg=" + cacheMsg + ']');
@@ -175,6 +176,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                                         log.debug("Process cache message after wait for affinity topology version [" +
                                             "txId=" + txId(cacheMsg) +
                                             ", dhtTxId=" + dhtTxId(cacheMsg) +
+                                            ", node=" + nodeId +
                                             ", msg=" + cacheMsg + ']');
                                     }
                                 }
@@ -257,19 +259,19 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                         log.debug("Received message without registered handler (will ignore) [msg=" + cacheMsg +
                             ", txId=" + txId(cacheMsg) +
                             ", dhtTxId=" + dhtTxId(cacheMsg) +
-                            ", nodeId=" + nodeId + ']');
+                            ", node=" + nodeId + ']');
                     }
                 }
                 else if (log.isDebugEnabled()) {
                     log.debug("Received message without registered handler (will ignore) [msg=" + cacheMsg +
-                        ", nodeId=" + nodeId + ']');
+                        ", node=" + nodeId + ']');
                 }
             }
             else {
                 U.warn(log, "Received message without registered handler (will ignore) [txId=" + txId(cacheMsg) +
                     ", msg=" + cacheMsg +
                     ", dhtTxId=" + dhtTxId(cacheMsg) +
-                    ", nodeId=" + nodeId +
+                    ", node=" + nodeId +
                     ", locTopVer=" + cctx.exchange().readyAffinityVersion() +
                     ", msgTopVer=" + cacheMsg.topologyVersion() +
                     ", cacheDesc=" + cctx.cache().cacheDescriptor(cacheMsg.cacheId()) + ']');

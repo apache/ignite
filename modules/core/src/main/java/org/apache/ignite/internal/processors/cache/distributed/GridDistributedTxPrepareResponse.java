@@ -92,7 +92,7 @@ public class GridDistributedTxPrepareResponse extends GridDistributedBaseMessage
 
     /** {@inheritDoc} */
     @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
-        return ctx.txPrepareLogger();
+        return ctx.txPrepareMessageLogger();
     }
 
     /** {@inheritDoc} */

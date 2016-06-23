@@ -116,7 +116,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         futId = IgniteUuid.randomUuid();
 
         if (log == null) {
-            txMsgLog = cctx.txFinishLogger();
+            txMsgLog = cctx.txFinishMessageLogger();
             log = U.logger(cctx.kernalContext(), logRef, GridNearTxFinishFuture.class);
         }
     }
@@ -188,7 +188,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
             if (!found && txMsgLog.isDebugEnabled()) {
                 txMsgLog.debug("Near finish fut, failed to find mini future [txId=" + tx.nearXidVersion() +
-                    ", nodeId=" + nodeId +
+                    ", node=" + nodeId +
                     ", res=" + res +
                     ", fut=" + this + ']');
             }
@@ -196,7 +196,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         else {
             if (txMsgLog.isDebugEnabled()) {
                 txMsgLog.debug("Near finish fut, response for finished future [txId=" + tx.nearXidVersion() +
-                    ", nodeId=" + nodeId +
+                    ", node=" + nodeId +
                     ", res=" + res +
                     ", fut=" + this + ']');
             }
@@ -227,7 +227,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
             if (!found && txMsgLog.isDebugEnabled()) {
                 txMsgLog.debug("Near finish fut, failed to find mini future [txId=" + tx.nearXidVersion() +
-                    ", nodeId=" + nodeId +
+                    ", node=" + nodeId +
                     ", res=" + res +
                     ", fut=" + this + ']');
             }
@@ -235,7 +235,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         else {
             if (txMsgLog.isDebugEnabled()) {
                 txMsgLog.debug("Near finish fut, response for finished future [txId=" + tx.nearXidVersion() +
-                    ", nodeId=" + nodeId +
+                    ", node=" + nodeId +
                     ", res=" + res +
                     ", fut=" + this + ']');
             }
@@ -512,8 +512,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
                             if (txMsgLog.isDebugEnabled()) {
                                 txMsgLog.debug("Near finish fut, sent check committed request [" +
-                                    "xId=" + tx.nearXidVersion() +
-                                    ", nodeId=" + backup.id() + ']');
+                                    "txId=" + tx.nearXidVersion() +
+                                    ", node=" + backup.id() + ']');
                             }
                         }
                         else
@@ -526,9 +526,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
                     }
                     catch (IgniteCheckedException e) {
                         if (txMsgLog.isDebugEnabled()) {
-                            txMsgLog.debug("Near finish fut, failed send check committed request [" +
-                                "xId=" + tx.nearXidVersion() +
-                                ", nodeId=" + backup.id() +
+                            txMsgLog.debug("Near finish fut, failed to send check committed request [" +
+                                "txId=" + tx.nearXidVersion() +
+                                ", node=" + backup.id() +
                                 ", err=" + e + ']');
                         }
 
@@ -664,8 +664,8 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
 
                 if (txMsgLog.isDebugEnabled()) {
                     txMsgLog.debug("Near finish fut, sent request [" +
-                        "xId=" + tx.nearXidVersion() +
-                        ", nodeId=" + n.id() + ']');
+                        "txId=" + tx.nearXidVersion() +
+                        ", node=" + n.id() + ']');
                 }
 
                 // If we don't wait for result, then mark future as done.
@@ -680,9 +680,9 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
             }
             catch (IgniteCheckedException e) {
                 if (txMsgLog.isDebugEnabled()) {
-                    txMsgLog.debug("Near finish fut, failed send request [" +
-                        "xId=" + tx.nearXidVersion() +
-                        ", nodeId=" + n.id() +
+                    txMsgLog.debug("Near finish fut, failed to send request [" +
+                        "txId=" + tx.nearXidVersion() +
+                        ", node=" + n.id() +
                         ", err=" + e + ']');
                 }
 
@@ -786,7 +786,7 @@ public final class GridNearTxFinishFuture<K, V> extends GridCompoundIdentityFutu
         void onResult(ClusterTopologyCheckedException e) {
             if (txMsgLog.isDebugEnabled()) {
                 txMsgLog.debug("Near finish fut, mini future node left [txId=" + tx.nearXidVersion() +
-                    ", nodeId=" + m.node().id() + ']');
+                    ", node=" + m.node().id() + ']');
             }
 
             if (backup != null) {
