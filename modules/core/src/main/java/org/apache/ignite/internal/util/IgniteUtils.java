@@ -4049,7 +4049,7 @@ public abstract class IgniteUtils {
     public static void quietAndWarn(IgniteLogger log, Object msg, Object shortMsg) {
         warn(log, msg);
 
-        if (log != null && log.isQuiet())
+        if (log.isQuiet())
             quiet(false, shortMsg);
     }
 

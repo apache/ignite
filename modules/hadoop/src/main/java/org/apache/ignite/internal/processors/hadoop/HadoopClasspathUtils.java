@@ -1,7 +1,23 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.hadoop;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -13,8 +29,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import static java.lang.System.err;
-
 /**
  * Hadoop classpath utilities.
  */
@@ -23,7 +37,7 @@ public class HadoopClasspathUtils {
      * Gets Hadoop class path as list of classpath elements for process.
      *
      * @return List of the class path elements.
-     * @throws IOException On error.
+     * @throws IOException If failed.
      */
     static List<String> getAsProcessClasspath() throws IOException {
         Collection<DirAndMask> dams = getClasspathBaseDirectories();
@@ -40,7 +54,7 @@ public class HadoopClasspathUtils {
      * Gets Hadoop class path as a list of URLs (for in-process class loader usage).
      *
      * @return List of class path URLs.
-     * @throws IOException On error.
+     * @throws IOException If failed.
      */
     public static List<URL> getAsUrlList() throws IOException {
         Collection<DirAndMask> dams = getClasspathBaseDirectories();
@@ -61,7 +75,7 @@ public class HadoopClasspathUtils {
      * @param res Result.
      * @param dir Directory.
      * @param startsWith Starts with prefix.
-     * @throws MalformedURLException If failed.
+     * @throws IOException If failed.
      */
     private static void addUrls(Collection<URL> res, File dir, final String startsWith) throws IOException {
         File[] files = dir.listFiles(new FilenameFilter() {
@@ -73,10 +87,15 @@ public class HadoopClasspathUtils {
         if (files == null)
             throw new IOException("Path is not a directory. [dir=" + dir + ']');
 
-        for (File file : files)
-            res.add(file.toURI().toURL());
+        for (File file : files) {
+            try {
+                res.add(file.toURI().toURL());
+            }
+            catch (MalformedURLException e) {
+                throw new IOException("Failed to convert file path to URL: " + file.getPath());
+            }
+        }
     }
-
 
     /**
      * Discovers classpath entries in specified directory and adds them as URLs to the given {@code res} collection.
@@ -84,9 +103,10 @@ public class HadoopClasspathUtils {
      * @param res Result.
      * @param dir Directory.
      * @param startsWith Starts with prefix.
-     * @throws MalformedURLException If failed.
+     * @throws IOException If failed.
      */
-    private static void addAsJavaProcessClasspathElement(Collection<String> res, File dir, final String startsWith) throws IOException {
+    private static void addAsJavaProcessClasspathElement(Collection<String> res, File dir, final String startsWith)
+        throws IOException {
         if (!dir.exists() || !dir.isDirectory() || !dir.canRead())
             throw new IOException("Path is not an existing readable directory. [dir=" + dir + ']');
 
@@ -120,9 +140,9 @@ public class HadoopClasspathUtils {
      * Gets base directories to discover classpath elements in.
      *
      * @return Collection of directory and mask pairs.
-     * @throws FileNotFoundException if a mandatory classpath location is not found.
+     * @throws IOException if a mandatory classpath location is not found.
      */
-    private static Collection<DirAndMask> getClasspathBaseDirectories() throws FileNotFoundException {
+    private static Collection<DirAndMask> getClasspathBaseDirectories() throws IOException {
         final String hadoopHome = hadoopHome();
 
         String commonHome = resolveLocation("HADOOP_COMMON_HOME", hadoopHome, "/share/hadoop/common");
@@ -174,26 +194,23 @@ public class HadoopClasspathUtils {
      * @param envVarName Environment variable name. The value denotes the location path.
      * @param hadoopHome Hadoop home location, may be null.
      * @param expHadoopHomeRelativePath The path relative to Hadoop home, expected to start with path separator.
-     * @throws FileNotFoundException If the value cannot be resolved to an existing directory.
+     * @throws IOException If the value cannot be resolved to an existing directory.
      */
-    private static String resolveLocation(String envVarName, String hadoopHome,
-                                          String expHadoopHomeRelativePath) throws FileNotFoundException {
+    private static String resolveLocation(String envVarName, String hadoopHome, String expHadoopHomeRelativePath)
+        throws IOException {
         String val = getEnv(envVarName, null);
 
         if (val == null) {
             // The env. variable is not set. Try to resolve the location relative HADOOP_HOME:
             if (!isExistingDirectory(hadoopHome))
-                throw new FileNotFoundException("Failed to resolve Hadoop installation location. " +
+                throw new IOException("Failed to resolve Hadoop installation location. " +
                         envVarName + " or HADOOP_HOME environment variable should be set.");
 
             val = hadoopHome + expHadoopHomeRelativePath;
         }
 
         if (!isExistingDirectory(val))
-            throw new FileNotFoundException("Failed to resolve Hadoop location. [path=" + val + ']');
-
-        // Print diagnostic output:
-        err.println(envVarName + " resolved to " + val);
+            throw new IOException("Failed to resolve Hadoop location [path=" + val + ']');
 
         return val;
     }

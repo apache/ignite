@@ -501,7 +501,7 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
                 hadoopUrls = HadoopClasspathUtils.getAsUrlList();
             }
             catch (IOException e) {
-                throw new IgniteCheckedException(e);
+                throw new IgniteCheckedException("Failed to resolve Hadoop JAR locations.", e);
             }
 
             hadoopJars = hadoopUrls;
