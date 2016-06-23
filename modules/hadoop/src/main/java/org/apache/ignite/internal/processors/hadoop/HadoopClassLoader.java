@@ -54,7 +54,6 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.commons.Remapper;
 import org.objectweb.asm.commons.RemappingClassAdapter;
-import static org.apache.ignite.internal.processors.hadoop.HadoopClasspathMain.*;
 
 /**
  * Class loader allowing explicitly load classes without delegation to parent class loader.
@@ -97,6 +96,9 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
     @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"})
     private final String name;
 
+    /** Native library names. */
+    private final String[] libNames;
+
     /**
      * Gets name for Job class loader. The name is specific for local node id.
      * @param locNodeId The local node id.
@@ -120,14 +122,19 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
     }
 
     /**
+     * Constructor.
+     *
      * @param urls Urls.
+     * @param name Classloader name.
+     * @param libNames Optional additional native library names to be linked from parent classloader.
      */
-    public HadoopClassLoader(URL[] urls, String name) {
+    public HadoopClassLoader(URL[] urls, String name, @Nullable String[] libNames) {
         super(addHadoopUrls(urls), APP_CLS_LDR);
 
         assert !(getParent() instanceof HadoopClassLoader);
 
         this.name = name;
+        this.libNames = libNames;
 
         initializeNativeLibraries();
     }
@@ -157,9 +164,21 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
                 Vector vector = U.field(ldr, "nativeLibraries");
 
                 for (Object lib : vector) {
-                    String libName = U.field(lib, "name");
+                    String name = U.field(lib, "name");
 
-                    if (libName.contains(LIBHADOOP)) {
+                    boolean add = name.contains(LIBHADOOP);
+
+                    if (!add && libNames != null) {
+                        for (String libName : libNames) {
+                            if (libName != null && name.contains(libName)) {
+                                add = true;
+
+                                break;
+                            }
+                        }
+                    }
+
+                    if (add) {
                         curVector.add(lib);
 
                         return;
@@ -169,9 +188,9 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
                 ldr = ldr.getParent();
             }
         }
-        catch (Throwable t) {
+        catch (Exception e) {
             U.quietAndWarn(null, "Failed to initialize Hadoop native library " +
-                "(native Hadoop methods might not work properly): " + t);
+                "(native Hadoop methods might not work properly): " + e);
         }
     }
 
@@ -437,20 +456,6 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
         return hasDot;
     }
 
-//    /**
-//     * @param name Variable name.
-//     * @param dflt Default.
-//     * @return Value.
-//     */
-//    private static String getEnv(String name, String dflt) {
-//        String res = System.getProperty(name);
-//
-//        if (F.isEmpty(res))
-//            res = System.getenv(name);
-//
-//        return F.isEmpty(res) ? dflt : res;
-//    }
-
     /**
      * @param urls URLs.
      * @return URLs.
@@ -493,7 +498,7 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
                 return hadoopUrls;
 
             try {
-                hadoopUrls = getAsUrlList();
+                hadoopUrls = HadoopClasspathUtils.getAsUrlList();
             }
             catch (IOException e) {
                 throw new IgniteCheckedException(e);
