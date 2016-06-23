@@ -75,6 +75,7 @@ import org.apache.ignite.lang.IgnitePredicate;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static org.apache.ignite.IgniteSystemProperties.IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -795,6 +796,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                             catch (Exception e) {
                                 U.error(log, "Failed to dump debug information: " + e, e);
                             }
+
+                            if (IgniteSystemProperties.getBoolean(IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT, false))
+                                U.dumpThreads(log);
 
                             dumpedObjects++;
                         }
