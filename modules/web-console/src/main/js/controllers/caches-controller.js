@@ -350,6 +350,20 @@ consoleModule.controller('cachesController', [
                         $scope.caches.push(item);
                     }
 
+                    _.forEach($scope.clusters, (cluster) => {
+                        if (_.includes(item.clusters, cluster.value))
+                            cluster.caches = _.union(cluster.caches, [_id]);
+                        else
+                            _.remove(cluster.caches, (id) => id === _id);
+                    });
+
+                    _.forEach($scope.domains, (domain) => {
+                        if (_.includes(item.domains, domain.value))
+                            domain.meta.caches = _.union(domain.meta.caches, [_id]);
+                        else
+                            _.remove(domain.meta.caches, (id) => id === _id);
+                    });
+
                     $scope.selectItem(item);
 
                     $common.showInfo('Cache "' + item.name + '" saved.');
@@ -417,6 +431,9 @@ consoleModule.controller('cachesController', [
                                     $scope.backupItem = emptyCache;
                                     $scope.ui.inputForm.$setPristine();
                                 }
+
+                                _.forEach($scope.clusters, (cluster) => _.remove(cluster.caches, (id) => id === _id));
+                                _.forEach($scope.domains, (domain) => _.remove(domain.meta.caches, (id) => id === _id));
                             }
                         })
                         .error(function(errMsg) {
@@ -434,6 +451,10 @@ consoleModule.controller('cachesController', [
                             $common.showInfo('All caches have been removed');
 
                             $scope.caches = [];
+
+                            _.forEach($scope.clusters, (cluster) => cluster.caches = []);
+                            _.forEach($scope.domains, (domain) => domain.meta.caches = []);
+
                             $scope.backupItem = emptyCache;
                             $scope.ui.inputForm.$setPristine();
                         })

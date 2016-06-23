@@ -1297,6 +1297,13 @@ consoleModule.controller('domainsController', [
                     else
                         $scope.domains.push(savedMeta);
 
+                    _.forEach($scope.caches, (cache) => {
+                        if (_.includes(item.caches, cache.value))
+                            cache.cache.domains = _.union(cache.cache.domains, [savedMeta._id]);
+                        else
+                            _.remove(cache.cache.domains, (id) => id === savedMeta._id);
+                    });
+
                     $scope.selectItem(savedMeta);
 
                     $common.showInfo('Domain model "' + item.valueType + '" saved.');
@@ -1382,6 +1389,8 @@ consoleModule.controller('domainsController', [
                                     $scope.backupItem = emptyDomain;
                                     $scope.ui.inputForm.$setPristine();
                                 }
+
+                                _.forEach($scope.caches, (cache) => _.remove(cache.cache.domains, (id) => id === _id));
                             }
 
                             _checkShowValidPresentation();
@@ -1403,6 +1412,9 @@ consoleModule.controller('domainsController', [
                             $common.showInfo('All domain models have been removed');
 
                             $scope.domains = [];
+
+                            _.forEach($scope.caches, (cache) => cache.cache.domains = []);
+
                             $scope.ui.inputForm.$setPristine();
                             $scope.backupItem = emptyDomain;
                             $scope.ui.showValid = true;
