@@ -25,6 +25,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
+    using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Resource;
     using NUnit.Framework;
 
@@ -150,10 +151,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         [Test]
         public void TestNonSerializableFunction()
         {
-            _ignite.CreateCache<int, int>(new CacheConfiguration("failCache")
-            {
-                AffinityFunction = new NonSerializableAffinityFunction()
-            });
+            var ex = Assert.Throws<IgniteException>(() =>
+                _ignite.CreateCache<int, int>(new CacheConfiguration("failCache")
+                {
+                    AffinityFunction = new NonSerializableAffinityFunction()
+                }));
+
+            Assert.AreEqual(ex.Message, "AffinityFunction should be serializable.");
         }
 
         /// <summary>
