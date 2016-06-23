@@ -90,10 +90,7 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
 
     /** {@inheritDoc} */
     @Override public void reset() {
-        assert ctx != null;
-        assert ptr != 0;
-
-        ctx.gateway().affinityFunctionReset(ptr);
+        // No-op: userFunc is always in initial state (it is serialized only once on start).
     }
 
     /** {@inheritDoc} */

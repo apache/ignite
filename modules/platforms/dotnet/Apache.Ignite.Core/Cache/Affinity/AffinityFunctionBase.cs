@@ -103,16 +103,6 @@ namespace Apache.Ignite.Core.Cache.Affinity
         }
 
         /// <summary>
-        /// Resets cache affinity to its initial state. This method will be called by the system any time
-        /// the affinity has been sent to remote node where it has to be reinitialized.
-        /// If your implementation of affinity function has no initialization logic, leave this method empty.
-        /// </summary>
-        public void Reset()
-        {
-            throw GetDirectUsageError();
-        }
-
-        /// <summary>
         /// Gets or sets a value indicating whether to exclude same-host-neighbors from being backups of each other.
         /// </summary>
         public bool ExcludeNeighbors { get; set; }

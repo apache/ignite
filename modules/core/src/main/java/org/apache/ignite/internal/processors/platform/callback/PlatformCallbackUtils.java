@@ -505,14 +505,6 @@ public class PlatformCallbackUtils {
     static native long affinityFunctionInit(long envPtr, long memPtr);
 
     /**
-     * Resets affinity function.
-     *
-     * @param envPtr Environment pointer.
-     * @param ptr Affinity function pointer.
-     */
-    static native void affinityFunctionReset(long envPtr, long ptr);
-
-    /**
      * Gets the partition from affinity function.
      *
      * @param envPtr Environment pointer.

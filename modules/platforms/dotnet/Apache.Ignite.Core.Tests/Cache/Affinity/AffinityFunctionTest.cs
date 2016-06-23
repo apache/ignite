@@ -41,6 +41,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         /** */
         private const int PartitionCount = 10;
 
+        /** */
+        private static volatile int _removeNodeCount;
+
         /// <summary>
         /// Fixture set up.
         /// </summary>
@@ -116,21 +119,24 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         }
 
         /// <summary>
-        /// Tests Reset and RemoveNode methods.
+        /// Tests the RemoveNode method.
         /// </summary>
         [Test]
-        public void TestResetRemoveNode()
+        public void TestRemoveNode()
         {
-            // Start another node and verify that Reset is called on start and RemoveNode on stop
+            Assert.AreEqual(0, _removeNodeCount);
 
-            using (var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+            using (Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
             {
                 GridName = "myGrid",
             }))
             {
-
+                Assert.AreEqual(0, _removeNodeCount);
             }
 
+            // Called on both nodes
+            TestUtils.WaitForCondition(() => _removeNodeCount == 2, 3000);
+            Assert.AreEqual(2, _removeNodeCount);
         }
 
         [Serializable]
@@ -138,11 +144,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         {
             #pragma warning disable 649  // field is never assigned
             [InstanceResource] public readonly IIgnite Ignite;
-
-            public void Reset()
-            {
-                // No-op.
-            }
 
             public int Partitions
             {
@@ -158,7 +159,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
             public void RemoveNode(Guid nodeId)
             {
-                // No-op.
+                _removeNodeCount++;
             }
 
             public IEnumerable<IEnumerable<IClusterNode>> AssignPartitions(IAffinityFunctionContext context)

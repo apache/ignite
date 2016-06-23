@@ -32,13 +32,6 @@ namespace Apache.Ignite.Core.Cache.Affinity
     public interface IAffinityFunction
     {
         /// <summary>
-        ///  Resets cache affinity to its initial state. This method will be called by the system any time 
-        /// the affinity has been sent to remote node where it has to be reinitialized.
-        /// If your implementation of affinity function has no initialization logic, leave this method empty.
-        /// </summary>
-        void Reset();
-
-        /// <summary>
         /// Gets the total number of partitions.
         /// <para />
         /// All caches should always provide correct partition count which should be the same on all 

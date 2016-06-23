@@ -950,22 +950,6 @@ public class PlatformCallbackGateway {
     }
 
     /**
-     * Resets affinity function.
-     *
-     * @param ptr Affinity function handle.
-     */
-    public void affinityFunctionReset(long ptr) {
-        enter();
-
-        try {
-            PlatformCallbackUtils.affinityFunctionReset(envPtr, ptr);
-        }
-        finally {
-            leave();
-        }
-    }
-
-    /**
      * Initializes affinity function.
      *
      * @param memPtr Pointer to a stream with serialized affinity function.

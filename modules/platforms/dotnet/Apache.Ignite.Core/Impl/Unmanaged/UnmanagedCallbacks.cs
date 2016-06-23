@@ -168,7 +168,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void OnClientReconnectedDelegate(void* target, bool clusterRestarted);
 
         private delegate long AffinityFunctionInitDelegate(void* target, long memPtr);
-        private delegate void AffinityFunctionResetDelegate(void* target, long ptr);
         private delegate int AffinityFunctionPartitionDelegate(void* target, long ptr, long memPtr);
         private delegate void AffinityFunctionAssignPartitionsDelegate(void* target, long ptr, long inMemPtr, long outMemPtr);
         private delegate void AffinityFunctionRemoveNodeDelegate(void* target, long ptr, long memPtr);
@@ -259,7 +258,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 ocClientReconnected = CreateFunctionPointer((OnClientReconnectedDelegate)OnClientReconnected),
 
                 affinityFunctionInit = CreateFunctionPointer((AffinityFunctionInitDelegate)AffinityFunctionInit),
-                affinityFunctionReset = CreateFunctionPointer((AffinityFunctionResetDelegate)AffinityFunctionReset),
                 affinityFunctionPartition = CreateFunctionPointer((AffinityFunctionPartitionDelegate)AffinityFunctionPartition),
                 affinityFunctionAssignPartitions = CreateFunctionPointer((AffinityFunctionAssignPartitionsDelegate)AffinityFunctionAssignPartitions),
                 affinityFunctionRemoveNode = CreateFunctionPointer((AffinityFunctionRemoveNodeDelegate)AffinityFunctionRemoveNode),
@@ -1119,14 +1117,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                     return _handleRegistry.Allocate(func);
                 }
-            });
-        }
-
-        private void AffinityFunctionReset(void* target, long ptr)
-        {
-            SafeCall(() =>
-            {
-                _handleRegistry.Get<IAffinityFunction>(ptr, true).Reset();
             });
         }
 
