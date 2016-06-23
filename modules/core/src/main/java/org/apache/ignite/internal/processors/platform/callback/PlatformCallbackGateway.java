@@ -1041,7 +1041,8 @@ public class PlatformCallbackGateway {
      * @param ptr Affinity function pointer.
      */
     public void affinityFunctionDestroy(long ptr) {
-        enter();
+        if (!lock.enterBusy())
+            return;  // skip: destroy is not necessary during shutdown.
 
         try {
             PlatformCallbackUtils.affinityFunctionDestroy(envPtr, ptr);
