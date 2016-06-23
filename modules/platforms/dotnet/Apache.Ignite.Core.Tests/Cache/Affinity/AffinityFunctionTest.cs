@@ -143,7 +143,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         private class SimpleAffinityFunction : IAffinityFunction
         {
             #pragma warning disable 649  // field is never assigned
-            [InstanceResource] public readonly IIgnite Ignite;
+            [InstanceResource] private readonly IIgnite _ignite;
 
             public int Partitions
             {
@@ -152,9 +152,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
             public int GetPartition(object key)
             {
-                Assert.IsNotNull(Ignite);
+                Assert.IsNotNull(_ignite);
 
-                return ((int) key) % Partitions;
+                return (int) key % Partitions;
             }
 
             public void RemoveNode(Guid nodeId)
@@ -164,7 +164,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
             public IEnumerable<IEnumerable<IClusterNode>> AssignPartitions(IAffinityFunctionContext context)
             {
-                Assert.IsNotNull(Ignite);
+                Assert.IsNotNull(_ignite);
 
                 // All partitions are the same
                 return Enumerable.Range(0, Partitions).Select(x => context.CurrentTopologySnapshot);
