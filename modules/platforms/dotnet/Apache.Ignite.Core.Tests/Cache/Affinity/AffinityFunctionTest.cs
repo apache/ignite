@@ -152,8 +152,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             }
 
             // Called on both nodes
-            TestUtils.WaitForCondition(() => _removedNodes.Count == 2, 3000);
-            Assert.AreEqual(new[] {expectedNodeId, expectedNodeId}, _removedNodes.ToArray());
+            TestUtils.WaitForCondition(() => _removedNodes.Count > 0, 3000);
+            Assert.AreEqual(expectedNodeId, _removedNodes.Distinct().Single());
         }
 
         /// <summary>
@@ -184,30 +184,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
             var ex = Assert.Throws<CacheException>(() => cache.Put(1, 2));
             Assert.AreEqual("User error", ex.InnerException.Message);
-        }
-
-        /// <summary>
-        /// Tests invalid partition assignment.
-        /// </summary>
-        [Test]
-        public void TestInvalidAssignment()
-        {
-            //_ignite.CreateCache<int, int>(new CacheConfiguration("failCache")
-            //{
-            //    AffinityFunction = new NonSerializableAffinityFunction()
-            //});
-        }
-
-        /// <summary>
-        /// Tests invalid return of GetPartition.
-        /// </summary>
-        [Test]
-        public void TestInvalidGetPatition()
-        {
-            //_ignite.CreateCache<int, int>(new CacheConfiguration("failCache")
-            //{
-            //    AffinityFunction = new NonSerializableAffinityFunction()
-            //});
         }
 
         [Serializable]
