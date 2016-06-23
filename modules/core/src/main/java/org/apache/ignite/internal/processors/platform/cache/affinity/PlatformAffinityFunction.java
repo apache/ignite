@@ -56,6 +56,9 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
     private int partitions;
 
     /** */
+    private transient Ignite ignite;
+
+    /** */
     private transient PlatformContext ctx;
 
     /** */
@@ -199,6 +202,8 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
+        assert ignite != null;
+        ctx = PlatformUtils.platformContext(ignite);
         assert ctx != null;
 
         try (PlatformMemory mem = ctx.memory().allocate()) {
@@ -225,6 +230,6 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
      */
     @IgniteInstanceResource
     private void setIgnite(Ignite ignite) {
-        ctx = PlatformUtils.platformContext(ignite);
+        this.ignite = ignite;
     }
 }
