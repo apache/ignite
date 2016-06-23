@@ -27,11 +27,11 @@
 #include "ignite/binary/binary_raw_writer.h"
 
 namespace ignite
-{
+{    
     namespace cache
     {
         namespace query
-        {
+        {            
             /**
              * Base class for all query arguments.
              */
@@ -49,24 +49,18 @@ namespace ignite
                 /**
                  * Copy argument. 
                  *
-                 * @return Copy of this argument instance.
+                 * @return Copy.
                  */
                 virtual QueryArgumentBase* Copy() const = 0;
 
                 /**
-                 * Write argument using provided writer.
-                 *
-                 * @param writer Writer to use to write this argument.
+                 * Write argument.
                  */
                 virtual void Write(ignite::binary::BinaryRawWriter& writer) = 0;
             };
 
             /**
-             * Query argument class template.
-             *
-             * Template argument type should be copy-constructable and
-             * assignable. Also BinaryType class template should be specialized
-             * for this type.
+             * Query argument.
              */
             template<typename T>
             class QueryArgument : public QueryArgumentBase
@@ -77,8 +71,7 @@ namespace ignite
                  *
                  * @param val Value.
                  */
-                QueryArgument(const T& val) :
-                    val(val)
+                QueryArgument(const T& val) : val(val)
                 {
                     // No-op.
                 }
@@ -88,22 +81,26 @@ namespace ignite
                  *
                  * @param other Other instance.
                  */
-                QueryArgument(const QueryArgument& other) :
-                    val(other.val)
+                QueryArgument(const QueryArgument& other)
                 {
-                    // No-op.
+                    val = other.val;
                 }
 
                 /**
                  * Assignment operator.
                  *
                  * @param other Other instance.
-                 * @return *this.
                  */
                 QueryArgument& operator=(const QueryArgument& other) 
                 {
                     if (this != &other)
-                        val = other.val;
+                    {
+                        QueryArgument tmp(other);
+
+                        T val0 = val;
+                        val = tmp.val;
+                        tmp.val = val0;
+                    }
 
                     return *this;
                 }

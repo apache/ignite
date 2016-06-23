@@ -32,15 +32,13 @@ namespace ignite
     namespace transactions
     {
         /**
-         * %Transaction metrics, shared across all caches.
+         * Transaction metrics.
          */
         class IGNITE_IMPORT_EXPORT TransactionMetrics
         {
         public:
             /**
              * Default constructor.
-             *
-             * Constructed instance is not valid.
              */
             TransactionMetrics() :
                 valid(false),
@@ -73,8 +71,6 @@ namespace ignite
 
             /**
              * Copy constructor.
-             *
-             * @param other Another instance.
              */
             TransactionMetrics(const TransactionMetrics& other) :
                 valid(other.valid),
@@ -88,9 +84,6 @@ namespace ignite
 
             /**
              * Assignment operator.
-             *
-             * @param other Another instance.
-             * @return @c *this.
              */
             TransactionMetrics& operator=(const TransactionMetrics& other)
             {
@@ -112,7 +105,7 @@ namespace ignite
             {
                 return commitTime;
             }
-
+            
             /**
              * Get rollback time.
              *
@@ -152,7 +145,7 @@ namespace ignite
              * in case of error. Invalid instances also often can be
              * created using default constructor.
              *
-             * @return @c true if the instance contains valid data.
+             * @return True if the instance contains valid data.
              */
             bool IsValid() const
             {

@@ -37,51 +37,37 @@ namespace ignite
     {
         /**
          * Binary string array writer.
-         *
-         * Can be used to write array of strings one by one.
-         *
-         * Use Write() method to write array string by string, then finilize
-         * the writing by calling Close() method. Once the Close() method have
-         * been called, instance is not usable and will throw an IgniteError
-         * on any subsequent attempt to use it.
          */
         class IGNITE_IMPORT_EXPORT BinaryStringArrayWriter
         {
         public:
             /**
              * Constructor.
-             * Internal call. Should not be used by user.
-             *
-             * @param impl Writer implementation.
+             * 
              * @param id Identifier.
+             * @param impl Writer.
              */
             BinaryStringArrayWriter(impl::binary::BinaryWriterImpl* impl, int32_t id);
 
             /**
-             * Write null-terminated string.
+             * Write string.
              *
-             * @param val Null-terminated character sequence to write.
-             *
-             * @throw IgniteError if the writer instance is closed already.
+             * @param val Null-terminated character sequence.
              */
             void Write(const char* val);
 
             /**
              * Write string.
              *
-             * @param val String to write.
-             * @param len String length in bytes.
-             *
-             * @throw IgniteError if the writer instance is closed already.
+             * @param val String.
+             * @param len String length (characters).
              */
             void Write(const char* val, int32_t len);
 
             /**
              * Write string.
              *
-             * @param val String to write.
-             *
-             * @throw IgniteError if the writer instance is closed already.
+             * @param val String.
              */
             void Write(const std::string& val)
             {
@@ -90,32 +76,18 @@ namespace ignite
 
             /**
              * Close the writer.
-             *
-             * This method should be called to finilize writing
-             * of the array.
-             *
-             * @throw IgniteError if the writer instance is closed already.
              */
             void Close();
-
         private:
             /** Implementation delegate. */
             impl::binary::BinaryWriterImpl* impl; 
 
-            /** Identifier. */
+            /** Idnetifier. */
             const int32_t id;    
         };
 
         /**
-         * Binary array writer.
-         *
-         * Can be used to write array of values of the specific type one by
-         * one.
-         *
-         * Use Write() method to write array value by value, then finilize
-         * the writing by calling Close() method. Once the Close() method have
-         * been called, instance is not usable and will throw an IgniteError
-         * on any subsequent attempt to use it.
+         * Binary collection writer.
          */
         template<typename T>
         class IGNITE_IMPORT_EXPORT BinaryArrayWriter
@@ -123,13 +95,11 @@ namespace ignite
         public:
             /**
              * Constructor.
-             * Internal call. Should not be used by user.
              *
-             * @param impl Writer implementation.
+             * @param impl Writer.
              * @param id Identifier.
              */
-            BinaryArrayWriter(impl::binary::BinaryWriterImpl* impl, int32_t id) :
-                impl(impl), id(id)
+            BinaryArrayWriter(impl::binary::BinaryWriterImpl* impl, int32_t id) : impl(impl), id(id)
             {
                 // No-op.
             }
@@ -137,9 +107,7 @@ namespace ignite
             /**
              * Write a value.
              *
-             * @param val Value to write.
-             *
-             * @throw IgniteError if the writer instance is closed already.
+             * @param val Value.
              */
             void Write(const T& val)
             {
@@ -148,17 +116,11 @@ namespace ignite
 
             /**
              * Close the writer.
-             *
-             * This method should be called to finilize writing
-             * of the array.
-             *
-             * @throw IgniteError if the writer instance is closed already.
              */
             void Close()
             {
                 impl->CommitContainer(id);
             }
-
         private:
             /** Implementation delegate. */
             impl::binary::BinaryWriterImpl* impl; 
@@ -169,14 +131,6 @@ namespace ignite
 
         /**
          * Binary collection writer.
-         *
-         * Can be used to write collection of values of the specific type one by
-         * one.
-         *
-         * Use Write() method to write collection value by value, then finilize
-         * the writing by calling Close() method. Once the Close() method have
-         * been called, instance is not usable and will throw an IgniteError
-         * on any subsequent attempt to use it.
          */
         template<typename T>
         class IGNITE_IMPORT_EXPORT BinaryCollectionWriter
@@ -184,13 +138,11 @@ namespace ignite
         public:
             /**
              * Constructor.
-             * Internal call. Should not be used by user.
              *
-             * @param impl Writer implementation.
+             * @param impl Writer.
              * @param id Identifier.
              */
-            BinaryCollectionWriter(impl::binary::BinaryWriterImpl* impl, int32_t id) :
-                impl(impl), id(id)
+            BinaryCollectionWriter(impl::binary::BinaryWriterImpl* impl, int32_t id) : impl(impl), id(id)
             {
                 // No-op.
             }
@@ -198,9 +150,7 @@ namespace ignite
             /**
              * Write a value.
              *
-             * @param val Value to write.
-             *
-             * @throw IgniteError if the writer instance is closed already.
+             * @param val Value.
              */
             void Write(const T& val)
             {
@@ -209,11 +159,6 @@ namespace ignite
 
             /**
              * Close the writer.
-             *
-             * This method should be called to finilize writing
-             * of the collection.
-             *
-             * @throw IgniteError if the writer instance is closed already.
              */
             void Close()
             {
@@ -229,13 +174,6 @@ namespace ignite
 
         /**
          * Binary map writer.
-         *
-         * Can be used to write map element by element.
-         *
-         * Use Write() method to write map value by value, then finilize
-         * the writing by calling Close() method. Once the Close() method have
-         * been called, instance is not usable and will throw an IgniteError
-         * on any subsequent attempt to use it.
          */
         template<typename K, typename V>
         class IGNITE_IMPORT_EXPORT BinaryMapWriter
@@ -243,24 +181,19 @@ namespace ignite
         public:
             /**
              * Constructor.
-             * Internal call. Should not be used by user.
              *
-             * @param impl Writer implementation.
-             * @param id Identifier.
+             * @param impl Writer.
              */
-            BinaryMapWriter(impl::binary::BinaryWriterImpl* impl, int32_t id) :
-                impl(impl), id(id)
+            BinaryMapWriter(impl::binary::BinaryWriterImpl* impl, int32_t id) : impl(impl), id(id)
             {
                 // No-op.
             }
 
             /**
-             * Write a map entry.
+             * Write a value.
              *
-             * @param key Key element of the map entry.
-             * @param val Value element of the map entry.
-             *
-             * @throw IgniteError if the writer instance is closed already.
+             * @param key Key.
+             * @param val Value.
              */
             void Write(const K& key, const V& val)
             {
@@ -269,10 +202,6 @@ namespace ignite
 
             /**
              * Close the writer.
-             *
-             * This method should be called to finilize writing of the map.
-             *
-             * @throw IgniteError if the writer instance is closed already.
              */
             void Close()
             {
@@ -288,20 +217,14 @@ namespace ignite
 
         /**
          * Binary string array reader.
-         *
-         * Can be used to read array of strings string by string.
-         *
-         * Use GetNext() method to read array value by value while HasNext()
-         * method returns true.
          */
         class IGNITE_IMPORT_EXPORT BinaryStringArrayReader
         {
         public:
             /**
              * Constructor.
-             * Internal call. Should not be used by user.
              *
-             * @param impl Reader implementation.
+             * @param impl Reader.
              * @param id Identifier.
              * @param size Array size.
              */
@@ -317,24 +240,20 @@ namespace ignite
             /**
              * Get next element.
              *
-             * @param res Buffer to store data to. 
+             * @param res Array to store data to. 
              * @param len Expected length of string. NULL terminator will be set in case len is 
              *     greater than real string length.
              * @return Actual amount of elements read. If "len" argument is less than actual
              *     array size or resulting array is set to null, nothing will be written
              *     to resulting array and returned value will contain required array length.
              *     -1 will be returned in case array in stream was null.
-             *
-             * @throw IgniteError if there is no element to read.
              */
             int32_t GetNext(char* res, int32_t len);
 
             /**
              * Get next element.
              *
-             * @return String.
-             *
-             * @throw IgniteError if there is no element to read.
+             * @return String. 
              */
             std::string GetNext()
             {
@@ -360,30 +279,22 @@ namespace ignite
             int32_t GetSize() const;
 
             /**
-             * Check whether array is NULL.
-             *
-             * @return True if the array is NULL.
+             * Whether array is NULL.
              */
             bool IsNull() const;
-
         private:
             /** Implementation delegate. */
             impl::binary::BinaryReaderImpl* impl;  
 
             /** Identifier. */
-            const int32_t id;
+            const int32_t id;    
 
             /** Size. */
-            const int32_t size;
+            const int32_t size;                              
         };
 
         /**
          * Binary array reader.
-         *
-         * Can be used to read array of values of the specific type one by one.
-         *
-         * Use GetNext() method to read array value by value while HasNext()
-         * method returns true.
          */
         template<typename T>
         class BinaryArrayReader
@@ -391,9 +302,8 @@ namespace ignite
         public:
             /**
              * Constructor.
-             * Internal call. Should not be used by user.
              *
-             * @param impl Reader implementation.
+             * @param impl Reader.
              * @param id Identifier.
              * @param size Array size.
              */
@@ -417,8 +327,6 @@ namespace ignite
              * Read next element.
              *
              * @return Next element.
-             *
-             * @throw IgniteError if there is no element to read.
              */
             T GetNext()
             {
@@ -436,9 +344,7 @@ namespace ignite
             }
 
             /**
-             * Check whether array is NULL.
-             *
-             * @return True if the array is NULL.
+             * Whether array is NULL.
              */
             bool IsNull()
             {
@@ -457,12 +363,6 @@ namespace ignite
 
         /**
          * Binary collection reader.
-         *
-         * Can be used to read collection of values of the specific type
-         * one by one.
-         *
-         * Use GetNext() method to read array value by value while HasNext()
-         * method returns true.
          */
         template<typename T>
         class BinaryCollectionReader
@@ -470,9 +370,8 @@ namespace ignite
         public:
             /**
              * Constructor.
-             * Internal call. Should not be used by user.
              *
-             * @param impl Reader implementation.
+             * @param impl Reader.
              * @param id Identifier.
              * @param type Collection type.
              * @param size Collection size.
@@ -497,8 +396,6 @@ namespace ignite
              * Read next element.
              *
              * @return Next element.
-             *
-             * @throw IgniteError if there is no element to read.
              */
             T GetNext()
             {
@@ -508,8 +405,7 @@ namespace ignite
             /**
              * Get collection type.
              *
-             * @return Collection type. See CollectionType for the list of
-             *     available values and their description.
+             * @return Type.
              */
             CollectionType GetType()
             {
@@ -527,9 +423,7 @@ namespace ignite
             }
 
             /**
-             * Check whether collection is NULL.
-             *
-             * @return True if the collection is NULL.
+             * Whether collection is NULL.
              */
             bool IsNull()
             {
@@ -551,11 +445,6 @@ namespace ignite
 
         /**
          * Binary map reader.
-         *
-         * Can be used to read map entry by entry.
-         *
-         * Use GetNext() method to read array value by value while HasNext()
-         * method returns true.
          */
         template<typename K, typename V>
         class BinaryMapReader
@@ -563,9 +452,8 @@ namespace ignite
         public:
             /**
              * Constructor.
-             * Internal call. Should not be used by user.
              *
-             * @param impl Reader implementation.
+             * @param impl Reader.
              * @param id Identifier.
              * @param type Map type.
              * @param size Map size.
@@ -589,12 +477,8 @@ namespace ignite
             /**
              * Read next element.
              *
-             * @param key Pointer to buffer where key element should be stored.
-             *     Should not be null.
-             * @param val Pointer to buffer where value element should be
-             *     stored. Should not be null.
-             *
-             * @throw IgniteError if there is no element to read.
+             * @param key Key.
+             * @param val Value.
              */
             void GetNext(K* key, V* val)
             {
@@ -604,8 +488,7 @@ namespace ignite
             /**
              * Get map type.
              *
-             * @return Map type. See MapType for the list of available values
-             *     and their description.
+             * @return Type.
              */
             MapType GetType()
             {
@@ -623,9 +506,7 @@ namespace ignite
             }
 
             /**
-             * Check whether map is NULL.
-             *
-             * @return True if the map is NULL.
+             * Whether map is NULL.
              */
             bool IsNull()
             {

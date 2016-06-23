@@ -41,11 +41,6 @@ namespace ignite
         {
             /**
              * Query fields cursor.
-             *
-             * This class implemented as a reference to an implementation so copying
-             * of this class instance will only create another reference to the same
-             * underlying object. Underlying object released automatically once all
-             * the instances are destructed.
              */
             class QueryFieldsCursor
             {
@@ -75,12 +70,11 @@ namespace ignite
                 
                 /**
                  * Check whether next entry exists.
+                 * Throws IgniteError class instance in case of failure.
                  *
                  * This method should only be used on the valid instance.
                  *
                  * @return True if next entry exists.
-                 *
-                 * @throw IgniteError class instance in case of failure.
                  */
                 bool HasNext()
                 {
@@ -120,12 +114,11 @@ namespace ignite
 
                 /**
                  * Get next entry.
+                 * Throws IgniteError class instance in case of failure.
                  *
                  * This method should only be used on the valid instance.
                  *
                  * @return Next entry.
-                 *
-                 * @throw IgniteError class instance in case of failure.
                  */
                 QueryFieldsRow GetNext()
                 {

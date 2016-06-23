@@ -31,12 +31,7 @@
 namespace ignite
 {
     /**
-     * Main interface to operate with %Ignite.
-     *
-     * This class implemented as a reference to an implementation so copying
-     * of this class instance will only create another reference to the same
-     * underlying object. Underlying object released automatically once all
-     * the instances are destructed.
+     * Main interface to operate with Ignite.
      */
     class IGNITE_IMPORT_EXPORT Ignite
     {
@@ -62,8 +57,6 @@ namespace ignite
         /**
          * Get cache.
          *
-         * This method should only be used on the valid instance.
-         *
          * @param name Cache name.
          * @return Cache.
          */
@@ -82,8 +75,6 @@ namespace ignite
         /**
          * Get cache.
          *
-         * This method should only be used on the valid instance.
-         *
          * @param name Cache name.
          * @param err Error;
          * @return Cache.
@@ -98,8 +89,6 @@ namespace ignite
 
         /**
          * Get or create cache.
-         *
-         * This method should only be used on the valid instance.
          *
          * @param name Cache name.
          * @return Cache.
@@ -119,8 +108,6 @@ namespace ignite
         /**
          * Get or create cache.
          *
-         * This method should only be used on the valid instance.
-         *
          * @param name Cache name.
          * @param err Error;
          * @return Cache.
@@ -135,8 +122,6 @@ namespace ignite
 
         /**
          * Create cache.
-         *
-         * This method should only be used on the valid instance.
          *
          * @param name Cache name.
          * @return Cache.
@@ -156,8 +141,6 @@ namespace ignite
         /**
          * Create cache.
          *
-         * This method should only be used on the valid instance.
-         *
          * @param name Cache name.
          * @param err Error;
          * @return Cache.
@@ -172,8 +155,6 @@ namespace ignite
 
         /**
          * Get transactions.
-         *
-         * This method should only be used on the valid instance.
          *
          * @return Transaction class instance.
          */

@@ -40,11 +40,6 @@ namespace ignite
         {
             /**
              * Query fields cursor.
-             *
-             * This class implemented as a reference to an implementation so copying
-             * of this class instance will only create another reference to the same
-             * underlying object. Underlying object released automatically once all
-             * the instances are destructed.
              */
             class QueryFieldsRow
             {
@@ -52,7 +47,8 @@ namespace ignite
                 /**
                  * Default constructor.
                  *
-                 * Constructed instance is not valid and thus can not be used.
+                 * Constructed instance is not valid and thus can not be used
+                 * as a cursor.
                  */
                 QueryFieldsRow() : impl(0)
                 {
@@ -73,12 +69,11 @@ namespace ignite
 
                 /**
                  * Check whether next entry exists.
+                 * Throws IgniteError class instance in case of failure.
                  *
                  * This method should only be used on the valid instance.
                  *
                  * @return True if next entry exists.
-                 *
-                 * @throw IgniteError class instance in case of failure.
                  */
                 bool HasNext()
                 {
@@ -118,16 +113,11 @@ namespace ignite
 
                 /**
                  * Get next entry.
-                 *
-                 * Template argument type should be default-constructable,
-                 * copy-constructable and assignable. Also BinaryType class
-                 * template should be specialized for this type.
+                 * Throws IgniteError class instance in case of failure.
                  *
                  * This method should only be used on the valid instance.
                  *
                  * @return Next entry.
-                 *
-                 * @throw IgniteError class instance in case of failure.
                  */
                 template<typename T>
                 T GetNext()
@@ -144,10 +134,6 @@ namespace ignite
                 /**
                  * Get next entry.
                  * Properly sets error param in case of failure.
-                 *
-                 * Template argument type should be default-constructable,
-                 * copy-constructable and assignable. Also BinaryType class
-                 * template should be specialized for this type.
                  *
                  * This method should only be used on the valid instance.
                  *

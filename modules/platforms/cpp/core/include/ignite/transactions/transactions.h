@@ -35,22 +35,13 @@ namespace ignite
     namespace transactions
     {
         /**
-         * %Transactions facade.
-         *
-         * This class implemented as a reference to an implementation so copying
-         * of this class instance will only create another reference to the same
-         * underlying object. Underlying object released automatically once all
-         * the instances are destructed.
+         * Transactions.
          */
         class IGNITE_FRIEND_EXPORT Transactions
         {
         public:
             /**
              * Constructor.
-             *
-             * Internal method. Should not be used by user.
-             *
-             * @param impl Implementation.
              */
             Transactions(ignite::common::concurrent::SharedPointer<impl::transactions::TransactionsImpl> impl);
 
@@ -84,16 +75,14 @@ namespace ignite
             Transaction GetTx();
 
             /**
-             * Start new transaction with default isolation, concurrency
-             * and timeout.
+             * Start new transaction.
              *
              * @return New transaction instance.
              */
             Transaction TxStart();
 
             /**
-             * Start new transaction with default isolation, concurrency
-             * and timeout.
+             * Start new transaction.
              *
              * @param err Error.
              * @return New transaction instance.
@@ -101,8 +90,7 @@ namespace ignite
             Transaction TxStart(IgniteError& err);
 
             /**
-             * Starts new transaction with the specified concurrency and
-             * isolation.
+             * Start new transaction.
              *
              * @param concurrency Concurrency.
              * @param isolation Isolation.
@@ -112,8 +100,7 @@ namespace ignite
                 TransactionIsolation isolation);
 
             /**
-             * Starts new transaction with the specified concurrency and
-             * isolation.
+             * Start new transaction.
              *
              * @param concurrency Concurrency.
              * @param isolation Isolation.
@@ -124,14 +111,12 @@ namespace ignite
                 TransactionIsolation isolation, IgniteError& err);
 
             /**
-             * Starts transaction with specified isolation, concurrency,
-             * timeout, and number of participating entries.
+             * Start new transaction.
              *
              * @param concurrency Concurrency.
              * @param isolation Isolation.
              * @param timeout Timeout. Zero if for infinite timeout.
-             * @param txSize Number of entries participating in transaction
-             *     (may be approximate).
+             * @param txSize Number of entries participating in transaction (may be approximate).
              * @return New transaction instance.
              */
             Transaction TxStart(TransactionConcurrency concurrency,
@@ -144,8 +129,7 @@ namespace ignite
              * @param concurrency Concurrency.
              * @param isolation Isolation.
              * @param timeout Timeout. Zero if for infinite timeout.
-             * @param txSize Number of entries participating in transaction
-             *     (may be approximate).
+             * @param txSize Number of entries participating in transaction (may be approximate).
              * @param err Error.
              * @return New transaction instance.
              */
@@ -154,14 +138,14 @@ namespace ignite
                 int32_t txSize, IgniteError& err);
 
             /**
-             * Get transaction metrics.
+             * Get metrics.
              *
              * @return Metrics instance.
              */
             TransactionMetrics GetMetrics();
 
             /**
-             * Get transaction metrics.
+             * Get metrics.
              *
              * @param err Error.
              * @return Metrics instance.

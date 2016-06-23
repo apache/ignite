@@ -76,7 +76,7 @@ namespace ignite
 {
     namespace java
     {
-        /* JNI error constants. */
+        /* Error constants. */
         const int IGNITE_JNI_ERR_SUCCESS = 0;
         const int IGNITE_JNI_ERR_GENERIC = 1;
         const int IGNITE_JNI_ERR_JVM_INIT = 2;
@@ -84,7 +84,7 @@ namespace ignite
     }
 
     /**
-     * %Ignite error information.
+     * Ignite error information.
      */
     class IGNITE_IMPORT_EXPORT IgniteError : public std::exception
     {
@@ -119,7 +119,7 @@ namespace ignite
         /** Binary error. */
         static const int IGNITE_ERR_BINARY = 1002;
 
-        /** Generic %Ignite error. */
+        /** Generic Ignite error. */
         static const int IGNITE_ERR_GENERIC = 2000;
 
         /** Illegal argument passed. */
@@ -202,13 +202,12 @@ namespace ignite
         static void ThrowIfNeeded(IgniteError& err);
 
         /**
-         * Default constructor.
-         * Creates empty error. Code is IGNITE_SUCCESS and message is NULL.
+         * Create empty error.
          */
         IgniteError();
 
         /**
-         * Create error with specific code. Message is set to NULL.
+         * Create error with specific code.
          *
          * @param code Error code.
          */
@@ -233,7 +232,7 @@ namespace ignite
          * Assignment operator.
          *
          * @param other Other instance.
-         * @return *this.
+         * @return Assignment result.
          */
         IgniteError& operator=(const IgniteError& other);
 
@@ -252,7 +251,7 @@ namespace ignite
         /**
          * Get error message.
          *
-         * @return Error message. Can be NULL.
+         * @return Error message.
          */
         const char* GetText() const IGNITE_NO_THROW;
 
@@ -265,12 +264,12 @@ namespace ignite
         virtual const char* what() const IGNITE_NO_THROW;
 
         /**
-         * Initializes IgniteError instance from the JNI error.
+         * Set error.
          *
          * @param jniCode Error code.
          * @param jniCls Error class.
          * @param jniMsg Error message.
-         * @param err Error. Can not be NULL.
+         * @param err Error.
          */
         static void SetError(const int jniCode, const char* jniCls, const char* jniMsg, IgniteError* err);
     private:
