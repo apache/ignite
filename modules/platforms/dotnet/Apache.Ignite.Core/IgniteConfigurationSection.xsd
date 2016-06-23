@@ -33,7 +33,7 @@
                             <xs:element name="typeConfigurations" minOccurs="0">
                                 <xs:complexType>
                                     <xs:sequence>
-                                        <xs:element name="binaryTypeConfiguration">
+                                        <xs:element name="binaryTypeConfiguration" maxOccurs="unbounded">
                                             <xs:complexType>
                                                 <xs:all>
                                                     <xs:element name="nameMapper" minOccurs="0">

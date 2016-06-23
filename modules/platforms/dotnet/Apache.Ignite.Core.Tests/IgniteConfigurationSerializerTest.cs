@@ -365,6 +365,14 @@ namespace Apache.Ignite.Core.Tests
                             IdMapper = new IdMapper(),
                             NameMapper = new NameMapper(),
                             Serializer = new TestSerializer()
+                        },
+                        new BinaryTypeConfiguration
+                        {
+                            IsEnum = false,
+                            KeepDeserialized = false,
+                            AffinityKeyFieldName = "affKeyFieldName",
+                            TypeName = "typeName2",
+                            Serializer = new BinaryReflectiveSerializer()
                         }
                     },
                     Types = new[] {typeof (string).FullName},
