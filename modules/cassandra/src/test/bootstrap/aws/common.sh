@@ -241,7 +241,7 @@ createTag()
 {
     for i in 0 9;
     do
-        ec2-create-tags $1 --tag $2=$3 --region $EC2_INSTANCE_REGION
+        aws ec2 create-tags --resources $1 --tags Key=$2,Value=$3 --region $EC2_INSTANCE_REGION
         if [ $? -eq 0 ]; then
             return 0
         fi
