@@ -203,7 +203,10 @@ class ServerImpl extends TcpDiscoveryImpl {
     private StatisticsPrinter statsPrinter;
 
     /** Failed nodes (but still in topology). */
-    private final Collection<TcpDiscoveryNode> failedNodes = new HashSet<>();
+    private final Map<TcpDiscoveryNode, UUID> failedNodes = new HashMap<>();
+
+    /** */
+    private final Collection<UUID> failedNodesMsgSent = new HashSet<>();
 
     /** Leaving nodes (but still in topology). */
     private final Collection<TcpDiscoveryNode> leavingNodes = new HashSet<>();
@@ -779,7 +782,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         if (nodeAlive) {
             synchronized (mux) {
-                nodeAlive = !F.transform(failedNodes, F.node2id()).contains(nodeId) &&
+                nodeAlive = !F.transform(failedNodes.keySet(), F.node2id()).contains(nodeId) &&
                     !F.transform(leavingNodes, F.node2id()).contains(nodeId);
             }
         }
@@ -1104,7 +1107,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     boolean ignore = false;
 
                     synchronized (failedNodes) {
-                        for (TcpDiscoveryNode failedNode : failedNodes) {
+                        for (TcpDiscoveryNode failedNode : failedNodes.keySet()) {
                             if (failedNode.id().equals(res.creatorNodeId())) {
                                 if (log.isDebugEnabled())
                                     log.debug("Ignore response from node from failed list: " + res);
@@ -1371,7 +1374,7 @@ class ServerImpl extends TcpDiscoveryImpl {
     @Nullable private TcpDiscoveryNode resolveCoordinator(
         @Nullable Collection<TcpDiscoveryNode> filter) {
         synchronized (mux) {
-            Collection<TcpDiscoveryNode> excluded = F.concat(false, failedNodes, leavingNodes);
+            Collection<TcpDiscoveryNode> excluded = F.concat(false, failedNodes.keySet(), leavingNodes);
 
             if (!F.isEmpty(filter))
                 excluded = F.concat(false, excluded, filter);
@@ -1526,7 +1529,7 @@ class ServerImpl extends TcpDiscoveryImpl {
         TcpDiscoveryNode next;
 
         synchronized (mux) {
-            next = ring.nextNode(failedNodes);
+            next = ring.nextNode(failedNodes.keySet());
         }
 
         if (next != null)
@@ -1597,7 +1600,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
             b.append("Failed nodes: ").append(U.nl());
 
-            for (TcpDiscoveryNode node : failedNodes)
+            for (TcpDiscoveryNode node : failedNodes.keySet())
                 b.append("    ").append(node.id()).append(U.nl());
 
             b.append(U.nl());
@@ -1792,10 +1795,14 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 if (failedNode != null) {
                     if (!failedNode.isLocal()) {
-                        boolean added;
+                        boolean added = false;
 
                         synchronized (mux) {
-                            added = failedNodes.add(failedNode);
+                            if (!failedNodes.containsKey(failedNode)) {
+                                failedNodes.put(failedNode, msg.senderNodeId() != null ? msg.senderNodeId() : getLocalNodeId());
+
+                                added = true;
+                            }
                         }
 
                         if (added && log.isDebugEnabled())
@@ -2403,7 +2410,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             TcpDiscoverySpiState state;
 
             synchronized (mux) {
-                failedNodes = U.arrayList(ServerImpl.this.failedNodes);
+                failedNodes = U.arrayList(ServerImpl.this.failedNodes.keySet());
 
                 state = spiState;
             }
@@ -2818,7 +2825,7 @@ class ServerImpl extends TcpDiscoveryImpl {
             }
 
             synchronized (mux) {
-                failedNodes.removeAll(ServerImpl.this.failedNodes);
+                failedNodes.removeAll(ServerImpl.this.failedNodes.keySet());
             }
 
             if (!failedNodes.isEmpty()) {
@@ -2832,7 +2839,13 @@ class ServerImpl extends TcpDiscoveryImpl {
                 }
 
                 synchronized (mux) {
-                    ServerImpl.this.failedNodes.addAll(failedNodes);
+                    for (TcpDiscoveryNode failedNode : failedNodes) {
+                        if (!ServerImpl.this.failedNodes.containsKey(failedNode))
+                            ServerImpl.this.failedNodes.put(failedNode, locNodeId);
+                    }
+
+                    for (TcpDiscoveryNode failedNode : failedNodes)
+                        failedNodesMsgSent.add(failedNode.id());
                 }
 
                 for (TcpDiscoveryNode n : failedNodes)
@@ -4214,6 +4227,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     failedNodes.remove(leftNode);
 
                     leavingNodes.remove(leftNode);
+
+                    failedNodesMsgSent.remove(leftNode.id());
                 }
             }
 
@@ -4273,7 +4288,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                     boolean contains;
 
                     synchronized (mux) {
-                        contains = failedNodes.contains(sndNode);
+                        contains = failedNodes.containsKey(sndNode);
                     }
 
                     if (contains) {
@@ -4302,7 +4317,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                 assert !node.isLocal() || !msg.verified() : msg;
 
                 synchronized (mux) {
-                    failedNodes.add(node);
+                    if (!failedNodes.containsKey(node))
+                        failedNodes.put(node, msg.senderNodeId() != null ? msg.senderNodeId() : getLocalNodeId());
                 }
             }
             else {
@@ -4362,6 +4378,8 @@ class ServerImpl extends TcpDiscoveryImpl {
                     failedNodes.remove(node);
 
                     leavingNodes.remove(node);
+
+                    failedNodesMsgSent.remove(node.id());
 
                     ClientMessageWorker worker = clientMsgWorkers.remove(node.id());
 
@@ -4638,7 +4656,7 @@ class ServerImpl extends TcpDiscoveryImpl {
                                     boolean failedNode;
 
                                     synchronized (mux) {
-                                        failedNode = failedNodes.contains(clientNode);
+                                        failedNode = failedNodes.containsKey(clientNode);
                                     }
 
                                     if (!failedNode) {
@@ -4873,23 +4891,43 @@ class ServerImpl extends TcpDiscoveryImpl {
 
         /**
          * Checks failed nodes list and sends {@link TcpDiscoveryNodeFailedMessage} if failed node is still in the
-         * ring.
+         * ring and node detected failure left ring.
          */
         private void checkFailedNodesList() {
             List<TcpDiscoveryNodeFailedMessage> msgs = null;
 
             synchronized (mux) {
-                for (Iterator<TcpDiscoveryNode> it = failedNodes.iterator(); it.hasNext(); ) {
-                    TcpDiscoveryNode node = it.next();
+                if (!failedNodes.isEmpty()) {
+                    for (Iterator<Map.Entry<TcpDiscoveryNode, UUID>> it = failedNodes.entrySet().iterator(); it.hasNext(); ) {
+                        Map.Entry<TcpDiscoveryNode, UUID> e = it.next();
 
-                    if (ring.node(node.id()) != null) {
-                        if (msgs == null)
-                            msgs = new ArrayList<>(failedNodes.size());
+                        TcpDiscoveryNode node = e.getKey();
+                        UUID failSndNode = e.getValue();
 
-                        msgs.add(new TcpDiscoveryNodeFailedMessage(getLocalNodeId(), node.id(), node.internalOrder()));
+                        if (ring.node(node.id()) == null) {
+                            it.remove();
+
+                            continue;
+                        }
+
+                        if (!nodeAlive(failSndNode) && !failedNodesMsgSent.contains(node.id())) {
+                            if (msgs == null)
+                                msgs = new ArrayList<>();
+
+                            msgs.add(new TcpDiscoveryNodeFailedMessage(getLocalNodeId(), node.id(), node.internalOrder()));
+
+                            failedNodesMsgSent.add(node.id());
+                        }
                     }
-                    else
-                        it.remove();
+                }
+
+                if (!failedNodesMsgSent.isEmpty()) {
+                    for (Iterator<UUID> it = failedNodesMsgSent.iterator(); it.hasNext(); ) {
+                        UUID nodeId = it.next();
+
+                        if (ring.node(nodeId) == null)
+                            it.remove();
+                    }
                 }
             }
 

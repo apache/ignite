@@ -474,6 +474,13 @@ public class TcpDiscoveryStatistics {
     }
 
     /**
+     * @return Sent messages counts (grouped by type).
+     */
+    public synchronized Map<String, Integer> sentMessages() {
+        return new HashMap<>(sentMsgs);
+    }
+
+    /**
      * Gets max messages send time (grouped by type).
      *
      * @return Map containing messages types and max send times.
