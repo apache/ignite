@@ -237,6 +237,13 @@ setupTestsPackage()
 
     . /opt/ignite-cassandra-tests/bootstrap/aws/common.sh "ganglia"
 
+    echo "[INFO] Starting logs collector daemon"
+
+    HOST_NAME=$(hostname -f | tr '[:upper:]' '[:lower:]')
+    /opt/ignite-cassandra-tests/bootstrap/aws/logs-collector.sh "$S3_LOGS_TRIGGER" "$S3_GANGLIA_LOGS/$HOST_NAME" "/var/log/httpd" > /opt/logs-collector.log &
+
+    echo "[INFO] Logs collector daemon started: $!"
+
     echo "----------------------------------------------------------------------------------------"
     printInstanceInfo
     echo "----------------------------------------------------------------------------------------"

@@ -236,6 +236,14 @@ setupTestsPackage()
     find /opt/ignite-cassandra-tests -type f -name "*.sh" -exec chmod ug+x {} \;
 
     . /opt/ignite-cassandra-tests/bootstrap/aws/common.sh "cassandra"
+
+    echo "[INFO] Starting logs collector daemon"
+
+    HOST_NAME=$(hostname -f | tr '[:upper:]' '[:lower:]')
+    /opt/ignite-cassandra-tests/bootstrap/aws/logs-collector.sh "$S3_LOGS_TRIGGER" "$S3_CASSANDRA_LOGS/$HOST_NAME" "/opt/cassandra/logs" "/opt/cassandra/cassandra-start.log" > /opt/logs-collector.log &
+
+    echo "[INFO] Logs collector daemon started: $!"
+
     . /opt/ignite-cassandra-tests/bootstrap/aws/ganglia/agent-bootstrap.sh
 
     echo "----------------------------------------------------------------------------------------"
@@ -306,13 +314,6 @@ setupCassandra()
     echo "export JAVA_HOME=/opt/java" >> $1
     echo "export CASSANDRA_HOME=/opt/cassandra" >> $1
     echo "export PATH=\$JAVA_HOME/bin:\$CASSANDRA_HOME/bin:\$PATH" >> $1
-
-    echo "[INFO] Starting logs collector daemon"
-
-    HOST_NAME=$(hostname -f | tr '[:upper:]' '[:lower:]')
-    /opt/ignite-cassandra-tests/bootstrap/aws/logs-collector.sh "/opt/cassandra/logs" "$S3_CASSANDRA_LOGS/$HOST_NAME" "$S3_LOGS_TRIGGER" > /opt/cassandra/logs-collector.log &
-
-    echo "[INFO] Logs collector daemon started: $!"
 }
 
 ###################################################################################################################
@@ -330,6 +331,6 @@ setupCassandra "/root/.bash_profile"
 
 cmd="/opt/ignite-cassandra-tests/bootstrap/aws/cassandra/cassandra-start.sh"
 
-#sudo -u cassandra -g cassandra sh -c "$cmd | tee /opt/cassandra/start.log"
+#sudo -u cassandra -g cassandra sh -c "$cmd | tee /opt/cassandra/cassandra-start.log"
 
-$cmd | tee /opt/cassandra/start.log
+$cmd | tee /opt/cassandra/cassandra-start.log

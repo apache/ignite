@@ -236,6 +236,14 @@ setupTestsPackage()
     find /opt/ignite-cassandra-tests -type f -name "*.sh" -exec chmod ug+x {} \;
 
     . /opt/ignite-cassandra-tests/bootstrap/aws/common.sh "ignite"
+
+    echo "[INFO] Starting logs collector daemon"
+
+    HOST_NAME=$(hostname -f | tr '[:upper:]' '[:lower:]')
+    /opt/ignite-cassandra-tests/bootstrap/aws/logs-collector.sh "$S3_LOGS_TRIGGER" "$S3_IGNITE_LOGS/$HOST_NAME" "/opt/ignite/work/log" "/opt/ignite/ignite-start.log" > /opt/logs-collector.log &
+
+    echo "[INFO] Logs collector daemon started: $!"
+
     . /opt/ignite-cassandra-tests/bootstrap/aws/ganglia/agent-bootstrap.sh
 
     echo "----------------------------------------------------------------------------------------"
@@ -305,14 +313,6 @@ setupIgnite()
     echo "export IGNITE_HOME=/opt/ignite" >> $1
     echo "export USER_LIBS=\$IGNITE_HOME/libs/optional/ignite-cassandra/*:\$IGNITE_HOME/libs/optional/ignite-slf4j/*" >> $1
     echo "export PATH=\$JAVA_HOME/bin:\IGNITE_HOME/bin:\$PATH" >> $1
-
-    echo "[INFO] Starting logs collector daemon"
-
-    HOST_NAME=$(hostname -f | tr '[:upper:]' '[:lower:]')
-    /opt/ignite-cassandra-tests/bootstrap/aws/logs-collector.sh "/opt/ignite/work/log" "$S3_IGNITE_LOGS/$HOST_NAME" "$S3_LOGS_TRIGGER" > /opt/ignite/logs-collector.log &
-
-    echo "[INFO] Logs collector daemon started: $!"
-
 }
 
 ###################################################################################################################
@@ -331,6 +331,6 @@ setupIgnite "/root/.bash_profile"
 
 cmd="/opt/ignite-cassandra-tests/bootstrap/aws/ignite/ignite-start.sh"
 
-#sudo -u ignite -g ignite sh -c "$cmd | tee /opt/ignite/start.log"
+#sudo -u ignite -g ignite sh -c "$cmd | tee /opt/ignite/ignite-start.log"
 
-$cmd | tee /opt/ignite/start.log
+$cmd | tee /opt/ignite/ignite-start.log
