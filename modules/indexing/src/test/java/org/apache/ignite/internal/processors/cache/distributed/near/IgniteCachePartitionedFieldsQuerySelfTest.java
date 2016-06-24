@@ -21,7 +21,6 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.internal.processors.cache.IgniteCacheAbstractFieldsQuerySelfTest;
-import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.cache.CacheMode.PARTITIONED;
 
@@ -47,8 +46,8 @@ public class IgniteCachePartitionedFieldsQuerySelfTest extends IgniteCacheAbstra
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cache(@Nullable String name, boolean primitives) {
-        CacheConfiguration cc = super.cache(name, primitives);
+    @Override protected CacheConfiguration cacheConfiguration() {
+        CacheConfiguration cc = super.cacheConfiguration();
 
         cc.setNearConfiguration(nearConfiguration());
 

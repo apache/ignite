@@ -71,7 +71,7 @@ public class IgniteSqlSchemaIndexingTest extends GridCommonAbstractTest {
             .setCacheMode(partitioned ? CacheMode.PARTITIONED : CacheMode.REPLICATED)
             .setAtomicityMode(CacheAtomicityMode.ATOMIC)
             .setBackups(1)
-            .setIndexedTypes(Integer.class, Fact.class);
+            .setIndexedTypes(idxTypes);
     }
 
     /** {@inheritDoc} */

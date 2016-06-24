@@ -38,7 +38,7 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 /**
  * Data store for H2 rows.
  */
-public class H2RowStore extends RowStore<GridH2Row> {
+public class H2RowStore extends RowStore {
     /** */
     private final GridH2RowDescriptor rowDesc;
 

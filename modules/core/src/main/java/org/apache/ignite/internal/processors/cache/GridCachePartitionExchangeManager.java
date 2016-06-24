@@ -83,7 +83,7 @@ import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeActivatedMessage;
+import org.apache.ignite.internal.managers.discovery.NodeActivatedMessage;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -105,6 +105,9 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.preloa
  * Partition exchange manager.
  */
 public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
+    /** */
+    private static final GridDhtPartitionsExchangeFuture STOP = new GridDhtPartitionsExchangeFuture();
+
     /** Exchange history size. */
     private static final int EXCHANGE_HISTORY_SIZE = 1000;
 
@@ -260,8 +263,8 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         else
                             exchangeFuture(msg.exchangeId(), null, null, null).onAffinityChangeMessage(customEvt.eventNode(), msg);
                     }
-                    else if (customEvt.customMessage() instanceof TcpDiscoveryNodeActivatedMessage) {
-                        TcpDiscoveryNodeActivatedMessage msg = (TcpDiscoveryNodeActivatedMessage)customEvt.customMessage();
+                    else if (customEvt.customMessage() instanceof NodeActivatedMessage) {
+                        NodeActivatedMessage msg = (NodeActivatedMessage)customEvt.customMessage();
 
                         exchId = exchangeId(n.id(), affinityTopologyVersion(e), e.type());
 
@@ -354,7 +357,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         assert startTime > 0;
 
         // Generate dummy discovery event for local node joining.
-        DiscoveryEvent discoEvt = cctx.discovery().localActivationEvent();
+        DiscoveryEvent discoEvt;
+
+        if (loc.isClient() || loc.isDaemon())
+            discoEvt = cctx.discovery().localJoinEvent();
+        else
+            discoEvt = cctx.discovery().localActivationEvent();
 
         GridDhtPartitionExchangeId exchId = initialExchangeId();
 
@@ -1278,6 +1286,16 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         }
 
         /** {@inheritDoc} */
+        @Override public void cancel() {
+            if (log.isDebugEnabled())
+                log.debug("Cancelling exchange worker: " + this);
+
+            isCancelled = true;
+
+            futQ.offer(STOP);
+        }
+
+        /** {@inheritDoc} */
         @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
             long timeout = cctx.gridConfig().getNetworkTimeout();
 
@@ -1323,6 +1341,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     if (exchFut == null)
                         continue; // Main while loop.
+
+                    if (exchFut == STOP) {
+                        assert isCancelled();
+
+                        break; // While.
+                    }
 
                     busy = true;
 

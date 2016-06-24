@@ -81,7 +81,7 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
         assert cache1.active();
         assert cache2.active();
 
-        cache1.active(false);
+        cache1.active(false).get();
 
         assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -99,7 +99,7 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
             }
         }, 5000);
 
-        cache3.active(true);
+        cache3.active(true).get();
 
         assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -209,7 +209,7 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
 
         assert ex;
 
-        cache1.active(true);
+        cache1.active(true).get();
 
         assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -238,7 +238,7 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
         cache1.put(1, 1);
         cache1.put(2, 2);
 
-        cache1.active(false);
+        cache1.active(false).get();
 
         assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -259,11 +259,22 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
         ignite1.close();
         ignite2.close();
 
-        cache3.active(true);
+        awaitPartitionMapExchange();
+
+        cache3.active(true).get();
 
         assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return cache3.active();
+            }
+        }, 5000);
+
+        if (!cache3.lostPartitions().isEmpty())
+            cache3.recoverPartitions(cache3.lostPartitions());
+
+        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return cache3.lostPartitions().isEmpty();
             }
         }, 5000);
 

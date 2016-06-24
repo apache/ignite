@@ -497,17 +497,15 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                             while (it.hasNext()) {
                                 Cache.Entry<Object, Object> e = it.next();
 
-                                if (e.getKey() instanceof GridServiceAssignmentsKey) {
-                                    GridServiceAssignments assigns = (GridServiceAssignments)e.getValue();
+                                GridServiceAssignments assigns = (GridServiceAssignments)e.getValue();
 
-                                    if (assigns.name().equals(cfg.getName())) {
-                                        // Remove future from local map.
-                                        depFuts.remove(cfg.getName(), fut);
+                                if (assigns.name().equals(cfg.getName())) {
+                                    // Remove future from local map.
+                                    depFuts.remove(cfg.getName(), fut);
 
-                                        fut.onDone();
+                                    fut.onDone();
 
-                                        break;
-                                    }
+                                    break;
                                 }
                             }
 
@@ -610,9 +608,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
         while (it.hasNext()) {
             Cache.Entry<Object, Object> e = it.next();
 
-            if (!(e.getKey() instanceof GridServiceDeploymentKey))
-                continue;
-
             GridServiceDeployment dep = (GridServiceDeployment)e.getValue();
 
             if (res == null)
@@ -673,9 +668,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         while (it.hasNext()) {
             Cache.Entry<Object, Object> e = it.next();
-
-            if (!(e.getKey() instanceof GridServiceDeploymentKey))
-                continue;
 
             GridServiceDeployment dep = (GridServiceDeployment)e.getValue();
 
@@ -1199,6 +1191,12 @@ public class GridServiceProcessor extends GridProcessorAdapter {
     @SuppressWarnings("unchecked")
     private Iterator<Cache.Entry<Object, Object>> serviceEntries(IgniteBiPredicate<Object, Object> p) {
         try {
+            GridCacheQueryManager qryMgr = cache.context().queries();
+
+            CacheQuery<Map.Entry<Object, Object>> qry = qryMgr.createScanQuery(p, null, false);
+
+            qry.keepAll(false);
+
             if (!cache.context().affinityNode()) {
                 ClusterNode oldestSrvNode =
                     CU.oldestAliveCacheServerNode(cache.context().shared(), AffinityTopologyVersion.NONE);
@@ -1206,29 +1204,23 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                 if (oldestSrvNode == null)
                     return new GridEmptyIterator<>();
 
-                GridCacheQueryManager qryMgr = cache.context().queries();
-
-                CacheQuery<Map.Entry<Object, Object>> qry = qryMgr.createScanQuery(p, null, false);
-
-                qry.keepAll(false);
-
                 qry.projection(ctx.cluster().get().forNode(oldestSrvNode));
-
-                GridCloseableIterator<Map.Entry<Object, Object>> iter = qry.executeScanQuery();
-
-                return cache.context().itHolder().iterator(iter,
-                    new CacheIteratorConverter<Cache.Entry<Object, Object>, Map.Entry<Object,Object>>() {
-                        @Override protected Cache.Entry<Object, Object> convert(Map.Entry<Object, Object> e) {
-                            return new CacheEntryImpl<>(e.getKey(), e.getValue());
-                        }
-
-                        @Override protected void remove(Cache.Entry<Object, Object> item) {
-                            throw new UnsupportedOperationException();
-                        }
-                    });
             }
             else
-                return cache.entrySetx().iterator();
+                qry.projection(ctx.cluster().get().forLocal());
+
+            GridCloseableIterator<Map.Entry<Object, Object>> iter = qry.executeScanQuery();
+
+            return cache.context().itHolder().iterator(iter,
+                new CacheIteratorConverter<Cache.Entry<Object, Object>, Map.Entry<Object,Object>>() {
+                    @Override protected Cache.Entry<Object, Object> convert(Map.Entry<Object, Object> e) {
+                        return new CacheEntryImpl<>(e.getKey(), e.getValue());
+                    }
+
+                    @Override protected void remove(Cache.Entry<Object, Object> item) {
+                        throw new UnsupportedOperationException();
+                    }
+                });
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -1494,9 +1486,6 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 while (it.hasNext()) {
                                     Cache.Entry<Object, Object> e = it.next();
 
-                                    if (!(e.getKey() instanceof GridServiceDeploymentKey))
-                                        continue;
-
                                     if (firstTime) {
                                         markCompatibilityStateAsUsed();
 
@@ -1531,24 +1520,26 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                 onReassignmentFailed(topVer, retries);
                         }
 
+                        Iterator<Cache.Entry<Object, Object>> it = serviceEntries(ServiceAssignmentsPredicate.INSTANCE);
+
                         // Clean up zombie assignments.
-                        for (Cache.Entry<Object, Object> e :
-                            cache.entrySetx(CU.cachePrimary(ctx.grid().affinity(cache.name()), ctx.grid().localNode()))) {
-                            if (!(e.getKey() instanceof GridServiceAssignmentsKey))
-                                continue;
+                        while (it.hasNext()) {
+                            Cache.Entry<Object, Object> e = it.next();
 
-                            String name = ((GridServiceAssignmentsKey)e.getKey()).name();
+                            if (cache.context().affinity().primary(ctx.grid().localNode(), e.getKey(), topVer)) {
+                                String name = ((GridServiceAssignmentsKey)e.getKey()).name();
 
-                            try {
-                                if (cache.get(new GridServiceDeploymentKey(name)) == null) {
-                                    if (log.isDebugEnabled())
-                                        log.debug("Removed zombie assignments: " + e.getValue());
+                                try {
+                                    if (cache.get(new GridServiceDeploymentKey(name)) == null) {
+                                        if (log.isDebugEnabled())
+                                            log.debug("Removed zombie assignments: " + e.getValue());
 
-                                    cache.getAndRemove(e.getKey());
+                                        cache.getAndRemove(e.getKey());
+                                    }
                                 }
-                            }
-                            catch (IgniteCheckedException ex) {
-                                U.error(log, "Failed to clean up zombie assignments for service: " + name, ex);
+                                catch (IgniteCheckedException ex) {
+                                    U.error(log, "Failed to clean up zombie assignments for service: " + name, ex);
+                                }
                             }
                         }
                     }

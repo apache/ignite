@@ -20,7 +20,9 @@ package org.apache.ignite.internal.processors.cache.local;
 import java.io.Externalizable;
 import java.util.Collection;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -34,6 +36,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCachePreloader;
 import org.apache.ignite.internal.processors.cache.GridCachePreloaderAdapter;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -46,12 +49,16 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Local cache implementation.
  */
-public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
+public class GridLocalCache<K, V> extends GridCacheAdapter<K, V>
+    implements IgniteCacheOffheapManager.CacheDataStore.Listener {
     /** */
     private static final long serialVersionUID = 0L;
 
     /** */
     private GridCachePreloader preldr;
+
+    /** Storage size. */
+    private final AtomicLong storageSize = new AtomicLong(); // TODO GG-11208 need restore after restart.
 
     /**
      * Empty constructor required by {@link Externalizable}.
@@ -232,5 +239,33 @@ public class GridLocalCache<K, V> extends GridCacheAdapter<K, V> {
             if (log().isDebugEnabled())
                 log().debug("Explicitly removed future from map of futures: " + fut);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onInsert() {
+        storageSize.incrementAndGet();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void onRemove() {
+        storageSize.decrementAndGet();
+    }
+
+    /** {@inheritDoc} */
+    @Override public long localSizeLong(CachePeekMode[] peekModes) throws IgniteCheckedException {
+        PeekModes modes = parsePeekModes(peekModes, true);
+
+        modes.primary = true;
+        modes.backup = true;
+
+        long size = 0;
+
+        if (modes.heap)
+            size += size();
+
+        if (modes.offheap)
+            size += storageSize.get();
+
+        return size;
     }
 }

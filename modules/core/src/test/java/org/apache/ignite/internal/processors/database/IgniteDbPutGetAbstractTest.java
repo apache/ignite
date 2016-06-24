@@ -435,6 +435,8 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
 
             assertTrue(plan, plan.contains("iVal_idx"));
         }
+
+        assertTrue(cache.localSize(CachePeekMode.BACKUP) >= 0);
     }
 
     /**

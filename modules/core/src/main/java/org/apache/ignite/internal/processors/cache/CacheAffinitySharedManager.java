@@ -36,6 +36,8 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.events.DiscoveryCustomEvent;
+import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
+import org.apache.ignite.internal.managers.discovery.NodeActivatedMessage;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
@@ -127,8 +129,10 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
      * @param type Event type.
      * @param node Event node.
      * @param topVer Topology version.
+     * @param customMsg Custom message if event is {@link DiscoveryCustomEvent}.
      */
-    public void onDiscoveryEvent(int type, ClusterNode node, AffinityTopologyVersion topVer) {
+    public void onDiscoveryEvent(int type, ClusterNode node, AffinityTopologyVersion topVer,
+        @Nullable DiscoveryCustomMessage customMsg) {
         if (type == EVT_NODE_JOINED && node.isLocal()) {
             // Clean-up in case of client reconnect.
             registeredCaches.clear();
@@ -141,11 +145,21 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 registeredCaches.put(desc.cacheId(), desc);
         }
 
-        if (!CU.clientNode(node) && (type == EVT_NODE_FAILED || type == EVT_NODE_JOINED || type == EVT_NODE_LEFT ||
-            type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT)) {
-            assert lastAffVer == null || topVer.compareTo(lastAffVer) > 0;
+        if (!CU.clientNode(node)) {
+            if (type == EVT_NODE_FAILED || type == EVT_NODE_JOINED || type == EVT_NODE_LEFT) {
+                assert lastAffVer == null || topVer.compareTo(lastAffVer) > 0;
 
-            lastAffVer = topVer;
+                lastAffVer = topVer;
+            }
+            else if (type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
+                assert customMsg != null;
+
+                if (customMsg instanceof NodeActivatedMessage) {
+                    assert lastAffVer == null || topVer.compareTo(lastAffVer) > 0;
+
+                    lastAffVer = topVer;
+                }
+            }
         }
     }
 
@@ -306,7 +320,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
             assignmentsChange.put(cacheId, assignment0);
         }
 
-        return new CacheAffinityChangeMessage(topVer, assignmentsChange, waitInfo.deploymentIds);
+        return new CacheAffinityChangeMessage(waitInfo.topVer, assignmentsChange, waitInfo.deploymentIds);
     }
 
     /**
@@ -563,7 +577,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
         throws IgniteCheckedException {
         assert affCalcVer != null || cctx.kernalContext().clientNode();
         assert msg.topologyVersion() != null && msg.exchangeId() == null : msg;
-//        assert affCalcVer == null || affCalcVer.equals(msg.topologyVersion());
+        assert affCalcVer == null || affCalcVer.equals(msg.topologyVersion());
 
         final AffinityTopologyVersion topVer = exchFut.topologyVersion();
 
@@ -606,15 +620,6 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                         Integer part = e.getKey();
 
                         List<ClusterNode> nodes = toNodes(topVer, e.getValue());
-
-//                        assert !nodes.equals(assignment.get(part)) : "Assignment did not change " +
-//                            "[cache=" + aff.cacheName() +
-//                            ", part=" + part +
-//                            ", cur=" + F.nodeIds(assignment.get(part)) +
-//                            ", new=" + F.nodeIds(nodes) +
-//                            ", exchVer=" + exchFut.topologyVersion() +
-//                            ", msgVer=" + msg.topologyVersion() +
-//                            ']';
 
                         assignment.set(part, nodes);
                     }

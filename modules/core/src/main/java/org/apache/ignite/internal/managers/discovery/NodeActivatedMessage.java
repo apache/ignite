@@ -16,7 +16,7 @@
  *
  */
 
-package org.apache.ignite.spi.discovery.tcp.messages;
+package org.apache.ignite.internal.managers.discovery;
 
 import java.util.UUID;
 import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
@@ -26,7 +26,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Message for node activation.
  */
-public class TcpDiscoveryNodeActivatedMessage implements DiscoveryCustomMessage {
+public class NodeActivatedMessage implements DiscoveryCustomMessage {
     /** */
     private final IgniteUuid id = IgniteUuid.randomUuid();
 
@@ -37,7 +37,7 @@ public class TcpDiscoveryNodeActivatedMessage implements DiscoveryCustomMessage 
      * Constructor
      * @param nodeId ID of activated node.
      */
-    public TcpDiscoveryNodeActivatedMessage(UUID nodeId) {
+    public NodeActivatedMessage(UUID nodeId) {
         this.nodeId = nodeId;
     }
 

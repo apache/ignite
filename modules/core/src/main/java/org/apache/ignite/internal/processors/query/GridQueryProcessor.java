@@ -148,6 +148,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     /** */
     private final GridQueryIndexing idx;
 
+    /** */
+    private boolean skipFieldLookup;
+
     /**
      * @param ctx Kernal context.
      */
@@ -404,6 +407,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
     }
 
     /**
+     * @param skipFieldLookup If {@code true}, will skip binary field object lookup and will instead use
+     *      {@link BinaryObject#field(String)} method to obtain field values.
+     */
+    public void skipFieldLookup(boolean skipFieldLookup) {
+        this.skipFieldLookup = skipFieldLookup;
+    }
+
+    /**
      * Check whether type still must be deserialized when binary marshaller is set.
      *
      * @param cls Class.
@@ -462,10 +473,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
         if (!busyLock.enterBusy())
             return;
 
+        cctx.shared().database().checkpointReadLock();
+
         try {
             initializeCache(cctx.config());
         }
         finally {
+            cctx.shared().database().checkpointReadUnlock();
+
             busyLock.leaveBusy();
         }
     }
@@ -922,7 +937,8 @@ public class GridQueryProcessor extends GridProcessorAdapter {
 
                         sendQueryExecutedEvent(
                             sqlQry,
-                            params);
+                            params,
+                            space);
 
                         return new ClIter<Cache.Entry<K, V>>() {
                             @Override public void close() throws Exception {
@@ -960,14 +976,14 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @param sqlQry Sql query.
      * @param params Params.
      */
-    private void sendQueryExecutedEvent(String sqlQry, Object[] params) {
+    private void sendQueryExecutedEvent(String sqlQry, Object[] params, String cacheName) {
         if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
             ctx.event().record(new CacheQueryExecutedEvent<>(
                 ctx.discovery().localNode(),
                 "SQL query executed.",
                 EVT_CACHE_QUERY_EXECUTED,
                 CacheQueryType.SQL.name(),
-                null,
+                cacheName,
                 null,
                 sqlQry,
                 null,
@@ -1006,7 +1022,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                     final GridQueryFieldsResult res = idx.queryFields(space, sql, F.asList(args),
                         idx.backupFilter(null, null, null));
 
-                    sendQueryExecutedEvent(sql, args);
+                    sendQueryExecutedEvent(sql, args, space);
 
                     QueryCursorImpl<List<?>> cursor = new QueryCursorImpl<>(new Iterable<List<?>>() {
                         @Override public Iterator<List<?>> iterator() {
@@ -2060,6 +2076,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          * @return Binary field.
          */
         private BinaryField binaryField(BinaryObject obj) {
+            if (skipFieldLookup)
+                return null;
+
             BinaryField field0 = field;
 
             if (field0 == null && !fieldTaken) {

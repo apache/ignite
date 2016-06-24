@@ -17,6 +17,7 @@
 
 package org.apache.ignite.spi.discovery;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
@@ -53,7 +54,7 @@ public interface DiscoverySpi extends IgniteSpi {
      * @return Consistent ID of this Ignite instance or {@code null} if not applicable.
      * @throws IgniteSpiException If failed.
      */
-    @Nullable public Object consistentId() throws IgniteSpiException;
+    @Nullable public Serializable consistentId() throws IgniteSpiException;
 
     /**
      * Gets collection of remote nodes in grid or empty collection if no remote nodes found.

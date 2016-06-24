@@ -703,7 +703,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         try {
             loc = locParts[p];
 
-            boolean belongs = cctx.affinity().localNode(p, topVer);
+            boolean belongs = cctx.shared().database().persistenceEnabled() || cctx.affinity().localNode(p, topVer);
 
             if (loc != null && loc.state() == EVICTED) {
                 locParts[p] = loc = null;
@@ -1033,28 +1033,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                     if (cntr == null || cntr < e.getValue())
                         this.cntrMap.put(e.getKey(), e.getValue());
                 }
-
-                for (int i = 0; i < locParts.length; i++) {
-                    GridDhtLocalPartition part = locParts[i];
-
-                    if (part == null)
-                        continue;
-
-                    Long cntr = cntrMap.get(part.id());
-
-                    if (cntr != null) {
-                        if (cntr > part.updateCounter() && part.state().active()) {
-                            try {
-                                cctx.offheap().clear(part);
-                            }
-                            catch (Exception ex) {
-                                assert false : ex;
-                            }
-                        }
-
-                        part.updateCounter(cntr);
-                    }
-                }
             }
 
             if (exchId != null && lastExchangeId != null && lastExchangeId.compareTo(exchId) >= 0) {
@@ -1134,10 +1112,65 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
             AffinityTopologyVersion affVer = cctx.affinity().affinityTopologyVersion();
 
+            GridDhtPartitionMap2 nodeMap = partMap.get(cctx.localNodeId());
+
+            if (nodeMap != null) {
+                for (Map.Entry<Integer, GridDhtPartitionState> e : nodeMap.entrySet()) {
+                    int p = e.getKey();
+                    GridDhtPartitionState state = e.getValue();
+
+                    if (state == OWNING) {
+                        GridDhtLocalPartition locPart = locParts[p];
+
+                        assert locPart != null;
+
+                        if (cntrMap != null) {
+                            Long cntr = cntrMap.get(p);
+
+                            if (cntr != null && cntr > locPart.updateCounter())
+                                locPart.updateCounter(cntr);
+                        }
+
+                        if (locPart.state() != OWNING) {
+                            boolean success = locPart.own();
+
+                            assert success;
+
+                            changed |= success;
+                        }
+                    }
+                    else if (state == MOVING) {
+                        GridDhtLocalPartition locPart = locParts[p];
+
+                        assert locPart != null;
+
+                        if (locPart.state() == OWNING) {
+                            try {
+                                cctx.offheap().clear(locPart);
+                            }
+                            catch (IgniteCheckedException ex) {
+                                throw new IgniteException(ex);
+                            }
+
+                            locPart = locParts[p] = new GridDhtLocalPartition(cctx, p, entryFactory);
+
+                            changed = true;
+                        }
+
+                        if (cntrMap != null) {
+                            Long cntr = cntrMap.get(p);
+
+                            if (cntr != null && cntr > locPart.updateCounter())
+                                locPart.updateCounter(cntr);
+                        }
+                    }
+                }
+            }
+
             if (!affVer.equals(AffinityTopologyVersion.NONE) && affVer.compareTo(topVer) >= 0) {
                 List<List<ClusterNode>> aff = cctx.affinity().assignments(topVer);
 
-                changed = checkEvictions(updateSeq, aff);
+                changed |= checkEvictions(updateSeq, aff);
 
                 updateRebalanceVersion(aff);
             }
@@ -1291,8 +1324,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                     try {
                         cctx.offheap().clear(locPart);
                     }
-                    catch (Exception ex) {
-                        assert false : ex;
+                    catch (IgniteCheckedException ex) {
+                        throw new IgniteException(ex);
                     }
 
                     locParts[p] = new GridDhtLocalPartition(cctx, p, entryFactory);
@@ -1305,8 +1338,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 
                 if (e.getValue().get(p) == OWNING && !owners.contains(e.getKey()))
                     e.getValue().put(p, MOVING);
-                else if (owners.contains(e.getKey()))
-                    e.getValue().put(p, OWNING);
             }
 
             part2node.put(p, owners);
@@ -1404,7 +1435,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         // In case if node joins, get topology at the time of joining node.
         ClusterNode oldest = CU.oldestAliveCacheServerNode(cctx.shared(), topVer);
 
-        assert oldest != null || cctx.kernalContext().clientNode();
+        assert oldest != null || cctx.kernalContext().clientNode() || !cctx.discovery().activated(cctx.localNode(), topVer);
 
         // If this node became the oldest node.
         if (cctx.localNode().equals(oldest)) {

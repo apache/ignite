@@ -21,6 +21,7 @@ import java.io.Serializable;
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -1706,12 +1707,13 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
     public boolean isMongoMetaCache();
 
     /**
-     * Gets entry set containing internal entries.
-     *
-     * @param filter Filter.
-     * @return Entry set.
+     * @param keepBinary Keep binary flag.
+     * @param p Optional key/value predicate.
+     * @return Scan query iterator.
+     * @throws IgniteCheckedException If failed.
      */
-    public Set<Cache.Entry<K, V>> entrySetx(CacheEntryPredicate... filter);
+    public Iterator<Cache.Entry<K, V>> scanIterator(boolean keepBinary, @Nullable IgniteBiPredicate<Object, Object> p)
+        throws IgniteCheckedException;
 
     /**
      * @return {@link javax.cache.expiry.ExpiryPolicy} associated with this projection.
@@ -1885,5 +1887,11 @@ public interface IgniteInternalCache<K, V> extends Iterable<Cache.Entry<K, V>> {
      * @param state New cache state.
      * @return {@code True} if state was changed.
      */
-    public boolean state(CacheState state);
+    public boolean changeState(CacheState state);
+
+    /**
+     * @param diff Cache state diff.
+     * @return {@code True} if state was changed.
+     */
+    public boolean changeState(CacheState.Difference diff);
 }

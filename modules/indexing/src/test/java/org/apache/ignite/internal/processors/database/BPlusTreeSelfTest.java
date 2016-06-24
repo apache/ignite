@@ -36,9 +36,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.util.lang.GridCursor;
-import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.X;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 /**
@@ -98,12 +96,12 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         pageMem.start();
 
         reuseList = createReuseList(CACHE_ID, pageMem, 2, new MetaStore() {
-            @Override public RootPage getOrAllocateForTree(final int cacheId, final String idxName,
-                final boolean idx) throws IgniteCheckedException {
-                return new RootPage(allocateMetaPage(), true, 0);
+            @Override public RootPage getOrAllocateForTree(final int cacheId, final String idxName)
+                throws IgniteCheckedException {
+                return new RootPage(allocateMetaPage(), true);
             }
 
-            @Override public long dropRootPage(final int cacheId, final String idxName) throws IgniteCheckedException {
+            @Override public RootPage dropRootPage(final int cacheId, final String idxName) {
                 throw new UnsupportedOperationException();
             }
         });

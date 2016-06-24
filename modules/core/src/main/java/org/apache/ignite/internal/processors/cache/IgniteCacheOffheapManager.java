@@ -17,113 +17,69 @@
 
 package org.apache.ignite.internal.processors.cache;
 
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Collection;
 import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.pagemem.Page;
-import org.apache.ignite.internal.pagemem.PageIdUtils;
-import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
-import org.apache.ignite.internal.processors.cache.database.RootPage;
-import org.apache.ignite.internal.processors.cache.database.RowStore;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
-import org.apache.ignite.internal.processors.cache.database.tree.BPlusTree;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
-import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
-import org.apache.ignite.internal.processors.query.GridQueryProcessor;
-import org.apache.ignite.internal.util.GridCloseableIteratorAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.internal.util.typedef.internal.S;
-import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
-import org.jetbrains.annotations.Nullable;
-
-import static org.apache.ignite.internal.IgniteComponentType.INDEXING;
-import static org.apache.ignite.internal.pagemem.PageIdUtils.dwordsOffset;
-import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 
 /**
  *
  */
-public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
-    /** */
-    private CacheDataRowStore rowStore;
-
-    /** */
-    private CacheDataTree dataTree;
-
-    /** */
-    private boolean indexingEnabled;
-
-    /** */
-    private FreeList freeList;
-
-    /** */
-    private ReuseList reuseList;
+@SuppressWarnings("WeakerAccess")
+public interface IgniteCacheOffheapManager extends GridCacheManager {
+    /**
+     * Partition counter update callback. May be overridden by plugin-provided subclasses.
+     *
+     * @param part Partition.
+     * @param cntr Partition counter.
+     */
+    public void onPartitionCounterUpdated(int part, long cntr);
 
     /**
-     * {@inheritDoc}
+     * Partition counter provider. May be overridden by plugin-provided subclasses.
+     *
+     * @param part Partition ID.
+     * @return Last updated counter.
      */
-    @Override protected void start0() throws IgniteCheckedException {
-        super.start0();
-
-        indexingEnabled = INDEXING.inClassPath() && GridQueryProcessor.isEnabled(cctx.config());
-
-        if (cctx.affinityNode()) {
-            IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
-
-            String idxName = BPlusTree.treeName(cctx.name(), cctx.cacheId(), "Cache");
-
-            final RootPage rootPage = dbMgr.meta().getOrAllocateForTree(cctx.cacheId(), idxName, false);
-
-            int cpus = Runtime.getRuntime().availableProcessors();
-
-            reuseList = new ReuseList(cctx.cacheId(), dbMgr.pageMemory(), cpus * 2, dbMgr.meta());
-            freeList = new FreeList(cctx, reuseList);
-
-            rowStore = new CacheDataRowStore(cctx, freeList);
-
-            dataTree = new CacheDataTree(idxName,
-                reuseList,
-                rowStore,
-                cctx,
-                dbMgr.pageMemory(),
-                rootPage.pageId(),
-                rootPage.isAllocated());
-        }
-    }
+    public long lastUpdatedPartitionCounter(int part);
 
     /**
      * @return Reuse list.
      */
-    public ReuseList reuseList() {
-        return reuseList;
-    }
+    public ReuseList reuseList();
 
     /**
      * @return Free list.
      */
-    public FreeList freeList() {
-        return freeList;
-    }
+    public FreeList freeList();
+
+    /**
+     * @param entry Cache entry.
+     * @return Value tuple, if available.
+     * @throws IgniteCheckedException If failed.
+     */
+    public IgniteBiTuple<CacheObject, GridCacheVersion> read(GridCacheMapEntry entry) throws IgniteCheckedException;
+
+    /**
+     * @param p Partition.
+     * @param lsnr Listener.
+     * @return Data store.
+     * @throws IgniteCheckedException If failed.
+     */
+    public CacheDataStore createCacheDataStore(int p, CacheDataStore.Listener lsnr) throws IgniteCheckedException;
+
+    /**
+     * TODO: GG-10884, used on only from initialValue.
+     */
+    public boolean containsKey(GridCacheMapEntry entry);
 
     /**
      * @param key  Key.
@@ -134,31 +90,13 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public void update(
-        KeyCacheObject key,
-        CacheObject val,
-        GridCacheVersion ver,
-        long expireTime,
-        int partId,
-        GridDhtLocalPartition part
-    ) throws IgniteCheckedException {
-        // Always store the row into the primary storage. Per-partition hash indexes should be used.
-        DataRow dataRow = new DataRow(key, val, ver, partId, 0);
-
-        rowStore.addRow(dataRow);
-
-        DataRow old = dataTree.put(dataRow);
-
-        if (old == null && part != null)
-            part.onInsert();
-
-        if (indexingEnabled) {
-            GridCacheQueryManager qryMgr = cctx.queries();
-
-            assert qryMgr.enabled();
-
-            qryMgr.store(key, partId, val, ver, 0);
-        }
-    }
+            KeyCacheObject key,
+            CacheObject val,
+            GridCacheVersion ver,
+            long expireTime,
+            int partId,
+            GridDhtLocalPartition part
+    ) throws IgniteCheckedException;
 
     /**
      * @param key Key.
@@ -168,864 +106,139 @@ public class IgniteCacheOffheapManager extends GridCacheManagerAdapter {
      * @throws IgniteCheckedException If failed.
      */
     public void remove(
-        KeyCacheObject key,
-        CacheObject prevVal,
-        GridCacheVersion prevVer,
-        int partId,
-        GridDhtLocalPartition part
-    ) throws IgniteCheckedException {
-        DataRow dataRow = dataTree.remove(new KeySearchRow(key, 0));
-
-        if (dataRow != null) {
-            assert dataRow.link != 0 : dataRow;
-
-            rowStore.removeRow(dataRow.link);
-
-            if (part != null)
-                part.onRemove();
-        }
-
-        if (indexingEnabled) {
-            GridCacheQueryManager qryMgr = cctx.queries();
-
-            assert qryMgr.enabled();
-
-            qryMgr.remove(key, partId, prevVal, prevVer);
-        }
-    }
+            KeyCacheObject key,
+            CacheObject prevVal,
+            GridCacheVersion prevVer,
+            int partId,
+            GridDhtLocalPartition part
+    ) throws IgniteCheckedException;
 
     /**
-     * @param key  Key to read.
-     * @param part Partition.
-     * @return Value tuple, if available.
+     * @param ldr Class loader.
+     * @return Number of undeployed entries.
+     */
+    public int onUndeploy(ClassLoader ldr);
+
+    /**
+     * @param primary Primary entries flag.
+     * @param backup Backup entries flag.
+     * @param topVer Topology version.
+     * @return Rows iterator.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable public IgniteBiTuple<CacheObject, GridCacheVersion> read(KeyCacheObject key, int part)
-        throws IgniteCheckedException {
-        DataRow dataRow = dataTree.findOne(new KeySearchRow(key, 0));
-
-        return dataRow != null ? F.t(dataRow.val, dataRow.ver) : null;
-    }
+    public GridIterator<CacheDataRow> iterator(boolean primary, boolean backup, final AffinityTopologyVersion topVer)
+        throws IgniteCheckedException;
 
     /**
-     * @param key Key.
      * @param part Partition.
-     * @return Value.
+     * @return Partition data iterator.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable CacheObject readValue(KeyCacheObject key, int part) throws IgniteCheckedException {
-        IgniteBiTuple<CacheObject, GridCacheVersion> t = read(key, part);
-
-        return t != null ? t.get1() : null;
-    }
+    public GridIterator<CacheDataRow> iterator(final int part) throws IgniteCheckedException;
 
     /**
-     * TODO: GG-10884, used on only from initialValue.
+     * @param primary Primary entries flag.
+     * @param backup Backup entries flag.
+     * @param topVer Topology version.
+     * @param keepBinary Keep binary flag.
+     * @return Entries iterator.
+     * @throws IgniteCheckedException If failed.
      */
-    public boolean containsKey(KeyCacheObject key, int part) {
-        try {
-            return read(key, part) != null;
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to read value", e);
+    public <K, V> GridCloseableIterator<Cache.Entry<K, V>> entriesIterator(final boolean primary,
+        final boolean backup,
+        final AffinityTopologyVersion topVer,
+        final boolean keepBinary) throws IgniteCheckedException;
 
-            return false;
-        }
-    }
+    /**
+     * @param part Partition.
+     * @return Iterator.
+     * @throws IgniteCheckedException If failed.
+     */
+    public GridCloseableIterator<KeyCacheObject> keysIterator(final int part) throws IgniteCheckedException;
+
+    /**
+     * @param primary Primary entries flag.
+     * @param backup Backup entries flag.
+     * @param topVer Topology version.
+     * @return Entries count.
+     * @throws IgniteCheckedException If failed.
+     */
+    public long entriesCount(boolean primary, boolean backup, AffinityTopologyVersion topVer)
+        throws IgniteCheckedException;
 
     /**
      * Clears offheap entries.
      *
      * @param readers {@code True} to clear readers.
      */
-    public void clear(boolean readers) {
-        if (dataTree != null)
-            clear(dataTree, readers);
+    public void clear(boolean readers);
 
-        if (indexingEnabled) {
-            BPlusTree<?, ? extends CacheDataRow> idx = cctx.queries().pkIndex();
-
-            if (idx != null)
-                clear(idx, readers);
-        }
-    }
-
-    public void clear(GridDhtLocalPartition part) throws IgniteCheckedException {
-        GridIterator<CacheDataRow> iterator = iterator(part.id());
-
-        while (iterator.hasNext()) {
-            CacheDataRow row = iterator.next();
-
-            remove(row.key(), row.value(), row.version(), part.id(), part);
-        }
-
-    }
-
-    /**
-     * @param ldr Class loader.
-     * @return Number of undeployed entries.
-     */
-    public int onUndeploy(ClassLoader ldr) {
-        // TODO: GG-11141.
-        return 0;
-    }
-
-    /**
-     * Partition counter update callback. May be overridden by plugin-provided subclasses.
-     *
-     * @param part Partition.
-     * @param cntr Partition counter.
-     */
-    public void onPartitionCounterUpdated(int part, long cntr) {
-        // No-op.
-    }
-
-    /**
-     * Partition counter provider. May be overridden by plugin-provided subclasses.
-     *
-     * @param part Partition ID.
-     * @return Last updated counter.
-     */
-    public long lastUpdatedPartitionCounter(int part) {
-        return 0;
-    }
-
-    /**
-     * @param tree    Tree.
-     * @param readers {@code True} to clear readers.
-     */
-    private void clear(BPlusTree<?, ? extends CacheDataRow> tree, boolean readers) {
-        try {
-            GridCursor<? extends CacheDataRow> cur = tree.find(null, null);
-
-            Collection<KeyCacheObject> keys = new ArrayList<>();
-
-            while (cur.next()) {
-                CacheDataRow row = cur.get();
-
-                keys.add(row.key());
-            }
-
-            GridCacheVersion obsoleteVer = null;
-
-            for (KeyCacheObject key : keys) {
-                try {
-                    if (obsoleteVer == null)
-                        obsoleteVer = cctx.versions().next();
-
-                    GridCacheEntryEx entry = cctx.cache().entryEx(key);
-
-                    entry.clear(obsoleteVer, readers);
-                }
-                catch (GridDhtInvalidPartitionException ignore) {
-                    // Ignore.
-                }
-                catch (IgniteCheckedException e) {
-                    U.error(log, "Failed to clear cache entry: " + key, e);
-                }
-            }
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to clear cache entries.", e);
-        }
-    }
+    public void clear(GridDhtLocalPartition part) throws IgniteCheckedException;
 
     /**
      * @param part Partition.
      * @return Number of entries in given partition.
      */
-    public long entriesCount(int part) {
-        GridDhtLocalPartition locPart = cctx.topology().localPartition(part, AffinityTopologyVersion.NONE, false);
-
-        return locPart == null ? 0 : locPart.size();
-    }
-
-    /**
-     * @param primary Include primary node keys.
-     * @param backup Include backup node keys.
-     * @param topVer Topology version.
-     * @return Entries count.
-     * @throws IgniteCheckedException If failed.
-     */
-    public long entriesCount(boolean primary, boolean backup, AffinityTopologyVersion topVer)
-        throws IgniteCheckedException {
-        ClusterNode locNode = cctx.localNode();
-
-        long cnt = 0;
-
-        for (GridDhtLocalPartition locPart : cctx.topology().currentLocalPartitions()) {
-            if (primary) {
-                if (cctx.affinity().primary(locNode, locPart.id(), topVer)) {
-                    cnt += locPart.size();
-
-                    continue;
-                }
-            }
-
-            if (backup) {
-                if (cctx.affinity().backup(locNode, locPart.size(), topVer))
-                    cnt += locPart.size();
-            }
-        }
-
-        return cnt;
-    }
+    public long entriesCount(int part);
 
     /**
      * @return Offheap allocated size.
      */
-    public long offHeapAllocatedSize() {
-        // TODO GG-10884.
-        return 0;
-    }
+    public long offHeapAllocatedSize();
 
     // TODO GG-10884: moved from GridCacheSwapManager.
-    void writeAll(Iterable<GridCacheBatchSwapEntry> swapped) throws IgniteCheckedException {
-        // No-op.
-    }
-
-    /**
-     * @param primary {@code True} if need return primary entries.
-     * @param backup {@code True} if need return backup entries.
-     * @param topVer Topology version to use.
-     * @return Entries iterator.
-     * @throws IgniteCheckedException If failed.
-     */
-    @SuppressWarnings("unchecked")
-    public <K, V> GridCloseableIterator<Cache.Entry<K, V>> entriesIterator(final boolean primary,
-        final boolean backup,
-        final AffinityTopologyVersion topVer,
-        final boolean keepBinary)
-        throws IgniteCheckedException {
-        final GridCursor<CacheDataRow> cur = cursor();
-
-        return new GridCloseableIteratorAdapter<Cache.Entry<K, V>>() {
-            /** */
-            private CacheEntryImplEx next;
-
-            @Override protected Cache.Entry<K, V> onNext() throws IgniteCheckedException {
-                CacheEntryImplEx ret = next;
-
-                next = null;
-
-                return ret;
-            }
-
-            @Override protected boolean onHasNext() throws IgniteCheckedException {
-                if (next != null)
-                    return true;
-
-                CacheDataRow nextRow = null;
-
-                while (cur.next()) {
-                    CacheDataRow row = cur.get();
-
-                    boolean pass;
-
-                    if (primary && backup)
-                        pass = true;
-                    else if (primary)
-                        pass = cctx.affinity().primary(cctx.localNode(), row.partition(), topVer);
-                    else
-                        pass = cctx.affinity().backup(cctx.localNode(), row.partition(), topVer);
-
-                    if (pass) {
-                        nextRow = row;
-
-                        break;
-                    }
-                }
-
-                if (nextRow != null) {
-                    KeyCacheObject key = nextRow.key();
-                    CacheObject val = nextRow.value();
-
-                    Object key0 = cctx.unwrapBinaryIfNeeded(key, keepBinary, false);
-                    Object val0 = cctx.unwrapBinaryIfNeeded(val, keepBinary, false);
-
-                    next = new CacheEntryImplEx(key0, val0, nextRow.version());
-
-                    return true;
-                }
-
-                return false;
-            }
-        };
-    }
-
-    /**
-     * @return Iterator.
-     * @throws IgniteCheckedException If failed.
-     */
-    public GridCloseableIterator<KeyCacheObject> keysIterator() throws IgniteCheckedException {
-        final GridCursor<CacheDataRow> cur = cursor();
-
-        return new GridCloseableIteratorAdapter<KeyCacheObject>() {
-            /** */
-            private KeyCacheObject next;
-
-            @Override protected KeyCacheObject onNext() throws IgniteCheckedException {
-                KeyCacheObject ret = next;
-
-                next = null;
-
-                return ret;
-            }
-
-            @Override protected boolean onHasNext() throws IgniteCheckedException {
-                if (next != null)
-                    return true;
-
-                if (cur.next())
-                    next = cur.get().key();
-
-                return next != null;
-            }
-        };
-    }
-
-    /**
-     * @param part Partition.
-     * @return Iterator.
-     * @throws IgniteCheckedException If failed.
-     */
-    public GridCloseableIterator<KeyCacheObject> keysIterator(final int part) throws IgniteCheckedException {
-        final GridCursor<CacheDataRow> cur = cursor();
-
-        return new GridCloseableIteratorAdapter<KeyCacheObject>() {
-            /** */
-            private KeyCacheObject next;
-
-            @Override protected KeyCacheObject onNext() throws IgniteCheckedException {
-                KeyCacheObject res = next;
-
-                next = null;
-
-                return res;
-            }
-
-            @Override protected boolean onHasNext() throws IgniteCheckedException {
-                if (next != null)
-                    return true;
-
-                while (cur.next()) {
-                    CacheDataRow row = cur.get();
-
-                    if (row.partition() == part) {
-                        next = row.key();
-
-                        break;
-                    }
-                }
-
-                return next != null;
-            }
-        };
-    }
-
-    public GridIterator<CacheDataRow> iterator(final boolean backups, final AffinityTopologyVersion topVer)
-        throws IgniteCheckedException {
-        final GridCursor<CacheDataRow> cur = cursor();
-
-        return new GridCloseableIteratorAdapter<CacheDataRow>() {
-            /** */
-            private CacheDataRow next;
-
-            @Override protected CacheDataRow onNext() throws IgniteCheckedException {
-                CacheDataRow res = next;
-
-                next = null;
-
-                return res;
-            }
-
-            @Override protected boolean onHasNext() throws IgniteCheckedException {
-                if (next != null)
-                    return true;
-
-                while (cur.next()) {
-                    CacheDataRow row = cur.get();
-
-                    if (backups || cctx.affinity().primary(cctx.localNode(), row.partition(), topVer)) {
-                        next = row;
-
-                        break;
-                    }
-                }
-
-                return next != null;
-            }
-        };
-    }
-
-    /**
-     * Creates an iterator for the given partition ID.
-     *
-     * @param part Partition ID.
-     * @return Partition iterator.
-     * @throws IgniteCheckedException If failed to create iterator.
-     */
-    public GridIterator<CacheDataRow> iterator(final int part) throws IgniteCheckedException {
-        final GridCursor<CacheDataRow> cur = cursor();
-
-        return new GridCloseableIteratorAdapter<CacheDataRow>() {
-            /** */
-            private CacheDataRow next;
-
-            @Override protected CacheDataRow onNext() throws IgniteCheckedException {
-                CacheDataRow res = next;
-
-                next = null;
-
-                return res;
-            }
-
-            @Override protected boolean onHasNext() throws IgniteCheckedException {
-                if (next != null)
-                    return true;
-
-                while (cur.next()) {
-                    CacheDataRow row = cur.get();
-
-                    if (row.partition() == part) {
-                        next = row;
-
-                        break;
-                    }
-                }
-
-                return next != null;
-            }
-        };
-    }
-
-    /**
-     * @return Cursor.
-     * @throws IgniteCheckedException If failed.
-     */
-    @SuppressWarnings("unchecked")
-    private GridCursor<CacheDataRow> cursor() throws IgniteCheckedException {
-        GridCursor<? extends CacheDataRow> cur1 = dataTree.find(null, null);
-
-        return (GridCursor<CacheDataRow>) cur1;
-    }
+    void writeAll(Iterable<GridCacheBatchSwapEntry> swapped) throws IgniteCheckedException;
 
     /**
      *
      */
-    static class KeySearchRow {
-        /** */
-        protected final KeyCacheObject key;
-
-        /** */
-        protected long link;
-
+    interface CacheDataStore {
         /**
          * @param key Key.
-         * @param link Link.
-         */
-        public KeySearchRow(KeyCacheObject key, long link) {
-            this.key = key;
-            this.link = link;
-        }
-
-        /** {@inheritDoc} */
-        public String toString() {
-            return S.toString(KeySearchRow.class, this);
-        }
-    }
-
-    /**
-     *
-     */
-    static class DataRow extends KeySearchRow implements CacheDataRow {
-        /** */
-        private CacheObject val;
-
-        /** */
-        private GridCacheVersion ver;
-
-        /** */
-        private int part;
-
-        /**
-         * @param key Key.
+         * @param part Partition.
          * @param val Value.
          * @param ver Version.
-         * @param part Partition.
-         * @param link Link.
-         */
-        public DataRow(KeyCacheObject key, CacheObject val, GridCacheVersion ver, int part, long link) {
-            super(key, link);
-
-            this.val = val;
-            this.ver = ver;
-            this.part = part;
-        }
-
-        /** {@inheritDoc} */
-        @Override public KeyCacheObject key() {
-            return key;
-        }
-
-        /** {@inheritDoc} */
-        @Override public CacheObject value() {
-            return val;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridCacheVersion version() {
-            return ver;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int partition() {
-            return part;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long link() {
-            return link;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void link(long link) {
-            this.link = link;
-        }
-
-        /** {@inheritDoc} */
-        public String toString() {
-            return S.toString(DataRow.class, this);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class CacheDataTree extends BPlusTree<KeySearchRow, DataRow> {
-        /** */
-        private final CacheDataRowStore rowStore;
-
-        /** */
-        private final GridCacheContext cctx;
-
-        /**
-         * @param name Tree name.
-         * @param reuseList Reuse list.
-         * @param rowStore Row store.
-         * @param cctx Context.
-         * @param pageMem Page memory.
-         * @param metaPageId Meta page ID.
-         * @param initNew Initialize new index.
+         * @param expireTime Expire time.
          * @throws IgniteCheckedException If failed.
          */
-        public CacheDataTree(
-            String name,
-            ReuseList reuseList,
-            CacheDataRowStore rowStore,
-            GridCacheContext cctx,
-            PageMemory pageMem,
-            FullPageId metaPageId,
-            boolean initNew)
-            throws IgniteCheckedException
-        {
-            super(name, cctx.cacheId(), pageMem, metaPageId, reuseList, DataInnerIO.VERSIONS, DataLeafIO.VERSIONS);
-
-            assert rowStore != null;
-
-            this.rowStore = rowStore;
-            this.cctx = cctx;
-
-            if (initNew)
-                initNew();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected int compare(BPlusIO<KeySearchRow> io, ByteBuffer buf, int idx, KeySearchRow row)
-            throws IgniteCheckedException {
-            KeySearchRow row0 = io.getLookupRow(this, buf, idx);
-
-            return compareKeys(row0.key, row.key);
-        }
-
-        /** {@inheritDoc} */
-        @Override protected DataRow getRow(BPlusIO<KeySearchRow> io, ByteBuffer buf, int idx)
-            throws IgniteCheckedException {
-            long link = ((RowLinkIO)io).getLink(buf, idx);
-
-            return rowStore.dataRow(link);
-        }
+        void update(KeyCacheObject key,
+            int part,
+            CacheObject val,
+            GridCacheVersion ver,
+            long expireTime) throws IgniteCheckedException;
 
         /**
-         * @param key1 First key.
-         * @param key2 Second key.
-         * @return Compare result.
+         * @param key Key.
          * @throws IgniteCheckedException If failed.
          */
-        private int compareKeys(CacheObject key1, CacheObject key2) throws IgniteCheckedException {
-            byte[] bytes1 = key1.valueBytes(cctx.cacheObjectContext());
-            byte[] bytes2 = key2.valueBytes(cctx.cacheObjectContext());
-
-            int len = Math.min(bytes1.length, bytes2.length);
-
-            for (int i = 0; i < len; i++) {
-                byte b1 = bytes1[i];
-                byte b2 = bytes2[i];
-
-                if (b1 != b2)
-                    return b1 > b2 ? 1 : -1;
-            }
-
-            return Integer.compare(bytes1.length, bytes2.length);
-        }
-    }
-
-    /**
-     *
-     */
-    static class CacheDataRowStore extends RowStore<DataRow> {
-        /**
-         * @param cctx Cache context.
-         * @param freeList Free list.
-         */
-        public CacheDataRowStore(GridCacheContext<?, ?> cctx, FreeList freeList) {
-            super(cctx, freeList);
-        }
+        public void remove(KeyCacheObject key) throws IgniteCheckedException;
 
         /**
-         * @param link Link.
-         * @return Search row.
+         * @param key Key.
+         * @return Value/version tuple.
          * @throws IgniteCheckedException If failed.
          */
-        public KeySearchRow keySearchRow(long link) throws IgniteCheckedException {
-            return getRow(link, KeyRowClosure.INSTANCE);
-        }
+        public IgniteBiTuple<CacheObject, GridCacheVersion> find(KeyCacheObject key) throws IgniteCheckedException;
 
         /**
-         * @param link Link.
-         * @return Data row.
+         * @return Data cursor.
          * @throws IgniteCheckedException If failed.
          */
-        public DataRow dataRow(long link) throws IgniteCheckedException {
-            return getRow(link, DataRowClosure.INSTANCE);
-        }
+        public GridCursor<? extends CacheDataRow> cursor() throws IgniteCheckedException;
 
         /**
-         * @param link Link.
-         * @param c Row closure.
-         * @return Row.
-         * @throws IgniteCheckedException If failed.
+         * Data store listener.
          */
-        private <T> T getRow(long link, RowClosure<T> c) throws IgniteCheckedException {
-            try (Page page = page(pageId(link))) {
-                ByteBuffer buf = page.getForRead();
-
-                try {
-                    DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
-
-                    int dataOff = io.getDataOffset(buf, dwordsOffset(link));
-
-                    buf.position(dataOff);
-
-                    // Skip entry size.
-                    buf.getShort();
-
-                    T row;
-
-                    try {
-                        row = c.create(buf, link, cctx);
-                    }
-                    catch (IgniteCheckedException e) {
-                        throw new IgniteException(e);
-                    }
-
-                    return row;
-                }
-                finally {
-                    page.releaseRead();
-                }
-            }
-        }
-
-        /**
-         *
-         */
-        private interface RowClosure<T> {
+        interface Listener {
             /**
-             * @param buf Buffer.
-             * @param link Link.
-             * @param cctx Context.
-             * @return Row.
-             * @throws IgniteCheckedException If failed.
+             * On new entry inserted.
              */
-            T create(ByteBuffer buf, long link, GridCacheContext cctx) throws IgniteCheckedException;
-        }
+            void onInsert();
 
-        /**
-         *
-         */
-        static class KeyRowClosure implements RowClosure<KeySearchRow> {
-            /** */
-            static final KeyRowClosure INSTANCE = new KeyRowClosure();
-
-            /** {@inheritDoc} */
-            @Override public KeySearchRow create(ByteBuffer buf, long link, GridCacheContext cctx)
-                throws IgniteCheckedException {
-                KeyCacheObject key = cctx.cacheObjects().toKeyCacheObject(cctx.cacheObjectContext(), buf);
-
-                return new KeySearchRow(key, link);
-            }
-        }
-
-        /**
-         *
-         */
-        static class DataRowClosure implements RowClosure<DataRow> {
-            /** */
-            static final DataRowClosure INSTANCE = new DataRowClosure();
-
-            /** {@inheritDoc} */
-            @Override public DataRow create(ByteBuffer buf, long link, GridCacheContext cctx)
-                throws IgniteCheckedException {
-                KeyCacheObject key = cctx.cacheObjects().toKeyCacheObject(cctx.cacheObjectContext(), buf);
-                CacheObject val = cctx.cacheObjects().toCacheObject(cctx.cacheObjectContext(), buf);
-
-                int topVer = buf.getInt();
-                int nodeOrderDrId = buf.getInt();
-                long globalTime = buf.getLong();
-                long order = buf.getLong();
-
-                GridCacheVersion ver = new GridCacheVersion(topVer, nodeOrderDrId, globalTime, order);
-
-                return new DataRow(key, val, ver, PageIdUtils.partId(link), link);
-            }
-        }
-    }
-
-    /**
-     *
-     */
-    interface RowLinkIO {
-        /**
-         * @param buf Buffer.
-         * @param idx Index.
-         * @return Row link.
-         */
-        public long getLink(ByteBuffer buf, int idx);
-
-        /**
-         * @param buf Buffer.
-         * @param idx Index.
-         * @param link Row link.
-         */
-        public void setLink(ByteBuffer buf, int idx, long link);
-    }
-
-    /**
-     *
-     */
-    static class DataInnerIO extends BPlusInnerIO<KeySearchRow> implements RowLinkIO {
-        /** */
-        public static final IOVersions<DataInnerIO> VERSIONS = new IOVersions<>(
-            new DataInnerIO(1)
-        );
-
-        /**
-         * @param ver Page format version.
-         */
-        private DataInnerIO(int ver) {
-            super(T_DATA_REF_INNER, ver, true, 8);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void store(ByteBuffer buf, int idx, KeySearchRow row) {
-            assert row.link != 0;
-
-            setLink(buf, idx, row.link);
-        }
-
-        /** {@inheritDoc} */
-        @Override public KeySearchRow getLookupRow(BPlusTree<KeySearchRow, ?> tree, ByteBuffer buf, int idx)
-            throws IgniteCheckedException {
-            long link = getLink(buf, idx);
-
-            return ((CacheDataTree)tree).rowStore.keySearchRow(link);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void store(ByteBuffer dst, int dstIdx, BPlusIO<KeySearchRow> srcIo, ByteBuffer src,
-            int srcIdx) {
-            long link = ((RowLinkIO)srcIo).getLink(src, srcIdx);
-
-            setLink(dst, dstIdx, link);
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getLink(ByteBuffer buf, int idx) {
-            assert idx < getCount(buf) : idx;
-
-            return buf.getLong(offset(idx, SHIFT_LINK));
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setLink(ByteBuffer buf, int idx, long link) {
-            buf.putLong(offset(idx, SHIFT_LINK), link);
-
-            assert getLink(buf, idx) == link;
-        }
-    }
-
-    /**
-     *
-     */
-    static class DataLeafIO extends BPlusLeafIO<KeySearchRow> implements RowLinkIO {
-        /** */
-        public static final IOVersions<DataLeafIO> VERSIONS = new IOVersions<>(
-            new DataLeafIO(1)
-        );
-
-        /**
-         * @param ver Page format version.
-         */
-        protected DataLeafIO(int ver) {
-            super(T_DATA_REF_LEAF, ver, 8);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void store(ByteBuffer buf, int idx, KeySearchRow row) {
-            DataRow row0 = (DataRow)row;
-
-            assert row0.link != 0;
-
-            setLink(buf, idx, row0.link);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void store(ByteBuffer dst, int dstIdx, BPlusIO<KeySearchRow> srcIo, ByteBuffer src, int srcIdx)
-            throws IgniteCheckedException {
-            setLink(dst, dstIdx, getLink(src, srcIdx));
-        }
-
-        /** {@inheritDoc} */
-        @Override public KeySearchRow getLookupRow(BPlusTree<KeySearchRow, ?> tree, ByteBuffer buf, int idx)
-            throws IgniteCheckedException {
-            long link = getLink(buf, idx);
-
-            return ((CacheDataTree)tree).rowStore.keySearchRow(link);
-        }
-
-        /** {@inheritDoc} */
-        @Override public long getLink(ByteBuffer buf, int idx) {
-            assert idx < getCount(buf) : idx;
-
-            return buf.getLong(offset(idx));
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setLink(ByteBuffer buf, int idx, long link) {
-            buf.putLong(offset(idx), link);
-
-            assert getLink(buf, idx) == link;
+            /**
+             * On entry removed.
+             */
+            void onRemove();
         }
     }
 }

@@ -124,6 +124,79 @@ public abstract class GridCommonAbstractTest extends GridAbstractTest {
     }
 
     /**
+     * Get or create instance of cache specified by K,V types;
+     * new instance of cache is created for each pair of types key and value
+     *
+     * @param clsK Key class.
+     * @param clsV Value class.
+     *
+     * @return cache instance
+     */
+    protected <K, V> IgniteCache<K, V> jcache(CacheConfiguration ccfg, Class<K> clsK, Class<V> clsV) {
+        return jcache(grid(), ccfg, clsK, clsV);
+    }
+
+    /**
+     * Get or create instance of cache specified by K,V types;
+     * new instance of cache is created for each pair of types key and value
+     *
+     * @param ig Ignite.
+     * @param ccfg Cache configuration.
+     * @param clsK Key class.
+     * @param clsV Value class.
+     *
+     * @return cache instance
+     */
+    protected <K, V> IgniteCache<K, V> jcache(Ignite ig, CacheConfiguration ccfg, Class<K> clsK, Class<V> clsV) {
+        return jcache(ig, ccfg, clsK.getSimpleName() + "-" + clsV.getSimpleName(), clsK, clsV);
+    }
+
+    /**
+     * Get or create instance of cache specified by K,V types;
+     * new instance of cache is created for each pair of types key and value
+     *
+     * @param ig Ignite.
+     * @param ccfg Cache configuration.
+     * @param name Cache name.
+     * @param clsK Key class.
+     * @param clsV Value class.
+     *
+     * @return cache instance
+     */
+    @SuppressWarnings("unchecked")
+    protected <K, V> IgniteCache<K, V> jcache(Ignite ig,
+        CacheConfiguration ccfg,
+        String name,
+        Class<K> clsK,
+        Class<V> clsV) {
+        CacheConfiguration<K, V> cc = new CacheConfiguration<>(ccfg);
+        cc.setName(name);
+        cc.setIndexedTypes(clsK, clsV);
+
+        return ig.getOrCreateCache(cc);
+    }
+
+    /**
+     * Get or create instance of cache specified by K,V types;
+     * new instance of cache is created
+     *
+     * @param ig Ignite.
+     * @param ccfg Cache configuration.
+     * @param name Cache name.
+     *
+     * @return cache instance
+     */
+    @SuppressWarnings("unchecked")
+    protected <K, V> IgniteCache<K, V> jcache(Ignite ig,
+        CacheConfiguration ccfg,
+        String name) {
+        CacheConfiguration<K, V> cc = new CacheConfiguration<>(ccfg);
+        cc.setName(name);
+
+        return ig.getOrCreateCache(cc);
+    }
+
+    /**
      * @param idx Grid index.
      * @param name Cache name.
      * @return Cache.

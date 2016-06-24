@@ -114,7 +114,6 @@ import org.apache.ignite.spi.discovery.DiscoverySpiHistorySupport;
 import org.apache.ignite.spi.discovery.DiscoverySpiListener;
 import org.apache.ignite.spi.discovery.DiscoverySpiNodeAuthenticator;
 import org.apache.ignite.spi.discovery.DiscoverySpiOrderSupport;
-import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryNodeActivatedMessage;
 import org.apache.ignite.thread.IgniteThread;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
@@ -539,12 +538,12 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                     nextTopVer = new AffinityTopologyVersion(topVer, minorTopVer);
 
                     if (verChanged)
-                        ctx.cache().onDiscoveryEvent(type, node, nextTopVer);
+                        ctx.cache().onDiscoveryEvent(type, node, nextTopVer, customMsg);
                 }
                 else {
                     nextTopVer = new AffinityTopologyVersion(topVer, minorTopVer);
 
-                    ctx.cache().onDiscoveryEvent(type, node, nextTopVer);
+                    ctx.cache().onDiscoveryEvent(type, node, nextTopVer, null);
                 }
 
                 if (type == DiscoveryCustomEvent.EVT_DISCOVERY_CUSTOM_EVT) {
@@ -566,8 +565,8 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
                 Set<ClusterNode> activatedNodes = activated();
 
-                if (customMsg != null && customMsg instanceof TcpDiscoveryNodeActivatedMessage) {
-                    ClusterNode activatedNode = node(((TcpDiscoveryNodeActivatedMessage)customMsg).nodeId());
+                if (customMsg != null && customMsg instanceof NodeActivatedMessage) {
+                    ClusterNode activatedNode = node(((NodeActivatedMessage)customMsg).nodeId());
 
                     assert activatedNode != null;
 
@@ -612,17 +611,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
                             }
                         }, FILTER_DAEMON)));
 
-                    try {
-                        ctx.cache().context().database().beforeExchange(discoEvt);
-                    } catch (IgniteCheckedException e) {
-                        assert false : e;
-                    }
-
                     locJoinEvt.onDone(discoEvt);
 
                     return;
                 }
-                else if (customMsg != null && customMsg instanceof TcpDiscoveryNodeActivatedMessage &&
+                else if (customMsg != null && customMsg instanceof NodeActivatedMessage &&
                     node.id().equals(locNode.id())) {
 
                     DiscoveryCustomEvent discoEvt = new DiscoveryCustomEvent();
@@ -761,10 +754,10 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         ctx.service().initCompatibilityMode(discoCache().remoteNodes());
 
-        setCustomEventListener(TcpDiscoveryNodeActivatedMessage.class, new CustomEventListener<TcpDiscoveryNodeActivatedMessage>() {
+        setCustomEventListener(NodeActivatedMessage.class, new CustomEventListener<NodeActivatedMessage>() {
             @Override
             public void onCustomEvent(AffinityTopologyVersion topVer, ClusterNode snd,
-                TcpDiscoveryNodeActivatedMessage msg) {
+                NodeActivatedMessage msg) {
                 discoveredActivatedNodes.add(snd);
             }
         });
@@ -1095,7 +1088,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
 
         Boolean locMarshStrSerVer2 = locNode.attribute(ATTR_MARSHALLER_USE_BINARY_STRING_SER_VER_2);
         boolean locMarshStrSerVer2Bool = locMarshStrSerVer2 == null ?
-            false /* turned on and added to the attributes list by default only when BinaryMarshaller is used. */:
+            false /* turned on and added to the attributes list by default only when BinaryMarshaller is used. */ :
             locMarshStrSerVer2;
 
         boolean locDelayAssign = locNode.attribute(ATTR_LATE_AFFINITY_ASSIGNMENT);
@@ -2096,7 +2089,7 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             @Override public void apply(IgniteInternalFuture<DiscoveryEvent> future) {
                 if (!activated(localNode())) {
                     try {
-                        sendCustomEvent(new TcpDiscoveryNodeActivatedMessage(ctx.localNodeId()));
+                        sendCustomEvent(new NodeActivatedMessage(ctx.localNodeId()));
                     }
                     catch (IgniteCheckedException e) {
                         if (future instanceof GridFutureAdapter)

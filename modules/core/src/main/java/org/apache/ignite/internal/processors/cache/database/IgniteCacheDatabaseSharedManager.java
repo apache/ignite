@@ -23,18 +23,12 @@ import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.mem.unsafe.UnsafeMemoryProvider;
-import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter;
-import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import java.io.File;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  *
@@ -50,7 +44,10 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     @Override protected void start0() throws IgniteCheckedException {
         DatabaseConfiguration dbCfg = cctx.kernalContext().config().getDatabaseConfiguration();
 
-        if (dbCfg != null && !cctx.kernalContext().clientNode()) {
+        if (!cctx.kernalContext().clientNode()) {
+            if (dbCfg == null)
+                dbCfg = new DatabaseConfiguration();
+
             pageMem = createPageMemory(dbCfg);
 
             pageMem.start();
@@ -100,6 +97,13 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
      */
     public void beforeExchange(DiscoveryEvent discoEvt) throws IgniteCheckedException {
         // No-op.
+    }
+
+    /**
+     * @return {@code True} if persistence is enablec.
+     */
+    public boolean persistenceEnabled() {
+        return false;
     }
 
     /**

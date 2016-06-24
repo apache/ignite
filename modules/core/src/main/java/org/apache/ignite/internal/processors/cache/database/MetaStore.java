@@ -28,13 +28,11 @@ public interface MetaStore {
      *
      * @param cacheId Cache ID.
      * @param idxName Index name.
-     * @param idx {@code True} if should be allocated in index space, {@code false} for
-     *                        allocation in meta space.
      * @return {@link RootPage} that keeps pageId, allocated flag that shows whether the page
-     * was newly allocated, and rootId that is counter which increments each time new page allocated.
+     *      was newly allocated, and rootId that is counter which increments each time new page allocated.
      * @throws IgniteCheckedException
      */
-    public RootPage getOrAllocateForTree(int cacheId, String idxName, boolean idx) throws IgniteCheckedException;
+    public RootPage getOrAllocateForTree(int cacheId, String idxName) throws IgniteCheckedException;
 
     /**
      * Deallocate index page and remove from tree.
@@ -44,5 +42,5 @@ public interface MetaStore {
      * @return Root ID or -1 if no page was removed.
      * @throws IgniteCheckedException
      */
-    public long dropRootPage(int cacheId, String idxName) throws IgniteCheckedException;
+    public RootPage dropRootPage(int cacheId, String idxName) throws IgniteCheckedException;
 }

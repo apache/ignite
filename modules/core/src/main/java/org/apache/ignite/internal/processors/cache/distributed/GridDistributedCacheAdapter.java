@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.compute.ComputeJob;
@@ -39,10 +40,10 @@ import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheConcurrentMap;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
+import org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheEntry;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxLocalEx;
@@ -259,6 +260,28 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
     }
 
     /** {@inheritDoc} */
+    @Override public long localSizeLong(CachePeekMode[] peekModes) throws IgniteCheckedException {
+        PeekModes modes = parsePeekModes(peekModes, true);
+
+        long size = 0;
+
+        if (modes.near)
+            size += nearSize();
+
+        // Swap and offheap are disabled for near cache.
+        if (modes.primary || modes.backup) {
+            AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
+
+            IgniteCacheOffheapManager offheap = ctx.offheap();
+
+            if (modes.offheap)
+                size += offheap.entriesCount(modes.primary, modes.backup, topVer);
+        }
+
+        return size;
+    }
+
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(GridDistributedCacheAdapter.class, this, "super", super.toString());
     }
@@ -330,12 +353,13 @@ public abstract class GridDistributedCacheAdapter<K, V> extends GridCacheAdapter
             return true;
         }
     }
+
     /**
      * Internal job which performs remove all primary key mappings
      * operation on a cache with the given name.
      */
     @GridInternal
-    private static class GlobalRemoveAllJob<K,V>  extends TopologyVersionAwareJob {
+    private static class GlobalRemoveAllJob<K, V> extends TopologyVersionAwareJob {
         /** */
         private static final long serialVersionUID = 0L;
 

@@ -56,9 +56,7 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
         Person p3 = new Person("Mike", 1800);
         Person p4 = new Person("Bob", 1900);
 
-        Ignite ignite0 = grid(0);
-
-        IgniteCache<UUID, Person> cache0 = ignite0.cache(null);
+        IgniteCache<UUID, Person> cache0 = jcache(UUID.class, Person.class);
 
         cache0.put(p1.id(), p1);
         cache0.put(p2.id(), p2);
@@ -97,7 +95,7 @@ public class IgniteCachePartitionedQuerySelfTest extends IgniteCacheAbstractQuer
         Person p3 = new Person("Mike", 1800);
         Person p4 = new Person("Bob", 1900);
 
-        IgniteCache<UUID, Person> cache0 = grid(0).cache(null);
+        IgniteCache<UUID, Person> cache0 = jcache(UUID.class, Person.class);
 
         cache0.put(p1.id(), p1);
         cache0.put(p2.id(), p2);

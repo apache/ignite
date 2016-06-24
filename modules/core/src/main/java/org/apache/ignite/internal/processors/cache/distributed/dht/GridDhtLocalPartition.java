@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
@@ -60,6 +61,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_UNLOADED;
+import static org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager.CacheDataStore;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
@@ -68,7 +70,8 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
 /**
  * Key partition.
  */
-public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>, GridReservable, GridCacheConcurrentMap {
+public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>, GridReservable, GridCacheConcurrentMap,
+    CacheDataStore.Listener {
     /** Maximum size for delete queue. */
     public static final int MAX_DELETE_QUEUE_SIZE = Integer.getInteger(IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE,
         200_000);
@@ -115,6 +118,9 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     /** Update counter. */
     private final AtomicLong cntr = new AtomicLong();
 
+    /** */
+    private final CacheDataStore store;
+
     /** Partition size. */
     private final AtomicLong storageSize = new AtomicLong();
 
@@ -128,8 +134,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @param cctx Context.
      * @param id Partition ID.
      */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor") GridDhtLocalPartition(GridCacheContext cctx, int id,
-        GridCacheMapEntryFactory entryFactory) {
+    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor") GridDhtLocalPartition(GridCacheContext cctx,
+        int id, GridCacheMapEntryFactory entryFactory) {
         assert cctx != null;
 
         this.id = id;
@@ -149,6 +155,21 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             Math.max(MAX_DELETE_QUEUE_SIZE / cctx.affinity().partitions(), 20);
 
         rmvQueue = new GridCircularBuffer<>(U.ceilPow2(delQueueSize));
+
+        try {
+            store = cctx.offheap().createCacheDataStore(id, this);
+        }
+        catch (IgniteCheckedException e) {
+            // TODO ignite-db
+            throw new IgniteException(e);
+        }
+    }
+
+    /**
+     * @return Data store.
+     */
+    public CacheDataStore dataStore() {
+        return store;
     }
 
     /**
@@ -158,6 +179,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     public void init(long size, long partCntr) {
         storageSize.set(size);
         cntr.set(partCntr);
+
+        own();
     }
 
     /**
@@ -283,12 +306,12 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     }
 
     /** {@inheritDoc} */
-    public void onInsert() {
+    @Override public void onInsert() {
         storageSize.incrementAndGet();
     }
 
     /** {@inheritDoc} */
-    public void onRemove() {
+    @Override public void onRemove() {
         storageSize.decrementAndGet();
     }
 

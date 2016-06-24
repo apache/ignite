@@ -86,6 +86,7 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
         return true;
     }
 
+    /** {@inheritDoc} */
     @Override public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException {
         return val.length + 5;
     }
@@ -181,6 +182,6 @@ public class CacheObjectByteArrayImpl implements CacheObject, Externalizable {
 
     /** {@inheritDoc} */
     public String toString() {
-        return "CacheObjectByteArrayImpl [arrLen" + (val != null ? val.length : 0) + ']';
+        return "CacheObjectByteArrayImpl [arrLen=" + (val != null ? val.length : 0) + ']';
     }
 }

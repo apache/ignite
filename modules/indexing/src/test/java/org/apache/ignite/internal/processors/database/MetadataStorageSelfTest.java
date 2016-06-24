@@ -24,7 +24,6 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.pagemem.impl.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 
 import java.io.File;
@@ -92,7 +91,7 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
                     idxName = randomName();
                 } while (idxMap.containsKey(idxName));
 
-                final RootPage rootPage = metaStore.getOrAllocateForTree(cacheId, idxName, idx);
+                final RootPage rootPage = metaStore.getOrAllocateForTree(cacheId, idxName);
 
                 assertTrue(rootPage.isAllocated());
 
@@ -106,7 +105,7 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
                     String idxName = entry.getKey();
                     FullPageId rootPageId = entry.getValue().pageId();
 
-                    final RootPage rootPage = metaStore.getOrAllocateForTree(cacheId, idxName, idx);
+                    final RootPage rootPage = metaStore.getOrAllocateForTree(cacheId, idxName);
 
                     assertEquals("Invalid root page ID restored [cacheId=" + cacheId + ", idxName=" + idxName + ']',
                         rootPageId, rootPage.pageId());
@@ -135,7 +134,7 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
                     FullPageId rootPageId = entry.getValue().pageId();
 
                     assertEquals("Invalid root page ID restored [cacheId=" + cacheId + ", idxName=" + idxName + ']',
-                        rootPageId, meta.getOrAllocateForTree(cacheId, idxName, idx).pageId());
+                        rootPageId, meta.getOrAllocateForTree(cacheId, idxName).pageId());
 
                 }
             }
@@ -148,20 +147,20 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
                     RootPage rootPage = entry.getValue();
                     FullPageId rootPageId = rootPage.pageId();
 
-                    final long droppedRootId = meta.dropRootPage(cacheId, idxName);
+                    final RootPage droppedRootId = meta.dropRootPage(cacheId, idxName);
 
                     assertEquals("Drop failure [cacheId=" + cacheId + ", idxName=" + idxName + ", stored rootPageId="
-                        + rootPage.rootId() + ", dropped rootPageId=" + droppedRootId + ']',
-                        rootPage.rootId(), droppedRootId);
+                        + rootPage + ", dropped rootPageId=" + droppedRootId + ']',
+                        rootPage.pageId(), droppedRootId.pageId());
 
-                    final long secondDropRootId = meta.dropRootPage(cacheId, idxName);
+                    final RootPage secondDropRootId = meta.dropRootPage(cacheId, idxName);
 
-                    assertEquals("Page was dropped twice [cacheId=" + cacheId + ", idxName=" + idxName
+                    assertNull("Page was dropped twice [cacheId=" + cacheId + ", idxName=" + idxName
                         + ", drop result=" + secondDropRootId + ']',
-                        -1, secondDropRootId);
+                        secondDropRootId);
 
                     // make sure it will be allocated again
-                    final RootPage newRootPage = meta.getOrAllocateForTree(cacheId, idxName, idx);
+                    final RootPage newRootPage = meta.getOrAllocateForTree(cacheId, idxName);
 
                     assertEquals("Invalid root page ID restored [cacheId=" + cacheId + ", idxName=" + idxName + ']',
                         rootPageId, newRootPage.pageId());
@@ -198,7 +197,7 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
      */
     private PageMemory memory(boolean clean) {
         MappedFileMemoryProvider provider = new MappedFileMemoryProvider(log(), allocationPath, clean,
-            20 * 1024 * 1024, 2 * 1024 * 1024);
+            20 * 1024 * 1024, 20 * 1024 * 1024);
 
         return new PageMemoryImpl(log, provider, null, PAGE_SIZE, Runtime.getRuntime().availableProcessors());
     }

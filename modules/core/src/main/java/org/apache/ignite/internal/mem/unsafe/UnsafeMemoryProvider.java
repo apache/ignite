@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.mem.unsafe;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.mem.DirectMemory;
@@ -86,10 +87,15 @@ public class UnsafeMemoryProvider implements DirectMemoryProvider, LifecycleAwar
 
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteException {
-        for (DirectMemoryFragment chunk : chunks) {
+        for (Iterator<DirectMemoryFragment> it = chunks.iterator(); it.hasNext(); ) {
+            DirectMemoryFragment chunk = it.next();
+
             UnsafeChunk uc = (UnsafeChunk)chunk;
 
             GridUnsafe.freeMemory(uc.ptr);
+
+            // Safety.
+            it.remove();
         }
     }
 

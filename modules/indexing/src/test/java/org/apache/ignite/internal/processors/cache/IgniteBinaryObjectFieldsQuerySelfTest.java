@@ -221,7 +221,7 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
             for (int i = 0; i < 100; i++) {
                 Object person = all.get(i).getValue();
 
-                assertEquals((Integer) i, U.field(person, "id"));
+                assertEquals(Integer.valueOf(i), U.field(person, "id"));
                 assertEquals("person-" + i, U.field(person, "name"));
                 assertEquals("person-last-" + i, U.field(person, "lastName"));
                 assertEquals((double)(i * 25), U.field(person, "salary"));
@@ -248,7 +248,8 @@ public class IgniteBinaryObjectFieldsQuerySelfTest extends GridCommonAbstractTes
             }
         }
         finally {
-            grid(3).destroyCache(null);
+            grid(GRID_CNT - 1).cache(null).removeAll();
+            grid(GRID_CNT - 1).destroyCache(null);
         }
     }
 

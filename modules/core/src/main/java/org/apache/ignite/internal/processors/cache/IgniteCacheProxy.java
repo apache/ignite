@@ -1031,25 +1031,6 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
         }
     }
 
-    /**
-     * Gets entry set containing internal entries.
-     *
-     * @param filter Filter.
-     * @return Entry set.
-     */
-    public Set<Cache.Entry<K, V>> entrySetx(CacheEntryPredicate... filter) {
-        GridCacheGateway<K, V> gate = this.gate;
-
-        CacheOperationContext prev = onEnter(gate, opCtx);
-
-        try {
-            return delegate.entrySetx(filter);
-        }
-        finally {
-            onLeave(gate, prev);
-        }
-    }
-
     /** {@inheritDoc} */
     @Override public boolean containsKey(K key) {
         GridCacheGateway<K, V> gate = this.gate;
@@ -2083,7 +2064,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<?> active(boolean active) {
-        return new IgniteFutureImpl<>(ctx.kernalContext().cache().changeCacheState(getName(), new CacheState(active)));
+        return new IgniteFutureImpl<>(ctx.kernalContext().cache().changeCacheState(getName(), new CacheState.Difference(active, null, null)));
     }
 
     /** {@inheritDoc} */
@@ -2092,7 +2073,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> recoverPartitions(Collection<Integer> partitions) {
+    @Override public IgniteFuture<?> recoverPartitions(Set<Integer> partitions) {
 
         CacheState state = delegate.state();
 
@@ -2100,7 +2081,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         lostParts.removeAll(partitions);
 
-        return new IgniteFutureImpl<>(ctx.kernalContext().cache().changeCacheState(getName(), new CacheState(state.active(), lostParts)));
+        return new IgniteFutureImpl<>(ctx.kernalContext().cache().changeCacheState(getName(),
+            new CacheState.Difference(null, null, partitions)));
     }
 
     /** {@inheritDoc} */

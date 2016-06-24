@@ -28,9 +28,9 @@ import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
 /**
  * Data store for H2 rows.
  */
-public class RowStore<T extends CacheDataRow> {
+public class RowStore {
     /** */
-    protected final FreeList freeList;
+    private final FreeList freeList;
 
     /** */
     protected final PageMemory pageMem;

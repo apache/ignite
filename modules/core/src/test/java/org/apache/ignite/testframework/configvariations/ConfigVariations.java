@@ -115,7 +115,6 @@ public class ConfigVariations {
         Parameters.enumParameters("setMemoryMode", CacheMemoryMode.class),
         // Set default parameters.
         Parameters.objectParameters("setLoadPreviousValue", true),
-        Parameters.objectParameters("setSwapEnabled", true),
         asArray(SIMPLE_CACHE_STORE_PARAM),
         Parameters.objectParameters("setWriteSynchronizationMode", CacheWriteSynchronizationMode.FULL_SYNC),
         Parameters.objectParameters("setAtomicWriteOrderMode", CacheAtomicWriteOrderMode.PRIMARY),
@@ -136,7 +135,6 @@ public class ConfigVariations {
         Parameters.booleanParameters("setReadFromBackup"),
         Parameters.booleanParameters("setStoreKeepBinary"),
         Parameters.objectParameters("setRebalanceMode", CacheRebalanceMode.SYNC, CacheRebalanceMode.ASYNC),
-        Parameters.booleanParameters("setSwapEnabled"),
         Parameters.booleanParameters("setCopyOnRead"),
         Parameters.objectParameters(true, "setNearConfiguration", nearCacheConfigurationFactory()),
         asArray(null,

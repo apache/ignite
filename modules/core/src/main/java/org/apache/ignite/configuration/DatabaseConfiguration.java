@@ -30,7 +30,7 @@ public class DatabaseConfiguration implements Serializable {
     public static final long DFLT_PAGE_CACHE_SIZE = 1024 * 1024 * 1024;
 
     /** Default page size. */
-    public static final int DFLT_PAGE_SIZE = 8 * 1024;
+    public static final int DFLT_PAGE_SIZE = 2 * 1024;
 
     /** Page size. */
     private int pageSize = DFLT_PAGE_SIZE;

@@ -399,7 +399,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
             checkObsolete();
 
             if (isStartVersion() && ((flags & IS_UNSWAPPED_MASK) == 0)) {
-                IgniteBiTuple<CacheObject, GridCacheVersion> read = cctx.offheap().read(key, partition());
+                IgniteBiTuple<CacheObject, GridCacheVersion> read = cctx.offheap().read(this);
 
                 flags |= IS_UNSWAPPED_MASK;
 
@@ -2922,7 +2922,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         synchronized (this) {
             checkObsolete();
 
-            if ((isNew() && !cctx.offheap().containsKey(key, partition())) || (!preload && deletedUnlocked())) {
+            if ((isNew() && !cctx.offheap().containsKey(this)) || (!preload && deletedUnlocked())) {
                 long expTime = expireTime < 0 ? CU.toExpireTime(ttl) : expireTime;
 
                 val = cctx.kernalContext().cacheObjects().prepareForCache(val, cctx);
@@ -3572,7 +3572,7 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         CacheObject val = this.val;
 
         if (val == null && isStartVersion()) {
-            IgniteBiTuple<CacheObject, GridCacheVersion> t = cctx.offheap().read(key, partition());
+            IgniteBiTuple<CacheObject, GridCacheVersion> t = detached() || isNear() ? null : cctx.offheap().read(this);
 
             if (t != null)
                 val = t.get1();

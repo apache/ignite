@@ -43,7 +43,7 @@ public class GridCacheReduceFieldsQueryPartitionedSelfTest extends GridCacheAbst
      * @throws Exception If failed.
      */
     public void testIncludeBackups() throws Exception {
-        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(null).context().queries().
+        CacheQuery<List<?>> qry = ((IgniteKernal)grid(0)).getCache(personCache.getName()).context().queries().
             createSqlFieldsQuery("select age from Person", false);
 
         qry.includeBackups(true);

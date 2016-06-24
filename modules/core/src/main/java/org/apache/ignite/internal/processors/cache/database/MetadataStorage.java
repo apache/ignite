@@ -19,9 +19,9 @@ package org.apache.ignite.internal.processors.cache.database;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdAllocator;
@@ -46,17 +46,8 @@ public class MetadataStorage implements MetaStore {
     /** Bytes in int. */
     private static final int INT_LEN = 4;
 
-    /** Bytes in long. */
-    private static final int LONG_LEN = 8;
-
-    /** Constant that's used for tree root page allocation. */
-    private static final int TREE_CACHE_ID = Integer.MAX_VALUE; // TODO drop this
-
     /** Page memory. */
     private final PageMemory pageMem;
-
-    /** Increments on each root page allocation. */
-    private final AtomicLong rootId = new AtomicLong(0); // TODO drop this
 
     /** Index tree. */
     private volatile MetaTree metaTree;
@@ -65,71 +56,69 @@ public class MetadataStorage implements MetaStore {
      * @param pageMem Page memory.
      */
     public MetadataStorage(PageMemory pageMem) {
-        this.pageMem = pageMem;
+        try {
+            this.pageMem = pageMem;
+
+            final RootPage rootPage = metaPageTree();
+
+            metaTree = new MetaTree(0, pageMem, rootPage.pageId(), null, IndexInnerIO.VERSIONS,
+                IndexLeafIO.VERSIONS, rootPage.isAllocated());
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public RootPage getOrAllocateForTree(final int cacheId, final String idxName, final boolean idx)
-        throws IgniteCheckedException {
+    @Override public RootPage getOrAllocateForTree(final int cacheId, final String idxName) throws IgniteCheckedException {
         // TODO drop cacheId from signature - must be one metastore per cache and it is bad idea to store more data than needed
-        // TODO drop idx from signature - never used
-
-        if (idxName.length() > MAX_IDX_NAME_LEN) // TODO useless check because we actually store in UTF-8
-            throw new IllegalArgumentException("Too long indexName [max allowed length=" + MAX_IDX_NAME_LEN +
-                ", current length=" + idxName.length() + "]");
-
-        final MetaTree tree = metaTree();
+        final MetaTree tree = metaTree;
 
         synchronized (this) {
-            byte[] idxNameBytes = idxName.getBytes(StandardCharsets.UTF_8); // TODO either store UTF-16 or calculate for UTF-8
+            byte[] idxNameBytes = idxName.getBytes(StandardCharsets.UTF_8);
 
-            final IndexItem row = tree.findOne(new IndexItem(idxNameBytes, 0, cacheId, 0));
+            if (idxNameBytes.length > MAX_IDX_NAME_LEN)
+                throw new IllegalArgumentException("Too long encoded indexName [maxAllowed=" + MAX_IDX_NAME_LEN +
+                    ", currentLength=" + idxNameBytes.length + ", name=" + idxName + "]");
+
+            final IndexItem row = tree.findOne(new IndexItem(idxNameBytes, 0, cacheId));
 
             if (row == null) {
                 final FullPageId idxRoot = pageMem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_META);
 
-                final long rootId = this.rootId.getAndIncrement();
+                tree.put(new IndexItem(idxNameBytes, idxRoot.pageId(), cacheId));
 
-                tree.put(new IndexItem(idxNameBytes, idxRoot.pageId(), cacheId, rootId));
-
-                return new RootPage(idxRoot, true, rootId);
+                return new RootPage(idxRoot, true);
             }
             else {
                 final FullPageId pageId = new FullPageId(row.pageId, cacheId);
 
-                return new RootPage(pageId, false, rootId.get());
+                return new RootPage(pageId, false);
             }
         }
     }
 
     /** {@inheritDoc} */
-    @Override public long dropRootPage(final int cacheId, final String idxName)
+    @Override public RootPage dropRootPage(final int cacheId, final String idxName)
         throws IgniteCheckedException {
-        final MetaTree tree = metaTree();
+        final MetaTree tree = metaTree;
 
-        byte[] idxNameBytes = idxName.getBytes(StandardCharsets.UTF_8); // TODO either store UTF-16 or calculate for UTF-8
+        byte[] idxNameBytes = idxName.getBytes(StandardCharsets.UTF_8);
 
-        final IndexItem row;
+        final IndexItem row = tree.remove(new IndexItem(idxNameBytes, 0, cacheId));
 
-        synchronized (this) { // TODO don't think this synchronisation makes any sense
-            row = tree.remove(new IndexItem(idxNameBytes, 0, cacheId, 0));
-        }
-
-        if (row != null) // TODO looks like a bug, are we allowed to call freePage?
+        if (row != null) // TODO Have a reuse tree for deallocated pages.
             pageMem.freePage(new FullPageId(row.pageId, cacheId));
 
-        // TODO Looks like this rootId is useless, and it is better to just return dropped root page ID or true/false.
-        return row != null ? row.rootId : -1;
+        return row != null ? new RootPage(new FullPageId(row.pageId, row.cacheId), false) : null;
     }
 
     /**
-     * @param cacheId Cache ID to get meta page for.
      * @return Meta page.
      */
-    private RootPage metaPageTree(int cacheId) throws IgniteCheckedException {
+    private RootPage metaPageTree() throws IgniteCheckedException {
         // TODO this complex stuff must go away after metastore will be made one per cache
         // TODO and we must make pageMem.metaPage to be a MetaTree root.
-
         Page meta = pageMem.metaPage();
 
         try {
@@ -138,41 +127,22 @@ public class MetadataStorage implements MetaStore {
             ByteBuffer buf = meta.getForWrite();
 
             try {
-                int cnt = buf.getShort() & 0xFFFF;
-                int cnt0 = cnt;
+                long pageId = buf.getLong();
 
-                int writePos = 0;
+                if (pageId != 0)
+                    return new RootPage(new FullPageId(pageId, 0), false);
+                else {
+                    FullPageId fullId = pageMem.allocatePage(0, 0, PageIdAllocator.FLAG_META);
 
-                while (cnt0 > 0) {
-                    int readId = buf.getInt();
-                    long pageId = buf.getLong();
+                    assert !fullId.equals(meta.fullId()) : "Duplicate page allocated " +
+                        "[metaId=" + meta.fullId() + ", allocated=" + fullId + ']';
 
-                    if (readId != 0) {
-                        if (readId == cacheId)
-                            return new RootPage(new FullPageId(pageId, cacheId), false, 0);
+                    buf.putLong(0, fullId.pageId());
 
-                        cnt0--;
-                    }
-                    else
-                        writePos = buf.position() - 12;
+                    written = true;
+
+                    return new RootPage(fullId, true);
                 }
-
-                if (writePos != 0)
-                    buf.position(writePos);
-
-                FullPageId fullId = pageMem.allocatePage(cacheId, 0, PageIdAllocator.FLAG_META);
-
-                assert !fullId.equals(meta.fullId()) : "Duplicate page allocated " +
-                    "[metaId=" + meta.fullId() + ", allocated=" + fullId + ']';
-
-                buf.putInt(cacheId);
-                buf.putLong(fullId.pageId());
-
-                written = true;
-
-                buf.putShort(0, (short)(cnt + 1));
-
-                return new RootPage(fullId, true, 0);
             }
             finally {
                 meta.releaseWrite(written);
@@ -188,7 +158,6 @@ public class MetadataStorage implements MetaStore {
      */
     private static class MetaTree extends BPlusTree<IndexItem, IndexItem> {
         /**
-         * @param cacheId Cache ID.
          * @param pageMem Page memory.
          * @param metaPageId Meta page ID.
          * @param reuseList Reuse list.
@@ -217,7 +186,7 @@ public class MetadataStorage implements MetaStore {
             final IndexItem row) throws IgniteCheckedException {
 
             // Compare cache IDs
-            final int off = ((IndexIO) io).getOffset(idx);
+            final int off = ((IndexIO)io).getOffset(idx);
 
             final int cacheId = buf.getInt(off);
 
@@ -265,18 +234,14 @@ public class MetadataStorage implements MetaStore {
         /** */
         private long pageId;
 
-        /** */
-        private long rootId;
-
         /**
          * @param idxName Index name.
          * @param pageId Page ID.
          */
-        private IndexItem(final byte[] idxName, final long pageId, final int cacheId, final long rootId) {
+        private IndexItem(final byte[] idxName, final long pageId, final int cacheId) {
             this.idxName = idxName;
             this.pageId = pageId;
             this.cacheId = cacheId;
-            this.rootId = rootId;
         }
     }
 
@@ -287,36 +252,31 @@ public class MetadataStorage implements MetaStore {
      * @param off Offset in buf.
      * @param row Row to store.
      */
-    private static void storeRow(final ByteBuffer buf, final int off,
-        final IndexItem row) {
+    private static void storeRow(
+        final ByteBuffer buf,
+        final int off,
+        final IndexItem row
+    ) {
+        int origPos = buf.position();
 
-        // Cache ID.
-        buf.putInt(off, row.cacheId);
+        try {
+            buf.position(off);
 
-        int shift = 0;
+            // Cache ID.
+            buf.putInt(row.cacheId);
 
-        shift += INT_LEN;
+            // Index name length.
+            buf.put((byte)row.idxName.length);
 
-        // Index name length.
-        final int len = row.idxName.length;
+            // Index name.
+            buf.put(row.idxName);
 
-        buf.put(off + shift, (byte) len);
-
-        shift += BYTE_LEN;
-
-        // Index name.
-        for (int i = 0; i < len; i++)
-            buf.put(off + i + shift, row.idxName[i]);
-
-        shift += len;
-
-        // Page ID.
-        buf.putLong(off + shift, row.pageId);
-
-        shift += LONG_LEN;
-
-        // Root ID.
-        buf.putLong(off + shift, row.rootId);
+            // Page ID.
+            buf.putLong(row.pageId);
+        }
+        finally {
+            buf.position(origPos);
+        }
     }
 
     /**
@@ -327,37 +287,43 @@ public class MetadataStorage implements MetaStore {
      * @param src Source buffer.
      * @param srcOff Src buf offset.
      */
-    private static void storeRow(final ByteBuffer dst, final int dstOff,
+    private static void storeRow(
+        final ByteBuffer dst,
+        final int dstOff,
         final ByteBuffer src,
-        final int srcOff) {
+        final int srcOff
+    ) {
+        int srcOrigPos = src.position();
+        int dstOrigPos = dst.position();
 
-        // Cache ID.
-        dst.putInt(dstOff, src.getInt(srcOff));
+        try {
+            src.position(srcOff);
+            dst.position(dstOff);
 
-        int shift = 0; // TODO drop shift and use buf.position(off)
+            // Cache ID.
+            dst.putInt(src.getInt());
 
-        shift += INT_LEN;
+            // Index name length.
+            final byte len = src.get();
 
-        // Index name length.
-        final byte len = src.get(srcOff + shift);
+            int lim = src.limit();
 
-        dst.put(dstOff + shift, len);
+            src.limit(src.position() + len);
 
-        shift += BYTE_LEN;
+            // Index name.
+            dst.put(src);
 
-        // Index name.
-        for (int i = 0; i < len; i++) // TODO byte by byte write???
-            dst.put(dstOff + i + shift, src.get(srcOff + i + shift));
+            dst.put(len);
 
-        shift += len;
+            src.limit(lim);
 
-        // Page ID.
-        dst.putLong(dstOff + shift, src.getLong(srcOff + shift));
-
-        shift += LONG_LEN;
-
-        // Root ID.
-        dst.putLong(dstOff + shift, src.getLong(srcOff + shift));
+            // Page ID.
+            dst.putLong(src.getLong());
+        }
+        finally {
+            src.position(srcOrigPos);
+            dst.position(dstOrigPos);
+        }
     }
 
     /**
@@ -368,35 +334,30 @@ public class MetadataStorage implements MetaStore {
      * @return Read row.
      */
     private static IndexItem readRow(final ByteBuffer buf, final int off) {
-        int shift = 0; // TODO drop shift and use buf.position(off)
+        int origOff = buf.position();
 
-        // Cache ID.
-        final int cacheId = buf.getInt(off);
+        try {
+            buf.position(off);
 
-        shift += INT_LEN;
+            // Cache ID.
+            final int cacheId = buf.getInt();
 
-        // Index name length.
-        final byte len = buf.get(off + shift);
+            // Index name length.
+            final int len = buf.get() & 0xFF;
 
-        shift += BYTE_LEN;
+            // Index name.
+            final byte[] idxName = new byte[len];
 
-        // Index name.
-        final byte[] idxName = new byte[len];
+            buf.get(idxName);
 
-        for (int i = 0; i < len; i++)
-            idxName[i] = buf.get(off + i + shift); // TODO byte by byte read???
+            // Page ID.
+            final long pageId = buf.getLong();
 
-        shift += len;
-
-        // Page ID.
-        final long pageId = buf.getLong(off + shift);
-
-        shift += LONG_LEN;
-
-        // Root ID.
-        final long rootId = buf.getLong(off + shift);
-
-        return new IndexItem(idxName, pageId, cacheId, rootId);
+            return new IndexItem(idxName, pageId, cacheId);
+        }
+        finally {
+            buf.position(origOff);
+        }
     }
 
     /**
@@ -423,9 +384,8 @@ public class MetadataStorage implements MetaStore {
          * @param ver Version.
          */
         private IndexInnerIO(final int ver) {
-            // TODO fix calculation for UTF-8 or actually store UTF-16
-            // 4 byte cache ID, UTF-16 symbols and 1 byte for length, 8 bytes pageId, 8 bytes root ID
-            super(T_INDEX_INNER, ver, false, 4 + MAX_IDX_NAME_LEN * 2 + 1 + 8 + 8);
+            // 4 byte cache ID, name bytes and 1 byte for length, 8 bytes pageId
+            super(T_INDEX_INNER, ver, false, 4 + MAX_IDX_NAME_LEN + 1 + 8);
         }
 
         /** {@inheritDoc} */
@@ -466,9 +426,8 @@ public class MetadataStorage implements MetaStore {
          * @param ver Version.
          */
         private IndexLeafIO(final int ver) {
-            // TODO fix calculation for UTF-8 or actually store UTF-16
-            // 4 byte cache ID, UTF-16 symbols and 1 byte for length, 8 bytes pageId, 8 bytes root ID
-            super(T_INDEX_LEAF, ver, 4 + MAX_IDX_NAME_LEN * 2 + 1 + 8 + 8);
+            // 4 byte cache ID, UTF-16 symbols and 1 byte for length, 8 bytes pageId
+            super(T_INDEX_LEAF, ver, 4 + MAX_IDX_NAME_LEN + 1 + 8);
         }
 
         /** {@inheritDoc} */
@@ -494,26 +453,5 @@ public class MetadataStorage implements MetaStore {
         @Override public int getOffset(final int idx) {
             return offset(idx);
         }
-    }
-
-    /**
-     * Get or allocate tree for metadata.
-     *
-     * @return Tree instance.
-     * @throws IgniteCheckedException
-     */
-    private MetaTree metaTree() throws IgniteCheckedException {
-        if (metaTree == null) { // TODO do we really need this lazy initialization?
-            synchronized (this) {
-                if (metaTree == null) {
-                    final RootPage rootPage = metaPageTree(TREE_CACHE_ID);
-
-                    metaTree = new MetaTree(TREE_CACHE_ID, pageMem, rootPage.pageId(), null, IndexInnerIO.VERSIONS,
-                        IndexLeafIO.VERSIONS, rootPage.isAllocated());
-                }
-            }
-        }
-
-        return metaTree;
     }
 }

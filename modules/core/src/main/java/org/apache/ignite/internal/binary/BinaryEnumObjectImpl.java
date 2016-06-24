@@ -58,6 +58,10 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     /** Ordinal. */
     private int ord;
 
+    /** Value bytes. */
+    @GridDirectTransient
+    private byte[] valBytes;
+
     /**
      * {@link Externalizable} support.
      */
@@ -90,6 +94,8 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
         assert ctx != null;
         assert arr != null;
         assert arr[0] == GridBinaryMarshaller.ENUM;
+
+        valBytes = arr;
 
         this.ctx = ctx;
 
@@ -205,7 +211,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
         }
 
         if (type != null)
-            return type.typeName() + "[ordinal=" + ord  + ']';
+            return type.typeName() + "[ordinal=" + ord + ']';
         else {
             if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)
                 return "BinaryEnum[clsName=" + clsName + ", ordinal=" + ord + ']';
@@ -237,17 +243,33 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
     /** {@inheritDoc} */
     @Override public byte[] valueBytes(CacheObjectContext cacheCtx) throws IgniteCheckedException {
-        return ctx.marshaller().marshal(this);
+        if (valBytes != null)
+            return valBytes;
+
+        valBytes = ctx.marshaller().marshal(this);
+
+        return valBytes;
     }
 
     /** {@inheritDoc} */
     @Override public boolean putValue(ByteBuffer buf, CacheObjectContext ctx) throws IgniteCheckedException {
-        throw new UnsupportedOperationException("TODO implement.");
+        byte[] valBytes = valueBytes(ctx);
+
+        if (buf.remaining() < valBytes.length + 5)
+            return false;
+
+        int len = valBytes.length;
+
+        buf.putInt(len);
+        buf.put(cacheObjectType());
+        buf.put(valBytes);
+
+        return true;
     }
 
     /** {@inheritDoc} */
     @Override public int valueBytesLength(CacheObjectContext ctx) throws IgniteCheckedException {
-        throw new UnsupportedOperationException("TODO implement.");
+        return valueBytes(ctx).length + 5;
     }
 
     /** {@inheritDoc} */

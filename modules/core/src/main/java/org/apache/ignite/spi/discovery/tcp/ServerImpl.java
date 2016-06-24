@@ -422,6 +422,8 @@ class ServerImpl extends TcpDiscoveryImpl {
         U.interrupt(tcpSrvr);
         U.join(tcpSrvr, log);
 
+        tcpSrvr = null;
+
         Collection<SocketReader> tmp;
 
         synchronized (mux) {

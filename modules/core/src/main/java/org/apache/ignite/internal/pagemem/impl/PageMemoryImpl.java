@@ -23,11 +23,10 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -54,6 +53,7 @@ import org.apache.ignite.internal.util.offheap.GridOffHeapOutOfMemoryException;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleAware;
+import org.jsr166.ConcurrentHashMap8;
 import sun.misc.JavaNioAccess;
 import sun.misc.SharedSecrets;
 import sun.nio.ch.DirectBuffer;
@@ -83,7 +83,7 @@ import sun.nio.ch.DirectBuffer;
  * on whether the page is in use or not.
  */
 @SuppressWarnings({"LockAcquiredButNotSafelyReleased", "FieldAccessedSynchronizedAndUnsynchronized"})
-public class  PageMemoryImpl implements PageMemory {
+public class PageMemoryImpl implements PageMemory {
     /** */
     public static final long PAGE_MARKER = 0x0000000000000001L;
 
@@ -197,9 +197,10 @@ public class  PageMemoryImpl implements PageMemory {
         this.segments = new Segment[segments];
         this.directMemoryProvider = directMemoryProvider;
 
-        if (sharedCtx != null)
-        storeMgr = sharedCtx.pageStore();
-        walMgr = sharedCtx.wal();
+        if (sharedCtx != null) {
+            storeMgr = sharedCtx.pageStore();
+            walMgr = sharedCtx.wal();
+        }
 
         chunks = new ArrayList<>();
         sysPageSize = pageSize + PAGE_OVERHEAD;
@@ -346,12 +347,34 @@ public class  PageMemoryImpl implements PageMemory {
         seg.readLock().lock();
 
         try {
-            PageImpl page = seg.acquiredPages.get(fullId);
+            long relPtr = seg.loadedPages.get(fullId, INVALID_REL_PTR);
 
-            if (page != null) {
-                page.acquireReference();
+            // The page is loaded to the memory.
+            if (relPtr != INVALID_REL_PTR) {
+                while (true) {
+                    PageImpl page = seg.acquiredPages.get(fullId);
 
-                return page;
+                    if (page != null) {
+                        if (page.acquireReference())
+                            return page;
+                        else
+                            seg.acquiredPages.remove(fullId, page);
+                    }
+
+                    page = new PageImpl(fullId, absolute(relPtr), this);
+                    page.acquireReference();
+
+                    PageImpl old = seg.acquiredPages.putIfAbsent(fullId, page);
+
+                    if (old != null) {
+                        if (old.acquireReference())
+                            return old;
+                        else
+                            seg.acquiredPages.remove(fullId, old);
+                    }
+                    else
+                        return page;
+                }
             }
         }
         finally {
@@ -365,9 +388,10 @@ public class  PageMemoryImpl implements PageMemory {
             PageImpl page = seg.acquiredPages.get(fullId);
 
             if (page != null) {
-                page.acquireReference();
-
-                return page;
+                if (page.acquireReference())
+                    return page;
+                else
+                    seg.acquiredPages.remove(fullId, page);
             }
 
             long relPtr = seg.loadedPages.get(fullId, INVALID_REL_PTR);
@@ -400,9 +424,11 @@ public class  PageMemoryImpl implements PageMemory {
             else
                 page = new PageImpl(fullId, absolute(relPtr), this);
 
-            seg.acquiredPages.put(fullId, page);
-
             page.acquireReference();
+
+            Page old = seg.acquiredPages.put(fullId, page);
+
+            assert old == null;
 
             return page;
         }
@@ -417,14 +443,14 @@ public class  PageMemoryImpl implements PageMemory {
 
         Segment seg = segment(page.fullId());
 
-        seg.writeLock().lock();
+        seg.readLock().lock();
 
         try {
             if (page.releaseReference())
-                seg.acquiredPages.remove(page.fullId());
+                seg.acquiredPages.remove(page.fullId(), page);
         }
         finally {
-            seg.writeLock().unlock();
+            seg.readLock().unlock();
         }
     }
 
@@ -451,7 +477,7 @@ public class  PageMemoryImpl implements PageMemory {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "TooBroadScope"})
     @Override public void finishCheckpoint() {
         assert checkpointPages != null : "Checkpoint has not been started.";
 
@@ -475,6 +501,7 @@ public class  PageMemoryImpl implements PageMemory {
         // Lock segment by segment and flush changes.
         for (int i = 0; i < segCols.length; i++) {
             Collection<FullPageId> col = segCols[i];
+
             if (col == null)
                 continue;
 
@@ -492,7 +519,10 @@ public class  PageMemoryImpl implements PageMemory {
                     PageImpl page = seg.acquiredPages.get(pageId);
 
                     if (page != null) {
-                        page.acquireReference();
+                        // We are in the segment write lock, so we can assert that the reference is acquired.
+                        boolean acquired = page.acquireReference();
+
+                        assert acquired : "Failed to acquire reference for dirty checkpoint page: " + page;
 
                         assert activePages != null;
 
@@ -517,7 +547,9 @@ public class  PageMemoryImpl implements PageMemory {
             // Must release active pages outside of segment write lock.
             if (activePages != null) {
                 for (PageImpl page : activePages) {
-                    page.flushCheckpoint(log);
+                    boolean releasedLast = page.flushCheckpoint(log);
+
+                    assert !releasedLast : "Released page that was modified during checkpoint: " + page;
 
                     releasePage(page);
                 }
@@ -1257,7 +1289,7 @@ public class  PageMemoryImpl implements PageMemory {
         private final FullPageIdTable loadedPages;
 
         /** */
-        private final Map<FullPageId, PageImpl> acquiredPages;
+        private final ConcurrentMap<FullPageId, PageImpl> acquiredPages;
 
         /**
          * @param ptr Pointer for the page IDs map.
@@ -1269,7 +1301,7 @@ public class  PageMemoryImpl implements PageMemory {
                     ? FullPageIdTable.AddressingStrategy.QUADRATIC
                     : FullPageIdTable.AddressingStrategy.LINEAR);
 
-            acquiredPages = new HashMap<>(16, 0.75f);
+            acquiredPages = new ConcurrentHashMap8<>(16, 0.75f);
         }
     }
 
