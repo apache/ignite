@@ -37,6 +37,7 @@
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Common;
+    using Apache.Ignite.Core.Impl.Handle;
     using Apache.Ignite.Core.Lifecycle;
     using Apache.Ignite.Core.Transactions;
     using BinaryReader = Apache.Ignite.Core.Impl.Binary.BinaryReader;
