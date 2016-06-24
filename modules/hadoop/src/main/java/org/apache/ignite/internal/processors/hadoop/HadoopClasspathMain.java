@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import java.util.List;
-
 /**
  * Main class to compose Hadoop classpath depending on the environment.
  * This class is designed to be independent on any Ignite classes as possible.
@@ -32,17 +30,15 @@ public class HadoopClasspathMain {
      */
     public static void main(String[] args) throws Exception {
         if (args.length < 1)
-            throw new IllegalArgumentException("Path separator must be passed as the 1st argument.");
+            throw new IllegalArgumentException("Path separator must be passed as the first argument.");
 
-        final String sep = args[0];
+        String separator = args[0];
 
-        List<String> cp = HadoopClasspathUtils.getAsProcessClasspath();
+        StringBuilder sb = new StringBuilder();
 
-        for (String s: cp) {
-            System.out.print(s);
-            System.out.print(sep);
-        }
+        for (String path : HadoopClasspathUtils.classpathForJavaProcess())
+            sb.append(path).append(separator);
 
-        System.out.println();
+        System.out.println(sb);
     }
 }

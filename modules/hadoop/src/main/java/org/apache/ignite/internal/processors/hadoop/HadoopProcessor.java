@@ -33,7 +33,6 @@ import org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopEmbeddedT
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.internal.processors.hadoop.HadoopClasspathUtils.HadoopLocations;
 
 /**
  * Hadoop processor.
@@ -74,14 +73,14 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
         validate(cfg);
 
         try {
-            HadoopLocations loc = HadoopClasspathUtils.getHadoopLocations();
+            HadoopLocations loc = HadoopClasspathUtils.hadoopLocations();
 
-            if (loc.home != null)
-                U.quietAndInfo(log, "HADOOP_HOME is set to " + loc.home);
+            if (loc.home() != null)
+                U.quietAndInfo(log, "HADOOP_HOME is set to " + loc.home());
 
-            U.quietAndInfo(log, "HADOOP_COMMON_HOME is set to " + loc.common);
-            U.quietAndInfo(log, "HADOOP_HDFS_HOME is set to " + loc.hdfs);
-            U.quietAndInfo(log, "HADOOP_MAPRED_HOME is set to " + loc.mapred);
+            U.quietAndInfo(log, "HADOOP_COMMON_HOME is set to " + loc.commonHome());
+            U.quietAndInfo(log, "HADOOP_HDFS_HOME is set to " + loc.hdfsHome());
+            U.quietAndInfo(log, "HADOOP_MAPRED_HOME is set to " + loc.mapredHome());
         }
         catch (IOException ioe) {
             throw new IgniteCheckedException(ioe);

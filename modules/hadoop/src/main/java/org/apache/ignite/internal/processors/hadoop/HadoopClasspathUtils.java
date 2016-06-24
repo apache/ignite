@@ -39,15 +39,19 @@ public class HadoopClasspathUtils {
      * @return List of the class path elements.
      * @throws IOException If failed.
      */
-    static List<String> getAsProcessClasspath() throws IOException {
-        Collection<DirAndMask> dams = getClasspathBaseDirectories();
+    public static List<String> classpathForJavaProcess() throws IOException {
+        List<String> res = new ArrayList<>();
 
-        List<String> list = new ArrayList<>(32);
+        for (final SearchDirectory dir : classpathDirectories()) {
+            if (dir.hasFilter()) {
+                for (File file : dir.files())
+                    res.add(file.getAbsolutePath());
+            }
+            else
+                res.add(dir.dir.getAbsolutePath() + File.separator + '*');
+        }
 
-        for (DirAndMask dam: dams)
-            addAsJavaProcessClasspathElement(list, dam.dir, dam.mask);
-
-        return list;
+        return res;
     }
 
     /**
@@ -56,85 +60,60 @@ public class HadoopClasspathUtils {
      * @return List of class path URLs.
      * @throws IOException If failed.
      */
-    public static List<URL> getAsUrlList() throws IOException {
-        Collection<DirAndMask> dams = getClasspathBaseDirectories();
+    public static List<URL> classpathUrls() throws IOException {
+        List<URL> res = new ArrayList<>();
 
-        List<URL> list = new ArrayList<>(32);
-
-        for (DirAndMask dam: dams)
-            // Note that this procedure does not use '*' classpath patterns,
-            // but adds all the children explicitly:
-            addUrls(list, dam.dir, dam.mask);
-
-        return list;
-    }
-
-    /**
-     * Discovers classpath entries in specified directory and adds them as URLs to the given {@code res} collection.
-     *
-     * @param res Result.
-     * @param dir Directory.
-     * @param startsWith Starts with prefix.
-     * @throws IOException If failed.
-     */
-    private static void addUrls(Collection<URL> res, File dir, final String startsWith) throws IOException {
-        File[] files = dir.listFiles(new FilenameFilter() {
-            @Override public boolean accept(File dir, String name) {
-                return startsWith == null || name.startsWith(startsWith);
-            }
-        });
-
-        if (files == null)
-            throw new IOException("Path is not a directory. [dir=" + dir + ']');
-
-        for (File file : files) {
-            try {
-                res.add(file.toURI().toURL());
-            }
-            catch (MalformedURLException e) {
-                throw new IOException("Failed to convert file path to URL: " + file.getPath());
-            }
-        }
-    }
-
-    /**
-     * Discovers classpath entries in specified directory and adds them as URLs to the given {@code res} collection.
-     *
-     * @param res Result.
-     * @param dir Directory.
-     * @param startsWith Starts with prefix.
-     * @throws IOException If failed.
-     */
-    private static void addAsJavaProcessClasspathElement(Collection<String> res, File dir, final String startsWith)
-        throws IOException {
-        if (!dir.exists() || !dir.isDirectory() || !dir.canRead())
-            throw new IOException("Path is not an existing readable directory. [dir=" + dir + ']');
-
-        if (startsWith == null)
-            res.add(dir.getAbsolutePath() + File.separator + '*');
-        else {
-            File[] files = dir.listFiles(new FilenameFilter() {
-                @Override public boolean accept(File dir, String name) {
-                    return name.startsWith(startsWith);
+        for (SearchDirectory dir : classpathDirectories()) {
+            for (File file : dir.files()) {
+                try {
+                    res.add(file.toURI().toURL());
                 }
-            });
-
-            if (files == null)
-                throw new IOException("Path is not a directory. [" + dir + ']');
-
-            for (File file : files)
-                res.add(file.getAbsolutePath());
+                catch (MalformedURLException e) {
+                    throw new IOException("Failed to convert file path to URL: " + file.getPath());
+                }
+            }
         }
+
+        return res;
     }
 
-    /**
-     * @return HADOOP_HOME Variable.
-     */
-    private static String hadoopHome() {
-        String prefix = getEnv("HADOOP_PREFIX", null);
+//    /**
+//     * @return HADOOP_HOME Variable.
+//     */
+//    private static String hadoopHome() {
+//        String prefix = getEnv("HADOOP_PREFIX", null);
+//
+//        return getEnv("HADOOP_HOME", prefix);
+//    }
 
-        return getEnv("HADOOP_HOME", prefix);
-    }
+//    /**
+//     * Simple structure to hold Hadoop directory locations.
+//     */
+//    public static class HadoopLocations {
+//        /** HADOOP_HOME, may be null. */
+//        public final String home;
+//        /** HADOOP_COMMON_HOME */
+//        public final String common;
+//        /** HADOOP_HDFS_HOME */
+//        public final String hdfs;
+//        /** HADOOP_MAPRED_HOME */
+//        public final String mapred;
+//
+//        /**
+//         * Constructor.
+//         *
+//         * @param home HADOOP_HOME
+//         * @param common HADOOP_COMMON_HOME
+//         * @param hdfs HADOOP_HDFS_HOME
+//         * @param mapred HADOOP_MAPRED_HOME
+//         */
+//        HadoopLocations(String home, String common, String hdfs, String mapred) {
+//            this.home = home;
+//            this.common = common;
+//            this.hdfs = hdfs;
+//            this.mapred = mapred;
+//        }
+//    }
 
     /**
      * Simple structure to hold Hadoop directory locations.
@@ -251,20 +230,14 @@ public class HadoopClasspathUtils {
             hadoopHome + "/../hadoop-hdfs-client/",
             hadoopHome + "/../hadoop-mapreduce-client/");
     }
-
+    
+    
     /**
-     * Gets the existing Hadoop locations, if any.
+     * Gets Hadoop locations.
      *
-     * @return Existing Hadoop locations.
-     * @throws IOException If no existing location found.
+     * @return The locations as determined from the environment.
      */
     public static HadoopLocations getHadoopLocations() throws IOException {
-        // 1. Try locations defined in System properties or environment:
-        HadoopLocations loc = getEnvHadoopLocations();
-
-        if (loc.isDefined())
-            return loc.existsOrException();
-
         final String hadoopHome = hadoopHome();
 
         if (hadoopHome != null) {
@@ -295,46 +268,73 @@ public class HadoopClasspathUtils {
      * @return Collection of directory and mask pairs.
      * @throws IOException if a mandatory classpath location is not found.
      */
-    private static Collection<DirAndMask> getClasspathBaseDirectories() throws IOException {
-        HadoopLocations loc = getHadoopLocations();
+    private static Collection<SearchDirectory> classpathDirectories() throws IOException {
+        HadoopLocations loc = hadoopLocations();
 
-        Collection<DirAndMask> c = new ArrayList<>();
+        Collection<SearchDirectory> res = new ArrayList<>();
 
-        c.add(new DirAndMask(new File(loc.common, "lib"), null));
-        c.add(new DirAndMask(new File(loc.hdfs, "lib"), null));
-        c.add(new DirAndMask(new File(loc.mapred, "lib"), null));
+        res.add(new SearchDirectory(new File(loc.commonHome(), "lib"), null));
+        res.add(new SearchDirectory(new File(loc.hdfsHome(), "lib"), null));
+        res.add(new SearchDirectory(new File(loc.mapredHome(), "lib"), null));
 
-        c.add(new DirAndMask(new File(loc.common), "hadoop-common-"));
-        c.add(new DirAndMask(new File(loc.common), "hadoop-auth-"));
+        res.add(new SearchDirectory(new File(loc.commonHome()), "hadoop-common-"));
+        res.add(new SearchDirectory(new File(loc.commonHome()), "hadoop-auth-"));
 
-        c.add(new DirAndMask(new File(loc.hdfs), "hadoop-hdfs-"));
+        res.add(new SearchDirectory(new File(loc.hdfsHome()), "hadoop-hdfs-"));
 
-        c.add(new DirAndMask(new File(loc.mapred), "hadoop-mapreduce-client-common"));
-        c.add(new DirAndMask(new File(loc.mapred), "hadoop-mapreduce-client-core"));
+        res.add(new SearchDirectory(new File(loc.mapredHome()), "hadoop-mapreduce-client-common"));
+        res.add(new SearchDirectory(new File(loc.mapredHome()), "hadoop-mapreduce-client-core"));
 
-        return c;
+        return res;
     }
 
+//    /**
+//     * Simple pair-like structure to hold directory name and a mask assigned to it.
+//     */
+//    public static class DirAndMask {
+//        /**
+//         * Constructor.
+//         *
+//         * @param dir The directory.
+//         * @param mask The mask.
+//         */
+//        DirAndMask(File dir, String mask) {
+//            this.dir = dir;
+//            this.mask = mask;
+//        }
+//
+//        /** The path. */
+//        public final File dir;
+//
+//        /** The mask. */
+//        public final String mask;
+//    }
+
     /**
-     * Simple pair-like structure to hold directory name and a mask assigned to it.
+     * Resolves a Hadoop location directory.
+     *
+     * @param envVarName Environment variable name. The value denotes the location path.
+     * @param hadoopHome Hadoop home location, may be null.
+     * @param expHadoopHomeRelativePath The path relative to Hadoop home, expected to start with path separator.
+     * @throws IOException If the value cannot be resolved to an existing directory.
      */
-    public static class DirAndMask {
-        /**
-         * Constructor.
-         *
-         * @param dir The directory.
-         * @param mask The mask.
-         */
-        DirAndMask(File dir, String mask) {
-            this.dir = dir;
-            this.mask = mask;
+    private static String resolveLocation(String envVarName, String hadoopHome, String expHadoopHomeRelativePath)
+        throws IOException {
+        String val = getEnv(envVarName, null);
+
+        if (val == null) {
+            // The env. variable is not set. Try to resolve the location relative HADOOP_HOME:
+            if (!isExistingDirectory(hadoopHome))
+                throw new IOException("Failed to resolve Hadoop installation location. " +
+                        envVarName + " or HADOOP_HOME environment variable should be set.");
+
+            val = hadoopHome + expHadoopHomeRelativePath;
         }
 
-        /** The path. */
-        public final File dir;
+        if (!isExistingDirectory(val))
+            throw new IOException("Failed to resolve Hadoop location [path=" + val + ']');
 
-        /** The mask. */
-        public final String mask;
+        return val;
     }
 
     /**
@@ -344,7 +344,7 @@ public class HadoopClasspathUtils {
      * @param dflt Default.
      * @return Value.
      */
-    private static String getEnv(String name, String dflt) {
+    private static String systemOrEnv(String name, String dflt) {
         String res = System.getProperty(name);
 
         if (res == null)
@@ -357,14 +357,62 @@ public class HadoopClasspathUtils {
      * Answers if the given path denotes existing directory.
      *
      * @param path The directory path.
-     * @return 'true' if the given path denotes an existing directory.
+     * @return {@code True} if the given path denotes an existing directory.
      */
-    private static boolean isExistingDirectory(String path) {
+    private static boolean directoryExists(String path) {
         if (path == null)
             return false;
 
         Path p = Paths.get(path);
 
         return Files.exists(p) && Files.isDirectory(p) && Files.isReadable(p);
+    }
+
+    /**
+     * Simple pair-like structure to hold directory name and a mask assigned to it.
+     */
+    public static class SearchDirectory {
+        /** File. */
+        private final File dir;
+
+        /** The mask. */
+        private final String filter;
+
+        /**
+         * Constructor.
+         *
+         * @param dir Directory.
+         * @param filter Filter.
+         */
+        private SearchDirectory(File dir, String filter) throws IOException {
+            this.dir = dir;
+            this.filter = filter;
+
+            if (!directoryExists(dir.getAbsolutePath()))
+                throw new IOException("Directory cannot be read: " + dir.getAbsolutePath());
+        }
+
+        /**
+         * @return Child files.
+         */
+        private File[] files() throws IOException {
+            File[] files = dir.listFiles(new FilenameFilter() {
+                @Override public boolean accept(File dir, String name) {
+                    return filter == null || name.startsWith(filter);
+                }
+            });
+
+            if (files == null)
+                throw new IOException("Path is not a directory. [dir=" + dir + ']');
+
+            return files;
+        }
+
+        /**
+         * @return {@code True} if filter exists.
+         */
+        private boolean hasFilter() {
+            return filter != null;
+        }
     }
 }
