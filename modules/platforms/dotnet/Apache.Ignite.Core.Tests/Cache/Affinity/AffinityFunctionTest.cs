@@ -50,8 +50,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         private static readonly ConcurrentBag<Guid> RemovedNodes = new ConcurrentBag<Guid>();
 
         /** */
-        private static readonly ConcurrentBag<AffinityFunctionContext> Contexts =
-            new ConcurrentBag<AffinityFunctionContext>();
+        private static volatile AffinityFunctionContext _lastCtx;
 
         /// <summary>
         /// Fixture set up.
@@ -116,10 +115,16 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
             VerifyCacheAffinity(_ignite.CreateCache<int, int>(new CacheConfiguration(cacheName)
             {
-                AffinityFunction = new SimpleAffinityFunction()
+                AffinityFunction = new SimpleAffinityFunction(),
+                Backups = 5
             }));
 
             VerifyCacheAffinity(_ignite2.GetCache<int, int>(cacheName));
+
+            // Verify context
+            Assert.IsNotNull(_lastCtx);
+            Assert.AreEqual(5, _lastCtx.Backups);
+            Assert.AreEqual(new AffinityTopologyVersion(2, 0), _lastCtx.CurrentTopologyVersion);
         }
 
         /// <summary>
@@ -218,7 +223,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             {
                 Assert.IsNotNull(_ignite);
 
-                Contexts.Add(context);
+                _lastCtx = context;
 
                 // All partitions are the same
                 return Enumerable.Range(0, Partitions).Select(x => context.CurrentTopologySnapshot);

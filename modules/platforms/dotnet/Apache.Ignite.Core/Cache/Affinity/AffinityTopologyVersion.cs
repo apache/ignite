@@ -122,5 +122,16 @@ namespace Apache.Ignite.Core.Cache.Affinity
         {
             return !left.Equals(right);
         }
+
+        /// <summary>
+        /// Returns a <see cref="string" /> that represents this instance.
+        /// </summary>
+        /// <returns>
+        /// A <see cref="string" /> that represents this instance.
+        /// </returns>
+        public override string ToString()
+        {
+            return string.Format("AffinityTopologyVersion [Version={0}, MinorVersion={1}]", _version, _minorVersion);
+        }
     }
 }
