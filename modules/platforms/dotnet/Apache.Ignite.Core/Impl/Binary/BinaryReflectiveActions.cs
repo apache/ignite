@@ -503,12 +503,12 @@ namespace Apache.Ignite.Core.Impl.Binary
                     ? GetRawReader(field, r => r.ReadCollection())
                     : GetReader(field, (f, r) => r.ReadCollection(f));
             }
-            else if (type == typeof (DateTime) && IsQueryField(field))
+            else if (type == typeof (DateTime) && IsQueryField(field) && !raw)
             {
                 writeAction = GetWriter<DateTime>(field, (f, w, o) => w.WriteTimestamp(f, o));
                 readAction = GetReader(field, (f, r) => r.ReadObject<DateTime>(f));
             }
-            else if (nullableType == typeof (DateTime) && IsQueryField(field))
+            else if (nullableType == typeof (DateTime) && IsQueryField(field) && !raw)
             {
                 writeAction = GetWriter<DateTime?>(field, (f, w, o) => w.WriteTimestamp(f, o));
                 readAction = GetReader(field, (f, r) => r.ReadTimestamp(f));
