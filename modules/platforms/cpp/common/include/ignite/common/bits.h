@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef _IGNITE_COMMON_MATH
-#define _IGNITE_COMMON_MATH
+#ifndef _IGNITE_COMMON_BITS
+#define _IGNITE_COMMON_BITS
 
 #include <stdint.h>
 
@@ -215,4 +215,4 @@ namespace ignite
     }
 }
 
-#endif //_IGNITE_COMMON_MATH
+#endif //_IGNITE_COMMON_BITS

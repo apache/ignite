@@ -254,7 +254,7 @@ namespace ignite
 
                 case IGNITE_TYPE_DECIMAL:
                 {
-                    Decimal res;
+                    common::Decimal res;
 
                     utility::ReadDecimal(reader, res);
 
@@ -437,7 +437,7 @@ namespace ignite
 
                 case IGNITE_TYPE_DECIMAL:
                 {
-                    Decimal res;
+                    common::Decimal res;
 
                     utility::ReadDecimal(reader, res);
 

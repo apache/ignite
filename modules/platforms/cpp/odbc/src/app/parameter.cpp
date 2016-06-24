@@ -156,7 +156,7 @@ namespace ignite
 
                     case SQL_DECIMAL:
                     {
-                        Decimal dec;
+                        common::Decimal dec;
                         buffer.GetDecimal(dec);
 
                         utility::WriteDecimal(writer, dec);

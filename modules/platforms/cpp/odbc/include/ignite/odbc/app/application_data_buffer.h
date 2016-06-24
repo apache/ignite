@@ -25,8 +25,8 @@
 #include <ignite/guid.h>
 #include <ignite/date.h>
 #include <ignite/timestamp.h>
+#include <ignite/common/decimal.h>
 
-#include "ignite/odbc/decimal.h"
 #include "ignite/odbc/common_types.h"
 #include "ignite/odbc/type_traits.h"
 
@@ -164,7 +164,7 @@ namespace ignite
                  *
                  * @param value Value to put.
                  */
-                void PutDecimal(const Decimal& value);
+                void PutDecimal(const common::Decimal& value);
 
                 /**
                  * Put date to buffer.
@@ -255,7 +255,7 @@ namespace ignite
                  *
                  * @param val Result is placed here.
                  */
-                void GetDecimal(Decimal& val) const;
+                void GetDecimal(common::Decimal& val) const;
 
                 /**
                  * Get raw data.

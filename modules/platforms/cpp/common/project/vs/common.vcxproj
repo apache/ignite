@@ -167,6 +167,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\common\big_integer.h" />
     <ClInclude Include="..\..\include\ignite\common\concurrent.h" />
+    <ClInclude Include="..\..\include\ignite\common\decimal.h" />
     <ClInclude Include="..\..\include\ignite\common\default_allocator.h" />
     <ClInclude Include="..\..\include\ignite\common\dynamic_size_array.h" />
     <ClInclude Include="..\..\include\ignite\common\fixed_size_array.h" />
@@ -185,6 +186,7 @@
     <ClCompile Include="..\..\os\win\src\common\utils.cpp" />
     <ClCompile Include="..\..\src\common\big_integer.cpp" />
     <ClCompile Include="..\..\src\common\concurrent.cpp" />
+    <ClCompile Include="..\..\src\common\decimal.cpp" />
     <ClCompile Include="..\..\src\date.cpp" />
     <ClCompile Include="..\..\src\guid.cpp" />
     <ClCompile Include="..\..\src\ignite_error.cpp" />

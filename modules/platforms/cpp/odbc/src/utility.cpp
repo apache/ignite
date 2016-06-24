@@ -77,7 +77,7 @@ namespace ignite
             writer.WriteString(str.data(), static_cast<int32_t>(str.size()));
         }
 
-        void ReadDecimal(ignite::impl::binary::BinaryReaderImpl& reader, Decimal& decimal)
+        void ReadDecimal(ignite::impl::binary::BinaryReaderImpl& reader, common::Decimal& decimal)
         {
             int8_t hdr = reader.ReadInt8();
 
@@ -96,16 +96,16 @@ namespace ignite
             int32_t sign = (scale & 0x80000000) ? -1 : 1;
             scale = scale & 0x7FFFFFFF;
 
-            Decimal res(mag.data(), static_cast<int32_t>(mag.size()), scale, sign);
+            common::Decimal res(mag.data(), static_cast<int32_t>(mag.size()), scale, sign);
 
             decimal.Swap(res);
         }
 
-        void WriteDecimal(ignite::impl::binary::BinaryWriterImpl& writer, const Decimal& decimal)
+        void WriteDecimal(ignite::impl::binary::BinaryWriterImpl& writer, const common::Decimal& decimal)
         {
             writer.WriteInt8(ignite::impl::binary::IGNITE_TYPE_DECIMAL);
 
-            const BigInteger &unscaled = decimal.GetUnscaledValue();
+            const common::BigInteger &unscaled = decimal.GetUnscaledValue();
 
             int32_t signFlag = unscaled.GetSign() == -1 ? 0x80000000 : 0;
 

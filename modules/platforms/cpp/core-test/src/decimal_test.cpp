@@ -22,10 +22,10 @@
 #include <boost/test/unit_test.hpp>
 
 #include <ignite/common/bits.h>
-
-#include "ignite/odbc/decimal.h"
+#include <ignite/common/decimal.h>
 
 using namespace ignite;
+using namespace ignite::common;
 using namespace ignite::common::bits;
 
 template<typename T>

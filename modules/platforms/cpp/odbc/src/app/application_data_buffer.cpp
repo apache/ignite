@@ -538,7 +538,7 @@ namespace ignite
                     *GetResLen() = SQL_NULL_DATA;
             }
 
-            void ApplicationDataBuffer::PutDecimal(const Decimal& value)
+            void ApplicationDataBuffer::PutDecimal(const common::Decimal& value)
             {
                 using namespace type_traits;
                 switch (type)
@@ -583,12 +583,12 @@ namespace ignite
                         SQL_NUMERIC_STRUCT* numeric =
                             reinterpret_cast<SQL_NUMERIC_STRUCT*>(GetData());
 
-                        Decimal zeroScaled;
+                        common::Decimal zeroScaled;
                         value.SetScale(0, zeroScaled);
 
                         common::FixedSizeArray<int8_t> bytesBuffer;
 
-                        const BigInteger& unscaled = zeroScaled.GetUnscaledValue();
+                        const common::BigInteger& unscaled = zeroScaled.GetUnscaledValue();
 
                         unscaled.MagnitudeToBytes(bytesBuffer);
 
@@ -1108,8 +1108,8 @@ namespace ignite
                         const SQL_NUMERIC_STRUCT* numeric =
                             reinterpret_cast<const SQL_NUMERIC_STRUCT*>(GetData());
 
-                        Decimal dec(reinterpret_cast<const int8_t*>(numeric->val), SQL_MAX_NUMERIC_LEN,
-                            numeric->scale, numeric->sign ? 1 : -1, false);
+                        common::Decimal dec(reinterpret_cast<const int8_t*>(numeric->val),
+                            SQL_MAX_NUMERIC_LEN, numeric->scale, numeric->sign ? 1 : -1, false);
 
                         res = static_cast<T>(dec.ToInt64());
 
@@ -1237,7 +1237,7 @@ namespace ignite
                 return BinaryUtils::CTmToTimestamp(tmTime, nanos);
             }
 
-            void ApplicationDataBuffer::GetDecimal(Decimal& val) const
+            void ApplicationDataBuffer::GetDecimal(common::Decimal& val) const
             {
                 using namespace type_traits;
 
@@ -1290,8 +1290,8 @@ namespace ignite
                         const SQL_NUMERIC_STRUCT* numeric =
                             reinterpret_cast<const SQL_NUMERIC_STRUCT*>(GetData());
 
-                        Decimal dec(reinterpret_cast<const int8_t*>(numeric->val), SQL_MAX_NUMERIC_LEN,
-                            numeric->scale, numeric->sign ? 1 : -1, false);
+                        common::Decimal dec(reinterpret_cast<const int8_t*>(numeric->val),
+                            SQL_MAX_NUMERIC_LEN, numeric->scale, numeric->sign ? 1 : -1, false);
 
                         val.Swap(dec);
 
