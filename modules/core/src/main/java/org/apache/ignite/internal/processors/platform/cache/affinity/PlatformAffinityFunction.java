@@ -132,6 +132,7 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
 
                 // Write previous assignment
                 List<List<ClusterNode>> prevAssignment = ((GridAffinityFunctionContextImpl)affCtx).prevAssignment();
+
                 if (prevAssignment == null)
                     writer.writeInt(-1);
                 else {
