@@ -932,25 +932,6 @@ namespace Apache.Ignite.Core.Tests.Binary
 
         private void CheckPrimitiveFields(Marshaller marsh, PrimitiveFieldType obj)
         {
-            obj.PBool = true;
-            obj.PByte = 2;
-            obj.PSbyte = 3;
-            obj.PShort = 4;
-            obj.PUshort = 5;
-            obj.PInt = 6;
-            obj.PUint = 7;
-            obj.PLong = 8;
-            obj.PUlong = 9;
-            obj.PChar = 'a';
-            obj.PFloat = 10;
-            obj.PDouble = 11;
-            obj.PString = "abc";
-            obj.PGuid = Guid.NewGuid();
-            obj.PnGuid = Guid.NewGuid();
-            obj.PDate = DateTime.Now;
-            obj.PnDate = DateTime.Now;
-            obj.IgniteGuid = new IgniteGuid(Guid.NewGuid(), 123);
-            
             CheckPrimitiveFieldsSerialization(marsh, obj);
         }
 
@@ -1847,6 +1828,28 @@ namespace Apache.Ignite.Core.Tests.Binary
         [Serializable]
         public class PrimitiveFieldType 
         {
+            public PrimitiveFieldType()
+            {
+                PBool = true;
+                PByte = 2;
+                PSbyte = 3;
+                PShort = 4;
+                PUshort = 5;
+                PInt = 6;
+                PUint = 7;
+                PLong = 8;
+                PUlong = 9;
+                PChar = 'a';
+                PFloat = 10;
+                PDouble = 11;
+                PString = "abc";
+                PGuid = Guid.NewGuid();
+                PnGuid = Guid.NewGuid();
+                PDate = DateTime.Now;
+                PnDate = DateTime.Now;
+                IgniteGuid = new IgniteGuid(Guid.NewGuid(), 123);
+            }
+
             public bool PBool { get; set; }
 
             public sbyte PSbyte { get; set; }
