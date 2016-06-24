@@ -1945,6 +1945,9 @@ namespace Apache.Ignite.Core.Tests.Binary
                 writer.WriteGuid("guid", PGuid);
                 writer.WriteGuid("nguid", PnGuid);
 
+                writer.WriteObject("date", PDate);
+                writer.WriteObject("ndate", PnDate);
+
                 writer.WriteObject("iguid", IgniteGuid);
             }
 
@@ -1973,6 +1976,9 @@ namespace Apache.Ignite.Core.Tests.Binary
                 PString = reader.ReadString("string");
                 PGuid = reader.ReadObject<Guid>("guid");
                 PnGuid = reader.ReadGuid("nguid");
+
+                PDate = reader.ReadObject<DateTime>("date");
+                PnDate = reader.ReadObject<DateTime?>("ndate");
 
                 IgniteGuid = reader.ReadObject<IgniteGuid>("iguid");
             }
