@@ -505,6 +505,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
             else if (type == typeof (DateTime) && IsQueryField(field) && !raw)
             {
+                // TODO: why do we do this? What's up with Utc?
                 writeAction = GetWriter<DateTime>(field, (f, w, o) => w.WriteTimestamp(f, o));
                 readAction = GetReader(field, (f, r) => r.ReadObject<DateTime>(f));
             }
