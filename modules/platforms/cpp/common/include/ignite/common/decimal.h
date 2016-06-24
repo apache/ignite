@@ -32,7 +32,6 @@ namespace ignite
     {
         /**
          * Big decimal number implementation.
-         * @todo Move to binary or common library.
          */
         class Decimal
         {
