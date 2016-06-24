@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
+import java.io.*;
+
 /**
  * Simple structure to hold Hadoop directory locations.
  */
@@ -74,5 +76,54 @@ public class HadoopLocations {
      */
     public String mapredHome() {
         return mapredHome;
+    }
+
+    /**
+     * Answers if all the base directories are defined.
+     *
+     * @return 'true' if "common", "hdfs", and "mapred" directories are defined.
+     */
+    public boolean isDefined() {
+        return commonHome != null && hdfsHome != null && mapredHome != null;
+    }
+
+    /**
+     * Answers if all the base directories exist.
+     *
+     * @return 'true' if "common", "hdfs", and "mapred" directories do exist.
+     */
+    public boolean exists() {
+        return HadoopClasspathUtils.directoryExists(commonHome) && HadoopClasspathUtils.directoryExists(hdfsHome)
+            && HadoopClasspathUtils.directoryExists(mapredHome);
+    }
+
+    /**
+     * Checks if all the base directories exist.
+     *
+     * @return this reference.
+     * @throws IOException if any of the base directories does not exist.
+     */
+    public HadoopLocations existsOrException() throws IOException {
+        if (!HadoopClasspathUtils.directoryExists(commonHome))
+            throw ioe("HADOOP_COMMON_HOME");
+
+        if (!HadoopClasspathUtils.directoryExists(hdfsHome))
+            throw ioe("HADOOP_HDFS_HOME");
+
+        if (!HadoopClasspathUtils.directoryExists(mapredHome))
+            throw ioe("HADOOP_MAPRED_HOME");
+
+        return this;
+    }
+
+    /**
+     * Constructs the exception.
+     *
+     * @param var The 1st variable name to mention in the exception text.
+     * @return The exception.
+     */
+    private IOException ioe(String var) {
+        return new IOException("Failed to resolve Hadoop installation location. " + var +
+            " or HADOOP_HOME environment variable should be set.");
     }
 }

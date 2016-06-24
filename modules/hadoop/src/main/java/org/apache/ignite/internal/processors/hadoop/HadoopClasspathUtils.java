@@ -77,113 +77,13 @@ public class HadoopClasspathUtils {
         return res;
     }
 
-//    /**
-//     * @return HADOOP_HOME Variable.
-//     */
-//    private static String hadoopHome() {
-//        String prefix = getEnv("HADOOP_PREFIX", null);
-//
-//        return getEnv("HADOOP_HOME", prefix);
-//    }
-
-//    /**
-//     * Simple structure to hold Hadoop directory locations.
-//     */
-//    public static class HadoopLocations {
-//        /** HADOOP_HOME, may be null. */
-//        public final String home;
-//        /** HADOOP_COMMON_HOME */
-//        public final String common;
-//        /** HADOOP_HDFS_HOME */
-//        public final String hdfs;
-//        /** HADOOP_MAPRED_HOME */
-//        public final String mapred;
-//
-//        /**
-//         * Constructor.
-//         *
-//         * @param home HADOOP_HOME
-//         * @param common HADOOP_COMMON_HOME
-//         * @param hdfs HADOOP_HDFS_HOME
-//         * @param mapred HADOOP_MAPRED_HOME
-//         */
-//        HadoopLocations(String home, String common, String hdfs, String mapred) {
-//            this.home = home;
-//            this.common = common;
-//            this.hdfs = hdfs;
-//            this.mapred = mapred;
-//        }
-//    }
-
     /**
-     * Simple structure to hold Hadoop directory locations.
+     * @return HADOOP_HOME Variable.
      */
-    public static class HadoopLocations {
-        /** HADOOP_HOME, may be null. */
-        public final String home;
-        /** HADOOP_COMMON_HOME */
-        public final String common;
-        /** HADOOP_HDFS_HOME */
-        public final String hdfs;
-        /** HADOOP_MAPRED_HOME */
-        public final String mapred;
+    private static String hadoopHome() {
+        String prefix = systemOrEnv("HADOOP_PREFIX", null);
 
-        /**
-         * Constructor.
-         *
-         * @param home HADOOP_HOME
-         * @param common HADOOP_COMMON_HOME
-         * @param hdfs HADOOP_HDFS_HOME
-         * @param mapred HADOOP_MAPRED_HOME
-         */
-        HadoopLocations(String home, String common, String hdfs, String mapred) {
-            this.home = home;
-            this.common = common;
-            this.hdfs = hdfs;
-            this.mapred = mapred;
-        }
-
-        /**
-         * Answers if all the base directories are defined.
-         *
-         * @return 'true' if "common", "hdfs", and "mapred" directories are defined.
-         */
-        public boolean isDefined() {
-            return common != null && hdfs != null && mapred != null;
-        }
-
-        /**
-         * Answers if all the base directories exist.
-         *
-         * @return 'true' if "common", "hdfs", and "mapred" directories do exist.
-         */
-        public boolean exists() {
-            return isExistingDirectory(common)
-                && isExistingDirectory(hdfs)
-                && isExistingDirectory(mapred);
-        }
-
-        /**
-         * Checks if all the base directories exist.
-         *
-         * @return this reference.
-         * @throws IOException if any of the base directories does not exist.
-         */
-        public HadoopLocations existsOrException() throws IOException {
-            if (!isExistingDirectory(common))
-                throw new IOException("Failed to resolve Hadoop installation location. HADOOP_COMMON_HOME " +
-                    "or HADOOP_HOME environment variable should be set.");
-
-            if (!isExistingDirectory(hdfs))
-                throw new IOException("Failed to resolve Hadoop installation location. HADOOP_HDFS_HOME " +
-                    "or HADOOP_HOME environment variable should be set.");
-
-            if (!isExistingDirectory(mapred))
-                throw new IOException("Failed to resolve Hadoop installation location. HADOOP_MAPRED_HOME " +
-                    "or HADOOP_HOME environment variable should be set.");
-
-            return this;
-        }
+        return systemOrEnv("HADOOP_HOME", prefix);
     }
 
     /**
@@ -194,9 +94,9 @@ public class HadoopClasspathUtils {
     private static HadoopLocations getEnvHadoopLocations() {
         return new HadoopLocations(
             hadoopHome(),
-            getEnv("HADOOP_COMMON_HOME", null),
-            getEnv("HADOOP_HDFS_HOME", null),
-            getEnv("HADOOP_MAPRED_HOME", null)
+            systemOrEnv("HADOOP_COMMON_HOME", null),
+            systemOrEnv("HADOOP_HDFS_HOME", null),
+            systemOrEnv("HADOOP_MAPRED_HOME", null)
         );
     }
 
@@ -231,18 +131,23 @@ public class HadoopClasspathUtils {
             hadoopHome + "/../hadoop-mapreduce-client/");
     }
     
-    
     /**
      * Gets Hadoop locations.
      *
      * @return The locations as determined from the environment.
      */
-    public static HadoopLocations getHadoopLocations() throws IOException {
+    private static HadoopLocations getHadoopLocations() throws IOException {
+        // 1. Get Hadoop locations from the environment:
+        HadoopLocations loc = getEnvHadoopLocations();
+
+        if (loc.isDefined())
+            return loc.existsOrException();
+
         final String hadoopHome = hadoopHome();
 
         if (hadoopHome != null) {
             // If home is defined, it must exist:
-            if (!isExistingDirectory(hadoopHome))
+            if (!directoryExists(hadoopHome))
                 throw new IOException("HADOOP_HOME location is not an existing readable directory. [dir="
                     + hadoopHome + ']');
 
@@ -269,7 +174,7 @@ public class HadoopClasspathUtils {
      * @throws IOException if a mandatory classpath location is not found.
      */
     private static Collection<SearchDirectory> classpathDirectories() throws IOException {
-        HadoopLocations loc = hadoopLocations();
+        HadoopLocations loc = getHadoopLocations();
 
         Collection<SearchDirectory> res = new ArrayList<>();
 
@@ -286,55 +191,6 @@ public class HadoopClasspathUtils {
         res.add(new SearchDirectory(new File(loc.mapredHome()), "hadoop-mapreduce-client-core"));
 
         return res;
-    }
-
-//    /**
-//     * Simple pair-like structure to hold directory name and a mask assigned to it.
-//     */
-//    public static class DirAndMask {
-//        /**
-//         * Constructor.
-//         *
-//         * @param dir The directory.
-//         * @param mask The mask.
-//         */
-//        DirAndMask(File dir, String mask) {
-//            this.dir = dir;
-//            this.mask = mask;
-//        }
-//
-//        /** The path. */
-//        public final File dir;
-//
-//        /** The mask. */
-//        public final String mask;
-//    }
-
-    /**
-     * Resolves a Hadoop location directory.
-     *
-     * @param envVarName Environment variable name. The value denotes the location path.
-     * @param hadoopHome Hadoop home location, may be null.
-     * @param expHadoopHomeRelativePath The path relative to Hadoop home, expected to start with path separator.
-     * @throws IOException If the value cannot be resolved to an existing directory.
-     */
-    private static String resolveLocation(String envVarName, String hadoopHome, String expHadoopHomeRelativePath)
-        throws IOException {
-        String val = getEnv(envVarName, null);
-
-        if (val == null) {
-            // The env. variable is not set. Try to resolve the location relative HADOOP_HOME:
-            if (!isExistingDirectory(hadoopHome))
-                throw new IOException("Failed to resolve Hadoop installation location. " +
-                        envVarName + " or HADOOP_HOME environment variable should be set.");
-
-            val = hadoopHome + expHadoopHomeRelativePath;
-        }
-
-        if (!isExistingDirectory(val))
-            throw new IOException("Failed to resolve Hadoop location [path=" + val + ']');
-
-        return val;
     }
 
     /**
@@ -359,7 +215,7 @@ public class HadoopClasspathUtils {
      * @param path The directory path.
      * @return {@code True} if the given path denotes an existing directory.
      */
-    private static boolean directoryExists(String path) {
+    static boolean directoryExists(String path) {
         if (path == null)
             return false;
 
