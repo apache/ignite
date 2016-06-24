@@ -15,20 +15,14 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Binary
-{
-    using Apache.Ignite.Core.Binary;
+package org.apache.ignite.internal;
 
-    /// <summary>
-    /// Serializer for system types that can create instances directly from a stream and does not support handles.
-    /// </summary>
-    internal interface IBinarySystemTypeSerializer : IBinarySerializer
-    {
-        /// <summary>
-        /// Reads the instance from a reader.
-        /// </summary>
-        /// <param name="reader">The reader.</param>
-        /// <returns>Deserialized instance.</returns>
-        object ReadInstance(BinaryReader reader);
-    }
+import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+
+/**
+ * Marker interface for beans with less naming conventions i.e., without "get" and "set" prefixes.
+ */
+@GridToStringExclude
+public interface LessNamingBean {
+    // No-op.
 }

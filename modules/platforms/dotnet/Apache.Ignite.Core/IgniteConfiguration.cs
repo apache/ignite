@@ -415,6 +415,8 @@
             SuppressWarnings = cfg.SuppressWarnings;
             LifecycleBeans = cfg.LifecycleBeans;
             Logger = cfg.Logger;
+            JvmInitialMemoryMb = cfg.JvmInitialMemoryMb;
+            JvmMaxMemoryMb = cfg.JvmMaxMemoryMb;
         }
 
         /// <summary>
@@ -697,8 +699,8 @@
         /// <summary>
         /// Gets or sets the logger.
         /// <para />
-        /// If no logger is set, <see cref="ConsoleLogger"/> is used by default, with 
-        /// <see cref="Apache.Ignite.Core.Log.LogLevel.Info"/>, <see cref="Apache.Ignite.Core.Log.LogLevel.Warn"/>, 
+        /// If no logger is set, <see cref="ConsoleLogger"/> is used by default, with
+        /// <see cref="Apache.Ignite.Core.Log.LogLevel.Info"/>, <see cref="Apache.Ignite.Core.Log.LogLevel.Warn"/>,
         /// and <see cref="Apache.Ignite.Core.Log.LogLevel.Error"/> levels enabled.
         /// </summary>
         public ILogger Logger { get; set; }

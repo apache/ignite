@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,20 +15,21 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spark.impl
+namespace Apache.Ignite.Core.Cache.Affinity
+{
+    using System.Diagnostics.CodeAnalysis;
+    using Apache.Ignite.Core.Cache.Affinity.Fair;
+    using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
 
-import org.apache.ignite.IgniteCache
-import org.apache.ignite.spark.IgniteRDD
-import org.apache.spark.api.java.{JavaPairRDD, JavaRDDLike}
-
-abstract class JavaIgniteAbstractRDD[K, V](val rdd: IgniteRDD[K, V])
-    extends JavaRDDLike[(K, V), JavaPairRDD[K, V]] {
-
-    protected def ensureCache(): IgniteCache[K, V] = {
-        // Make sure to deploy the cache
-        if (rdd.cacheCfg != null)
-            rdd.ic.ignite().getOrCreateCache(rdd.cacheCfg)
-        else
-            rdd.ic.ignite().getOrCreateCache(rdd.cacheName)
+    /// <summary>
+    /// Represents a function that maps cache keys to cluster nodes.
+    /// <para />
+    /// Only predefined implementations are supported now: 
+    /// <see cref="RendezvousAffinityFunction"/>, <see cref="FairAffinityFunction"/>.
+    /// </summary>
+    [SuppressMessage("Microsoft.Design", "CA1040:AvoidEmptyInterfaces")]
+    public interface IAffinityFunction
+    {
+        // No-op.
     }
 }

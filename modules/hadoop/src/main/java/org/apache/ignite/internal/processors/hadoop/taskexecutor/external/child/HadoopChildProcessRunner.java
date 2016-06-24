@@ -134,7 +134,7 @@ public class HadoopChildProcessRunner {
 
                 assert job == null;
 
-                job = req.jobInfo().createJob(HadoopV2Job.class, req.jobId(), log);
+                job = req.jobInfo().createJob(HadoopV2Job.class, req.jobId(), log, null);
 
                 job.initialize(true, nodeDesc.processId());
 
