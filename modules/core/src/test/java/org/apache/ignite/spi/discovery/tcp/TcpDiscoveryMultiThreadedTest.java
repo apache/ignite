@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.events.Event;
@@ -479,6 +480,83 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
                 stopGrid(i);
 
             fut.get();
+
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCustomEventOnJoinCoordinatorStop() throws Exception {
+        for (int k = 0; k < 5; k++) {
+            log.info("Iteration: " + k);
+
+            clientFlagGlobal = false;
+
+            final int START_NODES = 5;
+            final int JOIN_NODES = 5;
+
+            startGrids(START_NODES);
+
+            final CyclicBarrier barrier = new CyclicBarrier(JOIN_NODES + 1);
+
+            final AtomicInteger startIdx = new AtomicInteger(START_NODES);
+
+            final AtomicBoolean stop = new AtomicBoolean();
+
+            IgniteInternalFuture<?> fut1 = GridTestUtils.runAsync(new Callable<Void>() {
+                @Override public Void call() throws Exception {
+                    CacheConfiguration ccfg = new CacheConfiguration();
+
+                    Ignite ignite = ignite(START_NODES - 1);
+
+                    while (!stop.get()) {
+                        ignite.createCache(ccfg);
+
+                        ignite.destroyCache(ccfg.getName());
+                    }
+
+                    return null;
+                }
+            });
+
+            try {
+                IgniteInternalFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+                    @Override public Object call() throws Exception {
+                        int idx = startIdx.getAndIncrement();
+
+                        Thread.currentThread().setName("start-thread-" + idx);
+
+                        barrier.await();
+
+                        Ignite ignite = startGrid(idx);
+
+                        assertFalse(ignite.configuration().isClientMode());
+
+                        log.info("Started node: " + ignite.name());
+
+                        return null;
+                    }
+                }, JOIN_NODES, "start-thread");
+
+                barrier.await();
+
+                U.sleep(ThreadLocalRandom.current().nextInt(10, 100));
+
+                for (int i = 0; i < START_NODES - 1; i++)
+                    stopGrid(i);
+
+                stop.set(true);
+
+                fut1.get();
+                fut2.get();
+            }
+            finally {
+                stop.set(true);
+
+                fut1.get();
+            }
 
             stopAllGrids();
         }
