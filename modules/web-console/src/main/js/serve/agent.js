@@ -586,9 +586,10 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
 
                             const missedTokens = _.difference(tokens, _.map(accounts, (account) => account.token));
 
-                            if (missedTokens.length)
+                            if (missedTokens.length) {
                                 agent._emit('agent:warning',
                                     `Failed to authenticate with token(s): ${missedTokens.join(', ')}.`);
+                            }
 
                             cb();
                         })
