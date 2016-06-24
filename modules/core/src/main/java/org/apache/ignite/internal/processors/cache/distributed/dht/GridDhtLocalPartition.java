@@ -134,8 +134,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
      * @param cctx Context.
      * @param id Partition ID.
      */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor") GridDhtLocalPartition(GridCacheContext cctx,
-        int id, GridCacheMapEntryFactory entryFactory) {
+    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
+    GridDhtLocalPartition(GridCacheContext cctx, int id, GridCacheMapEntryFactory entryFactory) {
         assert cctx != null;
 
         this.id = id;

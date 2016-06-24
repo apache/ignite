@@ -1110,11 +1110,11 @@ public class GridDiscoveryManager extends GridManagerAdapter<DiscoverySpi> {
             if (!F.eq(rmtPreferIpV4, locPreferIpV4)) {
                 if (!ipV4Warned)
                     U.warn(log, "Local node's value of 'java.net.preferIPv4Stack' " +
-                            "system property differs from remote node's " +
-                            "(all nodes in topology should have identical value) " +
-                            "[locPreferIpV4=" + locPreferIpV4 + ", rmtPreferIpV4=" + rmtPreferIpV4 +
-                            ", locId8=" + U.id8(locNode.id()) + ", rmtId8=" + U.id8(n.id()) +
-                            ", rmtAddrs=" + U.addressesAsString(n) + ']',
+                        "system property differs from remote node's " +
+                        "(all nodes in topology should have identical value) " +
+                        "[locPreferIpV4=" + locPreferIpV4 + ", rmtPreferIpV4=" + rmtPreferIpV4 +
+                        ", locId8=" + U.id8(locNode.id()) + ", rmtId8=" + U.id8(n.id()) +
+                        ", rmtAddrs=" + U.addressesAsString(n) + ']',
                         "Local and remote 'java.net.preferIPv4Stack' system properties do not match.");
 
                 ipV4Warned = true;

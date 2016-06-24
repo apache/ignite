@@ -525,7 +525,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 cctx.database().checkpointReadUnlock();
             }
         }
-
         catch (IgniteInterruptedCheckedException e) {
             onDone(e);
 

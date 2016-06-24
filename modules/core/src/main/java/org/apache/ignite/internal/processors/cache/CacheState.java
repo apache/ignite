@@ -29,7 +29,6 @@ import org.jetbrains.annotations.Nullable;
  * This class represents mutable cache state.
  */
 public class CacheState implements Serializable {
-
     /** Active flag. */
     private final boolean active;
 
@@ -88,6 +87,7 @@ public class CacheState implements Serializable {
         return new CacheState(active, lostParts);
     }
 
+    /** {@inheritDoc} */
     @Override public String toString() {
         return S.toString(CacheState.class, this);
     }

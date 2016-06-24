@@ -100,7 +100,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
-     * @return {@code True} if persistence is enablec.
+     * @return {@code True} if persistence is enabled.
      */
     public boolean persistenceEnabled() {
         return false;

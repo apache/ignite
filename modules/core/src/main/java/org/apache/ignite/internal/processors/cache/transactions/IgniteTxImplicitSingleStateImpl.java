@@ -104,6 +104,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
             return null;
 
         Set<Integer> parts = Collections.emptySet();
+
         if (!entry.isEmpty())
             parts = Collections.singleton(cacheCtx.affinity().partition(entry.get(0).key()));
 

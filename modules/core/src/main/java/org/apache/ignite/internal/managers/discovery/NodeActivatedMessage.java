@@ -19,7 +19,6 @@
 package org.apache.ignite.internal.managers.discovery;
 
 import java.util.UUID;
-import org.apache.ignite.internal.managers.discovery.DiscoveryCustomMessage;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
