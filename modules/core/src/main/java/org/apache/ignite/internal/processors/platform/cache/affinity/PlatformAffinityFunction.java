@@ -110,7 +110,9 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
             BinaryRawWriterEx writer = ctx.writer(out);
+
             writer.writeObject(key);
+
             out.synchronize();
 
             return ctx.gateway().affinityFunctionPartition(ptr, mem.pointer());
@@ -128,29 +130,32 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
                 PlatformOutputStream out = outMem.output();
                 BinaryRawWriterEx writer = ctx.writer(out);
 
+                // Write previous assignment
                 List<List<ClusterNode>> prevAssignment = ((GridAffinityFunctionContextImpl)affCtx).prevAssignment();
                 if (prevAssignment == null)
                     writer.writeInt(-1);
-                else
-                {
+                else {
                     writer.writeInt(prevAssignment.size());
 
                     for (List<ClusterNode> part : prevAssignment)
                         ctx.writeNodes(writer, part);
                 }
 
+                // Write other props
                 writer.writeInt(affCtx.backups());
                 ctx.writeNodes(writer, affCtx.currentTopologySnapshot());
                 writer.writeLong(affCtx.currentTopologyVersion().topologyVersion());
                 writer.writeInt(affCtx.currentTopologyVersion().minorTopologyVersion());
                 ctx.writeEvent(writer, affCtx.discoveryEvent());
 
+                // Call platform
                 out.synchronize();
-
                 ctx.gateway().affinityFunctionAssignPartitions(ptr, outMem.pointer(), inMem.pointer());
+
                 PlatformInputStream in = inMem.input();
                 BinaryRawReaderEx reader = ctx.reader(in);
 
+                // Read result
                 int partCnt = in.readInt();
                 List<List<ClusterNode>> res = new ArrayList<>(partCnt);
                 IgniteClusterEx cluster = ctx.kernalContext().grid().cluster();
@@ -178,7 +183,9 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
             BinaryRawWriterEx writer = ctx.writer(out);
+
             writer.writeUuid(nodeId);
+
             out.synchronize();
 
             ctx.gateway().affinityFunctionRemoveNode(ptr, mem.pointer());
@@ -206,7 +213,9 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
         try (PlatformMemory mem = ctx.memory().allocate()) {
             PlatformOutputStream out = mem.output();
             BinaryRawWriterEx writer = ctx.writer(out);
+
             writer.writeObject(userFunc);
+
             out.synchronize();
 
             ptr = ctx.gateway().affinityFunctionInit(mem.pointer());
