@@ -163,21 +163,130 @@ public class HadoopClasspathUtils {
             this.hdfs = hdfs;
             this.mapred = mapred;
         }
+
+        /**
+         * Answers if all the base directories are defined.
+         *
+         * @return 'true' if "common", "hdfs", and "mapred" directories are defined.
+         */
+        public boolean isDefined() {
+            return common != null && hdfs != null && mapred != null;
+        }
+
+        /**
+         * Answers if all the base directories exist.
+         *
+         * @return 'true' if "common", "hdfs", and "mapred" directories do exist.
+         */
+        public boolean exists() {
+            return isExistingDirectory(common)
+                && isExistingDirectory(hdfs)
+                && isExistingDirectory(mapred);
+        }
+
+        /**
+         * Checks if all the base directories exist.
+         *
+         * @return this reference.
+         * @throws IOException if any of the base directories does not exist.
+         */
+        public HadoopLocations existsOrException() throws IOException {
+            if (!isExistingDirectory(common))
+                throw new IOException("Failed to resolve Hadoop installation location. HADOOP_COMMON_HOME " +
+                    "or HADOOP_HOME environment variable should be set.");
+
+            if (!isExistingDirectory(hdfs))
+                throw new IOException("Failed to resolve Hadoop installation location. HADOOP_HDFS_HOME " +
+                    "or HADOOP_HOME environment variable should be set.");
+
+            if (!isExistingDirectory(mapred))
+                throw new IOException("Failed to resolve Hadoop installation location. HADOOP_MAPRED_HOME " +
+                    "or HADOOP_HOME environment variable should be set.");
+
+            return this;
+        }
     }
 
     /**
-     * Gets Hadoop locations.
+     * Gets locations from the environment.
      *
-     * @return The Hadoop locations, never null.
+     * @return The locations as determined from the environment.
+     */
+    private static HadoopLocations getEnvHadoopLocations() {
+        return new HadoopLocations(
+            hadoopHome(),
+            getEnv("HADOOP_COMMON_HOME", null),
+            getEnv("HADOOP_HDFS_HOME", null),
+            getEnv("HADOOP_MAPRED_HOME", null)
+        );
+    }
+
+    /**
+     * Gets locations assuming Apache Hadoop distribution layout.
+     *
+     * @return The locations as for Apache distribution.
+     */
+    private static HadoopLocations getApacheHadoopLocations(String hadoopHome) {
+        return new HadoopLocations(hadoopHome,
+            hadoopHome + "/share/hadoop/common",
+            hadoopHome + "/share/hadoop/hdfs",
+            hadoopHome + "/share/hadoop/mapreduce");
+    }
+
+    /** HDP Hadoop locations. */
+    private static final HadoopLocations HDP_HADOOP_LOCATIONS = new HadoopLocations(
+        "/usr/hdp/current/hadoop-client",
+        "/usr/hdp/current/hadoop-client",
+        "/usr/hdp/current/hadoop-hdfs-client/",
+        "/usr/hdp/current/hadoop-mapreduce-client/");
+
+    /**
+     * HDP locations relative to an arbitrary Hadoop home.
+     *
+     * @param hadoopHome The hadoop home.
+     * @return The locations.
+     */
+    private static HadoopLocations getHdpLocationsRelative(String hadoopHome) {
+        return new HadoopLocations(hadoopHome, hadoopHome,
+            hadoopHome + "/../hadoop-hdfs-client/",
+            hadoopHome + "/../hadoop-mapreduce-client/");
+    }
+
+    /**
+     * Gets the existing Hadoop locations, if any.
+     *
+     * @return Existing Hadoop locations.
+     * @throws IOException If no existing location found.
      */
     public static HadoopLocations getHadoopLocations() throws IOException {
+        // 1. Try locations defined in System properties or environment:
+        HadoopLocations loc = getEnvHadoopLocations();
+
+        if (loc.isDefined())
+            return loc.existsOrException();
+
         final String hadoopHome = hadoopHome();
 
-        String commonHome = resolveLocation("HADOOP_COMMON_HOME", hadoopHome, "/share/hadoop/common");
-        String hdfsHome = resolveLocation("HADOOP_HDFS_HOME", hadoopHome, "/share/hadoop/hdfs");
-        String mapredHome = resolveLocation("HADOOP_MAPRED_HOME", hadoopHome, "/share/hadoop/mapreduce");
+        if (hadoopHome != null) {
+            // If home is defined, it must exist:
+            if (!isExistingDirectory(hadoopHome))
+                throw new IOException("HADOOP_HOME location is not an existing readable directory. [dir="
+                    + hadoopHome + ']');
 
-        return new HadoopLocations(hadoopHome, commonHome, hdfsHome, mapredHome);
+            // 2. Try Apache Hadoop locations defined relative to HADOOP_HOME:
+            loc = getApacheHadoopLocations(hadoopHome);
+
+            if (loc.exists())
+                return loc;
+
+            // 3. Try HDP Hadoop locations defined relative to HADOOP_HOME:
+            loc = getHdpLocationsRelative(hadoopHome);
+
+            return loc.existsOrException();
+        }
+
+        // 4. Try absolute HDP (Hortonworks) location:
+        return HDP_HADOOP_LOCATIONS.existsOrException();
     }
 
     /**
@@ -226,33 +335,6 @@ public class HadoopClasspathUtils {
 
         /** The mask. */
         public final String mask;
-    }
-
-    /**
-     * Resolves a Hadoop location directory.
-     *
-     * @param envVarName Environment variable name. The value denotes the location path.
-     * @param hadoopHome Hadoop home location, may be null.
-     * @param expHadoopHomeRelativePath The path relative to Hadoop home, expected to start with path separator.
-     * @throws IOException If the value cannot be resolved to an existing directory.
-     */
-    private static String resolveLocation(String envVarName, String hadoopHome, String expHadoopHomeRelativePath)
-        throws IOException {
-        String val = getEnv(envVarName, null);
-
-        if (val == null) {
-            // The env. variable is not set. Try to resolve the location relative HADOOP_HOME:
-            if (!isExistingDirectory(hadoopHome))
-                throw new IOException("Failed to resolve Hadoop installation location. " +
-                        envVarName + " or HADOOP_HOME environment variable should be set.");
-
-            val = hadoopHome + expHadoopHomeRelativePath;
-        }
-
-        if (!isExistingDirectory(val))
-            throw new IOException("Failed to resolve Hadoop location [path=" + val + ']');
-
-        return val;
     }
 
     /**
