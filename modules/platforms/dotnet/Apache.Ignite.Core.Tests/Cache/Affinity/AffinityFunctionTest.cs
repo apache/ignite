@@ -47,7 +47,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         private const int PartitionCount = 10;
 
         /** */
-        private static ConcurrentBag<Guid> _removedNodes = new ConcurrentBag<Guid>();
+        private static readonly ConcurrentBag<Guid> RemovedNodes = new ConcurrentBag<Guid>();
+
+        /** */
+        private static readonly ConcurrentBag<AffinityFunctionContext> Contexts =
+            new ConcurrentBag<AffinityFunctionContext>();
 
         /// <summary>
         /// Fixture set up.
@@ -61,7 +65,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                 {
                     new CacheConfiguration(CacheName)
                     {
-                        AffinityFunction = new SimpleAffinityFunction()
+                        AffinityFunction = new SimpleAffinityFunction(),
+                        Backups = 7
                     }
                 }
             };
@@ -137,7 +142,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         [Test]
         public void TestRemoveNode()
         {
-            Assert.AreEqual(0, _removedNodes.Count);
+            Assert.AreEqual(0, RemovedNodes.Count);
 
             Guid expectedNodeId;
 
@@ -147,13 +152,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             }))
             {
                 expectedNodeId = ignite.GetCluster().GetLocalNode().Id;
-                Assert.AreEqual(0, _removedNodes.Count);
+                Assert.AreEqual(0, RemovedNodes.Count);
                 VerifyCacheAffinity(ignite.GetCache<int, int>(CacheName));
             }
 
             // Called on both nodes
-            TestUtils.WaitForCondition(() => _removedNodes.Count > 0, 3000);
-            Assert.AreEqual(expectedNodeId, _removedNodes.Distinct().Single());
+            TestUtils.WaitForCondition(() => RemovedNodes.Count > 0, 3000);
+            Assert.AreEqual(expectedNodeId, RemovedNodes.Distinct().Single());
         }
 
         /// <summary>
@@ -206,12 +211,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
             public void RemoveNode(Guid nodeId)
             {
-                _removedNodes.Add(nodeId);
+                RemovedNodes.Add(nodeId);
             }
 
             public IEnumerable<IEnumerable<IClusterNode>> AssignPartitions(AffinityFunctionContext context)
             {
                 Assert.IsNotNull(_ignite);
+
+                Contexts.Add(context);
 
                 // All partitions are the same
                 return Enumerable.Range(0, Partitions).Select(x => context.CurrentTopologySnapshot);
