@@ -122,9 +122,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             VerifyCacheAffinity(_ignite2.GetCache<int, int>(cacheName));
 
             // Verify context
-            Assert.IsNotNull(_lastCtx);
+            Assert.AreEqual(new AffinityTopologyVersion(2, 1), _lastCtx.CurrentTopologyVersion); // 2 nodes, 1 cache
             Assert.AreEqual(5, _lastCtx.Backups);
-            Assert.AreEqual(new AffinityTopologyVersion(2, 0), _lastCtx.CurrentTopologyVersion);
         }
 
         /// <summary>

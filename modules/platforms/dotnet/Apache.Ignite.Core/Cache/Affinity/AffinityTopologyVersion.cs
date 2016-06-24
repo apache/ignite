@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Cache.Affinity
 {
     using System;
+    using Apache.Ignite.Core.Cluster;
 
     /// <summary>
     /// Affinity topology version.
@@ -42,7 +43,7 @@ namespace Apache.Ignite.Core.Cache.Affinity
         }
 
         /// <summary>
-        /// Gets the major version.
+        /// Gets the major version, same as <see cref="ICluster.TopologyVersion"/>.
         /// </summary>
         public long Version
         {
@@ -50,7 +51,7 @@ namespace Apache.Ignite.Core.Cache.Affinity
         }
 
         /// <summary>
-        /// Gets the minor version.
+        /// Gets the minor version, which is increased when new caches start.
         /// </summary>
         public int MinorVersion
         {
