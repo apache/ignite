@@ -27,16 +27,16 @@ import org.jetbrains.annotations.Nullable;
  */
 public class HadoopConfiguration {
     /** Default finished job info time-to-live. */
-    public static final long DFLT_FINISHED_JOB_INFO_TTL = 10_000;
+    public static final long DFLT_FINISHED_JOB_INFO_TTL = 30_000;
 
     /** Default value for external execution flag. */
     public static final boolean DFLT_EXTERNAL_EXECUTION = false;
 
     /** Default value for the max parallel tasks. */
-    public static final int DFLT_MAX_PARALLEL_TASKS = Runtime.getRuntime().availableProcessors();
+    public static final int DFLT_MAX_PARALLEL_TASKS = Runtime.getRuntime().availableProcessors() * 2;
 
     /** Default value for the max task queue size. */
-    public static final int DFLT_MAX_TASK_QUEUE_SIZE = 1000;
+    public static final int DFLT_MAX_TASK_QUEUE_SIZE = 8192;
 
     /** Map reduce planner. */
     private HadoopMapReducePlanner planner;
