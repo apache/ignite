@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -15,18 +15,18 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Cache.Affinity
+namespace Apache.Ignite.Core.Cache.Affinity
 {
     using System.Collections.Generic;
     using Apache.Ignite.Core.Binary;
-    using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Events;
+    using Apache.Ignite.Core.Impl;
 
     /// <summary>
     /// Affinity function context.
     /// </summary>
-    internal class AffinityFunctionContext : IAffinityFunctionContext
+    public class AffinityFunctionContext
     {
         /** */
         private readonly List<List<IClusterNode>> _previousAssignment;
@@ -36,10 +36,10 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
 
         /** */
         private readonly ICollection<IClusterNode> _currentTopologySnapshot;
-        
+
         /** */
         private readonly AffinityTopologyVersion _currentTopologyVersion;
-        
+
         /** */
         private readonly DiscoveryEvent _discoveryEvent;
 
@@ -47,7 +47,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
         /// Initializes a new instance of the <see cref="AffinityFunctionContext"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        public AffinityFunctionContext(IBinaryRawReader reader)
+        internal AffinityFunctionContext(IBinaryRawReader reader)
         {
             var cnt = reader.ReadInt();
 
@@ -65,31 +65,49 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
             _discoveryEvent = EventReader.Read<DiscoveryEvent>(reader);
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Gets the affinity assignment for given partition on previous topology version.
+        /// First node in returned list is a primary node, other nodes are backups.
+        /// </summary>
+        /// <param name="partition">The partition to get previous assignment for.</param>
+        /// <returns>
+        /// List of nodes assigned to a given partition on previous topology version or <code>null</code>
+        /// if this information is not available.
+        /// </returns>
         public ICollection<IClusterNode> GetPreviousAssignment(int partition)
         {
             return _previousAssignment == null ? null : _previousAssignment[partition];
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Gets number of backups for new assignment.
+        /// </summary>
         public int Backups
         {
             get { return _backups; }
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Gets the current topology snapshot. Snapshot will contain only nodes on which the particular
+        /// cache is configured. List of passed nodes is guaranteed to be sorted in a same order
+        /// on all nodes on which partition assignment is performed.
+        /// </summary>
         public ICollection<IClusterNode> CurrentTopologySnapshot
         {
             get { return _currentTopologySnapshot; }
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Gets the current topology version.
+        /// </summary>
         public AffinityTopologyVersion CurrentTopologyVersion
         {
             get { return _currentTopologyVersion; }
         }
 
-        /** <inheritdoc /> */
+        /// <summary>
+        /// Gets the discovery event that caused the topology change.
+        /// </summary>
         public DiscoveryEvent DiscoveryEvent
         {
             get { return _discoveryEvent; }

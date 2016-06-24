@@ -209,7 +209,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                 _removedNodes.Add(nodeId);
             }
 
-            public IEnumerable<IEnumerable<IClusterNode>> AssignPartitions(IAffinityFunctionContext context)
+            public IEnumerable<IEnumerable<IClusterNode>> AssignPartitions(AffinityFunctionContext context)
             {
                 Assert.IsNotNull(_ignite);
 
@@ -241,7 +241,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                 // No-op.
             }
 
-            public IEnumerable<IEnumerable<IClusterNode>> AssignPartitions(IAffinityFunctionContext context)
+            public IEnumerable<IEnumerable<IClusterNode>> AssignPartitions(AffinityFunctionContext context)
             {
                 return Enumerable.Range(0, Partitions).Select(x => context.CurrentTopologySnapshot);
             }
