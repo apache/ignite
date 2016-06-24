@@ -140,7 +140,8 @@ namespace ignite
                     data = new T[size];
                 }
 
-                std::copy(src, src + len, data);
+                for (SizeType i = 0; i < len; ++i)
+                    data[i] = src[i];
 
                 delete[] toClean;
             }
