@@ -505,7 +505,12 @@ namespace Apache.Ignite.Core.Impl.Binary
             }
             else if (type == typeof (DateTime) && IsQueryField(field) && !raw)
             {
-                // TODO: why do we do this? What's up with Utc?
+                // Special case for DateTime and query fields.
+                // If a field is marked with [QuerySqlField], write it as TimeStamp so that queries work.
+                // This is not needed in raw mode (queries do not work anyway).
+                // It may cause issues when field has attribute, but is used in a cache without queries, and user
+                // may expect non-UTC dates to work. However, such cases are rare, and there are workarounds.
+
                 writeAction = GetWriter<DateTime>(field, (f, w, o) => w.WriteTimestamp(f, o));
                 readAction = GetReader(field, (f, r) => r.ReadObject<DateTime>(f));
             }

@@ -31,6 +31,7 @@ namespace Apache.Ignite.Core.Tests.Binary
     using System.Linq;
     using System.Reflection;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
@@ -780,7 +781,12 @@ namespace Apache.Ignite.Core.Tests.Binary
                 }
             });
 
-            PrimitiveFieldType obj = new PrimitiveFieldType();
+            // Use utc date fields because reflective serializer writes [QuerySqlField] fields as timestamp
+            var obj = new PrimitiveFieldType
+            {
+                PDate = DateTime.UtcNow,
+                PnDate = DateTime.UtcNow
+            };
 
             CheckPrimitiveFields(marsh, obj);
         }
@@ -1850,40 +1856,59 @@ namespace Apache.Ignite.Core.Tests.Binary
                 IgniteGuid = new IgniteGuid(Guid.NewGuid(), 123);
             }
 
+            // Mark all fields with QuerySqlField because reflective serializer takes it into account
+            [QuerySqlField]
             public bool PBool { get; set; }
 
+            [QuerySqlField]
             public sbyte PSbyte { get; set; }
 
+            [QuerySqlField]
             public byte PByte { get; set; }
 
+            [QuerySqlField]
             public short PShort { get; set; }
 
+            [QuerySqlField]
             public ushort PUshort { get; set; }
 
+            [QuerySqlField]
             public char PChar { get; set; }
 
+            [QuerySqlField]
             public int PInt { get; set; }
 
+            [QuerySqlField]
             public uint PUint { get; set; }
 
+            [QuerySqlField]
             public long PLong { get; set; }
 
+            [QuerySqlField]
             public ulong PUlong { get; set; }
 
+            [QuerySqlField]
             public float PFloat { get; set; }
 
+            [QuerySqlField]
             public double PDouble { get; set; }
 
+            [QuerySqlField]
             public string PString { get; set; }
 
+            [QuerySqlField]
             public Guid PGuid { get; set; }
 
+            [QuerySqlField]
             public Guid? PnGuid { get; set; }
 
+            [QuerySqlField]
             public DateTime PDate { get; set; }
 
+            [QuerySqlField]
             public DateTime? PnDate { get; set; }
 
+            [QuerySqlField]
             public IgniteGuid IgniteGuid { get; set; }
 
             /** <inheritdoc /> */
