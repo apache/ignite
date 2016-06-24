@@ -21,34 +21,90 @@
 # Logs collector daemon
 # -----------------------------------------------------------------------------------------------
 # Script is launched in background by all EC2 nodes of all clusters (Cassandra, Ignite, Tests) and
-# periodically (each 30 seconds) checks if specific S3 trigger file (specified by $3)
+# periodically (each 30 seconds) checks if specific S3 trigger file (specified by $S3_LOGS_TRIGGER_URL)
 # was created or its timestamp was changed. Such an event serve as a trigger for the script
 # to collect EC2 instance logs (from folder specified by $1) and upload them into specific
-# S3 folder (specified by $2).
+# S3 folder (specified by $S3_LOGS_FOLDER).
 # -----------------------------------------------------------------------------------------------
+
+uploadLogs()
+{
+    if [ ! -d "$1" ] && [ ! -f "$1" ]; then
+        echo "[INFO] Logs source doesn't exist: $1"
+        return 0
+    fi
+
+    if [ -d "$1" ]; then
+        echo "[INFO] Uploading logs from directory: $1"
+
+        dirList=$(ls $1 | head -1)
+
+        if [ -z "$dirList" ]; then
+            echo "[INFO] Directory is empty: $1"
+            return 0
+        fi
+    else
+        echo "[INFO] Uploading logs file: $1"
+    fi
+
+    for i in 0 9;
+    do
+        if [ -d "$1" ]; then
+            aws s3 sync --sse AES256 "$1" "$S3_LOGS_FOLDER"
+            code=$?
+        else
+            aws s3 cp --sse AES256 "$1" "${S3_LOGS_FOLDER}/"
+            code=$?
+        fi
+
+        if [ $code -eq 0 ]; then
+            if [ -d "$1" ]; then
+                echo "[INFO] Successfully uploaded logs from directory: $1"
+            else
+                echo "[INFO] Successfully uploaded logs file: $1"
+            fi
+
+            return 0
+        fi
+
+        echo "[WARN] Failed to upload logs from $i attempt, sleeping extra 30sec"
+        sleep 30s
+    done
+
+    if [ -d "$1" ]; then
+        echo "[ERROR] All 10 attempts to upload logs are failed for the directory: $1"
+    else
+        echo "[ERROR] All 10 attempts to upload logs are failed for the file: $1"
+    fi
+}
 
 echo "[INFO] Running Logs collector service"
 
 if [ -z "$1" ]; then
-    echo "[ERROR] Local logs directory doesn't specified"
+    echo "[ERROR] Logs collection S3 trigger URL doesn't specified"
     exit 1
 fi
 
-echo "[INFO] Local logs directory: $1"
+S3_LOGS_TRIGGER_URL=$1
+
+echo "[INFO] Logs collection S3 trigger URL: $S3_LOGS_TRIGGER_URL"
 
 if [ -z "$2" ]; then
     echo "[ERROR] S3 folder where to upload logs doesn't specified"
     exit 1
 fi
 
-echo "[INFO] S3 logs upload folder: $2"
+S3_LOGS_FOLDER=$2
 
-if [ -z "$3" ]; then
-    echo "[ERROR] Logs collection S3 trigger URL doesn't specified"
-    exit 1
+echo "[INFO] S3 logs upload folder: $S3_LOGS_FOLDER"
+
+shift 2
+
+if [ -z "$1" ]; then
+    echo "[WARN] Local logs sources don't specified"
+else
+    echo "[INFO] Local logs sources: $@"
 fi
-
-echo "[INFO] Logs collection S3 trigger URL: $3"
 
 echo "--------------------------------------------------------------------"
 
@@ -57,7 +113,7 @@ TRIGGER_STATE=
 while true; do
     sleep 30s
 
-    STATE=$(aws s3 ls $3)
+    STATE=$(aws s3 ls $S3_LOGS_TRIGGER_URL)
 
     if [ -z "$STATE" ] || [ "$STATE" == "$TRIGGER_STATE" ]; then
         continue
@@ -65,48 +121,21 @@ while true; do
 
     TRIGGER_STATE=$STATE
 
-    exists=
-    if [ -d "$1" ]; then
-        exists="true"
-    fi
+    echo "[INFO] Cleaning S3 logs folder: $S3_LOGS_FOLDER"
 
-    echo "[INFO] Uploading logs from $1 to $2"
-
-    if [ "$exists" != "true" ]; then
-        echo "[INFO] Local logs directory $1 doesn't exist, thus there is nothing to upload"
-    fi
-
-    echo "--------------------------------------------------------------------"
-
-    if [ "$exists" != "true" ]; then
-        continue
-    fi
-
-    aws s3 sync --sse AES256 --delete "$1" "$2"
+    aws s3 rm --recursive $S3_LOGS_FOLDER
 
     if [ $? -ne 0 ]; then
-        echo "[ERROR] Failed to upload logs from $1 to $2 from first attempt"
-        sleep 30s
-
-        aws s3 sync --sse AES256 --delete "$1" "$2"
-
-        if [ $? -ne 0 ]; then
-            echo "[ERROR] Failed to upload logs from $1 to $2 from second attempt"
-            sleep 1m
-
-            aws s3 sync --sse AES256 --delete "$1" "$2"
-
-            if [ $? -ne 0 ]; then
-                echo "[ERROR] Failed to upload logs from $1 to $2 from third attempt"
-            else
-                echo "[INFO] Logs successfully uploaded from $1 to $2 from third attempt"
-            fi
-        else
-            echo "[INFO] Logs successfully uploaded from $1 to $2 from second attempt"
-        fi
-    else
-        echo "[INFO] Logs successfully uploaded from $1 to $2"
+        echo "[ERROR] Failed to clean S3 logs folder: $S3_LOGS_FOLDER"
     fi
+
+    for log_src in "$@"
+    do
+        uploadLogs $log_src
+    done
+
+    uploadLogs "/var/log/cloud-init.log"
+    uploadLogs "/var/log/cloud-init-output.log"
 
     echo "--------------------------------------------------------------------"
 done
