@@ -455,15 +455,10 @@ namespace ignite
          */
         void Normalize();
 
-        /**
-         * The sign of this BigInteger: -1 for negative, 0 for zero, or
-         * 1 for positive.
-         */
+        /** The sign of this BigInteger: -1 for negative and 1 for non-negative. */
         int8_t sign;
 
-        /**
-         * The magnitude of this BigInteger. Byte order is little-endian.
-         */
+        /** The magnitude of this BigInteger. Byte order is little-endian.  */
         MagArray mag;
     };
 
