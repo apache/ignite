@@ -254,8 +254,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             int partId,
             GridDhtLocalPartition part
     ) throws IgniteCheckedException {
-        dataStore(part).remove(key);
-
         if (indexingEnabled) {
             GridCacheQueryManager qryMgr = cctx.queries();
 
@@ -263,6 +261,8 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
             qryMgr.remove(key, partId, prevVal, prevVer);
         }
+
+        dataStore(part).remove(key);
     }
 
     /** {@inheritDoc} */
