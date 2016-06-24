@@ -50,7 +50,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         private static readonly ConcurrentBag<Guid> RemovedNodes = new ConcurrentBag<Guid>();
 
         /** */
-        private static volatile AffinityFunctionContext _lastCtx;
+        private static readonly ConcurrentBag<AffinityFunctionContext> Contexts =
+            new ConcurrentBag<AffinityFunctionContext>();
 
         /// <summary>
         /// Fixture set up.
@@ -120,12 +121,30 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             }));
 
             VerifyCacheAffinity(_ignite2.GetCache<int, int>(cacheName));
+            
+            // Verify context for new cache
+            var lastCtx = Contexts.Where(x => x.GetPreviousAssignment(1) == null)
+                .OrderBy(x => x.DiscoveryEvent.Timestamp).Last();
 
-            // Verify context
-            Assert.AreEqual(new AffinityTopologyVersion(2, 1), _lastCtx.CurrentTopologyVersion); // 2 nodes, 1 cache
-            Assert.AreEqual(5, _lastCtx.Backups);
-            Assert.AreEqual(_ignite.GetCluster().TopologyVersion, _lastCtx.CurrentTopologyVersion);
-            CollectionAssert.AreEquivalent(_ignite.GetCluster().GetNodes(), _lastCtx.CurrentTopologySnapshot);
+            Assert.AreEqual(new AffinityTopologyVersion(2, 1), lastCtx.CurrentTopologyVersion);
+            Assert.AreEqual(5, lastCtx.Backups);
+
+            // Verify context for old cache
+            var ctx = Contexts.Where(x => x.GetPreviousAssignment(1) != null)
+                .OrderBy(x => x.DiscoveryEvent.Timestamp).Last();
+
+            Assert.AreEqual(new AffinityTopologyVersion(2, 0), ctx.CurrentTopologyVersion);
+            Assert.AreEqual(7, ctx.Backups);
+            CollectionAssert.AreEquivalent(_ignite.GetCluster().GetNodes(), ctx.CurrentTopologySnapshot);
+
+            var evt = ctx.DiscoveryEvent;
+            CollectionAssert.AreEquivalent(_ignite.GetCluster().GetNodes(), evt.TopologyNodes);
+            CollectionAssert.Contains(_ignite.GetCluster().GetNodes(), evt.EventNode);
+            Assert.AreEqual(_ignite.GetCluster().TopologyVersion, evt.TopologyVersion);
+
+            var firstTop = _ignite.GetCluster().GetTopology(1);
+            var parts = Enumerable.Range(0, PartitionCount).ToArray();
+            CollectionAssert.AreEqual(parts.Select(x => firstTop), parts.Select(x => ctx.GetPreviousAssignment(x)));
         }
 
         /// <summary>
@@ -224,7 +243,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             {
                 Assert.IsNotNull(_ignite);
 
-                _lastCtx = context;
+                Contexts.Add(context);
 
                 // All partitions are the same
                 return Enumerable.Range(0, Partitions).Select(x => context.CurrentTopologySnapshot);
