@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef _IGNITE_ODBC_DECIMAL
-#define _IGNITE_ODBC_DECIMAL
+#ifndef _IGNITE_COMMON_DECIMAL
+#define _IGNITE_COMMON_DECIMAL
 
 #include <stdint.h>
 #include <cctype>
@@ -525,4 +525,4 @@ namespace ignite
     }
 }
 
-#endif //_IGNITE_ODBC_DECIMAL
+#endif //_IGNITE_COMMON_DECIMAL
