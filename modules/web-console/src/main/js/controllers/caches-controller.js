@@ -399,6 +399,8 @@ consoleModule.controller('cachesController', [
 
                     item.name = newName;
 
+                    delete item.sqlSchema;
+
                     save(item);
                 });
             }
