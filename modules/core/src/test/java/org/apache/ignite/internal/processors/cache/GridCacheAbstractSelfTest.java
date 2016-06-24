@@ -92,7 +92,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     /** VM ip finder for TCP discovery. */
     protected static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
-    protected static TestCacheStoreStrategy storeStrategy;
+    /** */
+    protected static TestCacheStoreStrategy storeStgy;
 
     /**
      * @return Grids count to start.
@@ -121,13 +122,13 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
 
-        storeStrategy.resetStore();
+        storeStgy.resetStore();
     }
 
-    /** Initialize {@link #storeStrategy} with respect to the nature of the test */
+    /** Initialize {@link #storeStgy} with respect to the nature of the test */
     void initStoreStrategy() throws IgniteCheckedException {
-        if (storeStrategy == null)
-            storeStrategy = isMultiJvm() ? new H2CacheStoreStrategy() : new MapCacheStoreStrategy();
+        if (storeStgy == null)
+            storeStgy = isMultiJvm() ? new H2CacheStoreStrategy() : new MapCacheStoreStrategy();
     }
 
     /** {@inheritDoc} */
@@ -209,7 +210,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         assert jcache().unwrap(Ignite.class).transactions().tx() == null;
         assertEquals("Cache is not empty", 0, jcache().localSize(CachePeekMode.ALL));
 
-        storeStrategy.resetStore();
+        storeStgy.resetStore();
     }
 
     /** {@inheritDoc} */
@@ -241,7 +242,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
-        Factory<? extends CacheStore<Object, Object>> storeFactory = storeStrategy.getStoreFactory();
+        Factory<? extends CacheStore<Object, Object>> storeFactory = storeStgy.getStoreFactory();
         CacheStore<?, ?> store = storeFactory.create();
 
         if (store != null) {
@@ -249,7 +250,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
             cfg.setReadThrough(true);
             cfg.setWriteThrough(true);
             cfg.setLoadPreviousValue(true);
-            storeStrategy.updateCacheConfiguration(cfg);
+            storeStgy.updateCacheConfiguration(cfg);
         }
 
         cfg.setSwapEnabled(swapEnabled());
@@ -547,24 +548,30 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     }
 
     /** Interface for cache store backend manipulation and stats routines */
-    protected interface TestCacheStoreStrategy {
-
-        /** */
-        void afterTestsStopped();
-
-        /** */
+    public interface TestCacheStoreStrategy {
+        /**
+         * @return Number of reads to store
+         */
         int getReads();
 
-        /** */
+        /**
+         * @return Number of writes to store
+         */
         int getWrites();
 
-        /** */
+        /**
+         * @return Number of removals from store
+         */
         int getRemoves();
 
-        /** */
+        /**
+         * @return Total number of items in the store
+         */
         int getStoreSize();
 
-        /** */
+        /**
+         * Clear store contents
+         */
         void resetStore();
 
         /**
@@ -575,30 +582,42 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
          */
         void putToStore(Object key, Object val);
 
-        /** */
+        /**
+         * @param data items to put to store
+         */
         void putAllToStore(Map<?, ?> data);
 
-        /** */
+        /**
+         * @param key to look for
+         * @return {@link Object} pointed to by given key or <tt>null</tt> if no object is present
+         */
         Object getFromStore(Object key);
 
-        /** */
+        /**
+         * @param key to look for
+         */
         void removeFromStore(Object key);
 
-        /** */
+        /**
+         * @param key to look for
+         * @return <tt>true</tt> if object pointed to by key is in store, false otherwise
+         */
         boolean isInStore(Object key);
 
-        /** */
+        /**
+         * Called from {@link #cacheConfiguration(String)}, this method allows implementations to tune cache config
+         * @param configuration {@link CacheConfiguration} to tune
+         */
         void updateCacheConfiguration(CacheConfiguration<Object, Object> configuration);
 
         /**
-         * @return Factory for write-through storage emulator
+         * @return {@link Factory} for write-through storage emulator
          */
         Factory<? extends CacheStore<Object, Object>> getStoreFactory();
     }
 
     /** {@link TestCacheStoreStrategy} implemented as a wrapper around {@link #map} */
-    protected static class MapCacheStoreStrategy implements TestCacheStoreStrategy {
-
+    private static class MapCacheStoreStrategy implements TestCacheStoreStrategy {
         /** Removes counter. */
         private final static AtomicInteger removes = new AtomicInteger();
 
@@ -610,11 +629,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
         /** Store map. */
         private final static Map<Object, Object> map = new ConcurrentHashMap8<>();
-
-        /** {@inheritDoc} */
-        @Override public void afterTestsStopped() {
-            resetStore();
-        }
 
         /** {@inheritDoc} */
         @Override public int getReads() {
@@ -670,8 +684,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
             return map.containsKey(key);
         }
 
-        @Override
-        public void updateCacheConfiguration(CacheConfiguration<Object, Object> configuration) {
+        /** {@inheritDoc} */
+        @Override public void updateCacheConfiguration(CacheConfiguration<Object, Object> configuration) {
             // No-op.
         }
 
@@ -717,26 +731,30 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** {@link TestCacheStoreStrategy} backed by H2 in-memory database */
     protected static class H2CacheStoreStrategy implements TestCacheStoreStrategy {
+        /** Pool to get {@link Connection}s from */
         private final JdbcConnectionPool dataSrc;
 
-        /** Create table script. */
+        /** Script that creates CACHE table */
         private static final String CREATE_CACHE_TABLE =
             "create table if not exists CACHE(k binary not null, v binary not null, PRIMARY KEY(k));";
 
+        /** Script that creates STATS table */
         private static final String CREATE_STATS_TABLE =
             "create table if not exists STATS(id bigint not null, reads int not null, writes int not null, " +
                 "removes int not null, PRIMARY KEY(id));";
 
+        /** Script that populates STATS table */
         private static final String POPULATE_STATS_TABLE =
             "delete from STATS;\n" +
             "insert into STATS(id, reads, writes, removes) values(1, 0, 0, 0);";
 
         /** */
-        public H2CacheStoreStrategy() throws IgniteCheckedException {
+        H2CacheStoreStrategy() throws IgniteCheckedException {
             try {
                 Server.createTcpServer("-tcpDaemon").start();
-                dataSrc = createDataSource();
+                dataSrc = H2CacheStoreSessionListenerFactory.createDataSource();
 
                 try (Connection conn = connection()) {
                     RunScript.execute(conn, new StringReader(CREATE_CACHE_TABLE));
@@ -747,11 +765,6 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
             catch (SQLException e) {
                 throw new IgniteCheckedException(e);
             }
-        }
-
-        /** {@inheritDoc} */
-        @Override public void afterTestsStopped() {
-
         }
 
         /** {@inheritDoc} */
@@ -787,11 +800,16 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public void putToStore(Object key, Object val) {
+            Connection conn = null;
             try {
-                H2CacheStore.putToDb(connection(), key, val);
+                conn = connection();
+                H2CacheStore.putToDb(conn, key, val);
             }
             catch (SQLException e) {
-                e.printStackTrace();
+                throw new IgniteException(e);
+            }
+            finally {
+                U.closeQuiet(conn);
             }
         }
 
@@ -815,27 +833,38 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                 throw new IgniteException(e);
             }
             finally {
-                H2CacheStore.end(stmt, conn);
+                U.closeQuiet(stmt);
+                U.closeQuiet(conn);
             }
         }
 
         /** {@inheritDoc} */
         @Override public Object getFromStore(Object key) {
+            Connection conn = null;
             try {
-                return H2CacheStore.getFromDb(connection(), key);
+                conn = connection();
+                return H2CacheStore.getFromDb(conn, key);
             }
             catch (SQLException e) {
                 throw new IgniteException(e);
+            }
+            finally {
+                U.closeQuiet(conn);
             }
         }
 
         /** {@inheritDoc} */
         @Override public void removeFromStore(Object key) {
+            Connection conn = null;
             try {
-                H2CacheStore.removeFromDb(connection(), key);
+                conn = connection();
+                H2CacheStore.removeFromDb(conn, key);
             }
             catch (SQLException e) {
                 throw new IgniteException(e);
+            }
+            finally {
+                U.closeQuiet(conn);
             }
         }
 
@@ -844,17 +873,28 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
             return getFromStore(key) != null;
         }
 
+        /**
+         * @return New {@link Connection} from {@link #dataSrc}
+         * @throws SQLException if failed
+         */
         private Connection connection() throws SQLException {
             return dataSrc.getConnection();
         }
 
-        private int querySingleInt(String query, String errorMsg) {
+        /**
+         * Retrieve single int value from {@link ResultSet} returned by given query
+         * @param qry Query string (fully populated, with params)
+         * @param errorMsg Message for {@link IgniteException} to bear in case of failure
+         * @return requested value
+         */
+        private int querySingleInt(String qry, String errorMsg) {
             Connection conn = null;
             PreparedStatement stmt = null;
+            ResultSet rs = null;
             try {
                 conn = connection();
-                stmt = conn.prepareStatement(query);
-                ResultSet rs = stmt.executeQuery();
+                stmt = conn.prepareStatement(qry);
+                rs = stmt.executeQuery();
                 if (rs.next())
                     return rs.getInt(1);
                 else
@@ -864,13 +904,10 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                 throw new IgniteException(e);
             }
             finally {
-                H2CacheStore.end(stmt, conn);
+                U.closeQuiet(rs);
+                U.closeQuiet(stmt);
+                U.closeQuiet(conn);
             }
-        }
-
-        /** */
-        private static JdbcConnectionPool createDataSource() {
-            return JdbcConnectionPool.create("jdbc:h2:tcp://localhost/mem:TestDb;mode=MySQL", "sa", "");
         }
 
         /** {@inheritDoc} */
@@ -893,15 +930,24 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         }
     }
 
+    /** Serializable {@link Factory} producing H2 backed {@link CacheStoreSessionListener}s */
     private static class H2CacheStoreSessionListenerFactory implements Factory<CacheStoreSessionListener> {
+        /**
+         * @return Connection pool
+         */
+        static JdbcConnectionPool createDataSource() {
+            return JdbcConnectionPool.create("jdbc:h2:tcp://localhost/mem:TestDb;mode=MySQL;DB_CLOSE_DELAY=-1", "sa", "");
+        }
+
+        /** {@inheritDoc} */
         @Override public CacheStoreSessionListener create() {
             CacheJdbcStoreSessionListener lsnr = new CacheJdbcStoreSessionListener();
-            lsnr.setDataSource(JdbcConnectionPool.create("jdbc:h2:tcp://localhost/mem:TestDb;mode=MySQL;DB_CLOSE_DELAY=-1", "sa", ""));
+            lsnr.setDataSource(createDataSource());
             return lsnr;
         }
     }
 
-
+    /** H2 backed {@link CacheStoreAdapter} implementations */
     public static class H2CacheStore extends CacheStoreAdapter<Object, Object> {
         /** Store session */
         @CacheStoreSessionResource
@@ -910,6 +956,26 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         /** Template for an insert statement */
         private static final String INSERT =
             "insert into CACHE(k, v) values(?, ?) on duplicate key update v = ?;";
+
+        /** {@inheritDoc} */
+        @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, Object... args) {
+            Connection conn = ses.attachment();
+            Statement stmt = null;
+            ResultSet rs = null;
+            try {
+                stmt = conn.createStatement();
+                rs = stmt.executeQuery("select * from CACHE");
+                while (rs.next())
+                    clo.apply(deserialize(rs.getBytes(1)), deserialize(rs.getBytes(2)));
+            }
+            catch (SQLException e) {
+                throw new IgniteException(e);
+            }
+            finally {
+                U.closeQuiet(rs);
+                U.closeQuiet(stmt);
+            }
+        }
 
         /** {@inheritDoc} */
         @Override public Object load(Object key) throws CacheLoaderException {
@@ -955,20 +1021,26 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
          */
         static Object getFromDb(Connection conn, Object key) throws SQLException {
             PreparedStatement stmt = null;
+            ResultSet rs = null;
             try {
                 stmt = conn.prepareStatement("select v from CACHE where k = ?");
                 stmt.setBinaryStream(1, new ByteArrayInputStream(H2CacheStore.serialize(key)));
-                ResultSet rs = stmt.executeQuery();
-                return rs.next() ? H2CacheStore.deserialize(IOUtils.toByteArray(rs.getBinaryStream(1))) : null;
-            }
-            catch (IOException e) {
-                throw new IgniteException(e);
+                rs = stmt.executeQuery();
+                return rs.next() ? H2CacheStore.deserialize(rs.getBytes(1)) : null;
             }
             finally {
-                end(stmt, conn);
+                U.closeQuiet(rs);
+                U.closeQuiet(stmt);
             }
         }
 
+        /**
+         * Put key-value pair to H2
+         * @param conn {@link Connection} to use
+         * @param key key
+         * @param val value
+         * @throws SQLException if failed
+         */
         static void putToDb(Connection conn, Object key, Object val) throws SQLException {
             PreparedStatement stmt = null;
             try {
@@ -980,10 +1052,16 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                 stmt.executeUpdate();
             }
             finally {
-                end(stmt, conn);
+                U.closeQuiet(stmt);
             }
         }
 
+        /**
+         * Remove given key and its value from H2
+         * @param conn {@link Connection} to invoke query upon
+         * @param key to remove
+         * @throws SQLException if failed
+         */
         static void removeFromDb(Connection conn, Object key) throws SQLException {
             PreparedStatement stmt = null;
             try {
@@ -992,7 +1070,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                 stmt.executeUpdate();
             }
             finally {
-                end(stmt, conn);
+                U.closeQuiet(stmt);
             }
         }
 
@@ -1012,18 +1090,8 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
                 throw new IgniteException("Failed to update H2 store usage stats", e);
             }
             finally {
-                end(stmt, conn);
+                U.closeQuiet(stmt);
             }
-        }
-
-        /**
-         * Quietly close statement and connection
-         * @param stmt {@link Statement} to close
-         * @param conn {@link Connection} to close
-         */
-        private static void end(Statement stmt, Connection conn) {
-            U.closeQuiet(stmt);
-            U.closeQuiet(conn);
         }
 
         /**
