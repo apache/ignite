@@ -947,6 +947,8 @@ namespace Apache.Ignite.Core.Tests.Binary
             obj.PString = "abc";
             obj.PGuid = Guid.NewGuid();
             obj.PnGuid = Guid.NewGuid();
+            obj.PDate = DateTime.Now;
+            obj.PnDate = DateTime.Now;
             obj.IgniteGuid = new IgniteGuid(Guid.NewGuid(), 123);
             
             CheckPrimitiveFieldsSerialization(marsh, obj);
@@ -2013,6 +2015,9 @@ namespace Apache.Ignite.Core.Tests.Binary
                 rawWriter.WriteGuid(PGuid);
                 rawWriter.WriteGuid(PnGuid);
 
+                rawWriter.WriteObject(PDate);
+                rawWriter.WriteObject(PnDate);
+
                 rawWriter.WriteObject(IgniteGuid);
             }
 
@@ -2043,6 +2048,9 @@ namespace Apache.Ignite.Core.Tests.Binary
                 PString = rawReader.ReadString();
                 PGuid = rawReader.ReadGuid().Value;
                 PnGuid = rawReader.ReadGuid();
+
+                PDate = rawReader.ReadObject<DateTime>();
+                PnDate = rawReader.ReadObject<DateTime?>();
 
                 IgniteGuid = rawReader.ReadObject<IgniteGuid>();
             }
@@ -2077,6 +2085,9 @@ namespace Apache.Ignite.Core.Tests.Binary
                 writer.WriteGuid("guid", obj0.PGuid);
                 writer.WriteGuid("nguid", obj0.PnGuid);
 
+                writer.WriteObject("date", obj0.PDate);
+                writer.WriteObject("ndate", obj0.PnDate);
+
                 writer.WriteObject("iguid", obj0.IgniteGuid);
             }
 
@@ -2107,6 +2118,9 @@ namespace Apache.Ignite.Core.Tests.Binary
                 obj0.PString = reader.ReadString("string");
                 obj0.PGuid = reader.ReadObject<Guid>("guid");
                 obj0.PnGuid = reader.ReadGuid("nguid");
+
+                obj0.PDate = reader.ReadObject<DateTime>("date");
+                obj0.PnDate = reader.ReadObject<DateTime?>("ndate");
 
                 obj0.IgniteGuid = reader.ReadObject<IgniteGuid>("iguid");
             }
@@ -2143,6 +2157,9 @@ namespace Apache.Ignite.Core.Tests.Binary
                 rawWriter.WriteGuid(obj0.PGuid);
                 rawWriter.WriteGuid(obj0.PnGuid);
 
+                rawWriter.WriteObject(obj0.PDate);
+                rawWriter.WriteObject(obj0.PnDate);
+
                 rawWriter.WriteObject(obj0.IgniteGuid);
             }
 
@@ -2174,6 +2191,9 @@ namespace Apache.Ignite.Core.Tests.Binary
                 obj0.PString = rawReader.ReadString();
                 obj0.PGuid = rawReader.ReadGuid().Value;
                 obj0.PnGuid = rawReader.ReadGuid();
+
+                obj0.PDate = rawReader.ReadObject<DateTime>();
+                obj0.PnDate = rawReader.ReadObject<DateTime?>();
 
                 obj0.IgniteGuid = rawReader.ReadObject<IgniteGuid>();
             }
