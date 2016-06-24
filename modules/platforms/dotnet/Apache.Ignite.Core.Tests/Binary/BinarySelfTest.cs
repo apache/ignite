@@ -1875,6 +1875,10 @@ namespace Apache.Ignite.Core.Tests.Binary
 
             public Guid? PnGuid { get; set; }
 
+            public DateTime PDate { get; set; }
+
+            public DateTime? PnDate { get; set; }
+
             public IgniteGuid IgniteGuid { get; set; }
 
             /** <inheritdoc /> */
@@ -1883,28 +1887,28 @@ namespace Apache.Ignite.Core.Tests.Binary
                 if (this == obj)
                     return true;
 
-                if (obj != null && obj is PrimitiveFieldType)
-                {
-                    PrimitiveFieldType that = (PrimitiveFieldType)obj;
+                var that = obj as PrimitiveFieldType;
+                if (that == null)
+                    return false;
 
-                    return PBool == that.PBool &&
-                        PByte == that.PByte &&
-                        PSbyte == that.PSbyte &&
-                        PShort == that.PShort &&
-                        PUshort == that.PUshort &&
-                        PInt == that.PInt &&
-                        PUint == that.PUint &&
-                        PLong == that.PLong &&
-                        PUlong == that.PUlong &&
-                        PChar == that.PChar &&
-                        PFloat == that.PFloat &&
-                        PDouble == that.PDouble &&
-                        (string.Equals(PString, that.PString)) &&
-                        PGuid.Equals(that.PGuid) &&
-                        IgniteGuid.Equals(that.IgniteGuid) &&
-                        (PnGuid == null && that.PnGuid == null || PnGuid != null && PnGuid.Equals(that.PnGuid));
-                }
-                return false;
+                return PBool == that.PBool &&
+                       PByte == that.PByte &&
+                       PSbyte == that.PSbyte &&
+                       PShort == that.PShort &&
+                       PUshort == that.PUshort &&
+                       PInt == that.PInt &&
+                       PUint == that.PUint &&
+                       PLong == that.PLong &&
+                       PUlong == that.PUlong &&
+                       PChar == that.PChar &&
+                       PFloat == that.PFloat &&
+                       PDouble == that.PDouble &&
+                       PString == that.PString &&
+                       PGuid == that.PGuid &&
+                       PnGuid == that.PnGuid &&
+                       IgniteGuid == that.IgniteGuid &&
+                       PDate == that.PDate &&
+                       PnDate == that.PnDate;
             }
 
             /** <inheritdoc /> */
