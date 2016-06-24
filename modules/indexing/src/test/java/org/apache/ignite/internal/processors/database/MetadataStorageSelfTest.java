@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.processors.database;
 
+import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
+import org.apache.ignite.internal.processors.cache.database.MetaStore;
 import org.apache.ignite.internal.processors.cache.database.MetadataStorage;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.pagemem.impl.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -54,15 +56,13 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
      * @throws Exception if failed.
      */
     public void testMetaIndexAllocation() throws Exception {
-        testMetaAllocation(true);
-        testMetaAllocation(false);
+        checkMetaAllocation();
     }
 
     /**
-     * @param idx {@code True} if allocate in index space, {@code false} if in meta space.
      * @throws Exception
      */
-    private void testMetaAllocation(final boolean idx) throws Exception {
+    private void checkMetaAllocation() throws Exception {
         PageMemory mem = memory(true);
 
         int[] cacheIds = new int[]{1, "partitioned".hashCode(), "replicated".hashCode()};
@@ -72,7 +72,7 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
         mem.start();
 
         try {
-            MetadataStorage metaStore = new MetadataStorage(mem);
+            MetaStore metaStore = new MetadataStorage(mem);
 
             for (int i = 0; i < 1_000; i++) {
                 int cacheId = cacheIds[i % cacheIds.length];
@@ -118,60 +118,6 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
         finally {
             mem.stop();
         }
-
-        mem = memory(false);
-
-        mem.start();
-
-        try {
-            MetadataStorage meta = new MetadataStorage(mem);
-
-            for (int cacheId : cacheIds) {
-                Map<String, RootPage> idxMap = allocatedIdxs.get(cacheId);
-
-                for (Map.Entry<String, RootPage> entry : idxMap.entrySet()) {
-                    String idxName = entry.getKey();
-                    FullPageId rootPageId = entry.getValue().pageId();
-
-                    assertEquals("Invalid root page ID restored [cacheId=" + cacheId + ", idxName=" + idxName + ']',
-                        rootPageId, meta.getOrAllocateForTree(cacheId, idxName).pageId());
-
-                }
-            }
-
-            for (int cacheId : cacheIds) {
-                Map<String, RootPage> idxMap = allocatedIdxs.get(cacheId);
-
-                for (Map.Entry<String, RootPage> entry : idxMap.entrySet()) {
-                    String idxName = entry.getKey();
-                    RootPage rootPage = entry.getValue();
-                    FullPageId rootPageId = rootPage.pageId();
-
-                    final RootPage droppedRootId = meta.dropRootPage(cacheId, idxName);
-
-                    assertEquals("Drop failure [cacheId=" + cacheId + ", idxName=" + idxName + ", stored rootPageId="
-                        + rootPage + ", dropped rootPageId=" + droppedRootId + ']',
-                        rootPage.pageId(), droppedRootId.pageId());
-
-                    final RootPage secondDropRootId = meta.dropRootPage(cacheId, idxName);
-
-                    assertNull("Page was dropped twice [cacheId=" + cacheId + ", idxName=" + idxName
-                        + ", drop result=" + secondDropRootId + ']',
-                        secondDropRootId);
-
-                    // make sure it will be allocated again
-                    final RootPage newRootPage = meta.getOrAllocateForTree(cacheId, idxName);
-
-                    assertEquals("Invalid root page ID restored [cacheId=" + cacheId + ", idxName=" + idxName + ']',
-                        rootPageId, newRootPage.pageId());
-
-                    assertTrue(newRootPage.isAllocated());
-                }
-            }
-        }
-        finally {
-            mem.stop();
-        }
     }
 
     /**
@@ -195,10 +141,14 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
      *      new empty page memory.
      * @return Page memory instance.
      */
-    private PageMemory memory(boolean clean) {
-        MappedFileMemoryProvider provider = new MappedFileMemoryProvider(log(), allocationPath, clean,
-            20 * 1024 * 1024, 20 * 1024 * 1024);
+    protected PageMemory memory(boolean clean) throws Exception {
+        long[] sizes = new long[10];
 
-        return new PageMemoryImpl(log, provider, null, PAGE_SIZE, Runtime.getRuntime().availableProcessors());
+        for (int i = 0; i < sizes.length; i++)
+            sizes[i] = 1024 * 1024;
+
+        DirectMemoryProvider provider = new MappedFileMemoryProvider(log(), allocationPath, clean, sizes);
+
+        return new PageMemoryNoStoreImpl(log, provider, null, PAGE_SIZE);
     }
 }

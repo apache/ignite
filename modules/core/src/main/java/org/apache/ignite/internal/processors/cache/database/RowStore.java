@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.cache.database;
 
 import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.internal.pagemem.FullPageId;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheObjectContext;
@@ -61,7 +60,7 @@ public class RowStore {
      * @throws IgniteCheckedException If failed.
      */
     protected final Page page(long pageId) throws IgniteCheckedException {
-        return pageMem.page(new FullPageId(pageId, cctx.cacheId()));
+        return pageMem.page(cctx.cacheId(), pageId);
     }
 
     /**

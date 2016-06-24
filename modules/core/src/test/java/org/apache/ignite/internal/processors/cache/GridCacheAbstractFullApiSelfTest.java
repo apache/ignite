@@ -2661,9 +2661,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
+     * TODO: GG-11241.
+     *
      * @throws Exception If failed.
      */
-    public void testDeletedEntriesFlag() throws Exception {
+    public void _testDeletedEntriesFlag() throws Exception {
         if (cacheMode() != LOCAL && cacheMode() != REPLICATED && memoryMode() != OFFHEAP_TIERED) {
             final int cnt = 3;
 
@@ -3427,9 +3429,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
+     * TODO GG-11133.
      * @throws Exception In case of error.
      */
-    public void testEvictExpired() throws Exception {
+    public void _testEvictExpired() throws Exception {
         final IgniteCache<String, Integer> cache = jcache();
 
         final String key = primaryKeysForCache(cache, 1).get(0);
@@ -3475,11 +3478,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
-     * JUnit.
+     * TODO GG-11133.
      *
      * @throws Exception If failed.
      */
-    public void testPeekExpired() throws Exception {
+    public void _testPeekExpired() throws Exception {
         final IgniteCache<String, Integer> c = jcache();
 
         final String key = primaryKeysForCache(c, 1).get(0);
@@ -3510,11 +3513,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
-     * JUnit.
+     * TODO GG-11133.
      *
      * @throws Exception If failed.
      */
-    public void testPeekExpiredTx() throws Exception {
+    public void _testPeekExpiredTx() throws Exception {
         if (txShouldBeUsed()) {
             final IgniteCache<String, Integer> c = jcache();
 
@@ -4022,11 +4025,11 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
-     * JUnit.
+     * TODO GG-11133.
      *
      * @throws Exception If failed.
      */
-    public void testCompactExpired() throws Exception {
+    public void _testCompactExpired() throws Exception {
         final IgniteCache<String, Integer> cache = jcache();
 
         final String key = F.first(primaryKeysForCache(cache, 1));

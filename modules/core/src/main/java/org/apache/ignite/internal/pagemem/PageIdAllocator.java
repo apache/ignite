@@ -39,12 +39,13 @@ public interface PageIdAllocator {
      * @param flags Flags to separate page spaces.
      * @return Allocated page ID.
      */
-    public FullPageId allocatePage(int cacheId, int partId, byte flags) throws IgniteCheckedException;
+    public long allocatePage(int cacheId, int partId, byte flags) throws IgniteCheckedException;
 
     /**
      * The given page is free now.
      *
-     * @param pageId Full page ID.
+     * @param cacheId Cache ID.
+     * @param pageId Page ID.
      */
-    public boolean freePage(FullPageId pageId) throws IgniteCheckedException;
+    public boolean freePage(int cacheId, long pageId) throws IgniteCheckedException;
 }

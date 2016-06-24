@@ -199,17 +199,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private final ConcurrentMap<UUID, GridDhtPartitionsAbstractMessage> msgs = new ConcurrentHashMap8<>();
 
     /**
-     * Constructor to create a dummy future to stop exchange worker.
-     */
-    public GridDhtPartitionsExchangeFuture() {
-        dummy = true;
-        forcePreload = false;
-        reassign = false;
-        exchId = null;
-        cctx = null;
-    }
-
-    /**
      * Dummy future created to trigger reassignments if partition
      * topology changed while preloading.
      *

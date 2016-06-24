@@ -771,62 +771,62 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
         PeekModes modes = parsePeekModes(peekModes, false);
 
-        try {
-            KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
+        KeyCacheObject cacheKey = ctx.toCacheKeyObject(key);
 
-            CacheObject cacheVal = null;
+        CacheObject cacheVal = null;
 
-            if (!ctx.isLocal()) {
-                AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
+        if (!ctx.isLocal()) {
+            AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
-                int part = ctx.affinity().partition(cacheKey);
+            int part = ctx.affinity().partition(cacheKey);
 
-                boolean nearKey;
+            boolean nearKey;
 
-                if (!(modes.near && modes.primary && modes.backup)) {
-                    boolean keyPrimary = ctx.affinity().primary(ctx.localNode(), part, topVer);
+            if (!(modes.near && modes.primary && modes.backup)) {
+                boolean keyPrimary = ctx.affinity().primary(ctx.localNode(), part, topVer);
 
-                    if (keyPrimary) {
-                        if (!modes.primary)
+                if (keyPrimary) {
+                    if (!modes.primary)
+                        return null;
+
+                    nearKey = false;
+                }
+                else {
+                    boolean keyBackup = ctx.affinity().belongs(ctx.localNode(), part, topVer);
+
+                    if (keyBackup) {
+                        if (!modes.backup)
                             return null;
 
                         nearKey = false;
                     }
                     else {
-                        boolean keyBackup = ctx.affinity().belongs(ctx.localNode(), part, topVer);
+                        if (!modes.near)
+                            return null;
 
-                        if (keyBackup) {
-                            if (!modes.backup)
-                                return null;
+                        nearKey = true;
 
-                            nearKey = false;
-                        }
-                        else {
-                            if (!modes.near)
-                                return null;
-
-                            nearKey = true;
-
-                            // Swap and offheap are disabled for near cache.
-                            modes.offheap = false;
-                        }
-                    }
-                }
-                else {
-                    nearKey = !ctx.affinity().belongs(ctx.localNode(), part, topVer);
-
-                    if (nearKey) {
                         // Swap and offheap are disabled for near cache.
                         modes.offheap = false;
                     }
                 }
+            }
+            else {
+                nearKey = !ctx.affinity().belongs(ctx.localNode(), part, topVer);
 
-                if (nearKey && !ctx.isNear())
-                    return null;
+                if (nearKey) {
+                    // Swap and offheap are disabled for near cache.
+                    modes.offheap = false;
+                }
+            }
 
-                GridCacheEntryEx e;
-                GridCacheContext ctx0;
+            if (nearKey && !ctx.isNear())
+                return null;
 
+            GridCacheEntryEx e;
+            GridCacheContext ctx0;
+
+            while (true) {
                 if (nearKey) {
                     ctx0 = context();
                     e = peekEx(key);
@@ -840,24 +840,39 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     try {
                         cacheVal = e.peek(modes.heap, modes.offheap, topVer, plc);
                     }
+                    catch (GridCacheEntryRemovedException ignore) {
+                        if (log.isDebugEnabled())
+                            log.debug("Got removed entry during 'peek': " + key);
+
+                        continue;
+                    }
                     finally {
                         ctx0.evicts().touch(e, null);
                     }
                 }
+
+                break;
             }
-            else
-                cacheVal = localCachePeek0(cacheKey, modes.heap, modes.offheap, plc);
-
-            Object val = ctx.unwrapBinaryIfNeeded(cacheVal, ctx.keepBinary(), false);
-
-            return (V)val;
         }
-        catch (GridCacheEntryRemovedException ignore) {
-            if (log.isDebugEnabled())
-                log.debug("Got removed entry during 'peek': " + key);
+        else {
+            while (true) {
+                try {
+                    cacheVal = localCachePeek0(cacheKey, modes.heap, modes.offheap, plc);
 
-            return null;
+                    break;
+                }
+                catch (GridCacheEntryRemovedException ignore) {
+                    if (log.isDebugEnabled())
+                        log.debug("Got removed entry during 'peek': " + key);
+
+                    // continue
+                }
+            }
         }
+
+        Object val = ctx.unwrapBinaryIfNeeded(cacheVal, ctx.keepBinary(), false);
+
+        return (V)val;
     }
 
     /**
@@ -4976,7 +4991,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
      * @param primary Defines the default behavior if affinity flags are not specified.
      * @return Peek modes flags.
      */
-    protected static final PeekModes parsePeekModes(CachePeekMode[] peekModes, boolean primary) {
+    protected static PeekModes parsePeekModes(CachePeekMode[] peekModes, boolean primary) {
         PeekModes modes = new PeekModes();
 
         if (F.isEmpty(peekModes)) {

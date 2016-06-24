@@ -18,21 +18,12 @@
 package org.apache.ignite.internal.pagemem.wal.record;
 
 import org.apache.ignite.internal.pagemem.FullPageId;
-import org.apache.ignite.internal.util.typedef.internal.U;
-
-import static org.apache.ignite.internal.pagemem.impl.PageMemoryImpl.PAGE_CACHE_ID_OFFSET;
-import static org.apache.ignite.internal.pagemem.impl.PageMemoryImpl.PAGE_ID_OFFSET;
-import static org.apache.ignite.internal.pagemem.impl.PageMemoryImpl.PAGE_MARKER;
-import static org.apache.ignite.internal.pagemem.impl.PageMemoryImpl.PAGE_OVERHEAD;
-import static org.apache.ignite.internal.util.GridUnsafe.BYTE_ARR_OFF;
-import static org.apache.ignite.internal.util.GridUnsafe.copyMemory;
-import static org.apache.ignite.internal.util.GridUnsafe.getInt;
-import static org.apache.ignite.internal.util.GridUnsafe.getLong;
+import org.apache.ignite.internal.util.GridUnsafe;
 
 /**
  *
  */
-public class PageSnapshot extends PageAbstractRecord {
+public class PageSnapshot extends WALRecord {
     /** */
     private byte[] pageData;
 
@@ -40,21 +31,30 @@ public class PageSnapshot extends PageAbstractRecord {
     private FullPageId fullPageId;
 
     /**
-     * @param arr Backing array.
+     * @param fullId Full page ID.
+     * @param arr Read array.
      */
-    public PageSnapshot(byte[] arr) {
-        long mark = getLong(arr, BYTE_ARR_OFF);
+    public PageSnapshot(FullPageId fullId, byte[] arr) {
+        fullPageId = fullId;
+        pageData = arr;
+    }
 
-        if (mark != PAGE_MARKER)
-            throw new IllegalArgumentException("Invalid page marker: " + U.hexLong(mark));
+    /**
+     * @param fullPageId Full page ID.
+     * @param ptr Pointer to copy from.
+     * @param pageSize Page size.
+     */
+    public PageSnapshot(FullPageId fullPageId, long ptr, int pageSize) {
+        this.fullPageId = fullPageId;
 
-        long pageId = getLong(arr, BYTE_ARR_OFF + PAGE_ID_OFFSET);
-        int cacheId = getInt(arr, BYTE_ARR_OFF + PAGE_CACHE_ID_OFFSET);
+        pageData = new byte[pageSize];
 
-        pageData = new byte[arr.length - PAGE_OVERHEAD];
-        copyMemory(arr, BYTE_ARR_OFF + PAGE_OVERHEAD, pageData, BYTE_ARR_OFF, pageData.length);
+        GridUnsafe.copyMemory(null, ptr, pageData, GridUnsafe.BYTE_ARR_OFF, pageSize);
+    }
 
-        fullPageId = new FullPageId(pageId, cacheId);
+    /** {@inheritDoc} */
+    @Override public RecordType type() {
+        return RecordType.PAGE_RECORD;
     }
 
     /**

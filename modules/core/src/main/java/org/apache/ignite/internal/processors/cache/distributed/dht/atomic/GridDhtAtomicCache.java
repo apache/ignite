@@ -41,6 +41,7 @@ import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
+import org.apache.ignite.internal.pagemem.wal.StorageException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
 import org.apache.ignite.internal.processors.cache.CacheInvokeEntry;
@@ -1687,6 +1688,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     for (IgniteBiTuple<GridDhtCacheEntry, GridCacheVersion> e : deleted)
                         ctx.onDeferredDelete(e.get1(), e.get2());
                 }
+
+                // TODO handle failure: probably drop the node from topology
+                // TODO fire events only after successful fsync
+                ctx.shared().wal().fsync(null);
             }
         }
         catch (GridDhtInvalidPartitionException ignore) {
@@ -1707,7 +1712,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             completionCb.apply(req, res);
 
             if (e instanceof Error)
-                throw e;
+                throw (Error)e;
 
             return;
         }
@@ -3066,6 +3071,18 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
 
         if (isNearEnabled(cacheCfg))
             ((GridNearAtomicCache<K, V>)near()).processDhtAtomicUpdateRequest(nodeId, req, res);
+
+        try {
+            // TODO handle failure: probably drop the node from topology
+            // TODO fire events only after successful fsync
+            ctx.shared().wal().fsync(null);
+        }
+        catch (StorageException e) {
+            res.onError(new IgniteCheckedException(e));
+        }
+        catch (IgniteCheckedException e) {
+            res.onError(e);
+        }
 
         try {
             if (res.failedKeys() != null || res.nearEvicted() != null || req.writeSynchronizationMode() == FULL_SYNC)

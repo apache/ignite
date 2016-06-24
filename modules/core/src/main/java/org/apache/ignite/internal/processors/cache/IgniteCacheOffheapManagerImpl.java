@@ -255,8 +255,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         int partId,
         GridDhtLocalPartition part
     ) throws IgniteCheckedException {
-        dataStore(part).remove(key);
-
         if (indexingEnabled) {
             GridCacheQueryManager qryMgr = cctx.queries();
 
@@ -264,24 +262,27 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
             qryMgr.remove(key, partId, prevVal, prevVer);
         }
+
+        dataStore(part).remove(key);
     }
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable public IgniteBiTuple<CacheObject, GridCacheVersion> read(GridCacheMapEntry entry)
         throws IgniteCheckedException {
-        KeyCacheObject key = entry.key();
+        try {
+            KeyCacheObject key = entry.key();
 
-//        if (indexingEnabled) {
-//            IgniteBiTuple<CacheObject, GridCacheVersion> t = cctx.queries().read(key, part);
-//
-//            if (t != null)
-//                return t.get1() != null ? t : null;
-//        }
+            assert cctx.isLocal() || entry.localPartition() != null : entry;
 
-        assert cctx.isLocal() || entry.localPartition() != null : entry;
-
-        return dataStore(entry.localPartition()).find(key);
+            return dataStore(entry.localPartition()).find(key);
+        }
+        catch (IgniteCheckedException e) {
+            throw e;
+        }
+        catch (Exception e) {
+            throw new IgniteCheckedException("Failed to read entry: " + entry.key(), e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -548,7 +549,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
      * @throws IgniteCheckedException If failed.
      */
     private Page page(long pageId) throws IgniteCheckedException {
-        return cctx.shared().database().pageMemory().page(new FullPageId(pageId, cctx.cacheId()));
+        return cctx.shared().database().pageMemory().page(cctx.cacheId(), pageId);
     }
 
     /** {@inheritDoc} */
@@ -751,6 +752,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             super(hash, null, link);
 
             part = PageIdUtils.partId(link);
+
+            // We can not init data row lazily because underlying buffer can be concurrently cleared.
+            initData();
         }
 
         /**
@@ -783,14 +787,14 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
         /** {@inheritDoc} */
         @Override public CacheObject value() {
-            initData();
+            assert val != null;
 
             return val;
         }
 
         /** {@inheritDoc} */
         @Override public GridCacheVersion version() {
-            initData();
+            assert ver != null;
 
             return ver;
         }
@@ -1003,7 +1007,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         @Override public long getLink(ByteBuffer buf, int idx) {
             assert idx < getCount(buf) : idx;
 
-            return buf.getLong(offset(idx, SHIFT_LINK));
+            return buf.getLong(offset(idx));
         }
 
         /**
@@ -1012,7 +1016,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
          * @param link Link.
          */
         private void setLink(ByteBuffer buf, int idx, long link) {
-            buf.putLong(offset(idx, SHIFT_LINK), link);
+            buf.putLong(offset(idx), link);
 
             assert getLink(buf, idx) == link;
         }

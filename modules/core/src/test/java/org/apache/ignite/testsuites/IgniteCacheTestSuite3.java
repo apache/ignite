@@ -193,7 +193,8 @@ public class IgniteCacheTestSuite3 extends TestSuite {
         suite.addTest(IgniteTopologyValidatorTestSuit.suite());
 
         // Eviction.
-        suite.addTest(IgniteCacheEvictionSelfTestSuite.suite());
+        // TODO GG-11140.
+        // suite.addTest(IgniteCacheEvictionSelfTestSuite.suite());
 
         // Iterators.
         suite.addTest(IgniteCacheIteratorsSelfTestSuite.suite());

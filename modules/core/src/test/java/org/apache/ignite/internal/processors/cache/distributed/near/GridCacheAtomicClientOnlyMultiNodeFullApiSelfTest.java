@@ -85,12 +85,12 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
     }
 
     /** {@inheritDoc} */
-    @Override public void testReaderTtlNoTx() throws Exception {
+    @Override public void _testReaderTtlNoTx() throws Exception {
         // No-op.
     }
 
     /** {@inheritDoc} */
-    @Override public void testReaderTtlTx() throws Exception {
+    @Override public void _testReaderTtlTx() throws Exception {
         // No-op.
     }
 
@@ -182,15 +182,15 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
 
         for (String key : keys) {
             if (keysToRmv.contains(key)) {
-                assertNull(nearCache.localPeek(key, CachePeekMode.ONHEAP));
+                assertNull(nearCache.localPeek(key));
 
-                assertNotNull(primary.localPeek(key, CachePeekMode.ONHEAP));
+                assertNotNull(primary.localPeek(key));
             }
         }
     }
 
     /** {@inheritDoc} */
-    @Override public void testEvictExpired() throws Exception {
+    @Override public void _testEvictExpired() throws Exception {
         IgniteCache<String, Integer> cache = jcache();
 
         String key = primaryKeysForCache(cache, 1).get(0);
@@ -279,7 +279,7 @@ public class GridCacheAtomicClientOnlyMultiNodeFullApiSelfTest extends GridCache
     }
 
     /** {@inheritDoc} */
-    @Override public void testPeekExpired() throws Exception {
+    @Override public void _testPeekExpired() throws Exception {
         IgniteCache<String, Integer> c = jcache();
 
         String key = primaryKeysForCache(c, 1).get(0);

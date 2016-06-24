@@ -28,7 +28,6 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.CacheMode;
-import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
@@ -229,7 +228,7 @@ public abstract class IgniteTxOriginatingNodeFailureAbstractSelfTest extends Gri
 
                         assertNotNull(cache);
 
-                        assertEquals(partial ? initVal : val, cache.localPeek(key, CachePeekMode.ONHEAP));
+                        assertEquals(partial ? initVal : val, cache.localPeek(key));
 
                         return null;
                     }

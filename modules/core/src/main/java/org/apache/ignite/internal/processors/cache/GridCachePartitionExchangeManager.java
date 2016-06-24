@@ -105,9 +105,6 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.preloa
  * Partition exchange manager.
  */
 public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedManagerAdapter<K, V> {
-    /** */
-    private static final GridDhtPartitionsExchangeFuture STOP = new GridDhtPartitionsExchangeFuture();
-
     /** Exchange history size. */
     private static final int EXCHANGE_HISTORY_SIZE = 1000;
 
@@ -150,6 +147,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** */
     private final Queue<Callable<Boolean>> rebalanceQ = new ConcurrentLinkedDeque8<>();
+
+    /** */
+    private final Object interruptLock = new Object();
 
     /**
      * Partition map futures.
@@ -522,6 +522,13 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         busyLock.writeLock().lock();
 
         exchFuts = null;
+    }
+
+    /**
+     * @return Interrupt lock.
+     */
+    public Object interruptLock() {
+        return interruptLock;
     }
 
     /**
@@ -1287,12 +1294,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         /** {@inheritDoc} */
         @Override public void cancel() {
-            if (log.isDebugEnabled())
-                log.debug("Cancelling exchange worker: " + this);
-
-            isCancelled = true;
-
-            futQ.offer(STOP);
+            synchronized (interruptLock) {
+                super.cancel();
+            }
         }
 
         /** {@inheritDoc} */
@@ -1341,12 +1345,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
                     if (exchFut == null)
                         continue; // Main while loop.
-
-                    if (exchFut == STOP) {
-                        assert isCancelled();
-
-                        break; // While.
-                    }
 
                     busy = true;
 
