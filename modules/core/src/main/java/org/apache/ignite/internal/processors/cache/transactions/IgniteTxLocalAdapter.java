@@ -1395,11 +1395,15 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                             log.debug("Got removed entry in transaction getAllAsync(..) (will retry): " + key);
                     }
                     finally {
-                        if (cacheCtx.isNear() && entry != null && readCommitted()) {
-                            if (cacheCtx.affinity().belongs(cacheCtx.localNode(), entry.partition(), topVer)) {
-                                if (entry.markObsolete(xidVer))
-                                    cacheCtx.cache().removeEntry(entry);
+                        if (entry != null && readCommitted()) {
+                            if (cacheCtx.isNear()) {
+                                if (cacheCtx.affinity().belongs(cacheCtx.localNode(), entry.partition(), topVer)) {
+                                    if (entry.markObsolete(xidVer))
+                                        cacheCtx.cache().removeEntry(entry);
+                                }
                             }
+                            else
+                                entry.context().evicts().touch(entry, topVer);
                         }
                     }
                 }

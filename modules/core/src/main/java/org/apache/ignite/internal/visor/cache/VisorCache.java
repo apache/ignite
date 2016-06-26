@@ -21,12 +21,12 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.Set;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.internal.IgniteEx;
+import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
 import org.apache.ignite.internal.processors.cache.GridCacheEntryEx;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
@@ -42,7 +42,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Data transfer object for {@link IgniteCache}.
  */
-public class VisorCache implements Serializable {
+public class VisorCache implements Serializable, LessNamingBean {
     /** */
     private static final long serialVersionUID = 0L;
 

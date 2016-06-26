@@ -84,6 +84,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Binary\BinaryReflectiveSerializer.cs" />
+    <Compile Include="Cache\Affinity\AffinityTopologyVersion.cs" />
+    <Compile Include="Cache\Affinity\AffinityFunctionContext.cs" />
     <Compile Include="Impl\Binary\BinaryReflectiveSerializerInternal.cs" />
     <Compile Include="Impl\Binary\IBinarySerializerInternal.cs" />
     <Compile Include="Binary\Package-Info.cs" />
@@ -414,6 +416,7 @@
     <Compile Include="Impl\Unmanaged\UnmanagedTarget.cs" />
     <Compile Include="Impl\Unmanaged\UnmanagedUtils.cs" />
     <Compile Include="Interop\JavaObject.cs" />
+    <Compile Include="Lifecycle\ClientReconnectEventArgs.cs" />
     <Compile Include="Lifecycle\Package-Info.cs" />
     <Compile Include="Messaging\Package-Info.cs" />
     <Compile Include="Package-Info.cs" />
