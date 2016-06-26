@@ -607,13 +607,13 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
             }
         }
         else {
-            checkSizeAffinityFilter(0);
+            checkPartitionSizeAffinityFilter(0);
 
-            checkSizeAffinityFilter(1);
+            checkPartitionSizeAffinityFilter(1);
 
-            checkSizeStorageFilter(0);
+            checkPartitionSizeStorageFilter(0);
 
-            checkSizeStorageFilter(1);
+            checkPartitionSizeStorageFilter(1);
         }
     }
 
@@ -744,6 +744,166 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
     }
 
     /**
+     * @param nodeIdx Node index.
+     * @throws Exception If failed.
+     */
+    private void checkPartitionSizeAffinityFilter(int nodeIdx) throws Exception {
+        IgniteCache<Integer, String> cache0 = jcache(nodeIdx);
+
+        final int PUT_KEYS = 10;
+
+        int partition = nodeIdx;
+
+        List<Integer> keys = null;
+
+        try {
+            if (cacheMode() == REPLICATED) {
+                keys = backupKeys(cache0, 10, 0);
+
+                for (Integer key : keys)
+                    cache0.put(key, String.valueOf(key));
+
+                int partitionSize = 0;
+
+                for (Integer key :keys){
+                    int keyPartition = ignite(nodeIdx).affinity(null).partition(key);
+                    if(keyPartition == partition){
+                        partitionSize++;
+                    }
+                }
+
+                assertEquals(PUT_KEYS, cache0.localSize(BACKUP));
+                assertEquals(PUT_KEYS, cache0.localSize(ALL));
+                assertEquals(partitionSize, cache0.localSize(partition, BACKUP));
+                assertEquals(partitionSize, cache0.localSize(partition, ALL));
+                assertEquals(0, cache0.localSize(partition, PRIMARY));
+                assertEquals(0, cache0.localSize(partition, NEAR));
+
+                for (int i = 0; i < gridCount(); i++) {
+                    IgniteCache<Integer, String> cache = jcache(i);
+                    assertEquals(0, cache.size(NEAR));
+                    assertEquals(partitionSize, cache.size(partition, PRIMARY));
+                    assertEquals(partitionSize * (gridCount() - 1), cache.size(partition, BACKUP));
+                    assertEquals(partitionSize * gridCount(), cache.size(partition, PRIMARY, BACKUP));
+                    assertEquals(partitionSize * gridCount(), cache.size(partition, ALL)); // Primary + backups.
+                }
+            }
+            else {
+                keys = nearKeys(cache0, PUT_KEYS, 0);
+
+                for (Integer key : keys)
+                    cache0.put(key, String.valueOf(key));
+
+                int partitionSize = 0;
+
+                for (Integer key :keys){
+                    int keyPartition = ignite(nodeIdx).affinity(null).partition(key);
+                    if(keyPartition == partition){
+                        partitionSize++;
+                    }
+                }
+
+                if (hasNearCache()) {
+                    assertEquals(0, cache0.localSize());
+                    assertEquals(0, cache0.localSize(partition, ALL));
+                    assertEquals(0, cache0.localSize(partition, NEAR));
+
+                    for (int i = 0; i < gridCount(); i++) {
+                        IgniteCache<Integer, String> cache = jcache(i);
+
+                        assertEquals(0, cache.size(partition, NEAR));
+                        assertEquals(partitionSize, cache.size(partition, BACKUP));
+                        assertEquals(partitionSize * 2, cache.size(partition, PRIMARY, BACKUP));
+                        assertEquals(partitionSize * 2, cache.size(partition, ALL)); // Primary + backups + near.
+                    }
+                }
+                else {
+                    assertEquals(0, cache0.localSize());
+                    //assertEquals(partitionSize, cache0.localSize(partition, ALL));
+                    assertEquals(0, cache0.localSize(partition, NEAR));
+
+                    for (int i = 0; i < gridCount(); i++) {
+                        IgniteCache<Integer, String> cache = jcache(i);
+
+                        assertEquals(0, cache.size(NEAR));
+                        assertEquals(partitionSize, cache.size(partition, BACKUP));
+                        assertEquals(partitionSize * 2, cache.size(partition, PRIMARY, BACKUP));
+                        assertEquals(partitionSize * 2, cache.size(partition, ALL)); // Primary + backups.
+                    }
+                }
+
+                assertEquals(0, cache0.localSize(BACKUP));
+                assertEquals(0, cache0.localSize(PRIMARY));
+            }
+
+            checkPrimarySize(PUT_KEYS);
+
+            Affinity<Integer> aff = ignite(0).affinity(null);
+
+            for (int i = 0; i < gridCount(); i++) {
+                if (i == nodeIdx)
+                    continue;
+
+                ClusterNode node = ignite(i).cluster().localNode();
+
+                int primary = 0;
+                int backups = 0;
+
+                for (Integer key : keys) {
+                    if (aff.isPrimary(node, key) && aff.partition(key) == partition)
+                        primary++;
+                    else if (aff.isBackup(node, key) && aff.partition(key) == partition)
+                        backups++;
+                }
+
+                IgniteCache<Integer, String> cache = jcache(i);
+
+                assertEquals(primary, cache.localSize(partition, PRIMARY));
+                assertEquals(backups, cache.localSize(partition, BACKUP));
+                assertEquals(primary + backups, cache.localSize(partition, PRIMARY, BACKUP));
+                assertEquals(primary + backups, cache.localSize(partition, BACKUP, PRIMARY));
+                assertEquals(primary + backups, cache.localSize(partition, ALL));
+            }
+
+            cache0.remove(keys.get(0));
+
+            keys.remove(0);
+
+            checkPrimarySize(PUT_KEYS - 1);
+
+            int primary = 0;
+            int backups = 0;
+
+            ClusterNode node = ignite(nodeIdx).cluster().localNode();
+
+            for (Integer key : keys) {
+                if (aff.isPrimary(node, key) && aff.partition(key) == partition)
+                    primary++;
+                else if (aff.isBackup(node, key) && aff.partition(key) == partition)
+                    backups++;
+            }
+
+            if (cacheMode() == REPLICATED) {
+                assertEquals(primary+backups, cache0.localSize(partition, ALL));
+                assertEquals(primary, cache0.localSize(partition, PRIMARY));
+                assertEquals(backups, cache0.localSize(partition, BACKUP));
+            }
+            else {
+                if (hasNearCache())
+                    assertEquals(0, cache0.localSize(partition, ALL));
+                else
+                    assertEquals(0, cache0.localSize(partition, ALL));
+            }
+        }
+        finally {
+            if (keys != null)
+                cache0.removeAll(new HashSet<>(keys));
+        }
+
+        checkEmpty();
+    }
+
+    /**
      * Checks size is zero.
      */
     private void checkEmpty() {
@@ -802,10 +962,55 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
 
     /**
      * @param nodeIdx Node index.
+     * @param partition Cache partition.
+     * @return Tuple with primary and backup keys.
+     */
+    private T2<List<Integer>, List<Integer>> swapKeys(int nodeIdx, int partition) {
+        SwapSpaceSpi swap = ignite(nodeIdx).configuration().getSwapSpaceSpi();
+
+        IgniteSpiCloseableIterator<KeyCacheObject> it = swap.keyIterator(SPACE_NAME, null);
+
+        assertNotNull(it);
+
+        Affinity aff = ignite(nodeIdx).affinity(null);
+
+        ClusterNode node = ignite(nodeIdx).cluster().localNode();
+
+        List<Integer> primary = new ArrayList<>();
+        List<Integer> backups = new ArrayList<>();
+
+        CacheObjectContext coctx = ((IgniteEx)ignite(nodeIdx)).context().cache().internalCache()
+                .context().cacheObjectContext();
+
+        while (it.hasNext()) {
+            Integer key = it.next().value(coctx, false);
+
+            if (aff.isPrimary(node, key) && aff.partition(key) == partition)
+                primary.add(key);
+            else if (aff.isBackup(node, key) &&  aff.partition(key) == partition)
+                backups.add(key);
+        }
+
+        return new T2<>(primary, backups);
+    }
+
+    /**
+     * @param nodeIdx Node index.
      * @return Tuple with number of primary and backup keys.
      */
     private T2<Integer, Integer> swapKeysCount(int nodeIdx) {
         T2<List<Integer>, List<Integer>> keys = swapKeys(nodeIdx);
+
+        return new T2<>(keys.get1().size(), keys.get2().size());
+    }
+
+    /**
+     * @param nodeIdx Node index.
+     * @param partition Cache partition
+     * @return Tuple with number of primary and backup keys.
+     */
+    private T2<Integer, Integer> swapKeysCount(int nodeIdx, int partition) {
+        T2<List<Integer>, List<Integer>> keys = swapKeys(nodeIdx, partition);
 
         return new T2<>(keys.get1().size(), keys.get2().size());
     }
@@ -849,10 +1054,56 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
 
     /**
      * @param nodeIdx Node index.
+     * @param partition Cache partition.
+     * @return Tuple with primary and backup keys.
+     */
+    private T2<List<Integer>, List<Integer>> offheapKeys(int nodeIdx, int partition) {
+        GridCacheAdapter<Integer, String> internalCache =
+                ((IgniteKernal)ignite(nodeIdx)).context().cache().internalCache();
+
+        Iterator<Map.Entry<Integer, String>> offheapIt;
+
+        if (internalCache.context().isNear())
+            offheapIt = internalCache.context().near().dht().context().swap().lazyOffHeapIterator(false);
+        else
+            offheapIt = internalCache.context().swap().lazyOffHeapIterator(false);
+
+        Affinity aff = ignite(nodeIdx).affinity(null);
+
+        ClusterNode node = ignite(nodeIdx).cluster().localNode();
+
+        List<Integer> primary = new ArrayList<>();
+        List<Integer> backups = new ArrayList<>();
+
+        while (offheapIt.hasNext()) {
+            Map.Entry<Integer, String> e = offheapIt.next();
+
+            if (aff.isPrimary(node, e.getKey()) && aff.partition(e.getKey()) == partition)
+                primary.add(e.getKey());
+            else if (aff.isBackup(node, e.getKey()) && aff.partition(e.getKey()) == partition)
+                backups.add(e.getKey());
+        }
+
+        return new T2<>(primary, backups);
+    }
+
+    /**
+     * @param nodeIdx Node index.
      * @return Tuple with number of primary and backup keys.
      */
     private T2<Integer, Integer> offheapKeysCount(int nodeIdx) {
         T2<List<Integer>, List<Integer>> keys = offheapKeys(nodeIdx);
+
+        return new T2<>(keys.get1().size(), keys.get2().size());
+    }
+
+    /**
+     * @param nodeIdx Node index.
+     * @param partition Cache partition.
+     * @return Tuple with number of primary and backup keys.
+     */
+    private T2<Integer, Integer> offheapKeysCount(int nodeIdx, int partition) {
+        T2<List<Integer>, List<Integer>> keys = offheapKeys(nodeIdx, partition);
 
         return new T2<>(keys.get1().size(), keys.get2().size());
     }
@@ -968,6 +1219,119 @@ public abstract class IgniteCachePeekModesAbstractTest extends IgniteCacheAbstra
                 assertEquals(globalSwapBackup + globalOffheapBackup, cache.size(SWAP, OFFHEAP, BACKUP));
 
                 assertEquals(globalTotal - (globalTotalOffheap + globalTotalSwap), cache.size(PRIMARY, BACKUP, NEAR, ONHEAP));
+            }
+        }
+        finally {
+            cache0.removeAll(new HashSet<>(primaryKeys));
+            cache0.removeAll(new HashSet<>(backupKeys));
+        }
+
+        checkEmpty();
+    }
+
+    /**
+     * @param nodeIdx Node index.
+     * @throws Exception If failed.
+     */
+    private void checkPartitionSizeStorageFilter(int nodeIdx) throws Exception {
+        IgniteCache<Integer, String> cache0 = jcache(nodeIdx);
+
+        int partition = nodeIdx;
+
+        List<Integer> primaryKeys = primaryKeys(cache0, 100, 10_000);
+        List<Integer> backupKeys = backupKeys(cache0, 100, 10_000);
+
+        try {
+            final String val = "test_value";
+
+            for (int i = 0; i < 100; i++) {
+                cache0.put(primaryKeys.get(i), val);
+                cache0.put(backupKeys.get(i), val);
+            }
+
+
+            int totalKeys = 200;
+
+            T2<Integer, Integer> swapKeys = swapKeysCount(nodeIdx, partition);
+
+            T2<Integer, Integer> offheapKeys = offheapKeysCount(nodeIdx, partition);
+
+            int totalSwap = swapKeys.get1() + swapKeys.get2();
+            int totalOffheap = offheapKeys.get1() + offheapKeys.get2();
+
+            log.info("Local keys [total=" + totalKeys + ", offheap=" + offheapKeys + ", swap=" + swapKeys + ']');
+
+            assertTrue(totalSwap + totalOffheap < totalKeys);
+
+            assertEquals(primaryKeys.size(), cache0.localSize());
+            assertEquals(totalKeys, cache0.localSize(ALL));
+            assertEquals(totalOffheap, cache0.localSize(partition, PRIMARY, BACKUP, NEAR, OFFHEAP));
+            assertEquals(totalSwap, cache0.localSize(partition, PRIMARY, BACKUP, NEAR, SWAP));
+            assertEquals(swapKeys.get1(), (Integer)cache0.localSize(partition, SWAP, PRIMARY));
+            assertEquals(swapKeys.get2(), (Integer)cache0.localSize(partition, SWAP, BACKUP));
+
+            assertEquals(offheapKeys.get1(), (Integer)cache0.localSize(partition, OFFHEAP, PRIMARY));
+            assertEquals(offheapKeys.get2(), (Integer)cache0.localSize(partition, OFFHEAP, BACKUP));
+
+            assertEquals(swapKeys.get1() + offheapKeys.get1(), cache0.localSize(partition, SWAP, OFFHEAP, PRIMARY));
+            assertEquals(swapKeys.get2() + offheapKeys.get2(), cache0.localSize(partition, SWAP, OFFHEAP, BACKUP));
+
+            assertEquals(totalSwap + totalOffheap, cache0.localSize(partition, PRIMARY, BACKUP, NEAR, SWAP, OFFHEAP));
+
+            int globalParitionSwapPrimary = 0;
+            int globalPartitionSwapBackup = 0;
+
+            int globalPartitionOffheapPrimary = 0;
+            int globalPartitionOffheapBackup = 0;
+
+            for (int i = 0; i < gridCount(); i++) {
+                T2<Integer, Integer> swap = swapKeysCount(i, partition);
+
+                globalParitionSwapPrimary += swap.get1();
+                globalPartitionSwapBackup += swap.get2();
+
+                T2<Integer, Integer> offheap = offheapKeysCount(i, partition);
+
+                globalPartitionOffheapPrimary += offheap.get1();
+                globalPartitionOffheapBackup += offheap.get2();
+            }
+
+            int backups;
+
+            if (cacheMode() == LOCAL)
+                backups = 0;
+            else if (cacheMode() == PARTITIONED)
+                backups = 1;
+            else // REPLICATED.
+                backups = gridCount() - 1;
+
+            int globalTotal = totalKeys + totalKeys * backups;
+            int globalPartitionTotalSwap = globalParitionSwapPrimary + globalPartitionSwapBackup;
+            int globalPartitionTotalOffheap = globalPartitionOffheapPrimary + globalPartitionOffheapBackup;
+
+            log.info("Global keys [total=" + globalTotal +
+                    ", offheap=" + globalPartitionTotalOffheap +
+                    ", swap=" + globalPartitionTotalSwap + ']');
+
+            for (int i = 0; i < gridCount(); i++) {
+                IgniteCache<Integer, String> cache = jcache(i);
+
+                assertEquals(totalKeys, cache.size(PRIMARY));
+                assertEquals(globalTotal, cache.size(ALL));
+                assertEquals(globalTotal, cache.size(PRIMARY, BACKUP, NEAR, ONHEAP, OFFHEAP, SWAP));
+                assertEquals(globalTotal, cache.size(ONHEAP, OFFHEAP, SWAP, PRIMARY, BACKUP));
+
+                assertEquals(globalPartitionTotalSwap, cache.size(partition, PRIMARY, BACKUP, NEAR, SWAP));
+                assertEquals(globalParitionSwapPrimary, cache.size(partition, SWAP, PRIMARY));
+                assertEquals(globalPartitionSwapBackup, cache.size(partition, SWAP, BACKUP));
+
+                assertEquals(globalPartitionTotalOffheap, cache.size(partition, PRIMARY, BACKUP, NEAR, OFFHEAP));
+                assertEquals(globalPartitionOffheapPrimary, cache.size(partition, OFFHEAP, PRIMARY));
+                assertEquals(globalPartitionOffheapBackup, cache.size(partition, OFFHEAP, BACKUP));
+
+                assertEquals(globalPartitionTotalSwap + globalPartitionTotalOffheap, cache.size(partition, PRIMARY, BACKUP, NEAR, SWAP, OFFHEAP));
+                assertEquals(globalParitionSwapPrimary + globalPartitionOffheapPrimary, cache.size(partition, SWAP, OFFHEAP, PRIMARY));
+                assertEquals(globalPartitionSwapBackup + globalPartitionOffheapBackup, cache.size(partition, SWAP, OFFHEAP, BACKUP));
             }
         }
         finally {

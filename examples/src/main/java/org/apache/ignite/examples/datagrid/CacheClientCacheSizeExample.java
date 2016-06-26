@@ -50,9 +50,8 @@ public class CacheClientCacheSizeExample {
                 // Individual puts and gets.
                 putGet(cache);
                 System.out.println(">>> cache size is " +cache.size());
-                System.out.println(">>> cache size in partition 1 is "+cache.size(1, CachePeekMode.ALL));
-                System.out.println(">>> cache size in partition 2 is "+cache.size(2, CachePeekMode.ALL));
-
+                System.out.println(">>> cache partition are "+ignite.affinity(CACHE_NAME).partitions());
+                System.out.println(">>> cache size in primary partition "+ 0 +"is "+cache.size(0, CachePeekMode.PRIMARY));
             }
         }
     }
@@ -66,7 +65,7 @@ public class CacheClientCacheSizeExample {
         System.out.println();
         System.out.println(">>> Cache put-get example started.");
 
-        final int keyCnt = 20;
+        final int keyCnt = 5000;
 
         // Store keys in cache.
         for (int i = 0; i < keyCnt; i++)

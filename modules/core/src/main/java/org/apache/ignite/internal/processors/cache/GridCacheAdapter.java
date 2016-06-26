@@ -84,6 +84,7 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.affinity.GridCacheAffinityImpl;
 import org.apache.ignite.internal.processors.cache.distributed.IgniteExternalizableExpiryPolicy;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheAdapter;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtInvalidPartitionException;
 import org.apache.ignite.internal.processors.cache.dr.GridCacheDrInfo;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
@@ -4012,7 +4013,7 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
         AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
         if (ctx.affinity().localNode(partition, topVer)) {
-            if (ctx.isLocal()) {
+            if(ctx.isLocal()){
                 modes.primary = true;
                 modes.backup = true;
 
@@ -4020,32 +4021,25 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     size += size();
             } else {
                 if (modes.heap) {
-                    if (modes.near)
-                        size += nearSize();
+                    GridDhtLocalPartition gridDthLocalPartition = ctx.topology().localPartition(partition, topVer, true);
 
-                    GridCacheAdapter cache = ctx.isNear() ? ctx.near().dht() : ctx.cache();
-
-                    if (!(modes.primary && modes.backup)) {
-                        if (modes.primary)
-                            size += cache.primarySize();
-
-                        if (modes.backup)
-                            size += (cache.size() - cache.primarySize());
-                    } else
-                        size += cache.size();
+                    if (modes.primary && gridDthLocalPartition.primary(topVer)) {
+                        size += gridDthLocalPartition.publicSize();
+                    }
+                    if (modes.backup && gridDthLocalPartition.backup(topVer)) {
+                        size += gridDthLocalPartition.publicSize();
+                    }
                 }
             }
-
             // Swap and offheap are disabled for near cache.
             if (modes.primary || modes.backup) {
-
                 GridCacheSwapManager swapMgr = ctx.isNear() ? ctx.near().dht().context().swap() : ctx.swap();
 
                 if (modes.swap)
-                    size += swapMgr.swapEntriesCount(modes.primary, modes.backup, topVer);
+                    size += swapMgr.swapEntriesCount(partition);
 
                 if (modes.offheap)
-                    size += swapMgr.offheapEntriesCount(modes.primary, modes.backup, topVer);
+                    size += swapMgr.offheapEntriesCount(partition);
             }
         }
 
