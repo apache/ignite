@@ -272,7 +272,7 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Preapare configuration.
+        /// Prepare configuration.
         /// </summary>
         /// <param name="reader">Reader.</param>
         /// <param name="outStream">Response stream.</param>
@@ -706,7 +706,7 @@ namespace Apache.Ignite.Core
             /** <inheritdoc /> */
             public void OnLifecycleEvent(LifecycleEventType evt)
             {
-                if (evt == LifecycleEventType.BeforeNodeStop)
+                if (evt == LifecycleEventType.BeforeNodeStop && _ignite != null)
                     ((IgniteProxy) _ignite).Target.BeforeNodeStop();
             }
         }
