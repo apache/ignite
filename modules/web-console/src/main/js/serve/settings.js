@@ -30,6 +30,11 @@ module.exports = {
 module.exports.factory = function(nconf, fs) {
     nconf.file({file: './serve/config/settings.json'});
 
+    if(process.env.NODE_ENV) {
+        const envConfigFile = `./serve/config/settings.${process.env.NODE_ENV}.json`;
+        fs.existsSync(envConfigFile) && nconf.file({file: envConfigFile});
+    }
+
     /**
      * Normalize a port into a number, string, or false.
      */

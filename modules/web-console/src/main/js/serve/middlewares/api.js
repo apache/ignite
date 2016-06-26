@@ -15,5 +15,36 @@
  * limitations under the License.
  */
 
-require('babel-core/register');
-require('./serve/index');
+'use strict';
+
+// Fire me up!
+
+function sendServerError(error) {
+    error.httpCode = 500;
+    this.api.error(error)
+}
+
+function sendError(err) {
+    // TODO: removed code from error
+    this.status(err.httpCode || err.code || 500).send(err.message);
+}
+
+function sendOk(data) {
+    this.status(200).json(data);
+}
+
+module.exports = {
+    implements: 'middlewares/api',
+    factory: () => {
+        return (req, res, next) => {
+            //Only prepare send functions
+            res.api = {
+                error: sendError.bind(res),
+                ok: sendOk.bind(res),
+                serverError: sendServerError.bind(res)
+            };
+
+            next();
+        };
+    }
+};

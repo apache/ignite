@@ -15,5 +15,15 @@
  * limitations under the License.
  */
 
-require('babel-core/register');
-require('./serve/index');
+'use strict';
+
+// Fire me up!
+
+module.exports = {
+    implements: 'errors',
+    factory: () => ({
+        AppError: require('./AppError'),
+        DupleError: require('./DupleError'),
+        ServerError: require('./ServerError')
+    })
+};

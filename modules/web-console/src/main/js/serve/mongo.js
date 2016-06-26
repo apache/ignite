@@ -24,12 +24,10 @@
  */
 module.exports = {
     implements: 'mongo',
-    inject: ['require(mongoose-deep-populate)', 'require(passport-local-mongoose)', 'settings', 'ignite_modules/mongo:*']
+    inject: ['require(mongoose-deep-populate)', 'require(passport-local-mongoose)', 'settings', 'ignite_modules/mongo:*', 'require(mongoose)']
 };
 
-module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, pluginMongo) {
-    const mongoose = require('mongoose');
-
+module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, pluginMongo, mongoose) {
     // Use native promises
     mongoose.Promise = global.Promise;
 

@@ -15,5 +15,14 @@
  * limitations under the License.
  */
 
-require('babel-core/register');
-require('./serve/index');
+'use strict';
+
+import AppError from './AppError';
+
+class DupleError extends AppError {
+    constructor(message) {
+        super(message);
+    }
+}
+
+module.exports = DupleError;

@@ -1,0 +1,27 @@
+{
+    "server": {
+        "port": 3000,
+        "ssl": false,
+        "key": "serve/keys/test.key",
+        "cert": "serve/keys/test.crt",
+        "keyPassphrase": "password",
+        "static": "./build"
+    },
+    "mongoDB": {
+        "url": "mongodb://localhost/console-test"
+    },
+    "agent-server": {
+        "port": 3001,
+        "ssl": false,
+        "key": "serve/keys/test.key",
+        "cert": "serve/keys/test.crt",
+        "keyPassphrase": "password"
+    },
+    "smtp": {
+        "service": "localhost",
+        "username": "Apache Ignite Web Console",
+        "sign": "Kind regards,<br>Apache Ignite Team",
+        "email": "m@m.test",
+        "password": "test"
+    }
+}

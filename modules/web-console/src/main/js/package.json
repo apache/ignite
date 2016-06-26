@@ -6,7 +6,9 @@
   "scripts": {
     "dev": "cross-env NODE_ENV=development gulp watch",
     "build": "cross-env NODE_ENV=production gulp build",
-    "test": "karma start karma.conf.js"
+    "test": "karma start karma.conf.js",
+    "ci-test-backend": "cross-env NODE_ENV=test mocha -u tdd --require babel-core/register --reporter mocha-teamcity-reporter --recursive ./test/backend/unit",
+    "test-backend": "cross-env NODE_ENV=test mocha -u tdd --require babel-core/register  --recursive ./test/backend/unit"
   },
   "author": "",
   "contributors": [
@@ -83,6 +85,7 @@
     "babel-eslint": "^6.0.4",
     "babel-loader": "^6.2.4",
     "babel-plugin-add-module-exports": "^0.2.1",
+    "babel-plugin-transform-builtin-extend": "^1.1.0",
     "babel-plugin-transform-runtime": "^6.7.5",
     "babel-polyfill": "^6.7.4",
     "babel-preset-angular": "^6.0.15",
@@ -116,6 +119,7 @@
     "karma-teamcity-reporter": "^1.0.0",
     "karma-webpack": "^1.7.0",
     "mocha": "~2.5.3",
+    "mocha-teamcity-reporter": "^1.0.0",
     "morgan": "^1.7.0",
     "ng-annotate-loader": "0.1.0",
     "ngtemplate-loader": "^1.3.1",

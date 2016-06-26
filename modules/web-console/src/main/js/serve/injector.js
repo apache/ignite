@@ -15,5 +15,16 @@
  * limitations under the License.
  */
 
-require('babel-core/register');
-require('./serve/index');
+const path = require('path');
+
+const igniteModules = (process.env.IGNITE_MODULES && path.relative(__dirname, process.env.IGNITE_MODULES)) || './ignite_modules';
+
+const fireUp = require('fire-up').newInjector({
+    basePath: __dirname,
+    modules: [
+        './**/*.js',
+        `${igniteModules}/**/*.js`
+    ]
+});
+
+module.exports = fireUp;

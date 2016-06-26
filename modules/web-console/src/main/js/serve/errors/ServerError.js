@@ -15,5 +15,17 @@
  * limitations under the License.
  */
 
-require('babel-core/register');
-require('./serve/index');
+'use strict';
+
+class ServerError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = this.constructor.name;
+        this.code = 500;
+        this.httpCode = 500;
+        this.message = message;
+        Error.captureStackTrace(this, this.constructor.name)
+    }
+}
+
+module.exports = ServerError;

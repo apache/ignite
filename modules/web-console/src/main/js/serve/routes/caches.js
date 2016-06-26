@@ -21,10 +21,10 @@
 
 module.exports = {
     implements: 'caches-routes',
-    inject: ['require(lodash)', 'require(express)', 'mongo']
+    inject: ['require(lodash)', 'require(express)', 'mongo', 'services/cacheService']
 };
 
-module.exports.factory = function(_, express, mongo) {
+module.exports.factory = function(_, express, mongo, cacheService) {
     return new Promise((factoryResolve) => {
         const router = new express.Router();
 
@@ -68,34 +68,11 @@ module.exports.factory = function(_, express, mongo) {
          * Save cache.
          */
         router.post('/save', (req, res) => {
-            const params = req.body;
-            const clusters = params.clusters;
-            const domains = params.domains;
+            const cache = req.body;
 
-            mongo.Cache.findOne({space: params.space, name: params.name}).exec()
-                .then((existingCache) => {
-                    const cacheId = params._id;
-
-                    if (existingCache && cacheId !== existingCache._id.toString())
-                        return res.status(500).send('Cache with name: "' + existingCache.name + '" already exist.');
-
-                    if (cacheId) {
-                        return mongo.Cache.update({_id: cacheId}, params, {upsert: true}).exec()
-                            .then(() => mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {caches: cacheId}}, {multi: true}).exec())
-                            .then(() => mongo.Cluster.update({_id: {$nin: clusters}}, {$pull: {caches: cacheId}}, {multi: true}).exec())
-                            .then(() => mongo.DomainModel.update({_id: {$in: domains}}, {$addToSet: {caches: cacheId}}, {multi: true}).exec())
-                            .then(() => mongo.DomainModel.update({_id: {$nin: domains}}, {$pull: {caches: cacheId}}, {multi: true}).exec())
-                            .then(() => res.send(cacheId));
-                    }
-
-                    return (new mongo.Cache(params)).save()
-                        .then((cache) =>
-                            mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {caches: cache._id}}, {multi: true}).exec()
-                                .then(() => mongo.DomainModel.update({_id: {$in: domains}}, {$addToSet: {caches: cache._id}}, {multi: true}).exec())
-                                .then(() => res.send(cache._id))
-                        );
-                })
-                .catch((err) => mongo.handleError(res, err));
+            cacheService.save(cache)
+                .then(res.api.ok)
+                .catch(res.api.error);
         });
 
         /**

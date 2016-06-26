@@ -25,10 +25,10 @@
 module.exports = {
     implements: 'configure',
     inject: ['require(morgan)', 'require(cookie-parser)', 'require(body-parser)',
-        'require(express-session)', 'require(connect-mongo)', 'require(passport)', 'require(passport.socketio)', 'settings', 'mongo']
+        'require(express-session)', 'require(connect-mongo)', 'require(passport)', 'require(passport.socketio)', 'settings', 'mongo', 'middlewares/api']
 };
 
-module.exports.factory = function(logger, cookieParser, bodyParser, session, connectMongo, passport, passportSocketIo, settings, mongo) {
+module.exports.factory = function(logger, cookieParser, bodyParser, session, connectMongo, passport, passportSocketIo, settings, mongo, api) {
     const _sessionStore = new (connectMongo(session))({mongooseConnection: mongo.connection});
 
     return {
@@ -37,6 +37,8 @@ module.exports.factory = function(logger, cookieParser, bodyParser, session, con
                 skip: (req, res) => res.statusCode < 400
             }));
 
+            app.use(api);
+            
             app.use(cookieParser(settings.sessionSecret));
 
             app.use(bodyParser.json({limit: '50mb'}));
