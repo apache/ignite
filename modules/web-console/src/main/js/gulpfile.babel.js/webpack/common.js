@@ -29,7 +29,8 @@ import {srcDir, destDir, rootDir} from '../paths';
 const NODE_ENV = process.env.NODE_ENV || 'production';
 const development = NODE_ENV === 'development';
 const node_modules_path = path.resolve('node_modules');
-const stylesLoader = 'css-loader?sourceMap!postcss-loader!sass-loader?outputStyle=expanded&sourceMap=true&sourceMapContents=true';
+const cssLoader = 'css-loader?sourceMap!postcss-loader';
+const stylesLoader = cssLoader + '!sass-loader?outputStyle=expanded&sourceMap=true&sourceMapContents=true';
 
 export default () => {
     return {
@@ -106,9 +107,7 @@ export default () => {
                 },
                 {
                     test: /\.css$/,
-                    loaders: ['style-loader',
-                        'css-loader?sourceMap',
-                        'postcss-loader']
+                    loader: development ? `style-loader!${cssLoader}` : ExtractTextPlugin.extract('style-loader', cssLoader)
                 },
                 {
                     test: /\.(scss|sass)$/,
@@ -146,7 +145,7 @@ export default () => {
         // ESLint loader configuration.
         eslint: {
             failOnWarning: false,
-            failOnError: !development
+            failOnError: false
         },
 
         // Load plugins.
