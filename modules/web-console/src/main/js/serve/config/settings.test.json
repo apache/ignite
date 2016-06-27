@@ -1,21 +1,13 @@
 {
     "server": {
         "port": 3000,
-        "ssl": false,
-        "key": "serve/keys/test.key",
-        "cert": "serve/keys/test.crt",
-        "keyPassphrase": "password",
         "static": "./build"
     },
     "mongoDB": {
         "url": "mongodb://localhost/console-test"
     },
     "agent-server": {
-        "port": 3001,
-        "ssl": false,
-        "key": "serve/keys/test.key",
-        "cert": "serve/keys/test.crt",
-        "keyPassphrase": "password"
+        "port": 3001
     },
     "smtp": {
         "service": "localhost",

@@ -22,9 +22,8 @@ import testCaches from '../data/caches.json';
 
 let cacheService, mongo, errors;
 
-suite('CacheService', function () {
-
-    suiteSetup(function () {
+suite('CacheService', () => {
+    suiteSetup(() => {
         return Promise.all([fireUp('services/cacheService'), fireUp('mongo'), fireUp('errors')])
             .then(([_cacheService, _mongo, _errors]) => {
                 mongo = _mongo;
@@ -38,10 +37,11 @@ suite('CacheService', function () {
             });
     });
 
-    test('CacheService::save', function (done) {
+    test('Cache save', (done) => {
         return cacheService.save(testCaches[0])
             .then((cacheId)=> {
                 assert.isNotNull(cacheId);
+
                 return cacheId;
             })
             .then((cacheId) => {
@@ -54,15 +54,13 @@ suite('CacheService', function () {
             .catch(done);
     });
 
-    test('CacheService::double save same cache', function (done) {
+    test('double save same cache', (done) => {
         return cacheService.save(testCaches[0])
-            .then(()=> {
-                return cacheService.save(testCaches[0])
-            })
+            .then(() => cacheService.save(testCaches[0]))
             .catch((err) => {
-                assert.instanceOf(err, errors.DupleError);
+                assert.instanceOf(err, errors.DuplicateKeyException);
+
                 done()
             })
     });
-
 });

@@ -19,10 +19,10 @@
 
 import AppError from './AppError';
 
-class DupleError extends AppError {
+class DuplicateKeyException extends AppError {
     constructor(message) {
         super(message);
     }
 }
 
-module.exports = DupleError;
+module.exports = DuplicateKeyException;

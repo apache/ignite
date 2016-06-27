@@ -32,6 +32,7 @@ module.exports.factory = function(nconf, fs) {
 
     if(process.env.NODE_ENV) {
         const envConfigFile = `./serve/config/settings.${process.env.NODE_ENV}.json`;
+        
         fs.existsSync(envConfigFile) && nconf.file({file: envConfigFile});
     }
 

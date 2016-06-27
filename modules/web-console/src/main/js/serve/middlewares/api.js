@@ -21,6 +21,7 @@
 
 function sendServerError(error) {
     error.httpCode = 500;
+
     this.api.error(error)
 }
 

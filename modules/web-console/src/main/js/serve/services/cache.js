@@ -21,18 +21,20 @@
 
 module.exports = {
     implements: 'services/cacheService',
-    inject: ['require(lodash)', 'require(express)', 'mongo', 'errors']
+    inject: ['require(lodash)',
+        'require(express)',
+        'mongo',
+        'errors']
 };
 
 module.exports.factory = function (_, express, mongo, errors) {
-
     const save = (cache) => {
         return mongo.Cache.findOne({space: cache.space, name: cache.name}).exec()
             .then((existingCache) => {
                 const cacheId = cache._id;
 
                 if (existingCache && cacheId !== existingCache._id.toString())
-                    throw new errors.DupleError('Cache with name: "' + existingCache.name + '" already exist.');
+                    throw new errors.DuplicateKeyException('Cache with name: "' + existingCache.name + '" already exist.');
 
                 if (cacheId) {
                     return mongo.Cache.update({_id: cacheId}, cache, {upsert: true}).exec()
@@ -44,15 +46,15 @@ module.exports.factory = function (_, express, mongo, errors) {
                 }
 
                 // TODO: Replace to mongo.Cache.create()
-                return (new mongo.Cache(cache)).save() 
+                return (new mongo.Cache(cache)).save()
                     .then((cache) =>
                         mongo.Cluster.update({_id: {$in: cache.clusters}}, {$addToSet: {caches: cache._id}}, {multi: true}).exec()
                             .then(() => mongo.DomainModel.update({_id: {$in: cache.domains}}, {$addToSet: {caches: cache._id}}, {multi: true}).exec())
                             .then(() => cache._id)
                     );
             });
-        };
-    
+    };
+
     return {
         save
     };
