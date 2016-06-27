@@ -55,6 +55,19 @@ import clustersSwap from './configuration/clusters/swap.directive';
 import clustersTime from './configuration/clusters/time.directive';
 import clustersThread from './configuration/clusters/thread.directive';
 import clustersTransactions from './configuration/clusters/transactions.directive';
+import clustersUserAttributes from './configuration/clusters/attributes.directive';
+import clustersCollision from './configuration/clusters/collision.directive';
+import clustersFailover from './configuration/clusters/failover.directive';
+import clustersLogger from './configuration/clusters/logger.directive';
+
+import clustersCollisionJobStealing from './configuration/clusters/collision/job-stealing.directive';
+import clustersCollisionFifoQueue from './configuration/clusters/collision/fifo-queue.directive';
+import clustersCollisionPriorityQueue from './configuration/clusters/collision/priority-queue.directive';
+import clustersCollisionCustom from './configuration/clusters/collision/custom.directive';
+
+import clustersLoggerLog4j2 from './configuration/clusters/logger/log4j2.directive';
+import clustersLoggerLog4j from './configuration/clusters/logger/log4j.directive';
+import clustersLoggerCustom from './configuration/clusters/logger/custom.directive';
 
 // Domains screen.
 import domainsGeneral from './configuration/domains/general.directive';
@@ -87,6 +100,17 @@ import summaryTabs from './configuration/summary/summary-tabs.directive';
 angular.module('ignite-console.states.configuration', ['ui.router'])
     // Clusters screen.
     .directive(...previewPanel)
+    .directive(...clustersLoggerCustom)
+    .directive(...clustersLoggerLog4j)
+    .directive(...clustersLoggerLog4j2)
+    .directive(...clustersLogger)
+    .directive(...clustersFailover)
+    .directive(...clustersCollisionCustom)
+    .directive(...clustersCollisionPriorityQueue)
+    .directive(...clustersCollisionFifoQueue)
+    .directive(...clustersCollisionJobStealing)
+    .directive(...clustersCollision)
+    .directive(...clustersUserAttributes)
     .directive(...clustersTransactions)
     .directive(...clustersThread)
     .directive(...clustersTime)
@@ -154,7 +178,7 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
                 url: '/clusters',
                 templateUrl: '/configuration/clusters.html',
                 params: {
-                    id: null
+                    linkId: null
                 },
                 metaTags: {
                     title: 'Configure Clusters'
@@ -164,7 +188,7 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
                 url: '/caches',
                 templateUrl: '/configuration/caches.html',
                 params: {
-                    id: null
+                    linkId: null
                 },
                 metaTags: {
                     title: 'Configure Caches'
@@ -174,7 +198,7 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
                 url: '/domains',
                 templateUrl: '/configuration/domains.html',
                 params: {
-                    id: null
+                    linkId: null
                 },
                 metaTags: {
                     title: 'Configure Domain Model'
@@ -184,7 +208,7 @@ angular.module('ignite-console.states.configuration', ['ui.router'])
                 url: '/igfs',
                 templateUrl: '/configuration/igfs.html',
                 params: {
-                    id: null
+                    linkId: null
                 },
                 metaTags: {
                     title: 'Configure IGFS'
