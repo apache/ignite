@@ -1137,7 +1137,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                 spi.writeToSocket(sock, msg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
-                spi.stats.onMessageSent(msg, U.currentTimeMillis() - tstamp);
+                long tstamp0 = U.currentTimeMillis();
 
                 if (debugMode)
                     debugLog(msg, "Message has been sent directly to address [msg=" + msg + ", addr=" + addr +
@@ -1152,7 +1152,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                 // E.g. due to class not found issue.
                 joinReqSent = msg instanceof TcpDiscoveryJoinRequestMessage;
 
-                return spi.readReceipt(sock, timeoutHelper.nextTimeoutChunk(ackTimeout0));
+                int receipt = spi.readReceipt(sock, timeoutHelper.nextTimeoutChunk(ackTimeout0));
+
+                spi.stats.onMessageSent(msg, tstamp0 - tstamp, U.currentTimeMillis() - tstamp0);
+
+                return receipt;
             }
             catch (ClassCastException e) {
                 // This issue is rarely reproducible on AmazonEC2, but never
@@ -2640,7 +2644,7 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                             assert !forceSndPending || msg instanceof TcpDiscoveryNodeLeftMessage;
 
-                            if (failure || forceSndPending) {
+                            if (newNextNode || failure || forceSndPending) {
                                 if (log.isDebugEnabled())
                                     log.debug("Pending messages will be sent [failure=" + failure +
                                         ", newNextNode=" + newNextNode +
@@ -2668,9 +2672,11 @@ class ServerImpl extends TcpDiscoveryImpl {
                                         clearNodeAddedMessage(pendingMsg);
                                     }
 
-                                    spi.stats.onMessageSent(pendingMsg, U.currentTimeMillis() - tstamp);
+                                    long tstamp0 = U.currentTimeMillis();
 
                                     int res = spi.readReceipt(sock, timeoutHelper.nextTimeoutChunk(ackTimeout0));
+
+                                    spi.stats.onMessageSent(pendingMsg, tstamp0 - tstamp, U.currentTimeMillis() - tstamp0);
 
                                     if (log.isDebugEnabled())
                                         log.debug("Pending message has been sent to next node [msgId=" + msg.id() +
@@ -2715,9 +2721,11 @@ class ServerImpl extends TcpDiscoveryImpl {
 
                                 spi.writeToSocket(sock, out, msg, timeoutHelper.nextTimeoutChunk(spi.getSocketTimeout()));
 
-                                spi.stats.onMessageSent(msg, U.currentTimeMillis() - tstamp);
+                                long tstamp0 = U.currentTimeMillis();
 
                                 int res = spi.readReceipt(sock, timeoutHelper.nextTimeoutChunk(ackTimeout0));
+
+                                spi.stats.onMessageSent(msg, tstamp0 - tstamp, U.currentTimeMillis() - tstamp0);
 
                                 onMessageExchanged();
 
