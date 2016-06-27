@@ -72,6 +72,9 @@ public class AgentLauncher {
     private static final String EVENT_SCHEMA_IMPORT_METADATA = "schemaImport:metadata";
 
     /** */
+    private static final String EVENT_AGENT_WARNING = "agent:warning";
+
+    /** */
     private static final String EVENT_AGENT_CLOSE = "agent:close";
 
     /** */
@@ -137,7 +140,7 @@ public class AgentLauncher {
      */
     private static final Emitter.Listener onDisconnect = new Emitter.Listener() {
         @Override public void call(Object... args) {
-            log.error(String.format("Connection closed: %s.", args[0]));
+            log.error(String.format("Connection closed: %s.", args));
         }
     };
 
@@ -277,28 +280,14 @@ public class AgentLauncher {
 
                             client.emit("agent:auth", authMsg, new Ack() {
                                 @Override public void call(Object... args) {
-                                    if (args == null || args.length == 0 || args.length > 2) {
-                                        onDisconnect.call("Authentication failed, wrong server response: " +
-                                            Arrays.toString(args));
-
-                                        System.exit(1);
-                                    }
-
-                                    String err = (String)args[0];
-                                    boolean isSuccess = args.length > 1 ? (boolean)args[1] : err == null;
-
                                     // Authentication failed if response contains args.
-                                    if (isSuccess) {
-                                        if (err != null)
-                                            log.warn(err);
-
-                                        log.info("Authentication success.");
-                                    }
-                                    else {
-                                        onDisconnect.call("Authentication failed. " + args[0]);
+                                    if (args != null && args.length > 0) {
+                                        onDisconnect.call(args);
 
                                         System.exit(1);
                                     }
+
+                                    log.info("Authentication success.");
                                 }
                             });
                         }
@@ -325,6 +314,11 @@ public class AgentLauncher {
                     .on(EVENT_SCHEMA_IMPORT_METADATA, dbHnd.metadataListener())
                     .on(EVENT_ERROR, onError)
                     .on(EVENT_DISCONNECT, onDisconnect)
+                    .on(EVENT_AGENT_WARNING, new Emitter.Listener() {
+                        @Override public void call(Object... args) {
+                            log.warn(args[0]);
+                        }
+                    })
                     .on(EVENT_AGENT_CLOSE, new Emitter.Listener() {
                         @Override public void call(Object... args) {
                             onDisconnect.call(args);

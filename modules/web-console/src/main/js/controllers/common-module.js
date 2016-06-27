@@ -1094,7 +1094,7 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
 // Confirm change location.
 consoleModule.service('$unsavedChangesGuard', ['$rootScope', ($root) => {
     return {
-        install($scope, customDirtyCheck = function() { return  $scope.ui.inputForm.$dirty }) {
+        install($scope, customDirtyCheck = () => $scope.ui.inputForm.$dirty) {
             $scope.$on('$destroy', function() {
                 window.onbeforeunload = null;
             });

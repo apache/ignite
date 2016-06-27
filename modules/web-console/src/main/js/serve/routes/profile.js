@@ -80,7 +80,7 @@ module.exports.factory = function(_, express, mongo, agentMgr) {
                 })
                 .then((user) => {
                     if (params.token && user.token !== params.token)
-                        agentMgr.close(user._id);
+                        agentMgr.close(user._id, user.token);
 
                     _.extend(user, params);
 
