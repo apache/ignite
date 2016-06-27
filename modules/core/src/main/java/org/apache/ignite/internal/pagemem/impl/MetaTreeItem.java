@@ -15,30 +15,41 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.database;
-
-import org.apache.ignite.IgniteCheckedException;
+package org.apache.ignite.internal.pagemem.impl;
 
 /**
- * Meta store.
+ *
  */
-public interface MetaStore {
-    /**
-     * Get or allocate initial page for an index.
-     *
-     * @param idxName Index name.
-     * @return {@link RootPage} that keeps pageId, allocated flag that shows whether the page
-     *      was newly allocated, and rootId that is counter which increments each time new page allocated.
-     * @throws IgniteCheckedException
-     */
-    public RootPage getOrAllocateForTree(String idxName) throws IgniteCheckedException;
+public class MetaTreeItem {
+    /** Size of the item. */
+    public static final int ITEM_SIZE = 4 + 8; // 4 bytes cacheId, 8 bytes pageId
+
+    /** */
+    private int cacheId;
+
+    /** */
+    private long pageId;
 
     /**
-     * Deallocate index page and remove from tree.
-     *
-     * @param idxName Index name.
-     * @return Root ID or -1 if no page was removed.
-     * @throws IgniteCheckedException
+     * @param cacheId Cache ID.
+     * @param pageId Page ID.
      */
-    public RootPage dropRootPage(String idxName) throws IgniteCheckedException;
+    public MetaTreeItem(final int cacheId, final long pageId) {
+        this.cacheId = cacheId;
+        this.pageId = pageId;
+    }
+
+    /**
+     * @return Cache ID.
+     */
+    public int cacheId() {
+        return cacheId;
+    }
+
+    /**
+     * @return Page ID.
+     */
+    public long pageId() {
+        return pageId;
+    }
 }

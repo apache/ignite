@@ -152,8 +152,8 @@ public class FreeList {
                 // Index name will be the same across restarts.
                 String idxName = BPlusTree.treeName("p" + partId, cctx.cacheId(), "Free");
 
-                final RootPage rootPage = cctx.shared().database().meta()
-                    .getOrAllocateForTree(cctx.cacheId(), idxName);
+                final RootPage rootPage = cctx.shared().database().meta(cctx.cacheId())
+                    .getOrAllocateForTree(idxName);
 
                 fut.onDone(new FreeTree(idxName, reuseList, cctx.cacheId(), partId, pageMem, rootPage.pageId(), rootPage.isAllocated()));
             }

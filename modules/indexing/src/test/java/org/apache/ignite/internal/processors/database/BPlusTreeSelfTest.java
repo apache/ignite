@@ -96,12 +96,12 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
         pageMem.start();
 
         reuseList = createReuseList(CACHE_ID, pageMem, 2, new MetaStore() {
-            @Override public RootPage getOrAllocateForTree(final int cacheId, final String idxName)
+            @Override public RootPage getOrAllocateForTree(final String idxName)
                 throws IgniteCheckedException {
                 return new RootPage(allocateMetaPage(), true);
             }
 
-            @Override public RootPage dropRootPage(final int cacheId, final String idxName) {
+            @Override public RootPage dropRootPage(final String idxName) {
                 throw new UnsupportedOperationException();
             }
         });

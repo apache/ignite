@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.ignite.IgniteCheckedException;
@@ -174,6 +175,12 @@ public class PageMemoryImpl implements PageMemory {
 
     /** Pages captured for the checkpoint process. */
     private Collection<FullPageId> checkpointPages;
+
+    /** Keeps allocated meta pages for caches. */
+    private MetaPagesTree metaTree;
+
+    /** Synchronizes meta tree access. */
+    private ReadWriteLock metaTreeRw = new ReentrantReadWriteLock();
 
     /**
      * @param directMemoryProvider Memory allocator to use.
@@ -325,6 +332,17 @@ public class PageMemoryImpl implements PageMemory {
             seg.loadedPages.remove(cacheId, pageId);
 
             releaseFreePage(relPtr);
+
+            if (metaTree == null && PageIdUtils.flag(pageId) == PageMemory.FLAG_META) {
+                metaTreeRw.writeLock().lock();
+
+                try {
+                    metaTree.remove(new MetaTreeItem(cacheId, 0));
+                }
+                finally {
+                    metaTreeRw.writeLock().unlock();
+                }
+            }
         }
         finally {
             seg.writeLock().unlock();
@@ -334,8 +352,55 @@ public class PageMemoryImpl implements PageMemory {
     }
 
     /** {@inheritDoc} */
-    @Override public Page metaPage() throws IgniteCheckedException {
+    private Page metaPage() throws IgniteCheckedException {
         return page(0, mem.readLong(dbMetaPageIdPtr));
+    }
+
+    /** {@inheritDoc} */
+    @Override public Page metaPage(final int cacheId) throws IgniteCheckedException {
+        if (storeMgr != null)
+            return page(cacheId, PageIdUtils.pageId(-1, PageMemory.FLAG_META, 0));
+
+        long pageId = 0;
+
+        boolean alloc = false;
+
+        final MetaTreeItem searchItem = new MetaTreeItem(cacheId, 0);
+
+        metaTreeRw.readLock().lock();
+
+        try {
+            final MetaTreeItem item = metaTree.findOne(searchItem);
+
+            if (item != null)
+                pageId = item.pageId();
+            else
+                alloc = true;
+        }
+        finally {
+            metaTreeRw.readLock().unlock();
+        }
+
+        if (alloc) {
+            metaTreeRw.writeLock().lock();
+
+            try {
+                final MetaTreeItem item = metaTree.findOne(searchItem);
+
+                if (item == null) {
+                    pageId = allocatePage(cacheId, -1, PageMemory.FLAG_META);
+
+                    metaTree.put(new MetaTreeItem(cacheId, pageId));
+                }
+                else
+                    pageId = item.pageId();
+            }
+            finally {
+                metaTreeRw.writeLock().unlock();
+            }
+        }
+
+        return page(cacheId, pageId);
     }
 
     /** {@inheritDoc} */
@@ -863,7 +928,7 @@ public class PageMemoryImpl implements PageMemory {
     /**
      * Attempts to restore page memory state based on the memory chunks returned by the allocator.
      */
-    private void initExisting(DirectMemory memory) {
+    private void initExisting(DirectMemory memory) throws IgniteCheckedException {
         DirectMemoryFragment meta = memory.fragments().get(0);
 
         long base = meta.address();
@@ -924,6 +989,9 @@ public class PageMemoryImpl implements PageMemory {
                     currentChunk = chunk;
             }
         }
+
+        if (storeMgr == null)
+            metaTree = new MetaPagesTree(this, mem.readLong(dbMetaPageIdPtr), false);
     }
 
     /**
@@ -1028,6 +1096,9 @@ public class PageMemoryImpl implements PageMemory {
         }
         else
             mem.writeLong(dbMetaPageIdPtr, storeMgr.metaRoot());
+
+        if (storeMgr == null)
+            metaTree = new MetaPagesTree(this, mem.readLong(dbMetaPageIdPtr), true);
     }
 
     /**

@@ -29,6 +29,8 @@ import org.apache.ignite.internal.processors.cache.GridCacheSharedManagerAdapter
 import org.apache.ignite.internal.util.typedef.internal.U;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  *
@@ -38,7 +40,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     protected PageMemory pageMem;
 
     /** */
-    protected MetadataStorage meta;
+    protected Map<Integer, MetadataStorage> metaStorages;
 
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
@@ -52,7 +54,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             pageMem.start();
 
-            meta = new MetadataStorage(pageMem);
+            metaStorages = new HashMap<>();
         }
     }
 
@@ -70,9 +72,19 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
     }
 
     /**
+     * @param cacheId Cache ID.
      * @return Metadata storage.
      */
-    public MetadataStorage meta() {
+    public MetadataStorage meta(final int cacheId) {
+        // TODO not thread safe
+        MetadataStorage meta = metaStorages.get(cacheId);
+
+        if (meta == null) {
+            meta = new MetadataStorage(pageMem, cacheId);
+
+            metaStorages.put(cacheId, meta);
+        }
+
         return meta;
     }
 
