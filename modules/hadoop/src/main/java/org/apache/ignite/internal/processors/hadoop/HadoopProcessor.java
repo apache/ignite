@@ -34,7 +34,6 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
-import static org.apache.ignite.internal.processors.hadoop.HadoopClassLoader.hadoopUrls;
 /**
  * Hadoop processor.
  */
@@ -77,11 +76,15 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
             HadoopLocations loc = HadoopClasspathUtils.getHadoopLocations();
 
             if (loc.home() != null)
-                U.quietAndInfo(log, "HADOOP_HOME is set to " + loc.home());
+                U.quietAndInfo(log, HadoopClasspathUtils.HadoopVariable.HADOOP_HOME.toString() + " is set to "
+                    + loc.home());
 
-            U.quietAndInfo(log, "HADOOP_COMMON_HOME is set to " + loc.commonHome());
-            U.quietAndInfo(log, "HADOOP_HDFS_HOME is set to " + loc.hdfsHome());
-            U.quietAndInfo(log, "HADOOP_MAPRED_HOME is set to " + loc.mapredHome());
+            U.quietAndInfo(log, HadoopClasspathUtils.HadoopVariable.HADOOP_COMMON_HOME.toString() + " is set to "
+                + loc.commonHome());
+            U.quietAndInfo(log, HadoopClasspathUtils.HadoopVariable.HADOOP_HDFS_HOME.toString() + " is set to "
+                + loc.hdfsHome());
+            U.quietAndInfo(log, HadoopClasspathUtils.HadoopVariable.HADOOP_MAPRED_HOME.toString() + " is set to "
+                + loc.mapredHome());
         }
         catch (IOException ioe) {
             throw new IgniteCheckedException(ioe);
@@ -165,7 +168,7 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
     @Override public Hadoop hadoop() {
         if (hadoop == null)
             throw new IllegalStateException("Hadoop accelerator is disabled (Hadoop is not in classpath, " +
-                "is HADOOP_HOME environment variable set?)");
+                "are Hadoop location environment variables set?)");
 
         return hadoop;
     }

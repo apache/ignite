@@ -237,7 +237,7 @@ public class HadoopClasspathUtils {
      * @param path The directory path.
      * @return {@code True} if the given path denotes an existing directory.
      */
-    private static boolean directoryExists(String path) {
+    static boolean directoryExists(String path) {
         if (path == null)
             return false;
 
