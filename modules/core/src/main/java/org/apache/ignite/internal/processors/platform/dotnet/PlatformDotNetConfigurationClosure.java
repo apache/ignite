@@ -182,11 +182,22 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
                 PlatformConfigurationUtils.writeDotNetConfiguration(writer, interopCfg.unwrap());
 
+                // Write .NET beans
                 List<PlatformDotNetLifecycleBean> beans = beans(igniteCfg);
 
                 writer.writeInt(beans.size());
 
                 for (PlatformDotNetLifecycleBean bean : beans) {
+                    writer.writeString(bean.getTypeName());
+                    writer.writeMap(bean.getProperties());
+                }
+
+                // Write .NET affinity funcs
+                List<PlatformDotNetAffinityFunction> affFuncs = affinityFunctions(igniteCfg);
+
+                writer.writeInt(affFuncs.size());
+
+                for (PlatformDotNetAffinityFunction bean : affFuncs) {
                     writer.writeString(bean.getTypeName());
                     writer.writeMap(bean.getProperties());
                 }
