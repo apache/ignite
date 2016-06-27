@@ -963,7 +963,7 @@ public class GridServiceProcessor extends GridProcessorAdapter {
                                     for (Map.Entry<UUID, Integer> e : entries) {
                                         // Assign only the ones that have not been reused from previous assignments.
                                         if (!used.contains(e.getKey())) {
-                                            if (e.getValue() < maxPerNodeCnt) {
+                                            if (e.getValue() < maxPerNodeCnt || maxPerNodeCnt == 0) {
                                                 e.setValue(e.getValue() + 1);
 
                                                 if (--remainder == 0)
