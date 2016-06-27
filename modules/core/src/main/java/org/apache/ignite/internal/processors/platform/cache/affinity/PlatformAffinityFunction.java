@@ -27,8 +27,10 @@ import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
 import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
+import org.apache.ignite.internal.processors.platform.memory.PlatformMemoryManagerImpl;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.lifecycle.LifecycleAware;
@@ -74,11 +76,13 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
 
     /**
      * Ctor.
-     *
-     * @param func User fun object.
+     *  @param func User fun object.
      * @param partitions Initial number of partitions.
+     * @param gate
+     * @param memory
      */
-    public PlatformAffinityFunction(Object func, int partitions) {
+    public PlatformAffinityFunction(Object func, int partitions, PlatformCallbackGateway gate,
+        PlatformMemoryManagerImpl memory) {
         userFunc = func;
         this.partitions = partitions;
     }

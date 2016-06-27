@@ -41,6 +41,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.*;
+import org.apache.ignite.internal.processors.platform.PlatformConfigurationEx;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration;
@@ -113,9 +114,10 @@ public class PlatformConfigurationUtils {
      * Reads cache configuration from a stream.
      *
      * @param in Stream.
+     * @param platformCfg Platform config.
      * @return Cache configuration.
      */
-    public static CacheConfiguration readCacheConfiguration(BinaryRawReaderEx in) {
+    public static CacheConfiguration readCacheConfiguration(BinaryRawReaderEx in, PlatformConfigurationEx platformCfg) {
         assert in != null;
 
         CacheConfiguration ccfg = new CacheConfiguration();
@@ -179,7 +181,7 @@ public class PlatformConfigurationUtils {
             ccfg.setNearConfiguration(readNearConfiguration(in));
 
         ccfg.setEvictionPolicy(readEvictionPolicy(in));
-        ccfg.setAffinity(readAffinityFunction(in));
+        ccfg.setAffinity(readAffinityFunction(in, platformCfg));
 
         return ccfg;
     }
@@ -236,9 +238,10 @@ public class PlatformConfigurationUtils {
      * Reads the eviction policy.
      *
      * @param in Stream.
+     * @param platformCfg Platform config.
      * @return Affinity function.
      */
-    private static AffinityFunction readAffinityFunction(BinaryRawReaderEx in) {
+    private static AffinityFunction readAffinityFunction(BinaryRawReaderEx in, PlatformConfigurationEx platformCfg) {
         byte plcTyp = in.readByte();
 
         switch (plcTyp) {
@@ -257,7 +260,8 @@ public class PlatformConfigurationUtils {
                 return f;
             }
             case 3: {
-                return new PlatformAffinityFunction(in.readObjectDetached(), in.readInt());
+                return new PlatformAffinityFunction(in.readObjectDetached(), in.readInt(), platformCfg.gate(),
+                    platformCfg.memory());
             }
             default:
                 assert false;
@@ -519,7 +523,7 @@ public class PlatformConfigurationUtils {
         List<CacheConfiguration> caches = new ArrayList<>();
 
         for (int i = 0; i < len; i++)
-            caches.add(readCacheConfiguration(in));
+            caches.add(readCacheConfiguration(in, (PlatformConfigurationEx)cfg.getPlatformConfiguration()));
 
         CacheConfiguration[] oldCaches = cfg.getCacheConfiguration();
         CacheConfiguration[] caches0 = caches.toArray(new CacheConfiguration[caches.size()]);
