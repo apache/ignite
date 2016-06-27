@@ -42,6 +42,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -87,7 +88,11 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
         this.partitions = partitions;
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Gets the user function object.
+     *
+     * @return User function object.
+     */
     public Object getUserFunc() {
         return userFunc;
     }
