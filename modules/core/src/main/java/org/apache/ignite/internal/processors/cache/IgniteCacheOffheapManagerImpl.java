@@ -567,7 +567,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
      * @return Tree name for given partition.
      */
     private String treeName(int p) {
-        return BPlusTree.treeName("p-" + p, cctx.cacheId(), "CacheData");
+        return BPlusTree.treeName("p-" + p, 0, "CacheData");
     }
 
     /**

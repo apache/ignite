@@ -79,7 +79,7 @@ public class H2TreeIndex extends GridH2IndexBase {
         initBaseIndex(tbl, 0, name, cols,
             pk ? IndexType.createPrimaryKey(false, false) : IndexType.createNonUnique(false, false, false));
 
-        name = BPlusTree.treeName(name, cctx.cacheId(), "H2Tree");
+        name = BPlusTree.treeName(name, 0, "H2Tree");
 
         IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
 

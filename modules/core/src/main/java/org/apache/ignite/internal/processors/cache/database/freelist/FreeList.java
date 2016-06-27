@@ -150,7 +150,7 @@ public class FreeList {
                 fut = trees.get(partId);
             else {
                 // Index name will be the same across restarts.
-                String idxName = BPlusTree.treeName("p" + partId, cctx.cacheId(), "Free");
+                String idxName = BPlusTree.treeName("p" + partId, 0, "Free");
 
                 final RootPage rootPage = cctx.shared().database().meta(cctx.cacheId())
                     .getOrAllocateForTree(idxName);
