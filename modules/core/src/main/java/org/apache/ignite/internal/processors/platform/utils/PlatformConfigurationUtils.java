@@ -41,6 +41,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.*;
+import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactoryNative;
@@ -237,7 +238,7 @@ public class PlatformConfigurationUtils {
      * @param in Stream.
      * @return Affinity function.
      */
-    private static AffinityFunction readAffinityFunction(BinaryRawReader in) {
+    private static AffinityFunction readAffinityFunction(BinaryRawReaderEx in) {
         byte plcTyp = in.readByte();
 
         switch (plcTyp) {
@@ -254,6 +255,9 @@ public class PlatformConfigurationUtils {
                 f.setPartitions(in.readInt());
                 f.setExcludeNeighbors(in.readBoolean());
                 return f;
+            }
+            case 3: {
+                return new PlatformAffinityFunction(in.readObjectDetached(), in.readInt());
             }
             default:
                 assert false;
@@ -295,6 +299,13 @@ public class PlatformConfigurationUtils {
             RendezvousAffinityFunction f0 = (RendezvousAffinityFunction)f;
             out.writeInt(f0.getPartitions());
             out.writeBoolean(f0.isExcludeNeighbors());
+        }
+        else if (f instanceof PlatformAffinityFunction) {
+            out.writeByte((byte)3);
+
+            PlatformAffinityFunction f0 = (PlatformAffinityFunction)f;
+            out.writeObject(f0.getUserFunc());
+            out.writeInt(f.partitions());
         }
         else {
             out.writeByte((byte)0);
