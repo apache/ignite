@@ -693,6 +693,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             return target.ChangeTarget(res);
         }
         
+        internal static IUnmanagedTarget ProjectionForServers(IUnmanagedTarget target)
+        {
+            void* res = JNI.ProjectionForServers(target.Context, target.Target);
+
+            return target.ChangeTarget(res);
+        }
+        
         internal static void ProjectionResetMetrics(IUnmanagedTarget target)
         {
             JNI.ProjectionResetMetrics(target.Context, target.Target);

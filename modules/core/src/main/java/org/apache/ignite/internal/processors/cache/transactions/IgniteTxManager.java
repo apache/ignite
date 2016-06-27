@@ -568,6 +568,10 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             ", tx=" + tx + ']';
 
         if (isCompleted(tx)) {
+            ConcurrentMap<GridCacheVersion, IgniteInternalTx> txIdMap = transactionMap(tx);
+
+            txIdMap.remove(tx.xidVersion(), tx);
+
             if (log.isDebugEnabled())
                 log.debug("Attempt to start a completed transaction (will ignore): " + tx);
 
@@ -1236,7 +1240,7 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
      * @param tx Transaction to finish.
      * @param commit {@code True} if transaction is committed, {@code false} if rolled back.
      */
-    public void fastFinishTx(IgniteInternalTx tx, boolean commit) {
+    public void fastFinishTx(GridNearTxLocal tx, boolean commit) {
         assert tx != null;
         assert tx.writeMap().isEmpty();
         assert tx.optimistic() || tx.readMap().isEmpty();
@@ -1247,16 +1251,22 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
             // 1. Notify evictions.
             notifyEvitions(tx);
 
-            // 2. Remove obsolete entries.
+            // 2. Evict near entries.
+            if (!tx.readMap().isEmpty()) {
+                for (IgniteTxEntry entry : tx.readMap().values())
+                    tx.evictNearEntry(entry, false);
+            }
+
+            // 3. Remove obsolete entries.
             removeObsolete(tx);
 
-            // 3. Remove from per-thread storage.
+            // 4. Remove from per-thread storage.
             clearThreadMap(tx);
 
-            // 4. Clear context.
+            // 5. Clear context.
             resetContext();
 
-            // 5. Update metrics.
+            // 6. Update metrics.
             if (!tx.dht() && tx.local()) {
                 if (!tx.system()) {
                     if (commit)

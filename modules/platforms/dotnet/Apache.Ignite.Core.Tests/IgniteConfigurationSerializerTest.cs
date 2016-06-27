@@ -30,6 +30,8 @@ namespace Apache.Ignite.Core.Tests
     using System.Xml;
     using System.Xml.Schema;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Affinity.Fair;
+    using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Cache.Store;
@@ -95,6 +97,7 @@ namespace Apache.Ignite.Core.Tests
                                     <nearConfiguration nearStartSize='7'>
                                         <evictionPolicy type='FifoEvictionPolicy' batchSize='10' maxSize='20' maxMemorySize='30' />
                                     </nearConfiguration>
+                                    <affinityFunction type='RendezvousAffinityFunction' partitions='99' excludeNeighbors='true' />
                                 </cacheConfiguration>
                                 <cacheConfiguration name='secondCache' />
                             </cacheConfiguration>
@@ -166,6 +169,11 @@ namespace Apache.Ignite.Core.Tests
             Assert.AreEqual(1, plc2.BatchSize);
             Assert.AreEqual(2, plc2.MaxSize);
             Assert.AreEqual(3, plc2.MaxMemorySize);
+
+            var af = cacheCfg.AffinityFunction as RendezvousAffinityFunction;
+            Assert.IsNotNull(af);
+            Assert.AreEqual(99, af.Partitions);
+            Assert.IsTrue(af.ExcludeNeighbors);
 
             Assert.AreEqual(new Dictionary<string, object> {{"myNode", "true"}}, cfg.UserAttributes);
 
@@ -357,6 +365,14 @@ namespace Apache.Ignite.Core.Tests
                             IdMapper = new IdMapper(),
                             NameMapper = new NameMapper(),
                             Serializer = new TestSerializer()
+                        },
+                        new BinaryTypeConfiguration
+                        {
+                            IsEnum = false,
+                            KeepDeserialized = false,
+                            AffinityKeyFieldName = "affKeyFieldName",
+                            TypeName = "typeName2",
+                            Serializer = new BinaryReflectiveSerializer()
                         }
                     },
                     Types = new[] {typeof (string).FullName},
@@ -436,6 +452,11 @@ namespace Apache.Ignite.Core.Tests
                         EvictionPolicy = new LruEvictionPolicy
                         {
                             BatchSize = 18, MaxMemorySize = 1023, MaxSize = 554
+                        },
+                        AffinityFunction = new FairAffinityFunction
+                        {
+                            ExcludeNeighbors = true,
+                            Partitions = 48
                         }
                     }
                 },

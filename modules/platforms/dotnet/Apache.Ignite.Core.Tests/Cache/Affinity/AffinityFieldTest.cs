@@ -16,7 +16,7 @@
  */
 
 // ReSharper disable UnusedAutoPropertyAccessor.Local
-namespace Apache.Ignite.Core.Tests.Cache
+namespace Apache.Ignite.Core.Tests.Cache.Affinity
 {
     using System;
     using System.Collections.Generic;
@@ -31,7 +31,7 @@ namespace Apache.Ignite.Core.Tests.Cache
     /// <summary>
     /// Tests custom affinity mapping.
     /// </summary>
-    public class CacheAffinityFieldTest
+    public class AffinityFieldTest
     {
         /** */
         private ICache<object, string> _cache1;
@@ -142,7 +142,7 @@ namespace Apache.Ignite.Core.Tests.Cache
 
                     cache.Put(cacheKey, index.ToString());
 
-                    // Verify that key is stored locally accroding to AffinityKeyFieldName
+                    // Verify that key is stored locally according to AffinityKeyFieldName
                     Assert.AreEqual(index.ToString(), cache.LocalPeek(cacheKey, CachePeekMode.Primary));
 
                     // Other cache does not have this key locally

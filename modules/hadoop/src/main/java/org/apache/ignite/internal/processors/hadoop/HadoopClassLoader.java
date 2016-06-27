@@ -99,6 +99,9 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
     @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"})
     private final String name;
 
+    /** Native library names. */
+    private final String[] libNames;
+
     /**
      * Gets name for Job class loader. The name is specific for local node id.
      * @param locNodeId The local node id.
@@ -122,14 +125,19 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
     }
 
     /**
+     * Constructor.
+     *
      * @param urls Urls.
+     * @param name Classloader name.
+     * @param libNames Optional additional native library names to be linked from parent classloader.
      */
-    public HadoopClassLoader(URL[] urls, String name) {
+    public HadoopClassLoader(URL[] urls, String name, @Nullable String[] libNames) {
         super(addHadoopUrls(urls), APP_CLS_LDR);
 
         assert !(getParent() instanceof HadoopClassLoader);
 
         this.name = name;
+        this.libNames = libNames;
 
         initializeNativeLibraries();
     }
@@ -159,9 +167,21 @@ public class HadoopClassLoader extends URLClassLoader implements ClassCache {
                 Vector vector = U.field(ldr, "nativeLibraries");
 
                 for (Object lib : vector) {
-                    String libName = U.field(lib, "name");
+                    String name = U.field(lib, "name");
 
-                    if (libName.contains(LIBHADOOP)) {
+                    boolean add = name.contains(LIBHADOOP);
+
+                    if (!add && libNames != null) {
+                        for (String libName : libNames) {
+                            if (libName != null && name.contains(libName)) {
+                                add = true;
+
+                                break;
+                            }
+                        }
+                    }
+
+                    if (add) {
                         curVector.add(lib);
 
                         return;

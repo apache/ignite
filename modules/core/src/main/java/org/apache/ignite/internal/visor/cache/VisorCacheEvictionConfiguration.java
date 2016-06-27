@@ -20,6 +20,7 @@ package org.apache.ignite.internal.visor.cache;
 import java.io.Serializable;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
@@ -29,7 +30,7 @@ import static org.apache.ignite.internal.visor.util.VisorTaskUtils.evictionPolic
 /**
  * Data transfer object for eviction configuration properties.
  */
-public class VisorCacheEvictionConfiguration implements Serializable {
+public class VisorCacheEvictionConfiguration implements Serializable, LessNamingBean {
     /** */
     private static final long serialVersionUID = 0L;
 
