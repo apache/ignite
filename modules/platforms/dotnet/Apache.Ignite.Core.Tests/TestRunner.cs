@@ -50,13 +50,18 @@ namespace Apache.Ignite.Core.Tests
 
             //TestOne(typeof(BinaryStringTest), "Test");
 
-            TestAll(typeof (AffinityFunctionTest));
+            TestAll(typeof (WindowsServiceTest));
             //TestAllInAssembly();
         }
 
         private static int TestOne(Type testClass, string method)
         {
-            string[] args = { "/run:" + testClass.FullName + "." + method, Assembly.GetAssembly(testClass).Location };
+            string[] args =
+            {
+                "/noshadow",
+                "/run:" + testClass.FullName + "." + method,
+                Assembly.GetAssembly(testClass).Location
+            };
 
             int returnCode = Runner.Main(args);
 
@@ -68,7 +73,11 @@ namespace Apache.Ignite.Core.Tests
 
         private static void TestAll(Type testClass)
         {
-            string[] args = { "/run:" + testClass.FullName, Assembly.GetAssembly(testClass).Location };
+            string[] args =
+            {
+                "/noshadow",
+                "/run:" + testClass.FullName, Assembly.GetAssembly(testClass).Location
+            };
 
             int returnCode = Runner.Main(args);
 
@@ -78,7 +87,11 @@ namespace Apache.Ignite.Core.Tests
 
         private static void TestAllInAssembly()
         {
-            string[] args = { Assembly.GetAssembly(typeof(InteropMemoryTest)).Location };
+            string[] args =
+            {
+                "/noshadow",
+                Assembly.GetAssembly(typeof(InteropMemoryTest)).Location
+            };
 
             int returnCode = Runner.Main(args);
 
