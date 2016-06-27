@@ -25,6 +25,9 @@ import java.util.Map;
  * AffinityFunction implementation which can be used to configure .NET affinity function in Java Spring configuration.
  */
 public class PlatformDotNetAffinityFunction extends PlatformAffinityFunction {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /** .NET type name. */
     private String typName;
 
