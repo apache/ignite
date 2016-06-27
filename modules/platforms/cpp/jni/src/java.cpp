@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-#include <cstring>
 #include <string>
 #include <exception>
 
@@ -2865,6 +2864,15 @@ namespace ignite
 
             JNIEXPORT void JNICALL JniAffinityFunctionDestroy(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr) {
                 IGNITE_SAFE_PROC(env, envPtr, AffinityFunctionDestroyHandler, affinityFunctionDestroy, ptr);
+            }
+
+            JNIEXPORT void JNICALL JniConsoleWrite(JNIEnv *env, jclass cls, jstring str, jboolean isErr) {
+                // TODO
+                /*
+                JniHandlers* hnds = reinterpret_cast<JniHandlers*>(envPtr); 
+                AffinityFunctionDestroyHandler hnd = hnds->affinityFunctionDestroy; 
+                if (hnd) 
+                    hnd(hnds->target, ptr); else ThrowOnMissingHandler(env);*/
             }
         }
     }
