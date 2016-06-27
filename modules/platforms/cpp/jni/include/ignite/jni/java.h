@@ -507,6 +507,7 @@ namespace ignite
                 static int Reallocate(long long memPtr, int cap);
                 static void Detach();
                 static void Release(jobject obj);
+                static void InitConsole(ConsoleWriteHandler consoleHandler);
 
                 jobject IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr);
                 jobject IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr, JniErrorInfo* errInfo);

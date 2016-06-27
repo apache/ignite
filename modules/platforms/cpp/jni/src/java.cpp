@@ -2504,6 +2504,10 @@ namespace ignite
                 }
             }
 
+            void JniContext::InitConsole(ConsoleWriteHandler consoleHandler) {
+                consoleWrite = consoleHandler;
+            }
+
             void JniContext::ThrowToJava(char* msg) {
                 JNIEnv* env = Attach();
 
