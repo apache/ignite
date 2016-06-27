@@ -43,6 +43,9 @@
     <ClCompile Include="..\..\src\impl\interop\interop_target.cpp">
       <Filter>Code\impl\interop</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\impl\cluster\cluster_group.cpp">
+      <Filter>Code\impl\cluster</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\impl\cache\cache_impl.h">
@@ -138,6 +141,9 @@
     <ClInclude Include="..\..\include\ignite\impl\interop\interop_target.h">
       <Filter>Code\impl\interop</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\impl\cluster\cluster_group_impl.h">
+      <Filter>Code\impl\cluster</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Code">
@@ -169,6 +175,9 @@
     </Filter>
     <Filter Include="Code\transactions">
       <UniqueIdentifier>{146fe661-0ad3-4d51-83a3-fce8a897e84d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Code\impl\cluster">
+      <UniqueIdentifier>{f5b54635-91a1-447e-923a-1b4608d7e5bc}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
