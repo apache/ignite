@@ -834,6 +834,11 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             JNI.DestroyJvm(ctx);
         }
 
+        internal static void InitConsole(void* consoleHandler)
+        {
+            JNI.InitConsole(consoleHandler);
+        }
+
         #endregion
 
         #region NATIVE METHODS: EVENTS
