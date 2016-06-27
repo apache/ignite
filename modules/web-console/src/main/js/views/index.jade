@@ -30,11 +30,6 @@ html(ng-app='ignite-console' id='app' ng-strict-di)
         meta(name='keywords' content='{{$meta.keywords}}')
         meta(ng-repeat='(key, value) in $meta.properties' name='{{::key}}' content='{{::value}}')
 
-        // build:css
-        link(rel='stylesheet', href='/vendors.css')
-        link(rel='stylesheet', href='/app.css')
-        // endbuild
-
     body.theme-line.body-overlap.greedy
 
         .splash.splash-max-foreground(hide-on-state-change)
@@ -52,15 +47,3 @@ html(ng-app='ignite-console' id='app' ng-strict-di)
                 label {{IgniteDemoMode ? "Demo" : "Beta" }}
 
         .wrapper(ui-view='')
-
-
-        // build:js
-        script(src='jspm_packages/system.js')
-        script(src='system.config.js')
-        script(src='vendors.js')
-        script(src='app.js')
-        script System.import('app/index');
-        // endbuild
-
-        // ignite:plugins
-        // endignite

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import template from './number.jade!';
+import templateUrl from './number.jade';
 
 export default ['igniteFormFieldInputNumber', ['IgniteFormGUID', '$table', (guid, $table) => {
     const link = (scope, el, attrs, [form, label]) => {
@@ -69,7 +69,7 @@ export default ['igniteFormFieldInputNumber', ['IgniteFormGUID', '$table', (guid
             value: '=ngModel'
         },
         link,
-        template,
+        templateUrl,
         replace: true,
         transclude: true,
         require: ['^form', '?^igniteFormField']

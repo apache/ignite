@@ -15,11 +15,31 @@
  * limitations under the License.
  */
 
-import gulp from 'gulp';
-import sass from 'gulp-sass';
+import webpack from 'webpack';
 
-gulp.task('sass', () =>
-    gulp.src('./public/stylesheets/style.scss')
-        .pipe(sass({ outputStyle: 'nested' }).on('error', sass.logError))
-        .pipe(gulp.dest('./public/stylesheets'))
-);
+import {destDir, rootDir} from '../../paths';
+
+export default () => {
+    const plugins = [
+        new webpack.optimize.UglifyJsPlugin({
+            path: destDir,
+            minimize: true,
+            warnings: false,
+            sourceMap: true,
+            mangle: true
+        })
+    ];
+
+    return {
+        context: rootDir,
+        bail: true, // Cancel build on error.
+        debug: false,
+        devtool: 'cheap-source-map',
+        output: {
+            publicPath: '/',
+            filename: '[name].[chunkhash].js',
+            path: destDir
+        },
+        plugins
+    };
+};

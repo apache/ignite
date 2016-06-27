@@ -15,8 +15,8 @@
  * limitations under the License.
  */
 
-import template from './text.jade!';
-import './text.css!';
+import templateUrl from './text.jade';
+import './text.css';
 
 export default ['igniteFormFieldInputText', ['IgniteFormGUID', '$table', (guid, $table) => {
     const link = (scope, element, attrs, [ngModel, form, label], transclude) => {
@@ -119,7 +119,7 @@ export default ['igniteFormFieldInputText', ['IgniteFormGUID', '$table', (guid, 
             autofocus: '=igniteFormFieldInputAutofocus'
         },
         link,
-        template,
+        templateUrl,
         replace: true,
         transclude: true,
         require: ['ngModel', '^form', '?^igniteFormField']

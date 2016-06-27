@@ -15,32 +15,18 @@
  * limitations under the License.
  */
 
-import gulp from 'gulp';
-import cache from 'gulp-cached';
-import eslint from 'gulp-eslint';
-import sequence from 'gulp-sequence';
+import _ from 'lodash';
+import commonConfig from './common';
+import devConfig from './environments/development';
+import prodConfig from './environments/production';
 
-const paths = [
-    './app/**/*.js',
-    './controllers/**/*.js',
-    './generator/**/*.js',
-    './ignite_modules_temp/**/*.js',
-    './gulpfile.babel.js/**/*.js',
-    './gulpfile.babel.js/*.js'
-];
+const env = process.env.NODE_ENV || 'production';
 
-gulp.task('eslint:node', () =>
-	gulp.src('./serve/**/*.js')
-        .pipe(cache('eslint:node'))
-		.pipe(eslint({envs: ['node']}))
-		.pipe(eslint.format())
-);
+// Config by environments.
+const configs = {
+    production: prodConfig,
+    development: devConfig
+};
 
-gulp.task('eslint:browser', () =>
-	gulp.src(paths)
-        .pipe(cache('eslint:browser'))
-		.pipe(eslint({envs: ['browser']}))
-		.pipe(eslint.format())
-);
-
-gulp.task('eslint', (cb) => sequence('eslint:browser', 'eslint:node', cb));
+// Load config file by environment
+export default _.merge(commonConfig(), configs[env]());

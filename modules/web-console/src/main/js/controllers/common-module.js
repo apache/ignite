@@ -31,7 +31,7 @@ const consoleModule = angular.module('ignite-console.legacy',
         /* endignite */
     ]);
 
-import alertTemplate from '../views/templates/alert.jade!';
+import alertTemplateUrl from '../views/templates/alert.jade';
 
 consoleModule.run(['$rootScope', '$http', '$state', '$common', 'Auth', 'User', 'gettingStarted',
     ($root, $http, $state, $common, Auth, User, gettingStarted) => {
@@ -100,7 +100,7 @@ consoleModule.config(['$alertProvider', ($alertProvider) => {
         container: 'body',
         placement: 'top-right',
         duration: '5',
-        template: alertTemplate(),
+        templateUrl: alertTemplateUrl,
         type: 'danger'
     });
 }]);

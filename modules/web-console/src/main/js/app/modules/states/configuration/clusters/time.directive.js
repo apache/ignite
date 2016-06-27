@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
-import template from './time.jade!';
+import templateUrl from './time.jade';
 
 export default ['igniteConfigurationClustersTime', [() => {
     return {
         scope: true,
         restrict: 'E',
-        template,
+        templateUrl,
         replace: true
     };
 }]];

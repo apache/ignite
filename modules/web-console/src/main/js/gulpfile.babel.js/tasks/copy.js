@@ -16,39 +16,24 @@
  */
 
 import gulp from 'gulp';
-import util from 'gulp-util';
-import cache from 'gulp-cached';
 import sequence from 'gulp-sequence';
 
-import { destDir, jsPaths, jsModulePaths, resourcePaths, resourceModulePaths, igniteModulesTemp } from '../paths';
+import { destDir, rootDir, jsModulePaths, resourcePaths, resourceModulePaths, igniteModulesTemp } from '../paths';
 
 gulp.task('copy', (cb) => {
-    const tasks = ['copy:resource', 'copy:ignite_modules:resource'];
-
-    if (util.env.debug || util.env.sourcemaps) {
-        tasks.push('copy:js');
-
-        tasks.push('copy:ignite_modules:js');
-    }
-
+    const tasks = ['copy:resource', 'copy:ignite_modules:js', 'copy:ignite_modules:resource'];
+    
     return sequence(tasks, cb);
 });
 
-gulp.task('copy:js', () =>
-    gulp.src(jsPaths, {base: './'})
-        .pipe(cache('copy:js'))
+gulp.task('copy:resource', () =>
+    gulp.src(resourcePaths)
         .pipe(gulp.dest(destDir))
 );
 
 gulp.task('copy:ignite_modules:js', () =>
     gulp.src(jsModulePaths)
-        .pipe(cache('copy:ignite_modules:js'))
-        .pipe(gulp.dest(`${destDir}/${igniteModulesTemp}`))
-);
-
-gulp.task('copy:resource', () =>
-    gulp.src(resourcePaths)
-        .pipe(gulp.dest(destDir))
+        .pipe(gulp.dest(`${rootDir}/${igniteModulesTemp}`))
 );
 
 gulp.task('copy:ignite_modules:resource', () =>

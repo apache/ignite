@@ -15,43 +15,7 @@
  * limitations under the License.
  */
 
-import _ from 'lodash';
-import ace from 'ace';
-import angular from 'angular';
-import pdfMake from 'pdfmake';
-
-ace.config.set('basePath', '/jspm_packages/github/ajaxorg/ace-builds@1.2.3');
-
-window._ = _;
-window.require = ace.require; // TODO Should be removed after full refactoring to directives.
-window.pdfMake = pdfMake;
-
-import 'angular-animate';
-import 'angular-sanitize';
-import 'angular-strap';
-import 'angular-socket-io';
-import 'angular-retina';
-import 'angular-ui-router';
-import 'angular-ui-router-metatags';
-import 'angular-smart-table';
-import 'angular-ui-grid';
-import 'angular-drag-and-drop-lists';
-import 'angular-nvd3';
-import 'angular-tree-control';
-import 'angular-gridster';
-
-import 'bootstrap-carousel';
-import 'file-saver';
-import 'jszip';
-import 'query-command-supported';
-
-import 'public/stylesheets/style.css!';
-
-import 'angular-gridster/dist/angular-gridster.min.css!';
-import 'angular-tree-control/css/tree-control-attribute.css!';
-import 'angular-tree-control/css/tree-control.css!';
-import 'angular-ui-grid/ui-grid.css!';
-import 'angular-motion/dist/angular-motion.css!';
+import '../public/stylesheets/style.scss';
 
 import './decorator/select';
 import './decorator/tooltip';
@@ -93,7 +57,7 @@ import igniteUiAcePom from './directives/ui-ace-pom/ui-ace-pom.directive';
 import igniteUiAceDocker from './directives/ui-ace-docker/ui-ace-docker.directive';
 import igniteUiAcePojos from './directives/ui-ace-pojos/ui-ace-pojos.directive';
 import igniteBsAffixUpdate from './directives/bs-affix-update.directive';
-import igniteСentered from './directives/centered/centered.directive.js';
+import igniteCentered from './directives/centered/centered.directive.js';
 
 // Services.
 import cleanup from './services/cleanup.service';
@@ -138,6 +102,8 @@ import 'controllers/sql-controller';
 
 // Inject external modules.
 import 'ignite_modules_temp/index';
+
+import baseTemplate from '../views/base.jade';
 
 angular
 .module('ignite-console', [
@@ -187,7 +153,7 @@ angular
 .directive(...igniteUiAceDocker)
 .directive(...igniteUiAcePojos)
 .directive(...igniteBsAffixUpdate)
-.directive(...igniteСentered)
+.directive(...igniteCentered)
 // Services.
 .service(...cleanup)
 .service(...confirm)
@@ -205,12 +171,12 @@ angular
         .state('base', {
             url: '',
             abstract: true,
-            templateUrl: '/base.html'
+            templateUrl: baseTemplate
         })
         .state('settings', {
             url: '/settings',
             abstract: true,
-            templateUrl: '/base.html'
+            templateUrl: baseTemplate
         });
 
     $urlRouterProvider.otherwise('/');
