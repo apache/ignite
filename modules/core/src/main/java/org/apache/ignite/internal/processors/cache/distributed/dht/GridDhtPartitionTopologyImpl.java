@@ -633,7 +633,9 @@ class GridDhtPartitionTopologyImpl implements GridDhtPartitionTopology {
          * ===================================================
          */
 
-        GridDhtLocalPartition loc = localPartition(e.partition(), topVer, true);
+        int p = cctx.affinity().partition(e.key());
+
+        GridDhtLocalPartition loc = localPartition(p, topVer, true);
 
         assert loc != null;
 
