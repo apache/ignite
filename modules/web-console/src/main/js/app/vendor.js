@@ -48,3 +48,4 @@ import 'angular-tree-control/css/tree-control-attribute.css';
 import 'angular-tree-control/css/tree-control.css';
 import 'angular-ui-grid/ui-grid.css';
 import 'angular-motion/dist/angular-motion.css';
+import 'nvd3/build/nv.d3.css';
