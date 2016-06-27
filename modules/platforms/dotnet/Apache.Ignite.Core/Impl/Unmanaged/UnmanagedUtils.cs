@@ -48,6 +48,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             if (ptr == IntPtr.Zero)
                 throw new IgniteException(string.Format("Failed to load {0}: {1}", 
                     IgniteUtils.FileIgniteJniDll, Marshal.GetLastWin32Error()));
+
+            JNI.InitConsole(UnmanagedCallbacks.ConsoleWriteHandler);
         }
 
         /// <summary>
@@ -832,11 +834,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         internal static void DestroyJvm(void* ctx)
         {
             JNI.DestroyJvm(ctx);
-        }
-
-        internal static void InitConsole(void* consoleHandler)
-        {
-            JNI.InitConsole(consoleHandler);
         }
 
         #endregion

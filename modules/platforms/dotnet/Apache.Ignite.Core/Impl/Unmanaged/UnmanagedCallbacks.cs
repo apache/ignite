@@ -55,6 +55,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         Justification = "This class instance usually lives as long as the app runs.")]
     internal unsafe class UnmanagedCallbacks
     {
+        /** Console write delegate */
+        private static readonly ConsoleWriteDelegate ConsoleWriteDel = ConsoleWrite;
+
+        /** Console write pointer */
+        private static readonly void* ConsoleWritePtr = 
+            Marshal.GetFunctionPointerForDelegate(ConsoleWriteDel).ToPointer();
+
         /** Unmanaged context. */
         private volatile UnmanagedContext _ctx;
 
@@ -71,7 +78,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /** Initialized flag. */
         private readonly ManualResetEventSlim _initEvent = new ManualResetEventSlim(false);
 
-        /** Actions to be called upon Ignite initialisation. */
+        /** Actions to be called upon Ignite initialization. */
         private readonly List<Action<Ignite>> _initActions = new List<Action<Ignite>>();
 
         /** GC handle to UnmanagedCallbacks instance to prevent it from being GCed. */
@@ -171,6 +178,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void AffinityFunctionAssignPartitionsDelegate(void* target, long ptr, long inMemPtr, long outMemPtr);
         private delegate void AffinityFunctionRemoveNodeDelegate(void* target, long ptr, long memPtr);
         private delegate void AffinityFunctionDestroyDelegate(void* target, long ptr);
+
+        private delegate void ConsoleWriteDelegate(sbyte* chars, int charsLen, bool isErr);
 
         /// <summary>
         /// constructor.
@@ -1100,6 +1109,15 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             });
         }
 
+        private static void ConsoleWrite(sbyte* chars, int charsLen, bool isErr)
+        {
+            var str = IgniteUtils.Utf8UnmanagedToString(chars, charsLen);
+
+            var target = isErr ? Console.Error : Console.Out;
+
+            target.Write(str);
+        }
+
         #endregion
 
         #region AffinityFunction
@@ -1308,6 +1326,14 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             _ignite = null;
             
             _handleRegistry.Close();
+        }
+
+        /// <summary>
+        /// Gets the console write handler.
+        /// </summary>
+        public static void* ConsoleWriteHandler
+        {
+            get { return ConsoleWritePtr; }
         }
     }
 }
