@@ -233,6 +233,7 @@ namespace ignite
             JniMethod M_PLATFORM_CLUSTER_GRP_FOR_RANDOM = JniMethod("forRandom", "()Lorg/apache/ignite/internal/processors/platform/cluster/PlatformClusterGroup;", false);
             JniMethod M_PLATFORM_CLUSTER_GRP_FOR_OLDEST = JniMethod("forOldest", "()Lorg/apache/ignite/internal/processors/platform/cluster/PlatformClusterGroup;", false);
             JniMethod M_PLATFORM_CLUSTER_GRP_FOR_YOUNGEST = JniMethod("forYoungest", "()Lorg/apache/ignite/internal/processors/platform/cluster/PlatformClusterGroup;", false);
+            JniMethod M_PLATFORM_CLUSTER_GRP_FOR_SERVERS = JniMethod("forServers", "()Lorg/apache/ignite/internal/processors/platform/cluster/PlatformClusterGroup;", false);
             JniMethod M_PLATFORM_CLUSTER_GRP_RESET_METRICS = JniMethod("resetMetrics", "()V", false);
 
             const char* C_PLATFORM_MESSAGING = "org/apache/ignite/internal/processors/platform/messaging/PlatformMessaging";
@@ -615,6 +616,7 @@ namespace ignite
                 m_PlatformClusterGroup_forRandom = FindMethod(env, c_PlatformClusterGroup, M_PLATFORM_CLUSTER_GRP_FOR_RANDOM);
                 m_PlatformClusterGroup_forOldest = FindMethod(env, c_PlatformClusterGroup, M_PLATFORM_CLUSTER_GRP_FOR_OLDEST);
                 m_PlatformClusterGroup_forYoungest = FindMethod(env, c_PlatformClusterGroup, M_PLATFORM_CLUSTER_GRP_FOR_YOUNGEST);
+                m_PlatformClusterGroup_forServers = FindMethod(env, c_PlatformClusterGroup, M_PLATFORM_CLUSTER_GRP_FOR_SERVERS);
                 m_PlatformClusterGroup_resetMetrics = FindMethod(env, c_PlatformClusterGroup, M_PLATFORM_CLUSTER_GRP_RESET_METRICS);
 
                 c_PlatformCompute = FindClass(env, C_PLATFORM_COMPUTE);
@@ -1949,6 +1951,16 @@ namespace ignite
                 JNIEnv* env = Attach();
 
                 jobject newPrj = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformClusterGroup_forYoungest);
+
+                ExceptionCheck(env);
+
+                return LocalToGlobal(env, newPrj);
+            }
+
+            jobject JniContext::ProjectionForServers(jobject obj) {
+                JNIEnv* env = Attach();
+
+                jobject newPrj = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformClusterGroup_forServers);
 
                 ExceptionCheck(env);
 

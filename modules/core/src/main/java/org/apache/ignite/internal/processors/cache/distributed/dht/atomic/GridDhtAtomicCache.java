@@ -1371,8 +1371,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                     null,
                                     /*swap*/true,
                                     /*read-through*/false,
-                                    /*fail-fast*/true,
-                                    /*unmarshal*/true,
                                     /**update-metrics*/false,
                                     /*event*/!skipVals,
                                     /*temporary*/false,
@@ -1848,8 +1846,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         null,
                         /*read swap*/true,
                         /*read through*/true,
-                        /*fail fast*/false,
-                        /*unmarshal*/true,
                         /*metrics*/true,
                         /*event*/true,
                         /*temporary*/true,
@@ -1874,7 +1870,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             if (invokeRes == null)
                                 invokeRes = new GridCacheReturn(node.isLocal());
 
-                            invokeRes.addEntryProcessResult(ctx, entry.key(), invokeEntry.key(), computed, null);
+                            computed = ctx.unwrapTemporary(computed);
+
+                            invokeRes.addEntryProcessResult(ctx, entry.key(), invokeEntry.key(), computed, null,
+                                req.keepBinary());
                         }
 
                         if (!invokeEntry.modified())
@@ -1888,7 +1887,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         if (invokeRes == null)
                             invokeRes = new GridCacheReturn(node.isLocal());
 
-                        invokeRes.addEntryProcessResult(ctx, entry.key(), invokeEntry.key(), null, e);
+                        invokeRes.addEntryProcessResult(ctx, entry.key(), invokeEntry.key(), null, e, req.keepBinary());
 
                         updated = old;
                     }
@@ -2005,8 +2004,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                              null,
                             /*read swap*/true,
                             /*read through*/ctx.loadPreviousValue(),
-                            /*fail fast*/false,
-                            /*unmarshal*/true,
                             /*metrics*/true,
                             /*event*/true,
                             /*temporary*/true,
@@ -2022,8 +2019,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 entry.key(),
                                 old,
                                 req.keepBinary()),
-                            updated.value(
-                                ctx.cacheObjectContext(),
+                            ctx.unwrapBinaryIfNeeded(
+                                updated, 
+                                req.keepBinary(), 
                                 false));
 
                         if (val == null)
@@ -2051,8 +2049,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             null,
                             /*read swap*/true,
                             /*read through*/ctx.loadPreviousValue(),
-                            /*fail fast*/false,
-                            /*unmarshal*/true,
                             /*metrics*/true,
                             /*event*/true,
                             /*temporary*/true,
@@ -2366,7 +2362,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             k,
                             null,
                             compRes.get1(),
-                            compRes.get2());
+                            compRes.get2(),
+                            req.keepBinary());
                     }
                 }
                 else {

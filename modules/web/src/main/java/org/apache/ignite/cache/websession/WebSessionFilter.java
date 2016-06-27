@@ -31,9 +31,8 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
-import javax.servlet.http.HttpSession;
+import javax.servlet.http.*;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteClientDisconnectedException;
@@ -854,8 +853,8 @@ public class WebSessionFilter implements Filter {
      */
     private void handleAttributeUpdateException(final String sesId, final int tryCnt, final RuntimeException e) {
         if (tryCnt == retries - 1) {
-            U.warn(log, "Failed to apply updates for session (maximum number of retries exceeded) [sesId=" +
-                sesId + ", retries=" + retries + ']');
+            U.error(log, "Failed to apply updates for session (maximum number of retries exceeded) [sesId=" +
+                sesId + ", retries=" + retries + ']', e);
         }
         else {
             U.warn(log, "Failed to apply updates for session (will retry): " + sesId);
@@ -963,6 +962,22 @@ public class WebSessionFilter implements Filter {
 
             return newId;
         }
+
+        /** {@inheritDoc} */
+        @Override public void login(String username, String password) throws ServletException{
+            HttpServletRequest req = (HttpServletRequest)getRequest();
+
+            req.login(username, password);
+
+            String newId = req.getSession(false).getId();
+
+            this.ses.setId(newId);
+
+            this.ses = createSession(ses, newId);
+            this.ses.servletContext(ctx);
+            this.ses.filter(WebSessionFilter.this);
+            this.ses.resetUpdates();
+        }
     }
 
     /**
@@ -1025,6 +1040,24 @@ public class WebSessionFilter implements Filter {
             }
 
             return newId;
+        }
+
+        /** {@inheritDoc} */
+        @Override public void login(String username, String password) throws ServletException{
+            final HttpServletRequest req = (HttpServletRequest)getRequest();
+
+            req.login(username, password);
+
+            final String newId = req.getSession(false).getId();
+
+            if (!F.eq(newId, ses.getId())) {
+                try {
+                    ses = createSessionV2(ses, newId);
+                }
+                catch (IOException e) {
+                    throw new IgniteException(e);
+                }
+            }
         }
     }
 }
