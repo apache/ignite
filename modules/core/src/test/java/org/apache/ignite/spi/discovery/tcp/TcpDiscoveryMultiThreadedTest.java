@@ -28,9 +28,16 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.cache.Cache;
+import javax.cache.event.CacheEntryEvent;
+import javax.cache.event.CacheEntryUpdatedListener;
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteClientDisconnectedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.query.ContinuousQuery;
+import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -43,6 +50,7 @@ import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.util.typedef.G;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgnitePredicate;
 import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
@@ -489,7 +497,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testCustomEventOnJoinCoordinatorStop() throws Exception {
-        for (int k = 0; k < 5; k++) {
+        for (int k = 0; k < 10; k++) {
             log.info("Iteration: " + k);
 
             clientFlagGlobal = false;
@@ -498,8 +506,6 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
             final int JOIN_NODES = 5;
 
             startGrids(START_NODES);
-
-            final CyclicBarrier barrier = new CyclicBarrier(JOIN_NODES + 1);
 
             final AtomicInteger startIdx = new AtomicInteger(START_NODES);
 
@@ -522,6 +528,8 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
             });
 
             try {
+                final CyclicBarrier barrier = new CyclicBarrier(JOIN_NODES + 1);
+
                 IgniteInternalFuture<?> fut2 = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
                     @Override public Object call() throws Exception {
                         int idx = startIdx.getAndIncrement();
@@ -536,6 +544,20 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
                         log.info("Started node: " + ignite.name());
 
+                        IgniteCache<Object, Object> cache = ignite.getOrCreateCache((String)null);
+
+                        ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
+
+                        qry.setLocalListener(new CacheEntryUpdatedListener<Object, Object>() {
+                            @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) {
+                                // No-op.
+                            }
+                        });
+
+                        QueryCursor<Cache.Entry<Object, Object>> cur = cache.query(qry);
+
+                        cur.close();
+
                         return null;
                     }
                 }, JOIN_NODES, "start-thread");
@@ -544,8 +566,11 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
                 U.sleep(ThreadLocalRandom.current().nextInt(10, 100));
 
-                for (int i = 0; i < START_NODES - 1; i++)
+                for (int i = 0; i < START_NODES - 1; i++) {
+                    GridTestUtils.invoke(ignite(i).configuration().getDiscoverySpi(), "simulateNodeFailure");
+
                     stopGrid(i);
+                }
 
                 stop.set(true);
 
@@ -560,5 +585,124 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
             stopAllGrids();
         }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testClientContinuousQueryCoordinatorStop() throws Exception {
+        for (int k = 0; k < 10; k++) {
+            log.info("Iteration: " + k);
+
+            clientFlagGlobal = false;
+
+            final int START_NODES = 5;
+            final int JOIN_NODES = 5;
+
+            startGrids(START_NODES);
+
+            ignite(0).createCache(new CacheConfiguration<>());
+
+            final AtomicInteger startIdx = new AtomicInteger(START_NODES);
+
+            final CyclicBarrier barrier = new CyclicBarrier(JOIN_NODES + 1);
+
+            clientFlagGlobal = true;
+
+            IgniteInternalFuture<?> fut = GridTestUtils.runMultiThreadedAsync(new Callable<Object>() {
+                @Override public Object call() throws Exception {
+                    int idx = startIdx.getAndIncrement();
+
+                    Thread.currentThread().setName("start-thread-" + idx);
+
+                    barrier.await();
+
+                    Ignite ignite = startGrid(idx);
+                    assertTrue(ignite.configuration().isClientMode());
+
+                    log.info("Started node: " + ignite.name());
+
+                    IgniteCache<Object, Object> cache = ignite.getOrCreateCache((String)null);
+
+                    for (int i = 0; i < 10; i++) {
+                        ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
+
+                        qry.setLocalListener(new CacheEntryUpdatedListener<Object, Object>() {
+                            @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) {
+                                // No-op.
+                            }
+                        });
+
+                        cache.query(qry);
+                    }
+
+                    return null;
+                }
+            }, JOIN_NODES, "start-thread");
+
+            barrier.await();
+
+            U.sleep(ThreadLocalRandom.current().nextInt(100, 500));
+
+            for (int i = 0; i < START_NODES - 1; i++) {
+                GridTestUtils.invoke(ignite(i).configuration().getDiscoverySpi(), "simulateNodeFailure");
+
+                stopGrid(i);
+            }
+
+            fut.get();
+
+            stopAllGrids();
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testCustomEventNodeRestart() throws Exception {
+        clientFlagGlobal = false;
+
+        Ignite ignite = startGrid(0);
+
+        ignite.getOrCreateCache(new CacheConfiguration<>());
+
+        final long stopTime = System.currentTimeMillis() + 60_000;
+
+        GridTestUtils.runMultiThreaded(new IgniteInClosure<Integer>() {
+            @Override public void apply(Integer idx) {
+                try {
+                    while (System.currentTimeMillis() < stopTime) {
+                        Ignite ignite = startGrid(idx + 1);
+
+                        IgniteCache<Object, Object> cache = ignite.cache(null);
+
+                        int qryCnt = ThreadLocalRandom.current().nextInt(10) + 1;
+
+                        for (int i = 0; i < qryCnt; i++) {
+                            ContinuousQuery<Object, Object> qry = new ContinuousQuery<>();
+
+                            qry.setLocalListener(new CacheEntryUpdatedListener<Object, Object>() {
+                                @Override public void onUpdated(Iterable<CacheEntryEvent<?, ?>> evts) {
+                                    // No-op.
+                                }
+                            });
+
+                            QueryCursor<Cache.Entry<Object, Object>> cur = cache.query(qry);
+
+                            cur.close();
+                        }
+
+                        GridTestUtils.invoke(ignite.configuration().getDiscoverySpi(), "simulateNodeFailure");
+
+                        ignite.close();
+                    }
+                }
+                catch (Exception e) {
+                    log.error("Unexpected error: " + e, e);
+
+                    throw new IgniteException(e);
+                }
+            }
+        }, 5, "node-restart");
     }
 }
