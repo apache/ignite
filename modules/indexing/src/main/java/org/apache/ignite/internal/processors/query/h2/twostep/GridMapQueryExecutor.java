@@ -42,6 +42,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
 import org.apache.ignite.internal.managers.eventstorage.GridLocalEventListener;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
@@ -59,10 +60,13 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryRequest;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
+import org.apache.ignite.internal.util.lang.IgniteInClosureX;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.U;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.plugin.extensions.communication.Message;
 import org.h2.jdbc.JdbcResultSet;
@@ -451,26 +455,16 @@ public class GridMapQueryExecutor {
             int i = 0;
 
             for (GridCacheSqlQuery qry : qrys) {
-                final QueryResult res = qr.addResult(i, qry, node.id());
-
-                ResultSet rs = h2.executeSqlQueryWithTimer(new CI1<PreparedStatement>() {
-                                                               @Override public void apply(PreparedStatement statement) {
-                                                                   try {
-                                                                       statement.setQueryTimeout(req.timeout());
-                                                                   }
-                                                                   catch (SQLException e) {
-                                                                       log.error("Cannot set query timeout", e);
-                                                                   }
-
-                                                                   res.prepStmt = statement;
-                                                               }
-                                                           }, req.space(),
+                GridFutureAdapter<ResultSet> fut = h2.sqlQueryFuture(req.space(),
                     h2.connectionForSpace(req.space()),
                     qry.query(),
                     F.asList(qry.parameters()),
-                    true);
+                    true,
+                    req.timeout());
 
-                res.rs(rs);
+                final QueryResult res = qr.addResult(i, qry, node.id(), fut);
+
+                ResultSet rs = fut.get();
 
                 if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                     ctx.event().record(new CacheQueryExecutedEvent<>(
@@ -680,8 +674,8 @@ public class GridMapQueryExecutor {
          * @param q Query object.
          * @param qrySrcNodeId Query source node.
          */
-        QueryResult addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId) {
-            QueryResult update = new QueryResult(cctx, qrySrcNodeId, q);
+        QueryResult addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, GridFutureAdapter<ResultSet> fut) {
+            QueryResult update = new QueryResult(cctx, qrySrcNodeId, q, fut);
 
             if (!results.compareAndSet(qry, null, update))
                 throw new IllegalStateException();
@@ -732,9 +726,6 @@ public class GridMapQueryExecutor {
         private ResultSet rs;
 
         /** */
-        private PreparedStatement prepStmt;
-
-        /** */
         private final GridCacheContext<?, ?> cctx;
 
         /** */
@@ -753,17 +744,38 @@ public class GridMapQueryExecutor {
         private int rowCount;
 
         /** */
-        private boolean closed;
+        private GridFutureAdapter<ResultSet> fut;
+
+        /** */
+        public boolean closed;
 
         /**
          * @param cctx Cache context.
          * @param qrySrcNodeId Query source node.
          * @param qry Query.
+         * @param fut
          */
-        private QueryResult(GridCacheContext<?, ?> cctx, UUID qrySrcNodeId, GridCacheSqlQuery qry) {
+        private QueryResult(GridCacheContext<?, ?> cctx, UUID qrySrcNodeId, GridCacheSqlQuery qry,
+            GridFutureAdapter<ResultSet> fut) {
             this.cctx = cctx;
             this.qry = qry;
             this.qrySrcNodeId = qrySrcNodeId;
+            this.fut = fut;
+            fut.listen(new IgniteInClosureX<IgniteInternalFuture<ResultSet>>() {
+                @Override public void applyx(IgniteInternalFuture<ResultSet> fut) throws IgniteCheckedException {
+                    rs = fut.get();
+
+                    try {
+                        res = (ResultInterface)RESULT_FIELD.get(rs);
+                    }
+                    catch (IllegalAccessException e) {
+                        throw new IllegalStateException(e); // Must not happen.
+                    }
+
+                    rowCount = res.getRowCount();
+                    cols = res.getVisibleColumnCount();
+                }
+            });
         }
 
         /**
@@ -833,12 +845,12 @@ public class GridMapQueryExecutor {
 
             closed = true;
 
-            // Cancel a query if it's still executing. No-op if query was already finished.
+            // Cancel a query fiture if it's still executing. No-op if query was already finished.
             try {
-                prepStmt.cancel();
+                fut.cancel();
             }
-            catch (SQLException e) {
-                U.error(log, "Failed to close statement", e);
+            catch (IgniteCheckedException e) {
+                U.error(log, "Failed to cancel query future", e);
             }
 
             U.close(rs, log);
@@ -849,24 +861,6 @@ public class GridMapQueryExecutor {
          */
         public ResultSet rs() {
             return rs;
-        }
-
-        /**
-         * @param rs New rs.
-         */
-        public void rs(ResultSet rs) {
-            this.rs = rs;
-
-            try {
-                res = (ResultInterface)RESULT_FIELD.get(rs);
-            }
-            catch (IllegalAccessException e) {
-                throw new IllegalStateException(e); // Must not happen.
-            }
-
-            rowCount = res.getRowCount();
-            cols = res.getVisibleColumnCount();
-
         }
     }
 

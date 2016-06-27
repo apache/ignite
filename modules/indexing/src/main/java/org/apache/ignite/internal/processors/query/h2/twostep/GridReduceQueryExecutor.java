@@ -674,13 +674,6 @@ public class GridReduceQueryExecutor {
                         // Statement caching is prohibited here because we can't guarantee correct merge index reuse.
                         ResultSet res = h2.executeSqlQueryWithTimer(new IgniteInClosure<PreparedStatement>() {
                                                                         @Override public void apply(PreparedStatement statement) {
-                                                                            try {
-                                                                                statement.setQueryTimeout(qry.timeout());
-                                                                            }
-                                                                            catch (SQLException e) {
-                                                                                log.error("Cannot set query timeout", e);
-                                                                            }
-
                                                                             r.rdcPrepStmt = statement;
                                                                         }
                                                                     },

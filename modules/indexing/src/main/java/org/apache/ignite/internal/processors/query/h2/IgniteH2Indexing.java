@@ -99,6 +99,7 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
@@ -736,7 +737,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         try {
             Connection conn = connectionForThread(schema(spaceName));
 
-            ResultSet rs = executeSqlQueryWithTimer(null, spaceName, conn, qry, params, true);
+            ResultSet rs = executeSqlQueryWithTimer(spaceName, conn, qry, params, true);
 
             List<GridQueryFieldMetadata> meta = null;
 
@@ -842,8 +843,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     /**
      * Executes sql query and prints warning if query is too slow..
      *
-     *
-     * @param prepStmtReadyClo Prepared statement ready callback.
      * @param space Space name.
      * @param conn Connection,.
      * @param sql Sql query.
@@ -852,16 +851,73 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
-    public ResultSet executeSqlQueryWithTimer(@Nullable IgniteInClosure<PreparedStatement> prepStmtReadyClo,
-        String space,
+    public ResultSet executeSqlQueryWithTimer(String space,
         Connection conn,
         String sql,
         @Nullable Collection<Object> params,
         boolean useStmtCache) throws IgniteCheckedException {
-        long start = U.currentTimeMillis();
+        return new CancellableSqlQueryFuture(space, conn, sql, params, useStmtCache, 0).get();
+    }
 
-        try {
-            PreparedStatement stmt;
+    /**
+     * Executes sql query and prints warning if query is too slow..
+     *
+     * @param space Space name.
+     * @param conn Connection,.
+     * @param sql Sql query.
+     * @param params Parameters.
+     * @param useStmtCache If {@code true} uses statement cache.
+     * @param timeout Query timeout.
+     * @return Result.
+     * @throws IgniteCheckedException If failed.
+     */
+    public GridFutureAdapter<ResultSet> sqlQueryFuture(String space,
+        Connection conn,
+        String sql,
+        @Nullable Collection<Object> params,
+        boolean useStmtCache,
+        int timeout) throws IgniteCheckedException {
+        return new CancellableSqlQueryFuture(space, conn, sql, params, useStmtCache, timeout);
+    }
+
+    /** */
+    private class CancellableSqlQueryFuture extends GridFutureAdapter<ResultSet> {
+        /** */
+        private final String space;
+
+        /** */
+        private final Connection conn;
+
+        /** */
+        private final String sql;
+
+        /** */
+        private final Collection<Object> params;
+
+        /** */
+        private final int timeout;
+
+        /** */
+        private PreparedStatement stmt;
+
+        /** */
+        private GridTimeoutProcessor.CancelableTask timeoutTask;
+
+        /**
+         * @param space
+         * @param conn
+         * @param sql
+         * @param params
+         * @param useStmtCache
+         * @param timeout
+         */
+        public CancellableSqlQueryFuture(String space, Connection conn, String sql, Collection<Object> params,
+            boolean useStmtCache, int timeout) throws IgniteCheckedException {
+            this.space = space;
+            this.conn = conn;
+            this.sql = sql;
+            this.params = params;
+            this.timeout = timeout;
 
             try {
                 stmt = prepareStatement(conn, sql, useStmtCache);
@@ -869,44 +925,91 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             catch (SQLException e) {
                 throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
             }
+        }
 
-            if (prepStmtReadyClo != null)
-                prepStmtReadyClo.apply(stmt);
+        /** {@inheritDoc} */
+        @Override public ResultSet get() throws IgniteCheckedException {
+            long start = U.currentTimeMillis();
 
-            ResultSet rs = executeSqlQuery(sql, stmt, params);
+            try {
+                if (this.timeout > 0) {
+                    timeoutTask = ctx.timeout().schedule(new Runnable() {
+                        @Override public void run() {
+                            try {
+                                stmt.cancel();
+                            }
+                            catch (SQLException e) {
+                                log.error("Failed to cancel a statement", e);
+                            }
+                        }
+                    }, this.timeout * 1000L, 0);
+                }
 
-            long time = U.currentTimeMillis() - start;
+                java.sql.ResultSet rs = executeSqlQuery(sql, stmt, params);
 
-            long longQryExecTimeout = schemas.get(schema(space)).ccfg.getLongQueryWarningTimeout();
+                // Remove from timer queue.
+                if (timeoutTask != null)
+                    timeoutTask.close();
 
-            if (time > longQryExecTimeout) {
-                String msg = "Query execution is too long (" + time + " ms): " + sql;
+                long time = U.currentTimeMillis() - start;
 
-                String explainSql = "EXPLAIN " + sql;
+                long longQryExecTimeout = schemas.get(schema(space)).ccfg.getLongQueryWarningTimeout();
+
+                if (time > longQryExecTimeout) {
+                    String msg = "Query execution is too long (" + time + " ms): " + sql;
+
+                    String explainSql = "EXPLAIN " + sql;
+                    try {
+                        stmt = prepareStatement(conn, explainSql, false);
+                    }
+                    catch (SQLException e) {
+                        throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
+                    }
+
+                    java.sql.ResultSet plan = executeSqlQuery(explainSql, stmt, params);
+
+                    plan.next();
+
+                    // Add SQL explain result message into log.
+                    String longMsg = "Query execution is too long [time=" + time + " ms, sql='" + sql + '\'' +
+                        ", plan=" + U.nl() + plan.getString(1) + U.nl() + ", parameters=" + params + "]";
+
+                    LT.warn(log, null, longMsg, msg);
+                }
+
+                return rs;
+            }
+            catch (SQLException e) {
+                onSqlException();
+
+                throw new IgniteCheckedException(e);
+            }
+        }
+
+        /** {@inheritDoc} */
+        @Override public boolean cancel() throws IgniteCheckedException {
+            if (onCancelled()) {
                 try {
-                    stmt = prepareStatement(conn, explainSql, false);
+                    stmt.cancel();
+
+                    if (timeoutTask != null)
+                        timeoutTask.close();
+
+                    return true;
                 }
                 catch (SQLException e) {
                     throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
                 }
-
-                ResultSet plan = executeSqlQuery(explainSql, stmt, params);
-
-                plan.next();
-
-                // Add SQL explain result message into log.
-                String longMsg = "Query execution is too long [time=" + time + " ms, sql='" + sql + '\'' +
-                    ", plan=" + U.nl() + plan.getString(1) + U.nl() + ", parameters=" + params + "]";
-
-                LT.warn(log, null, longMsg, msg);
             }
-
-            return rs;
+            else
+                return false;
         }
-        catch (SQLException e) {
-            onSqlException();
 
-            throw new IgniteCheckedException(e);
+        /**
+         * @return Stmt.
+         */
+        public PreparedStatement stmt() {
+            return stmt;
         }
     }
 
@@ -926,7 +1029,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         String sql = generateQuery(qry, tbl);
 
-        return executeSqlQueryWithTimer(null, space, conn, sql, params, true);
+        return executeSqlQueryWithTimer(space, conn, sql, params, true);
     }
 
     /**
