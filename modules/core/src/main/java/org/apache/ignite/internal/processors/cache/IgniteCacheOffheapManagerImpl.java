@@ -235,14 +235,14 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             int partId,
             GridDhtLocalPartition part
     ) throws IgniteCheckedException {
-        dataStore(part).update(key, partId, val, ver, expireTime);
+        long link = dataStore(part).update(key, partId, val, ver, expireTime);
 
         if (indexingEnabled) {
             GridCacheQueryManager qryMgr = cctx.queries();
 
             assert qryMgr.enabled();
 
-            qryMgr.store(key, partId, val, ver, expireTime);
+            qryMgr.store(key, partId, val, ver, expireTime, link);
         }
     }
 
@@ -597,7 +597,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
 
         /** {@inheritDoc} */
-        @Override public void update(KeyCacheObject key,
+        @Override public long update(KeyCacheObject key,
             int p,
             CacheObject val,
             GridCacheVersion ver,
@@ -610,6 +610,10 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
             if (old == null)
                 lsnr.onInsert();
+
+            assert dataRow.link != 0 : dataRow;
+
+            return dataRow.link;
         }
 
         /** {@inheritDoc} */

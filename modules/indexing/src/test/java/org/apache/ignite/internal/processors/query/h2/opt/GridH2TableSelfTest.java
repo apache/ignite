@@ -33,7 +33,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.ignite.internal.processors.query.h2.database.H2RowStore;
+import org.apache.ignite.internal.processors.query.h2.database.H2RowFactory;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.h2.Driver;
 import org.h2.index.Index;
@@ -88,7 +88,7 @@ public class GridH2TableSelfTest extends GridCommonAbstractTest {
         conn = DriverManager.getConnection(DB_URL);
 
         tbl = GridH2Table.Engine.createTable(conn, CREATE_TABLE_SQL, null, new GridH2Table.IndexesFactory() {
-            @Override public H2RowStore createRowStore(GridH2Table tbl) {
+            @Override public H2RowFactory createRowFactory(GridH2Table tbl) {
                 return null;
             }
 

@@ -33,7 +33,7 @@ import org.h2.result.SearchRow;
  */
 public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     /** */
-    private final H2RowStore rowStore;
+    private final H2RowFactory rowStore;
 
     /**
      * @param name Tree name.
@@ -50,7 +50,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
         ReuseList reuseList,
         int cacheId,
         PageMemory pageMem,
-        H2RowStore rowStore,
+        H2RowFactory rowStore,
         FullPageId metaPageId,
         boolean initNew
     ) throws IgniteCheckedException {
@@ -67,7 +67,7 @@ public abstract class H2Tree extends BPlusTree<SearchRow, GridH2Row> {
     /**
      * @return Row store.
      */
-    public H2RowStore getRowStore() {
+    public H2RowFactory getRowFactory() {
         return rowStore;
     }
 

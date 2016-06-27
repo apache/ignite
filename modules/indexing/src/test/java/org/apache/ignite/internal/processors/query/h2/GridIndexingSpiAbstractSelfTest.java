@@ -251,47 +251,47 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         spi.remove("A", key(1), 0, aa(1, "", 10), null);
         spi.remove("B", key(1), 0, ba(1, "", 10, true), null);
 
-        spi.store(typeAA.space(), typeAA, key(1), 0, aa(1, "Vasya", 10), new GridCacheVersion(), 0);
+        spi.store(typeAA.space(), typeAA, key(1), 0, aa(1, "Vasya", 10), new GridCacheVersion(), 0, 0);
 
         assertEquals(1, spi.size(typeAA.space(), typeAA, null));
         assertEquals(0, spi.size(typeAB.space(), typeAB, null));
         assertEquals(0, spi.size(typeBA.space(), typeBA, null));
 
         spi.store(typeAB.space(), typeAB, key(1), 0, ab(1, "Vasya", 20, "Some text about Vasya goes here."),
-            new GridCacheVersion(), 0);
+            new GridCacheVersion(), 0, 0);
 
         // In one space all keys must be unique.
         assertEquals(0, spi.size(typeAA.space(), typeAA, null));
         assertEquals(1, spi.size(typeAB.space(), typeAB, null));
         assertEquals(0, spi.size(typeBA.space(), typeBA, null));
 
-        spi.store(typeBA.space(), typeBA, key(1), 0, ba(2, "Petya", 25, true), new GridCacheVersion(), 0);
+        spi.store(typeBA.space(), typeBA, key(1), 0, ba(2, "Petya", 25, true), new GridCacheVersion(), 0, 0);
 
         // No replacement because of different space.
         assertEquals(0, spi.size(typeAA.space(), typeAA, null));
         assertEquals(1, spi.size(typeAB.space(), typeAB, null));
         assertEquals(1, spi.size(typeBA.space(), typeBA, null));
 
-        spi.store(typeBA.space(), typeBA, key(1), 0, ba(2, "Kolya", 25, true), new GridCacheVersion(), 0);
+        spi.store(typeBA.space(), typeBA, key(1), 0, ba(2, "Kolya", 25, true), new GridCacheVersion(), 0, 0);
 
         // Replacement in the same table.
         assertEquals(0, spi.size(typeAA.space(), typeAA, null));
         assertEquals(1, spi.size(typeAB.space(), typeAB, null));
         assertEquals(1, spi.size(typeBA.space(), typeBA, null));
 
-        spi.store(typeAA.space(), typeAA, key(2), 0, aa(2, "Valera", 19), new GridCacheVersion(), 0);
+        spi.store(typeAA.space(), typeAA, key(2), 0, aa(2, "Valera", 19), new GridCacheVersion(), 0, 0);
 
         assertEquals(1, spi.size(typeAA.space(), typeAA, null));
         assertEquals(1, spi.size(typeAB.space(), typeAB, null));
         assertEquals(1, spi.size(typeBA.space(), typeBA, null));
 
-        spi.store(typeAA.space(), typeAA, key(3), 0, aa(3, "Borya", 18), new GridCacheVersion(), 0);
+        spi.store(typeAA.space(), typeAA, key(3), 0, aa(3, "Borya", 18), new GridCacheVersion(), 0, 0);
 
         assertEquals(2, spi.size(typeAA.space(), typeAA, null));
         assertEquals(1, spi.size(typeAB.space(), typeAB, null));
         assertEquals(1, spi.size(typeBA.space(), typeBA, null));
 
-        spi.store(typeAB.space(), typeAB, key(4), 0, ab(4, "Vitalya", 20, "Very Good guy"), new GridCacheVersion(), 0);
+        spi.store(typeAB.space(), typeAB, key(4), 0, ab(4, "Vitalya", 20, "Very Good guy"), new GridCacheVersion(), 0, 0);
 
         assertEquals(2, spi.size(typeAA.space(), typeAA, null));
         assertEquals(2, spi.size(typeAB.space(), typeAB, null));
@@ -416,7 +416,7 @@ public abstract class GridIndexingSpiAbstractSelfTest extends GridCommonAbstract
         spi.unregisterType(typeBA.space(), typeBA);
 
         // Should not store but should not fail as well.
-        spi.store(typeAA.space(), typeAA, key(10), 0, aa(1, "Fail", 100500), new GridCacheVersion(), 0);
+        spi.store(typeAA.space(), typeAA, key(10), 0, aa(1, "Fail", 100500), new GridCacheVersion(), 0, 0);
 
         assertEquals(-1, spi.size(typeAA.space(), typeAA, null));
     }
