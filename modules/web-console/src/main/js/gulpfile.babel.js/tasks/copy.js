@@ -32,8 +32,7 @@ gulp.task('copy:resource', () =>
 );
 
 gulp.task('copy:ignite_modules:js', () =>
-    gulp.src(jsModulePaths)
-        .pipe(gulp.dest(`${rootDir}/${igniteModulesTemp}`))
+    gulp.src(jsModulePaths).pipe(gulp.dest(igniteModulesTemp))
 );
 
 gulp.task('copy:ignite_modules:resource', () =>
