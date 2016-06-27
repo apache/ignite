@@ -655,8 +655,13 @@ public class GridQueryProcessor extends GridProcessorAdapter {
      * @throws IgniteCheckedException In case of error.
      */
     @SuppressWarnings("unchecked")
-    public boolean store(final String space, final KeyCacheObject key, int partId, final CacheObject val,
-        GridCacheVersion ver, long expirationTime) throws IgniteCheckedException {
+    public boolean store(final String space,
+        final KeyCacheObject key,
+        int partId,
+        final CacheObject val,
+        GridCacheVersion ver,
+        long expirationTime,
+        long link) throws IgniteCheckedException {
         assert key != null;
         assert val != null;
 
@@ -716,7 +721,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                         desc.keyClass().getName() + ", actualCls=" + keyCls.getName() + "]");
             }
 
-            return idx.store(space, desc, key, partId, val, ver, expirationTime);
+            return idx.store(space, desc, key, partId, val, ver, expirationTime, link);
         }
         finally {
             busyLock.leaveBusy();

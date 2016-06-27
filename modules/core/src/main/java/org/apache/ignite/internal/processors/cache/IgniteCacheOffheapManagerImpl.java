@@ -235,14 +235,14 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             int partId,
             GridDhtLocalPartition part
     ) throws IgniteCheckedException {
-        dataStore(part).update(key, partId, val, ver, expireTime);
+        long link = dataStore(part).update(key, partId, val, ver, expireTime);
 
         if (indexingEnabled) {
             GridCacheQueryManager qryMgr = cctx.queries();
 
             assert qryMgr.enabled();
 
-            qryMgr.store(key, partId, val, ver, expireTime);
+            qryMgr.store(key, partId, val, ver, expireTime, link);
         }
     }
 
@@ -254,8 +254,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             int partId,
             GridDhtLocalPartition part
     ) throws IgniteCheckedException {
-        dataStore(part).remove(key);
-
         if (indexingEnabled) {
             GridCacheQueryManager qryMgr = cctx.queries();
 
@@ -263,6 +261,8 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
             qryMgr.remove(key, partId, prevVal, prevVer);
         }
+
+        dataStore(part).remove(key);
     }
 
     /** {@inheritDoc} */
@@ -597,7 +597,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
 
         /** {@inheritDoc} */
-        @Override public void update(KeyCacheObject key,
+        @Override public long update(KeyCacheObject key,
             int p,
             CacheObject val,
             GridCacheVersion ver,
@@ -610,6 +610,10 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
             if (old == null)
                 lsnr.onInsert();
+
+            assert dataRow.link != 0 : dataRow;
+
+            return dataRow.link;
         }
 
         /** {@inheritDoc} */
@@ -740,6 +744,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             super(hash, null, link);
 
             part = PageIdUtils.partId(link);
+
+            // We can not init data row lazily because underlying buffer can be concurrently cleared.
+            initData();
         }
 
         /**
@@ -772,14 +779,14 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
         /** {@inheritDoc} */
         @Override public CacheObject value() {
-            initData();
+            assert val != null;
 
             return val;
         }
 
         /** {@inheritDoc} */
         @Override public GridCacheVersion version() {
-            initData();
+            assert ver != null;
 
             return ver;
         }
@@ -992,7 +999,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         @Override public long getLink(ByteBuffer buf, int idx) {
             assert idx < getCount(buf): idx;
 
-            return buf.getLong(offset(idx, SHIFT_LINK));
+            return buf.getLong(offset(idx));
         }
 
         /**
@@ -1001,7 +1008,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
          * @param link Link.
          */
         private void setLink(ByteBuffer buf, int idx, long link) {
-            buf.putLong(offset(idx, SHIFT_LINK), link);
+            buf.putLong(offset(idx), link);
 
             assert getLink(buf, idx) == link;
         }

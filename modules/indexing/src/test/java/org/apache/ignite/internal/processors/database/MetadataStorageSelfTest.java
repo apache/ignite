@@ -17,11 +17,13 @@
 
 package org.apache.ignite.internal.processors.database;
 
+import org.apache.ignite.internal.mem.DirectMemoryProvider;
 import org.apache.ignite.internal.pagemem.FullPageId;
+import org.apache.ignite.internal.pagemem.impl.PageMemoryNoStoreImpl;
+import org.apache.ignite.internal.processors.cache.database.MetaStore;
 import org.apache.ignite.internal.processors.cache.database.MetadataStorage;
 import org.apache.ignite.internal.mem.file.MappedFileMemoryProvider;
 import org.apache.ignite.internal.pagemem.PageMemory;
-import org.apache.ignite.internal.pagemem.impl.PageMemoryImpl;
 import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
@@ -124,68 +126,6 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
         finally {
             mem.stop();
         }
-
-        mem = memory(false);
-
-        mem.start();
-
-        try {
-            final Map<Integer, MetadataStorage> storeMap = new HashMap<>();
-
-            for (int cacheId : cacheIds) {
-                Map<String, RootPage> idxMap = allocatedIdxs.get(cacheId);
-
-                MetadataStorage meta = storeMap.get(cacheId);
-
-                if (meta == null) {
-                    meta = new MetadataStorage(mem, cacheId);
-
-                    storeMap.put(cacheId, meta);
-                }
-
-                for (Map.Entry<String, RootPage> entry : idxMap.entrySet()) {
-                    String idxName = entry.getKey();
-                    FullPageId rootPageId = entry.getValue().pageId();
-
-                    assertEquals("Invalid root page ID restored [cacheId=" + cacheId + ", idxName=" + idxName + ']',
-                        rootPageId, meta.getOrAllocateForTree(idxName).pageId());
-
-                }
-            }
-
-            for (int cacheId : cacheIds) {
-                Map<String, RootPage> idxMap = allocatedIdxs.get(cacheId);
-
-                for (Map.Entry<String, RootPage> entry : idxMap.entrySet()) {
-                    String idxName = entry.getKey();
-                    RootPage rootPage = entry.getValue();
-                    FullPageId rootPageId = rootPage.pageId();
-
-                    final RootPage droppedRootId = storeMap.get(cacheId).dropRootPage(idxName);
-
-                    assertEquals("Drop failure [cacheId=" + cacheId + ", idxName=" + idxName + ", stored rootPageId="
-                        + rootPage + ", dropped rootPageId=" + droppedRootId + ']',
-                        rootPage.pageId(), droppedRootId.pageId());
-
-                    final RootPage secondDropRootId = storeMap.get(cacheId).dropRootPage(idxName);
-
-                    assertNull("Page was dropped twice [cacheId=" + cacheId + ", idxName=" + idxName
-                        + ", drop result=" + secondDropRootId + ']',
-                        secondDropRootId);
-
-                    // make sure it will be allocated again
-                    final RootPage newRootPage = storeMap.get(cacheId).getOrAllocateForTree(idxName);
-
-                    assertEquals("Invalid root page ID restored [cacheId=" + cacheId + ", idxName=" + idxName + ']',
-                        rootPageId, newRootPage.pageId());
-
-                    assertTrue(newRootPage.isAllocated());
-                }
-            }
-        }
-        finally {
-            mem.stop();
-        }
     }
 
     /**
@@ -209,10 +149,14 @@ public class MetadataStorageSelfTest extends GridCommonAbstractTest {
      *      new empty page memory.
      * @return Page memory instance.
      */
-    private PageMemory memory(boolean clean) {
-        MappedFileMemoryProvider provider = new MappedFileMemoryProvider(log(), allocationPath, clean,
-            20 * 1024 * 1024, 20 * 1024 * 1024);
+    protected PageMemory memory(boolean clean) throws Exception {
+        long[] sizes = new long[10];
 
-        return new PageMemoryImpl(log, provider, null, PAGE_SIZE, Runtime.getRuntime().availableProcessors());
+        for (int i = 0; i < sizes.length; i++)
+            sizes[i] = 1024 * 1024;
+
+        DirectMemoryProvider provider = new MappedFileMemoryProvider(log(), allocationPath, clean, sizes);
+
+        return new PageMemoryNoStoreImpl(log, provider, null, PAGE_SIZE);
     }
 }
