@@ -1038,6 +1038,16 @@ public class PlatformCallbackGateway {
     }
 
     /**
+     * Redirects the console output to platform.
+     *
+     * @param str String to write.
+     * @param isErr Whether this is stdErr or stdOut.
+     */
+    public static void consoleWrite(String str, boolean isErr) {
+        PlatformCallbackUtils.consoleWrite(str, isErr);
+    }
+
+    /**
      * Enter gateway.
      */
     protected void enter() {
