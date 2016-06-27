@@ -1111,11 +1111,19 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         private static void ConsoleWrite(sbyte* chars, int charsLen, bool isErr)
         {
-            var str = IgniteUtils.Utf8UnmanagedToString(chars, charsLen);
+            try
+            {
+                var str = IgniteUtils.Utf8UnmanagedToString(chars, charsLen);
 
-            var target = isErr ? Console.Error : Console.Out;
+                var target = isErr ? Console.Error : Console.Out;
 
-            target.Write(str);
+                target.Write(str);
+
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine("ConsoleWrite unmanaged callback failed: " + ex);
+            }
         }
 
         #endregion
