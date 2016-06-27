@@ -84,7 +84,7 @@ export default () => {
                     loaders: [
                         `ngtemplate-loader?relativeTo=${rootDir}`,
                         'html-loader?attrs[]=img:src&attrs[]=img:data-src',
-                        `jade-html-loader`
+                        'jade-html-loader'
                     ]
                 },
                 {
@@ -125,16 +125,16 @@ export default () => {
                     loaders: ['file-loader?name=assets/images/[name]_[hash].[ext]']
                 },
                 {
-                    test: require.resolve("jquery"),
+                    test: require.resolve('jquery'),
                     loaders: [
-                        "expose-loader?$",
-                        "expose-loader?jQuery"
+                        'expose-loader?$',
+                        'expose-loader?jQuery'
                     ]
                 },
                 {
-                    test: require.resolve("nvd3"),
+                    test: require.resolve('nvd3'),
                     loaders: [
-                        "expose-loader?nv"
+                        'expose-loader?nv'
                     ]
                 }
             ]
@@ -157,7 +157,7 @@ export default () => {
                 _: 'lodash',
                 nv: 'nvd3'
             }),
-            new webpack.DefinePlugin({'NODE_ENV': JSON.stringify(NODE_ENV)}),
+            new webpack.DefinePlugin({NODE_ENV: JSON.stringify(NODE_ENV)}),
             // new webpack.NoErrorsPlugin(),
             new webpack.optimize.DedupePlugin(),
             new webpack.optimize.CommonsChunkPlugin({

@@ -16,26 +16,28 @@
  */
 
 import gulp from 'gulp';
+import eslint from 'gulp-eslint';
 import sequence from 'gulp-sequence';
 
-import { destDir, rootDir, jsModulePaths, resourcePaths, resourceModulePaths, igniteModulesTemp } from '../paths';
+const paths = [
+    './app/**/*.js',
+    './controllers/**/*.js',
+    './generator/**/*.js',
+    './ignite_modules_temp/**/*.js',
+    './gulpfile.babel.js/**/*.js',
+    './gulpfile.babel.js/*.js'
+];
 
-gulp.task('copy', (cb) => {
-    const tasks = ['copy:resource', 'copy:ignite_modules:js', 'copy:ignite_modules:resource'];
-
-    return sequence(tasks, cb);
-});
-
-gulp.task('copy:resource', () =>
-    gulp.src(resourcePaths)
-        .pipe(gulp.dest(destDir))
+gulp.task('eslint:node', () =>
+    gulp.src('./serve/**/*.js')
+        .pipe(eslint({envs: ['node']}))
+        .pipe(eslint.format())
 );
 
-gulp.task('copy:ignite_modules:js', () =>
-    gulp.src(jsModulePaths).pipe(gulp.dest(igniteModulesTemp))
+gulp.task('eslint:browser', () =>
+    gulp.src(paths)
+        .pipe(eslint({envs: ['browser']}))
+        .pipe(eslint.format())
 );
 
-gulp.task('copy:ignite_modules:resource', () =>
-    gulp.src(resourceModulePaths)
-        .pipe(gulp.dest(`${destDir}/ignite_modules`))
-);
+gulp.task('eslint', (cb) => sequence('eslint:browser', 'eslint:node', cb));
