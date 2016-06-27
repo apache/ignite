@@ -355,7 +355,8 @@ public class VisorGatewayTask implements ComputeTask<Object[], Object> {
                 }
             }
 
-            return ignite.compute().execute(taskName, new VisorTaskArgument<>(nids, jobArgs, false));
+            return ignite.compute(ignite.cluster().forNodeIds(nids))
+                .execute(taskName, new VisorTaskArgument<>(nids, jobArgs, false));
         }
     }
 }
