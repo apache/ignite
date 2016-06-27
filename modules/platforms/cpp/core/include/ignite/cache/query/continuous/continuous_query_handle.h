@@ -120,8 +120,10 @@ namespace ignite
                     }
 
                 private:
+                    typedef impl::cache::query::continuous::ContinuousQueryHandleImpl ContinuousQueryHandleImpl;
+
                     /** Implementation delegate. */
-                    ignite::common::concurrent::SharedPointer<impl::cache::query::continuous::ContinuousQueryHandleImpl> impl;
+                    common::concurrent::SharedPointer<ContinuousQueryHandleImpl> impl;
                 };
             }
         }

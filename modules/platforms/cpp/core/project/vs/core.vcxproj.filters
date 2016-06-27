@@ -43,7 +43,7 @@
     <ClCompile Include="..\..\src\impl\interop\interop_target.cpp">
       <Filter>Code\impl\interop</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\impl\cache\query\continuous\continuous_query_handle_imp.cpp">
+    <ClCompile Include="..\..\src\impl\cache\query\continuous\continuous_query_handle_impl.cpp">
       <Filter>Code\impl\cache\query\continuous</Filter>
     </ClCompile>
   </ItemGroup>

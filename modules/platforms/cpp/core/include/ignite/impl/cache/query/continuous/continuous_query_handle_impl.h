@@ -40,6 +40,7 @@ namespace ignite
                      */
                     class IGNITE_IMPORT_EXPORT ContinuousQueryHandleImpl
                     {
+                        typedef common::concurrent::SharedPointer<IgniteEnvironment> SP_IgniteEnvironment;
                     public:
                         /**
                          * Default constructor.
@@ -47,7 +48,7 @@ namespace ignite
                          * @param env Environment.
                          * @param javaRef Java reference.
                          */
-                        ContinuousQueryHandleImpl(ignite::common::concurrent::SharedPointer<IgniteEnvironment> env, jobject javaRef);
+                        ContinuousQueryHandleImpl(SP_IgniteEnvironment env, jobject javaRef);
 
                         /**
                          * Destructor.
@@ -65,7 +66,7 @@ namespace ignite
 
                     private:
                         /** Environment. */
-                        ignite::common::concurrent::SharedPointer<impl::IgniteEnvironment> env;
+                        SP_IgniteEnvironment env;
 
                         /** Handle to Java object. */
                         jobject javaRef;

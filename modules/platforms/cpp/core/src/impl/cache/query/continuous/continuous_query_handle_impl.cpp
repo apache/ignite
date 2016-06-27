@@ -33,8 +33,7 @@ namespace ignite
             {
                 namespace continuous
                 {
-                    ContinuousQueryHandleImpl::ContinuousQueryHandleImpl(
-                        SharedPointer<IgniteEnvironment> env, jobject javaRef) :
+                    ContinuousQueryHandleImpl::ContinuousQueryHandleImpl(SP_IgniteEnvironment env, jobject javaRef) :
                         env(env),
                         javaRef(javaRef),
                         extracted(false)

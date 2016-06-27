@@ -234,7 +234,7 @@
     <ClCompile Include="..\..\src\ignition.cpp" />
     <ClCompile Include="..\..\src\impl\binary\binary_type_updater_impl.cpp" />
     <ClCompile Include="..\..\src\impl\cache\cache_impl.cpp" />
-    <ClCompile Include="..\..\src\impl\cache\query\continuous\continuous_query_handle_imp.cpp" />
+    <ClCompile Include="..\..\src\impl\cache\query\continuous\continuous_query_handle_impl.cpp" />
     <ClCompile Include="..\..\src\impl\cache\query\query_impl.cpp" />
     <ClCompile Include="..\..\src\impl\ignite_environment.cpp" />
     <ClCompile Include="..\..\src\impl\ignite_impl.cpp" />
