@@ -105,25 +105,17 @@ public class HadoopLocations {
      */
     public HadoopLocations existsOrException() throws IOException {
         if (!HadoopClasspathUtils.directoryExists(commonHome))
-            throw ioe("HADOOP_COMMON_HOME");
+            throw HadoopClasspathUtils.ioeNotFound(HadoopClasspathUtils.HadoopVariable.HADOOP_COMMON_HOME.toString(),
+                commonHome);
 
         if (!HadoopClasspathUtils.directoryExists(hdfsHome))
-            throw ioe("HADOOP_HDFS_HOME");
+            throw HadoopClasspathUtils.ioeNotFound(HadoopClasspathUtils.HadoopVariable.HADOOP_HDFS_HOME.toString(),
+                hdfsHome);
 
         if (!HadoopClasspathUtils.directoryExists(mapredHome))
-            throw ioe("HADOOP_MAPRED_HOME");
+            throw HadoopClasspathUtils.ioeNotFound(HadoopClasspathUtils.HadoopVariable.HADOOP_MAPRED_HOME.toString(),
+                mapredHome);
 
         return this;
-    }
-
-    /**
-     * Constructs the exception.
-     *
-     * @param var The 1st variable name to mention in the exception text.
-     * @return The exception.
-     */
-    private IOException ioe(String var) {
-        return new IOException("Failed to resolve Hadoop installation location. " + var +
-            " or HADOOP_HOME environment variable should be set.");
     }
 }

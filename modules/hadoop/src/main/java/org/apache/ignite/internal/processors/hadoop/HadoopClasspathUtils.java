@@ -83,7 +83,7 @@ public class HadoopClasspathUtils {
     private static String hadoopHome() {
         String prefix = systemOrEnv("HADOOP_PREFIX", null);
 
-        return systemOrEnv("HADOOP_HOME", prefix);
+        return systemOrEnv(HadoopVariable.HADOOP_HOME.toString(), prefix);
     }
 
     /**
@@ -94,9 +94,9 @@ public class HadoopClasspathUtils {
     private static HadoopLocations getEnvHadoopLocations() {
         return new HadoopLocations(
             hadoopHome(),
-            systemOrEnv("HADOOP_COMMON_HOME", null),
-            systemOrEnv("HADOOP_HDFS_HOME", null),
-            systemOrEnv("HADOOP_MAPRED_HOME", null)
+            systemOrEnv(HadoopVariable.HADOOP_COMMON_HOME.toString(), null),
+            systemOrEnv(HadoopVariable.HADOOP_HDFS_HOME.toString(), null),
+            systemOrEnv(HadoopVariable.HADOOP_MAPRED_HOME.toString(), null)
         );
     }
 
@@ -116,8 +116,8 @@ public class HadoopClasspathUtils {
     private static final HadoopLocations HDP_HADOOP_LOCATIONS = new HadoopLocations(
         "/usr/hdp/current/hadoop-client",
         "/usr/hdp/current/hadoop-client",
-        "/usr/hdp/current/hadoop-hdfs-client/",
-        "/usr/hdp/current/hadoop-mapreduce-client/");
+        "/usr/hdp/current/hadoop-hdfs-client",
+        "/usr/hdp/current/hadoop-mapreduce-client");
 
     /**
      * HDP locations relative to an arbitrary Hadoop home.
@@ -127,8 +127,8 @@ public class HadoopClasspathUtils {
      */
     private static HadoopLocations getHdpLocationsRelative(String hadoopHome) {
         return new HadoopLocations(hadoopHome, hadoopHome,
-            hadoopHome + "/../hadoop-hdfs-client/",
-            hadoopHome + "/../hadoop-mapreduce-client/");
+            hadoopHome + "/../hadoop-hdfs-client",
+            hadoopHome + "/../hadoop-mapreduce-client");
     }
     
     /**
@@ -136,7 +136,7 @@ public class HadoopClasspathUtils {
      *
      * @return The locations as determined from the environment.
      */
-    private static HadoopLocations getHadoopLocations() throws IOException {
+    static HadoopLocations getHadoopLocations() throws IOException {
         // 1. Get Hadoop locations from the environment:
         HadoopLocations loc = getEnvHadoopLocations();
 
@@ -148,8 +148,7 @@ public class HadoopClasspathUtils {
         if (hadoopHome != null) {
             // If home is defined, it must exist:
             if (!directoryExists(hadoopHome))
-                throw new IOException("HADOOP_HOME location is not an existing readable directory. [dir="
-                    + hadoopHome + ']');
+                throw ioeNotFound(HadoopVariable.HADOOP_HOME.toString(), hadoopHome);
 
             // 2. Try Apache Hadoop locations defined relative to HADOOP_HOME:
             loc = getApacheHadoopLocations(hadoopHome);
@@ -160,11 +159,34 @@ public class HadoopClasspathUtils {
             // 3. Try HDP Hadoop locations defined relative to HADOOP_HOME:
             loc = getHdpLocationsRelative(hadoopHome);
 
-            return loc.existsOrException();
+            if (loc.exists())
+                return loc;
+
+            throw new IOException("Hadoop installation locations not found based on defined "
+                + HadoopVariable.HADOOP_HOME.toString() + " value. [" + HadoopVariable.HADOOP_HOME.toString()
+                + "=" + hadoopHome + ']');
         }
 
         // 4. Try absolute HDP (Hortonworks) location:
-        return HDP_HADOOP_LOCATIONS.existsOrException();
+        if (HDP_HADOOP_LOCATIONS.exists())
+            return HDP_HADOOP_LOCATIONS;
+
+        throw new IOException("Hadoop installation locations cannot be found. Please define environment variables "
+            + HadoopVariable.HADOOP_COMMON_HOME.toString() + ", "
+            + HadoopVariable.HADOOP_HDFS_HOME.toString() + ", "
+            + HadoopVariable.HADOOP_MAPRED_HOME.toString() + ", or "
+            + HadoopVariable.HADOOP_HOME.toString() + ".");
+    }
+
+    /**
+     * Convenience method to construct Exception.
+     *
+     * @param var The variable name.
+     * @param dir The dir.
+     * @return The Exception.
+     */
+    static IOException ioeNotFound(String var, String dir) {
+        return new IOException(var + " location is not an existing readable directory. [" + var + "=" + dir + ']');
     }
 
     /**
@@ -270,5 +292,22 @@ public class HadoopClasspathUtils {
         private boolean hasFilter() {
             return filter != null;
         }
+    }
+
+    /**
+     * Enumeration of commonly used Hadoop environment variables.
+     */
+    public enum HadoopVariable {
+        /** Variable HADOOP_HOME. */
+        HADOOP_HOME,
+
+        /** Variable HADOOP_COMMON_HOME. */
+        HADOOP_COMMON_HOME,
+
+        /** Variable HADOOP_HDFS_HOME. */
+        HADOOP_HDFS_HOME,
+
+        /** Variable HADOOP_MAPRED_HOME. */
+        HADOOP_MAPRED_HOME,
     }
 }

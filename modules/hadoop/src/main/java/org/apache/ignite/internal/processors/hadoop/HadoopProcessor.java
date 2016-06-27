@@ -73,7 +73,7 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
         validate(cfg);
 
         try {
-            HadoopLocations loc = HadoopClasspathUtils.hadoopLocations();
+            HadoopLocations loc = HadoopClasspathUtils.getHadoopLocations();
 
             if (loc.home() != null)
                 U.quietAndInfo(log, "HADOOP_HOME is set to " + loc.home());
