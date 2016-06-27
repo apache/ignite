@@ -160,7 +160,7 @@ namespace ignite
 
                             memset(out->val, 0, SQL_MAX_NUMERIC_LEN);
 
-                            int64_t intVal = static_cast<int64_t>(std::abs(value));
+                            int64_t intVal = static_cast<int64_t>(value < 0 ? -value : value);
 
                             memcpy(out->val, &intVal, std::min<int>(SQL_MAX_NUMERIC_LEN, sizeof(intVal)));
                         }

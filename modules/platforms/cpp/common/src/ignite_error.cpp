@@ -30,34 +30,34 @@ namespace ignite
             throw err;
     }
 
-    IgniteError::IgniteError() :
+    IgniteError::IgniteError() IGNITE_NO_THROW :
         code(IGNITE_SUCCESS),
         msg(NULL)
     {
         // No-op.
     }
 
-    IgniteError::IgniteError(int32_t code) :
+    IgniteError::IgniteError(int32_t code) IGNITE_NO_THROW :
         code(code),
         msg(NULL)
     {
     }
 
-    IgniteError::IgniteError(int32_t code, const char* msg) :
+    IgniteError::IgniteError(int32_t code, const char* msg) IGNITE_NO_THROW :
         code(code),
         msg(CopyChars(msg))
     {
         // No-op.
     }
 
-    IgniteError::IgniteError(const IgniteError& other) :
+    IgniteError::IgniteError(const IgniteError& other) IGNITE_NO_THROW :
         code(other.code),
         msg(CopyChars(other.msg))
     {
         // No-op.
     }
 
-    IgniteError& IgniteError::operator=(const IgniteError& other)
+    IgniteError& IgniteError::operator=(const IgniteError& other) IGNITE_NO_THROW
     {
         if (this != &other)
         {
@@ -70,12 +70,12 @@ namespace ignite
         return *this;
     }
 
-    IgniteError::~IgniteError()
+    IgniteError::~IgniteError() IGNITE_NO_THROW
     {
         ReleaseChars(msg);
     }
 
-    int32_t IgniteError::GetCode() const
+    int32_t IgniteError::GetCode() const IGNITE_NO_THROW
     {
         return code;
     }

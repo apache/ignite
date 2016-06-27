@@ -205,14 +205,14 @@ namespace ignite
          * Default constructor.
          * Creates empty error. Code is IGNITE_SUCCESS and message is NULL.
          */
-        IgniteError();
+        IgniteError() IGNITE_NO_THROW;
 
         /**
          * Create error with specific code. Message is set to NULL.
          *
          * @param code Error code.
          */
-        IgniteError(const int32_t code);
+        IgniteError(const int32_t code) IGNITE_NO_THROW;
 
         /**
          * Create error with specific code and message.
@@ -220,14 +220,14 @@ namespace ignite
          * @param code Error code.
          * @param msg Message.
          */
-        IgniteError(const int32_t code, const char* msg);
+        IgniteError(const int32_t code, const char* msg) IGNITE_NO_THROW;
         
         /**
          * Copy constructor.
          *
          * @param other Other instance.
          */
-        IgniteError(const IgniteError& other);
+        IgniteError(const IgniteError& other) IGNITE_NO_THROW;
 
         /**
          * Assignment operator.
@@ -235,19 +235,19 @@ namespace ignite
          * @param other Other instance.
          * @return *this.
          */
-        IgniteError& operator=(const IgniteError& other);
+        IgniteError& operator=(const IgniteError& other) IGNITE_NO_THROW;
 
         /**
          * Destructor.
          */
-        ~IgniteError();
+        ~IgniteError() IGNITE_NO_THROW;
 
         /**
          * Get error code.
          *
          * @return Error code.
          */
-        int32_t GetCode() const;
+        int32_t GetCode() const IGNITE_NO_THROW;
 
         /**
          * Get error message.
