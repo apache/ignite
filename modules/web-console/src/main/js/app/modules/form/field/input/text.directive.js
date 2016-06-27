@@ -37,11 +37,14 @@ export default ['igniteFormFieldInputText', ['IgniteFormGUID', '$table', (guid, 
             label.for = scope.id;
 
             scope.label = label;
+            scope.labelName = label.name;
 
             scope.$watch('required', (required) => {
                 label.required = required || false;
             });
         }
+        else
+            scope.labelName = attrs.igniteLabelName || 'Value';
 
         form.$defaults = form.$defaults || {};
 
@@ -75,10 +78,10 @@ export default ['igniteFormFieldInputText', ['IgniteFormGUID', '$table', (guid, 
         scope.ngChange = () => {
             ngModel.$setViewValue(scope.value);
 
-            if (JSON.stringify(scope.value) !== JSON.stringify(form.$defaults[name]))
-                ngModel.$setDirty();
-            else
+            if (_.isEqual(scope.value, form.$defaults[name]))
                 ngModel.$setPristine();
+            else
+                ngModel.$setDirty();
 
             setTimeout(checkValid, 100); // Use setTimeout() workaround of problem of two controllers.
         };
