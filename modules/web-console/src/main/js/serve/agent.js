@@ -152,7 +152,7 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
                     const code = res.code;
 
                     if (code === 401)
-                        return reject(new Error('Agent is failed to authenticate in grid. Please check agent\'s login and password or node port.'));
+                        return reject(new Error('Agent failed to authenticate in grid. Please check agent\'s login and password or node port.'));
 
                     if (code !== 200)
                         return reject(new Error(error || 'Failed connect to node and execute REST command.'));
@@ -164,7 +164,7 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
                             return resolve(msg.response);
 
                         if (msg.successStatus === 2)
-                            return reject(new Error('Agent is failed to authenticate in grid. Please check agent\'s login and password or node port.'));
+                            return reject(new Error('Agent failed to authenticate in grid. Please check agent\'s login and password or node port.'));
 
                         reject(new Error(msg.error));
                     }
@@ -618,8 +618,8 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
         }
 
         /**
-         * @param {ObjectId} accountId
-         * @param {Socket} socket
+         * @param {ObjectId} accountId.
+         * @param {Socket} socket.
          * @returns {int} connected agent count.
          */
         removeAgentListener(accountId, socket) {
@@ -663,7 +663,7 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
 
             _.pullAll(agentsForWarning, agentsForClose);
 
-            const msg = `Security token was reset: ${oldToken}`;
+            const msg = `Security token has been reset: ${oldToken}`;
 
             _.forEach(agentsForWarning, (socket) => socket._emit('agent:warning', msg));
 
