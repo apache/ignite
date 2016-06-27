@@ -496,7 +496,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testCustomEventOnJoinCoordinatorStop() throws Exception {
+    public void _testCustomEventOnJoinCoordinatorStop() throws Exception {
         for (int k = 0; k < 10; k++) {
             log.info("Iteration: " + k);
 
@@ -590,7 +590,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testClientContinuousQueryCoordinatorStop() throws Exception {
+    public void _testClientContinuousQueryCoordinatorStop() throws Exception {
         for (int k = 0; k < 10; k++) {
             log.info("Iteration: " + k);
 
@@ -659,7 +659,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
     /**
      * @throws Exception If failed.
      */
-    public void testCustomEventNodeRestart() throws Exception {
+    public void _testCustomEventNodeRestart() throws Exception {
         clientFlagGlobal = false;
 
         Ignite ignite = startGrid(0);
