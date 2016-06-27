@@ -947,7 +947,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
                 java.sql.ResultSet rs = executeSqlQuery(sql, stmt, params);
 
-                // Remove from timer queue.
+                // Remove pending task from timer queue.
                 if (timeoutTask != null)
                     timeoutTask.close();
 

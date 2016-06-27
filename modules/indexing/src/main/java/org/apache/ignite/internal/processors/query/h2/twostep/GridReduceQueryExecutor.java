@@ -74,6 +74,7 @@ import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQuery
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryNextPageResponse;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryRequest;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
+import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridFilteredIterator;
 import org.apache.ignite.internal.util.typedef.CI1;
 import org.apache.ignite.internal.util.typedef.F;
@@ -533,12 +534,12 @@ public class GridReduceQueryExecutor {
                     }
 
                     // Give a change to the reduce query to terminate.
-                    if ( r.rdcPrepStmt != null )
+                    if ( r.fut != null )
                         try {
-                            r.rdcPrepStmt.cancel();
+                            r.fut.cancel();
                         }
-                        catch (SQLException e) {
-                            throw new IgniteException("Cannot close reduce stmt", e);
+                        catch (IgniteCheckedException e) {
+                            throw new IgniteException("Failed to cancel a reduce query", e);
                         }
                 }
             };
@@ -672,16 +673,16 @@ public class GridReduceQueryExecutor {
                         GridCacheSqlQuery rdc = qry.reduceQuery();
 
                         // Statement caching is prohibited here because we can't guarantee correct merge index reuse.
-                        ResultSet res = h2.executeSqlQueryWithTimer(new IgniteInClosure<PreparedStatement>() {
-                                                                        @Override public void apply(PreparedStatement statement) {
-                                                                            r.rdcPrepStmt = statement;
-                                                                        }
-                                                                    },
-                            space,
+                        GridFutureAdapter<ResultSet> fut = h2.sqlQueryFuture(space,
                             r.conn,
                             rdc.query(),
                             F.asList(rdc.parameters()),
-                            false);
+                            false,
+                            qry.timeout());
+
+                        r.fut = fut;
+
+                        ResultSet res = fut.get();
 
                         resIter = new Iter(res);
                     }
@@ -1063,7 +1064,7 @@ public class GridReduceQueryExecutor {
         List<List<?>> lists = new ArrayList<>();
 
         for (int i = 0, mapQrys = qry.mapQueries().size(); i < mapQrys; i++) {
-            ResultSet rs = h2.executeSqlQueryWithTimer(null, space, c, "SELECT PLAN FROM " + table(i), null, false);
+            ResultSet rs = h2.executeSqlQueryWithTimer(space, c, "SELECT PLAN FROM " + table(i), null, false);
 
             lists.add(F.asList(getPlan(rs)));
         }
@@ -1078,7 +1079,7 @@ public class GridReduceQueryExecutor {
 
         GridCacheSqlQuery rdc = qry.reduceQuery();
 
-        ResultSet rs = h2.executeSqlQueryWithTimer(null, space,
+        ResultSet rs = h2.executeSqlQueryWithTimer(space,
             c,
             "EXPLAIN " + rdc.query(),
             F.asList(rdc.parameters()),
@@ -1291,7 +1292,7 @@ public class GridReduceQueryExecutor {
         public CI1<UUID> rmtCancellationClo;
 
         /** */
-        public volatile PreparedStatement rdcPrepStmt;
+        public volatile GridFutureAdapter<ResultSet> fut;
 
         /** */
         public volatile boolean cancelled;
