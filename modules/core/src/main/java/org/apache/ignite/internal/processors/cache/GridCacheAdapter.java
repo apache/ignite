@@ -4011,13 +4011,15 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
                     size += size();
             } else {
                 if (modes.heap) {
-                    GridDhtLocalPartition gridDthLocalPartition = ctx.topology().localPartition(partition, topVer, true);
+                    GridDhtLocalPartition gridDthLocalPartition = ctx.topology().localPartition(partition, topVer, false);
 
-                    if (modes.primary && gridDthLocalPartition.primary(topVer)) {
-                        size += gridDthLocalPartition.publicSize();
-                    }
-                    if (modes.backup && gridDthLocalPartition.backup(topVer)) {
-                        size += gridDthLocalPartition.publicSize();
+                    if (!(gridDthLocalPartition == null)){
+                        if (modes.primary && gridDthLocalPartition.primary(topVer)) {
+                            size += gridDthLocalPartition.publicSize();
+                        }
+                        else if (modes.backup && gridDthLocalPartition.backup(topVer)) {
+                            size += gridDthLocalPartition.publicSize();
+                        }
                     }
                 }
             }
