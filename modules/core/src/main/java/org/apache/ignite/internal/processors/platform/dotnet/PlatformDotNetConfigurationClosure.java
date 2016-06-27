@@ -222,6 +222,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
         PlatformConfigurationUtils.readIgniteConfiguration(in, cfg);
 
+        // Process beans
         List<PlatformDotNetLifecycleBean> beans = beans(cfg);
         List<PlatformLifecycleBean> newBeans = new ArrayList<>();
 
@@ -252,6 +253,16 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
                 cfg.setLifecycleBeans(mergedBeans);
             }
+        }
+
+        // Process affinity functions
+        List<PlatformDotNetAffinityFunction> affFuncs = affinityFunctions(cfg);
+
+        if (!affFuncs.isEmpty()) {
+            assert affFuncs.size() == in.readInt();
+
+            for (PlatformDotNetAffinityFunction aff : affFuncs)
+                aff.init(in.readObjectDetached(), in.readInt());
         }
     }
 
