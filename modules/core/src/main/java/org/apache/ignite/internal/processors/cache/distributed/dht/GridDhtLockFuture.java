@@ -88,7 +88,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
     private static IgniteLogger log;
 
     /** Logger. */
-    private static IgniteLogger txMsgLog;
+    private static IgniteLogger msgLog;
 
     /** Cache registry. */
     @GridToStringExclude
@@ -239,7 +239,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
         pendingLocks = U.newHashSet(cnt);
 
         if (log == null) {
-            txMsgLog = cctx.shared().txLockMessageLogger();
+            msgLog = cctx.shared().txLockMessageLogger();
             log = U.logger(cctx.kernalContext(), logRef, GridDhtLockFuture.class);
         }
 
@@ -530,7 +530,7 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                 return;
             }
 
-            U.warn(txMsgLog, "DHT lock fut, failed to find mini future [txId=" + nearLockVer +
+            U.warn(msgLog, "DHT lock fut, failed to find mini future [txId=" + nearLockVer +
                 ", dhtTxId=" + lockVer +
                 ", inTx=" + inTx() +
                 ", node=" + nodeId +
@@ -952,8 +952,8 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
 
                             cctx.io().send(n, req, cctx.ioPolicy());
 
-                            if (txMsgLog.isDebugEnabled()) {
-                                txMsgLog.debug("DHT lock fut, sent request [txId=" + nearLockVer +
+                            if (msgLog.isDebugEnabled()) {
+                                msgLog.debug("DHT lock fut, sent request [txId=" + nearLockVer +
                                     ", dhtTxId=" + lockVer +
                                     ", inTx=" + inTx() +
                                     ", nodeId=" + n.id() + ']');
@@ -965,8 +965,8 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
                         if (e instanceof ClusterTopologyCheckedException)
                             fut.onResult((ClusterTopologyCheckedException)e);
                         else {
-                            if (txMsgLog.isDebugEnabled()) {
-                                txMsgLog.debug("DHT lock fut, failed to send request [txId=" + nearLockVer +
+                            if (msgLog.isDebugEnabled()) {
+                                msgLog.debug("DHT lock fut, failed to send request [txId=" + nearLockVer +
                                     ", dhtTxId=" + lockVer +
                                     ", inTx=" + inTx() +
                                     ", node=" + n.id() +
@@ -1179,8 +1179,8 @@ public final class GridDhtLockFuture extends GridCompoundIdentityFuture<Boolean>
          * @param e Node failure.
          */
         void onResult(ClusterTopologyCheckedException e) {
-            if (txMsgLog.isDebugEnabled()) {
-                txMsgLog.debug("DHT lock fut, mini future node left [txId=" + nearLockVer +
+            if (msgLog.isDebugEnabled()) {
+                msgLog.debug("DHT lock fut, mini future node left [txId=" + nearLockVer +
                     ", dhtTxId=" + lockVer +
                     ", inTx=" + inTx() +
                     ", node=" + node.id() + ']');

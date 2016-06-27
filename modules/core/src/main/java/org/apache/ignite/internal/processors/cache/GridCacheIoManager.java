@@ -117,7 +117,7 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
     /** Message listener. */
     private GridMessageListener lsnr = new GridMessageListener() {
-        @Override public void onMessage(final UUID nodeId, Object msg) {
+        @Override public void onMessage(final UUID nodeId, final Object msg) {
             if (log.isDebugEnabled())
                 log.debug("Received unordered cache communication message [nodeId=" + nodeId +
                     ", locId=" + cctx.localNodeId() + ", msg=" + msg + ']');
@@ -143,22 +143,19 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                 AffinityTopologyVersion rmtAffVer = cacheMsg.topologyVersion();
 
                 if (locAffVer.compareTo(rmtAffVer) < 0) {
-                    if (cacheMsg.txMessage()) {
-                        IgniteLogger log = cacheMsg.messageLogger(cctx);
+                    IgniteLogger log = cacheMsg.messageLogger(cctx);
 
-                        if (log.isDebugEnabled()) {
-                            log.debug("Received message has higher affinity topology version [" +
-                                "txId=" + txId(cacheMsg) +
-                                ", dhtTxId=" + dhtTxId(cacheMsg) +
-                                ", node=" + nodeId +
-                                ", locTopVer=" + locAffVer +
-                                ", rmtTopVer=" + rmtAffVer +
-                                ", msg=" + cacheMsg + ']');
-                        }
+                    if (log.isDebugEnabled()) {
+                        StringBuilder msg0 = new StringBuilder("Received message has higher affinity topology version [");
+
+                        appendMessageInfo(cacheMsg, nodeId, msg0);
+
+                        msg0.append(", locTopVer=").append(locAffVer).
+                            append(", rmtTopVer=").append(rmtAffVer).
+                            append(']');
+
+                        log.debug(msg0.toString());
                     }
-                    else if (log.isDebugEnabled())
-                        log.debug("Received message has higher affinity topology version [msg=" + msg +
-                            ", locTopVer=" + locAffVer + ", rmtTopVer=" + rmtAffVer + ']');
 
                     fut = cctx.exchange().affinityReadyFuture(rmtAffVer);
                 }
@@ -169,16 +166,15 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
                     @Override public void apply(IgniteInternalFuture<?> t) {
                         cctx.kernalContext().closure().runLocalSafe(new Runnable() {
                             @Override public void run() {
-                                if (cacheMsg.txMessage()) {
-                                    IgniteLogger log = cacheMsg.messageLogger(cctx);
+                                IgniteLogger log = cacheMsg.messageLogger(cctx);
 
-                                    if (log.isDebugEnabled()) {
-                                        log.debug("Process cache message after wait for affinity topology version [" +
-                                            "txId=" + txId(cacheMsg) +
-                                            ", dhtTxId=" + dhtTxId(cacheMsg) +
-                                            ", node=" + nodeId +
-                                            ", msg=" + cacheMsg + ']');
-                                    }
+                                if (log.isDebugEnabled()) {
+                                    StringBuilder msg0 = new StringBuilder("Process cache message after wait for " +
+                                        "affinity topology version [");
+
+                                    appendMessageInfo(cacheMsg, nodeId, msg0).append(']');
+
+                                    log.debug(msg0.toString());
                                 }
 
                                 handleMessage(nodeId, cacheMsg);
@@ -193,42 +189,6 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             handleMessage(nodeId, cacheMsg);
         }
     };
-
-    /**
-     * @param cacheMsg Cache message.
-     * @return Transaction ID if applicable for message.
-     */
-    @Nullable  private GridCacheVersion txId(GridCacheMessage cacheMsg) {
-        if (cacheMsg instanceof GridDhtTxPrepareRequest)
-            return ((GridDhtTxPrepareRequest)cacheMsg).nearXidVersion();
-        else if (cacheMsg instanceof GridNearTxPrepareRequest)
-            return ((GridNearTxPrepareRequest)cacheMsg).version();
-        else if (cacheMsg instanceof GridNearTxPrepareResponse)
-            return ((GridNearTxPrepareResponse)cacheMsg).version();
-        else if (cacheMsg instanceof GridNearTxFinishRequest)
-            return ((GridNearTxFinishRequest)cacheMsg).version();
-        else if (cacheMsg instanceof GridNearTxFinishResponse)
-            return ((GridNearTxFinishResponse)cacheMsg).xid();
-
-        return null;
-    }
-
-    /**
-     * @param cacheMsg Cache message.
-     * @return Transaction ID if applicable for message.
-     */
-    @Nullable  private GridCacheVersion dhtTxId(GridCacheMessage cacheMsg) {
-        if (cacheMsg instanceof GridDhtTxPrepareRequest)
-            return ((GridDhtTxPrepareRequest)cacheMsg).version();
-        else if (cacheMsg instanceof GridDhtTxPrepareResponse)
-            return ((GridDhtTxPrepareResponse)cacheMsg).version();
-        else if (cacheMsg instanceof GridDhtTxFinishRequest)
-            return ((GridDhtTxFinishRequest)cacheMsg).version();
-        else if (cacheMsg instanceof GridDhtTxFinishResponse)
-            return ((GridDhtTxFinishResponse)cacheMsg).xid();
-
-        return null;
-    }
 
     /**
      * @param nodeId Sender node ID.
@@ -251,31 +211,23 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             c = clsHandlers.get(new ListenerKey(cacheMsg.cacheId(), cacheMsg.getClass()));
 
         if (c == null) {
-            if (cctx.kernalContext().isStopping()) {
-                if (cacheMsg.txMessage()) {
-                    IgniteLogger log = cacheMsg.messageLogger(cctx);
+            IgniteLogger log = cacheMsg.messageLogger(cctx);
 
-                    if (log.isDebugEnabled()) {
-                        log.debug("Received message without registered handler (will ignore) [msg=" + cacheMsg +
-                            ", txId=" + txId(cacheMsg) +
-                            ", dhtTxId=" + dhtTxId(cacheMsg) +
-                            ", node=" + nodeId + ']');
-                    }
-                }
-                else if (log.isDebugEnabled()) {
-                    log.debug("Received message without registered handler (will ignore) [msg=" + cacheMsg +
-                        ", node=" + nodeId + ']');
-                }
+            StringBuilder msg0 = new StringBuilder("Received message without registered handler (will ignore) [");
+
+            appendMessageInfo(cacheMsg, nodeId, msg0);
+
+            msg0.append(", locTopVer=").append(cctx.exchange().readyAffinityVersion()).
+                append(", msgTopVer=").append(cacheMsg.topologyVersion()).
+                append(", cacheDesc=").append(cctx.cache().cacheDescriptor(cacheMsg.cacheId())).
+                append(']');
+
+            if (cctx.kernalContext().isStopping()) {
+                if (log.isDebugEnabled())
+                    log.debug(msg0.toString());
             }
-            else {
-                U.warn(log, "Received message without registered handler (will ignore) [txId=" + txId(cacheMsg) +
-                    ", msg=" + cacheMsg +
-                    ", dhtTxId=" + dhtTxId(cacheMsg) +
-                    ", node=" + nodeId +
-                    ", locTopVer=" + cctx.exchange().readyAffinityVersion() +
-                    ", msgTopVer=" + cacheMsg.topologyVersion() +
-                    ", cacheDesc=" + cctx.cache().cacheDescriptor(cacheMsg.cacheId()) + ']');
-            }
+            else
+                U.warn(log, msg0.toString());
 
             return;
         }
@@ -389,6 +341,99 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
             U.error(log, "Failed to send response to node (is node still alive?) [nodeId=" + nodeId +
                 ",res=" + res + ']', e);
         }
+    }
+
+
+    /**
+     * @param cacheMsg Cache message.
+     * @param nodeId Node ID.
+     * @param builder Message builder.
+     * @return Message builder.
+     */
+    private StringBuilder appendMessageInfo(GridCacheMessage cacheMsg, UUID nodeId, StringBuilder builder) {
+        if (txId(cacheMsg) != null) {
+            builder.append("txId=").append(txId(cacheMsg)).
+                append(", dhtTxId=").append(dhtTxId(cacheMsg)).
+                append(", msg=").append(cacheMsg);
+        }
+        else if (atomicFututeId(cacheMsg) != null) {
+            builder.append("futId=").append(atomicFututeId(cacheMsg)).
+                append(", writeVer=").append(atomicWriteVersion(cacheMsg)).
+                append(", msg=").append(cacheMsg);
+        }
+        else
+            builder.append("msg=").append(cacheMsg);
+
+        builder.append(", node=").append(nodeId);
+
+        return builder;
+    }
+
+    /**
+     * @param cacheMsg Cache message.
+     * @return Transaction ID if applicable for message.
+     */
+    @Nullable private GridCacheVersion txId(GridCacheMessage cacheMsg) {
+        if (cacheMsg instanceof GridDhtTxPrepareRequest)
+            return ((GridDhtTxPrepareRequest)cacheMsg).nearXidVersion();
+        else if (cacheMsg instanceof GridNearTxPrepareRequest)
+            return ((GridNearTxPrepareRequest)cacheMsg).version();
+        else if (cacheMsg instanceof GridNearTxPrepareResponse)
+            return ((GridNearTxPrepareResponse)cacheMsg).version();
+        else if (cacheMsg instanceof GridNearTxFinishRequest)
+            return ((GridNearTxFinishRequest)cacheMsg).version();
+        else if (cacheMsg instanceof GridNearTxFinishResponse)
+            return ((GridNearTxFinishResponse)cacheMsg).xid();
+
+        return null;
+    }
+
+    /**
+     * @param cacheMsg Cache message.
+     * @return Transaction ID if applicable for message.
+     */
+    @Nullable private GridCacheVersion dhtTxId(GridCacheMessage cacheMsg) {
+        if (cacheMsg instanceof GridDhtTxPrepareRequest)
+            return ((GridDhtTxPrepareRequest)cacheMsg).version();
+        else if (cacheMsg instanceof GridDhtTxPrepareResponse)
+            return ((GridDhtTxPrepareResponse)cacheMsg).version();
+        else if (cacheMsg instanceof GridDhtTxFinishRequest)
+            return ((GridDhtTxFinishRequest)cacheMsg).version();
+        else if (cacheMsg instanceof GridDhtTxFinishResponse)
+            return ((GridDhtTxFinishResponse)cacheMsg).xid();
+
+        return null;
+    }
+
+    /**
+     * @param cacheMsg Cache message.
+     * @return Atomic future ID if applicable for message.
+     */
+    @Nullable private GridCacheVersion atomicFututeId(GridCacheMessage cacheMsg) {
+        if (cacheMsg instanceof GridNearAtomicUpdateRequest)
+            return ((GridNearAtomicUpdateRequest)cacheMsg).futureVersion();
+        else if (cacheMsg instanceof GridNearAtomicUpdateResponse)
+            return ((GridNearAtomicUpdateResponse) cacheMsg).futureVersion();
+        else if (cacheMsg instanceof GridDhtAtomicUpdateRequest)
+            return ((GridDhtAtomicUpdateRequest)cacheMsg).futureVersion();
+        else if (cacheMsg instanceof GridDhtAtomicUpdateResponse)
+            return ((GridDhtAtomicUpdateResponse) cacheMsg).futureVersion();
+
+        return null;
+    }
+
+
+    /**
+     * @param cacheMsg Cache message.
+     * @return Atomic future ID if applicable for message.
+     */
+    @Nullable private GridCacheVersion atomicWriteVersion(GridCacheMessage cacheMsg) {
+        if (cacheMsg instanceof GridNearAtomicUpdateRequest)
+            return ((GridNearAtomicUpdateRequest)cacheMsg).updateVersion();
+        else if (cacheMsg instanceof GridDhtAtomicUpdateRequest)
+            return ((GridDhtAtomicUpdateRequest)cacheMsg).writeVersion();
+
+        return null;
     }
 
     /**

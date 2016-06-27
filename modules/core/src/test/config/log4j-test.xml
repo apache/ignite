@@ -97,7 +97,7 @@
     -->
 
     <!--
-    <category name="org.apache.ignite.cache.tx.msg">
+    <category name="org.apache.ignite.cache.msg">
         <level value="DEBUG"/>
     </category>
     -->

@@ -129,7 +129,13 @@ public class GridCacheUtils {
     public static final String MARSH_CACHE_NAME = "ignite-marshaller-sys-cache";
 
     /** */
-    public static final String TX_MSG_LOG_CATEGORY = "org.apache.ignite.cache.tx.msg";
+    public static final String CACHE_MSG_LOG_CATEGORY = "org.apache.ignite.cache.msg";
+
+    /** */
+    public static final String ATOMIC_MSG_LOG_CATEGORY = CACHE_MSG_LOG_CATEGORY + ".atomic";
+
+    /** */
+    public static final String TX_MSG_LOG_CATEGORY = CACHE_MSG_LOG_CATEGORY + ".tx";
 
     /** */
     public static final String TX_MSG_PREPARE_LOG_CATEGORY = TX_MSG_LOG_CATEGORY + ".prepare";

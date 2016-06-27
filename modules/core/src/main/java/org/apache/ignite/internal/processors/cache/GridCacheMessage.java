@@ -615,18 +615,11 @@ public abstract class GridCacheMessage implements Message {
     }
 
     /**
-     * @return {@code True} if this is transaction message.
-     */
-    public boolean txMessage() {
-        return false;
-    }
-
-    /**
      * @param ctx Context.
      * @return Logger.
      */
     public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
-        return ctx.txMessageLogger();
+        return ctx.messageLogger();
     }
 
     /** {@inheritDoc} */

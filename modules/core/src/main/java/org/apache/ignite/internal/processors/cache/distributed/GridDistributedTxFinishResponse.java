@@ -82,11 +82,6 @@ public class GridDistributedTxFinishResponse extends GridCacheMessage {
     }
 
     /** {@inheritDoc} */
-    @Override public boolean txMessage() {
-        return true;
-    }
-
-    /** {@inheritDoc} */
     @Override public IgniteLogger messageLogger(GridCacheSharedContext ctx) {
         return ctx.txFinishMessageLogger();
     }

@@ -103,8 +103,8 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                 f.onResult(res);
             }
             else {
-                if (txMsgLog.isDebugEnabled()) {
-                    txMsgLog.debug("Near pessimistic prepare, failed to find mini future [txId=" + tx.nearXidVersion() +
+                if (msgLog.isDebugEnabled()) {
+                    msgLog.debug("Near pessimistic prepare, failed to find mini future [txId=" + tx.nearXidVersion() +
                         ", node=" + nodeId +
                         ", res=" + res +
                         ", fut=" + this + ']');
@@ -112,8 +112,8 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
             }
         }
         else {
-            if (txMsgLog.isDebugEnabled()) {
-                txMsgLog.debug("Near pessimistic prepare, response for finished future [txId=" + tx.nearXidVersion() +
+            if (msgLog.isDebugEnabled()) {
+                msgLog.debug("Near pessimistic prepare, response for finished future [txId=" + tx.nearXidVersion() +
                     ", node=" + nodeId +
                     ", res=" + res +
                     ", fut=" + this + ']');
@@ -272,8 +272,8 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                 try {
                     cctx.io().send(node, req, tx.ioPolicy());
 
-                    if (txMsgLog.isDebugEnabled()) {
-                        txMsgLog.debug("Near pessimistic prepare, sent request [txId=" + tx.nearXidVersion() +
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("Near pessimistic prepare, sent request [txId=" + tx.nearXidVersion() +
                             ", node=" + node.id() + ']');
                     }
                 }
@@ -283,8 +283,8 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                     fut.onNodeLeft(e);
                 }
                 catch (IgniteCheckedException e) {
-                    if (txMsgLog.isDebugEnabled()) {
-                        txMsgLog.debug("Near pessimistic prepare, failed send request [txId=" + tx.nearXidVersion() +
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("Near pessimistic prepare, failed send request [txId=" + tx.nearXidVersion() +
                             ", node=" + node.id() + ", err=" + e + ']');
                     }
 
@@ -386,8 +386,8 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
          * @param e Error.
          */
         void onNodeLeft(ClusterTopologyCheckedException e) {
-            if (txMsgLog.isDebugEnabled()) {
-                txMsgLog.debug("Near pessimistic prepare, mini future node left [txId=" + tx.nearXidVersion() +
+            if (msgLog.isDebugEnabled()) {
+                msgLog.debug("Near pessimistic prepare, mini future node left [txId=" + tx.nearXidVersion() +
                     ", nodeId=" + m.node().id() + ']');
             }
 

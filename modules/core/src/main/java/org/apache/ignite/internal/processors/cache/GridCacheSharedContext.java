@@ -106,7 +106,10 @@ public class GridCacheSharedContext<K, V> {
     private final boolean locStorePrimaryOnly = IgniteSystemProperties.getBoolean(IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY);
 
     /** */
-    private final IgniteLogger txMsgLog;
+    private final IgniteLogger msgLog;
+
+    /** */
+    private final IgniteLogger atomicMsgLog;
 
     /** */
     private final IgniteLogger txPrepareMsgLog;
@@ -154,7 +157,8 @@ public class GridCacheSharedContext<K, V> {
 
         locStoreCnt = new AtomicInteger();
 
-        txMsgLog = kernalCtx.log(CU.TX_MSG_LOG_CATEGORY);
+        msgLog = kernalCtx.log(CU.CACHE_MSG_LOG_CATEGORY);
+        atomicMsgLog = kernalCtx.log(CU.ATOMIC_MSG_LOG_CATEGORY);
         txPrepareMsgLog = kernalCtx.log(CU.TX_MSG_PREPARE_LOG_CATEGORY);
         txFinishMsgLog = kernalCtx.log(CU.TX_MSG_FINISH_LOG_CATEGORY);
         txLockMsgLog = kernalCtx.log(CU.TX_MSG_LOCK_LOG_CATEGORY);
@@ -164,8 +168,15 @@ public class GridCacheSharedContext<K, V> {
     /**
      * @return Logger.
      */
-    public IgniteLogger txMessageLogger() {
-        return txMsgLog;
+    public IgniteLogger messageLogger() {
+        return msgLog;
+    }
+
+    /**
+     * @return Logger.
+     */
+    public IgniteLogger atomicMessageLogger() {
+        return atomicMsgLog;
     }
 
     /**

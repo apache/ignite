@@ -70,7 +70,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
     protected static IgniteLogger log;
 
     /** Logger. */
-    protected static IgniteLogger txMsgLog;
+    protected static IgniteLogger msgLog;
 
     /** Context. */
     protected GridCacheSharedContext<?, ?> cctx;
@@ -109,7 +109,7 @@ public abstract class GridNearTxPrepareFutureAdapter extends
         futId = IgniteUuid.randomUuid();
 
         if (log == null) {
-            txMsgLog = cctx.txFinishMessageLogger();
+            msgLog = cctx.txFinishMessageLogger();
             log = U.logger(cctx.kernalContext(), logRef, GridNearTxPrepareFutureAdapter.class);
         }
     }

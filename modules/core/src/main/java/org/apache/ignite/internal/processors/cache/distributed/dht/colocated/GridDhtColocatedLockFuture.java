@@ -93,7 +93,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
     private static IgniteLogger log;
 
     /** Logger. */
-    private static IgniteLogger txMsgLog;
+    private static IgniteLogger msgLog;
 
     /** Cache registry. */
     @GridToStringExclude
@@ -202,7 +202,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         futId = IgniteUuid.randomUuid();
 
         if (log == null) {
-            txMsgLog = cctx.shared().txLockMessageLogger();
+            msgLog = cctx.shared().txLockMessageLogger();
             log = U.logger(cctx.kernalContext(), logRef, GridDhtColocatedLockFuture.class);
         }
 
@@ -438,15 +438,15 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                 return;
             }
 
-            U.warn(txMsgLog, "Collocated lock fut, failed to find mini future [txId=" + lockVer +
+            U.warn(msgLog, "Collocated lock fut, failed to find mini future [txId=" + lockVer +
                 ", inTx=" + inTx() +
                 ", node=" + nodeId +
                 ", res=" + res +
                 ", fut=" + this + ']');
         }
         else {
-            if (txMsgLog.isDebugEnabled()) {
-                txMsgLog.debug("Collocated lock fut, response for finished future [txId=" + lockVer +
+            if (msgLog.isDebugEnabled()) {
+                msgLog.debug("Collocated lock fut, response for finished future [txId=" + lockVer +
                     ", inTx=" + inTx() +
                     ", node=" + nodeId + ']');
             }
@@ -1058,8 +1058,8 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                 try {
                     cctx.io().send(node, req, cctx.ioPolicy());
 
-                    if (txMsgLog.isDebugEnabled()) {
-                        txMsgLog.debug("Collocated lock fut, sent request [txId=" + lockVer +
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("Collocated lock fut, sent request [txId=" + lockVer +
                             ", inTx=" + inTx() +
                             ", node=" + node.id() + ']');
                     }
@@ -1076,8 +1076,8 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                         try {
                             cctx.io().send(node, req, cctx.ioPolicy());
 
-                            if (txMsgLog.isDebugEnabled()) {
-                                txMsgLog.debug("Collocated lock fut, sent request [txId=" + lockVer +
+                            if (msgLog.isDebugEnabled()) {
+                                msgLog.debug("Collocated lock fut, sent request [txId=" + lockVer +
                                     ", inTx=" + inTx() +
                                     ", node=" + node.id() + ']');
                             }
@@ -1088,8 +1088,8 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                             fut.onResult(ex);
                         }
                         catch (IgniteCheckedException e) {
-                            if (txMsgLog.isDebugEnabled()) {
-                                txMsgLog.debug("Collocated lock fut, failed to send request [txId=" + lockVer +
+                            if (msgLog.isDebugEnabled()) {
+                                msgLog.debug("Collocated lock fut, failed to send request [txId=" + lockVer +
                                     ", inTx=" + inTx() +
                                     ", node=" + node.id() +
                                     ", err=" + e + ']');
@@ -1431,8 +1431,8 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
          * @param e Node left exception.
          */
         void onResult(ClusterTopologyCheckedException e) {
-            if (txMsgLog.isDebugEnabled()) {
-                txMsgLog.debug("Collocated lock fut, mini future node left [txId=" + lockVer +
+            if (msgLog.isDebugEnabled()) {
+                msgLog.debug("Collocated lock fut, mini future node left [txId=" + lockVer +
                     ", inTx=" + inTx() +
                     ", nodeId=" + node.id() + ']');
             }
