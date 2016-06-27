@@ -55,10 +55,10 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         Justification = "This class instance usually lives as long as the app runs.")]
     internal unsafe class UnmanagedCallbacks
     {
-        /** Console write delegate */
+        /** Console write delegate. */
         private static readonly ConsoleWriteDelegate ConsoleWriteDel = ConsoleWrite;
 
-        /** Console write pointer */
+        /** Console write pointer. */
         private static readonly void* ConsoleWritePtr = 
             Marshal.GetFunctionPointerForDelegate(ConsoleWriteDel).ToPointer();
 
