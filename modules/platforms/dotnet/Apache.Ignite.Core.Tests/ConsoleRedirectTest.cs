@@ -29,7 +29,10 @@ namespace Apache.Ignite.Core.Tests
     /// </summary>
     public class ConsoleRedirectTest
     {
+        /** */
         private StringBuilder _outSb;
+
+        /** */
         private StringBuilder _errSb;
 
         [SetUp]
@@ -71,6 +74,16 @@ namespace Apache.Ignite.Core.Tests
                 }));
 
             Assert.IsTrue(_errSb.ToString().Contains("SPI parameter failed condition check: idleConnTimeout > 0"));
+        }
+
+        /// <summary>
+        /// Tests the JVM shutdown.
+        /// </summary>
+        [Test]
+        public void TestJvmShutdown()
+        {
+            // TODO: Test that there is no crash on shutdown (see DESTROY_JVM etc).
+            // Use a separate process.
         }
     }
 }
