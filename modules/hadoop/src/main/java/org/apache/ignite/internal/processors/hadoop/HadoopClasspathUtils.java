@@ -48,7 +48,7 @@ public class HadoopClasspathUtils {
                     res.add(file.getAbsolutePath());
             }
             else
-                res.add(dir.dir.getAbsolutePath() + File.separator + '*');
+                res.add(dir.absolutePath() + File.separator + '*');
         }
 
         return res;
@@ -237,7 +237,7 @@ public class HadoopClasspathUtils {
      * @param path The directory path.
      * @return {@code True} if the given path denotes an existing directory.
      */
-    static boolean directoryExists(String path) {
+    private static boolean directoryExists(String path) {
         if (path == null)
             return false;
 
@@ -249,7 +249,7 @@ public class HadoopClasspathUtils {
     /**
      * Simple pair-like structure to hold directory name and a mask assigned to it.
      */
-    public static class SearchDirectory {
+    private static class SearchDirectory {
         /** File. */
         private final File dir;
 
@@ -268,6 +268,13 @@ public class HadoopClasspathUtils {
 
             if (!directoryExists(dir.getAbsolutePath()))
                 throw new IOException("Directory cannot be read: " + dir.getAbsolutePath());
+        }
+
+        /**
+         * @return Absolute path.
+         */
+        private String absolutePath() {
+            return dir.getAbsolutePath();
         }
 
         /**
