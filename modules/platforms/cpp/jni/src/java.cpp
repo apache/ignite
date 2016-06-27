@@ -439,6 +439,7 @@ namespace ignite
             gcc::CriticalSection JVM_LOCK;
             JniJvm JVM;
             bool PRINT_EXCEPTION = false;
+            ConsoleWriteHandler consoleWrite;
 
             /* HELPER METHODS. */
 
@@ -2870,12 +2871,16 @@ namespace ignite
             }
 
             JNIEXPORT void JNICALL JniConsoleWrite(JNIEnv *env, jclass cls, jstring str, jboolean isErr) {
-                // TODO: call static method in C#
-                /*
-                JniHandlers* hnds = reinterpret_cast<JniHandlers*>(envPtr); 
-                AffinityFunctionDestroyHandler hnd = hnds->affinityFunctionDestroy; 
-                if (hnd) 
-                    hnd(hnds->target, ptr); else ThrowOnMissingHandler(env);*/
+                if (consoleWrite) {
+                    const char* strChars = env->GetStringUTFChars(str, nullptr);
+                    const int strCharsLen = env->GetStringUTFLength(str);
+                    
+                    consoleWrite(strChars, strCharsLen, isErr);
+
+                    env->ReleaseStringUTFChars(str, strChars);
+                }
+                else
+                    ThrowOnMissingHandler(env);
             }
         }
     }

@@ -105,6 +105,8 @@ namespace ignite
             typedef void(JNICALL *AffinityFunctionAssignPartitionsHandler)(void* target, long long ptr, long long inMemPtr, long long outMemPtr);
             typedef void(JNICALL *AffinityFunctionRemoveNodeHandler)(void* target, long long ptr, long long memPtr);
             typedef void(JNICALL *AffinityFunctionDestroyHandler)(void* target, long long ptr);
+            
+            typedef void(JNICALL *ConsoleWriteHandler)(const char* chars, int charsLen, unsigned char isErr);
 
             /**
              * JNI handlers holder.
