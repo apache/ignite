@@ -27,35 +27,99 @@ module.exports = {
         'errors']
 };
 
-module.exports.factory = function (_, express, mongo, errors) {
-    const save = (cache) => {
-        return mongo.Cache.findOne({space: cache.space, name: cache.name}).exec()
-            .then((existingCache) => {
-                const cacheId = cache._id;
+module.exports.factory = (_, express, mongo, errors) => {
 
-                if (existingCache && cacheId !== existingCache._id.toString())
-                    throw new errors.DuplicateKeyException('Cache with name: "' + existingCache.name + '" already exist.');
+    class CacheService {
+                
+        static update(cache) {
+            const cacheId = cache._id;
 
-                if (cacheId) {
-                    return mongo.Cache.update({_id: cacheId}, cache, {upsert: true}).exec()
-                        .then(() => mongo.Cluster.update({_id: {$in: cache.clusters}}, {$addToSet: {caches: cacheId}}, {multi: true}).exec())
-                        .then(() => mongo.Cluster.update({_id: {$nin: cache.clusters}}, {$pull: {caches: cacheId}}, {multi: true}).exec())
-                        .then(() => mongo.DomainModel.update({_id: {$in: cache.domains}}, {$addToSet: {caches: cacheId}}, {multi: true}).exec())
-                        .then(() => mongo.DomainModel.update({_id: {$nin: cache.domains}}, {$pull: {caches: cacheId}}, {multi: true}).exec())
-                        .then(() => cacheId);
-                }
+            return mongo.Cache.update({_id: cacheId}, cache, {upsert: true}).exec()
+                .then(() => mongo.Cluster.update({_id: {$in: cache.clusters}}, {$addToSet: {caches: cacheId}}, {multi: true}).exec())
+                .then(() => mongo.Cluster.update({_id: {$nin: cache.clusters}}, {$pull: {caches: cacheId}}, {multi: true}).exec())
+                .then(() => mongo.DomainModel.update({_id: {$in: cache.domains}}, {$addToSet: {caches: cacheId}}, {multi: true}).exec())
+                .then(() => mongo.DomainModel.update({_id: {$nin: cache.domains}}, {$pull: {caches: cacheId}}, {multi: true}).exec())
+                .then(() => cacheId);
+        }
 
-                // TODO: Replace to mongo.Cache.create()
-                return (new mongo.Cache(cache)).save()
-                    .then((cache) =>
-                        mongo.Cluster.update({_id: {$in: cache.clusters}}, {$addToSet: {caches: cache._id}}, {multi: true}).exec()
-                            .then(() => mongo.DomainModel.update({_id: {$in: cache.domains}}, {$addToSet: {caches: cache._id}}, {multi: true}).exec())
-                            .then(() => cache._id)
-                    );
-            });
-    };
+        static create(cache) {
+            // TODO: Replace to mongo.Cache.create()
+            return (new mongo.Cache(cache)).save()
+                .then((cache) =>
+                    mongo.Cluster.update({_id: {$in: cache.clusters}}, {$addToSet: {caches: cache._id}}, {multi: true}).exec()
+                        .then(() => mongo.DomainModel.update({_id: {$in: cache.domains}}, {$addToSet: {caches: cache._id}}, {multi: true}).exec())
+                        .then(() => cache._id)
+                )
+        }
 
-    return {
-        save
-    };
+        static merge(cache) {
+            return this.loadByName(cache)
+                .then((existingCache) => {
+                    const cacheId = cache._id;
+
+                    if (existingCache && cacheId !== existingCache._id.toString())
+                        throw new errors.DuplicateKeyException('Cache with name: "' + existingCache.name + '" already exist.');
+
+                    if (cacheId) {
+                        return this.update(cache);
+                    }
+
+                    return this.create(cache);
+                });
+        }
+
+        static loadByName(cache) {
+            return mongo.Cache.findOne({space: cache.space, name: cache.name}).exec();
+        };
+
+        static listByUser(userId, demo) {
+            const result = {};
+            let spaceIds = [];
+
+            // Get owned space and all accessed space.
+            return mongo.spaces(userId, demo)
+                .then((spaces) => {
+                    result.spaces = spaces;
+                    spaceIds = spaces.map((space) => space._id);
+
+                    return mongo.Cluster.find({space: {$in: spaceIds}}).sort('name').lean().exec();
+                })
+                .then((clusters) => {
+                    result.clusters = clusters;
+
+                    return mongo.DomainModel.find({space: {$in: spaceIds}}).sort('name').lean().exec();
+                })
+                .then((domains) => {
+                    result.domains = domains;
+
+                    return mongo.Cache.find({space: {$in: spaceIds}}).sort('name').lean().exec();
+                })
+                .then((caches) => {
+                    result.caches = caches;
+
+                    return result;
+                })
+        }
+
+        static remove(cache) {
+            const cacheId = cache._id;
+
+            return mongo.Cluster.update({caches: {$in: [cacheId]}}, {$pull: {caches: cacheId}}, {multi: true}).exec()
+                .then(() => mongo.DomainModel.update({caches: {$in: [cacheId]}}, {$pull: {caches: cacheId}}, {multi: true}).exec())
+                .then(() => mongo.Cache.remove(cache).exec())
+                .then(() => ({}))
+        };
+
+        static removeAll(user, demo) {
+            return mongo.spaceIds(user, demo)
+                .then((spaceIds) =>
+                    mongo.Cluster.update({space: {$in: spaceIds}}, {caches: []}, {multi: true}).exec()
+                        .then(() => mongo.DomainModel.update({space: {$in: spaceIds}}, {caches: []}, {multi: true}).exec())
+                        .then(() => mongo.Cache.remove({space: {$in: spaceIds}}).exec())
+                        .then(() => ({}))
+                );
+        };
+    }
+
+    return CacheService;
 };

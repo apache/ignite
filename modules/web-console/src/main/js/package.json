@@ -7,8 +7,8 @@
     "dev": "cross-env NODE_ENV=development gulp watch",
     "build": "cross-env NODE_ENV=production gulp build",
     "test": "karma start karma.conf.js",
-    "ci-test-backend": "cross-env NODE_ENV=test mocha -u tdd --require babel-core/register --reporter mocha-teamcity-reporter --recursive ./test/backend/unit",
-    "test-backend": "cross-env NODE_ENV=test mocha -u tdd --require babel-core/register  --recursive ./test/backend/unit"
+    "ci-test-backend": "cross-env NODE_ENV=test CONFIG_PATH='./test/backend/config/settings.json' mocha -u tdd --require babel-core/register --reporter mocha-teamcity-reporter --recursive ./test/backend/unit",
+    "test-backend": "cross-env NODE_ENV=test CONFIG_PATH='./test/backend/config/settings.json' mocha -u tdd --require babel-core/register  --recursive ./test/backend/unit"
   },
   "author": "",
   "contributors": [

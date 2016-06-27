@@ -29,16 +29,17 @@ suite('CacheService', () => {
                 mongo = _mongo;
                 cacheService = _cacheService;
                 errors = _errors;
-            })
-            .then(() => {
-                return Promise.all([
-                    mongo.Cache.remove().exec()
-                ])
             });
     });
 
-    test('Cache save', (done) => {
-        return cacheService.save(testCaches[0])
+    setup(() => {
+        return Promise.all([
+            mongo.Cache.remove().exec()
+        ]);
+    });
+
+    test('Cache merge', (done) => {
+        return cacheService.merge(testCaches[0])
             .then((cacheId)=> {
                 assert.isNotNull(cacheId);
 
@@ -55,12 +56,46 @@ suite('CacheService', () => {
     });
 
     test('double save same cache', (done) => {
-        return cacheService.save(testCaches[0])
-            .then(() => cacheService.save(testCaches[0]))
+        return cacheService.merge(testCaches[0])
+            .then(() => cacheService.merge(testCaches[0]))
             .catch((err) => {
                 assert.instanceOf(err, errors.DuplicateKeyException);
 
                 done()
             })
     });
+
+    test('Remove cache', (done)=> {
+        return cacheService.merge(testCaches[0])
+            .then((cacheId)=> {
+
+                assert.isNotNull(cacheId);
+
+                return mongo.Cache.findById(cacheId)
+                    .then((cache)=> {
+                        assert.isNotNull(cache);
+
+                        return cache;
+                    })
+                    .then(cacheService.remove)
+                    .then(() => {
+                        return mongo.Cache.findById(cacheId)
+                            .then((notFoundCache) => {
+                                assert.isNull(notFoundCache);
+                            })
+                    })
+            })
+            .then(done)
+            .catch(done);
+    });
+
+    test('Remove all caches for user', (done) => {
+        return Promise.all([cacheService.merge(testCaches[0]), cacheService.merge(testCaches[1])])
+            .then((results) => {
+
+            })
+            .then(done)
+            .catch(done);
+    });
+
 });

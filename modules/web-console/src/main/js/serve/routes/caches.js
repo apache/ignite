@@ -35,33 +35,9 @@ module.exports.factory = function(_, express, mongo, cacheService) {
          * @param res Response.
          */
         router.post('/list', (req, res) => {
-            const result = {};
-            let spaceIds = [];
-
-            // Get owned space and all accessed space.
-            mongo.spaces(req.currentUserId(), req.header('IgniteDemoMode'))
-                .then((spaces) => {
-                    result.spaces = spaces;
-                    spaceIds = spaces.map((space) => space._id);
-
-                    return mongo.Cluster.find({space: {$in: spaceIds}}).sort('name').lean().exec();
-                })
-                .then((clusters) => {
-                    result.clusters = clusters;
-
-                    return mongo.DomainModel.find({space: {$in: spaceIds}}).sort('name').lean().exec();
-                })
-                .then((domains) => {
-                    result.domains = domains;
-
-                    return mongo.Cache.find({space: {$in: spaceIds}}).sort('name').lean().exec();
-                })
-                .then((caches) => {
-                    result.caches = caches;
-
-                    res.json(result);
-                })
-                .catch((err) => mongo.handleError(res, err));
+            cacheService.listByUser(req.currentUserId(), req.header('IgniteDemoMode'))
+                .then(res.api.ok)
+                .catch(req.api.error);
         });
 
         /**
@@ -70,7 +46,7 @@ module.exports.factory = function(_, express, mongo, cacheService) {
         router.post('/save', (req, res) => {
             const cache = req.body;
 
-            cacheService.save(cache)
+            cacheService.merge(cache)
                 .then(res.api.ok)
                 .catch(res.api.error);
         });
@@ -79,28 +55,20 @@ module.exports.factory = function(_, express, mongo, cacheService) {
          * Remove cache by ._id.
          */
         router.post('/remove', (req, res) => {
-            const params = req.body;
-            const cacheId = params._id;
+            const cache = req.body;
 
-            mongo.Cluster.update({caches: {$in: [cacheId]}}, {$pull: {caches: cacheId}}, {multi: true}).exec()
-                .then(() => mongo.DomainModel.update({caches: {$in: [cacheId]}}, {$pull: {caches: cacheId}}, {multi: true}).exec())
-                .then(() => mongo.Cache.remove(params).exec())
-                .then(() => res.sendStatus(200))
-                .catch((err) => mongo.handleError(res, err));
+            cacheService.remove(cache)
+                .then(res.api.ok)
+                .catch(res.api.error);
         });
 
         /**
          * Remove all caches.
          */
         router.post('/remove/all', (req, res) => {
-            mongo.spaceIds(req.currentUserId(), req.header('IgniteDemoMode'))
-                .then((spaceIds) =>
-                    mongo.Cluster.update({space: {$in: spaceIds}}, {caches: []}, {multi: true}).exec()
-                        .then(() => mongo.DomainModel.update({space: {$in: spaceIds}}, {caches: []}, {multi: true}).exec())
-                        .then(() => mongo.Cache.remove({space: {$in: spaceIds}}).exec())
-                )
-                .then(() => res.sendStatus(200))
-                .catch((err) => mongo.handleError(res, err));
+            cacheService.removeAll(req.currentUserId(), req.header('IgniteDemoMode'))
+                .then(res.api.ok)
+                .catch(res.api.error);
         });
 
         factoryResolve(router);
