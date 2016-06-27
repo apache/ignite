@@ -47,10 +47,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         {
             var cache = Grid.GetCache<int, int>("cache1");
 
-            var aff = (TestFunc) cache.GetConfiguration().AffinityFunction;
+            var func = (TestFunc) cache.GetConfiguration().AffinityFunction;
 
-            Assert.AreEqual(1, aff.Property1);
-            Assert.AreEqual("1", aff.Property2);
+            Assert.AreEqual(1, func.Property1);
+            Assert.AreEqual("1", func.Property2);
+
+            var aff = Grid.GetAffinity(cache.Name);
+            Assert.AreEqual(func.Partitions, aff.Partitions);
         }
 
         [Serializable]
