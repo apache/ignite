@@ -60,6 +60,7 @@
     <Compile Include="Binary\BinarySelfTestFullFooter.cs" />
     <Compile Include="Binary\BinaryStringTest.cs" />
     <Compile Include="Cache\Affinity\AffinityFieldTest.cs" />
+    <Compile Include="Cache\Affinity\AffinityFunctionSpringTest.cs" />
     <Compile Include="Cache\Affinity\AffinityFunctionTest.cs" />
     <Compile Include="Cache\CacheConfigurationTest.cs" />
     <Compile Include="Cache\CacheDynamicStartTest.cs" />
@@ -207,6 +208,9 @@
     <Content Include="Config\cache-query.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <SubType>Designer</SubType>
+    </Content>
+    <Content Include="Config\Cache\Affinity\affinity-function.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Config\Cache\Store\cache-store-session.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
