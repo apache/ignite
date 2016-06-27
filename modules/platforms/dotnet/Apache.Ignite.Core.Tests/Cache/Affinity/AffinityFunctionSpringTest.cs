@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+// ReSharper disable UnusedAutoPropertyAccessor.Local
 namespace Apache.Ignite.Core.Tests.Cache.Affinity
 {
     using System;
@@ -48,15 +49,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
             var aff = (TestFunc) cache.GetConfiguration().AffinityFunction;
 
-            Assert.IsNotNull(aff.Ignite);
             Assert.AreEqual(1, aff.Property1);
             Assert.AreEqual("1", aff.Property2);
         }
 
+        [Serializable]
         private class TestFunc : IAffinityFunction
         {
             [InstanceResource]
-            public IIgnite Ignite { get; set; }
+            private readonly IIgnite _ignite = null;
 
             public int Property1 { get; set; }
 
@@ -69,6 +70,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
             public int GetPartition(object key)
             {
+                Assert.IsNotNull(_ignite);
+
                 return 1;
             }
 

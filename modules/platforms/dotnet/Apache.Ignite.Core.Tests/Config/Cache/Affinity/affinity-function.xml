@@ -33,12 +33,8 @@
             <list>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="cache1"/>
-                    <property name="cacheMode" value="LOCAL"/>
-                    <property name="atomicityMode" value="TRANSACTIONAL"/>
-                    <property name="writeThrough" value="true"/>
-                    <property name="readThrough" value="true"/>
 
-                    <property name="affinityFunction">
+                    <property name="affinity">
                         <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetAffinityFunction">
                             <property name="typeName" value="Apache.Ignite.Core.Tests.Cache.Affinity.AffinityFunctionSpringTest+TestFunc, Apache.Ignite.Core.Tests"/>
                             <property name="properties">
