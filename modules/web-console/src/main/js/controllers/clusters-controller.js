@@ -513,6 +513,20 @@ consoleModule.controller('clustersController', [
                         $scope.clusters.push(item);
                     }
 
+                    _.forEach($scope.caches, (cache) => {
+                        if (_.includes(item.caches, cache.value))
+                            cache.cache.clusters = _.union(cache.cache.clusters, [_id]);
+                        else
+                            _.remove(cache.cache.clusters, (id) => id === _id);
+                    });
+
+                    _.forEach($scope.igfss, (igfs) => {
+                        if (_.includes(item.igfss, igfs.value))
+                            igfs.igfs.clusters = _.union(igfs.igfs.clusters, [_id]);
+                        else
+                            _.remove(igfs.igfs.clusters, (id) => id === _id);
+                    });
+
                     $scope.selectItem(item);
 
                     $common.showInfo('Cluster "' + item.name + '" saved.');
@@ -576,6 +590,9 @@ consoleModule.controller('clustersController', [
                                     $scope.backupItem = emptyCluster;
                                     $scope.ui.inputForm.$setPristine();
                                 }
+
+                                _.forEach($scope.caches, (cache) => _.remove(cache.cache.clusters, (id) => id === _id));
+                                _.forEach($scope.igfss, (igfs) => _.remove(igfs.igfs.clusters, (id) => id === _id));
                             }
                         })
                         .error(function(errMsg) {
@@ -593,6 +610,10 @@ consoleModule.controller('clustersController', [
                             $common.showInfo('All clusters have been removed');
 
                             $scope.clusters = [];
+
+                            _.forEach($scope.caches, (cache) => cache.cache.clusters = []);
+                            _.forEach($scope.igfss, (igfs) => igfs.igfs.clusters = []);
+
                             $scope.backupItem = emptyCluster;
                             $scope.ui.inputForm.$setPristine();
                         })

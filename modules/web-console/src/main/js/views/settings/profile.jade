@@ -28,19 +28,19 @@ mixin lbl(txt)
                     .details-row
                         +lbl('First name:')
                         .col-xs-5.col-sm-4
-                            input#profile-firstname.form-control(type='text' ng-model='user.firstName' placeholder='Input first name' required auto-focus)
+                            input#profile-firstname.form-control(enter-focus-next='profile-lastname' type='text' ng-model='user.firstName' placeholder='Input first name' required auto-focus)
                     .details-row
                         +lbl('Last name:')
                         .col-xs-5.col-sm-4
-                            input#profile-lastname.form-control(type='text' ng-model='user.lastName' placeholder='Input last name' required)
+                            input#profile-lastname.form-control(enter-focus-next='profile-email' type='text' ng-model='user.lastName' placeholder='Input last name' required)
                     .details-row
                         +lbl('Email:')
                         .col-xs-5.col-sm-4
-                            input#profile-email.form-control(type='email' ng-model='user.email' placeholder='Input email' required)
+                            input#profile-email.form-control(enter-focus-next='profile-company' type='email' ng-model='user.email' placeholder='Input email' required)
                     .details-row
                         +lbl('Company:')
                         .col-xs-5.col-sm-4
-                            input#profile-company.form-control(type='text' ng-model='user.company' placeholder='Input company name' required)
+                            input#profile-company.form-control(enter-focus-next='profile-country' type='text' ng-model='user.company' placeholder='Input company name' required)
                     .details-row
                         +lbl('Country:')
                         .col-xs-5.col-sm-4
@@ -67,10 +67,10 @@ mixin lbl(txt)
                             .details-row
                                 +lbl('New password:')
                                 .col-xs-5.col-sm-4
-                                    input.form-control(type='password' ng-model='user.password' placeholder='New password')
+                                    input#profile_password.form-control(enter-focus-next='profile_confirm' type='password' ng-model='user.password' placeholder='New password')
                             .details-row
                                 +lbl('Confirm:')
                                 .col-xs-5.col-sm-4
-                                    input.form-control(type='password' ng-model='user.confirm' match='user.password' placeholder='Confirm new password')
+                                    input#profile_confirm.form-control(type='password' ng-model='user.confirm' match='user.password' placeholder='Confirm new password')
                 .col-xs-12.col-sm-12.details-row
                     a.btn.btn-primary(ng-disabled='!profileCouldBeSaved()' ng-click='profileCouldBeSaved() && saveUser()' bs-tooltip='' data-title='{{saveBtnTipText()}}' data-placement='bottom' data-trigger='hover') Save

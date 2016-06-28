@@ -45,7 +45,7 @@ module.exports.factory = (_, socketio, agentMgr, configure) => {
                 const user = socket.request.user;
 
                 const demo = socket.request._query.IgniteDemoMode === 'true';
-                
+
                 const accountId = () => user._id;
 
                 // Return available drivers to browser.

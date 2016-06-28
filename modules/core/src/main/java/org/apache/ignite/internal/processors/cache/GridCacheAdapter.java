@@ -340,19 +340,9 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
 
                         igfsDataSpaceMax = igfsCfg.getMaxSpaceSize();
 
-                        if (igfsDataSpaceMax == 0) {
-                            long maxMem = Runtime.getRuntime().maxMemory();
-
-                            // We leave JVM at least 500M of memory for correct operation.
-                            long jvmFreeSize = (maxMem - 512 * 1024 * 1024);
-
-                            if (jvmFreeSize <= 0)
-                                jvmFreeSize = maxMem / 2;
-
-                            long dfltMaxSize = (long)(0.8f * maxMem);
-
-                            igfsDataSpaceMax = Math.min(dfltMaxSize, jvmFreeSize);
-                        }
+                        // Do we have limits?
+                        if (igfsDataSpaceMax <= 0)
+                            igfsDataSpaceMax = Long.MAX_VALUE;
                     }
 
                     break;

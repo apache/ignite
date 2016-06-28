@@ -32,7 +32,7 @@ consoleModule.controller('adminController', [
                         user.userName = user.firstName + ' ' + user.lastName;
                         user.countryCode = Countries.getByName(user.country).code;
                         user.label = user.userName + ' ' + user.email + ' ' +
-                            (user.company || '') + ' ' + (user.country || '');
+                            (user.company || '') + ' ' + (user.countryCode || '');
                     });
                 })
                 .catch((err) => $common.showError(err));

@@ -17,22 +17,23 @@
 
 import ProgressPlugin from 'webpack/lib/ProgressPlugin';
 
-let chars = 0,
-    lastState, lastStateTime;
+let chars = 0;
+let lastState = 0;
+let lastStateTime = 0;
 
 const outputStream = process.stdout;
 
 const _goToLineStart = (nextMessage) => {
-    let str = "";
-    for (; chars > nextMessage.length; chars--) {
-        str += "\b \b";
-    }
+    let str = '';
+
+    for (; chars > nextMessage.length; chars--)
+        str += '\b \b';
 
     chars = nextMessage.length;
 
-    for (var i = 0; i < chars; i++) {
-        str += "\b";
-    }
+    for (let i = 0; i < chars; i++)
+        str += '\b';
+
     if (str)
         outputStream.write(str);
 };
@@ -42,28 +43,32 @@ export default new ProgressPlugin((percentage, msg) => {
 
     if (percentage < 1) {
         percentage = Math.floor(percentage * 100);
-        msg = percentage + "% " + msg;
-        if (percentage < 100) {
-            msg = " " + msg;
-        }
-        if (percentage < 10) {
-            msg = " " + msg;
-        }
+
+        msg = percentage + '% ' + msg;
+
+        if (percentage < 100)
+            msg = ' ' + msg;
+
+        if (percentage < 10)
+            msg = ' ' + msg;
     }
 
-    state = state.replace(/^\d+\/\d+\s+/, "");
+    state = state.replace(/^\d+\/\d+\s+/, '');
 
     if (percentage === 0) {
         lastState = null;
-        lastStateTime = +new Date();
+        lastStateTime = (new Date()).getTime();
     }
     else if (state !== lastState || percentage === 1) {
-        let now = +new Date();
+        const now = (new Date()).getTime();
 
         if (lastState) {
-            var stateMsg = (now - lastStateTime) + "ms " + lastState;
+            const stateMsg = (now - lastStateTime) + 'ms ' + lastState;
+
             _goToLineStart(stateMsg);
-            outputStream.write(stateMsg + "\n");
+
+            outputStream.write(stateMsg + '\n');
+
             chars = 0;
         }
 
@@ -72,5 +77,6 @@ export default new ProgressPlugin((percentage, msg) => {
     }
 
     _goToLineStart(msg);
+
     outputStream.write(msg);
 });

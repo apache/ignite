@@ -1094,13 +1094,13 @@ consoleModule.service('$common', ['$alert', '$popover', '$anchorScroll', '$locat
 // Confirm change location.
 consoleModule.service('$unsavedChangesGuard', ['$rootScope', ($root) => {
     return {
-        install($scope) {
+        install($scope, customDirtyCheck = () => $scope.ui.inputForm.$dirty) {
             $scope.$on('$destroy', function() {
                 window.onbeforeunload = null;
             });
 
             const unbind = $root.$on('$stateChangeStart', function(event) {
-                if ($scope.ui && $scope.ui.inputForm && $scope.ui.inputForm.$dirty) {
+                if ($scope.ui && $scope.ui.inputForm && customDirtyCheck()) {
                     if (!confirm('You have unsaved changes.\n\nAre you sure you want to discard them?')) // eslint-disable-line no-alert
                         event.preventDefault();
                     else

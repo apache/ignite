@@ -95,9 +95,9 @@ export default ['igniteUiAceJava', ['GeneratorJava', (generator) => {
             }
         }
 
-        if (typeof attrs.clusterCfg !== 'undefined') {
+        if (!_.isUndefined(attrs.clusterCfg)) {
             scope.$watch('cfg', (cfg) => {
-                if (typeof cfg !== 'undefined')
+                if (!_.isUndefined(cfg))
                     return;
 
                 scope.cfg = {};

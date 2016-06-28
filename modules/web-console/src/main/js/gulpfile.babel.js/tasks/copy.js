@@ -18,25 +18,16 @@
 import gulp from 'gulp';
 import sequence from 'gulp-sequence';
 
-import { destDir, rootDir, jsModulePaths, resourcePaths, resourceModulePaths, igniteModulesTemp } from '../paths';
+import { destDir, resourcePaths, resourceModulePaths } from '../paths';
 
-gulp.task('copy', (cb) => {
-    const tasks = ['copy:resource', 'copy:ignite_modules:js', 'copy:ignite_modules:resource'];
-    
-    return sequence(tasks, cb);
-});
+gulp.task('copy:resource', (cb) => sequence('copy:resource:app', 'copy:resource:ignite_modules', cb));
 
-gulp.task('copy:resource', () =>
+gulp.task('copy:resource:app', () =>
     gulp.src(resourcePaths)
         .pipe(gulp.dest(destDir))
 );
 
-gulp.task('copy:ignite_modules:js', () =>
-    gulp.src(jsModulePaths)
-        .pipe(gulp.dest(`${rootDir}/${igniteModulesTemp}`))
-);
-
-gulp.task('copy:ignite_modules:resource', () =>
+gulp.task('copy:resource:ignite_modules', () =>
     gulp.src(resourceModulePaths)
         .pipe(gulp.dest(`${destDir}/ignite_modules`))
 );

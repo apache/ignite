@@ -62,8 +62,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
 
-import static org.apache.ignite.transactions.TransactionIsolation.READ_COMMITTED;
-
 /**
  *
  */
@@ -636,7 +634,7 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
             catch (GridCacheEntryRemovedException ignored) {
                 // Retry.
             }
-            catch (GridDhtInvalidPartitionException e) {
+            catch (GridDhtInvalidPartitionException ignored) {
                 return false;
             }
             catch (IgniteCheckedException e) {
@@ -645,7 +643,9 @@ public final class GridNearGetFuture<K, V> extends CacheDistributedGetFutureAdap
                 return false;
             }
             finally {
-                if (dhtEntry != null && (tx == null || (!tx.implicit() && tx.isolation() == READ_COMMITTED)))
+                if (dhtEntry != null)
+                    // Near cache is enabled, so near entry will be enlisted in the transaction.
+                    // Always touch DHT entry in this case.
                     dht.context().evicts().touch(dhtEntry, topVer);
             }
         }

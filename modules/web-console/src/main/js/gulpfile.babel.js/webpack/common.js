@@ -29,7 +29,8 @@ import {srcDir, destDir, rootDir} from '../paths';
 const NODE_ENV = process.env.NODE_ENV || 'production';
 const development = NODE_ENV === 'development';
 const node_modules_path = path.resolve('node_modules');
-const stylesLoader = 'css-loader?sourceMap!postcss-loader!sass-loader?outputStyle=expanded&sourceMap=true&sourceMapContents=true';
+const cssLoader = 'css-loader?sourceMap!postcss-loader';
+const stylesLoader = cssLoader + '!sass-loader?outputStyle=expanded&sourceMap=true&sourceMapContents=true';
 
 export default () => {
     return {
@@ -65,6 +66,7 @@ export default () => {
         },
 
         // Modules resolvers.
+        /* global require */
         module: {
             noParse: [],
             preLoaders: [
@@ -84,7 +86,7 @@ export default () => {
                     loaders: [
                         `ngtemplate-loader?relativeTo=${rootDir}`,
                         'html-loader?attrs[]=img:src&attrs[]=img:data-src',
-                        `jade-html-loader`
+                        'jade-html-loader'
                     ]
                 },
                 {
@@ -106,9 +108,7 @@ export default () => {
                 },
                 {
                     test: /\.css$/,
-                    loaders: ['style-loader',
-                        'css-loader?sourceMap',
-                        'postcss-loader']
+                    loader: development ? `style-loader!${cssLoader}` : ExtractTextPlugin.extract('style-loader', cssLoader)
                 },
                 {
                     test: /\.(scss|sass)$/,
@@ -125,16 +125,16 @@ export default () => {
                     loaders: ['file-loader?name=assets/images/[name]_[hash].[ext]']
                 },
                 {
-                    test: require.resolve("jquery"),
+                    test: require.resolve('jquery'),
                     loaders: [
-                        "expose-loader?$",
-                        "expose-loader?jQuery"
+                        'expose-loader?$',
+                        'expose-loader?jQuery'
                     ]
                 },
                 {
-                    test: require.resolve("nvd3"),
+                    test: require.resolve('nvd3'),
                     loaders: [
-                        "expose-loader?nv"
+                        'expose-loader?nv'
                     ]
                 }
             ]
@@ -146,7 +146,7 @@ export default () => {
         // ESLint loader configuration.
         eslint: {
             failOnWarning: false,
-            failOnError: !development
+            failOnError: false
         },
 
         // Load plugins.
@@ -157,7 +157,7 @@ export default () => {
                 _: 'lodash',
                 nv: 'nvd3'
             }),
-            new webpack.DefinePlugin({'NODE_ENV': JSON.stringify(NODE_ENV)}),
+            new webpack.DefinePlugin({NODE_ENV: JSON.stringify(NODE_ENV)}),
             // new webpack.NoErrorsPlugin(),
             new webpack.optimize.DedupePlugin(),
             new webpack.optimize.CommonsChunkPlugin({

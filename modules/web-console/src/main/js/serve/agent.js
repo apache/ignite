@@ -152,7 +152,7 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
                     const code = res.code;
 
                     if (code === 401)
-                        return reject(new Error('Agent is failed to authenticate in grid. Please check agent\'s login and password or node port.'));
+                        return reject(new Error('Agent failed to authenticate in grid. Please check agent\'s login and password or node port.'));
 
                     if (code !== 200)
                         return reject(new Error(error || 'Failed connect to node and execute REST command.'));
@@ -164,7 +164,7 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
                             return resolve(msg.response);
 
                         if (msg.successStatus === 2)
-                            return reject(new Error('Agent is failed to authenticate in grid. Please check agent\'s login and password or node port.'));
+                            return reject(new Error('Agent failed to authenticate in grid. Please check agent\'s login and password or node port.'));
 
                         reject(new Error(msg.error));
                     }
@@ -574,7 +574,7 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
                     mongo.Account.find({token: {$in: tokens}}, '_id token').lean().exec()
                         .then((accounts) => {
                             if (!accounts.length)
-                                return cb('Invalid token(s), user(s) not found', false);
+                                return cb('Agent is failed to authenticate. Please check agent\'s token(s)');
 
                             const agent = new Agent(socket);
 
@@ -586,13 +586,15 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
 
                             const missedTokens = _.difference(tokens, _.map(accounts, (account) => account.token));
 
-                            if (_.isEmpty(missedTokens))
-                                return cb(null, true);
+                            if (missedTokens.length) {
+                                agent._emit('agent:warning',
+                                    `Failed to authenticate with token(s): ${missedTokens.join(', ')}.`);
+                            }
 
-                            cb('Failed to find users with token(s): ' + missedTokens.join(', '), true)
+                            cb();
                         })
                         // TODO IGNITE-1379 send error to web master.
-                        .catch((err) => cb('Failed to authorize agent by token(s)', false));
+                        .catch((err) => cb('Agent is failed to authenticate. Please check agent\'s tokens'));
                 });
             });
         }
@@ -616,8 +618,8 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
         }
 
         /**
-         * @param {ObjectId} accountId
-         * @param {Socket} socket
+         * @param {ObjectId} accountId.
+         * @param {Socket} socket.
          * @returns {int} connected agent count.
          */
         removeAgentListener(accountId, socket) {
@@ -645,18 +647,27 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
         /**
          * Close connections for all user agents.
          * @param {ObjectId} accountId
+         * @param {String} oldToken
          */
-        close(accountId) {
+        close(accountId, oldToken) {
             if (!this._server)
                 return;
 
-            const socketsForClose = this._agents[accountId];
+            const agentsForClose = this._agents[accountId];
+
+            const agentsForWarning = _.clone(agentsForClose);
 
             this._agents[accountId] = [];
 
-            _.forEach(this._agents, (sockets) => _.pullAll(socketsForClose, sockets));
+            _.forEach(this._agents, (sockets) => _.pullAll(agentsForClose, sockets));
 
-            _.forEach(socketsForClose, (socket) => socket._emit('agent:close', 'Security token was changed for user'));
+            _.pullAll(agentsForWarning, agentsForClose);
+
+            const msg = `Security token has been reset: ${oldToken}`;
+
+            _.forEach(agentsForWarning, (socket) => socket._emit('agent:warning', msg));
+
+            _.forEach(agentsForClose, (socket) => socket._emit('agent:close', msg));
 
             _.forEach(this._browsers[accountId], (socket) => socket.emit('agent:count', {count: 0}));
         }
@@ -688,7 +699,7 @@ module.exports.factory = function(_, ws, fs, path, JSZip, socketio, settings, mo
             _.forEach(accountIds, (accountId) => {
                 const agents = this._agents[accountId];
 
-                if (!agents)
+                if (agents && agents.length)
                     _.pull(agents, agent);
 
                 const sockets = this._browsers[accountId];
