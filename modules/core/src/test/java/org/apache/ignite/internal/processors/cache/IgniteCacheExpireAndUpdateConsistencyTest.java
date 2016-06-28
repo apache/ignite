@@ -204,8 +204,10 @@ public class IgniteCacheExpireAndUpdateConsistencyTest extends GridCommonAbstrac
 
                 log.info("Test with node: " + ignite.name());
 
-                updateAndEventConsistencyTest(ignite, ccfg.getName(), keyVal, nodesEvts,
-                    ccfg.getAtomicityMode() == TRANSACTIONAL);
+                updateAndEventConsistencyTest(ignite, ccfg.getName(), keyVal, nodesEvts, false);
+
+                if (ccfg.getAtomicityMode() == TRANSACTIONAL)
+                    updateAndEventConsistencyTest(ignite, ccfg.getName(), keyVal, nodesEvts, true);
             }
         }
         finally {

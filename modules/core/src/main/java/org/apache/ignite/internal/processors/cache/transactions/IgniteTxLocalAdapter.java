@@ -704,8 +704,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
 
                                     boolean evt = !isNearLocallyMapped(txEntry, false);
 
-                                    // Always unswap with value because the value is checked below.
-                                    cached.unswap(true);
+                                    if (!F.isEmpty(txEntry.entryProcessors()) || !F.isEmpty(txEntry.filters()))
+                                        txEntry.cached().unswap(false);
 
                                     IgniteBiTuple<GridCacheOperation, CacheObject> res = applyTransformClosures(txEntry,
                                         true);
@@ -725,6 +725,8 @@ public abstract class IgniteTxLocalAdapter extends IgniteTxAdapter implements Ig
                                             ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);
 
                                             if (expiry != null) {
+                                                txEntry.cached().unswap(false);
+
                                                 Duration duration = cached.hasValue() ?
                                                     expiry.getExpiryForUpdate() : expiry.getExpiryForCreation();
 

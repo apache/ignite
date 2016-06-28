@@ -334,12 +334,11 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
             ExpiryPolicy expiry = cacheCtx.expiryForTxEntry(txEntry);
 
             try {
-                // Always unswap with value because the value is checked below.
-                cached.unswap(true);
-
                 if ((txEntry.op() == CREATE || txEntry.op() == UPDATE) &&
                     txEntry.conflictExpireTime() == CU.EXPIRE_TIME_CALCULATE) {
                     if (expiry != null) {
+                        cached.unswap(true);
+
                         Duration duration = cached.hasValue() ?
                             expiry.getExpiryForUpdate() : expiry.getExpiryForCreation();
 
@@ -350,6 +349,8 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 boolean hasFilters = !F.isEmptyOrNulls(txEntry.filters()) && !F.isAlwaysTrue(txEntry.filters());
 
                 if (hasFilters || retVal || txEntry.op() == DELETE || txEntry.op() == TRANSFORM) {
+                    cached.unswap(retVal);
+
                     boolean readThrough = (retVal || hasFilters) &&
                         cacheCtx.config().isLoadPreviousValue() &&
                         !txEntry.skipStore();
