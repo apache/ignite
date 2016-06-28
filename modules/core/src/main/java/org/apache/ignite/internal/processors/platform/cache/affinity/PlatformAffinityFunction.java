@@ -250,7 +250,7 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
      * @param ignite Ignite.
      */
     @IgniteInstanceResource
-    public void setIgnite(Ignite ignite) {
+    private void setIgnite(Ignite ignite) {
         this.ignite = ignite;
     }
 }
