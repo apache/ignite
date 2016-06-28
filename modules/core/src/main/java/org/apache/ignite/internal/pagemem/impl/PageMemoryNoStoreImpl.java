@@ -244,7 +244,7 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         writePageId(absPtr, pageId);
 
         // Clear pin counter.
-        GridUnsafe.putInt(absPtr + PIN_CNT_OFFSET, 0);
+        GridUnsafe.putLong(absPtr + PIN_CNT_OFFSET, 0);
 
         // TODO pass an argument to decide whether the page should be cleaned.
         GridUnsafe.setMemory(absPtr + PAGE_OVERHEAD, sysPageSize - PAGE_OVERHEAD, (byte)0);
