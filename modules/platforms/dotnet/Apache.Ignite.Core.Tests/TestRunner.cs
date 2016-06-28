@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Tests
 
             //TestOne(typeof(BinaryStringTest), "Test");
 
-            TestAll(typeof (WindowsServiceTest));
+            TestAll(typeof (AffinityFunctionTest));
             //TestAllInAssembly();
         }
 
