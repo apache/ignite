@@ -152,19 +152,14 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
     /**
      * Initializes this instance.
      *
-     * @param ptr User func pointer.
      * @param partitions Number of partitions.
      */
-    public void init(long ptr, int partitions) {
+    public void init(int partitions) {
         this.partitions = partitions;
-        func = new PlatformAffinityFunction(ptr, partitions);
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
-        if (func != null)
-            return;
-
         assert ignite != null;
 
         PlatformContext ctx = PlatformUtils.platformContext(ignite);
@@ -180,8 +175,7 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
 
             long ptr = ctx.gateway().affinityFunctionInit(mem.pointer());
 
-            func = new PlatformAffinityFunction(ptr, partitions);
-            func.setIgnite(ignite);
+            func = new PlatformAffinityFunction(ctx, ptr, partitions);
         }
     }
 
@@ -199,8 +193,5 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
     @IgniteInstanceResource
     private void setIgnite(Ignite ignite) {
         this.ignite = ignite;
-
-        if (func != null)
-            func.setIgnite(ignite);
     }
 }

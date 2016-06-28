@@ -264,7 +264,7 @@ namespace Apache.Ignite.Core
 
                 PrepareLifecycleBeans(reader, outStream, handleRegistry);
 
-                PrepareAffinityFunctions(reader, outStream, handleRegistry);
+                PrepareAffinityFunctions(reader, outStream);
 
                 outStream.SynchronizeOutput();
             }
@@ -347,20 +347,14 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Prepares the affinity functions.
         /// </summary>
-        private static void PrepareAffinityFunctions(BinaryReader reader, PlatformMemoryStream outStream,
-            HandleRegistry handleRegistry)
+        private static void PrepareAffinityFunctions(BinaryReader reader, PlatformMemoryStream outStream)
         {
             var cnt = reader.ReadInt();
 
             var writer = reader.Marshaller.StartMarshal(outStream);
 
             for (var i = 0; i < cnt; i++)
-            {
-                var func = CreateObject<IAffinityFunction>(reader);
-
-                writer.WriteLong(handleRegistry.Allocate(func));
-                writer.WriteInt(func.Partitions);
-            }
+                writer.WriteInt(CreateObject<IAffinityFunction>(reader).Partitions);
         }
 
         /// <summary>
@@ -370,15 +364,8 @@ namespace Apache.Ignite.Core
         /// <returns>Resulting object.</returns>
         private static T CreateObject<T>(IBinaryRawReader reader)
         {
-            // 1. Instantiate.
-            var bean = IgniteUtils.CreateInstance<T>(reader.ReadString());
-
-            // 2. Set properties.
-            var props = reader.ReadDictionaryAsGeneric<string, object>();
-
-            IgniteUtils.SetProperties(bean, props);
-
-            return bean;
+            return IgniteUtils.CreateInstance<T>(reader.ReadString(),
+                reader.ReadDictionaryAsGeneric<string, object>());
         }
 
         /// <summary>
