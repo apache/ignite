@@ -559,7 +559,7 @@ extern "C" {
         return ctx->ListenableIsCancelled(static_cast<jobject>(obj));
     }
 
-    void IGNITE_CALL IgniteInitConsole(gcj::ConsoleWriteHandler consoleHandler) {
-        gcj::JniContext::InitConsole(consoleHandler);
+    void IGNITE_CALL IgniteSetConsoleHandler(gcj::ConsoleWriteHandler consoleHandler) {
+        gcj::JniContext::SetConsoleHandler(consoleHandler);
     }
 }

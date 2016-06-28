@@ -51,7 +51,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
             AppDomain.CurrentDomain.DomainUnload += CurrentDomain_DomainUnload;
 
-            JNI.InitConsole(UnmanagedCallbacks.ConsoleWriteHandler);
+            JNI.SetConsoleHandler(UnmanagedCallbacks.ConsoleWriteHandler);
         }
 
         /// <summary>
@@ -59,7 +59,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// </summary>
         private static void CurrentDomain_DomainUnload(object sender, EventArgs e)
         {
-            JNI.InitConsole(null);
+            JNI.SetConsoleHandler(null);
         }
 
         /// <summary>

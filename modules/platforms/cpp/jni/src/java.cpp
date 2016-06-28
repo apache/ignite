@@ -2505,7 +2505,7 @@ namespace ignite
                 }
             }
 
-            void JniContext::InitConsole(ConsoleWriteHandler consoleHandler) {
+            void JniContext::SetConsoleHandler(ConsoleWriteHandler consoleHandler) {
                 CONSOLE_LOCK.Enter();
                 consoleWrite = consoleHandler;
                 CONSOLE_LOCK.Leave();
