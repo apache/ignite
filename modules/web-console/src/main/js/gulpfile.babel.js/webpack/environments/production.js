@@ -25,7 +25,7 @@ export default () => {
             path: destDir,
             minimize: true,
             warnings: false,
-            sourceMap: true,
+            sourceMap: false,
             mangle: true
         })
     ];
