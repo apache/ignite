@@ -24,7 +24,7 @@ using namespace ignite::common::concurrent;
 using namespace ignite::impl;
 
 namespace ignite
-{    
+{
     Ignite::Ignite() : impl(SharedPointer<IgniteImpl>())
     {
         // No-op.

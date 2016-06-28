@@ -24,6 +24,7 @@
 
 #include "ignite/impl/cache/cache_impl.h"
 #include "ignite/impl/transactions/transactions_impl.h"
+#include "ignite/impl/cluster/cluster_group_impl.h"
 #include "ignite/impl/ignite_environment.h"
 
 namespace ignite 
@@ -35,8 +36,9 @@ namespace ignite
          */
         class IGNITE_FRIEND_EXPORT IgniteImpl
         {
-            typedef ignite::common::concurrent::SharedPointer<IgniteEnvironment> SP_IgniteEnvironment;
-            typedef ignite::common::concurrent::SharedPointer<impl::transactions::TransactionsImpl> SP_TransactionsImpl;
+            typedef common::concurrent::SharedPointer<IgniteEnvironment> SP_IgniteEnvironment;
+            typedef common::concurrent::SharedPointer<transactions::TransactionsImpl> SP_TransactionsImpl;
+            typedef common::concurrent::SharedPointer<cluster::ClusterGroupImpl> SP_ClusterGroupImpl;
         public:
             /**
              * Constructor used to create new instance.
@@ -163,6 +165,16 @@ namespace ignite
                 return txImpl;
             }
 
+            /**
+             * Get projection.
+             *
+             * @return ClusterGroupImpl instance.
+             */
+            SP_ClusterGroupImpl GetProjection()
+            {
+                return prjImpl;
+            }
+
         private:
             /**
              * Get transactions internal call.
@@ -170,6 +182,13 @@ namespace ignite
              * @return TransactionsImpl instance.
              */
             SP_TransactionsImpl InternalGetTransactions(IgniteError &err);
+
+            /**
+             * Get current projection internal call.
+             *
+             * @return ClusterGroupImpl instance.
+             */
+            SP_ClusterGroupImpl InternalGetProjection(IgniteError &err);
 
             /** Environment. */
             SP_IgniteEnvironment env;
@@ -179,6 +198,9 @@ namespace ignite
 
             /** Transactions implementaion. */
             SP_TransactionsImpl txImpl;
+
+            /** Projection implementation. */
+            SP_ClusterGroupImpl prjImpl;
 
             IGNITE_NO_COPY_ASSIGNMENT(IgniteImpl)
         };

@@ -1195,12 +1195,12 @@ namespace ignite
                 ExceptionCheck(env);
             }
 
-            jobject JniContext::ProcessorProjection(jobject obj) {
+            jobject JniContext::ProcessorProjection(jobject obj, JniErrorInfo* errInfo) {
                 JNIEnv* env = Attach();
 
                 jobject prj = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_projection);
 
-                ExceptionCheck(env);
+                ExceptionCheck(env, errInfo);
 
                 return LocalToGlobal(env, prj);
             }
