@@ -93,6 +93,9 @@ public class HadoopV2Job implements HadoopJob {
     /** Job info. */
     protected final HadoopJobInfo jobInfo;
 
+    /** Native library names. */
+    private final String[] libNames;
+
     /** */
     private final JobID hadoopJobID;
 
@@ -119,16 +122,21 @@ public class HadoopV2Job implements HadoopJob {
     private volatile byte[] jobConfData;
 
     /**
+     * Constructor.
+     *
      * @param jobId Job ID.
      * @param jobInfo Job info.
      * @param log Logger.
+     * @param libNames Optional additional native library names.
      */
-    public HadoopV2Job(HadoopJobId jobId, final HadoopDefaultJobInfo jobInfo, IgniteLogger log) {
+    public HadoopV2Job(HadoopJobId jobId, final HadoopDefaultJobInfo jobInfo, IgniteLogger log,
+        @Nullable String[] libNames) {
         assert jobId != null;
         assert jobInfo != null;
 
         this.jobId = jobId;
         this.jobInfo = jobInfo;
+        this.libNames = libNames;
 
         hadoopJobID = new JobID(jobId.globalId().toString(), jobId.localId());
 
@@ -220,7 +228,7 @@ public class HadoopV2Job implements HadoopJob {
     }
 
     /** {@inheritDoc} */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "MismatchedQueryAndUpdateOfCollection" })
     @Override public HadoopTaskContext getTaskContext(HadoopTaskInfo info) throws IgniteCheckedException {
         T2<HadoopTaskType, Integer> locTaskId = new T2<>(info.type(),  info.taskNumber());
 
@@ -242,7 +250,7 @@ public class HadoopV2Job implements HadoopJob {
                 // Note that the classloader identified by the task it was initially created for,
                 // but later it may be reused for other tasks.
                 HadoopClassLoader ldr = new HadoopClassLoader(rsrcMgr.classPath(),
-                    HadoopClassLoader.nameForTask(info, false));
+                    HadoopClassLoader.nameForTask(info, false), libNames);
 
                 cls = (Class<? extends HadoopTaskContext>)ldr.loadClass(HadoopV2TaskContext.class.getName());
 
