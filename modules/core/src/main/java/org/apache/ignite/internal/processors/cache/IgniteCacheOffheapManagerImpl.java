@@ -632,14 +632,10 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             if (old != null) {
                 assert old.link != 0 : old;
 
-                rowStore.removeRow(old.link);
+                oldEntry = createClosableEntry(key, old);
             }
             else
                 lsnr.onInsert();
-            else {
-                assert old.link != 0 : old;
-                oldEntry = createClosableEntry(key, old);
-            }
 
             DataRow dr = new DataRow(0, dataRow.link);
             dr.initData();
@@ -670,6 +666,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
                 lsnr.onRemove();
             }
+
             return removed;
         }
 
