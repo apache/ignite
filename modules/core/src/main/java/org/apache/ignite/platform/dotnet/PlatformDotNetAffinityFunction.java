@@ -47,6 +47,9 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
     /** Properties. */
     private Map<String, ?> props;
 
+    /** Partition count. */
+    private int partitions;
+
     /** Inner function. */
     private transient PlatformAffinityFunction func;
 
@@ -96,7 +99,7 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
 
     /** {@inheritDoc} */
     @Override public int partitions() {
-        return func.partitions();
+        return partitions;
     }
 
     /** {@inheritDoc} */
@@ -118,12 +121,14 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(typName);
         out.writeObject(props);
+        out.writeInt(partitions);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         typName = (String)in.readObject();
         props = (Map<String, ?>)in.readObject();
+        partitions = in.readInt();
     }
 
     /**
@@ -133,6 +138,7 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
      * @param partitions Number of partitions.
      */
     public void init(Object fun, int partitions) {
+        this.partitions = partitions;
         func = new PlatformAffinityFunction(fun, partitions);
     }
 
