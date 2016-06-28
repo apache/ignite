@@ -55,6 +55,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Binary\Package-Info.cs" />
+    <Compile Include="Cache\Affinity\AffinityFunctionContext.cs" />
+    <Compile Include="Cache\Affinity\AffinityTopologyVersion.cs" />
+    <Compile Include="Cache\Affinity\IAffinityFunction.cs" />
     <Compile Include="Cache\CacheAtomicUpdateTimeoutException.cs" />
     <Compile Include="Cache\CacheEntryProcessorException.cs" />
     <Compile Include="Cache\CacheException.cs" />
