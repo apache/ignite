@@ -107,7 +107,10 @@ public interface IgnitePageStoreManager extends GridCacheSharedManager {
     public long allocatePage(int cacheId, int partId, byte flags) throws IgniteCheckedException;
 
     /**
-     * @return Page ID of a root metadata page.
+     * Gets meta page ID for specified cache.
+     *
+     * @param cacheId Cache ID.
+     * @return Meta page ID.
      */
-    public long metaRoot();
+    public long metaPageId(int cacheId);
 }
