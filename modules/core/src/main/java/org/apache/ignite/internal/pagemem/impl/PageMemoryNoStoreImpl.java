@@ -243,6 +243,9 @@ public class PageMemoryNoStoreImpl implements PageMemory {
 
         writePageId(absPtr, pageId);
 
+        // Clear pin counter.
+        GridUnsafe.putInt(absPtr + PIN_CNT_OFFSET, 0);
+
         // TODO pass an argument to decide whether the page should be cleaned.
         GridUnsafe.setMemory(absPtr + PAGE_OVERHEAD, sysPageSize - PAGE_OVERHEAD, (byte)0);
 
@@ -417,10 +420,19 @@ public class PageMemoryNoStoreImpl implements PageMemory {
         return segments[segIdx];
     }
 
+    /**
+     * @param pageIdx Page index to extract segment index from.
+     * @return Segment index.
+     */
     private int segmentIndex(long pageIdx) {
         return (int)((pageIdx >> idxBits) & segMask);
     }
 
+    /**
+     * @param segIdx Segment index.
+     * @param pageIdx Page index.
+     * @return Full page index.
+     */
     private long fromSegmentIndex(int segIdx, long pageIdx) {
         long res = 0;
 
