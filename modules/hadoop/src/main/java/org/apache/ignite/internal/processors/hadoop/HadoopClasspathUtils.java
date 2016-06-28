@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
+import org.apache.ignite.internal.util.typedef.F;
+
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -33,6 +35,24 @@ import java.util.List;
  * Hadoop classpath utilities.
  */
 public class HadoopClasspathUtils {
+    /** Prefix directory. */
+    public static final String PREFIX = "HADOOP_PREFIX";
+
+    /** Home directory. */
+    public static final String HOME = "HADOOP_HOME";
+
+    /** Home directory. */
+    public static final String COMMON_HOME = "HADOOP_COMMON_HOME";
+
+    /** Home directory. */
+    public static final String HDFS_HOME = "HADOOP_HDFS_HOME";
+
+    /** Home directory. */
+    public static final String MAPRED_HOME = "HADOOP_MAPRED_HOME";
+
+    /** Empty string. */
+    private static final String EMPTY_STR = "";
+
     /**
      * Gets Hadoop class path as list of classpath elements for process.
      *
@@ -78,115 +98,73 @@ public class HadoopClasspathUtils {
     }
 
     /**
-     * @return HADOOP_HOME Variable.
-     */
-    private static String hadoopHome() {
-        String prefix = systemOrEnv("HADOOP_PREFIX", null);
-
-        return systemOrEnv(HadoopVariable.HADOOP_HOME.toString(), prefix);
-    }
-
-    /**
-     * Gets locations from the environment.
-     *
-     * @return The locations as determined from the environment.
-     */
-    private static HadoopLocations getEnvHadoopLocations() {
-        return new HadoopLocations(
-            hadoopHome(),
-            systemOrEnv(HadoopVariable.HADOOP_COMMON_HOME.toString(), null),
-            systemOrEnv(HadoopVariable.HADOOP_HDFS_HOME.toString(), null),
-            systemOrEnv(HadoopVariable.HADOOP_MAPRED_HOME.toString(), null)
-        );
-    }
-
-    /**
-     * Gets locations assuming Apache Hadoop distribution layout.
-     *
-     * @return The locations as for Apache distribution.
-     */
-    private static HadoopLocations getApacheHadoopLocations(String hadoopHome) {
-        return new HadoopLocations(hadoopHome,
-            hadoopHome + "/share/hadoop/common",
-            hadoopHome + "/share/hadoop/hdfs",
-            hadoopHome + "/share/hadoop/mapreduce");
-    }
-
-    /** HDP Hadoop locations. */
-    private static final HadoopLocations HDP_HADOOP_LOCATIONS = new HadoopLocations(
-        "/usr/hdp/current/hadoop-client",
-        "/usr/hdp/current/hadoop-client",
-        "/usr/hdp/current/hadoop-hdfs-client",
-        "/usr/hdp/current/hadoop-mapreduce-client");
-
-    /**
-     * HDP locations relative to an arbitrary Hadoop home.
-     *
-     * @param hadoopHome The hadoop home.
-     * @return The locations.
-     */
-    private static HadoopLocations getHdpLocationsRelative(String hadoopHome) {
-        return new HadoopLocations(hadoopHome, hadoopHome,
-            hadoopHome + "/../hadoop-hdfs-client",
-            hadoopHome + "/../hadoop-mapreduce-client");
-    }
-    
-    /**
      * Gets Hadoop locations.
      *
      * @return The locations as determined from the environment.
      */
-    static HadoopLocations getHadoopLocations() throws IOException {
-        // 1. Get Hadoop locations from the environment:
-        HadoopLocations loc = getEnvHadoopLocations();
+    public static HadoopLocations locations() throws IOException {
+        // Query environment.
+        String hadoopHome = systemOrEnv(PREFIX, systemOrEnv(HOME, EMPTY_STR));
 
-        if (loc.isDefined())
-            return loc.existsOrException();
+        String commonHome = systemOrEnv(COMMON_HOME, EMPTY_STR);
+        String hdfsHome = systemOrEnv(HDFS_HOME, EMPTY_STR);
+        String mapredHome = systemOrEnv(MAPRED_HOME, EMPTY_STR);
 
-        final String hadoopHome = hadoopHome();
+        // If any composite location is defined, use only them.
+        if (!F.isEmpty(commonHome) || !F.isEmpty(hdfsHome) || !F.isEmpty(mapredHome)) {
+            HadoopLocations res = new HadoopLocations(hadoopHome, commonHome, hdfsHome, mapredHome);
 
-        if (hadoopHome != null) {
-            // If home is defined, it must exist:
-            if (!directoryExists(hadoopHome))
-                throw ioeNotFound(HadoopVariable.HADOOP_HOME.toString(), hadoopHome);
-
-            // 2. Try Apache Hadoop locations defined relative to HADOOP_HOME:
-            loc = getApacheHadoopLocations(hadoopHome);
-
-            if (loc.exists())
-                return loc;
-
-            // 3. Try HDP Hadoop locations defined relative to HADOOP_HOME:
-            loc = getHdpLocationsRelative(hadoopHome);
-
-            if (loc.exists())
-                return loc;
-
-            throw new IOException("Hadoop installation locations not found based on defined "
-                + HadoopVariable.HADOOP_HOME.toString() + " value. [" + HadoopVariable.HADOOP_HOME.toString()
-                + "=" + hadoopHome + ']');
+            if (res.valid())
+                return res;
+            else
+                throw new IOException("Failed to resolve Hadoop classpath because some environment variables are " +
+                    "either undefined or point to nonexistent directories [" +
+                    "[env=" + COMMON_HOME + ", value=" + commonHome + ", exists=" + res.commonExists() + "], " +
+                    "[env=" + HDFS_HOME + ", value=" + hdfsHome + ", exists=" + res.hdfsExists() + "], " +
+                    "[env=" + MAPRED_HOME + ", value=" + mapredHome + ", exists=" + res.mapredExists() + "]]");
         }
+        else if (!F.isEmpty(hadoopHome)) {
+            // All further checks will be based on HADOOP_HOME, so check for it's existence.
+            if (!exists(hadoopHome))
+                throw new IOException("Failed to resolve Hadoop classpath because " + HOME + " environment " +
+                    "variable points to nonexistent directory: " + hadoopHome);
 
-        // 4. Try absolute HDP (Hortonworks) location:
-        if (HDP_HADOOP_LOCATIONS.exists())
-            return HDP_HADOOP_LOCATIONS;
+            // Create the list of probes and then iterate over them.
+            List<HadoopLocations> probes = new ArrayList<>();
 
-        throw new IOException("Hadoop installation locations cannot be found. Please define environment variables "
-            + HadoopVariable.HADOOP_COMMON_HOME.toString() + ", "
-            + HadoopVariable.HADOOP_HDFS_HOME.toString() + ", "
-            + HadoopVariable.HADOOP_MAPRED_HOME.toString() + ", or "
-            + HadoopVariable.HADOOP_HOME.toString() + ".");
-    }
+            // Probe for Apache Hadoop.
+            probes.add(new HadoopLocations(hadoopHome, hadoopHome + "/share/hadoop/common",
+                hadoopHome + "/share/hadoop/hdfs", hadoopHome + "/share/hadoop/mapreduce"));
 
-    /**
-     * Convenience method to construct Exception.
-     *
-     * @param var The variable name.
-     * @param dir The dir.
-     * @return The Exception.
-     */
-    static IOException ioeNotFound(String var, String dir) {
-        return new IOException(var + " location is not an existing readable directory. [" + var + "=" + dir + ']');
+            // Probe for CDH with normal HADOOP_HOME directory.
+            probes.add(new HadoopLocations(hadoopHome, hadoopHome + "/hadoop",
+                hadoopHome + "/hadoop-hdfs", hadoopHome + "/hadoop-mapreduce"));
+
+            // Probe for CDH with HADOOP_HOME equal to HADOOP_COMMON_HOME.
+            probes.add(new HadoopLocations(hadoopHome, hadoopHome,
+                hadoopHome + "/../hadoop-hdfs", hadoopHome + "/../hadoop-mapreduce"));
+
+            // Probe for HDP with normal HADOOP_HOME directory.
+            probes.add(new HadoopLocations(hadoopHome, hadoopHome + "/hadoop-client,",
+                hadoopHome + "/hadoop-hdfs-client", hadoopHome + "/hadoop-mapreduce-client"));
+
+            // Probe for HDP with HADOOP_HOME equal to HADOOP_COMMON_HOME.
+            probes.add(new HadoopLocations(hadoopHome, hadoopHome,
+                hadoopHome + "/../hadoop-hdfs-client", hadoopHome + "/../hadoop-mapreduce-client"));
+
+            for (HadoopLocations probe : probes) {
+                if (probe.valid())
+                    return probe;
+            }
+
+            throw new IOException("Failed to resolve Hadoop classpath because " + HOME + " environment variable " +
+                "points to invalid directory: " + hadoopHome);
+        }
+        else {
+            // Advise to set HADOOP_HOME only as this is preferred way to configure classpath.
+            throw new IOException("Failed to resolve Hadoop classpath (please define " + HOME + " environment " +
+                "variable and point it to your Hadoop distribution).");
+        }
     }
 
     /**
@@ -196,30 +174,30 @@ public class HadoopClasspathUtils {
      * @throws IOException if a mandatory classpath location is not found.
      */
     private static Collection<SearchDirectory> classpathDirectories() throws IOException {
-        HadoopLocations loc = getHadoopLocations();
+        HadoopLocations loc = locations();
 
         Collection<SearchDirectory> res = new ArrayList<>();
 
-        res.add(new SearchDirectory(new File(loc.commonHome(), "lib"), null));
-        res.add(new SearchDirectory(new File(loc.hdfsHome(), "lib"), null));
-        res.add(new SearchDirectory(new File(loc.mapredHome(), "lib"), null));
+        res.add(new SearchDirectory(new File(loc.common(), "lib"), null));
+        res.add(new SearchDirectory(new File(loc.hdfs(), "lib"), null));
+        res.add(new SearchDirectory(new File(loc.mapred(), "lib"), null));
 
-        res.add(new SearchDirectory(new File(loc.commonHome()), "hadoop-common-"));
-        res.add(new SearchDirectory(new File(loc.commonHome()), "hadoop-auth-"));
+        res.add(new SearchDirectory(new File(loc.common()), "hadoop-common-"));
+        res.add(new SearchDirectory(new File(loc.common()), "hadoop-auth-"));
 
-        res.add(new SearchDirectory(new File(loc.hdfsHome()), "hadoop-hdfs-"));
+        res.add(new SearchDirectory(new File(loc.hdfs()), "hadoop-hdfs-"));
 
-        res.add(new SearchDirectory(new File(loc.mapredHome()), "hadoop-mapreduce-client-common"));
-        res.add(new SearchDirectory(new File(loc.mapredHome()), "hadoop-mapreduce-client-core"));
+        res.add(new SearchDirectory(new File(loc.mapred()), "hadoop-mapreduce-client-common"));
+        res.add(new SearchDirectory(new File(loc.mapred()), "hadoop-mapreduce-client-core"));
 
         return res;
     }
 
     /**
-     * Note that this method does not treat empty value as an absent value.
+     * Get system property or environment variable with the given name.
      *
      * @param name Variable name.
-     * @param dflt Default.
+     * @param dflt Default value.
      * @return Value.
      */
     private static String systemOrEnv(String name, String dflt) {
@@ -228,7 +206,7 @@ public class HadoopClasspathUtils {
         if (res == null)
             res = System.getenv(name);
 
-        return res == null ? dflt : res;
+        return res != null ? res : dflt;
     }
 
     /**
@@ -237,7 +215,7 @@ public class HadoopClasspathUtils {
      * @param path The directory path.
      * @return {@code True} if the given path denotes an existing directory.
      */
-    static boolean directoryExists(String path) {
+    public static boolean exists(String path) {
         if (path == null)
             return false;
 
@@ -266,7 +244,7 @@ public class HadoopClasspathUtils {
             this.dir = dir;
             this.filter = filter;
 
-            if (!directoryExists(dir.getAbsolutePath()))
+            if (!exists(dir.getAbsolutePath()))
                 throw new IOException("Directory cannot be read: " + dir.getAbsolutePath());
         }
 
@@ -299,22 +277,5 @@ public class HadoopClasspathUtils {
         private boolean hasFilter() {
             return filter != null;
         }
-    }
-
-    /**
-     * Enumeration of commonly used Hadoop environment variables.
-     */
-    public enum HadoopVariable {
-        /** Variable HADOOP_HOME. */
-        HADOOP_HOME,
-
-        /** Variable HADOOP_COMMON_HOME. */
-        HADOOP_COMMON_HOME,
-
-        /** Variable HADOOP_HDFS_HOME. */
-        HADOOP_HDFS_HOME,
-
-        /** Variable HADOOP_MAPRED_HOME. */
-        HADOOP_MAPRED_HOME,
     }
 }

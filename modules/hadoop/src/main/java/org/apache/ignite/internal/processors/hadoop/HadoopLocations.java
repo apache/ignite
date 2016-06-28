@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import java.io.*;
-
 /**
  * Simple structure to hold Hadoop directory locations.
  */
@@ -27,27 +25,42 @@ public class HadoopLocations {
     private final String home;
 
     /** Common home. */
-    private final String commonHome;
+    private final String common;
 
     /** HDFS home. */
-    private final String hdfsHome;
+    private final String hdfs;
 
     /** Mapred home. */
-    private final String mapredHome;
+    private final String mapred;
+
+    /** Whether common home exists. */
+    private final boolean commonExists;
+
+    /** Whether HDFS home exists. */
+    private final boolean hdfsExists;
+
+    /** Whether mapred home exists. */
+    private final boolean mapredExists;
 
     /**
      * Constructor.
      *
      * @param home Hadoop home.
-     * @param commonHome Common home.
-     * @param hdfsHome HDFS home.
-     * @param mapredHome Mapred home.
+     * @param common Common home.
+     * @param hdfs HDFS home.
+     * @param mapred Mapred home.
      */
-    public HadoopLocations(String home, String commonHome, String hdfsHome, String mapredHome) {
+    public HadoopLocations(String home, String common, String hdfs, String mapred) {
+        assert common != null && hdfs != null && mapred != null;
+
         this.home = home;
-        this.commonHome = commonHome;
-        this.hdfsHome = hdfsHome;
-        this.mapredHome = mapredHome;
+        this.common = common;
+        this.hdfs = hdfs;
+        this.mapred = mapred;
+
+        commonExists = HadoopClasspathUtils.exists(common);
+        hdfsExists = HadoopClasspathUtils.exists(hdfs);
+        mapredExists = HadoopClasspathUtils.exists(mapred);
     }
 
     /**
@@ -60,62 +73,51 @@ public class HadoopLocations {
     /**
      * @return Common home.
      */
-    public String commonHome() {
-        return commonHome;
+    public String common() {
+        return common;
     }
 
     /**
      * @return HDFS home.
      */
-    public String hdfsHome() {
-        return hdfsHome;
+    public String hdfs() {
+        return hdfs;
     }
 
     /**
      * @return Mapred home.
      */
-    public String mapredHome() {
-        return mapredHome;
+    public String mapred() {
+        return mapred;
     }
 
     /**
-     * Answers if all the base directories are defined.
-     *
-     * @return 'true' if "common", "hdfs", and "mapred" directories are defined.
+     * @return Whether common home exists.
      */
-    public boolean isDefined() {
-        return commonHome != null && hdfsHome != null && mapredHome != null;
+    public boolean commonExists() {
+        return commonExists;
     }
 
     /**
-     * Answers if all the base directories exist.
-     *
-     * @return 'true' if "common", "hdfs", and "mapred" directories do exist.
+     * @return Whether HDFS home exists.
      */
-    public boolean exists() {
-        return HadoopClasspathUtils.directoryExists(commonHome) && HadoopClasspathUtils.directoryExists(hdfsHome)
-            && HadoopClasspathUtils.directoryExists(mapredHome);
+    public boolean hdfsExists() {
+        return hdfsExists;
     }
 
     /**
-     * Checks if all the base directories exist.
-     *
-     * @return this reference.
-     * @throws IOException if any of the base directories does not exist.
+     * @return Whether mapred home exists.
      */
-    public HadoopLocations existsOrException() throws IOException {
-        if (!HadoopClasspathUtils.directoryExists(commonHome))
-            throw HadoopClasspathUtils.ioeNotFound(HadoopClasspathUtils.HadoopVariable.HADOOP_COMMON_HOME.toString(),
-                commonHome);
+    public boolean mapredExists() {
+        return mapredExists;
+    }
 
-        if (!HadoopClasspathUtils.directoryExists(hdfsHome))
-            throw HadoopClasspathUtils.ioeNotFound(HadoopClasspathUtils.HadoopVariable.HADOOP_HDFS_HOME.toString(),
-                hdfsHome);
-
-        if (!HadoopClasspathUtils.directoryExists(mapredHome))
-            throw HadoopClasspathUtils.ioeNotFound(HadoopClasspathUtils.HadoopVariable.HADOOP_MAPRED_HOME.toString(),
-                mapredHome);
-
-        return this;
+    /**
+     * Whether all required directories exists.
+     *
+     * @return {@code True} if exists.
+     */
+    public boolean valid() {
+        return commonExists && hdfsExists && mapredExists;
     }
 }
