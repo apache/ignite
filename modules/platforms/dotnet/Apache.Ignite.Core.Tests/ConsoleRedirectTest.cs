@@ -41,6 +41,9 @@ namespace Apache.Ignite.Core.Tests
         /** */
         private TextWriter _stdErr;
 
+        /// <summary>
+        /// Sets up the test.
+        /// </summary>
         [SetUp]
         public void SetUp()
         {
@@ -54,6 +57,9 @@ namespace Apache.Ignite.Core.Tests
             Console.SetError(new StringWriter(_errSb));
         }
 
+        /// <summary>
+        /// Tears down the test.
+        /// </summary>
         [TearDown]
         public void TearDown()
         {

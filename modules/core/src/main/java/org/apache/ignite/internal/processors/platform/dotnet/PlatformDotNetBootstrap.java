@@ -26,6 +26,9 @@ import java.io.PrintStream;
  * Interop .Net bootstrap.
  */
 public class PlatformDotNetBootstrap extends PlatformAbstractBootstrap {
+    /**
+     * Class initializer.
+     */
     static {
         System.setOut(new PrintStream(new PlatformDotNetConsoleStream(false)));
         System.setErr(new PrintStream(new PlatformDotNetConsoleStream(true)));

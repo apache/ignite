@@ -59,6 +59,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         /// </summary>
         private static void CurrentDomain_DomainUnload(object sender, EventArgs e)
         {
+            // Clean the handler to avoid JVM crash.
             JNI.SetConsoleHandler(null);
         }
 
