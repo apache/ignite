@@ -79,17 +79,18 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
      * @param partitions Number of partitions.
      */
     public PlatformAffinityFunction(Object func, int partitions) {
-        init(func, partitions);
+        userFunc = func;
+        this.partitions = partitions;
     }
 
     /**
-     * Initializes this instance.
+     * Ctor.
      *
-     * @param func User fun object.
+     * @param ptr User func ptr.
      * @param partitions Number of partitions.
      */
-    private void init(Object func, int partitions) {
-        userFunc = func;
+    public PlatformAffinityFunction(long ptr, int partitions) {
+        this.ptr = ptr;
         this.partitions = partitions;
     }
 
@@ -211,7 +212,8 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        init(in.readObject(), in.readInt());
+        userFunc = in.readObject();
+        partitions = in.readInt();
     }
 
     /** {@inheritDoc} */

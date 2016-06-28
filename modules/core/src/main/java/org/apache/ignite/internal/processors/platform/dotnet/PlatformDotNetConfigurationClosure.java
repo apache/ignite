@@ -197,10 +197,8 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
                 writer.writeInt(affFuncs.size());
 
-                for (PlatformDotNetAffinityFunction bean : affFuncs) {
-                    writer.writeString(bean.getTypeName());
-                    writer.writeMap(bean.getProperties());
-                }
+                for (PlatformDotNetAffinityFunction func : affFuncs)
+                    func.write(writer);
 
                 out.synchronize();
 
@@ -260,7 +258,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
         if (!affFuncs.isEmpty()) {
             for (PlatformDotNetAffinityFunction aff : affFuncs)
-                aff.init(in.readObjectDetached(), in.readInt());
+                aff.init(in.readLong(), in.readInt());
         }
     }
 

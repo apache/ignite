@@ -264,7 +264,7 @@ namespace Apache.Ignite.Core
 
                 PrepareLifecycleBeans(reader, outStream, handleRegistry);
 
-                PrepareAffinityFunctions(reader, outStream);
+                PrepareAffinityFunctions(reader, outStream, handleRegistry);
 
                 outStream.SynchronizeOutput();
             }
@@ -347,7 +347,8 @@ namespace Apache.Ignite.Core
         /// <summary>
         /// Prepares the affinity functions.
         /// </summary>
-        private static void PrepareAffinityFunctions(BinaryReader reader, PlatformMemoryStream outStream)
+        private static void PrepareAffinityFunctions(BinaryReader reader, PlatformMemoryStream outStream,
+            HandleRegistry handleRegistry)
         {
             var cnt = reader.ReadInt();
 
@@ -357,7 +358,7 @@ namespace Apache.Ignite.Core
             {
                 var func = CreateObject<IAffinityFunction>(reader);
 
-                writer.WriteObject(func);
+                writer.WriteLong(handleRegistry.Allocate(func));
                 writer.WriteInt(func.Partitions);
             }
         }

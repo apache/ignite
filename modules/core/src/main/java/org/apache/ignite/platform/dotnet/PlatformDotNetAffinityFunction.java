@@ -19,10 +19,16 @@ package org.apache.ignite.platform.dotnet;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
+import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
+import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
+import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
+import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
 import org.apache.ignite.lifecycle.LifecycleAware;
 import org.apache.ignite.resources.IgniteInstanceResource;
 
@@ -117,6 +123,18 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
         func.removeNode(nodeId);
     }
 
+    /**
+     * Writes this func to the writer.
+     *
+     * @param writer Writer.
+     */
+    public void write(BinaryRawWriter writer) {
+        assert writer != null;
+
+        writer.writeObject(typName);
+        writer.writeMap(props);
+    }
+
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(typName);
@@ -134,22 +152,43 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
     /**
      * Initializes this instance.
      *
-     * @param fun User func object.
+     * @param ptr User func pointer.
      * @param partitions Number of partitions.
      */
-    public void init(Object fun, int partitions) {
+    public void init(long ptr, int partitions) {
         this.partitions = partitions;
-        func = new PlatformAffinityFunction(fun, partitions);
+        func = new PlatformAffinityFunction(ptr, partitions);
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
-        func.start();
+        if (func != null)
+            return;
+
+        assert ignite != null;
+
+        PlatformContext ctx = PlatformUtils.platformContext(ignite);
+        assert ctx != null;
+
+        try (PlatformMemory mem = ctx.memory().allocate()) {
+            PlatformOutputStream out = mem.output();
+            BinaryRawWriterEx writer = ctx.writer(out);
+
+            write(writer);
+
+            out.synchronize();
+
+            long ptr = ctx.gateway().affinityFunctionInit(mem.pointer());
+
+            func = new PlatformAffinityFunction(ptr, partitions);
+            func.setIgnite(ignite);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteException {
-        func.stop();
+        if (func != null)
+            func.stop();
     }
 
     /**
@@ -160,6 +199,8 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
     @IgniteInstanceResource
     private void setIgnite(Ignite ignite) {
         this.ignite = ignite;
-        func.setIgnite(ignite);
+
+        if (func != null)
+            func.setIgnite(ignite);
     }
 }
