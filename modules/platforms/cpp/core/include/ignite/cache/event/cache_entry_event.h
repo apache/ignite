@@ -48,7 +48,6 @@ namespace ignite
             CacheEntryEvent() :
                 CacheEntry<K, V>(),
                 oldVal(),
-                hasValue(false),
                 hasOldValue(false)
             {
                 // No-op.
@@ -62,7 +61,6 @@ namespace ignite
             CacheEntryEvent(const CacheEntryEvent<K, V>& other) :
                 CacheEntry<K, V>(other),
                 oldVal(other.oldVal),
-                hasValue(other.hasValue),
                 hasOldValue(other.hasOldValue)
             {
                 // No-op.
@@ -89,7 +87,6 @@ namespace ignite
                     CacheEntry<K, V>::operator=(other);
 
                     oldVal = other.oldVal;
-                    hasValue = other.hasValue;
                     hasOldValue = other.hasOldValue;
                 }
 
@@ -104,16 +101,6 @@ namespace ignite
             const V& GetOldValue() const
             {
                 return oldVal;
-            }
-
-            /**
-             * Check if the value exists.
-             *
-             * @return True, if the value exists.
-             */
-            bool HasValue() const
-            {
-                return hasValue;
             }
 
             /**
@@ -142,9 +129,6 @@ namespace ignite
         private:
             /** Old value. */
             V oldVal;
-
-            /** Indicates whether value exists */
-            bool hasValue;
 
             /** Indicates whether old value exists */
             bool hasOldValue;

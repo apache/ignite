@@ -46,7 +46,8 @@ namespace ignite
              */
             CacheEntry() :
                 key(),
-                val()
+                val(),
+                hasValue(false)
             {
                 // No-op.
             }
@@ -59,7 +60,8 @@ namespace ignite
              */
             CacheEntry(const K& key, const V& val) :
                 key(key),
-                val(val)
+                val(val),
+                hasValue(true)
             {
                 // No-op.
             }
@@ -71,7 +73,8 @@ namespace ignite
              */
             CacheEntry(const CacheEntry& other) :
                 key(other.key),
-                val(other.val)
+                val(other.val),
+                hasValue(other.hasValue)
             {
                 // No-op.
             }
@@ -95,6 +98,7 @@ namespace ignite
                 {
                     key = other.key;
                     val = other.val;
+                    hasValue = other.hasValue;
                 }
 
                 return *this;
@@ -120,12 +124,25 @@ namespace ignite
                 return val;
             }
 
+            /**
+             * Check if the value exists.
+             *
+             * @return True, if the value exists.
+             */
+            bool HasValue() const
+            {
+                return hasValue;
+            }
+
         protected:
             /** Key. */
             K key;
 
             /** Value. */
             V val;
+
+            /** Indicates whether value exists */
+            bool hasValue;
         };
     }
 }
