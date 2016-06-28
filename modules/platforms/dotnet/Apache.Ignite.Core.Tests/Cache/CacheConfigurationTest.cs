@@ -271,7 +271,7 @@ namespace Apache.Ignite.Core.Tests.Cache
             var py = (AffinityFunctionBase) y;
 
             Assert.AreEqual(px.GetType(), py.GetType());
-            Assert.AreEqual(px.PartitionCount, py.PartitionCount);
+            Assert.AreEqual(px.Partitions, py.Partitions);
             Assert.AreEqual(px.ExcludeNeighbors, py.ExcludeNeighbors);
         }
 
@@ -552,7 +552,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 },
                 AffinityFunction = new RendezvousAffinityFunction
                 {
-                    PartitionCount = 513,
+                    Partitions = 513,
                     ExcludeNeighbors = true
                 }
             };
@@ -645,7 +645,7 @@ namespace Apache.Ignite.Core.Tests.Cache
                 },
                 AffinityFunction = new FairAffinityFunction
                 {
-                    PartitionCount = 113,
+                    Partitions = 113,
                     ExcludeNeighbors = false
                 }
             };

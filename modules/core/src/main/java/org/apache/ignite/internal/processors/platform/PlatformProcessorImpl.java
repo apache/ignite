@@ -75,10 +75,6 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     private final Collection<StoreInfo> pendingStores =
         Collections.newSetFromMap(new ConcurrentHashMap<StoreInfo, Boolean>());
 
-    /** Started stores. */
-    private final Collection<PlatformCacheStore> stores =
-        Collections.newSetFromMap(new ConcurrentHashMap<PlatformCacheStore, Boolean>());
-
     /** Lock for store lifecycle operations. */
     private final ReadWriteLock storeLock = new ReentrantReadWriteLock();
 
@@ -95,7 +91,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     private boolean started;
 
     /** Whether processor if stopped (or stopping). */
-    private boolean stopped;
+    private volatile boolean stopped;
 
     /**
      * Constructor.
@@ -165,34 +161,7 @@ public class PlatformProcessorImpl extends GridProcessorAdapter implements Platf
     /** {@inheritDoc} */
     @Override public void stop(boolean cancel) throws IgniteCheckedException {
         if (platformCtx != null) {
-            // Destroy cache stores.
-            storeLock.writeLock().lock();
-
-            try {
-                for (PlatformCacheStore store : stores) {
-                    if (store != null) {
-                        if (store instanceof PlatformDotNetCacheStore) {
-                            PlatformDotNetCacheStore store0 = (PlatformDotNetCacheStore)store;
-
-                            try {
-                                store0.destroy(platformCtx.kernalContext());
-                            }
-                            catch (Exception e) {
-                                U.error(log, "Failed to destroy .Net cache store [store=" + store0 +
-                                    ", err=" + e.getMessage() + ']');
-                            }
-                        }
-                        else
-                            assert false : "Invalid interop cache store type: " + store;
-                    }
-                }
-            }
-            finally {
-                stopped = true;
-
-                storeLock.writeLock().unlock();
-            }
-
+            stopped = true;
             platformCtx.gateway().onStop();
         }
     }

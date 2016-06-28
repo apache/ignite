@@ -97,7 +97,7 @@ namespace Apache.Ignite.Core.Tests
                                     <nearConfiguration nearStartSize='7'>
                                         <evictionPolicy type='FifoEvictionPolicy' batchSize='10' maxSize='20' maxMemorySize='30' />
                                     </nearConfiguration>
-                                    <affinityFunction type='RendezvousAffinityFunction' partitionCount='99' excludeNeighbors='true' />
+                                    <affinityFunction type='RendezvousAffinityFunction' partitions='99' excludeNeighbors='true' />
                                 </cacheConfiguration>
                                 <cacheConfiguration name='secondCache' />
                             </cacheConfiguration>
@@ -172,7 +172,7 @@ namespace Apache.Ignite.Core.Tests
 
             var af = cacheCfg.AffinityFunction as RendezvousAffinityFunction;
             Assert.IsNotNull(af);
-            Assert.AreEqual(99, af.PartitionCount);
+            Assert.AreEqual(99, af.Partitions);
             Assert.IsTrue(af.ExcludeNeighbors);
 
             Assert.AreEqual(new Dictionary<string, object> {{"myNode", "true"}}, cfg.UserAttributes);
@@ -365,6 +365,14 @@ namespace Apache.Ignite.Core.Tests
                             IdMapper = new IdMapper(),
                             NameMapper = new NameMapper(),
                             Serializer = new TestSerializer()
+                        },
+                        new BinaryTypeConfiguration
+                        {
+                            IsEnum = false,
+                            KeepDeserialized = false,
+                            AffinityKeyFieldName = "affKeyFieldName",
+                            TypeName = "typeName2",
+                            Serializer = new BinaryReflectiveSerializer()
                         }
                     },
                     Types = new[] {typeof (string).FullName},
@@ -448,7 +456,7 @@ namespace Apache.Ignite.Core.Tests
                         AffinityFunction = new FairAffinityFunction
                         {
                             ExcludeNeighbors = true,
-                            PartitionCount = 48
+                            Partitions = 48
                         }
                     }
                 },

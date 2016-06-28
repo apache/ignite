@@ -34,7 +34,7 @@
                             <list>
                                 <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration">
                                     <property name="typeName"
-                                              value="Apache.Ignite.Core.Tests.Cache.CacheAffinityTest+AffinityTestKey"/>
+                                              value="Apache.Ignite.Core.Tests.Cache.Affinity.AffinityTest+AffinityTestKey"/>
                                     <property name="affinityKeyFieldName" value="_affKey"/>
                                 </bean>
                             </list>
