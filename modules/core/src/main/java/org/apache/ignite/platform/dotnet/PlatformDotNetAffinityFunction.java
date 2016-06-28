@@ -17,14 +17,23 @@
 
 package org.apache.ignite.platform.dotnet;
 
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.AffinityFunctionContext;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * AffinityFunction implementation which can be used to configure .NET affinity function in Java Spring configuration.
  */
-public class PlatformDotNetAffinityFunction extends PlatformAffinityFunction {
+public class PlatformDotNetAffinityFunction implements AffinityFunction, Externalizable {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -33,6 +42,9 @@ public class PlatformDotNetAffinityFunction extends PlatformAffinityFunction {
 
     /** Properties. */
     private Map<String, ?> props;
+
+    /** Inner function. */
+    private transient PlatformAffinityFunction func;
 
     /**
      * Gets .NET type name.
@@ -68,5 +80,52 @@ public class PlatformDotNetAffinityFunction extends PlatformAffinityFunction {
      */
     public void setProperties(Map<String, ?> props) {
         this.props = props;
+    }
+
+    /** {@inheritDoc} */
+    @Override public void reset() {
+        func.reset();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partitions() {
+        return func.partitions();
+    }
+
+    /** {@inheritDoc} */
+    @Override public int partition(Object key) {
+        return func.partition(key);
+    }
+
+    /** {@inheritDoc} */
+    @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext affCtx) {
+        return func.assignPartitions(affCtx);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void removeNode(UUID nodeId) {
+        func.removeNode(nodeId);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void writeExternal(ObjectOutput out) throws IOException {
+        out.writeObject(typName);
+        out.writeObject(props);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        typName = (String)in.readObject();
+        props = (Map<String, ?>)in.readObject();
+    }
+
+    /**
+     * Initializes this instance.
+     *
+     * @param fun User func object.
+     * @param partitions Number of partitions.
+     */
+    public void init(Object fun, int partitions) {
+        func = new PlatformAffinityFunction(fun, partitions);
     }
 }

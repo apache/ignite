@@ -88,7 +88,7 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
      * @param func User fun object.
      * @param partitions Number of partitions.
      */
-    public void init(Object func, int partitions) {
+    private void init(Object func, int partitions) {
         userFunc = func;
         this.partitions = partitions;
     }
