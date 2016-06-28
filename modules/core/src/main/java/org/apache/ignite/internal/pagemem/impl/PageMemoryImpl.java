@@ -1094,8 +1094,6 @@ public class PageMemoryImpl implements PageMemory {
                 releasePage(dbMetaPage);
             }
         }
-        else
-            mem.writeLong(dbMetaPageIdPtr, storeMgr.metaRoot());
 
         if (storeMgr == null)
             metaTree = new MetaPagesTree(this, mem.readLong(dbMetaPageIdPtr), true);
