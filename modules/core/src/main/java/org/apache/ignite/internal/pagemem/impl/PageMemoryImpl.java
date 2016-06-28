@@ -359,7 +359,7 @@ public class PageMemoryImpl implements PageMemory {
     /** {@inheritDoc} */
     @Override public Page metaPage(final int cacheId) throws IgniteCheckedException {
         if (storeMgr != null)
-            return page(cacheId, PageIdUtils.pageId(-1, PageMemory.FLAG_META, 0));
+            return page(cacheId, storeMgr.metaPageId(cacheId));
 
         long pageId = 0;
 
