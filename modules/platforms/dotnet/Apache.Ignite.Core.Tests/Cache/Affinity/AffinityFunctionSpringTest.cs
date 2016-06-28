@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
     using System;
     using System.Collections.Generic;
     using System.Linq;
+    using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Resource;
@@ -31,6 +32,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
     /// </summary>
     public class AffinityFunctionSpringTest : IgniteTestBase
     {
+        /** */
+        private IIgnite _ignite;
+
         /// <summary>
         /// Initializes a new instance of the <see cref="AffinityFunctionSpringTest"/> class.
         /// </summary>
@@ -39,21 +43,53 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             // No-op.
         }
 
+        /** <inheritdoc /> */
+        public override void TestSetUp()
+        {
+            base.TestSetUp();
+
+            // Start another node without spring config
+            if (Ignition.TryGetIgnite("grid2") == null)
+            {
+                var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration()) {GridName = "grid2"};
+                _ignite = Ignition.Start(cfg);
+            }
+        }
+
         /// <summary>
-        /// Tests the affinity.
+        /// Tests the static cache.
         /// </summary>
         [Test]
-        public void TestAffinity()
+        public void TestStaticCache()
         {
-            var cache = Grid.GetCache<int, int>("cache1");
+            ValidateAffinityFunction(Grid.GetCache<int, int>("cache1"));
+            ValidateAffinityFunction(_ignite.GetCache<int, int>("cache1"));
+        }
 
+        /// <summary>
+        /// Tests the dynamic cache.
+        /// </summary>
+        [Test]
+        public void TestDynamicCache()
+        {
+            // TODO: Start cache from template
+        }
+
+        /// <summary>
+        /// Validates the affinity function.
+        /// </summary>
+        /// <param name="cache">The cache.</param>
+        private static void ValidateAffinityFunction(ICache<int, int> cache)
+        {
             var func = (TestFunc) cache.GetConfiguration().AffinityFunction;
 
             Assert.AreEqual(1, func.Property1);
             Assert.AreEqual("1", func.Property2);
 
-            var aff = Grid.GetAffinity(cache.Name);
+            var aff = cache.Ignite.GetAffinity(cache.Name);
             Assert.AreEqual(func.Partitions, aff.Partitions);
+            Assert.AreEqual(4, aff.GetPartition(2));
+            Assert.AreEqual(3, aff.GetPartition(4));
         }
 
         [Serializable]
@@ -75,7 +111,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             {
                 Assert.IsNotNull(_ignite);
 
-                return 1;
+                return (int) key * 2 % 5;
             }
 
             public void RemoveNode(Guid nodeId)
