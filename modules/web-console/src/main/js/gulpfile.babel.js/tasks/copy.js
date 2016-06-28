@@ -18,9 +18,9 @@
 import gulp from 'gulp';
 import sequence from 'gulp-sequence';
 
-import { destDir, rootDir, jsModulePaths, resourcePaths, resourceModulePaths, igniteModulesTemp } from '../paths';
+import { destDir, resourcePaths, resourceModulePaths } from '../paths';
 
-gulp.task('copy:resource', (cb) => sequence('copy:resource:app',  'copy:resource:ignite_modules', cb));
+gulp.task('copy:resource', (cb) => sequence('copy:resource:app', 'copy:resource:ignite_modules', cb));
 
 gulp.task('copy:resource:app', () =>
     gulp.src(resourcePaths)

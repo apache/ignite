@@ -18,7 +18,7 @@
 import gulp from 'gulp';
 import sequence from 'gulp-sequence';
 
-import { jadePaths, jadeModulePaths, resourcePaths, resourceModulePaths, appPaths, appModulePaths } from '../paths';
+import { jadePaths, jadeModulePaths, resourcePaths, resourceModulePaths, appModulePaths } from '../paths';
 
 gulp.task('watch:ignite-modules', (cb) => sequence('clean:ignite-modules-temp', 'ignite:modules', cb));
 

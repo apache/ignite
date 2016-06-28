@@ -66,6 +66,7 @@ export default () => {
         },
 
         // Modules resolvers.
+        /* global require */
         module: {
             noParse: [],
             preLoaders: [
