@@ -524,7 +524,8 @@ public class PageMemoryNoStoreImpl implements PageMemory {
                 long pinCnt = GridUnsafe.getLong(absPtr + PIN_CNT_OFFSET);
 
                 if (pinCnt < 0)
-                    throw new IllegalStateException("Page has been deallocated: " + U.hexLong(absPtr));
+                    throw new IllegalStateException("Page has been deallocated [absPtr=" + U.hexLong(absPtr) +
+                        ", cacheId=" + cacheId + ", pageId=" + U.hexLong(pageId) + ", pinCnt=" + pinCnt + ']');
 
                 if (GridUnsafe.compareAndSwapLong(null, absPtr + PIN_CNT_OFFSET, pinCnt, pinCnt + 1))
                     break;
