@@ -16,6 +16,7 @@
  */
 
 // ReSharper disable UnusedAutoPropertyAccessor.Local
+// ReSharper disable UnusedMember.Local
 namespace Apache.Ignite.Core.Tests.Cache.Affinity
 {
     using System;
@@ -85,13 +86,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         /// <param name="cache">The cache.</param>
         private static void ValidateAffinityFunction(ICache<int, int> cache)
         {
-            var func = (TestFunc) cache.GetConfiguration().AffinityFunction;
-
-            Assert.AreEqual(1, func.Property1);
-            Assert.AreEqual("1", func.Property2);
+            Assert.IsNull(cache.GetConfiguration().AffinityFunction);
 
             var aff = cache.Ignite.GetAffinity(cache.Name);
-            Assert.AreEqual(func.Partitions, aff.Partitions);
+            Assert.AreEqual(5, aff.Partitions);
             Assert.AreEqual(4, aff.GetPartition(2));
             Assert.AreEqual(3, aff.GetPartition(4));
         }
@@ -102,9 +100,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             [InstanceResource]
             private readonly IIgnite _ignite = null;
 
-            public int Property1 { get; set; }
+            private int Property1 { get; set; }
 
-            public string Property2 { get; set; }
+            private string Property2 { get; set; }
 
             public int Partitions
             {
@@ -114,6 +112,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             public int GetPartition(object key)
             {
                 Assert.IsNotNull(_ignite);
+                Assert.AreEqual(1, Property1);
+                Assert.AreEqual("1", Property2);
 
                 return (int) key * 2 % 5;
             }
