@@ -20,12 +20,12 @@ import sequence from 'gulp-sequence';
 
 import { jadePaths, jadeModulePaths, resourcePaths, resourceModulePaths, appPaths, appModulePaths } from '../paths';
 
-gulp.task('watch:ignite-modules', (cb) => sequence('clean:ignite-modules-temp', 'ignite:modules', 'copy:ignite_modules:js', cb));
+gulp.task('watch:ignite-modules', (cb) => sequence('clean:ignite-modules-temp', 'ignite:modules', cb));
 
 // Build + watch task.
 gulp.task('watch', ['build'], () => {
     gulp.watch(jadePaths.concat(jadeModulePaths), ['jade']);
-    gulp.watch(resourcePaths, ['copy:resource']);
-    gulp.watch(resourceModulePaths, ['copy:ignite_modules:resource']);
+    gulp.watch(resourcePaths, ['copy:resource:app']);
+    gulp.watch(resourceModulePaths, ['copy:resource:ignite_modules']);
     gulp.watch(appModulePaths, ['watch:ignite-modules']);
 });
