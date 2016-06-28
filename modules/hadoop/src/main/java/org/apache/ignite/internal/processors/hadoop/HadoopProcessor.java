@@ -50,6 +50,8 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
     private Hadoop hadoop;
 
     /**
+     * Constructor.
+     *
      * @param ctx Kernal context.
      */
     public HadoopProcessor(GridKernalContext ctx) {
@@ -69,24 +71,6 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
             cfg = new HadoopConfiguration(cfg);
 
         initializeDefaults(cfg);
-
-        validate(cfg);
-
-        try {
-            HadoopLocations loc = HadoopClasspathUtils.hadoopLocations();
-
-            if (loc.home() != null)
-                U.quietAndInfo(log, "HADOOP_HOME is set to " + loc.home());
-
-            U.quietAndInfo(log, "HADOOP_COMMON_HOME is set to " + loc.commonHome());
-            U.quietAndInfo(log, "HADOOP_HDFS_HOME is set to " + loc.hdfsHome());
-            U.quietAndInfo(log, "HADOOP_MAPRED_HOME is set to " + loc.mapredHome());
-        }
-        catch (IOException ioe) {
-            throw new IgniteCheckedException(ioe);
-        }
-
-        HadoopClassLoader.hadoopUrls();
 
         hctx = new HadoopContext(
             ctx,
@@ -204,6 +188,26 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
         return hctx.jobTracker().killJob(jobId);
     }
 
+    /** {@inheritDoc} */
+    @Override public void validateEnvironment() throws IgniteCheckedException {
+        // Perform some static checks as early as possible, so that any recoverable exceptions are thrown here.
+        try {
+            HadoopLocations loc = HadoopClasspathUtils.hadoopLocations();
+
+            if (loc.home() != null)
+                U.quietAndInfo(log, "HADOOP_HOME is set to " + loc.home());
+
+            U.quietAndInfo(log, "HADOOP_COMMON_HOME is set to " + loc.commonHome());
+            U.quietAndInfo(log, "HADOOP_HDFS_HOME is set to " + loc.hdfsHome());
+            U.quietAndInfo(log, "HADOOP_MAPRED_HOME is set to " + loc.mapredHome());
+        }
+        catch (IOException ioe) {
+            throw new IgniteCheckedException(ioe.getMessage(), ioe);
+        }
+
+        HadoopClassLoader.hadoopUrls();
+    }
+
     /**
      * Initializes default hadoop configuration.
      *
@@ -212,17 +216,5 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
     private void initializeDefaults(HadoopConfiguration cfg) {
         if (cfg.getMapReducePlanner() == null)
             cfg.setMapReducePlanner(new IgniteHadoopMapReducePlanner());
-    }
-
-    /**
-     * Validates Grid and Hadoop configuration for correctness.
-     *
-     * @param hadoopCfg Hadoop configuration.
-     * @throws IgniteCheckedException If failed.
-     */
-    private void validate(HadoopConfiguration hadoopCfg) throws IgniteCheckedException {
-        if (ctx.config().isPeerClassLoadingEnabled())
-            throw new IgniteCheckedException("Peer class loading cannot be used with Hadoop (disable it using " +
-                "IgniteConfiguration.setPeerClassLoadingEnabled()).");
     }
 }
