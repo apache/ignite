@@ -42,7 +42,13 @@ namespace ignite
              * Query cursor class template.
              *
              * Both key and value types should be default-constructable,
-             * copy-constructable and assignable.
+             * copy-constructable and assignable. Also BinaryType class
+             * template should be specialized for both types.
+             *
+             * This class implemented as a reference to an implementation so copying
+             * of this class instance will only create another reference to the same
+             * underlying object. Underlying object released automatically once all
+             * the instances are destructed.
              */
             template<typename K, typename V>
             class QueryCursor
@@ -73,11 +79,12 @@ namespace ignite
 
                 /**
                  * Check whether next entry exists.
-                 * Throws IgniteError class instance in case of failure.
                  *
                  * This method should only be used on the valid instance.
                  *
                  * @return True if next entry exists.
+                 *
+                 * @throw IgniteError class instance in case of failure.
                  */
                 bool HasNext()
                 {
@@ -117,11 +124,12 @@ namespace ignite
 
                 /**
                  * Get next entry.
-                 * Throws IgniteError class instance in case of failure.
                  *
                  * This method should only be used on the valid instance.
                  *
                  * @return Next entry.
+                 *
+                 * @throw IgniteError class instance in case of failure.
                  */
                 CacheEntry<K, V> GetNext()
                 {
@@ -175,11 +183,12 @@ namespace ignite
 
                 /**
                  * Get all entries.
-                 * Throws IgniteError class instance in case of failure.
                  *
                  * This method should only be used on the valid instance.
                  *
                  * @param Vector where query entries will be stored.
+                 *
+                 * @throw IgniteError class instance in case of failure.
                  */
                 void GetAll(std::vector<CacheEntry<K, V>>& res)
                 {

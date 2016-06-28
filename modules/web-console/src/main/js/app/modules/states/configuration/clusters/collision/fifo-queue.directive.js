@@ -15,20 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.spark.impl
+import template from './fifo-queue.jade!';
 
-import org.apache.ignite.IgniteCache
-import org.apache.ignite.spark.IgniteRDD
-import org.apache.spark.api.java.{JavaPairRDD, JavaRDDLike}
-
-abstract class JavaIgniteAbstractRDD[K, V](val rdd: IgniteRDD[K, V])
-    extends JavaRDDLike[(K, V), JavaPairRDD[K, V]] {
-
-    protected def ensureCache(): IgniteCache[K, V] = {
-        // Make sure to deploy the cache
-        if (rdd.cacheCfg != null)
-            rdd.ic.ignite().getOrCreateCache(rdd.cacheCfg)
-        else
-            rdd.ic.ignite().getOrCreateCache(rdd.cacheName)
-    }
-}
+export default ['igniteConfigurationClustersCollisionFifoQueue', [() => {
+    return {
+        scope: true,
+        restrict: 'E',
+        template,
+        replace: true
+    };
+}]];

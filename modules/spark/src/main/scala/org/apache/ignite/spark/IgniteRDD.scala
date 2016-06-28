@@ -45,8 +45,9 @@ import scala.collection.JavaConversions._
 class IgniteRDD[K, V] (
     val ic: IgniteContext[K, V],
     val cacheName: String,
-    val cacheCfg: CacheConfiguration[K, V]
-) extends IgniteAbstractRDD[(K, V), K, V] (ic, cacheName, cacheCfg) {
+    val cacheCfg: CacheConfiguration[K, V],
+    val keepBinary: Boolean
+) extends IgniteAbstractRDD[(K, V), K, V] (ic, cacheName, cacheCfg, keepBinary) {
     /**
      * Computes iterator based on given partition.
      *
@@ -127,7 +128,8 @@ class IgniteRDD[K, V] (
 
         qry.setArgs(args.map(_.asInstanceOf[Object]):_*)
 
-        new IgniteSqlRDD[(K, V), Cache.Entry[K, V], K, V](ic, cacheName, cacheCfg, qry, entry ⇒ (entry.getKey, entry.getValue))
+        new IgniteSqlRDD[(K, V), Cache.Entry[K, V], K, V](ic, cacheName, cacheCfg, qry,
+            entry ⇒ (entry.getKey, entry.getValue), keepBinary)
     }
 
     /**
@@ -144,7 +146,8 @@ class IgniteRDD[K, V] (
 
         val schema = buildSchema(ensureCache().query(qry).asInstanceOf[QueryCursorEx[java.util.List[_]]].fieldsMeta())
 
-        val rowRdd = new IgniteSqlRDD[Row, java.util.List[_], K, V](ic, cacheName, cacheCfg, qry, list ⇒ Row.fromSeq(list))
+        val rowRdd = new IgniteSqlRDD[Row, java.util.List[_], K, V](
+            ic, cacheName, cacheCfg, qry, list ⇒ Row.fromSeq(list), keepBinary)
 
         ic.sqlContext.createDataFrame(rowRdd, schema)
     }
@@ -288,6 +291,20 @@ class IgniteRDD[K, V] (
      */
     def clear(): Unit = {
         ensureCache().removeAll()
+    }
+
+    /**
+     * Returns `IgniteRDD` that will operate with binary objects. This method
+     * behaves similar to [[org.apache.ignite.IgniteCache#withKeepBinary]].
+     *
+     * @return New `IgniteRDD` instance for binary objects.
+     */
+    def withKeepBinary[K1, V1](): IgniteRDD[K1, V1] = {
+        new IgniteRDD[K1, V1](
+            ic.asInstanceOf[IgniteContext[K1, V1]],
+            cacheName,
+            cacheCfg.asInstanceOf[CacheConfiguration[K1, V1]],
+            true)
     }
 
     /**
