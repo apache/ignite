@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         /// <summary>
         /// Initializes a new instance of the <see cref="AffinityFunctionSpringTest"/> class.
         /// </summary>
-        public AffinityFunctionSpringTest() : base(1, "config\\cache\\affinity\\affinity-function.xml")
+        public AffinityFunctionSpringTest() : base(3, "config\\cache\\affinity\\affinity-function.xml")
         {
             // No-op.
         }
@@ -72,7 +72,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         [Test]
         public void TestDynamicCache()
         {
-            // TODO: Start cache from template
+            ValidateAffinityFunction(Grid.CreateCache<int, int>("dyn-cache-1"));
+            ValidateAffinityFunction(_ignite.GetCache<int, int>("dyn-cache-1"));
+
+            ValidateAffinityFunction(_ignite.CreateCache<int, int>("dyn-cache-2"));
+            ValidateAffinityFunction(Grid.GetCache<int, int>("dyn-cache-2"));
         }
 
         /// <summary>

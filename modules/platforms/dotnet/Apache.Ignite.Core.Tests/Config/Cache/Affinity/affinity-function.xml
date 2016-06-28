@@ -48,6 +48,23 @@
                         </bean>
                     </property>
                 </bean>
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="dyn-cache-*"/>
+
+                    <property name="affinity">
+                        <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetAffinityFunction">
+                            <property name="typeName" value="Apache.Ignite.Core.Tests.Cache.Affinity.AffinityFunctionSpringTest+TestFunc, Apache.Ignite.Core.Tests"/>
+                            <property name="properties">
+                                <map>
+                                    <entry key="Property1">
+                                        <value type="java.lang.Integer">1</value>
+                                    </entry>
+                                    <entry key="Property2" value="1"/>
+                                </map>
+                            </property>
+                        </bean>
+                    </property>
+                </bean>
             </list>
         </property>
 
