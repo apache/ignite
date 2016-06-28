@@ -39,22 +39,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         /// <summary>
         /// Initializes a new instance of the <see cref="AffinityFunctionSpringTest"/> class.
         /// </summary>
-        public AffinityFunctionSpringTest() : base(3, "config\\cache\\affinity\\affinity-function.xml")
+        public AffinityFunctionSpringTest() : base(3, 
+            "config\\cache\\affinity\\affinity-function.xml",
+            "config\\cache\\affinity\\affinity-function2.xml")
         {
             // No-op.
-        }
-
-        /** <inheritdoc /> */
-        public override void TestSetUp()
-        {
-            base.TestSetUp();
-
-            // Start another node without spring config
-            if (Ignition.TryGetIgnite("grid2") == null)
-            {
-                var cfg = new IgniteConfiguration(TestUtils.GetTestConfiguration()) {GridName = "grid2"};
-                _ignite = Ignition.Start(cfg);
-            }
         }
 
         /// <summary>
@@ -86,8 +75,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         /// <param name="cache">The cache.</param>
         private static void ValidateAffinityFunction(ICache<int, int> cache)
         {
-            Assert.IsNull(cache.GetConfiguration().AffinityFunction);
-
             var aff = cache.Ignite.GetAffinity(cache.Name);
             Assert.AreEqual(5, aff.Partitions);
             Assert.AreEqual(4, aff.GetPartition(2));

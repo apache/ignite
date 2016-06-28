@@ -176,6 +176,7 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <SubType>Designer</SubType>
     </Content>
+    <Content Include="Config\Cache\Affinity\affinity-function2.xml" />
     <Content Include="Config\Cache\Affinity\affinity-function.xml" />
     <Content Include="Config\Cache\Store\cache-store-session.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
