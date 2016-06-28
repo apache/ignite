@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.jdbc2;
 
 import org.apache.ignite.*;
+import org.apache.ignite.cache.CachePeekMode;
 import org.apache.ignite.cache.affinity.*;
 import org.apache.ignite.cache.query.annotations.*;
 import org.apache.ignite.configuration.*;
@@ -177,6 +178,20 @@ public class JdbcMetadataSelfTest extends GridCommonAbstractTest {
             rs = meta.getTables("", "PUBLIC", "", new String[]{"WRONG"});
 
             assertFalse(rs.next());
+        }
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMetadataResultSetClose() throws Exception {
+        try (Connection conn = DriverManager.getConnection(BASE_URL)) {
+            try (ResultSet tables = conn.getMetaData().getTables(null, null, "%", null)) {
+                int columnCount = tables.getMetaData().getColumnCount();
+                while (tables.next())
+                    for (int i = 0; i < columnCount; i++)
+                        tables.getObject(i + 1);
+            }
         }
     }
 
