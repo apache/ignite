@@ -17,8 +17,6 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import org.apache.ignite.internal.util.typedef.F;
-
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -111,7 +109,7 @@ public class HadoopClasspathUtils {
         String mapredHome = systemOrEnv(MAPRED_HOME, EMPTY_STR);
 
         // If any composite location is defined, use only them.
-        if (!F.isEmpty(commonHome) || !F.isEmpty(hdfsHome) || !F.isEmpty(mapredHome)) {
+        if (!isEmpty(commonHome) || !isEmpty(hdfsHome) || !isEmpty(mapredHome)) {
             HadoopLocations res = new HadoopLocations(hadoopHome, commonHome, hdfsHome, mapredHome);
 
             if (res.valid())
@@ -123,7 +121,7 @@ public class HadoopClasspathUtils {
                     "[env=" + HDFS_HOME + ", value=" + hdfsHome + ", exists=" + res.hdfsExists() + "], " +
                     "[env=" + MAPRED_HOME + ", value=" + mapredHome + ", exists=" + res.mapredExists() + "]]");
         }
-        else if (!F.isEmpty(hadoopHome)) {
+        else if (!isEmpty(hadoopHome)) {
             // All further checks will be based on HADOOP_HOME, so check for it's existence.
             if (!exists(hadoopHome))
                 throw new IOException("Failed to resolve Hadoop classpath because " + HOME + " environment " +
@@ -222,6 +220,16 @@ public class HadoopClasspathUtils {
         Path p = Paths.get(path);
 
         return Files.exists(p) && Files.isDirectory(p) && Files.isReadable(p);
+    }
+
+    /**
+     * Check if string is empty.
+     *
+     * @param val Value.
+     * @return {@code True} if empty.
+     */
+    private static boolean isEmpty(String val) {
+        return val == null || val.isEmpty();
     }
 
     /**
