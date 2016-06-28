@@ -37,6 +37,7 @@ import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
+import org.apache.ignite.internal.processors.rest.GridRestResponse;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandler;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
@@ -191,6 +192,36 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
         }
 
         return res;
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testHandleMetadataForAllCache() throws Exception {
+        GridCacheCommandHandler cmdHandler = new GridCacheCommandHandler(((IgniteKernal)grid()).context());
+        GridRestCacheRequest req = new GridRestCacheRequest();
+
+        req.command(GridRestCommand.GET_OR_CREATE_CACHE);
+        req.cacheName("partitioned_cache");
+
+        IgniteInternalFuture<GridRestResponse> resp = cmdHandler.handleAsync(req);
+
+        req = new GridRestCacheRequest();
+        req.command(GridRestCommand.GET_OR_CREATE_CACHE);
+        req.cacheName("replicated_cache");
+
+        resp = cmdHandler.handleAsync(req);
+
+        req = new GridRestCacheRequest();
+        req.command(GridRestCommand.CACHE_METADATA);
+        req.cacheName(null);
+
+        resp = cmdHandler.handleAsync(req);
+
+        assertNull(resp.result().getError());
+        assertEquals(GridRestResponse.STATUS_SUCCESS, resp.result().getSuccessStatus());
+        assertEquals("[CacheSqlMetadata [cacheName=null], CacheSqlMetadata [cacheName=replicated_cache], CacheSqlMetadata [cacheName=partitioned_cache]]",
+                resp.result().getResponse().toString());
     }
 
     /**

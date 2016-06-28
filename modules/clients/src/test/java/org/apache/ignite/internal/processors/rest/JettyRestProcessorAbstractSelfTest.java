@@ -28,13 +28,7 @@ import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -1103,6 +1097,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         Collection<GridCacheSqlMetadata> meta = cache.context().queries().sqlMetadata();
 
         testMetadata(meta);
+        testMetadataForVoidCacheName(meta);
     }
 
     /**
@@ -1119,6 +1114,94 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         Collection<GridCacheSqlMetadata> metas = c.context().queries().sqlMetadata();
 
         testMetadata(metas);
+        testMetadataForVoidCacheName(metas);
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testMetadataForVoidCacheName(Collection<GridCacheSqlMetadata> metas) throws Exception {
+
+        Map<String, String> params = F.asMap("cmd", GridRestCommand.CACHE_METADATA.key());
+
+        String ret = content(params);
+
+        info("Cache metadata result: " + ret);
+
+        JsonNode arr = jsonResponse(ret);
+
+        assertTrue(arr.isArray());
+        assertEquals(metas.size(), arr.size());
+
+        for (JsonNode item : arr) {
+            JsonNode cacheNameNode = item.get("cacheName");
+            final String cacheName = cacheNameNode != null ? cacheNameNode.asText() : null;
+
+            GridCacheSqlMetadata meta = F.find(metas, null, new P1<GridCacheSqlMetadata>() {
+                @Override public boolean apply(GridCacheSqlMetadata meta) {
+                    return F.eq(meta.cacheName(), cacheName);
+                }
+            });
+
+            assertNotNull("REST return metadata for unexpected cache: " + cacheName, meta);
+
+            JsonNode types = item.get("types");
+
+            assertNotNull(types);
+            assertFalse(types.isNull());
+
+            assertEqualsCollections(meta.types(), JSON_MAPPER.treeToValue(types, Collection.class));
+
+            JsonNode keyClasses = item.get("keyClasses");
+
+            assertNotNull(keyClasses);
+            assertFalse(keyClasses.isNull());
+
+            assertTrue(meta.keyClasses().equals(JSON_MAPPER.treeToValue(keyClasses, Map.class)));
+
+            JsonNode valClasses = item.get("valClasses");
+
+            assertNotNull(valClasses);
+            assertFalse(valClasses.isNull());
+
+            assertTrue(meta.valClasses().equals(JSON_MAPPER.treeToValue(valClasses, Map.class)));
+
+            JsonNode fields = item.get("fields");
+
+            assertNotNull(fields);
+            assertFalse(fields.isNull());
+            assertTrue(meta.fields().equals(JSON_MAPPER.treeToValue(fields, Map.class)));
+
+            JsonNode indexesByType = item.get("indexes");
+
+            assertNotNull(indexesByType);
+            assertFalse(indexesByType.isNull());
+            assertEquals(meta.indexes().size(), indexesByType.size());
+
+            for (Map.Entry<String, Collection<GridCacheSqlIndexMetadata>> metaIndexes : meta.indexes().entrySet()) {
+                JsonNode indexes = indexesByType.get(metaIndexes.getKey());
+
+                assertNotNull(indexes);
+                assertFalse(indexes.isNull());
+                assertEquals(metaIndexes.getValue().size(), indexes.size());
+
+                for (final GridCacheSqlIndexMetadata metaIdx : metaIndexes.getValue()) {
+                    JsonNode idx = F.find(indexes, null, new P1<JsonNode>() {
+                        @Override public boolean apply(JsonNode idx) {
+                            return metaIdx.name().equals(idx.get("name").asText());
+                        }
+                    });
+
+                    assertNotNull(idx);
+
+                    assertEqualsCollections(metaIdx.fields(),
+                            JSON_MAPPER.treeToValue(idx.get("fields"), Collection.class));
+                    assertEqualsCollections(metaIdx.descendings(),
+                            JSON_MAPPER.treeToValue(idx.get("descendings"), Collection.class));
+                    assertEquals(metaIdx.unique(), idx.get("unique").asBoolean());
+                }
+            }
+        }
     }
 
     /**
