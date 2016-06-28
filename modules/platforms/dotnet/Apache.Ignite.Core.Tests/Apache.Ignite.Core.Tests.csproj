@@ -60,6 +60,7 @@
     <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Cache\Affinity\AffinityFunctionSpringTest.cs" />
     <Compile Include="Cache\CacheDynamicStartTest.cs" />
     <Compile Include="Cache\CacheTestAsyncWrapper.cs" />
     <Compile Include="Cache\CacheAbstractTest.cs" />
@@ -175,6 +176,7 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <SubType>Designer</SubType>
     </Content>
+    <Content Include="Config\Cache\Affinity\affinity-function.xml" />
     <Content Include="Config\Cache\Store\cache-store-session.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
