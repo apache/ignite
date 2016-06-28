@@ -134,5 +134,5 @@ IgniteProcessorCreateNearCache @131
 IgniteProcessorGetOrCreateNearCache @132
 IgniteProcessorGetCacheNames @133
 IgniteProjectionForServers @134
-IgniteInitConsole @135
+IgniteSetConsoleHandler @135
  

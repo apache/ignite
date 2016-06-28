@@ -35,14 +35,30 @@ namespace Apache.Ignite.Core.Tests
         /** */
         private StringBuilder _errSb;
 
+        /** */
+        private TextWriter _stdOut;
+
+        /** */
+        private TextWriter _stdErr;
+
         [SetUp]
         public void SetUp()
         {
+            _stdOut = Console.Out;
+            _stdErr = Console.Error;
+
             _outSb = new StringBuilder();
             Console.SetOut(new StringWriter(_outSb));
 
             _errSb = new StringBuilder();
             Console.SetError(new StringWriter(_errSb));
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            Console.SetOut(_stdOut);
+            Console.SetError(_stdErr);
         }
 
         /// <summary>
