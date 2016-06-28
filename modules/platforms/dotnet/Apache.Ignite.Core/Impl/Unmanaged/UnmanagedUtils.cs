@@ -49,7 +49,17 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 throw new IgniteException(string.Format("Failed to load {0}: {1}", 
                     IgniteUtils.FileIgniteJniDll, Marshal.GetLastWin32Error()));
 
+            AppDomain.CurrentDomain.DomainUnload += CurrentDomain_DomainUnload;
+
             JNI.InitConsole(UnmanagedCallbacks.ConsoleWriteHandler);
+        }
+
+        /// <summary>
+        /// Handles the DomainUnload event of the current AppDomain.
+        /// </summary>
+        private static void CurrentDomain_DomainUnload(object sender, EventArgs e)
+        {
+            JNI.InitConsole(null);
         }
 
         /// <summary>

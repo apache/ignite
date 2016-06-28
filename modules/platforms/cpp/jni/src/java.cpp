@@ -437,6 +437,7 @@ namespace ignite
 
             /* STATIC STATE. */
             gcc::CriticalSection JVM_LOCK;
+            gcc::CriticalSection CONSOLE_LOCK;
             JniJvm JVM;
             bool PRINT_EXCEPTION = false;
             ConsoleWriteHandler consoleWrite;
@@ -2505,7 +2506,9 @@ namespace ignite
             }
 
             void JniContext::InitConsole(ConsoleWriteHandler consoleHandler) {
+                CONSOLE_LOCK.Enter();
                 consoleWrite = consoleHandler;
+                CONSOLE_LOCK.Leave();
             }
 
             void JniContext::ThrowToJava(char* msg) {
@@ -2875,16 +2878,18 @@ namespace ignite
             }
 
             JNIEXPORT void JNICALL JniConsoleWrite(JNIEnv *env, jclass cls, jstring str, jboolean isErr) {
+                CONSOLE_LOCK.Enter();
+
                 if (consoleWrite) {
                     const char* strChars = env->GetStringUTFChars(str, nullptr);
                     const int strCharsLen = env->GetStringUTFLength(str);
-                    
+
                     consoleWrite(strChars, strCharsLen, isErr);
 
                     env->ReleaseStringUTFChars(str, strChars);
                 }
-                else
-                    ThrowOnMissingHandler(env);
+
+                CONSOLE_LOCK.Leave();
             }
         }
     }
