@@ -21,7 +21,6 @@ import javax.cache.Cache;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
-import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
@@ -29,6 +28,7 @@ import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.lang.GridCursor;
 import org.apache.ignite.internal.util.lang.GridIterator;
 import org.apache.ignite.internal.util.typedef.internal.S;
+import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -57,16 +57,11 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
     public ReuseList reuseList();
 
     /**
-     * @return Free list.
-     */
-    public FreeList freeList();
-
-    /**
      * @param entry Cache entry.
-     * @return Cached object entry, if available, null otherwise.
+     * @return Cached row, if available, null otherwise.
      * @throws IgniteCheckedException If failed.
      */
-    public CacheObjectEntry read(GridCacheMapEntry entry) throws IgniteCheckedException;
+    @Nullable public CacheDataRow read(GridCacheMapEntry entry) throws IgniteCheckedException;
 
     /**
      * @param p Partition.
@@ -87,11 +82,9 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * @param ver  Version.
      * @param expireTime Expire time.
      * @param part Partition.
-     * @return UpdateInfo object that contains the info about the old entry and the offheap link to new
-     *          entry.
      * @throws IgniteCheckedException If failed.
      */
-    public UpdateInfo update(
+    public void update(
             KeyCacheObject key,
             CacheObject val,
             GridCacheVersion ver,
@@ -105,10 +98,9 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * @param prevVal Previous value.
      * @param prevVer Previous version.
      * @param part Partition.
-     * @return removed entry info
      * @throws IgniteCheckedException If failed.
      */
-    public CacheObjectEntry remove(
+    public void remove(
             KeyCacheObject key,
             CacheObject prevVal,
             GridCacheVersion prevVer,
@@ -206,11 +198,9 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
          * @param val Value.
          * @param ver Version.
          * @param expireTime Expire time.
-         * @return UpdateInfo object that contains the info about the old entry and the offheap link to new
-         *          entry.
          * @throws IgniteCheckedException If failed.
          */
-        UpdateInfo update(KeyCacheObject key,
+        void update(KeyCacheObject key,
             int part,
             CacheObject val,
             GridCacheVersion ver,
@@ -218,10 +208,9 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
 
         /**
          * @param key Key.
-         * @return removed entry
          * @throws IgniteCheckedException If failed.
          */
-        public CacheObjectEntry remove(KeyCacheObject key,
+        public void remove(KeyCacheObject key,
             CacheObject prevVal,
             GridCacheVersion prevVer,
             int partId) throws IgniteCheckedException;
@@ -231,7 +220,7 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
          * @return Cached object entry.
          * @throws IgniteCheckedException If failed.
          */
-        public CacheObjectEntry find(KeyCacheObject key) throws IgniteCheckedException;
+        public CacheDataRow find(KeyCacheObject key) throws IgniteCheckedException;
 
         /**
          * @return Data cursor.
@@ -341,26 +330,10 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      * storage of entries
      */
     interface PendingEntries {
-
-        /**
-         * @param entry Entry.
-         */
-        void addTrackedEntry(GridCacheMapEntry entry);
-
-        /**
-         * @param entry Entry.
-         */
-        void removeTrackedEntry(GridCacheMapEntry entry);
-
-        /**
-         * @param entry Entry.
-         */
-        void removeTrackedEntry(IgniteCacheOffheapManager.CacheObjectEntry entry);
-
         /**
          *
          */
-        ExpiredEntriesCursor expired(long time);
+        ExpiredEntriesCursor expired(long time) throws IgniteCheckedException;
 
         /**
          *
@@ -377,34 +350,6 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
      *
      */
     interface ExpiredEntriesCursor extends GridCursor<GridCacheEntryEx> {
-        /**
-         * Remove all items that
-         */
-        void removeAll();
+        // No-op.
     }
-
-    class UpdateInfo implements AutoCloseable {
-
-        private final long newLink;
-        private final CacheObjectEntry oldEntry;
-
-        public UpdateInfo(long link, CacheObjectEntry entry) {
-            newLink = link;
-            oldEntry = entry;
-        }
-
-        public long newLink() {
-            return newLink;
-        }
-
-        public CacheObjectEntry oldEntry() {
-            return oldEntry;
-        }
-
-        @Override public void close() throws Exception {
-            if (oldEntry != null)
-                oldEntry.close();
-        }
-    }
-
 }
