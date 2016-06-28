@@ -22,11 +22,11 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.internal.pagemem.Page;
 import org.apache.ignite.internal.pagemem.PageIdUtils;
+import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.cache.CacheObject;
+import org.apache.ignite.internal.processors.cache.CacheObjectContext;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.KeyCacheObject;
-import org.apache.ignite.internal.processors.cache.database.RowStore;
-import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
 import org.apache.ignite.internal.processors.cache.database.tree.io.DataPageIO;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.processors.query.h2.opt.GridH2Row;
@@ -38,19 +38,29 @@ import static org.apache.ignite.internal.pagemem.PageIdUtils.pageId;
 /**
  * Data store for H2 rows.
  */
-public class H2RowStore extends RowStore {
+public class H2RowFactory {
+    /** */
+    private final PageMemory pageMem;
+
+    /** */
+    private final GridCacheContext<?,?> cctx;
+
+    /** */
+    private final CacheObjectContext coctx;
+
     /** */
     private final GridH2RowDescriptor rowDesc;
 
     /**
      * @param rowDesc Row descriptor.
      * @param cctx Cache context.
-     * @param freeList Free list.
      */
-    public H2RowStore(GridH2RowDescriptor rowDesc, GridCacheContext<?,?> cctx, FreeList freeList) {
-        super(cctx, freeList);
-
+    public H2RowFactory(GridH2RowDescriptor rowDesc, GridCacheContext<?,?> cctx) {
         this.rowDesc = rowDesc;
+        this.cctx = cctx;
+
+        coctx = cctx.cacheObjectContext();
+        pageMem = cctx.shared().database().pageMemory();
     }
 
     /**
@@ -105,5 +115,14 @@ public class H2RowStore extends RowStore {
                 page.releaseRead();
             }
         }
+    }
+
+    /**
+     * @param pageId Page ID.
+     * @return Page.
+     * @throws IgniteCheckedException If failed.
+     */
+    private Page page(long pageId) throws IgniteCheckedException {
+        return pageMem.page(cctx.cacheId(), pageId);
     }
 }

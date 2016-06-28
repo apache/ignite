@@ -195,7 +195,8 @@ public interface GridQueryIndexing {
         int partId,
         CacheObject val,
         GridCacheVersion ver,
-        long expirationTime) throws IgniteCheckedException;
+        long expirationTime,
+        long link) throws IgniteCheckedException;
 
     /**
      * Removes index entry by key.

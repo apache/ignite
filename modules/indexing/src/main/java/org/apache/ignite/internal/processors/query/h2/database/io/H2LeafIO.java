@@ -64,7 +64,7 @@ public class H2LeafIO extends BPlusLeafIO<SearchRow> implements H2RowLinkIO {
         throws IgniteCheckedException {
         long link = getLink(buf, idx);
 
-        return ((H2Tree)tree).getRowStore().getRow(link);
+        return ((H2Tree)tree).getRowFactory().getRow(link);
     }
 
     /** {@inheritDoc} */

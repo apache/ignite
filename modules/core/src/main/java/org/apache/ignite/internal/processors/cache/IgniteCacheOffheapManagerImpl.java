@@ -238,13 +238,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     ) throws IgniteCheckedException {
         UpdateInfo updInfo = dataStore(part).update(key, partId, val, ver, expireTime);
 
-        if (indexingEnabled) {
-            GridCacheQueryManager qryMgr = cctx.queries();
-
-            assert qryMgr.enabled();
-
-            qryMgr.store(key, partId, val, ver, expireTime);
-        }
         return updInfo;
     }
 
@@ -256,15 +249,8 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             int partId,
             GridDhtLocalPartition part
     ) throws IgniteCheckedException {
-        CacheObjectEntry removed = dataStore(part).remove(key);
+        CacheObjectEntry removed = dataStore(part).remove(key, prevVal, prevVer, partId);
 
-        if (indexingEnabled) {
-            GridCacheQueryManager qryMgr = cctx.queries();
-
-            assert qryMgr.enabled();
-
-            qryMgr.remove(key, partId, prevVal, prevVer);
-        }
         return removed;
     }
 
@@ -630,10 +616,25 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
             rowStore.addRow(dataRow);
 
+            assert dataRow.link != 0 : dataRow;
+
             DataRow old = dataTree.put(dataRow);
             CacheObjectEntry oldEntry = null;
 
-            if (old == null)
+            if (indexingEnabled) {
+                GridCacheQueryManager qryMgr = cctx.queries();
+
+                assert qryMgr.enabled();
+
+                qryMgr.store(key, p, val, ver, expireTime, dataRow.link);
+            }
+
+            if (old != null) {
+                assert old.link != 0 : old;
+
+                rowStore.removeRow(old.link);
+            }
+            else
                 lsnr.onInsert();
             else {
                 assert old.link != 0 : old;
@@ -647,7 +648,18 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
 
         /** {@inheritDoc} */
-        @Override public CacheObjectEntry remove(KeyCacheObject key) throws IgniteCheckedException {
+        @Override public CacheObjectEntry remove(KeyCacheObject key,
+            CacheObject prevVal,
+            GridCacheVersion prevVer,
+            int partId) throws IgniteCheckedException {
+            if (indexingEnabled) {
+                GridCacheQueryManager qryMgr = cctx.queries();
+
+                assert qryMgr.enabled();
+
+                qryMgr.remove(key, partId, prevVal, prevVer);
+            }
+
             DataRow dataRow = dataTree.remove(new KeySearchRow(key.hashCode(), key, 0));
             CacheObjectEntry removed = null;
 

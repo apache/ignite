@@ -32,7 +32,7 @@ public abstract class JdbcAbstractBenchmark extends BenchmarkDriverAdapter {
         @Override protected Connection initialValue() {
             Connection conn;
             try {
-                conn = connection(false);
+                conn = connection();
                 if (args.createTempDatabase()) {
                     assert dbName != null;
                     conn.setCatalog(dbName);
@@ -60,11 +60,10 @@ public abstract class JdbcAbstractBenchmark extends BenchmarkDriverAdapter {
         if (args.createTempDatabase())
             createTestDatabase();
 
-        try (Connection conn = connection(false)) {
+        try (Connection conn = connection()) {
             if (args.createTempDatabase())
                 conn.setCatalog(dbName);
             populateTestDatabase(conn);
-            conn.commit();
         }
     }
 
@@ -82,7 +81,7 @@ public abstract class JdbcAbstractBenchmark extends BenchmarkDriverAdapter {
 
     /** Create new, randomly named database to put dummy benchmark data in - no need in this for databases like H2 */
     private void createTestDatabase() throws SQLException {
-        try (Connection conn = connection(true)) {
+        try (Connection conn = connection()) {
             String uuid = UUID.randomUUID().toString().replace("-", "");
             dbName = "benchmark" + getClass().getSimpleName() + uuid.substring(0, 16);
             try (Statement stmt = conn.createStatement()) {
@@ -93,7 +92,7 @@ public abstract class JdbcAbstractBenchmark extends BenchmarkDriverAdapter {
 
     /** Drop previously created randomly named database - no need in this for databases like H2 */
     private void dropTestDatabase() throws SQLException {
-        try (Connection conn = connection(true)) {
+        try (Connection conn = connection()) {
             try (Statement stmt = conn.createStatement()) {
                 stmt.executeUpdate("drop database " + dbName);
             }
@@ -125,12 +124,10 @@ public abstract class JdbcAbstractBenchmark extends BenchmarkDriverAdapter {
         }
     }
 
-    /** Create new {@link Connection} from {@link #args}. Intended for use by {@link #setUp} and {@link #tearDown}
-     * @param autoCommit whether all statements must be executed immediately */
-    private Connection connection(boolean autoCommit) throws SQLException {
+    /** Create new {@link Connection} from {@link #args}. Intended for use by {@link #setUp} and {@link #tearDown}  */
+    private Connection connection() throws SQLException {
         Connection conn = DriverManager.getConnection(args.jdbcUrl());
-        // For more fine-grained control of operations in child classes
-        conn.setAutoCommit(autoCommit);
+        conn.setAutoCommit(true);
         return conn;
     }
 
@@ -140,8 +137,8 @@ public abstract class JdbcAbstractBenchmark extends BenchmarkDriverAdapter {
      * @throws SQLException if failed
      */
     void clearTable(String tblName) throws SQLException {
-        try (Connection conn = connection(true)) {
-            try (PreparedStatement stmt = conn.prepareStatement("delete from " + tblName)) {
+        try (Connection conn = connection()) {
+            try (PreparedStatement stmt = conn.prepareStatement("drop table " + tblName)) {
                 stmt.executeUpdate();
             }
         }

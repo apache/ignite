@@ -12,6 +12,7 @@ import static org.yardstickframework.BenchmarkUtils.println;
  * JDBC benchmark that performs query operations
  */
 public class JdbcSqlQueryBenchmark extends JdbcAbstractBenchmark {
+    /** Benchmarked query template */
     private static final String SELECT_QUERY =
         "select p.id, p.org_id, p.first_name, p.last_name, p.salary " +
             "from PERSON p " +
@@ -39,7 +40,6 @@ public class JdbcSqlQueryBenchmark extends JdbcAbstractBenchmark {
                     println(cfg, "Populated persons: " + i);
             }
             stmt.executeBatch();
-            conn.get().commit();
         }
 
         println(cfg, "Finished populating join query data in " + ((System.nanoTime() - start) / 1_000_000) + " ms.");
