@@ -24,6 +24,7 @@ import org.apache.ignite.binary.BinaryBasicIdMapper;
 import org.apache.ignite.binary.BinaryNameMapper;
 import org.apache.ignite.binary.BinaryBasicNameMapper;
 import org.apache.ignite.configuration.BinaryConfiguration;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.PlatformConfiguration;
 import org.apache.ignite.internal.MarshallerContextImpl;
@@ -42,6 +43,7 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lifecycle.LifecycleBean;
 import org.apache.ignite.logger.NullLogger;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.platform.dotnet.PlatformDotNetAffinityFunction;
 import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
 import org.apache.ignite.platform.dotnet.PlatformDotNetLifecycleBean;
@@ -196,6 +198,14 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
                     writer.writeMap(bean.getProperties());
                 }
 
+                // Write .NET affinity funcs
+                List<PlatformDotNetAffinityFunction> affFuncs = affinityFunctions(igniteCfg);
+
+                writer.writeInt(affFuncs.size());
+
+                for (PlatformDotNetAffinityFunction func : affFuncs)
+                    func.write(writer);
+
                 out.synchronize();
 
                 gate.extensionCallbackInLongLongOutLong(
@@ -245,6 +255,14 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
                 cfg.setLifecycleBeans(mergedBeans);
             }
         }
+
+        // Process affinity functions
+        List<PlatformDotNetAffinityFunction> affFuncs = affinityFunctions(cfg);
+
+        if (!affFuncs.isEmpty()) {
+            for (PlatformDotNetAffinityFunction aff : affFuncs)
+                aff.init(in.readInt());
+        }
     }
 
     /**
@@ -288,5 +306,26 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
         catch (IgniteCheckedException e) {
             throw U.convertException(e);
         }
+    }
+
+    /**
+     * Find .NET affinity functions in configuration.
+     *
+     * @param cfg Configuration.
+     * @return affinity functions.
+     */
+    private static List<PlatformDotNetAffinityFunction> affinityFunctions(IgniteConfiguration cfg) {
+        List<PlatformDotNetAffinityFunction> res = new ArrayList<>();
+
+        CacheConfiguration[] cacheCfg = cfg.getCacheConfiguration();
+
+        if (cacheCfg != null) {
+            for (CacheConfiguration ccfg : cacheCfg) {
+                if (ccfg.getAffinity() instanceof PlatformDotNetAffinityFunction)
+                    res.add((PlatformDotNetAffinityFunction)ccfg.getAffinity());
+            }
+        }
+
+        return res;
     }
 }
