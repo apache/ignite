@@ -33,9 +33,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
     /// </summary>
     public class AffinityFunctionSpringTest : IgniteTestBase
     {
-        /** */
-        private IIgnite _ignite;
-
         /// <summary>
         /// Initializes a new instance of the <see cref="AffinityFunctionSpringTest"/> class.
         /// </summary>
@@ -53,7 +50,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         public void TestStaticCache()
         {
             ValidateAffinityFunction(Grid.GetCache<int, int>("cache1"));
-            ValidateAffinityFunction(_ignite.GetCache<int, int>("cache1"));
+            ValidateAffinityFunction(Grid2.GetCache<int, int>("cache1"));
         }
 
         /// <summary>
@@ -63,9 +60,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         public void TestDynamicCache()
         {
             ValidateAffinityFunction(Grid.CreateCache<int, int>("dyn-cache-1"));
-            ValidateAffinityFunction(_ignite.GetCache<int, int>("dyn-cache-1"));
+            ValidateAffinityFunction(Grid2.GetCache<int, int>("dyn-cache-1"));
 
-            ValidateAffinityFunction(_ignite.CreateCache<int, int>("dyn-cache-2"));
+            ValidateAffinityFunction(Grid2.CreateCache<int, int>("dyn-cache-2"));
             ValidateAffinityFunction(Grid.GetCache<int, int>("dyn-cache-2"));
         }
 
