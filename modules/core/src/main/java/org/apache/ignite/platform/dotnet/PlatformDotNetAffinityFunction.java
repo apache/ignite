@@ -17,12 +17,14 @@
 
 package org.apache.ignite.platform.dotnet;
 
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
 import org.apache.ignite.lifecycle.LifecycleAware;
+import org.apache.ignite.resources.IgniteInstanceResource;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -47,6 +49,9 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
 
     /** Inner function. */
     private transient PlatformAffinityFunction func;
+
+    /** Ignite. */
+    private Ignite ignite;
 
     /**
      * Gets .NET type name.
@@ -139,5 +144,16 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteException {
         func.stop();
+    }
+
+    /**
+     * Injects the Ignite.
+     *
+     * @param ignite Ignite.
+     */
+    @IgniteInstanceResource
+    private void setIgnite(Ignite ignite) {
+        this.ignite = ignite;
+        func.setIgnite(ignite);
     }
 }
