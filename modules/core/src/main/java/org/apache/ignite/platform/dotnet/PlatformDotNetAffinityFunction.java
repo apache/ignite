@@ -17,10 +17,12 @@
 
 package org.apache.ignite.platform.dotnet;
 
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
+import org.apache.ignite.lifecycle.LifecycleAware;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -33,7 +35,7 @@ import java.util.UUID;
 /**
  * AffinityFunction implementation which can be used to configure .NET affinity function in Java Spring configuration.
  */
-public class PlatformDotNetAffinityFunction implements AffinityFunction, Externalizable {
+public class PlatformDotNetAffinityFunction implements AffinityFunction, Externalizable, LifecycleAware {
     /** */
     private static final long serialVersionUID = 0L;
 
@@ -127,5 +129,15 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
      */
     public void init(Object fun, int partitions) {
         func = new PlatformAffinityFunction(fun, partitions);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void start() throws IgniteException {
+        func.start();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop() throws IgniteException {
+        func.stop();
     }
 }
