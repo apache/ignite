@@ -26,6 +26,7 @@ namespace Apache.Ignite.Core
     using System.Runtime;
     using System.Threading;
     using Apache.Ignite.Core.Binary;
+    using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl;
     using Apache.Ignite.Core.Impl.Binary;
@@ -233,6 +234,8 @@ namespace Apache.Ignite.Core
                 PrepareConfiguration(reader);
 
                 PrepareLifecycleBeans(reader, outStream, handleRegistry);
+
+                PrepareAffinityFunctions(reader, outStream);
             }
             catch (Exception e)
             {
@@ -282,7 +285,7 @@ namespace Apache.Ignite.Core
             int cnt = reader.ReadInt();
 
             for (int i = 0; i < cnt; i++)
-                beans.Add(new LifecycleBeanHolder(CreateLifecycleBean(reader)));
+                beans.Add(new LifecycleBeanHolder(CreateObject<ILifecycleBean>(reader)));
 
             // 2. Append beans definied in local configuration.
             ICollection<ILifecycleBean> nativeBeans = _startup.Configuration.LifecycleBeans;
@@ -306,21 +309,30 @@ namespace Apache.Ignite.Core
         }
 
         /// <summary>
-        /// Create lifecycle bean.
+        /// Prepares the affinity functions.
+        /// </summary>
+        private static void PrepareAffinityFunctions(BinaryReader reader, PlatformMemoryStream outStream)
+        {
+            var cnt = reader.ReadInt();
+
+            var writer = reader.Marshaller.StartMarshal(outStream);
+
+            for (var i = 0; i < cnt; i++)
+                writer.WriteInt(CreateObject<IAffinityFunction>(reader).Partitions);
+        }
+
+        /// <summary>
+        /// Creates an object and sets the properties.
         /// </summary>
         /// <param name="reader">Reader.</param>
-        /// <returns>Lifecycle bean.</returns>
-        private static ILifecycleBean CreateLifecycleBean(BinaryReader reader)
+        /// <returns>Resulting object.</returns>
+        private static T CreateObject<T>(IBinaryRawReader reader)
         {
-            // 1. Instantiate.
-            var bean = IgniteUtils.CreateInstance<ILifecycleBean>(reader.ReadString());
+            var res =  IgniteUtils.CreateInstance<T>(reader.ReadString());
 
-            // 2. Set properties.
-            var props = reader.ReadDictionaryAsGeneric<string, object>();
+            IgniteUtils.SetProperties(res, reader.ReadDictionaryAsGeneric<string, object>());
 
-            IgniteUtils.SetProperties(bean, props);
-
-            return bean;
+            return res;
         }
 
         /// <summary>
