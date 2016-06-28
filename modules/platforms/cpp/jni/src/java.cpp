@@ -1251,12 +1251,12 @@ namespace ignite
                 ExceptionCheck(env);
             }
 
-            jobject JniContext::ProcessorProjection(jobject obj) {
+            jobject JniContext::ProcessorProjection(jobject obj, JniErrorInfo* errInfo) {
                 JNIEnv* env = Attach();
 
                 jobject prj = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformProcessor_projection);
 
-                ExceptionCheck(env);
+                ExceptionCheck(env, errInfo);
 
                 return LocalToGlobal(env, prj);
             }
@@ -2013,12 +2013,12 @@ namespace ignite
                 return LocalToGlobal(env, newPrj);
             }
 
-            jobject JniContext::ProjectionForServers(jobject obj) {
+            jobject JniContext::ProjectionForServers(jobject obj, JniErrorInfo* errInfo) {
                 JNIEnv* env = Attach();
 
                 jobject newPrj = env->CallObjectMethod(obj, jvm->GetMembers().m_PlatformClusterGroup_forServers);
 
-                ExceptionCheck(env);
+                ExceptionCheck(env, errInfo);
 
                 return LocalToGlobal(env, newPrj);
             }

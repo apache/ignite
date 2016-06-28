@@ -518,7 +518,7 @@ namespace ignite
                 void IgnitionStopAll(bool cancel, JniErrorInfo* errInfo);
                 
                 void ProcessorReleaseStart(jobject obj);
-                jobject ProcessorProjection(jobject obj);
+                jobject ProcessorProjection(jobject obj, JniErrorInfo* errInfo = NULL);
                 jobject ProcessorCache(jobject obj, const char* name);
                 jobject ProcessorCache(jobject obj, const char* name, JniErrorInfo* errInfo);
                 jobject ProcessorCreateCache(jobject obj, const char* name);
@@ -606,7 +606,7 @@ namespace ignite
                 jobject ProjectionForRandom(jobject obj);
                 jobject ProjectionForOldest(jobject obj);
                 jobject ProjectionForYoungest(jobject obj);
-                jobject ProjectionForServers(jobject obj);
+                jobject ProjectionForServers(jobject obj, JniErrorInfo* errInfo = NULL);
                 void ProjectionResetMetrics(jobject obj);
                 jobject ProjectionOutOpRet(jobject obj, int type, long long memPtr);
 
