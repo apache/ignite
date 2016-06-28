@@ -610,9 +610,11 @@ public class PlatformCache extends PlatformAbstractTarget {
             }
 
             case OP_INVOKE: {
+                Long procId = reader.readObject();
+
                 Object key = reader.readObjectDetached();
 
-                CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(reader.readObjectDetached(), 0);
+                CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(procId, reader.readObjectDetached(), 0);
 
                 try {
                     writer.writeObjectDetached(cache.invoke(key, proc));
@@ -631,7 +633,7 @@ public class PlatformCache extends PlatformAbstractTarget {
             case OP_INVOKE_ALL: {
                 Set<Object> keys = PlatformUtils.readSet(reader);
 
-                CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(reader.readObjectDetached(), 0);
+                CacheEntryProcessor proc = platformCtx.createCacheEntryProcessor(null, reader.readObjectDetached(), 0);
 
                 writeInvokeAllResult(writer, cache.invokeAll(keys, proc));
 

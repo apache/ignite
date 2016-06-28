@@ -518,7 +518,7 @@ namespace ignite
                 void IgnitionStopAll(bool cancel, JniErrorInfo* errInfo);
                 
                 void ProcessorReleaseStart(jobject obj);
-                jobject ProcessorProjection(jobject obj);
+                jobject ProcessorProjection(jobject obj, JniErrorInfo* errInfo = NULL);
                 jobject ProcessorCache(jobject obj, const char* name);
                 jobject ProcessorCache(jobject obj, const char* name, JniErrorInfo* errInfo);
                 jobject ProcessorCreateCache(jobject obj, const char* name);
@@ -544,8 +544,8 @@ namespace ignite
                 jobject ProcessorAtomicLong(jobject obj, char* name, long long initVal, bool create);
                 jobject ProcessorAtomicSequence(jobject obj, char* name, long long initVal, bool create);
                 jobject ProcessorAtomicReference(jobject obj, char* name, long long memPtr, bool create);
-				void ProcessorGetIgniteConfiguration(jobject obj, long long memPtr);
-				void ProcessorGetCacheNames(jobject obj, long long memPtr);
+                void ProcessorGetIgniteConfiguration(jobject obj, long long memPtr);
+                void ProcessorGetCacheNames(jobject obj, long long memPtr);
                 
                 long long TargetInStreamOutLong(jobject obj, int type, long long memPtr, JniErrorInfo* errInfo = NULL);
                 void TargetInStreamOutStream(jobject obj, int opType, long long inMemPtr, long long outMemPtr, JniErrorInfo* errInfo = NULL);
@@ -558,7 +558,7 @@ namespace ignite
                 void TargetListenFutureForOperation(jobject obj, long long futId, int typ, int opId);
                 void* TargetListenFutureAndGet(jobject obj, long long futId, int typ);
                 void* TargetListenFutureForOperationAndGet(jobject obj, long long futId, int typ, int opId);
-                
+
                 int AffinityPartitions(jobject obj);
 
                 jobject CacheWithSkipStore(jobject obj);
@@ -606,7 +606,7 @@ namespace ignite
                 jobject ProjectionForRandom(jobject obj);
                 jobject ProjectionForOldest(jobject obj);
                 jobject ProjectionForYoungest(jobject obj);
-                jobject ProjectionForServers(jobject obj);
+                jobject ProjectionForServers(jobject obj, JniErrorInfo* errInfo = NULL);
                 void ProjectionResetMetrics(jobject obj);
                 jobject ProjectionOutOpRet(jobject obj, int type, long long memPtr);
 

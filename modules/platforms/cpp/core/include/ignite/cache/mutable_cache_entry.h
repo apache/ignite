@@ -15,49 +15,63 @@
  * limitations under the License.
  */
 
-/**
- * @file
- * Declares ignite::cache::CacheEntry class.
- */
-
-#ifndef _IGNITE_CACHE_CACHE_ENTRY
-#define _IGNITE_CACHE_CACHE_ENTRY
+#ifndef _IGNITE_CACHE_MUTABLE_CACHE_ENTRY
+#define _IGNITE_CACHE_MUTABLE_CACHE_ENTRY
 
 #include <ignite/common/common.h>
+#include <ignite/cache/cache_entry.h>
 
 namespace ignite
 {
     namespace cache
     {
         /**
-         * %Cache entry class template.
+         * Mutable representation of CacheEntry class template.
          *
          * Both key and value types should be default-constructable,
          * copy-constructable and assignable.
+         *
+         * Additionally, equality operator should be defined for
+         * the value type.
          */
         template<typename K, typename V>
-        class CacheEntry
+        class MutableCacheEntry
         {
         public:
             /**
              * Default constructor.
-             *
-             * Creates instance with both key and value default-constructed.
              */
-            CacheEntry() :
-                key(), val()
+            MutableCacheEntry() :
+                key(),
+                val(),
+                exists(false)
             {
                 // No-op.
             }
 
             /**
-             * Constructor.
+             * Constructor for non-existing entry.
+             *
+             * @param key Key.
+             */
+            MutableCacheEntry(const K& key) :
+                key(key),
+                val(),
+                exists(false)
+            {
+                // No-op.
+            }
+
+            /**
+             * Constructor for existing entry.
              *
              * @param key Key.
              * @param val Value.
              */
-            CacheEntry(const K& key, const V& val) :
-                key(key), val(val)
+            MutableCacheEntry(const K& key, const V& val) :
+                key(key),
+                val(val), 
+                exists(true)
             {
                 // No-op.
             }
@@ -67,8 +81,10 @@ namespace ignite
              *
              * @param other Other instance.
              */
-            CacheEntry(const CacheEntry& other) :
-                key(other.key), val(other.val)
+            MutableCacheEntry(const MutableCacheEntry& other) : 
+                key(other.key),
+                val(other.val), 
+                exists(other.exists)
             {
                 // No-op.
             }
@@ -77,16 +93,37 @@ namespace ignite
              * Assignment operator.
              *
              * @param other Other instance.
+             * @return *this.
              */
-            CacheEntry& operator=(const CacheEntry& other) 
+            MutableCacheEntry& operator=(const MutableCacheEntry& other)
             {
                 if (this != &other)
                 {
                     key = other.key;
                     val = other.val;
+                    exists = other.exists;
                 }
 
                 return *this;
+            }
+
+            /**
+             * Check whether cache entry exists in cache.
+             *
+             * @return True if the cache entry exists in cache and false
+             *     otherwise.
+             */
+            bool IsExists() const
+            {
+                return exists;
+            }
+
+            /**
+             * Removes the entry from the Cache.
+             */
+            void Remove()
+            {
+                exists = false;
             }
 
             /**
@@ -94,7 +131,7 @@ namespace ignite
              *
              * @return Key.
              */
-            K GetKey() const
+            const K& GetKey() const
             {
                 return key;
             }
@@ -104,19 +141,36 @@ namespace ignite
              *
              * @return Value.
              */
-            V GetValue() const
+            const V& GetValue() const
             {
                 return val;
             }
 
+            /**
+             * Sets or replaces the value associated with the key.
+             *
+             * After setter invocation "IsExists" will return true.
+             *
+             * @param val Value to set.
+             */
+            void SetValue(const V& val)
+            {
+                this->val = val;
+
+                exists = true;
+            }
+
         private:
             /** Key. */
-            K key;
+            K key; 
 
             /** Value. */
-            V val;
+            V val; 
+
+            /** Exists. */
+            bool exists;
         };
     }
 }
 
-#endif //_IGNITE_CACHE_CACHE_ENTRY
+#endif //_IGNITE_CACHE_MUTABLE_CACHE_ENTRY

@@ -19,6 +19,7 @@
 #include "ignite/impl/binary/binary_reader_impl.h"
 #include "ignite/impl/ignite_environment.h"
 #include "ignite/binary/binary.h"
+#include "ignite/impl/module_manager.h"
 
 using namespace ignite::common::concurrent;
 using namespace ignite::jni::java;
@@ -34,14 +35,14 @@ namespace ignite
          * OnStart callback.
          *
          * @param target Target environment.
-         * @param proc Processor instance (not used for now).
+         * @param proc Processor instance.
          * @param memPtr Memory pointer.
          */
         void IGNITE_CALL OnStart(void* target, void* proc, long long memPtr)
         {
             SharedPointer<IgniteEnvironment>* ptr = static_cast<SharedPointer<IgniteEnvironment>*>(target);
 
-            ptr->Get()->OnStartCallback(memPtr);
+            ptr->Get()->OnStartCallback(memPtr, proc);
         }
 
         /**
@@ -72,20 +73,39 @@ namespace ignite
             mem.Get()->Reallocate(cap);
         }
 
-        IgniteEnvironment::IgniteEnvironment() : ctx(SharedPointer<JniContext>()), latch(new SingleLatch), name(NULL),
-            metaMgr(new BinaryTypeManager())
+        /**
+         * CacheInvoke callback.
+         *
+         * @param target Target environment.
+         * @param inMemPtr Input memory pointer.
+         * @param outMemPtr Output memory pointer.
+         */
+        void IGNITE_CALL CacheInvoke(void* target, long long inMemPtr, long long outMemPtr)
+        {
+            SharedPointer<IgniteEnvironment>* ptr = static_cast<SharedPointer<IgniteEnvironment>*>(target);
+
+            ptr->Get()->CacheInvokeCallback(inMemPtr, outMemPtr);
+        }
+
+        IgniteEnvironment::IgniteEnvironment() :
+            ctx(SharedPointer<JniContext>()),
+            latch(new SingleLatch),
+            name(0),
+            proc(),
+            metaMgr(new BinaryTypeManager()),
+            invokeMgr(new InvokeManager()),
+            moduleMgr(new ModuleManager(invokeMgr))
         {
             // No-op.
         }
 
         IgniteEnvironment::~IgniteEnvironment()
         {
-            delete latch;
-
-            if (name)
-                delete name;
-
+            delete moduleMgr;
+            delete invokeMgr;
             delete metaMgr;
+            delete name;
+            delete latch;
         }
 
         JniHandlers IgniteEnvironment::GetJniHandlers(SharedPointer<IgniteEnvironment>* target)
@@ -99,21 +119,31 @@ namespace ignite
 
             hnds.memRealloc = MemoryReallocate;
 
-            hnds.error = NULL;
+            hnds.cacheInvoke = CacheInvoke;
+
+            hnds.error = 0;
 
             return hnds;
         }
 
-        void IgniteEnvironment::Initialize(SharedPointer<JniContext> ctx)
+        void IgniteEnvironment::SetContext(SharedPointer<JniContext> ctx)
         {
             this->ctx = ctx;
+        }
 
+        void IgniteEnvironment::Initialize()
+        {
             latch->CountDown();
         }
 
         const char* IgniteEnvironment::InstanceName() const
         {
             return name;
+        }
+
+        void* IgniteEnvironment::GetProcessor()
+        {
+            return (void*)proc.Get();
         }
 
         JniContext* IgniteEnvironment::Context()
@@ -160,14 +190,27 @@ namespace ignite
             return metaMgr;
         }
 
-        void IgniteEnvironment::OnStartCallback(long long memPtr)
+        void* IgniteEnvironment::Acquire(void *obj)
         {
+            return reinterpret_cast<void*>(ctx.Get()->Acquire(reinterpret_cast<jobject>(obj)));
+        }
+
+        void IgniteEnvironment::ProcessorReleaseStart()
+        {
+            if (proc.Get())
+                ctx.Get()->ProcessorReleaseStart(proc.Get());
+        }
+
+        void IgniteEnvironment::OnStartCallback(long long memPtr, void* proc)
+        {
+            this->proc = ignite::jni::JavaGlobalRef(*ctx.Get(), (jobject)proc);
+
             InteropExternalMemory mem(reinterpret_cast<int8_t*>(memPtr));
             InteropInputStream stream(&mem);
 
             BinaryReaderImpl reader(&stream);
 
-            int32_t nameLen = reader.ReadString(NULL, 0);
+            int32_t nameLen = reader.ReadString(0, 0);
 
             if (nameLen >= 0)
             {
@@ -175,7 +218,34 @@ namespace ignite
                 reader.ReadString(name, nameLen + 1);
             }
             else
-                name = NULL;
+                name = 0;
+        }
+
+        void IgniteEnvironment::CacheInvokeCallback(long long inMemPtr, long long outMemPtr)
+        {
+            if (!invokeMgr)
+                throw IgniteError(IgniteError::IGNITE_ERR_UNKNOWN, "InvokeManager is not initialized.");
+
+            InteropExternalMemory inMem(reinterpret_cast<int8_t*>(inMemPtr));
+            InteropInputStream inStream(&inMem);
+            BinaryReaderImpl reader(&inStream);
+
+            InteropExternalMemory outMem(reinterpret_cast<int8_t*>(outMemPtr));
+            InteropOutputStream outStream(&outMem);
+            BinaryWriterImpl writer(&outStream, GetTypeManager());
+
+            int64_t procId;
+
+            if (!reader.TryReadObject<int64_t>(procId))
+                throw IgniteError(IgniteError::IGNITE_ERR_BINARY, "C++ entry processor id is not specified.");
+
+            bool invoked = invokeMgr->InvokeCacheEntryProcessorById(procId, reader, writer);
+
+            if (!invoked)
+                throw IgniteError(IgniteError::IGNITE_ERR_COMPUTE_USER_UNDECLARED_EXCEPTION,
+                    "C++ entry processor is not found on the node (did you compile your program with -rdynamic?).");
+
+            outStream.Synchronize();
         }
     }
 }

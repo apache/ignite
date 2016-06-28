@@ -72,6 +72,9 @@ namespace ignite
             /** Operation: GetAndReplace. */
             const int32_t OP_GET_AND_REPLACE = 10;
 
+            /** Operation: Invoke. */
+            const int32_t OP_INVOKE = 12;
+
             /** Operation: LocalEvict. */
             const int32_t OP_LOCAL_EVICT = 16;
 
@@ -295,6 +298,11 @@ namespace ignite
             QueryCursorImpl* CacheImpl::QueryScan(const ScanQuery& qry, IgniteError* err)
             {
                 return QueryInternal(qry, OP_QRY_SCAN, err);
+            }
+
+            void CacheImpl::Invoke(InputOperation& inOp, OutputOperation& outOp, IgniteError* err)
+            {
+                OutInOp(OP_INVOKE, inOp, outOp, err);
             }
 
             QueryCursorImpl* CacheImpl::QuerySqlFields(const SqlFieldsQuery& qry, IgniteError* err)

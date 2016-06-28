@@ -20,9 +20,11 @@
 
 #include <ignite/common/concurrent.h>
 #include <ignite/jni/java.h>
+#include <ignite/jni/utils.h>
 
 #include "ignite/impl/interop/interop_memory.h"
 #include "ignite/impl/binary/binary_type_manager.h"
+#include "ignite/impl/module_manager.h"
 
 namespace ignite 
 {
@@ -58,18 +60,32 @@ namespace ignite
             ignite::jni::java::JniHandlers GetJniHandlers(ignite::common::concurrent::SharedPointer<IgniteEnvironment>* target);
 
             /**
-             * Perform initialization on successful start.
+             * Set context.
              *
              * @param ctx Context.
              */
-            void Initialize(ignite::common::concurrent::SharedPointer<ignite::jni::java::JniContext> ctx);
+            void SetContext(ignite::common::concurrent::SharedPointer<ignite::jni::java::JniContext> ctx);
+
+            /**
+             * Perform initialization on successful start.
+             */
+            void Initialize();
 
             /**
              * Start callback.
              *
              * @param memPtr Memory pointer.
+             * @param proc Processor instance.
              */
-            void OnStartCallback(long long memPtr);
+            void OnStartCallback(long long memPtr, void* proc);
+
+            /**
+             * Cache Invoke callback.
+             *
+             * @param inMemPtr Input memory pointer.
+             * @param outMemPtr Output memory pointer.
+             */
+            void CacheInvokeCallback(long long inMemPtr, long long outMemPtr);
 
             /**
              * Get name of Ignite instance.
@@ -77,6 +93,13 @@ namespace ignite
              * @return Name.
              */
             const char* InstanceName() const;
+
+            /**
+             * Get processor associated with the instance.
+             *
+             * @return Processor.
+             */
+            void* GetProcessor();
 
             /**
              * Get JNI context.
@@ -114,6 +137,14 @@ namespace ignite
              * @param Type manager.
              */
             binary::BinaryTypeManager* GetTypeManager();
+
+            void* Acquire(void* obj);
+
+            /**
+             * Notify processor that Ignite instance has started.
+             */
+            void ProcessorReleaseStart();
+
         private:
             /** Context to access Java. */
             ignite::common::concurrent::SharedPointer<ignite::jni::java::JniContext> ctx;
@@ -124,8 +155,17 @@ namespace ignite
             /** Ignite name. */
             char* name;
 
+            /** Processor instance. */
+            ignite::jni::JavaGlobalRef proc;
+
             /** Type manager. */
             binary::BinaryTypeManager* metaMgr;
+
+            /** Invoke manager */
+            InvokeManager* invokeMgr;
+
+            /** Module manager. */
+            ModuleManager* moduleMgr;
 
             IGNITE_NO_COPY_ASSIGNMENT(IgniteEnvironment);
         };

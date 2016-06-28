@@ -38,10 +38,11 @@ BOOST_AUTO_TEST_CASE(TestIgnition)
     cfg.jvmOpts.push_back("-Djava.compiler=NONE");
     cfg.jvmOpts.push_back("-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005");
     cfg.jvmOpts.push_back("-XX:+HeapDumpOnOutOfMemoryError");
+    cfg.jvmOpts.push_back("-DIGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE=1000");
 
 #ifdef IGNITE_TESTS_32
         cfg.jvmInitMem = 256;
-        cfg.jvmMaxMem = 768;
+        cfg.jvmMaxMem = 512;
 #else
         cfg.jvmInitMem = 1024;
         cfg.jvmMaxMem = 4096;

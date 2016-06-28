@@ -26,36 +26,36 @@
  /**
   * Apache %Ignite API.
   */
- namespace ignite
- {
-	 /**
-	  * %Ignite Binary Objects API.
-	  */
-	 namespace binary
-	 {
-		 // Empty.
-	 }
+namespace ignite
+{
+    /**
+     * %Ignite Binary Objects API.
+     */
+    namespace binary
+    {
+        // Empty.
+    }
 
-	 /**
-	  * %Ignite %Transaction API.
-	  */
-	 namespace transactions
-	 {
-		 // Empty.
-	 }
-	 
-	 /**
-	  * %Ignite %Cache API.
-	  */
-	 namespace cache
-	 {
-		 /**
-		  * Contains APIs for creating and executing cache queries.
-		  */
-		 namespace query
-		 {
-			 // Empty.
-		 }
-	 }
+    /**
+     * %Ignite %Transaction API.
+     */
+    namespace transactions
+    {
+        // Empty.
+    }
+
+    /**
+     * %Ignite %Cache API.
+     */
+    namespace cache
+    {
+        /**
+         * Contains APIs for creating and executing cache queries.
+         */
+        namespace query
+        {
+            // Empty.
+        }
+    }
  }
  

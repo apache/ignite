@@ -173,10 +173,12 @@
     <ClInclude Include="..\..\include\ignite\timestamp.h" />
     <ClInclude Include="..\..\os\win\include\ignite\common\common.h" />
     <ClInclude Include="..\..\os\win\include\ignite\common\concurrent_os.h" />
+    <ClInclude Include="..\..\os\win\include\ignite\common\dynamic_load_os.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\os\win\src\common\concurrent_os.cpp" />
+    <ClCompile Include="..\..\os\win\src\common\dynamic_load_os.cpp" />
     <ClCompile Include="..\..\os\win\src\common\utils.cpp" />
     <ClCompile Include="..\..\src\common\concurrent.cpp" />
     <ClCompile Include="..\..\src\date.cpp" />

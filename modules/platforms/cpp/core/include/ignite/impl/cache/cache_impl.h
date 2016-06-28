@@ -326,6 +326,15 @@ namespace ignite
                  * @return Query cursor.
                  */
                 query::QueryCursorImpl* QuerySqlFields(const ignite::cache::query::SqlFieldsQuery& qry, IgniteError* err);
+
+                /**
+                 * Perform Invoke.
+                 *
+                 * @param inOp Input.
+                 * @param outOp Output.
+                 * @param err Error.
+                 */
+                void Invoke(InputOperation& inOp, OutputOperation& outOp, IgniteError* err);
                 
             private:
                 /** Name. */

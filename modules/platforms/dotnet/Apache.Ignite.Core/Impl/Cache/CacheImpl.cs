@@ -813,6 +813,8 @@ namespace Apache.Ignite.Core.Impl.Cache
 
             return DoOutInOp((int)CacheOp.Invoke, writer =>
             {
+                // Cache entry processor. Always null for .NET. Used in C++.
+                writer.Write<object>(null);
                 writer.Write(key);
                 writer.Write(holder);
             },
