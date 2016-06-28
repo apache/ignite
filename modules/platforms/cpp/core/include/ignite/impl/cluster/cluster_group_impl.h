@@ -35,6 +35,7 @@ namespace ignite
             class IGNITE_FRIEND_EXPORT ClusterGroupImpl : private interop::InteropTarget
             {
                 typedef common::concurrent::SharedPointer<IgniteEnvironment> SP_IgniteEnvironment;
+                typedef common::concurrent::SharedPointer<ClusterGroupImpl> SP_ClusterGroupImpl;
             public:
                 /**
                  * Constructor used to create new instance.
@@ -49,7 +50,25 @@ namespace ignite
                  */
                 ~ClusterGroupImpl();
 
+                /**
+                 * Get server nodes cluster group implementation.
+                 *
+                 * @param err Error.
+                 * @return Server nodes cluster group implementation.
+                 */
+                SP_ClusterGroupImpl ForServers(IgniteError& err);
+
             private:
+
+                /**
+                 * Make cluster group implementation using java reference and
+                 * internal state of this cluster group.
+                 *
+                 * @param javaRef Java reference to cluster group to be created.
+                 * @return New cluster group implementation.
+                 */
+                SP_ClusterGroupImpl FromTarget(jobject javaRef);
+
                 IGNITE_NO_COPY_ASSIGNMENT(ClusterGroupImpl)
             };
         }

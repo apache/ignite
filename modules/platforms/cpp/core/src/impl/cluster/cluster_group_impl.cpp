@@ -36,6 +36,27 @@ namespace ignite
             {
                 // No-op.
             }
+
+            ClusterGroupImpl::SP_ClusterGroupImpl ClusterGroupImpl::ForServers(IgniteError& err)
+            {
+                JniErrorInfo jniErr;
+
+                jobject res = GetEnvironment().Context()->ProjectionForServers(GetTarget());
+
+                if (jniErr.code != java::IGNITE_JNI_ERR_SUCCESS)
+                {
+                    IgniteError::SetError(jniErr.code, jniErr.errCls, jniErr.errMsg, &err);
+
+                    return SP_ClusterGroupImpl();
+                }
+
+                return FromTarget(res);
+            }
+
+            ClusterGroupImpl::SP_ClusterGroupImpl ClusterGroupImpl::FromTarget(jobject javaRef)
+            {
+                return SP_ClusterGroupImpl(new ClusterGroupImpl(GetEnvironmentPointer(), javaRef));
+            }
         }
     }
 }

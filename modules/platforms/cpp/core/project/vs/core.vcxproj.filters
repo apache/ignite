@@ -43,7 +43,7 @@
     <ClCompile Include="..\..\src\impl\interop\interop_target.cpp">
       <Filter>Code\impl\interop</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\src\impl\cluster\cluster_group.cpp">
+    <ClCompile Include="..\..\src\impl\cluster\cluster_group_impl.cpp">
       <Filter>Code\impl\cluster</Filter>
     </ClCompile>
   </ItemGroup>

@@ -160,7 +160,7 @@ namespace ignite
              *
              * @return TransactionsImpl instance.
              */
-            SP_TransactionsImpl GetTransactions()
+            SP_TransactionsImpl GetTransactions() const
             {
                 return txImpl;
             }
@@ -170,7 +170,7 @@ namespace ignite
              *
              * @return ClusterGroupImpl instance.
              */
-            SP_ClusterGroupImpl GetProjection()
+            SP_ClusterGroupImpl GetProjection() const
             {
                 return prjImpl;
             }
