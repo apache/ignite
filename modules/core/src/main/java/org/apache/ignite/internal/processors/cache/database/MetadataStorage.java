@@ -152,7 +152,7 @@ public class MetadataStorage implements MetaStore {
             final IOVersions<? extends BPlusInnerIO<IndexItem>> innerIos,
             final IOVersions<? extends BPlusLeafIO<IndexItem>> leafIos, final boolean initNew)
             throws IgniteCheckedException {
-            super(treeName("meta", cacheId, "Meta"), cacheId, pageMem, metaPageId, reuseList, innerIos, leafIos);
+            super(treeName("meta", "Meta"), cacheId, pageMem, metaPageId, reuseList, innerIos, leafIos);
 
             if (initNew)
                 initNew();

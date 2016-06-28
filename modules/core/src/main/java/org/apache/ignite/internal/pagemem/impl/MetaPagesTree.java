@@ -43,7 +43,7 @@ public class MetaPagesTree extends BPlusTree<MetaTreeItem, MetaTreeItem> {
         final PageMemory pageMem,
         final long metaPageId,
         final boolean initNew) throws IgniteCheckedException {
-        super(treeName("meta", 0, "Meta"), 0, pageMem, new FullPageId(metaPageId, 0),
+        super(treeName("meta", "Meta"), 0, pageMem, new FullPageId(metaPageId, 0),
             null, MetaInnerIO.VERSIONS, MetaLeafIO.VERSIONS);
 
         if (initNew)

@@ -32,6 +32,8 @@ import org.apache.ignite.internal.pagemem.PageMemory;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.database.CacheDataRow;
 import org.apache.ignite.internal.processors.cache.database.IgniteCacheDatabaseSharedManager;
+import org.apache.ignite.internal.processors.cache.database.MetaStore;
+import org.apache.ignite.internal.processors.cache.database.MetadataStorage;
 import org.apache.ignite.internal.processors.cache.database.RootPage;
 import org.apache.ignite.internal.processors.cache.database.RowStore;
 import org.apache.ignite.internal.processors.cache.database.freelist.FreeList;
@@ -81,11 +83,16 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     /** */
     private CacheDataStore locCacheDataStore;
 
+    /** */
+    private MetaStore metaStore;
+
     /** {@inheritDoc} */
     @Override protected void start0() throws IgniteCheckedException {
         super.start0();
 
         indexingEnabled = INDEXING.inClassPath() && GridQueryProcessor.isEnabled(cctx.config());
+
+        metaStore = new MetadataStorage(cctx.shared().database().pageMemory(), cctx.cacheId());
 
         if (cctx.affinityNode()) {
             IgniteCacheDatabaseSharedManager dbMgr = cctx.shared().database();
@@ -95,7 +102,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             cctx.shared().database().checkpointReadLock();
 
             try {
-                reuseList = new ReuseList(cctx.cacheId(), dbMgr.pageMemory(), cpus * 2, dbMgr.meta(cctx.cacheId()));
+                reuseList = new ReuseList(cctx.cacheId(), dbMgr.pageMemory(), cpus * 2, metaStore);
                 freeList = new FreeList(cctx, reuseList);
 
                 if (cctx.isLocal()) {
@@ -147,6 +154,11 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     /** {@inheritDoc} */
     @Override public FreeList freeList() {
         return freeList;
+    }
+
+    /** {@inheritDoc} */
+    @Override public MetaStore meta() {
+        return metaStore;
     }
 
     /** {@inheritDoc} */
@@ -547,7 +559,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         String idxName = treeName(p);
 
         // TODO: GG-11220 cleanup when cache/partition is destroyed.
-        final RootPage rootPage = dbMgr.meta(cctx.cacheId()).getOrAllocateForTree(idxName);
+        final RootPage rootPage = metaStore.getOrAllocateForTree(idxName);
 
         CacheDataRowStore rowStore = new CacheDataRowStore(cctx, freeList);
 
@@ -567,7 +579,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
      * @return Tree name for given partition.
      */
     private String treeName(int p) {
-        return BPlusTree.treeName("p-" + p, 0, "CacheData");
+        return BPlusTree.treeName("p-" + p, "CacheData");
     }
 
     /**

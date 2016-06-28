@@ -824,12 +824,11 @@ public abstract class BPlusTree<L, T extends L> {
 
     /**
      * @param instance Instance name.
-     * @param cacheId Cache ID.
      * @param type Tree type.
      * @return Tree name.
      */
-    public static String treeName(String instance, int cacheId, String type) {
-        return instance + "@" + cacheId + "##" + type;
+    public static String treeName(String instance, String type) {
+        return instance + "##" + type;
     }
 
     /**

@@ -44,7 +44,7 @@ public final class ReuseList {
         ReuseTree[] trees0 = new ReuseTree[segments];
 
         for (int i = 0; i < segments; i++) {
-            String idxName = BPlusTree.treeName("s" + i, 0, "Reuse");
+            String idxName = BPlusTree.treeName("s" + i, "Reuse");
 
             final RootPage rootPage = metaStore.getOrAllocateForTree(idxName);
 
