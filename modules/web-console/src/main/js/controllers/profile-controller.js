@@ -53,9 +53,10 @@ consoleModule.controller('profileController', [
         $scope.togglePassword = () => {
             $scope.expandedPassword = !$scope.expandedPassword;
 
-            if (!$scope.expandedPassword) {
+            if ($scope.expandedPassword)
+                $focus('profile_password');
+            else {
                 delete $scope.user.password;
-
                 delete $scope.user.confirm;
             }
         };
