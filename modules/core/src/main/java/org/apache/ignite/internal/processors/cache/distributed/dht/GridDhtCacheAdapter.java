@@ -1217,13 +1217,16 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     /**
      * @param primary If {@code true} includes primary entries.
      * @param backup If {@code true} includes backup entries.
+     * @param keepBinary Keep binary flag.
      * @return Local entries iterator.
      */
-    public Iterator<Cache.Entry<K, V>> localEntriesIterator(final boolean primary, final boolean backup) {
+    public Iterator<Cache.Entry<K, V>> localEntriesIterator(final boolean primary,
+        final boolean backup,
+        final boolean keepBinary) {
         assert primary || backup;
 
         if (primary && backup)
-            return iterator(entries().iterator(), !ctx.keepBinary());
+            return iterator(entries().iterator(), !keepBinary);
         else {
             final AffinityTopologyVersion topVer = ctx.affinity().affinityTopologyVersion();
 
@@ -1287,7 +1290,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 }
             };
 
-            return iterator(it, !ctx.keepBinary());
+            return iterator(it, !keepBinary);
         }
     }
 
@@ -1352,7 +1355,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                     if (next instanceof GridCacheMapEntry && (!((GridCacheMapEntry)next).visitable(CU.empty0())))
                         continue;
 
-                    entry = next.wrapLazyValue();
+                    entry = next.wrapLazyValue(ctx.keepBinary());
 
                     return;
                 }

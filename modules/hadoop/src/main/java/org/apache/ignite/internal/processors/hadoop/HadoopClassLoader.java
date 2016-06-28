@@ -31,10 +31,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
 import org.apache.hadoop.util.NativeCodeLoader;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.internal.processors.hadoop.v2.HadoopDaemon;
 import org.apache.ignite.internal.processors.hadoop.v2.HadoopShutdownHookManager;
+import org.apache.ignite.internal.util.ClassCache;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
@@ -59,7 +63,7 @@ import org.objectweb.asm.commons.RemappingClassAdapter;
  * Also supports class parsing for finding dependencies which contain transitive dependencies
  * unavailable for parent.
  */
-public class HadoopClassLoader extends URLClassLoader {
+public class HadoopClassLoader extends URLClassLoader implements ClassCache {
     /**
      * We are very parallel capable.
      */
@@ -87,6 +91,9 @@ public class HadoopClassLoader extends URLClassLoader {
 
     /** */
     private static final Map<String, byte[]> bytesCache = new ConcurrentHashMap8<>();
+
+    /** Class cache. */
+    private final ConcurrentMap<String, Class> cacheMap = new ConcurrentHashMap<>();
 
     /** Diagnostic name of this class loader. */
     @SuppressWarnings({"FieldCanBeLocal", "UnusedDeclaration"})
@@ -280,6 +287,20 @@ public class HadoopClassLoader extends URLClassLoader {
 
             return defineClass(name, bytes, 0, bytes.length);
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Class<?> getFromCache(String clsName) throws ClassNotFoundException {
+        Class<?> cls = cacheMap.get(clsName);
+
+        if (cls == null) {
+            Class old = cacheMap.putIfAbsent(clsName, cls = Class.forName(clsName, true, this));
+
+            if (old != null)
+                cls = old;
+        }
+
+        return cls;
     }
 
     /**
