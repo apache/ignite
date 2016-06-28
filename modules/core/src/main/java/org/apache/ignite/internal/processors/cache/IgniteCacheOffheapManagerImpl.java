@@ -237,14 +237,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         GridDhtLocalPartition part
     ) throws IgniteCheckedException {
         dataStore(part).update(key, partId, val, ver, expireTime);
-
-        if (indexingEnabled) {
-            GridCacheQueryManager qryMgr = cctx.queries();
-
-            assert qryMgr.enabled();
-
-            qryMgr.store(key, partId, val, ver, expireTime);
-        }
     }
 
     /** {@inheritDoc} */
@@ -255,15 +247,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         int partId,
         GridDhtLocalPartition part
     ) throws IgniteCheckedException {
-        if (indexingEnabled) {
-            GridCacheQueryManager qryMgr = cctx.queries();
-
-            assert qryMgr.enabled();
-
-            qryMgr.remove(key, partId, prevVal, prevVer);
-        }
-
-        dataStore(part).remove(key);
+        dataStore(part).remove(key, prevVal, prevVer, partId);
     }
 
     /** {@inheritDoc} */
@@ -618,14 +602,40 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
             rowStore.addRow(dataRow);
 
+            assert dataRow.link != 0 : dataRow;
+
             DataRow old = dataTree.put(dataRow);
 
-            if (old == null)
+            if (indexingEnabled) {
+                GridCacheQueryManager qryMgr = cctx.queries();
+
+                assert qryMgr.enabled();
+
+                qryMgr.store(key, p, val, ver, expireTime, dataRow.link);
+            }
+
+            if (old != null) {
+                assert old.link != 0 : old;
+
+                rowStore.removeRow(old.link);
+            }
+            else
                 lsnr.onInsert();
         }
 
         /** {@inheritDoc} */
-        @Override public void remove(KeyCacheObject key) throws IgniteCheckedException {
+        @Override public void remove(KeyCacheObject key,
+            CacheObject prevVal,
+            GridCacheVersion prevVer,
+            int partId) throws IgniteCheckedException {
+            if (indexingEnabled) {
+                GridCacheQueryManager qryMgr = cctx.queries();
+
+                assert qryMgr.enabled();
+
+                qryMgr.remove(key, partId, prevVal, prevVer);
+            }
+
             DataRow dataRow = dataTree.remove(new KeySearchRow(key.hashCode(), key, 0));
 
             if (dataRow != null) {

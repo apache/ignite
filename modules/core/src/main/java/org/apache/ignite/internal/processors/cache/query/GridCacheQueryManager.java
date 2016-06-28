@@ -388,7 +388,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * @param expirationTime Expiration time or 0 if never expires.
      * @throws IgniteCheckedException In case of error.
      */
-    public boolean store(KeyCacheObject key, int partId, CacheObject val, GridCacheVersion ver, long expirationTime)
+    public boolean store(KeyCacheObject key, int partId, CacheObject val, GridCacheVersion ver, long expirationTime, long link)
         throws IgniteCheckedException {
         assert key != null;
         assert val != null;
@@ -401,7 +401,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
             return false; // Ignore index update when node is stopping.
 
         try {
-            return qryProc.store(space, key, partId, val, ver, expirationTime);
+            return qryProc.store(space, key, partId, val, ver, expirationTime, link);
         }
         finally {
             invalidateResultCache();
