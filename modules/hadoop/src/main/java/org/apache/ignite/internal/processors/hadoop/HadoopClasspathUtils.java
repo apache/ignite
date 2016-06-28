@@ -135,20 +135,20 @@ public class HadoopClasspathUtils {
                 hadoopHome + "/share/hadoop/hdfs", hadoopHome + "/share/hadoop/mapreduce"));
 
             // Probe for CDH with normal HADOOP_HOME directory.
-            probes.add(new HadoopLocations(hadoopHome, hadoopHome + "/hadoop",
-                hadoopHome + "/hadoop-hdfs", hadoopHome + "/hadoop-mapreduce"));
-
-            // Probe for CDH with HADOOP_HOME equal to HADOOP_COMMON_HOME.
             probes.add(new HadoopLocations(hadoopHome, hadoopHome,
                 hadoopHome + "/../hadoop-hdfs", hadoopHome + "/../hadoop-mapreduce"));
 
-            // Probe for HDP with normal HADOOP_HOME directory.
-            probes.add(new HadoopLocations(hadoopHome, hadoopHome + "/hadoop-client,",
-                hadoopHome + "/hadoop-hdfs-client", hadoopHome + "/hadoop-mapreduce-client"));
+            // Probe for CDH with HADOOP_HOME set to parent directory.
+            probes.add(new HadoopLocations(hadoopHome, hadoopHome + "/hadoop",
+                hadoopHome + "/hadoop-hdfs", hadoopHome + "/hadoop-mapreduce"));
 
-            // Probe for HDP with HADOOP_HOME equal to HADOOP_COMMON_HOME.
+            // Probe for HDP with normal HADOOP_HOME directory.
             probes.add(new HadoopLocations(hadoopHome, hadoopHome,
                 hadoopHome + "/../hadoop-hdfs-client", hadoopHome + "/../hadoop-mapreduce-client"));
+
+            // Probe for HDP with HADOOP_HOME set to parent directory.
+            probes.add(new HadoopLocations(hadoopHome, hadoopHome + "/hadoop-client,",
+                hadoopHome + "/hadoop-hdfs-client", hadoopHome + "/hadoop-mapreduce-client"));
 
             for (HadoopLocations probe : probes) {
                 if (probe.valid())
