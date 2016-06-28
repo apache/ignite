@@ -60,7 +60,7 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
     private transient PlatformAffinityFunction func;
 
     /** Ignite. */
-    private Ignite ignite;
+    private transient Ignite ignite;
 
     /**
      * Gets .NET type name.
@@ -100,6 +100,8 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
 
     /** {@inheritDoc} */
     @Override public void reset() {
+        assert func != null;
+
         func.reset();
     }
 
@@ -110,16 +112,22 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
 
     /** {@inheritDoc} */
     @Override public int partition(Object key) {
+        assert func != null;
+
         return func.partition(key);
     }
 
     /** {@inheritDoc} */
     @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext affCtx) {
+        assert func != null;
+
         return func.assignPartitions(affCtx);
     }
 
     /** {@inheritDoc} */
     @Override public void removeNode(UUID nodeId) {
+        assert func != null;
+
         func.removeNode(nodeId);
     }
 
