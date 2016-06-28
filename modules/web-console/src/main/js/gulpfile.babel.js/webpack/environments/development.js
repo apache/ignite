@@ -26,7 +26,7 @@ export default () => {
     return {
         context: rootDir,
         debug: true,
-        devtool: 'cheap-module-eval-source-map',
+        devtool: 'source-map',
         watch: true,
         devServer: {
             historyApiFallback: true,

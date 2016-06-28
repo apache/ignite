@@ -17,6 +17,7 @@
 
 import _ from 'lodash';
 import JSZip from 'jszip';
+import saver from 'file-saver';
 
 export default [
     '$rootScope', '$scope', '$http', '$common', '$loading', '$filter', 'ConfigurationSummaryResource', 'JavaTypes', 'IgniteVersion', 'GeneratorDocker', 'GeneratorPom',
@@ -326,10 +327,8 @@ export default [
 
             $generatorOptional.optionalContent(zip, cluster);
 
-            const blob = zip.generate({type: 'blob', compression: 'DEFLATE', mimeType: 'application/octet-stream'});
-
-            // Download archive.
-            saveAs(blob, cluster.name + '-project.zip');
+            zip.generateAsync({type: 'blob', compression: 'DEFLATE', mimeType: 'application/octet-stream'})
+                .then((blob) => saver.saveAs(blob, cluster.name + '-project.zip'));
         };
 
         /**
