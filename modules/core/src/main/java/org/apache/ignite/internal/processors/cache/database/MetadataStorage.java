@@ -37,8 +37,11 @@ import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList
  * Metadata storage.
  */
 public class MetadataStorage implements MetaStore {
-    /** Max index name length (symbols num) */
+    /** Max index name length (bytes num) */
     public static final int MAX_IDX_NAME_LEN = 64;
+
+    /** */
+    public static final String REUSE_TREE_NAME = "metaReuseTree";
 
     /** Bytes in byte. */
     private static final int BYTE_LEN = 1;
@@ -48,6 +51,9 @@ public class MetadataStorage implements MetaStore {
 
     /** Index tree. */
     private final MetaTree metaTree;
+
+    /** Meta page reuse tree. */
+    private final MetaReuseTree reuseTree;
 
     /** Cache ID. */
     private final int cacheId;
@@ -67,6 +73,15 @@ public class MetadataStorage implements MetaStore {
 
             metaTree = new MetaTree(cacheId, pageMem, rootPage.pageId(), null, IndexInnerIO.VERSIONS,
                 IndexLeafIO.VERSIONS, rootPage.isAllocated());
+
+            // Reuse logic
+            final RootPage root = getOrAllocateForTree(REUSE_TREE_NAME);
+
+            final ReuseList reuseList = new ReuseList(cacheId, pageMem,
+                Runtime.getRuntime().availableProcessors() * 2, this);
+
+            this.reuseTree = new MetaReuseTree(cacheId, pageMem, root.pageId(), reuseList,
+                MetaReuseInnerIO.VERSIONS, MetaReuseLeafIO.VERSIONS, root.isAllocated());
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -87,7 +102,12 @@ public class MetadataStorage implements MetaStore {
             final IndexItem row = tree.findOne(new IndexItem(idxNameBytes, 0));
 
             if (row == null) {
-                final long pageId = pageMem.allocatePage(cacheId, 0, ALLOC_SPACE);
+                Long reused = null;
+
+                if (reuseTree != null)
+                    reused = reuseTree.removeCeil(0L, null);
+
+                long pageId = reused == null ? pageMem.allocatePage(cacheId, 0, ALLOC_SPACE) : reused;
 
                 tree.put(new IndexItem(idxNameBytes, pageId));
 
@@ -110,8 +130,12 @@ public class MetadataStorage implements MetaStore {
 
         final IndexItem row = tree.remove(new IndexItem(idxNameBytes, 0));
 
-        if (row != null) // TODO Have a reuse tree for deallocated pages.
-            pageMem.freePage(cacheId, row.pageId);
+        if (row != null) {
+            if (reuseTree != null)
+                reuseTree.put(row.pageId);
+            else
+               pageMem.freePage(cacheId, row.pageId);
+        }
 
         return row != null ? new RootPage(new FullPageId(row.pageId, cacheId), false) : null;
     }
@@ -405,6 +429,126 @@ public class MetadataStorage implements MetaStore {
         @Override public IndexItem getLookupRow(final BPlusTree<IndexItem, ?> tree, final ByteBuffer buf,
             final int idx) throws IgniteCheckedException {
             return readRow(buf, offset(idx));
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getOffset(final int idx) {
+            return offset(idx);
+        }
+    }
+
+    /**
+     * Keeps freed meta page IDs.
+     */
+    private static class MetaReuseTree extends BPlusTree<Long, Long> {
+        /**
+         * @param cacheId Cache ID.
+         * @param pageMem Page memory.
+         * @param metaPageId Meta root page ID.
+         * @param reuseList Reuse list.
+         * @param innerIos Inner IO.
+         * @param leafIos Leaf IO.
+         * @param initNew Init new flag.
+         * @throws IgniteCheckedException
+         */
+        public MetaReuseTree(final int cacheId, final PageMemory pageMem,
+            final FullPageId metaPageId, final ReuseList reuseList,
+            final IOVersions<? extends BPlusInnerIO<Long>> innerIos,
+            final IOVersions<? extends BPlusLeafIO<Long>> leafIos, final boolean initNew)
+            throws IgniteCheckedException {
+            super(treeName("meta@" + cacheId, "Reuse"), cacheId, pageMem, metaPageId, reuseList, innerIos, leafIos);
+
+            if (initNew)
+                initNew();
+        }
+
+        /** {@inheritDoc} */
+        @Override protected int compare(final BPlusIO<Long> io, final ByteBuffer buf, final int idx,
+            final Long row) throws IgniteCheckedException {
+            return row.compareTo(buf.getLong(((IndexIO) io).getOffset(idx)));
+        }
+
+        /** {@inheritDoc} */
+        @Override protected Long getRow(final BPlusIO<Long> io, final ByteBuffer buf,
+            final int idx) throws IgniteCheckedException {
+            return buf.getLong(((IndexIO) io).getOffset(idx));
+        }
+    }
+
+    /**
+     *
+     */
+    private static class MetaReuseInnerIO extends BPlusInnerIO<Long> implements IndexIO {
+        /** */
+        static final IOVersions<MetaReuseInnerIO> VERSIONS = new IOVersions<>(
+            new MetaReuseInnerIO(1)
+        );
+
+        /**
+         * @param ver Version.
+         */
+        public MetaReuseInnerIO(final int ver) {
+            super(T_META_REUSE_INNER, ver, false, 8);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void store(final ByteBuffer buf, final int idx,
+            final Long row) throws IgniteCheckedException {
+            buf.putLong(offset(idx), row);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void store(final ByteBuffer dst, final int dstIdx, final BPlusIO<Long> srcIo,
+            final ByteBuffer src,
+            final int srcIdx) throws IgniteCheckedException {
+            dst.putLong(getOffset(dstIdx), src.getLong(((IndexIO)srcIo).getOffset(srcIdx)));
+        }
+
+        /** {@inheritDoc} */
+        @Override public Long getLookupRow(final BPlusTree<Long, ?> tree, final ByteBuffer buf,
+            final int idx) throws IgniteCheckedException {
+            return buf.getLong(offset(idx));
+        }
+
+        /** {@inheritDoc} */
+        @Override public int getOffset(final int idx) {
+            return offset(idx);
+        }
+    }
+
+    /**
+     *
+     */
+    private static class MetaReuseLeafIO extends BPlusLeafIO<Long> implements IndexIO {
+        /** */
+        static final IOVersions<MetaReuseLeafIO> VERSIONS = new IOVersions<>(
+            new MetaReuseLeafIO(1)
+        );
+
+        /**
+         * @param ver Version.
+         */
+        public MetaReuseLeafIO(final int ver) {
+            super(T_META_REUSE_LEAF, ver, 8);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void store(final ByteBuffer buf, final int idx,
+            final Long row) throws IgniteCheckedException {
+            buf.putLong(offset(idx), row);
+        }
+
+        /** {@inheritDoc} */
+        @Override public void store(final ByteBuffer dst, final int dstIdx, final BPlusIO<Long> srcIo,
+            final ByteBuffer src,
+            final int srcIdx) throws IgniteCheckedException {
+            dst.putLong(getOffset(dstIdx), src.getLong(((IndexIO)srcIo).getOffset(srcIdx)));
+        }
+
+        /** {@inheritDoc} */
+        @Override public Long getLookupRow(final BPlusTree<Long, ?> tree, final ByteBuffer buf,
+            final int idx) throws IgniteCheckedException {
+            return buf.getLong(offset(idx));
         }
 
         /** {@inheritDoc} */

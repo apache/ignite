@@ -73,7 +73,7 @@ public final class ReuseList {
      * @return Reuse tree.
      */
     private ReuseTree tree(BPlusTree<?,?> client) {
-        int treeIdx = client.randomInt(trees.length);
+        int treeIdx = BPlusTree.randomInt(trees.length);
 
         ReuseTree tree = trees[treeIdx];
 
@@ -109,14 +109,13 @@ public final class ReuseList {
     }
 
     /**
-     * @param client Client tree.
      * @param bag Reuse bag.
      * @throws IgniteCheckedException If failed.
      */
-    public void add(BPlusTree<?,?> client, ReuseBag bag) throws IgniteCheckedException {
+    public void add(ReuseBag bag) throws IgniteCheckedException {
         assert bag != null;
 
-        for (int i = client.randomInt(trees.length);;) {
+        for (int i = BPlusTree.randomInt(trees.length);;) {
             long pageId = bag.pollFreePage();
 
             if (pageId == 0)

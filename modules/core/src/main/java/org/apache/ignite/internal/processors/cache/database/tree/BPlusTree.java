@@ -2388,7 +2388,7 @@ public abstract class BPlusTree<L, T extends L> {
         private void reuseFreePages() throws IgniteCheckedException {
             // If we have a bag, then it will be processed at the upper level.
             if (reuseList != null && bag == null)
-                reuseList.add(BPlusTree.this, this);
+                reuseList.add(this);
         }
 
         /**
