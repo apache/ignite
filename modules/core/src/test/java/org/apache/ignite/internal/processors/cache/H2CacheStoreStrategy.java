@@ -57,14 +57,17 @@ public class H2CacheStoreStrategy implements TestCacheStoreStrategy {
         "create table if not exists CACHE(k binary not null, v binary not null, PRIMARY KEY(k));";
 
     /** Script that creates STATS table */
-    private static final String CREATE_STATS_TABLE =
-        "create table if not exists STATS(id bigint not null, reads int not null, writes int not null, " +
-            "removes int not null, PRIMARY KEY(id));";
+    private static final String CREATE_STATS_TABLES =
+        "create table if not exists READS(id bigint auto_increment);\n" +
+        "create table if not exists WRITES(id bigint auto_increment);\n" +
+        "create table if not exists REMOVES(id bigint auto_increment);";
+
 
     /** Script that populates STATS table */
     private static final String POPULATE_STATS_TABLE =
-        "delete from STATS;\n" +
-        "insert into STATS(id, reads, writes, removes) values(1, 0, 0, 0);";
+        "delete from READS;\n" +
+        "delete from WRITES;\n" +
+        "delete from REMOVES;";
 
     /** */
     public H2CacheStoreStrategy() throws IgniteCheckedException {
@@ -74,7 +77,7 @@ public class H2CacheStoreStrategy implements TestCacheStoreStrategy {
 
             try (Connection conn = connection()) {
                 RunScript.execute(conn, new StringReader(CREATE_CACHE_TABLE));
-                RunScript.execute(conn, new StringReader(CREATE_STATS_TABLE));
+                RunScript.execute(conn, new StringReader(CREATE_STATS_TABLES));
                 RunScript.execute(conn, new StringReader(POPULATE_STATS_TABLE));
             }
         }
@@ -85,17 +88,21 @@ public class H2CacheStoreStrategy implements TestCacheStoreStrategy {
 
     /** {@inheritDoc} */
     @Override public int getReads() {
-        return querySingleInt("select reads from STATS limit 0,1;", "Failed to query number of reads from STATS table");
+        return queryStats("reads");
     }
 
     /** {@inheritDoc} */
     @Override public int getWrites() {
-        return querySingleInt("select writes from STATS limit 0,1;", "Failed to query number of writes from STATS table");
+        return queryStats("writes");
     }
 
     /** {@inheritDoc} */
     @Override public int getRemoves() {
-        return querySingleInt("select removes from STATS limit 0,1;", "Failed to query number of removals from STATS table");
+        return queryStats("removes");
+    }
+
+    private int queryStats(String table) {
+        return querySingleInt("select count(*) from " + table, "Failed to query store stats [table=" + table + "]");
     }
 
     /** {@inheritDoc} */
@@ -389,16 +396,16 @@ public class H2CacheStoreStrategy implements TestCacheStoreStrategy {
         }
 
         /**
-         * Increment stored stats for given field
-         * @param field field name
+         * Increment stored stats for given operation
+         * @param tableName field name
          */
-        private void updateStats(String field) {
+        private void updateStats(String tableName) {
             Connection conn = ses.attachment();
             assert conn != null;
             Statement stmt = null;
             try {
                 stmt = conn.createStatement();
-                stmt.executeUpdate("update STATS set " + field + " = " + field + " + 1;");
+                stmt.executeUpdate("insert into " + tableName + " default values");
             }
             catch (SQLException e) {
                 throw new IgniteException("Failed to update H2 store usage stats", e);
