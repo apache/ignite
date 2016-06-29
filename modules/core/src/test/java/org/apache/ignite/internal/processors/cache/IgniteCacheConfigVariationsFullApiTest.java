@@ -351,9 +351,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      * @throws Exception If failed.
      */
     public void testRemoveAllSkipStore() throws Exception {
-        if (isMultiJvm())
-            fail("https://issues.apache.org/jira/browse/IGNITE-1088");
-
         if (!storeEnabled())
             return;
 
@@ -3655,7 +3652,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         }
 
         // Avoid reloading from store.
-        map.remove(key);
+        storeStgy.removeFromStore(key);
 
         assertTrue(GridTestUtils.waitForCondition(new GridAbsPredicateX() {
             @SuppressWarnings("unchecked")
@@ -4169,12 +4166,12 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         for (int i = 0; i < gridCount(); i++) {
             for (Cache.Entry entry : jcache(i))
-                map.put(entry.getKey(), entry.getValue());
+                storeStgy.putToStore(entry.getKey(), entry.getValue());
         }
 
-        assert map.size() == 2;
-        assert (Integer)map.get("key1") == 1;
-        assert (Integer)map.get("key2") == 2;
+        assert storeStgy.getStoreSize() == 2;
+        assert (Integer)storeStgy.getFromStore("key1") == 1;
+        assert (Integer)storeStgy.getFromStore("key2") == 2;
     }
 
     /**
@@ -4777,7 +4774,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
             assertNotNull(cacheSkipStore.get(key));
             assertNotNull(cache.get(key));
-            assertEquals(i, map.get(key));
+            assertEquals(i, storeStgy.getFromStore(key));
         }
 
         for (int i = 0; i < keys.size(); ++i) {
@@ -4786,13 +4783,13 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             Integer val1 = -1;
 
             cacheSkipStore.put(key, val1);
-            assertEquals(i, map.get(key));
+            assertEquals(i, storeStgy.getFromStore(key));
             assertEquals(val1, cacheSkipStore.get(key));
 
             Integer val2 = -2;
 
             assertEquals(val1, cacheSkipStore.invoke(key, new SetValueProcessor(val2)));
-            assertEquals(i, map.get(key));
+            assertEquals(i, storeStgy.getFromStore(key));
             assertEquals(val2, cacheSkipStore.get(key));
         }
 
@@ -4801,7 +4798,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
             assertNull(cacheSkipStore.get(key));
             assertNotNull(cache.get(key));
-            assertTrue(map.containsKey(key));
+            assertTrue(storeStgy.isInStore(key));
         }
 
         for (String key : keys) {
@@ -4809,37 +4806,37 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
             assertNull(cacheSkipStore.get(key));
             assertNull(cache.get(key));
-            assertFalse(map.containsKey(key));
+            assertFalse(storeStgy.isInStore(key));
 
-            map.put(key, 0);
+            storeStgy.putToStore(key, 0);
 
             Integer val = -1;
 
             assertNull(cacheSkipStore.invoke(key, new SetValueProcessor(val)));
-            assertEquals(0, map.get(key));
+            assertEquals(0, storeStgy.getFromStore(key));
             assertEquals(val, cacheSkipStore.get(key));
 
             cache.remove(key);
 
-            map.put(key, 0);
+            storeStgy.putToStore(key, 0);
 
             assertTrue(cacheSkipStore.putIfAbsent(key, val));
             assertEquals(val, cacheSkipStore.get(key));
-            assertEquals(0, map.get(key));
+            assertEquals(0, storeStgy.getFromStore(key));
 
             cache.remove(key);
 
-            map.put(key, 0);
+            storeStgy.putToStore(key, 0);
 
             assertNull(cacheSkipStore.getAndPut(key, val));
             assertEquals(val, cacheSkipStore.get(key));
-            assertEquals(0, map.get(key));
+            assertEquals(0, storeStgy.getFromStore(key));
 
             cache.remove(key);
         }
 
         assertFalse(cacheSkipStore.iterator().hasNext());
-        assertTrue(map.size() == 0);
+        assertTrue(storeStgy.getStoreSize() == 0);
         assertTrue(cache.size(ALL) == 0);
 
         // putAll/removeAll from multiple nodes.
@@ -4854,7 +4851,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         for (String key : keys) {
             assertNotNull(cacheSkipStore.get(key));
             assertNotNull(cache.get(key));
-            assertFalse(map.containsKey(key));
+            assertFalse(storeStgy.isInStore(key));
         }
 
         cache.putAll(data);
@@ -4862,7 +4859,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         for (String key : keys) {
             assertNotNull(cacheSkipStore.get(key));
             assertNotNull(cache.get(key));
-            assertTrue(map.containsKey(key));
+            assertTrue(storeStgy.isInStore(key));
         }
 
         cacheSkipStore.removeAll(data.keySet());
@@ -4870,7 +4867,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         for (String key : keys) {
             assertNull(cacheSkipStore.get(key));
             assertNotNull(cache.get(key));
-            assertTrue(map.containsKey(key));
+            assertTrue(storeStgy.isInStore(key));
         }
 
         cacheSkipStore.putAll(data);
@@ -4878,7 +4875,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         for (String key : keys) {
             assertNotNull(cacheSkipStore.get(key));
             assertNotNull(cache.get(key));
-            assertTrue(map.containsKey(key));
+            assertTrue(storeStgy.isInStore(key));
         }
 
         cacheSkipStore.removeAll(data.keySet());
@@ -4886,7 +4883,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         for (String key : keys) {
             assertNull(cacheSkipStore.get(key));
             assertNotNull(cache.get(key));
-            assertTrue(map.containsKey(key));
+            assertTrue(storeStgy.isInStore(key));
         }
 
         cache.removeAll(data.keySet());
@@ -4894,24 +4891,24 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         for (String key : keys) {
             assertNull(cacheSkipStore.get(key));
             assertNull(cache.get(key));
-            assertFalse(map.containsKey(key));
+            assertFalse(storeStgy.isInStore(key));
         }
 
-        assertTrue(map.size() == 0);
+        assertTrue(storeStgy.getStoreSize() == 0);
 
         // Miscellaneous checks.
 
         String newKey = "New key";
 
-        assertFalse(map.containsKey(newKey));
+        assertFalse(storeStgy.isInStore(newKey));
 
         cacheSkipStore.put(newKey, 1);
 
-        assertFalse(map.containsKey(newKey));
+        assertFalse(storeStgy.isInStore(newKey));
 
         cache.put(newKey, 1);
 
-        assertTrue(map.containsKey(newKey));
+        assertTrue(storeStgy.isInStore(newKey));
 
         Iterator<Cache.Entry<String, Integer>> it = cacheSkipStore.iterator();
 
@@ -4921,20 +4918,20 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         String rmvKey = entry.getKey();
 
-        assertTrue(map.containsKey(rmvKey));
+        assertTrue(storeStgy.isInStore(rmvKey));
 
         it.remove();
 
         assertNull(cacheSkipStore.get(rmvKey));
 
-        assertTrue(map.containsKey(rmvKey));
+        assertTrue(storeStgy.isInStore(rmvKey));
 
         assertTrue(cache.size(ALL) == 0);
         assertTrue(cacheSkipStore.size(ALL) == 0);
 
         cache.remove(rmvKey);
 
-        assertTrue(map.size() == 0);
+        assertTrue(storeStgy.getStoreSize() == 0);
     }
 
     /**
@@ -4964,7 +4961,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         for (String key : data.keySet()) {
             assertNotNull(cacheSkipStore.get(key));
             assertNotNull(cache.get(key));
-            assertTrue(map.containsKey(key));
+            assertTrue(storeStgy.isInStore(key));
         }
 
         cacheSkipStore.removeAll();
@@ -4972,7 +4969,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         for (String key : data.keySet()) {
             assertNull(cacheSkipStore.get(key));
             assertNotNull(cache.get(key));
-            assertTrue(map.containsKey(key));
+            assertTrue(storeStgy.isInStore(key));
         }
 
         cache.removeAll();
@@ -4980,7 +4977,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         for (String key : data.keySet()) {
             assertNull(cacheSkipStore.get(key));
             assertNull(cache.get(key));
-            assertFalse(map.containsKey(key));
+            assertFalse(storeStgy.isInStore(key));
         }
     }
 
@@ -5054,7 +5051,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             for (String key : keys) {
                 assertEquals(val, cacheSkipStore.get(key));
                 assertEquals(val, cache.get(key));
-                assertFalse(map.containsKey(key));
+                assertFalse(storeStgy.isInStore(key));
             }
 
             tx.commit();
@@ -5063,10 +5060,10 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         for (String key : keys) {
             assertEquals(val, cacheSkipStore.get(key));
             assertEquals(val, cache.get(key));
-            assertFalse(map.containsKey(key));
+            assertFalse(storeStgy.isInStore(key));
         }
 
-        assertEquals(0, map.size());
+        assertEquals(0, storeStgy.getStoreSize());
 
         // cacheSkipStore putAll(..)/removeAll(..) check.
         try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
@@ -5080,10 +5077,10 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
             assertEquals(val, cacheSkipStore.get(key));
             assertEquals(val, cache.get(key));
-            assertFalse(map.containsKey(key));
+            assertFalse(storeStgy.isInStore(key));
         }
 
-        map.putAll(data);
+        storeStgy.putAllToStore(data);
 
         try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
             cacheSkipStore.removeAll(data.keySet());
@@ -5094,12 +5091,12 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         for (String key : keys) {
             assertNull(cacheSkipStore.get(key));
             assertNotNull(cache.get(key));
-            assertTrue(map.containsKey(key));
+            assertTrue(storeStgy.isInStore(key));
 
             cache.remove(key);
         }
 
-        assertTrue(map.size() == 0);
+        assertTrue(storeStgy.getStoreSize() == 0);
 
         // cache putAll(..)/removeAll(..) check.
         try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
@@ -5108,7 +5105,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             for (String key : keys) {
                 assertNotNull(cacheSkipStore.get(key));
                 assertNotNull(cache.get(key));
-                assertFalse(map.containsKey(key));
+                assertFalse(storeStgy.isInStore(key));
             }
 
             cache.removeAll(data.keySet());
@@ -5116,13 +5113,13 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             for (String key : keys) {
                 assertNull(cacheSkipStore.get(key));
                 assertNull(cache.get(key));
-                assertFalse(map.containsKey(key));
+                assertFalse(storeStgy.isInStore(key));
             }
 
             tx.commit();
         }
 
-        assertTrue(map.size() == 0);
+        assertTrue(storeStgy.getStoreSize() == 0);
 
         // putAll(..) from both cacheSkipStore and cache.
         try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
@@ -5143,7 +5140,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             for (String key : keys) {
                 assertNotNull(cacheSkipStore.get(key));
                 assertNotNull(cache.get(key));
-                assertFalse(map.containsKey(key));
+                assertFalse(storeStgy.isInStore(key));
             }
 
             tx.commit();
@@ -5154,7 +5151,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
             assertNotNull(cacheSkipStore.get(key));
             assertNotNull(cache.get(key));
-            assertFalse(map.containsKey(key));
+            assertFalse(storeStgy.isInStore(key));
         }
 
         for (int i = keys.size() / 2; i < keys.size(); i++) {
@@ -5162,7 +5159,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
             assertNotNull(cacheSkipStore.get(key));
             assertNotNull(cache.get(key));
-            assertTrue(map.containsKey(key));
+            assertTrue(storeStgy.isInStore(key));
         }
 
         cache.removeAll(data.keySet());
@@ -5170,7 +5167,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         for (String key : keys) {
             assertNull(cacheSkipStore.get(key));
             assertNull(cache.get(key));
-            assertFalse(map.containsKey(key));
+            assertFalse(storeStgy.isInStore(key));
         }
 
         // Check that read-through is disabled when cacheSkipStore is used.
@@ -5179,7 +5176,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         assertTrue(cacheSkipStore.size(ALL) == 0);
         assertTrue(cache.size(ALL) == 0);
-        assertTrue(map.size() != 0);
+        assertTrue(storeStgy.getStoreSize() != 0);
 
         try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
             assertTrue(cacheSkipStore.getAll(data.keySet()).size() == 0);
@@ -5202,7 +5199,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
             for (String key : data.keySet()) {
-                map.put(key, 0);
+                storeStgy.putToStore(key, 0);
 
                 assertNull(cacheSkipStore.invoke(key, new SetValueProcessor(val)));
             }
@@ -5211,7 +5208,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         }
 
         for (String key : data.keySet()) {
-            assertEquals(0, map.get(key));
+            assertEquals(0, storeStgy.getFromStore(key));
 
             assertEquals(val, cacheSkipStore.get(key));
             assertEquals(val, cache.get(key));
@@ -5221,7 +5218,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
             for (String key : data.keySet()) {
-                map.put(key, 0);
+                storeStgy.putToStore(key, 0);
 
                 assertTrue(cacheSkipStore.putIfAbsent(key, val));
             }
@@ -5230,7 +5227,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         }
 
         for (String key : data.keySet()) {
-            assertEquals(0, map.get(key));
+            assertEquals(0, storeStgy.getFromStore(key));
 
             assertEquals(val, cacheSkipStore.get(key));
             assertEquals(val, cache.get(key));
@@ -5240,7 +5237,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         try (Transaction tx = txs.txStart(txConcurrency, txIsolation)) {
             for (String key : data.keySet()) {
-                map.put(key, 0);
+                storeStgy.putToStore(key, 0);
 
                 assertNull(cacheSkipStore.getAndPut(key, val));
             }
@@ -5249,7 +5246,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         }
 
         for (String key : data.keySet()) {
-            assertEquals(0, map.get(key));
+            assertEquals(0, storeStgy.getFromStore(key));
 
             assertEquals(val, cacheSkipStore.get(key));
             assertEquals(val, cache.get(key));
@@ -5268,7 +5265,7 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         throws Exception {
         assertTrue(cache.size(ALL) == 0);
         assertTrue(cacheSkipStore.size(ALL) == 0);
-        assertTrue(map.size() == 0);
+        assertTrue(storeStgy.getStoreSize() == 0);
     }
 
     /**
