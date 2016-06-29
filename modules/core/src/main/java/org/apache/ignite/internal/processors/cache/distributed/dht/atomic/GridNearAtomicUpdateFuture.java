@@ -509,12 +509,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             GridDhtTopologyFuture fut = cache.topology().topologyVersionFuture();
 
             if (fut.isDone()) {
-                Set<Integer> parts = new HashSet<>();
-
-                for (Object key : keys)
-                    parts.add(cctx.affinity().partition(key));
-
-                Throwable err = fut.validateCache(cctx, parts);
+                Throwable err = fut.validateCache(cctx, null, keys);
 
                 if (err != null) {
                     onDone(err);

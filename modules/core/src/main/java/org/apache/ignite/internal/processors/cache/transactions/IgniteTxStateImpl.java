@@ -111,7 +111,6 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     /** {@inheritDoc} */
     @Override public IgniteCheckedException validateTopology(GridCacheSharedContext cctx,
         GridDhtTopologyFuture topFut) {
-        StringBuilder invalidCaches = null;
 
         Map<Integer, Set<KeyCacheObject>> keysByCacheId = new HashMap<>();
 
@@ -124,19 +123,16 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
             set.add(key.key());
         }
 
+        StringBuilder invalidCaches = null;
+
         for (Map.Entry<Integer, Set<KeyCacheObject>> e : keysByCacheId.entrySet()) {
             int cacheId = e.getKey();
-
-            Set<Integer> parts = new HashSet<>();
 
             GridCacheContext ctx = cctx.cacheContext(cacheId);
 
             assert ctx != null : cacheId;
 
-            for (KeyCacheObject key : e.getValue())
-                parts.add(ctx.affinity().partition(key));
-
-            Throwable err = topFut.validateCache(ctx, parts);
+            Throwable err = topFut.validateCache(ctx, null, e.getValue());
 
             if (err != null) {
                 if (invalidCaches != null)
@@ -150,7 +146,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
         if (invalidCaches != null) {
             return new IgniteCheckedException("Failed to perform cache operation (cache topology is not valid): " +
-                invalidCaches.toString());
+                invalidCaches);
         }
 
         for (int i = 0; i < activeCacheIds.size(); i++) {

@@ -130,6 +130,11 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
+    @Override public IgniteCache<K, V> withPartitionRecover() {
+        throw new UnsupportedOperationException("Method should be supported.");
+    }
+
+    /** {@inheritDoc} */
     @Override public void loadCache(@Nullable IgniteBiPredicate<K, V> p, @Nullable Object... args)
         throws CacheException {
         throw new UnsupportedOperationException("Method should be supported.");
@@ -466,12 +471,17 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public Set<Integer> lostPartitions() {
+    @Override public Collection<Integer> lostPartitions() {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> recoverPartitions(Set<Integer> partitions) {
+    @Override public IgniteFuture<?> clearLostPartitions() {
+        throw new UnsupportedOperationException("Method should be supported.");
+    }
+
+    /** {@inheritDoc} */
+    @Override public IgniteFuture<?> resetLostPartitions() {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 

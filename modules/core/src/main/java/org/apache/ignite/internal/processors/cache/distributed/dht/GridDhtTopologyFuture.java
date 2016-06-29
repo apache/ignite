@@ -17,7 +17,7 @@
 
 package org.apache.ignite.internal.processors.cache.distributed.dht;
 
-import java.util.Set;
+import java.util.Collection;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
@@ -51,8 +51,10 @@ public interface GridDhtTopologyFuture extends IgniteInternalFuture<AffinityTopo
      * Returns error is cache topology is not valid.
      *
      * @param cctx Cache context.
-     * @param partitions Partitions involved in cache operation.
+     * @param key Key (optimization to avoid collection creation).
+     * @param keys Keys involved in a cache operation.
      * @return valid ot not.
      */
-    @Nullable public Throwable validateCache(GridCacheContext cctx, @Nullable Set<Integer> partitions);
+    @Nullable public Throwable validateCache(GridCacheContext cctx, @Nullable Object key,
+        @Nullable Collection<?> keys);
 }

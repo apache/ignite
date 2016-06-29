@@ -231,6 +231,9 @@ public class GridCacheContext<K, V> implements Externalizable {
     /** Updates allowed flag. */
     private boolean updatesAllowed;
 
+    /** Cache active state. */
+    private boolean active;
+
     /** Deployment enabled flag for this specific cache */
     private boolean depEnabled;
 
@@ -1853,6 +1856,20 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public boolean updatesAllowed() {
         return updatesAllowed;
+    }
+
+    /**
+     * @return If cache is in active state.
+     */
+    public boolean active() {
+        return active;
+    }
+
+    /**
+     * @param active Cache active state.
+     */
+    public void active(boolean active) {
+        this.active = active;
     }
 
     /**

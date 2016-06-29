@@ -37,7 +37,6 @@ import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtCacheA
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
-import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionMap2;
 import org.apache.ignite.internal.processors.cache.distributed.near.GridNearCacheAdapter;
 import org.apache.ignite.internal.util.lang.IgnitePair;
@@ -107,7 +106,7 @@ public class VisorCache implements Serializable {
     private VisorCacheMetrics metrics;
 
     /** Cache partitions states. */
-    private GridDhtPartitionMap partitionsMap;
+    private GridDhtPartitionMap2 partitionsMap;
 
     /**
      * @param ignite Grid.
@@ -149,9 +148,7 @@ public class VisorCache implements Serializable {
                 GridDhtPartitionTopology top = dca.topology();
 
                 if (cfg.getCacheMode() != CacheMode.LOCAL && cfg.getBackups() > 0) {
-                    GridDhtPartitionMap2 map2 = top.localPartitionMap();
-
-                    partitionsMap = new GridDhtPartitionMap(map2.nodeId(), map2.updateSequence(), map2.map());
+                    partitionsMap = top.localPartitionMap();
                 }
 
                 List<GridDhtLocalPartition> parts = top.localPartitions();
@@ -415,7 +412,7 @@ public class VisorCache implements Serializable {
     /**
      * @return Cache partitions states.
      */
-    @Nullable public GridDhtPartitionMap partitionMap() {
+    @Nullable public GridDhtPartitionMap2 partitionMap() {
         return partitionsMap;
     }
 

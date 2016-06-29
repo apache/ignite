@@ -429,7 +429,7 @@ public class CacheAffinitySharedManager<K, V> extends GridCacheSharedManagerAdap
                 else
                     initStartedCacheOnCoordinator(fut, cacheId);
             }
-            else if (req.modify()) {
+            else if (req.activation()) {
                 if (!crd || !lateAffAssign) {
                     GridCacheContext cacheCtx = cctx.cacheContext(cacheId);
 

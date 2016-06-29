@@ -63,6 +63,7 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELET
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_UNLOADED;
 import static org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager.CacheDataStore;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.RENTING;
@@ -551,6 +552,28 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                 return true;
             }
         }
+    }
+
+    boolean markLost() {
+        while (true) {
+            long reservations = state.get();
+
+            int ord = (int)(reservations >> 32);
+
+            if (ord == LOST.ordinal())
+                return false;
+
+            if (casState(reservations, LOST)) {
+                if (log.isDebugEnabled())
+                    log.debug("Marked partition as LOST: " + this);
+
+                // No need to keep history any more.
+                evictHist = null;
+
+                return true;
+            }
+        }
+
     }
 
     /**

@@ -57,7 +57,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
         throws IgniteCheckedException {
         assert cacheCtx == null : "Cache already set [cur=" + cacheCtx.name() + ", new=" + ctx.name() + ']';
 
-        this.cacheCtx = ctx;
+        cacheCtx = ctx;
 
         tx.activeCachesDeploymentEnabled(cacheCtx.deploymentEnabled());
     }
@@ -103,12 +103,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
         if (cacheCtx == null)
             return null;
 
-        Set<Integer> parts = Collections.emptySet();
-
-        if (!entry.isEmpty())
-            parts = Collections.singleton(cacheCtx.affinity().partition(entry.get(0).key()));
-
-        Throwable err = topFut.validateCache(cacheCtx, parts);
+        Throwable err = topFut.validateCache(cacheCtx, null, entry);
 
         if (err != null) {
             return new IgniteCheckedException("Failed to perform cache operation (cache topology is not valid): " +

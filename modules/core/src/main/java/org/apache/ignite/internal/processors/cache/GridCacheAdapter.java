@@ -289,9 +289,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** Asynchronous operations limit semaphore. */
     private Semaphore asyncOpsSem;
 
-    /** Current cache state. */
-    private final AtomicReference<CacheState> state = new AtomicReference<>(new CacheState(true));
-
     /** {@inheritDoc} */
     @Override public String name() {
         return cacheCfg.getName();
@@ -3930,49 +3927,6 @@ public abstract class GridCacheAdapter<K, V> implements IgniteInternalCache<K, V
     /** {@inheritDoc} */
     @Override public Iterator<Cache.Entry<K, V>> iterator() {
         return entrySet().iterator();
-    }
-
-    /** {@inheritDoc} */
-    @Override public CacheState state() {
-        return state.get();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean changeState(CacheState state) {
-        CacheState previousState = this.state.get();
-
-        if (state.equals(previousState))
-            return false;
-
-        boolean success = this.state.compareAndSet(previousState, state);
-
-        assert success;
-
-        if (previousState.active() && !state.active()) {
-            // TODO: trigger a checkpoint
-        }
-
-        return true;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean changeState(CacheState.Difference diff) {
-        CacheState previousState = this.state.get();
-
-        CacheState state = previousState.apply(diff);
-
-        if (state.equals(previousState))
-            return false;
-
-        boolean success = this.state.compareAndSet(previousState, state);
-
-        assert success;
-
-        if (previousState.active() && !state.active()) {
-            // TODO: trigger a checkpoint
-        }
-
-        return true;
     }
 
     /**

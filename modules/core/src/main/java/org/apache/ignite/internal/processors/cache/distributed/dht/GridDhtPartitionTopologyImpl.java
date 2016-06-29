@@ -51,9 +51,11 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.RENTING;
@@ -1222,9 +1224,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                         this.cntrMap.put(e.getKey(), e.getValue());
                 }
 
-                for (int i = 0; i < locParts.length; i++) {
-                    GridDhtLocalPartition part = locParts[i];
-
+                for (GridDhtLocalPartition part : locParts) {
                     if (part == null)
                         continue;
 
@@ -1315,6 +1315,76 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         finally {
             lock.writeLock().unlock();
         }
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean detectLostPartitions() {
+        boolean changed = false;
+
+        lock.writeLock().lock();
+
+        try {
+            int parts = cctx.affinity().partitions();
+
+            Collection<Integer> lost = null;
+
+            for (int p = 0; p < parts; p++) {
+                boolean foundOwner = false;
+
+                for (UUID nodeId : part2node.get(p)) {
+                    GridDhtPartitionMap2 partMap = node2part.get(nodeId);
+
+                    GridDhtPartitionState state = partMap.get(p);
+
+                    if (state == OWNING) {
+                        foundOwner = true;
+
+                        break;
+                    }
+                }
+
+                if (!foundOwner) {
+                    if (lost == null)
+                        lost = new HashSet<>(parts - p, 1.0f);
+
+                    lost.add(p);
+                }
+            }
+
+            if (lost != null) {
+                long nextUpd = updateSeq.incrementAndGet();
+
+                node2part.updateSequence(nextUpd);
+
+                // Update partition state on all nodes.
+                for (Integer part : lost) {
+                    for (UUID nodeId : part2node.get(part)) {
+                        GridDhtPartitionMap2 partMap = node2part.get(nodeId);
+
+                        partMap.updateSequence(nextUpd, topVer);
+
+                        partMap.put(part, LOST);
+                    }
+
+                    GridDhtLocalPartition locPart = localPartition(part, topVer, false);
+
+                    if (locPart != null)
+                        changed |= locPart.markLost();
+                }
+
+            }
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+
+        return changed;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasLostPartitions() {
+        // TODO GG-10882
+        throw new NotImplementedException();
     }
 
     /** {@inheritDoc} */

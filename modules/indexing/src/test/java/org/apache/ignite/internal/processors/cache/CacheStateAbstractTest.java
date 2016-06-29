@@ -38,7 +38,7 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
 import org.apache.ignite.transactions.Transaction;
 
 /**
- * Tests functionality related to {@link CacheState}.
+ *
  */
 public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
 
@@ -269,14 +269,7 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
             }
         }, 5000);
 
-        if (!cache3.lostPartitions().isEmpty())
-            cache3.recoverPartitions(cache3.lostPartitions());
-
-        assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
-            @Override public boolean apply() {
-                return cache3.lostPartitions().isEmpty();
-            }
-        }, 5000);
+        // TODO GG-10882 Recover lost partitions?
 
         assert !cache3.containsKey(1);
         assert !cache3.containsKey(2);
@@ -355,6 +348,7 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
         for (int p : ignite1.affinity(null).allPartitions(ignite1.localNode())) {
             if (!ignite2Parts.contains(p)) {
                 part = p;
+
                 break;
             }
         }
@@ -383,7 +377,7 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
 
         assert ex;
 
-        cache2.recoverPartitions(Collections.singleton(partition));
+        cache2.resetLostPartitions();
 
         assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {

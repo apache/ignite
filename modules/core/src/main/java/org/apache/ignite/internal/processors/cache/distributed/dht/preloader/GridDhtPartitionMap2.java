@@ -40,9 +40,6 @@ public class GridDhtPartitionMap2 implements Comparable<GridDhtPartitionMap2>, E
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Used since. */
-    public static final IgniteProductVersion SINCE = IgniteProductVersion.fromString("1.5.0");
-
     /** Node ID. */
     protected UUID nodeId;
 

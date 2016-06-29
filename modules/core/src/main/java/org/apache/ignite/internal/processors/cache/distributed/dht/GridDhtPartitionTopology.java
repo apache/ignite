@@ -226,6 +226,21 @@ public interface GridDhtPartitionTopology {
         @Nullable Map<Integer, Long> cntrMap);
 
     /**
+     * Checks if there is at least one owner for each partition in the cache topology.
+     * If not, marks such a partition as LOST.
+     * <p>
+     * This method should be called on topology coordinator after all partition messages are received.
+     *
+     * @return {@code True} if partitons state got updated.
+     */
+    public boolean detectLostPartitions();
+
+    /**
+     * @return {@code True} if there is at least one lost partition in current cache topology.
+     */
+    public boolean hasLostPartitions();
+
+    /**
      * @return Partition update counters.
      */
     public Map<Integer, Long> updateCounters();

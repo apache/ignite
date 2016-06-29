@@ -730,6 +730,20 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         }
     }
 
+    /** {@inheritDoc} */
+    @Override public boolean detectLostPartitions() {
+        assert false;
+
+        return false;
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean hasLostPartitions() {
+        assert false;
+
+        return false;
+    }
+
     /**
      * Updates value for single partition.
      *

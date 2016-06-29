@@ -82,7 +82,7 @@ public class DynamicCacheDescriptor {
     private AffinityTopologyVersion rcvdFromVer;
 
     /** */
-    private CacheState.Difference stateDiff;
+    private Boolean active;
 
     /**
      * @param ctx Context.
@@ -306,17 +306,17 @@ public class DynamicCacheDescriptor {
     }
 
     /**
-     * @return Cache state diff.
+     * @return Cache active state.
      */
-    public CacheState.Difference stateDiff() {
-        return stateDiff;
+    public Boolean active() {
+        return active;
     }
 
     /**
-     * @param stateDiff Cache state diff.
+     * @param active Cache active state.
      */
-    public void stateDiff(CacheState.Difference stateDiff) {
-        this.stateDiff = stateDiff;
+    public void active(Boolean active) {
+        this.active = active;
     }
 
     /** {@inheritDoc} */

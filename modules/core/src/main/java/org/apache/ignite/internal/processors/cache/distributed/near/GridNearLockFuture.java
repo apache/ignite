@@ -20,12 +20,10 @@ package org.apache.ignite.internal.processors.cache.distributed.near;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.ignite.IgniteCheckedException;
@@ -730,12 +728,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
         if (topVer != null) {
             for (GridDhtTopologyFuture fut : cctx.shared().exchange().exchangeFutures()) {
                 if (fut.topologyVersion().equals(topVer)) {
-                    Set<Integer> parts = new HashSet<>();
-
-                    for (KeyCacheObject key : keys)
-                        parts.add(cctx.affinity().partition(key));
-
-                    Throwable err = fut.validateCache(cctx, parts);
+                    Throwable err = fut.validateCache(cctx, null, keys);
 
                     if (err != null) {
                         onDone(err);
@@ -783,12 +776,7 @@ public final class GridNearLockFuture extends GridCompoundIdentityFuture<Boolean
             GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
 
             if (fut.isDone()) {
-                Set<Integer> parts = new HashSet<>();
-
-                for (Object key : keys)
-                    parts.add(cctx.affinity().partition(key));
-
-                Throwable err = fut.validateCache(cctx, parts);
+                Throwable err = fut.validateCache(cctx, null, keys);
 
                 if (err != null) {
                     onDone(err);

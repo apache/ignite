@@ -626,12 +626,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         if (topVer != null) {
             for (GridDhtTopologyFuture fut : cctx.shared().exchange().exchangeFutures()) {
                 if (fut.topologyVersion().equals(topVer)) {
-                    Set<Integer> parts = new HashSet<>();
-
-                    for (KeyCacheObject key : keys)
-                        parts.add(cctx.affinity().partition(key));
-
-                    Throwable err = fut.validateCache(cctx, parts);
+                    Throwable err = fut.validateCache(cctx, null, keys);
 
                     if (err != null) {
                         onDone(err);
@@ -682,12 +677,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
             GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
 
             if (fut.isDone()) {
-                Set<Integer> parts = new HashSet<>();
-
-                for (KeyCacheObject key : keys)
-                    parts.add(cctx.affinity().partition(key));
-
-                Throwable err = fut.validateCache(cctx, parts);
+                Throwable err = fut.validateCache(cctx, null, keys);
 
                 if (err != null) {
                     onDone(err);
@@ -857,7 +847,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
                     if (txEntry != null) {
                         entry = (GridDistributedCacheEntry)txEntry.cached();
 
-                        if (entry != null && !(loc ^ entry.detached())) {
+                        if (entry != null && loc == entry.detached()) {
                             entry = cctx.colocated().entryExx(key, topVer, true);
 
                             txEntry.cached(entry);

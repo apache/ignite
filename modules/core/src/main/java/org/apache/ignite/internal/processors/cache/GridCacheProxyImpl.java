@@ -1625,21 +1625,6 @@ public class GridCacheProxyImpl<K, V> implements IgniteInternalCache<K, V>, Exte
     }
 
     /** {@inheritDoc} */
-    @Override public CacheState state() {
-        return delegate.state();
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean changeState(CacheState state) {
-        return delegate.changeState(state);
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean changeState(CacheState.Difference diff) {
-        return delegate.changeState(diff);
-    }
-
-    /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(ctx);
         out.writeObject(delegate);
