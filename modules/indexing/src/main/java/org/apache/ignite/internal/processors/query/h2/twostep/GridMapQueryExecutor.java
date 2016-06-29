@@ -29,6 +29,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
@@ -455,7 +456,7 @@ public class GridMapQueryExecutor {
             int i = 0;
 
             for (GridCacheSqlQuery qry : qrys) {
-                GridFutureAdapter<ResultSet> fut = h2.sqlQueryFuture(req.space(),
+                RunnableFuture<ResultSet> fut = h2.sqlQueryFuture(req.space(),
                     h2.connectionForSpace(req.space()),
                     qry.query(),
                     F.asList(qry.parameters()),
@@ -464,7 +465,11 @@ public class GridMapQueryExecutor {
 
                 final QueryResult res = qr.addResult(i, qry, node.id(), fut);
 
+                fut.run();
+
                 ResultSet rs = fut.get();
+
+                res.rs(rs);
 
                 if (ctx.event().isRecordable(EVT_CACHE_QUERY_EXECUTED)) {
                     ctx.event().record(new CacheQueryExecutedEvent<>(
@@ -674,7 +679,7 @@ public class GridMapQueryExecutor {
          * @param q Query object.
          * @param qrySrcNodeId Query source node.
          */
-        QueryResult addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, GridFutureAdapter<ResultSet> fut) {
+        QueryResult addResult(int qry, GridCacheSqlQuery q, UUID qrySrcNodeId, RunnableFuture<ResultSet> fut) {
             QueryResult update = new QueryResult(cctx, qrySrcNodeId, q, fut);
 
             if (!results.compareAndSet(qry, null, update))
@@ -744,7 +749,7 @@ public class GridMapQueryExecutor {
         private int rowCount;
 
         /** */
-        private GridFutureAdapter<ResultSet> fut;
+        private RunnableFuture<ResultSet> fut;
 
         /** */
         public boolean closed;
@@ -756,26 +761,11 @@ public class GridMapQueryExecutor {
          * @param fut
          */
         private QueryResult(GridCacheContext<?, ?> cctx, UUID qrySrcNodeId, GridCacheSqlQuery qry,
-            GridFutureAdapter<ResultSet> fut) {
+            RunnableFuture<ResultSet> fut) {
             this.cctx = cctx;
             this.qry = qry;
             this.qrySrcNodeId = qrySrcNodeId;
             this.fut = fut;
-            fut.listen(new IgniteInClosureX<IgniteInternalFuture<ResultSet>>() {
-                @Override public void applyx(IgniteInternalFuture<ResultSet> fut) throws IgniteCheckedException {
-                    rs = fut.get();
-
-                    try {
-                        res = (ResultInterface)RESULT_FIELD.get(rs);
-                    }
-                    catch (IllegalAccessException e) {
-                        throw new IllegalStateException(e); // Must not happen.
-                    }
-
-                    rowCount = res.getRowCount();
-                    cols = res.getVisibleColumnCount();
-                }
-            });
         }
 
         /**
@@ -845,11 +835,11 @@ public class GridMapQueryExecutor {
 
             closed = true;
 
-            // Cancel a query fiture if it's still executing. No-op if query was already finished.
+            // Cancel a query future if it's still executing. No-op if query was already finished.
             try {
-                fut.cancel();
+                fut.cancel(false);
             }
-            catch (IgniteCheckedException e) {
+            catch (Exception e) {
                 U.error(log, "Failed to cancel query future", e);
             }
 
@@ -861,6 +851,24 @@ public class GridMapQueryExecutor {
          */
         public ResultSet rs() {
             return rs;
+        }
+
+        /**
+         * @param rs New rs.
+         */
+        public void rs(ResultSet rs) {
+            this.rs = rs;
+
+            try {
+                res = (ResultInterface)RESULT_FIELD.get(rs);
+            }
+            catch (IllegalAccessException e) {
+                throw new IllegalStateException(e); // Must not happen.
+            }
+
+            rowCount = res.getRowCount();
+            cols = res.getVisibleColumnCount();
+
         }
     }
 

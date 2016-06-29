@@ -36,6 +36,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.RunnableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -53,6 +55,7 @@ import org.apache.ignite.events.Event;
 import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.GridTopic;
+import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.managers.communication.GridIoPolicy;
 import org.apache.ignite.internal.managers.communication.GridMessageListener;
@@ -536,9 +539,9 @@ public class GridReduceQueryExecutor {
                     // Give a change to the reduce query to terminate.
                     if ( r.fut != null )
                         try {
-                            r.fut.cancel();
+                            r.fut.cancel(false);
                         }
-                        catch (IgniteCheckedException e) {
+                        catch (Exception e) {
                             throw new IgniteException("Failed to cancel a reduce query", e);
                         }
                 }
@@ -673,7 +676,7 @@ public class GridReduceQueryExecutor {
                         GridCacheSqlQuery rdc = qry.reduceQuery();
 
                         // Statement caching is prohibited here because we can't guarantee correct merge index reuse.
-                        GridFutureAdapter<ResultSet> fut = h2.sqlQueryFuture(space,
+                        RunnableFuture<ResultSet> fut = h2.sqlQueryFuture(space,
                             r.conn,
                             rdc.query(),
                             F.asList(rdc.parameters()),
@@ -681,6 +684,8 @@ public class GridReduceQueryExecutor {
                             qry.timeout());
 
                         r.fut = fut;
+
+                        fut.run();
 
                         ResultSet res = fut.get();
 
@@ -715,7 +720,7 @@ public class GridReduceQueryExecutor {
 
                 return new GridQueryCacheObjectsIterator(resIter, cctx, keepBinary);
             }
-            catch (IgniteCheckedException | RuntimeException e) {
+            catch (IgniteCheckedException | RuntimeException | InterruptedException | ExecutionException e) {
                 U.closeQuiet(r.conn);
 
                 if (e instanceof CacheException)
@@ -1292,7 +1297,7 @@ public class GridReduceQueryExecutor {
         public CI1<UUID> rmtCancellationClo;
 
         /** */
-        public volatile GridFutureAdapter<ResultSet> fut;
+        public volatile RunnableFuture<ResultSet> fut;
 
         /** */
         public volatile boolean cancelled;

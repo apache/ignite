@@ -49,8 +49,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.RunnableFuture;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
@@ -99,7 +102,6 @@ import org.apache.ignite.internal.processors.timeout.GridTimeoutProcessor;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
 import org.apache.ignite.internal.util.GridEmptyCloseableIterator;
 import org.apache.ignite.internal.util.GridSpinBusyLock;
-import org.apache.ignite.internal.util.future.GridFutureAdapter;
 import org.apache.ignite.internal.util.lang.GridCloseableIterator;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeGuard;
 import org.apache.ignite.internal.util.offheap.unsafe.GridUnsafeMemory;
@@ -112,7 +114,6 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.marshaller.Marshaller;
 import org.apache.ignite.marshaller.jdk.JdkMarshaller;
 import org.apache.ignite.resources.LoggerResource;
@@ -836,6 +837,8 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             return stmt.executeQuery();
         }
         catch (SQLException e) {
+            onSqlException();
+
             throw new IgniteCheckedException("Failed to execute SQL query.", e);
         }
     }
@@ -856,11 +859,20 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         String sql,
         @Nullable Collection<Object> params,
         boolean useStmtCache) throws IgniteCheckedException {
-        return new CancellableSqlQueryFuture(space, conn, sql, params, useStmtCache, 0).get();
+        try {
+            return new SqlQueryRunnableFuture(space, conn, sql, params, useStmtCache, 0).call();
+        }
+        catch (Exception e) {
+            if (e instanceof IgniteCheckedException)
+                throw (IgniteCheckedException) e;
+
+            throw new IgniteCheckedException(e);
+        }
     }
 
     /**
-     * Executes sql query and prints warning if query is too slow..
+     * Returns future suitable for running SQL query.
+     * Future can be using for query cancelling from another thread.
      *
      * @param space Space name.
      * @param conn Connection,.
@@ -871,17 +883,33 @@ public class IgniteH2Indexing implements GridQueryIndexing {
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
-    public GridFutureAdapter<ResultSet> sqlQueryFuture(String space,
+    public RunnableFuture<ResultSet> sqlQueryFuture(String space,
         Connection conn,
-        String sql,
+        final String sql,
         @Nullable Collection<Object> params,
         boolean useStmtCache,
         int timeout) throws IgniteCheckedException {
-        return new CancellableSqlQueryFuture(space, conn, sql, params, useStmtCache, timeout);
+        final SqlQueryRunnableFuture fut = new SqlQueryRunnableFuture(space, conn, sql, params, useStmtCache, timeout);
+
+        return new FutureTask<ResultSet>(fut) {
+            @Override public boolean cancel(boolean mayInterruptIfRunning) {
+                boolean cancelled = super.cancel(mayInterruptIfRunning);
+
+                if (cancelled)
+                    try {
+                        fut.cancel();
+                    }
+                    catch (SQLException e) {
+                        IgniteH2Indexing.this.log.error("Failed to cancel SQL query " + sql, e);
+                    }
+
+                return cancelled;
+            }
+        };
     }
 
     /** */
-    private class CancellableSqlQueryFuture extends GridFutureAdapter<ResultSet> {
+    private class SqlQueryRunnableFuture implements Callable<ResultSet> {
         /** */
         private final String space;
 
@@ -904,15 +932,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         private GridTimeoutProcessor.CancelableTask timeoutTask;
 
         /**
-         * @param space
-         * @param conn
-         * @param sql
-         * @param params
-         * @param useStmtCache
-         * @param timeout
+         * @param space Space.
+         * @param conn Connection.
+         * @param sql Query.
+         * @param params Params.
+         * @param useStmtCache Use cache?
+         * @param timeout Timeout.
          */
-        public CancellableSqlQueryFuture(String space, Connection conn, String sql, Collection<Object> params,
+        public SqlQueryRunnableFuture(String space, Connection conn, String sql, Collection<Object> params,
             boolean useStmtCache, int timeout) throws IgniteCheckedException {
+
             this.space = space;
             this.conn = conn;
             this.sql = sql;
@@ -928,7 +957,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         }
 
         /** {@inheritDoc} */
-        @Override public ResultSet get() throws IgniteCheckedException {
+        @Override public ResultSet call() throws Exception {
             long start = U.currentTimeMillis();
 
             try {
@@ -936,16 +965,16 @@ public class IgniteH2Indexing implements GridQueryIndexing {
                     timeoutTask = ctx.timeout().schedule(new Runnable() {
                         @Override public void run() {
                             try {
-                                stmt.cancel();
+                                cancel();
                             }
                             catch (SQLException e) {
-                                log.error("Failed to cancel a statement", e);
+                                log.error("Failed to timeout SQL query " + sql, e);
                             }
                         }
-                    }, this.timeout * 1000L, 0);
+                    }, this.timeout * 1000L, -1);
                 }
 
-                java.sql.ResultSet rs = executeSqlQuery(sql, stmt, params);
+                ResultSet rs = executeSqlQuery(sql, stmt, params);
 
                 // Remove pending task from timer queue.
                 if (timeoutTask != null)
@@ -986,30 +1015,12 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             }
         }
 
-        /** {@inheritDoc} */
-        @Override public boolean cancel() throws IgniteCheckedException {
-            if (onCancelled()) {
-                try {
-                    stmt.cancel();
+        /** */
+        public void cancel() throws SQLException {
+            stmt.cancel();
 
-                    if (timeoutTask != null)
-                        timeoutTask.close();
-
-                    return true;
-                }
-                catch (SQLException e) {
-                    throw new IgniteCheckedException("Failed to parse SQL query: " + sql, e);
-                }
-            }
-            else
-                return false;
-        }
-
-        /**
-         * @return Stmt.
-         */
-        public PreparedStatement stmt() {
-            return stmt;
+            if (timeoutTask != null)
+                timeoutTask.close();
         }
     }
 

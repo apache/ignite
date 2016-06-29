@@ -56,7 +56,7 @@ public class IgniteCacheReplicatedFieldsQueryStopSelfTest extends IgniteCacheAbs
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
-        return 3;
+        return 1;
     }
 
     /** {@inheritDoc} */
