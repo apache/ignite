@@ -694,8 +694,8 @@ public class WebSessionFilter implements Filter {
      * @return New session.
      */
     private WebSessionV2 createSessionV2(final HttpSession ses, final String sesId) throws IOException {
-        if (log.isDebugEnabled())
-            log.debug("Session created: " + sesId);
+        assert ses != null;
+        assert sesId != null;
 
         WebSessionV2 cached = new WebSessionV2(sesId, ses, true, ctx, null, marshaller);
 
@@ -731,6 +731,9 @@ public class WebSessionFilter implements Filter {
         final HttpSession ses = httpReq.getSession(true);
 
         final String sesId = transformSessionId(ses.getId());
+
+        if (log.isDebugEnabled())
+            log.debug("Session created: " + sesId);
 
         return createSessionV2(ses, sesId);
     }
