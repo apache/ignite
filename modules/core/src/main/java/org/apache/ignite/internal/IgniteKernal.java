@@ -114,6 +114,7 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.hadoop.Hadoop;
+import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
@@ -862,9 +863,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             startProcessor(new DataStreamProcessor(ctx));
             startProcessor((GridProcessor)IGFS.create(ctx, F.isEmpty(cfg.getFileSystemConfiguration())));
             startProcessor(new GridContinuousProcessor(ctx));
-            startProcessor((GridProcessor)(cfg.isPeerClassLoadingEnabled() ?
-                IgniteComponentType.HADOOP.create(ctx, true): // No-op when peer class loading is enabled.
-                IgniteComponentType.HADOOP.createIfInClassPath(ctx, cfg.getHadoopConfiguration() != null)));
+            startProcessor((GridProcessor)createHadoopComponent());
             startProcessor(new DataStructuresProcessor(ctx));
             startProcessor(createComponent(PlatformProcessor.class, ctx));
 
@@ -1082,6 +1081,50 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
         if (!isDaemon())
             ctx.discovery().ackTopology();
+    }
+
+    /**
+     * Create Hadoop component.
+     *
+     * @return Non-null Hadoop component: workable or no-op.
+     * @throws IgniteCheckedException If the component is mandatory and cannot be initialized.
+     */
+    private HadoopProcessorAdapter createHadoopComponent() throws IgniteCheckedException {
+        boolean mandatory = cfg.getHadoopConfiguration() != null;
+
+        if (mandatory) {
+            if (cfg.isPeerClassLoadingEnabled())
+                throw new IgniteCheckedException("Hadoop module cannot be used with peer class loading enabled " +
+                    "(set IgniteConfiguration.peerClassLoadingEnabled to \"false\").");
+
+            return IgniteComponentType.HADOOP.createIfInClassPath(ctx, true);
+        }
+        else {
+            HadoopProcessorAdapter cmp = null;
+
+            if (IgniteComponentType.HADOOP.inClassPath() && cfg.isPeerClassLoadingEnabled()) {
+                U.warn(log, "Hadoop module is found in classpath, but will not be started because peer class " +
+                    "loading is enabled (set IgniteConfiguration.peerClassLoadingEnabled to \"false\" if you want " +
+                    "to use Hadoop module).");
+            }
+            else {
+                cmp = IgniteComponentType.HADOOP.createIfInClassPath(ctx, false);
+
+                try {
+                    cmp.validateEnvironment();
+                }
+                catch (IgniteException | IgniteCheckedException e) {
+                    U.quietAndWarn(log, "Hadoop module will not start due to exception: " + e.getMessage());
+
+                    cmp = null;
+                }
+            }
+
+            if (cmp == null)
+                cmp = IgniteComponentType.HADOOP.create(ctx, true);
+
+            return cmp;
+        }
     }
 
     /**
