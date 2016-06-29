@@ -204,7 +204,7 @@ public class QueryEntity implements Serializable {
         }
         else
             throw new IllegalArgumentException("An index with the same name and of a different type already exists " +
-                    "[idxName=" + idxName + ", existingIdxType=" + idx.getIndexType() + ", newIdxType=" + idxType + ']');
+                "[idxName=" + idxName + ", existingIdxType=" + idx.getIndexType() + ", newIdxType=" + idxType + ']');
     }
 
     /**
