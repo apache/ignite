@@ -195,36 +195,6 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @throws Exception If failed.
-     */
-    public void testHandleMetadataForAllCache() throws Exception {
-        GridCacheCommandHandler cmdHandler = new GridCacheCommandHandler(((IgniteKernal)grid()).context());
-        GridRestCacheRequest req = new GridRestCacheRequest();
-
-        req.command(GridRestCommand.GET_OR_CREATE_CACHE);
-        req.cacheName("partitioned_cache");
-
-        IgniteInternalFuture<GridRestResponse> resp = cmdHandler.handleAsync(req);
-
-        req = new GridRestCacheRequest();
-        req.command(GridRestCommand.GET_OR_CREATE_CACHE);
-        req.cacheName("replicated_cache");
-
-        resp = cmdHandler.handleAsync(req);
-
-        req = new GridRestCacheRequest();
-        req.command(GridRestCommand.CACHE_METADATA);
-        req.cacheName(null);
-
-        resp = cmdHandler.handleAsync(req);
-
-        assertNull(resp.result().getError());
-        assertEquals(GridRestResponse.STATUS_SUCCESS, resp.result().getSuccessStatus());
-        assertEquals("[CacheSqlMetadata [cacheName=null], CacheSqlMetadata [cacheName=replicated_cache], CacheSqlMetadata [cacheName=partitioned_cache]]",
-                resp.result().getResponse().toString());
-    }
-
-    /**
      * Test command handler.
      */
     private static class TestableCacheCommandHandler extends GridCacheCommandHandler {

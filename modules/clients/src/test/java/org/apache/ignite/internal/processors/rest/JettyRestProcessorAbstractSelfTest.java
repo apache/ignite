@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.rest;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -28,10 +30,14 @@ import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -148,8 +154,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     }
 
     /**
-     * @return Port to use for rest. Needs to be changed over time
-     *      because Jetty has some delay before port unbind.
+     * @return Port to use for rest. Needs to be changed over time because Jetty has some delay before port unbind.
      */
     protected abstract int restPort();
 
@@ -333,7 +338,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     /**
      * @throws Exception If failed.
      */
-    public void testNullMapKeyAndValue()  throws Exception {
+    public void testNullMapKeyAndValue() throws Exception {
         Map<String, String> map1 = new HashMap<>();
         map1.put(null, null);
         map1.put("key", "value");
@@ -366,7 +371,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     /**
      * @throws Exception If failed.
      */
-    public void testSimpleObject()  throws Exception {
+    public void testSimpleObject() throws Exception {
         SimplePerson p = new SimplePerson(1, "Test", java.sql.Date.valueOf("1977-01-26"), 1000.55, 39, "CIO", 25);
 
         jcache().put("simplePersonKey", p);
@@ -998,18 +1003,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @param metas Metadata for Ignite caches.
      * @throws Exception If failed.
      */
-    private void testMetadata(Collection<GridCacheSqlMetadata> metas) throws Exception {
-        Map<String, String> params = F.asMap("cmd", GridRestCommand.CACHE_METADATA.key());
-
-        String cacheNameArg = F.first(metas).cacheName();
-
-        if (cacheNameArg != null)
-            params.put("cacheName", cacheNameArg);
-
-        String ret = content(params);
-
-        info("Cache metadata result: " + ret);
-
+    private void testMetadata(Collection<GridCacheSqlMetadata> metas, String ret) throws Exception {
         JsonNode arr = jsonResponse(ret);
 
         assertTrue(arr.isArray());
@@ -1094,10 +1088,19 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         assertNotNull("Should have configured public cache!", cache);
 
-        Collection<GridCacheSqlMetadata> meta = cache.context().queries().sqlMetadata();
+        Collection<GridCacheSqlMetadata> metas = cache.context().queries().sqlMetadata();
 
-        testMetadata(meta);
-        testMetadataForVoidCacheName(meta);
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_METADATA.key()));
+
+        info("Cache metadata: " + ret);
+
+        testMetadata(metas, ret);
+
+        ret = content(F.asMap("cmd", GridRestCommand.CACHE_METADATA.key(), "cacheName", "person"));
+
+        info("Cache metadata with cacheName parameter: " + ret);
+
+        testMetadata(metas, ret);
     }
 
     /**
@@ -1113,95 +1116,17 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         Collection<GridCacheSqlMetadata> metas = c.context().queries().sqlMetadata();
 
-        testMetadata(metas);
-        testMetadataForVoidCacheName(metas);
-    }
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_METADATA.key()));
 
-    /**
-     * @throws Exception If failed.
-     */
-    public void testMetadataForVoidCacheName(Collection<GridCacheSqlMetadata> metas) throws Exception {
+        info("Cache metadata: " + ret);
 
-        Map<String, String> params = F.asMap("cmd", GridRestCommand.CACHE_METADATA.key());
+        testMetadata(metas, ret);
 
-        String ret = content(params);
+        ret = content(F.asMap("cmd", GridRestCommand.CACHE_METADATA.key(), "cacheName", "person"));
 
-        info("Cache metadata result: " + ret);
+        info("Cache metadata with cacheName parameter: " + ret);
 
-        JsonNode arr = jsonResponse(ret);
-
-        assertTrue(arr.isArray());
-        assertEquals(metas.size(), arr.size());
-
-        for (JsonNode item : arr) {
-            JsonNode cacheNameNode = item.get("cacheName");
-            final String cacheName = cacheNameNode != null ? cacheNameNode.asText() : null;
-
-            GridCacheSqlMetadata meta = F.find(metas, null, new P1<GridCacheSqlMetadata>() {
-                @Override public boolean apply(GridCacheSqlMetadata meta) {
-                    return F.eq(meta.cacheName(), cacheName);
-                }
-            });
-
-            assertNotNull("REST return metadata for unexpected cache: " + cacheName, meta);
-
-            JsonNode types = item.get("types");
-
-            assertNotNull(types);
-            assertFalse(types.isNull());
-
-            assertEqualsCollections(meta.types(), JSON_MAPPER.treeToValue(types, Collection.class));
-
-            JsonNode keyClasses = item.get("keyClasses");
-
-            assertNotNull(keyClasses);
-            assertFalse(keyClasses.isNull());
-
-            assertTrue(meta.keyClasses().equals(JSON_MAPPER.treeToValue(keyClasses, Map.class)));
-
-            JsonNode valClasses = item.get("valClasses");
-
-            assertNotNull(valClasses);
-            assertFalse(valClasses.isNull());
-
-            assertTrue(meta.valClasses().equals(JSON_MAPPER.treeToValue(valClasses, Map.class)));
-
-            JsonNode fields = item.get("fields");
-
-            assertNotNull(fields);
-            assertFalse(fields.isNull());
-            assertTrue(meta.fields().equals(JSON_MAPPER.treeToValue(fields, Map.class)));
-
-            JsonNode indexesByType = item.get("indexes");
-
-            assertNotNull(indexesByType);
-            assertFalse(indexesByType.isNull());
-            assertEquals(meta.indexes().size(), indexesByType.size());
-
-            for (Map.Entry<String, Collection<GridCacheSqlIndexMetadata>> metaIndexes : meta.indexes().entrySet()) {
-                JsonNode indexes = indexesByType.get(metaIndexes.getKey());
-
-                assertNotNull(indexes);
-                assertFalse(indexes.isNull());
-                assertEquals(metaIndexes.getValue().size(), indexes.size());
-
-                for (final GridCacheSqlIndexMetadata metaIdx : metaIndexes.getValue()) {
-                    JsonNode idx = F.find(indexes, null, new P1<JsonNode>() {
-                        @Override public boolean apply(JsonNode idx) {
-                            return metaIdx.name().equals(idx.get("name").asText());
-                        }
-                    });
-
-                    assertNotNull(idx);
-
-                    assertEqualsCollections(metaIdx.fields(),
-                            JSON_MAPPER.treeToValue(idx.get("fields"), Collection.class));
-                    assertEqualsCollections(metaIdx.descendings(),
-                            JSON_MAPPER.treeToValue(idx.get("descendings"), Collection.class));
-                    assertEquals(metaIdx.unique(), idx.get("unique").asBoolean());
-                }
-            }
-        }
+        testMetadata(metas, ret);
     }
 
     /**
@@ -1980,6 +1905,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         public String getLastName() {
             return lastName;
         }
+
         /**
          * @return Salary.
          */
@@ -2094,7 +2020,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
          * @param vals Values.
          * @return This helper for chaining method calls.
          */
-        public VisorGatewayArgument argument(Class cls, Object ... vals) {
+        public VisorGatewayArgument argument(Class cls, Object... vals) {
             put("p" + idx++, cls.getName());
 
             for (Object val : vals)
@@ -2110,7 +2036,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
          * @param vals Values.
          * @return This helper for chaining method calls.
          */
-        public VisorGatewayArgument collection(Class cls, Object ... vals) {
+        public VisorGatewayArgument collection(Class cls, Object... vals) {
             put("p" + idx++, Collection.class.getName());
             put("p" + idx++, cls.getName());
             put("p" + idx++, concat(vals, ";"));
@@ -2168,7 +2094,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
          * @param vals Values.
          * @return This helper for chaining method calls.
          */
-        public VisorGatewayArgument set(Class cls, Object ... vals) {
+        public VisorGatewayArgument set(Class cls, Object... vals) {
             put("p" + idx++, Set.class.getName());
             put("p" + idx++, cls.getName());
             put("p" + idx++, concat(vals, ";"));
