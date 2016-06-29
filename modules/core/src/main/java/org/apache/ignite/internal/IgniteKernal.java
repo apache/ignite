@@ -1097,7 +1097,11 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 throw new IgniteCheckedException("Hadoop module cannot be used with peer class loading enabled " +
                     "(set IgniteConfiguration.peerClassLoadingEnabled to \"false\").");
 
-            return IgniteComponentType.HADOOP.createIfInClassPath(ctx, true);
+            HadoopProcessorAdapter res = IgniteComponentType.HADOOP.createIfInClassPath(ctx, true);
+
+            res.validateEnvironment();
+
+            return res;
         }
         else {
             HadoopProcessorAdapter cmp = null;
