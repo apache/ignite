@@ -103,6 +103,10 @@ public class BPlusTreeSelfTest extends GridCommonAbstractTest {
             @Override public RootPage dropRootPage(final String idxName) {
                 throw new UnsupportedOperationException();
             }
+
+            @Override public void dropAllRootPages() throws IgniteCheckedException {
+                throw new UnsupportedOperationException();
+            }
         });
     }
 

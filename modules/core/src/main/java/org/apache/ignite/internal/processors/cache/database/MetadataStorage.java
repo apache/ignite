@@ -131,6 +131,22 @@ public class MetadataStorage implements MetaStore {
         return row != null ? new RootPage(new FullPageId(row.pageId, cacheId), false) : null;
     }
 
+    /** {@inheritDoc} */
+    public void dropAllRootPages() throws IgniteCheckedException {
+        final IndexItem item = new IndexItem(new byte[MAX_IDX_NAME_LEN + 1], 0);
+
+        IndexItem rmv;
+
+        do {
+            rmv = metaTree.removeCeil(item, null);
+
+            if (rmv != null)
+                reuseList.add(new Bag(rmv.pageId));
+        } while (rmv != null);
+
+        metaTree.init();
+    }
+
     /**
      * @return Meta page.
      */
@@ -171,6 +187,17 @@ public class MetadataStorage implements MetaStore {
 
             if (initNew)
                 initNew();
+        }
+
+        /**
+         * Init tree.
+         *
+         * @throws IgniteCheckedException
+         */
+        public void init() throws IgniteCheckedException {
+            assert size() == 0 : "Reinit non-empty meta tree.";
+
+            initNew();
         }
 
         /** {@inheritDoc} */

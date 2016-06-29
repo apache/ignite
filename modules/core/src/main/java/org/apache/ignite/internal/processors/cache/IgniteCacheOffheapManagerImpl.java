@@ -117,6 +117,18 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
     }
 
+    /** {@inheritDoc} */
+    @Override protected void stop0(final boolean cancel) {
+        super.stop0(cancel);
+
+        try {
+            metaStore.dropAllRootPages();
+        }
+        catch (IgniteCheckedException e) {
+            throw new IgniteException(e.getMessage(), e);
+        }
+    }
+
     /**
      * @param part Partition.
      * @return Data store for given entry.
@@ -558,7 +570,6 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
 
         String idxName = treeName(p);
 
-        // TODO: GG-11220 cleanup when cache/partition is destroyed.
         final RootPage rootPage = metaStore.getOrAllocateForTree(idxName);
 
         CacheDataRowStore rowStore = new CacheDataRowStore(cctx, freeList);
@@ -572,6 +583,13 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
                 rootPage.isAllocated());
 
         return new CacheDataStoreImpl(rowStore, dataTree, lsnr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void destroyCacheDataStore(final int part) throws IgniteCheckedException {
+        final String idxName = treeName(part);
+
+        metaStore.dropRootPage(idxName);
     }
 
     /**

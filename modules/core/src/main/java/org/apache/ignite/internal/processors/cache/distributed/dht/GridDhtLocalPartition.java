@@ -666,6 +666,13 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             ((GridDhtPreloader)cctx.preloader()).onPartitionEvicted(this, true);
 
             clearDeferredDeletes();
+
+            try {
+                cctx.offheap().destroyCacheDataStore(id);
+            }
+            catch (IgniteCheckedException e) {
+                log.error("Unable to destroy cache data store on partition eviction [id=" + id + "]", e);
+            }
         }
     }
 

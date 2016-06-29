@@ -41,4 +41,11 @@ public interface MetaStore {
      * @throws IgniteCheckedException
      */
     public RootPage dropRootPage(String idxName) throws IgniteCheckedException;
+
+    /**
+     * Deallocate all index pages and clear tree.
+     *
+     * @throws IgniteCheckedException If fail.
+     */
+    public void dropAllRootPages() throws IgniteCheckedException;
 }
