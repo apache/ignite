@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Map;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteBinary;
+import org.apache.ignite.internal.binary.BinaryMetadata;
 import org.apache.ignite.internal.processors.cacheobject.IgniteCacheObjectProcessor;
 import org.apache.ignite.binary.BinaryObjectBuilder;
 import org.apache.ignite.binary.BinaryType;
@@ -69,6 +70,13 @@ public interface CacheObjectBinaryProcessor extends IgniteCacheObjectProcessor {
      * @throws IgniteException In case of error.
      */
     @Nullable public BinaryType metadata(int typeId) throws IgniteException;
+
+    /**
+     * @param typeId Type ID.
+     * @return Binary metadata or {@code null} if no success.
+     * @throws IgniteException In case of error.
+     */
+    @Nullable public BinaryMetadata binaryMetadata(int typeId) throws IgniteException;
 
     /**
      * @param typeIds Type ID.

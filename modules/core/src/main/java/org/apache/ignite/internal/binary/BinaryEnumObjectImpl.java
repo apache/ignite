@@ -130,7 +130,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
     /** {@inheritDoc} */
     @Override public BinaryType type() throws BinaryObjectException {
-        return ctx.metadata(typeId());
+        return new BinaryTypeImpl(typeId(), ctx, null);
     }
 
     /** {@inheritDoc} */
@@ -204,7 +204,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
             type = null;
         }
 
-        if (type != null)
+        if (type != null && BinaryUtils.isMetadataAvailable(type))
             return type.typeName() + "[ordinal=" + ord  + ']';
         else {
             if (typeId == GridBinaryMarshaller.UNREGISTERED_TYPE_ID)

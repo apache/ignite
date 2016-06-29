@@ -182,7 +182,7 @@ public abstract class BinaryObjectExImpl implements BinaryObjectEx {
             meta = null;
         }
 
-        if (meta == null)
+        if (meta == null || !BinaryUtils.isMetadataAvailable(meta))
             return BinaryObject.class.getSimpleName() +  " [idHash=" + idHash + ", hash=" + hash + ", typeId=" + typeId() + ']';
 
         handles.put(this, idHash);

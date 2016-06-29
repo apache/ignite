@@ -54,6 +54,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
@@ -955,6 +956,17 @@ public class BinaryUtils {
             return changed ? new BinaryMetadata(oldMeta.typeId(), oldMeta.typeName(), mergedFields,
                 oldMeta.affinityKeyFieldName(), mergedSchemas, oldMeta.isEnum()) : oldMeta;
         }
+    }
+
+    /**
+     * @param binaryType Metadata to test.
+     * @return {@code True} if metadata available.
+     */
+    public static boolean isMetadataAvailable(final BinaryType binaryType) {
+        if (binaryType instanceof BinaryTypeImpl)
+            return ((BinaryTypeImpl) binaryType).isMetadataAvailable();
+
+        return true;
     }
 
     /**

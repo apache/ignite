@@ -17,9 +17,11 @@
 
 package org.apache.ignite.internal.binary;
 
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryType;
 
 import java.util.Collection;
+
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
@@ -32,52 +34,59 @@ public class BinaryTypeImpl implements BinaryType {
     private final BinaryContext ctx;
 
     /** Type metadata. */
-    private final BinaryMetadata meta;
+    private volatile BinaryMetadata meta;
+
+    /** Type ID. */
+    private final int typeId;
 
     /**
      * Constructor.
      *
+     * @param typeId Type ID.
      * @param ctx Binary context.
      * @param meta Type  metadata.
      */
-    public BinaryTypeImpl(BinaryContext ctx, BinaryMetadata meta) {
+    public BinaryTypeImpl(int typeId, BinaryContext ctx, BinaryMetadata meta) {
+        assert ctx != null;
+
         this.ctx = ctx;
         this.meta = meta;
+        this.typeId = typeId;
     }
 
     /** {@inheritDoc} */
     @Override public String typeName() {
-        return meta.typeName();
+        return metadata().typeName();
     }
 
     /** {@inheritDoc} */
     @Override public int typeId() {
-        return meta.typeId();
+        return typeId;
     }
 
     /** {@inheritDoc} */
     @Override public Collection<String> fieldNames() {
-        return meta.fields();
+        return metadata().fields();
     }
 
     /** {@inheritDoc} */
     @Override public String fieldTypeName(String fieldName) {
-        return meta.fieldTypeName(fieldName);
+        return metadata().fieldTypeName(fieldName);
     }
 
     /** {@inheritDoc} */
     @Override public BinaryFieldImpl field(String fieldName) {
-        return ctx.createField(meta.typeId(), fieldName);
+        return ctx.createField(typeId, fieldName);
     }
 
     /** {@inheritDoc} */
     @Override public String affinityKeyFieldName() {
-        return meta.affinityKeyFieldName();
+        return metadata().affinityKeyFieldName();
     }
 
     /** {@inheritDoc} */
     @Override public boolean isEnum() {
-        return meta.isEnum();
+        return metadata().isEnum();
     }
 
     /**
@@ -91,8 +100,35 @@ public class BinaryTypeImpl implements BinaryType {
      * @return Metadata.
      */
     public BinaryMetadata metadata() {
+        loadMetadata();
+
+        if (meta == null)
+            throw new IgniteException("No binary metadata available for type ID: " + typeId);
+
         return meta;
     }
+
+    /**
+     * Load metadata if need.
+     */
+    private void loadMetadata() {
+        if (meta == null) {
+            synchronized (this) {
+                if (meta == null)
+                    meta = ctx.binaryMetadata(typeId);
+            }
+        }
+    }
+
+    /**
+     * @return {@code True} if metadata available.
+     */
+    public boolean isMetadataAvailable() {
+        loadMetadata();
+
+        return meta != null;
+    }
+
 
     /** {@inheritDoc} */
     public String toString() {

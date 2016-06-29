@@ -1142,6 +1142,15 @@ public class BinaryContext {
 
     /**
      * @param typeId Type ID.
+     * @return Binary metadata.
+     * @throws BinaryObjectException
+     */
+    @Nullable public BinaryMetadata binaryMetadata(int typeId) throws BinaryObjectException {
+        return metaHnd != null ? metaHnd.binaryMetadata(typeId) : null;
+    }
+
+    /**
+     * @param typeId Type ID.
      * @return Affinity key field name.
      */
     public String affinityKeyFieldName(int typeId) {

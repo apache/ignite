@@ -207,6 +207,14 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
                     return CacheObjectBinaryProcessorImpl.this.metadata(typeId);
                 }
+
+                @Nullable @Override public BinaryMetadata binaryMetadata(
+                    final int typeId) throws BinaryObjectException {
+                    if (metaDataCache == null)
+                        U.awaitQuiet(startLatch);
+
+                    return CacheObjectBinaryProcessorImpl.this.binaryMetadata(typeId);
+                }
             };
 
             BinaryMarshaller bMarsh0 = (BinaryMarshaller)marsh;
@@ -563,6 +571,22 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public BinaryMetadata binaryMetadata(final int typeId) throws IgniteException {
+        if (clientNode)
+            return metaDataCache.getTopologySafe(new BinaryMetadataKey(typeId));
+        else {
+            BinaryMetadataKey key = new BinaryMetadataKey(typeId);
+
+            BinaryMetadata meta = metaDataCache.localPeek(key);
+
+            if (meta == null && !metaDataCache.context().preloader().syncFuture().isDone())
+                meta = metaDataCache.getTopologySafe(key);
+
+            return meta;
+        }
+    }
+
+    /** {@inheritDoc} */
     @Nullable @Override public BinaryType metadata(final int typeId) throws BinaryObjectException {
         try {
             if (clientNode) {
@@ -570,21 +594,11 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
 
                 if (typeMeta != null)
                     return typeMeta;
-
-                BinaryMetadata meta = metaDataCache.getTopologySafe(new BinaryMetadataKey(typeId));
-
-                return meta != null ? meta.wrap(binaryCtx) : null;
             }
-            else {
-                BinaryMetadataKey key = new BinaryMetadataKey(typeId);
 
-                BinaryMetadata meta = metaDataCache.localPeek(key);
+            final BinaryMetadata meta = binaryMetadata(typeId);
 
-                if (meta == null && !metaDataCache.context().preloader().syncFuture().isDone())
-                    meta = metaDataCache.getTopologySafe(key);
-
-                return meta != null ? meta.wrap(binaryCtx) : null;
-            }
+            return meta != null ? meta.wrap(binaryCtx) : null;
         }
         catch (CacheException e) {
             throw new BinaryObjectException(e);
@@ -669,7 +683,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
         try {
             BinaryType meta = po.type();
 
-            if (meta != null) {
+            if (meta != null && BinaryUtils.isMetadataAvailable(meta)) {
                 String affKeyFieldName = meta.affinityKeyFieldName();
 
                 if (affKeyFieldName != null)

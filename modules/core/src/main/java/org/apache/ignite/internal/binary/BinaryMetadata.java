@@ -155,7 +155,7 @@ public class BinaryMetadata implements Externalizable {
      * @return Binary type.
      */
     public BinaryTypeImpl wrap(BinaryContext ctx) {
-        return new BinaryTypeImpl(ctx, this);
+        return new BinaryTypeImpl(typeId, ctx, this);
     }
 
     /** {@inheritDoc} */
