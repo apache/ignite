@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Tests.Services
 {
     using System;
     using System.Collections;
-    using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.Linq;
     using System.Threading;
@@ -152,30 +151,11 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             var svc = new TestIgniteServiceSerializable();
 
-            for (int i = 0; i < 10000; i++)
-            {
-                Services.DeployNodeSingleton(SvcName, svc);
+            Services.DeployNodeSingleton(SvcName, svc);
 
-                Assert.AreEqual(1, GetServices<ITestIgniteService>(Grid1, SvcName).Count);
-                Assert.AreEqual(1, GetServices<ITestIgniteService>(Grid2, SvcName).Count);
-                Assert.AreEqual(0, GetServices<ITestIgniteService>(Grid3, SvcName).Count);
-
-                Services.CancelAll();
-            }
-
-        }
-
-        private ICollection<T> GetServices<T>(IIgnite ignite, string name)
-        {
-            var svcs = ignite.GetServices();
-
-            Assert.IsNotNull(svcs);
-
-            var res = svcs.GetServices<T>(name);
-
-            Assert.IsNotNull(res);
-
-            return res;
+            Assert.AreEqual(1, Grid1.GetServices().GetServices<ITestIgniteService>(SvcName).Count);
+            Assert.AreEqual(1, Grid2.GetServices().GetServices<ITestIgniteService>(SvcName).Count);
+            Assert.AreEqual(0, Grid3.GetServices().GetServices<ITestIgniteService>(SvcName).Count);
         }
 
         /// <summary>
