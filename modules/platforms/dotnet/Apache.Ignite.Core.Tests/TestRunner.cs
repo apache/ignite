@@ -25,7 +25,6 @@ namespace Apache.Ignite.Core.Tests
     using Apache.Ignite.Core.Tests.Cache.Affinity;
     using Apache.Ignite.Core.Tests.Cache.Query;
     using Apache.Ignite.Core.Tests.Memory;
-    using Apache.Ignite.Core.Tests.Services;
     using NUnit.ConsoleRunner;
 
     public static class TestRunner
@@ -49,9 +48,9 @@ namespace Apache.Ignite.Core.Tests
                 return;
             }
 
-            TestOne(typeof(ServicesTest), "TestDeployNodeSingleton");
+            //TestOne(typeof(BinaryStringTest), "Test");
 
-            //TestAll(typeof (ServicesTest));
+            TestAll(typeof (AffinityFunctionTest));
             //TestAllInAssembly();
         }
 
