@@ -31,6 +31,7 @@ import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusInnerIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.BPlusLeafIO;
 import org.apache.ignite.internal.processors.cache.database.tree.io.IOVersions;
+import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseBag;
 import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList;
 
 /**
@@ -39,9 +40,6 @@ import org.apache.ignite.internal.processors.cache.database.tree.reuse.ReuseList
 public class MetadataStorage implements MetaStore {
     /** Max index name length (bytes num) */
     public static final int MAX_IDX_NAME_LEN = 64;
-
-    /** */
-    public static final String REUSE_TREE_NAME = "metaReuseTree";
 
     /** Bytes in byte. */
     private static final int BYTE_LEN = 1;
@@ -53,7 +51,7 @@ public class MetadataStorage implements MetaStore {
     private final MetaTree metaTree;
 
     /** Meta page reuse tree. */
-    private final MetaReuseTree reuseTree;
+    private final ReuseList reuseList;
 
     /** Cache ID. */
     private final int cacheId;
@@ -75,13 +73,8 @@ public class MetadataStorage implements MetaStore {
                 IndexLeafIO.VERSIONS, rootPage.isAllocated());
 
             // Reuse logic
-            final RootPage root = getOrAllocateForTree(REUSE_TREE_NAME);
-
-            final ReuseList reuseList = new ReuseList(cacheId, pageMem,
+            reuseList = new ReuseList(cacheId, pageMem,
                 Runtime.getRuntime().availableProcessors() * 2, this);
-
-            this.reuseTree = new MetaReuseTree(cacheId, pageMem, root.pageId(), reuseList,
-                MetaReuseInnerIO.VERSIONS, MetaReuseLeafIO.VERSIONS, root.isAllocated());
         }
         catch (IgniteCheckedException e) {
             throw new IgniteException(e);
@@ -102,12 +95,12 @@ public class MetadataStorage implements MetaStore {
             final IndexItem row = tree.findOne(new IndexItem(idxNameBytes, 0));
 
             if (row == null) {
-                Long reused = null;
+                long pageId = 0;
 
-                if (reuseTree != null)
-                    reused = reuseTree.removeCeil(0L, null);
+                if (reuseList != null)
+                    pageId = reuseList.take(null, new Bag(0));
 
-                long pageId = reused == null ? pageMem.allocatePage(cacheId, 0, ALLOC_SPACE) : reused;
+                pageId = pageId == 0 ? pageMem.allocatePage(cacheId, 0, ALLOC_SPACE) : pageId;
 
                 tree.put(new IndexItem(idxNameBytes, pageId));
 
@@ -124,15 +117,13 @@ public class MetadataStorage implements MetaStore {
     /** {@inheritDoc} */
     @Override public RootPage dropRootPage(final String idxName)
         throws IgniteCheckedException {
-        final MetaTree tree = metaTree;
-
         byte[] idxNameBytes = idxName.getBytes(StandardCharsets.UTF_8);
 
-        final IndexItem row = tree.remove(new IndexItem(idxNameBytes, 0));
+        final IndexItem row = metaTree.remove(new IndexItem(idxNameBytes, 0));
 
         if (row != null) {
-            if (reuseTree != null)
-                reuseTree.put(row.pageId);
+            if (reuseList != null)
+                reuseList.add(new Bag(row.pageId));
             else
                pageMem.freePage(cacheId, row.pageId);
         }
@@ -438,122 +429,31 @@ public class MetadataStorage implements MetaStore {
     }
 
     /**
-     * Keeps freed meta page IDs.
-     */
-    private static class MetaReuseTree extends BPlusTree<Long, Long> {
-        /**
-         * @param cacheId Cache ID.
-         * @param pageMem Page memory.
-         * @param metaPageId Meta root page ID.
-         * @param reuseList Reuse list.
-         * @param innerIos Inner IO.
-         * @param leafIos Leaf IO.
-         * @param initNew Init new flag.
-         * @throws IgniteCheckedException
-         */
-        public MetaReuseTree(final int cacheId, final PageMemory pageMem,
-            final FullPageId metaPageId, final ReuseList reuseList,
-            final IOVersions<? extends BPlusInnerIO<Long>> innerIos,
-            final IOVersions<? extends BPlusLeafIO<Long>> leafIos, final boolean initNew)
-            throws IgniteCheckedException {
-            super(treeName("meta@" + cacheId, "Reuse"), cacheId, pageMem, metaPageId, reuseList, innerIos, leafIos);
-
-            if (initNew)
-                initNew();
-        }
-
-        /** {@inheritDoc} */
-        @Override protected int compare(final BPlusIO<Long> io, final ByteBuffer buf, final int idx,
-            final Long row) throws IgniteCheckedException {
-            return row.compareTo(buf.getLong(((IndexIO) io).getOffset(idx)));
-        }
-
-        /** {@inheritDoc} */
-        @Override protected Long getRow(final BPlusIO<Long> io, final ByteBuffer buf,
-            final int idx) throws IgniteCheckedException {
-            return buf.getLong(((IndexIO) io).getOffset(idx));
-        }
-    }
-
-    /**
      *
      */
-    private static class MetaReuseInnerIO extends BPlusInnerIO<Long> implements IndexIO {
+    private static class Bag implements ReuseBag {
         /** */
-        static final IOVersions<MetaReuseInnerIO> VERSIONS = new IOVersions<>(
-            new MetaReuseInnerIO(1)
-        );
+        private long pageId;
 
         /**
-         * @param ver Version.
+         * @param pageId Page ID.
          */
-        public MetaReuseInnerIO(final int ver) {
-            super(T_META_REUSE_INNER, ver, false, 8);
+        public Bag(final long pageId) {
+            this.pageId = pageId;
         }
 
         /** {@inheritDoc} */
-        @Override public void store(final ByteBuffer buf, final int idx,
-            final Long row) throws IgniteCheckedException {
-            buf.putLong(offset(idx), row);
+        @Override public void addFreePage(final long pageId) {
+            this.pageId = pageId;
         }
 
         /** {@inheritDoc} */
-        @Override public void store(final ByteBuffer dst, final int dstIdx, final BPlusIO<Long> srcIo,
-            final ByteBuffer src,
-            final int srcIdx) throws IgniteCheckedException {
-            dst.putLong(getOffset(dstIdx), src.getLong(((IndexIO)srcIo).getOffset(srcIdx)));
-        }
+        @Override public long pollFreePage() {
+            long pageId = this.pageId;
 
-        /** {@inheritDoc} */
-        @Override public Long getLookupRow(final BPlusTree<Long, ?> tree, final ByteBuffer buf,
-            final int idx) throws IgniteCheckedException {
-            return buf.getLong(offset(idx));
-        }
+            this.pageId = 0;
 
-        /** {@inheritDoc} */
-        @Override public int getOffset(final int idx) {
-            return offset(idx);
-        }
-    }
-
-    /**
-     *
-     */
-    private static class MetaReuseLeafIO extends BPlusLeafIO<Long> implements IndexIO {
-        /** */
-        static final IOVersions<MetaReuseLeafIO> VERSIONS = new IOVersions<>(
-            new MetaReuseLeafIO(1)
-        );
-
-        /**
-         * @param ver Version.
-         */
-        public MetaReuseLeafIO(final int ver) {
-            super(T_META_REUSE_LEAF, ver, 8);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void store(final ByteBuffer buf, final int idx,
-            final Long row) throws IgniteCheckedException {
-            buf.putLong(offset(idx), row);
-        }
-
-        /** {@inheritDoc} */
-        @Override public void store(final ByteBuffer dst, final int dstIdx, final BPlusIO<Long> srcIo,
-            final ByteBuffer src,
-            final int srcIdx) throws IgniteCheckedException {
-            dst.putLong(getOffset(dstIdx), src.getLong(((IndexIO)srcIo).getOffset(srcIdx)));
-        }
-
-        /** {@inheritDoc} */
-        @Override public Long getLookupRow(final BPlusTree<Long, ?> tree, final ByteBuffer buf,
-            final int idx) throws IgniteCheckedException {
-            return buf.getLong(offset(idx));
-        }
-
-        /** {@inheritDoc} */
-        @Override public int getOffset(final int idx) {
-            return offset(idx);
+            return pageId;
         }
     }
 }
