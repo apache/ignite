@@ -39,7 +39,7 @@ const jsPaths = [
 ];
 
 const appPaths = [
-    './app/**/*.сss',
+    './app/**/*.css',
     './app/**/*.jade',
     './app/data/*.json'
 ].concat(jsPaths);
