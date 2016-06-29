@@ -127,36 +127,42 @@ public class HadoopClasspathUtils {
                 throw new IOException("Failed to resolve Hadoop classpath because " + HOME + " environment " +
                     "variable points to nonexistent directory: " + hadoopHome);
 
-            // Create the list of probes and then iterate over them.
-            List<HadoopLocations> probes = new ArrayList<>();
+            // Probe Apache Hadoop.
+            HadoopLocations res = new HadoopLocations(
+                hadoopHome,
+                hadoopHome + "/share/hadoop/common",
+                hadoopHome + "/share/hadoop/hdfs",
+                hadoopHome + "/share/hadoop/mapreduce"
+            );
 
-            // Probe for Apache Hadoop.
-            probes.add(new HadoopLocations(hadoopHome, hadoopHome + "/share/hadoop/common",
-                hadoopHome + "/share/hadoop/hdfs", hadoopHome + "/share/hadoop/mapreduce"));
+            if (res.valid())
+                return res;
 
-            // Probe for CDH with normal HADOOP_HOME directory.
-            probes.add(new HadoopLocations(hadoopHome, hadoopHome,
-                hadoopHome + "/../hadoop-hdfs", hadoopHome + "/../hadoop-mapreduce"));
+            // Probe CDH.
+            res = new HadoopLocations(
+                hadoopHome,
+                hadoopHome,
+                hadoopHome + "/../hadoop-hdfs",
+                hadoopHome + "/../hadoop-mapreduce"
+            );
 
-            // Probe for CDH with HADOOP_HOME set to parent directory.
-            probes.add(new HadoopLocations(hadoopHome, hadoopHome + "/hadoop",
-                hadoopHome + "/hadoop-hdfs", hadoopHome + "/hadoop-mapreduce"));
+            if (res.valid())
+                return res;
 
-            // Probe for HDP with normal HADOOP_HOME directory.
-            probes.add(new HadoopLocations(hadoopHome, hadoopHome,
-                hadoopHome + "/../hadoop-hdfs-client", hadoopHome + "/../hadoop-mapreduce-client"));
+            // Probe HDP.
+            res = new HadoopLocations(
+                hadoopHome,
+                hadoopHome,
+                hadoopHome + "/../hadoop-hdfs-client",
+                hadoopHome + "/../hadoop-mapreduce-client"
+            );
 
-            // Probe for HDP with HADOOP_HOME set to parent directory.
-            probes.add(new HadoopLocations(hadoopHome, hadoopHome + "/hadoop-client,",
-                hadoopHome + "/hadoop-hdfs-client", hadoopHome + "/hadoop-mapreduce-client"));
+            if (res.valid())
+                return res;
 
-            for (HadoopLocations probe : probes) {
-                if (probe.valid())
-                    return probe;
-            }
-
+            // Failed.
             throw new IOException("Failed to resolve Hadoop classpath because " + HOME + " environment variable " +
-                "points to invalid directory: " + hadoopHome);
+                "is either invalid or points to non-standard Hadoop distribution: " + hadoopHome);
         }
         else {
             // Advise to set HADOOP_HOME only as this is preferred way to configure classpath.
