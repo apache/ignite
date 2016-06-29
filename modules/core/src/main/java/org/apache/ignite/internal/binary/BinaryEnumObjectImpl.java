@@ -135,6 +135,11 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
     }
 
     /** {@inheritDoc} */
+    @Nullable @Override public BinaryType rawType() throws BinaryObjectException {
+        return BinaryUtils.type(ctx, this);
+    }
+
+    /** {@inheritDoc} */
     @Override public <F> F field(String fieldName) throws BinaryObjectException {
         return null;
     }
@@ -199,7 +204,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
         BinaryType type;
 
         try {
-            type = type();
+            type = rawType();
         }
         catch (Exception e) {
             type = null;

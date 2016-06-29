@@ -36,6 +36,7 @@ import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.binary.BinaryMarshaller;
+import org.apache.ignite.internal.binary.BinaryObjectEx;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
 import org.apache.ignite.internal.processors.cache.CacheEntryImpl;
 import org.apache.ignite.internal.processors.cache.CacheObject;
@@ -2004,9 +2005,9 @@ public class GridQueryProcessor extends GridProcessorAdapter {
                 obj = isKeyProp0 == 1 ? key : val;
             }
 
-            assert obj instanceof BinaryObject;
+            assert obj instanceof BinaryObjectEx;
 
-            BinaryObject obj0 = (BinaryObject)obj;
+            BinaryObjectEx obj0 = (BinaryObjectEx)obj;
 
             return fieldValue(obj0);
         }
@@ -2017,11 +2018,11 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          * @param obj Target object.
          * @return Binary field.
          */
-        private BinaryField binaryField(BinaryObject obj) {
+        private BinaryField binaryField(BinaryObjectEx obj) {
             BinaryField field0 = field;
 
             if (field0 == null && !fieldTaken) {
-                BinaryType type = obj.type();
+                BinaryType type = obj.rawType();
 
                 if (type != null) {
                     field0 = type.field(propName);
@@ -2044,7 +2045,7 @@ public class GridQueryProcessor extends GridProcessorAdapter {
          * @return Field value.
          */
         @SuppressWarnings("IfMayBeConditional")
-        private Object fieldValue(BinaryObject obj) {
+        private Object fieldValue(BinaryObjectEx obj) {
             BinaryField field = binaryField(obj);
 
             if (field != null)

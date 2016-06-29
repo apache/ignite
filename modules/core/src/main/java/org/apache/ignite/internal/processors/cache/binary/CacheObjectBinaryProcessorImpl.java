@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import javax.cache.Cache;
@@ -671,7 +670,9 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
      */
     public Object affinityKey(BinaryObject po) {
         try {
-            BinaryType meta = po.type();
+            assert po instanceof BinaryObjectEx;
+
+            BinaryType meta = ((BinaryObjectEx)po).rawType();
 
             if (meta != null) {
                 String affKeyFieldName = meta.affinityKeyFieldName();
@@ -679,7 +680,7 @@ public class CacheObjectBinaryProcessorImpl extends IgniteCacheObjectProcessorIm
                 if (affKeyFieldName != null)
                     return po.field(affKeyFieldName);
             }
-            else if (po instanceof BinaryObjectEx) {
+            else {
                 int id = ((BinaryObjectEx)po).typeId();
 
                 String affKeyFieldName = binaryCtx.affinityKeyFieldName(id);
