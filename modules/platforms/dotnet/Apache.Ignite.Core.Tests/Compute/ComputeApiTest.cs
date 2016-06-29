@@ -1034,6 +1034,8 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestRunActionAsyncCancel()
         {
+            ComputeAction.InvokeCount = 0;
+
             using (var cts = new CancellationTokenSource())
             {
                 // Cancel while executing
@@ -1045,6 +1047,8 @@ namespace Apache.Ignite.Core.Tests.Compute
                 task = _grid1.GetCompute().RunAsync(new ComputeAction(), cts.Token);
                 Assert.IsTrue(task.IsCanceled);
             }
+
+            Assert.IsTrue(TestUtils.WaitForCondition(() => ComputeAction.InvokeCount == 1, 1000));
         }
 
         /// <summary>
