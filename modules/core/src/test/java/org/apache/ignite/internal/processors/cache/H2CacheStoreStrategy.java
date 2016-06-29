@@ -293,7 +293,8 @@ public class H2CacheStoreStrategy implements TestCacheStoreStrategy {
         /** {@inheritDoc} */
         @Override public Object load(Object key) throws CacheLoaderException {
             try {
-                Object res = getFromDb(ses.attachment(), key);
+                Connection conn = ses.attachment();
+                Object res = getFromDb(conn, key);
                 updateStats("reads");
                 return res;
             }
@@ -305,7 +306,8 @@ public class H2CacheStoreStrategy implements TestCacheStoreStrategy {
         /** {@inheritDoc} */
         @Override public void write(Cache.Entry<?, ?> entry) throws CacheWriterException {
             try {
-                putToDb(ses.attachment(), entry.getKey(), entry.getValue());
+                Connection conn = ses.attachment();
+                putToDb(conn, entry.getKey(), entry.getValue());
                 updateStats("writes");
             }
             catch (SQLException e) {
@@ -317,7 +319,8 @@ public class H2CacheStoreStrategy implements TestCacheStoreStrategy {
         /** {@inheritDoc} */
         @Override public void delete(Object key) throws CacheWriterException {
             try {
-                removeFromDb(ses.attachment(), key);
+                Connection conn = ses.attachment();
+                removeFromDb(conn, key);
                 updateStats("removes");
             }
             catch (SQLException e) {
