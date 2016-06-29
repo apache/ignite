@@ -48,6 +48,9 @@ public class QueryEntity implements Serializable {
     /** Collection of query indexes. */
     private Map<String, QueryIndex> idxs = new HashMap<>();
 
+    /** Table name. */
+    private String tableName;
+
     /**
      * Gets key type for this query pair.
      *
@@ -151,6 +154,24 @@ public class QueryEntity implements Serializable {
         }
     }
 
+
+    /**
+     * Gets table name for this query pair.
+     *
+     * @return table name
+     */
+    public String getTableName() {
+        return tableName;
+    }
+
+    /**
+     * Sets table name for this query pair.
+     * @param tableName table name
+     */
+    public void setTableName(String tableName) {
+        this.tableName = tableName;
+    }
+
     /**
      * Utility method for building query entities programmatically.
      */
@@ -183,7 +204,7 @@ public class QueryEntity implements Serializable {
         }
         else
             throw new IllegalArgumentException("An index with the same name and of a different type already exists " +
-                "[idxName=" + idxName + ", existingIdxType=" + idx.getIndexType() + ", newIdxType=" + idxType + ']');
+                    "[idxName=" + idxName + ", existingIdxType=" + idx.getIndexType() + ", newIdxType=" + idxType + ']');
     }
 
     /**
