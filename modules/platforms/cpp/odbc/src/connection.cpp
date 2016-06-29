@@ -25,7 +25,6 @@
 #include "ignite/odbc/message.h"
 #include "ignite/odbc/config/configuration.h"
 
-// TODO: implement appropriate protocol with de-/serialisation.
 namespace
 {
 #pragma pack(push, 1)

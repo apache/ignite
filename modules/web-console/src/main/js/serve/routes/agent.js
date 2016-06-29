@@ -59,7 +59,7 @@ module.exports.factory = function(_, express, fs, JSZip, settings, agentMgr) {
 
                 const host = req.hostname.match(/:/g) ? req.hostname.slice(0, req.hostname.indexOf(':')) : req.hostname;
 
-                prop.push('token=' + req.user.token);
+                prop.push('tokens=' + req.user.token);
                 prop.push('server-uri=' + (settings.agent.SSLOptions ? 'https' : 'http') + '://' + host + ':' + settings.agent.port);
                 prop.push('#Uncomment following options if needed:');
                 prop.push('#node-uri=http://localhost:8080');
@@ -79,4 +79,3 @@ module.exports.factory = function(_, express, fs, JSZip, settings, agentMgr) {
         resolveFactory(router);
     });
 };
-
