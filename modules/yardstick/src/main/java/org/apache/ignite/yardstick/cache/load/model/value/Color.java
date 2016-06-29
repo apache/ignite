@@ -15,40 +15,36 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.cache.model;
+package org.apache.ignite.yardstick.cache.load.model.value;
 
 import java.io.Serializable;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
 
 /**
- * Value used for indexed put test.
+ * Car color
  */
-public class Person1 implements Serializable {
-    /** Value. */
-    @QuerySqlField(index = true)
-    private int val1;
+public enum Color implements Serializable {
+    /**
+     * Grey color.
+     */
+    GREY,
 
     /**
-     * Constructs.
-     *
-     * @param val Indexed value.
+     * Red color.
      */
-    public Person1(int val) {
-        this.val1 = val;
-    }
+    RED,
 
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        return this == o || (o instanceof Person1) && val1 == ((Person1)o).val1;
-    }
+    /**
+     * Green color.
+     */
+    GREEN,
 
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return val1;
-    }
+    /**
+     * Purple color.
+     */
+    PURPLE,
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return "Person1 [val1=" + val1 + ']';
-    }
+    /**
+     * Light blue color.
+     */
+    LIGHTBLUE
 }

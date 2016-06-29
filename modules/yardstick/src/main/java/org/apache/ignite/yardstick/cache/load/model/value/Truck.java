@@ -15,52 +15,55 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.yardstick.cache.model;
+package org.apache.ignite.yardstick.cache.load.model.value;
 
 import java.io.Serializable;
-import org.apache.ignite.cache.query.annotations.QuerySqlField;
+import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
- * Value used for indexed put test.
+ * Cache value class
  */
-public class Person2 implements Serializable {
-    /** Value 1. */
-    @QuerySqlField(index = true)
-    private int val1;
-
-    /** Value 2. */
-    @QuerySqlField(index = true)
-    private int val2;
+public class Truck extends Car implements Serializable {
+    /**
+     * Truck capacity
+     */
+    public double cap;
 
     /**
-     * Constructs.
-     *
-     * @param val Value.
+     * Empty constructor
      */
-    public Person2(int val) {
-        this.val1 = val;
-        this.val2 = val + 1;
+    public Truck() {
+        // No-op.
     }
 
-    /** {@inheritDoc} */
-    @Override public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-
-        Person2 value2 = (Person2)o;
-
-        return val1 == value2.val1 && val2 == value2.val2;
+    /**
+     * @param id identifier
+     * @param make mark of truck
+     * @param weight weight
+     * @param color Color.
+     * @param cap capacity
+     */
+    public Truck(int id, String make, double weight, Color color, double cap) {
+        super(id, make, weight, color);
+        this.cap = cap;
     }
 
-    /** {@inheritDoc} */
-    @Override public int hashCode() {
-        return 31 * val1 + val2;
+    /**
+     * @return truck capacity
+     */
+    public double getCap() {
+        return cap;
+    }
+
+    /**
+     * @param cap truck capacity
+     */
+    public void setCap(double cap) {
+        this.cap = cap;
     }
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "Person2 [val1=" + val1 + ", val2=" + val2 + ']';
+        return S.toString(Truck.class, this);
     }
 }
