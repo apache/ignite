@@ -249,7 +249,7 @@ public class H2CacheStoreStrategy implements TestCacheStoreStrategy {
          */
         static JdbcConnectionPool createDataSource() {
             JdbcConnectionPool pool = JdbcConnectionPool.create("jdbc:h2:tcp://localhost/mem:TestDb;LOCK_MODE=0", "sa", "");
-            pool.setMaxConnections(48);
+            pool.setMaxConnections(100);
             return pool;
         }
 
