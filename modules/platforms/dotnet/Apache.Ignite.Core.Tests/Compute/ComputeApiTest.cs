@@ -1048,7 +1048,8 @@ namespace Apache.Ignite.Core.Tests.Compute
                 Assert.IsTrue(task.IsCanceled);
             }
 
-            Assert.IsTrue(TestUtils.WaitForCondition(() => ComputeAction.InvokeCount == 1, 1000));
+            TestUtils.WaitForCondition(() => ComputeAction.InvokeCount == 1, 1000);
+            Assert.AreEqual(1, ComputeAction.InvokeCount);
         }
 
         /// <summary>
