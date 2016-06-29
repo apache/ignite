@@ -690,7 +690,8 @@ consoleModule.controller('sqlController', [
                             displayName: col.fieldName,
                             headerTooltip: _fullColName(col),
                             field: col.field,
-                            minWidth: 50
+                            minWidth: 50,
+                            cellClass: 'cell-left'
                         };
                     });
 
