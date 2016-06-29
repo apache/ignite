@@ -324,7 +324,8 @@ namespace Apache.Ignite.Core.Impl.Services
 
                         return res;
                     }
-                    return null;
+
+                    return new List<T>(0);
                 });
         }
 
