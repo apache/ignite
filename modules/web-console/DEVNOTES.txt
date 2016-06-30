@@ -14,7 +14,7 @@ How to deploy locally:
        npm-windows-upgrade
        See: https://github.com/felixrieseberg/npm-windows-upgrade
   Check npm version: "npm --version".
-5. Run "npm install" in terminal for download all dependencies.
+5. Run "npm install --no-optional" in terminal for download dependencies.
 6. Build ignite-web-agent module follow instructions from 'modules/web-agent/README.txt'.
 7. Copy ignite-web-agent-<version>.zip from target of ignite-web-agent module to 'modules/web-console/src/main/js/serve/agent_dists' folder.
 
