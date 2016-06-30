@@ -227,7 +227,10 @@ public final class BinaryObjectImpl extends BinaryObjectExImpl implements Extern
 
     /** {@inheritDoc} */
     @Nullable @Override public BinaryType type() throws BinaryObjectException {
-        return BinaryUtils.typeProxy(ctx, this);
+        if (ctx == null)
+            throw new BinaryObjectException("BinaryContext is not set for the object.");
+
+        return ctx.metadata(typeId());
     }
 
     /** {@inheritDoc} */

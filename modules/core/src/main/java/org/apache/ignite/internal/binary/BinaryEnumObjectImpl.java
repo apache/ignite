@@ -131,7 +131,7 @@ public class BinaryEnumObjectImpl implements BinaryObjectEx, Externalizable, Cac
 
     /** {@inheritDoc} */
     @Override public BinaryType type() throws BinaryObjectException {
-        return BinaryUtils.typeProxy(ctx, this);
+        return ctx.metadata(typeId());
     }
 
     /** {@inheritDoc} */
