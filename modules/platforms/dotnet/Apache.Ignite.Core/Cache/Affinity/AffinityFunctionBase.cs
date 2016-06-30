@@ -177,21 +177,26 @@ namespace Apache.Ignite.Core.Cache.Affinity
 
             if (p != null)
             {
-                ValidateAffinityFunctionType(p.GetType());
                 writer.WriteByte(p is FairAffinityFunction ? TypeCodeFair : TypeCodeRendezvous);
                 writer.WriteInt(p.Partitions);
                 writer.WriteBoolean(p.ExcludeNeighbors);
-                writer.WriteByte(0);  // Override flags
-                writer.WriteObject<object>(null);  // TODO: User func if there are override flags
+                writer.WriteByte((byte) GetOverrideFlags(p.GetType())); // Override flags
+                writer.WriteObject<object>(null); // TODO: User func if there are override flags
             }
             else
             {
                 writer.WriteByte(TypeCodeUser);
-                writer.WriteInt(fun.Partitions);  // partition count is written once and can not be changed.
-                writer.WriteBoolean(false);   // Exclude neighbors
-                writer.WriteByte(0);  // Override flags
-                WriteUserFunc(writer, fun);  // User func
+                writer.WriteInt(fun.Partitions); // partition count is written once and can not be changed.
+                writer.WriteBoolean(false); // Exclude neighbors
+                writer.WriteByte((byte) UserOverrideFlags.None); // Override flags
+                WriteUserFunc(writer, fun); // User func
             }
+        }
+
+        private static UserOverrideFlags GetOverrideFlags(Type funcType)
+        {
+            // TODO
+            return UserOverrideFlags.None;
         }
 
         /// <summary>
@@ -206,23 +211,19 @@ namespace Apache.Ignite.Core.Cache.Affinity
         }
 
         /// <summary>
-        /// Validates the type of the affinity function.
-        /// </summary>
-        private static void ValidateAffinityFunctionType(Type funcType)
-        {
-            if (funcType == typeof(FairAffinityFunction) || funcType == typeof(RendezvousAffinityFunction))
-                return;
-
-            throw new IgniteException(string.Format("User-defined AffinityFunction can not inherit from {0}: {1}",
-                typeof(AffinityFunctionBase), funcType));
-        }
-
-        /// <summary>
         /// Gets the direct usage error.
         /// </summary>
         private Exception GetDirectUsageError()
         {
             return new IgniteException(GetType() + " can not be used directly.");
+        }
+
+        [Flags]
+        private enum UserOverrideFlags : byte
+        {
+            None = 0,
+
+            
         }
     }
 }
