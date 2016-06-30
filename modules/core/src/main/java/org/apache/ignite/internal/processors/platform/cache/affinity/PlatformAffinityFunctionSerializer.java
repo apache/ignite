@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.processors.platform.cache.affinity;
 
 import org.apache.ignite.binary.BinaryRawReader;
-import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -140,9 +139,15 @@ public class PlatformAffinityFunctionSerializer {
      * @param partitions Partitions.
      * @param writer Writer.
      */
-    public static void writePartitionAssignment(List<List<ClusterNode>> partitions, BinaryRawWriter writer) {
+    public static void writePartitionAssignment(List<List<ClusterNode>> partitions, BinaryRawWriterEx writer,
+        PlatformContext ctx) {
         assert partitions != null;
         assert writer != null;
+
+        writer.writeInt(partitions.size());
+
+        for (List<ClusterNode> part : partitions)
+            ctx.writeNodes(writer, part);
     }
 
     /**
