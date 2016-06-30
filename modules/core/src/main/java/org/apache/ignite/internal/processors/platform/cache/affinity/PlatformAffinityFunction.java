@@ -70,6 +70,9 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
     /** */
     private transient long ptr;
 
+    /** */
+    private transient AffinityFunction baseFunc = null; // TODO
+
     /**
      * Ctor for serialization.
      *
@@ -110,7 +113,9 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
 
     /** {@inheritDoc} */
     @Override public void reset() {
-        // No-op: userFunc is always in initial state (it is serialized only once on start).
+        // userFunc is always in initial state (it is serialized only once on start).
+        if (baseFunc != null)
+            baseFunc.reset();
     }
 
     /** {@inheritDoc} */
