@@ -27,6 +27,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Memory;
 
     /// <summary>
@@ -123,12 +124,12 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
         /// Writes the partitions assignment to a stream.
         /// </summary>
         /// <param name="parts">The parts.</param>
-        /// <param name="outStream">The out stream.</param>
+        /// <param name="stream">The stream.</param>
         /// <param name="marsh">The marshaller.</param>
         internal static void WritePartitions(IEnumerable<IEnumerable<IClusterNode>> parts,
-            PlatformMemoryStream outStream, Marshaller marsh)
+            PlatformMemoryStream stream, Marshaller marsh)
         {
-            var writer = marsh.StartMarshal(outStream);
+            IBinaryRawWriter writer = marsh.StartMarshal(stream);
 
             var partCnt = 0;
             writer.WriteInt(partCnt); // reserve size
@@ -141,7 +142,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
                 partCnt++;
 
                 var nodeCnt = 0;
-                var cntPos = outStream.Position;
+                var cntPos = stream.Position;
                 writer.WriteInt(nodeCnt); // reserve size
 
                 foreach (var node in part)
@@ -150,15 +151,35 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
                     writer.WriteGuid(node.Id);
                 }
 
-                var endPos = outStream.Position;
-                outStream.Seek(cntPos, SeekOrigin.Begin);
-                outStream.WriteInt(nodeCnt);
-                outStream.Seek(endPos, SeekOrigin.Begin);
+                var endPos = stream.Position;
+                stream.Seek(cntPos, SeekOrigin.Begin);
+                stream.WriteInt(nodeCnt);
+                stream.Seek(endPos, SeekOrigin.Begin);
             }
 
-            outStream.SynchronizeOutput();
-            outStream.Seek(0, SeekOrigin.Begin);
+            stream.SynchronizeOutput();
+            stream.Seek(0, SeekOrigin.Begin);
             writer.WriteInt(partCnt);
+        }
+
+        /// <summary>
+        /// Reads the partitions assignment from a stream.
+        /// </summary>
+        /// <param name="stream">The stream.</param>
+        /// <param name="marsh">The marshaller.</param>
+        /// <returns>Partitions assignment.</returns>
+        internal static IEnumerable<IEnumerable<IClusterNode>> ReadPartitions(IBinaryStream stream, Marshaller marsh)
+        {
+            IBinaryRawReader reader = marsh.StartUnmarshal(stream);
+
+            var partCnt = reader.ReadInt();
+
+            var res = new List<IEnumerable<IClusterNode>>(partCnt);
+
+            for (var i = 0; i < partCnt; i++)
+                res.Add(IgniteUtils.ReadNodes(reader));
+
+            return res;
         }
 
         /// <summary>
@@ -181,6 +202,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
             writer.WriteObject(fun);
         }
 
+        /// <summary>
+        /// Overridden function flags.
+        /// </summary>
         [Flags]
         private enum UserOverrides : byte
         {

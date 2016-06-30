@@ -19,7 +19,6 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl.Binary;
@@ -47,28 +46,29 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
             // No-op.
         }
 
+        /** <inheritdoc /> */
         public int Partitions
         {
             get { throw new NotSupportedException("PlatformAffinityFunction.Partitions is not supported."); }
         }
 
+        /** <inheritdoc /> */
         public int GetPartition(object key)
         {
             return (int) DoOutOp((int) Op.Partition, w => w.WriteObject(key));
         }
 
+        /** <inheritdoc /> */
         public void RemoveNode(Guid nodeId)
         {
             DoOutOp((int) Op.RemoveNode, w => w.WriteGuid(nodeId));
         }
 
+        /** <inheritdoc /> */
         public IEnumerable<IEnumerable<IClusterNode>> AssignPartitions(AffinityFunctionContext context)
         {
             return DoOutInOp((int) Op.AssignPartitions, context.Write, s =>
-            {
-                // TODO
-                return Enumerable.Empty<IEnumerable<IClusterNode>>();
-            });
+                AffinityFunctionSerializer.ReadPartitions(s, Marshaller));
         }
     }
 }
