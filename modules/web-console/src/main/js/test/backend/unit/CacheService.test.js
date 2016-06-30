@@ -20,7 +20,6 @@ import {assert} from 'chai';
 import fireUp from '../injector';
 import testCaches from '../data/caches.json';
 import testAccounts from '../data/accounts.json';
-import testSpaces from '../data/spaces.json';
 
 let cacheService;
 let mongo;
@@ -28,8 +27,19 @@ let errors;
 
 suite('CacheService', () => {
 
-    const injectSpaceInCaches = (spaceId) => {
-        return testCaches.map((cache) => ({...cache, space: spaceId}));
+    const prepareUserSpaces = () => {
+        return mongo.Account.create(testAccounts)
+            .then((accounts) => {
+                return Promise.all(accounts.map((account)=> {
+                    return mongo.Space.create([
+                        {name: 'Personal space', owner: account._id, demo: false},
+                        {name: 'Demo space', owner: account._id, demo: true}
+                    ])
+                }))
+                    .then((spaces)=> {
+                        return [accounts, spaces];
+                    });
+            });
     };
 
     suiteSetup(() => {
@@ -43,12 +53,14 @@ suite('CacheService', () => {
 
     setup(() => {
         return Promise.all([
-            mongo.Cache.remove().exec()
+            mongo.Cache.remove().exec(),
+            mongo.Account.remove().exec(),
+            mongo.Space.remove().exec()
         ]);
     });
 
-    test('Cache merge', (done) => {
-        return cacheService.merge(testCaches[0])
+    test('Cache merge.', (done) => {
+        cacheService.merge(testCaches[0])
             .then((cacheId) => {
                 assert.isNotNull(cacheId);
 
@@ -58,43 +70,45 @@ suite('CacheService', () => {
                 return mongo.Cache.findById(cacheId)
                     .then((cache) => {
                         assert.isNotNull(cache);
-                    });
+                    })
             })
             .then(done)
             .catch(done);
     });
 
     test('Try to save same cache twice.', (done) => {
-        return cacheService.merge(testCaches[0])
+        cacheService.merge(testCaches[0])
             .then(() => cacheService.merge(testCaches[0]))
-            .catch((err) => {
-                assert.instanceOf(err, errors.DuplicateKeyException);
-                done();
-            })
-            .then(done);
-    });
-
-    test('Try to save null cache.', (done) => {
-        return cacheService.merge({})
-            .then(done)
             .catch((err) => {
                 assert.instanceOf(err, errors.DuplicateKeyException);
                 done();
             });
     });
 
-    test('Remove cache', (done) => {
-        return cacheService.merge(testCaches[0])
+    test('Try to update cache.', (done) => {
+        cacheService.merge(testCaches[0])
             .then((cacheId) => {
+                const cacheBeforeMerge = {...testCaches[0], _id: cacheId};
+                cacheBeforeMerge.name = 'NewUniqueName';
 
-                assert.isNotNull(cacheId);
+                return cacheService.merge(cacheBeforeMerge)
+                    .then((cacheId) => {
+                        return mongo.Cache.findById(cacheId)
+                            .then((cacheAfterMerge) => {
+                                assert.equal(cacheBeforeMerge.name, cacheAfterMerge.name);
+                            })
+                            .then(done);
+                    });
+            })
+            .catch(done);
+    });
 
+
+    test('Remove cache.', (done) => {
+        cacheService.merge(testCaches[0])
+            .then((cacheId) => {
                 return mongo.Cache.findById(cacheId)
-                    .then((cache) => {
-                        assert.isNotNull(cache);
-
-                        return cache;
-                    })
+                    .then((cache) => cache._id)
                     .then(cacheService.remove)
                     .then((results) => {
                         assert.equal(results.rowsAffected, 1);
@@ -109,13 +123,56 @@ suite('CacheService', () => {
             .catch(done);
     });
 
-    // TODO implement test
-    test('Remove all caches by user', (done) => {
-        done();
+    test('Remove null cache must be throw exception.', (done) => {
+        cacheService.merge(testCaches[0])
+            .then(()=> cacheService.remove())
+            .catch((err) => {
+                assert.instanceOf(err, errors.IllegalArgumentException);
+                done();
+            })
     });
 
-    // TODO Implement test
-    test('Load all caches by space', (done) => {
-        done();
+
+    test('Remove all caches by user.', (done) => {
+        prepareUserSpaces()
+            .then(([accounts, spaces]) => {
+                const currentUser = accounts[0];
+                const userCache = {...testCaches[0], space: spaces[0][0]._id};
+
+                return cacheService.merge(userCache)
+                    .then(() => {
+                        return cacheService.removeAll(currentUser._id, false)
+                            .then(({rowsAffected})=> {
+                                assert.equal(rowsAffected, 1);
+                            })
+                    });
+            })
+            .then(done)
+            .catch(done);
     });
+
+    test('Load all caches by space.', (done) => {
+        prepareUserSpaces()
+            .then(([accounts, spaces]) => {
+                const currentUser = accounts[0];
+                const userCache = {...testCaches[0], space: spaces[0][0]._id};
+
+                return cacheService.merge(userCache)
+                    .then((cacheId) => {
+                        return cacheService.listByUser(currentUser._id, false)
+                            .then(({caches}) => {
+                                assert.equal(caches.length, 1);
+                                assert.equal(caches[0]._id.toString(), cacheId.toString());
+                            });
+                    });
+            })
+            .then(done)
+            .catch(done);
+    });
+
+    // TODO
+    // test('Test link entities on merge', () => {})
+
+    // TODO
+    // test('Test link entities on remove', () => {})
 });

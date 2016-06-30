@@ -21,10 +21,10 @@
 
 module.exports = {
     implements: 'admin-routes',
-    inject: ['require(lodash)', 'require(express)', 'settings', 'mail', 'mongo']
+    inject: ['require(lodash)', 'require(express)', 'settings', 'mail', 'mongo', 'services/space']
 };
 
-module.exports.factory = function(_, express, settings, mail, mongo) {
+module.exports.factory = function(_, express, settings, mail, mongo, spaceService) {
     return new Promise((factoryResolve) => {
         const router = new express.Router();
 
@@ -72,7 +72,7 @@ module.exports.factory = function(_, express, settings, mail, mongo) {
                 .then((user) => {
                     res.sendStatus(200);
 
-                    return mongo.spaceIds(userId)
+                    return spaceService.spaceIds(userId)
                         .then((spaceIds) => Promise.all([
                             mongo.Cluster.remove({space: {$in: spaceIds}}).exec(),
                             mongo.Cache.remove({space: {$in: spaceIds}}).exec(),

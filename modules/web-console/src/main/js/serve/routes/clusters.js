@@ -21,10 +21,10 @@
 
 module.exports = {
     implements: 'clusters-routes',
-    inject: ['require(lodash)', 'require(express)', 'mongo']
+    inject: ['require(lodash)', 'require(express)', 'mongo', 'services/space']
 };
 
-module.exports.factory = function(_, express, mongo) {
+module.exports.factory = function(_, express, mongo, spaceService) {
     return new Promise((factoryResolve) => {
         const router = new express.Router();
 
@@ -39,7 +39,7 @@ module.exports.factory = function(_, express, mongo) {
             let spaceIds = [];
             let domains = {};
 
-            mongo.spaces(req.currentUserId(), req.header('IgniteDemoMode'))
+            spaceService.spaces(req.currentUserId(), req.header('IgniteDemoMode'))
                 .then((spaces) => {
                     result.spaces = spaces;
                     spaceIds = spaces.map((space) => space._id);
@@ -132,7 +132,7 @@ module.exports.factory = function(_, express, mongo) {
          */
         router.post('/remove/all', (req, res) => {
             // Get owned space and all accessed space.
-            mongo.spaceIds(req.currentUserId(), req.header('IgniteDemoMode'))
+            spaceService.spaceIds(req.currentUserId(), req.header('IgniteDemoMode'))
                 .then((spaceIds) => mongo.Cache.update({space: {$in: spaceIds}}, {clusters: []}, {multi: true}).exec()
                     .then(() => mongo.Igfs.update({space: {$in: spaceIds}}, {clusters: []}, {multi: true}).exec())
                     .then(() => mongo.Cluster.remove({space: {$in: spaceIds}}).exec())

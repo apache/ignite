@@ -23,12 +23,11 @@ module.exports = {
     implements: 'services/cache',
     inject: ['require(lodash)',
         'mongo',
+        'services/space',
         'errors']
 };
 
-module.exports.factory = (_, mongo, errors) => {
-
-
+module.exports.factory = (_, mongo, spaceService, errors) => {
     /**
      * Convert remove status operation to own presentation.
      * @param {RemoveResult} result - The results of remove operation.
@@ -78,7 +77,6 @@ module.exports.factory = (_, mongo, errors) => {
         return mongo.Cluster.update({space: {$in: spaceIds}}, {caches: []}, {multi: true}).exec()
             .then(() => mongo.DomainModel.update({space: {$in: spaceIds}}, {caches: []}, {multi: true}).exec())
             .then(() => mongo.Cache.remove({space: {$in: spaceIds}}).exec())
-            .then(convertRemoveStatus)
     };
 
     /**
@@ -99,13 +97,13 @@ module.exports.factory = (_, mongo, errors) => {
 
         /**
          * Get caches and linked objects by user.
-         * @param {Integer} userId - The user id that own caches.
+         * @param {mongo.ObjectId|String} userId - The user id that own caches.
          * @param {Boolean} demo - The flag indicates that need lookup in demo space.
          * @returns {Promise.<[mongo.Cache[], mongo.Cluster[], mongo.DomainModel[], mongo.Space[]]>} - contains requested caches and array of linked objects: clusters, domains, spaces.
          */
         static listByUser(userId, demo) {
             // Get owned space and all accessed space.
-            return mongo.spaces(userId, demo)
+            return spaceService.spaces(userId, demo)
                 .then((spaces) => {
                     const spaceIds = spaces.map((space) => space._id);
 
@@ -120,27 +118,29 @@ module.exports.factory = (_, mongo, errors) => {
 
         /**
          * Remove cache.
-         * @param {Object} cache - The cache object with _id property.
+         * @param {mongo.ObjectId|String} cacheId - The cache id for remove.
          * @returns {Promise.<{rowsAffected}>} - The number of affected rows.
          */
-        static remove(cache) {
-            const cacheId = cache._id;
+        static remove(cacheId) {
+            if(!cacheId)
+                throw new errors.IllegalArgumentException('Cache id can not be undefined or null');
 
             return mongo.Cluster.update({caches: {$in: [cacheId]}}, {$pull: {caches: cacheId}}, {multi: true}).exec()
                 .then(() => mongo.DomainModel.update({caches: {$in: [cacheId]}}, {$pull: {caches: cacheId}}, {multi: true}).exec())
-                .then(() => mongo.Cache.remove(cache).exec())
+                .then(() => mongo.Cache.remove({_id: cacheId}).exec())
                 .then(convertRemoveStatus);
         }
 
         /**
          * Remove all caches by user.
-         * @param {Integer} userId - The user id that own caches.
+         * @param {mongo.ObjectId|String} userId - The user id that own caches.
          * @param {Boolean} demo - The flag indicates that need lookup in demo space.
          * @returns {Promise.<{rowsAffected}>} - The number of affected rows.
          */
         static removeAll(userId, demo) {
-            return mongo.spaceIds(userId, demo)
-                .then(removeAllBySpaces);
+            return spaceService.spaceIds(userId, demo)
+                .then(removeAllBySpaces)
+                .then(convertRemoveStatus);
         }
     }
 

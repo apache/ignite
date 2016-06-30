@@ -54,7 +54,7 @@ module.exports.factory = function(_, express, mongo, cacheService) {
         router.post('/remove', (req, res) => {
             const cache = req.body;
 
-            cacheService.remove(cache)
+            cacheService.remove(cache._id)
                 .then(res.api.ok)
                 .catch(res.api.error);
         });

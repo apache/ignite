@@ -17,15 +17,13 @@
 
 'use strict';
 
-// Fire me up!
+import AppErrorException from './AppErrorException';
 
-module.exports = {
-    implements: 'errors',
-    factory: () => ({
-        AppErrorException: require('./AppErrorException'),
-        IllegalArgumentException: require('./IllegalArgumentException'),
-        DuplicateKeyException: require('./DuplicateKeyException'),
-        ServerErrorException: require('./ServerErrorException'),
-        NotFoundException: require('./NotFoundException')
-    })
-};
+class NotFoundException extends AppErrorException {
+    constructor(message) {
+        super(message);
+        this.httpCode = 404;
+    }
+}
+
+module.exports = NotFoundException;

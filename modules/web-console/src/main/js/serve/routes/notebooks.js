@@ -21,10 +21,10 @@
 
 module.exports = {
     implements: 'notebooks-routes',
-    inject: ['require(express)', 'mongo']
+    inject: ['require(express)', 'mongo', 'services/space']
 };
 
-module.exports.factory = function(express, mongo) {
+module.exports.factory = function(express, mongo, spaceService) {
     return new Promise((factoryResolve) => {
         const router = new express.Router();
 
@@ -35,7 +35,7 @@ module.exports.factory = function(express, mongo) {
          * @param res Response.
          */
         router.post('/list', (req, res) => {
-            mongo.spaces(req.currentUserId())
+            spaceService.spaces(req.currentUserId())
                 .then((spaces) => mongo.Notebook.find({space: {$in: spaces.map((value) => value._id)}}).select('_id name').sort('name').lean().exec())
                 .then((notebooks) => res.json(notebooks))
                 .catch((err) => mongo.handleError(res, err));
@@ -49,7 +49,7 @@ module.exports.factory = function(express, mongo) {
          * @param res Response.
          */
         router.post('/get', (req, res) => {
-            mongo.spaces(req.currentUserId())
+            spaceService.spaces(req.currentUserId())
                 .then((spaces) => mongo.Notebook.findOne({space: {$in: spaces.map((value) => value._id)}, _id: req.body.noteId}).lean().exec())
                 .then((notebook) => res.json(notebook))
                 .catch((err) => mongo.handleError(res, err));
@@ -102,7 +102,7 @@ module.exports.factory = function(express, mongo) {
          * @param res Response.
          */
         router.post('/new', (req, res) => {
-            mongo.spaceIds(req.currentUserId())
+            spaceService.spaceIds(req.currentUserId())
                 .then((spaceIds) =>
                     mongo.Notebook.findOne({space: spaceIds[0], name: req.body.name})
                         .then((notebook) => {

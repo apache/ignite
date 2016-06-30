@@ -133,8 +133,8 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
 
     // Define Cache schema.
     const CacheSchema = new Schema({
-        space: {type: ObjectId, ref: 'Space', index: true, required: true},
-        name: {type: String, required: true},
+        space: {type: ObjectId, ref: 'Space', index: true},
+        name: {type: String},
         clusters: [{type: ObjectId, ref: 'Cluster'}],
         domains: [{type: ObjectId, ref: 'DomainModel'}],
         cacheMode: {type: String, enum: ['PARTITIONED', 'REPLICATED', 'LOCAL']},
@@ -216,7 +216,7 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
         writeBehindFlushFrequency: Number,
         writeBehindFlushThreadCount: Number,
 
-        // invalidate: Boolean,
+        invalidate: Boolean,
         defaultLockTimeout: Number,
         atomicWriteOrderMode: {type: String, enum: ['CLOCK', 'PRIMARY']},
         writeSynchronizationMode: {type: String, enum: ['FULL_SYNC', 'FULL_ASYNC', 'PRIMARY_SYNC']},
@@ -647,30 +647,6 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
         res.status(err.code || 500).send(err.message);
     };
 
-
-    // TODO Remove after refactoring spaceService.
-    /**
-     * Query for user spaces.
-     *
-     * @param userId User ID.
-     * @param {Boolean} demo Is need use demo space.
-     * @returns {Promise}
-     */
-    result.spaces = function(userId, demo) {
-        return result.Space.find({owner: userId, demo: !!demo}).lean().exec();
-    };
-
-    /**
-     * Extract IDs from user spaces.
-     *
-     * @param userId User ID.
-     * @param {Boolean} demo Is need use demo space.
-     * @returns {Promise}
-     */
-    result.spaceIds = function(userId, demo) {
-        return result.spaces(userId, demo)
-            .then((spaces) => spaces.map((space) => space._id));
-    };
 
     // Registering the routes of all plugin modules
     for (const name in pluginMongo) {

@@ -20,33 +20,38 @@
 // Fire me up!
 
 module.exports = {
-    implements: 'services/spaceService',
+    implements: 'services/space',
     inject: ['mongo']
 };
 
 module.exports.factory = (mongo) => {
 
     class SpaceService {
-
         /**
          * Query for user spaces.
          *
-         * @param userId User ID.
+         * @param {mongo.ObjectId|String} userId User ID.
          * @param {Boolean} demo Is need use demo space.
          * @returns {Promise}
          */
-        spaces(userId, demo) {
-            return mongo.Space.find({owner: userId, demo: !!demo}).lean().exec();
+        static spaces(userId, demo) {
+            return mongo.Space.find({owner: userId, demo: !!demo}).lean().exec()
+                .then((spaces) => {
+                    if (!spaces.length)
+                        throw new errors.NotFoundException('Spaces not found');
+
+                    return spaces;
+                });
         }
 
         /**
          * Extract IDs from user spaces.
          *
-         * @param userId User ID.
+         * @param {mongo.ObjectId|String} userId User ID.
          * @param {Boolean} demo Is need use demo space.
          * @returns {Promise}
          */
-        spaceIds(userId, demo) {
+        static spaceIds(userId, demo) {
             return this.spaces(userId, demo)
                 .then((spaces) => spaces.map((space) => space._id));
         }

@@ -21,10 +21,10 @@
 
 module.exports = {
     implements: 'domains-routes',
-    inject: ['require(lodash)', 'require(express)', 'mongo']
+    inject: ['require(lodash)', 'require(express)', 'mongo', 'services/space']
 };
 
-module.exports.factory = (_, express, mongo) => {
+module.exports.factory = (_, express, mongo, spaceService) => {
     return new Promise((factoryResolve) => {
         const router = new express.Router();
 
@@ -38,7 +38,7 @@ module.exports.factory = (_, express, mongo) => {
             const result = {};
             let spacesIds = [];
 
-            mongo.spaces(req.currentUserId(), req.header('IgniteDemoMode'))
+            spaceService.spaces(req.currentUserId(), req.header('IgniteDemoMode'))
                 .then((spaces) => {
                     result.spaces = spaces;
                     spacesIds = spaces.map((space) => space._id);
@@ -182,7 +182,7 @@ module.exports.factory = (_, express, mongo) => {
          * Remove all domain models.
          */
         router.post('/remove/all', (req, res) => {
-            mongo.spaceIds(req.currentUserId(), req.header('IgniteDemoMode'))
+            spaceService.spaceIds(req.currentUserId(), req.header('IgniteDemoMode'))
                 .then((spaceIds) => mongo.Cache.update({space: {$in: spaceIds}}, {domains: []}, {multi: true}).exec()
                         .then(() => mongo.DomainModel.remove({space: {$in: spaceIds}}).exec()))
                 .then(() => res.sendStatus(200))
