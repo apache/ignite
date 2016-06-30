@@ -20,6 +20,7 @@ package org.apache.ignite.internal.processors.platform.cache.affinity;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
+import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 
@@ -30,6 +31,12 @@ import org.apache.ignite.internal.processors.platform.PlatformContext;
 public class PlatformAffinityFunctionTarget extends PlatformAbstractTarget {
     /** */
     private static final int OP_PARTITION = 1;
+
+    /** */
+    private static final int OP_REMOVE_NODE = 2;
+
+    /** */
+    private static final int OP_ASSIGN_PARTITIONS = 3;
 
     /** Inner function to delegate calls to. */
     private final AffinityFunction baseFunc;
@@ -51,7 +58,23 @@ public class PlatformAffinityFunctionTarget extends PlatformAbstractTarget {
     @Override protected long processInStreamOutLong(int type, BinaryRawReaderEx reader) throws IgniteCheckedException {
         if (type == OP_PARTITION)
             return baseFunc.partition(reader.readObjectDetached());
+        else if (type == OP_REMOVE_NODE) {
+            baseFunc.removeNode(reader.readUuid());
+            return 0;
+        }
 
         return super.processInStreamOutLong(type, reader);
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader,
+        BinaryRawWriterEx writer) throws IgniteCheckedException {
+        if (type == OP_ASSIGN_PARTITIONS) {
+
+
+            return;
+        }
+
+        super.processInStreamOutStream(type, reader, writer);
     }
 }
