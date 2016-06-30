@@ -24,6 +24,13 @@
 #include <ignite/common/dynamic_load_os.h>
 #include "ignite/impl/invoke_manager.h"
 
+/**
+ * @def IGNITE_CACHE_ENTRY_PROCESSOR_INVOKER_NAME
+ * Function name in which user Invoke callbacks are registred.
+ */
+#define IGNITE_MODULE_INIT_CALLBACK_NAME "IgniteModuleInit"
+
+
 namespace ignite
 {
     namespace impl
@@ -34,8 +41,8 @@ namespace ignite
          */
         class ModuleManager
         {
-            typedef ignite::common::dynamic::Module Module;
-            typedef void (InvokersRegisterCallback)(InvokeManager&);
+            typedef common::dynamic::Module Module;
+            typedef void (ModuleInitCallback)(InvokeManager&);
 
         public:
             /**
@@ -61,6 +68,27 @@ namespace ignite
                     it->Unload();
             }
 
+            /**
+             * Load module.
+             *
+             * @param path Module path.
+             * @param err Error.
+             */
+            void LoadModule(const std::string& path, IgniteError& err)
+            {
+                common::dynamic::Module module = common::dynamic::LoadModule(path);
+
+                if (!module.IsLoaded())
+                {
+                    err = IgniteError(IgniteError::IGNITE_ERR_GENERIC,
+                        ("Can not load module [path=" + path + ']').c_str());
+
+                    return;
+                }
+
+                RegisterModule(module);
+            }
+
         private:
             IGNITE_NO_COPY_ASSIGNMENT(ModuleManager);
 
@@ -75,7 +103,7 @@ namespace ignite
 
                 if (invokeMgr)
                 {
-                    InvokersRegisterCallback* callback = GetProcessorsRegisterCallback(module);
+                    ModuleInitCallback* callback = GetModuleInitCallback(module);
 
                     if (callback)
                         callback(*invokeMgr);
@@ -83,15 +111,15 @@ namespace ignite
             }
 
             /**
-             * Get callback that registers cache entry processors for module.
+             * Get callback that inits Ignite module.
              *
              * @param module Module for which callback should be retrieved.
              * @return Callback if found and null-pointer otherwise.
              */
-            InvokersRegisterCallback* GetProcessorsRegisterCallback(Module& module)
+            static ModuleInitCallback* GetModuleInitCallback(Module& module)
             {
-                return reinterpret_cast<InvokersRegisterCallback*>(
-                    module.FindSymbol(IGNITE_CACHE_ENTRY_PROCESSOR_REGISTRATOR_NAME));
+                return reinterpret_cast<ModuleInitCallback*>(
+                    module.FindSymbol(IGNITE_MODULE_INIT_CALLBACK_NAME));
             }
 
             /** Collection of loaded modules. */

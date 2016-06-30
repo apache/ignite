@@ -91,7 +91,7 @@ namespace ignite
                 return LoadModule(strPath);
             }
 
-            Module LoadModule(std::string& path)
+            Module LoadModule(const std::string& path)
             {
                 std::wstring convertedPath = StringToWstring(path);
 
