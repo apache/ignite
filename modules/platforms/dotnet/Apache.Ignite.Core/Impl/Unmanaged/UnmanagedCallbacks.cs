@@ -1164,7 +1164,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                     using (var outStream = IgniteManager.Memory.Get(outMemPtr).GetStream())
                     {
-                        AffinityFunctionBase.WritePartitions(parts, outStream, _ignite.Marshaller);
+                        AffinityFunctionSerializer.WritePartitions(parts, outStream, _ignite.Marshaller);
                     }
                 }
             });

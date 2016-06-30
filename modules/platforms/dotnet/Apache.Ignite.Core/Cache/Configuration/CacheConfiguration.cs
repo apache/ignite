@@ -34,6 +34,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Cache.Affinity;
 
     /// <summary>
     /// Defines grid cache configuration.
@@ -275,7 +276,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
             NearConfiguration = reader.ReadBoolean() ? new NearCacheConfiguration(reader) : null;
 
             EvictionPolicy = EvictionPolicyBase.Read(reader);
-            AffinityFunction = AffinityFunctionBase.Read(reader);
+            AffinityFunction = AffinityFunctionSerializer.Read(reader);
         }
 
         /// <summary>
@@ -348,7 +349,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
                 writer.WriteBoolean(false);
 
             EvictionPolicyBase.Write(writer, EvictionPolicy);
-            AffinityFunctionBase.Write(writer, AffinityFunction);
+            AffinityFunctionSerializer.Write(writer, AffinityFunction);
         }
 
         /// <summary>
