@@ -53,7 +53,13 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
     /** Properties. */
     private Map<String, ?> props;
 
-    /** Partition count. */
+    /**
+     * Partition count.
+     *
+     * 1) Java calls partitions() method very early (before LifecycleAware.start) during CacheConfiguration validation.
+     * 2) Partition count never changes.
+     * Therefore, we get the value on .NET side once, and pass it along with PlatformAffinity.
+     */
     private int partitions;
 
     /** Inner function. */
@@ -158,11 +164,11 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
     }
 
     /**
-     * Initializes this instance.
+     * Initializes the partitions count.
      *
      * @param partitions Number of partitions.
      */
-    public void init(int partitions) {
+    public void initPartitions(int partitions) {
         this.partitions = partitions;
     }
 

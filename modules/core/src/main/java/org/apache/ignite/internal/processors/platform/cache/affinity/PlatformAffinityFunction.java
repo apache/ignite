@@ -52,7 +52,13 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
     /** */
     private Object userFunc;
 
-    /** */
+    /**
+     * Partition count.
+     *
+     * 1) Java calls partitions() method very early (before LifecycleAware.start) during CacheConfiguration validation.
+     * 2) Partition count never changes.
+     * Therefore, we get the value on .NET side once, and pass it along with PlatformAffinity.
+     */
     private int partitions;
 
     /** */

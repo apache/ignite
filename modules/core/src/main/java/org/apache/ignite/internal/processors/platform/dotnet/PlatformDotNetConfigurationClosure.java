@@ -258,7 +258,7 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
         if (!affFuncs.isEmpty()) {
             for (PlatformDotNetAffinityFunction aff : affFuncs)
-                aff.init(in.readInt());
+                aff.initPartitions(in.readInt());
         }
     }
 
