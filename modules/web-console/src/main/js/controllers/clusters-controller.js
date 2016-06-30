@@ -17,8 +17,8 @@
 
 // Controller for Clusters screen.
 export default ['clustersController', [
-    '$rootScope', '$scope', '$http', '$state', '$timeout', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteClone', '$loading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'igniteEventGroups', 'DemoInfo', 'IgniteLegacyTable',
-    function($root, $scope, $http, $state, $timeout, LegacyUtils, Messages, Confirm, Clone, $loading, ModelNormalizer, UnsavedChangesGuard, igniteEventGroups, DemoInfo, LegacyTable) {
+    '$rootScope', '$scope', '$http', '$state', '$timeout', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteClone', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'igniteEventGroups', 'DemoInfo', 'IgniteLegacyTable',
+    function($root, $scope, $http, $state, $timeout, LegacyUtils, Messages, Confirm, Clone, Loading, ModelNormalizer, UnsavedChangesGuard, igniteEventGroups, DemoInfo, LegacyTable) {
         UnsavedChangesGuard.install($scope);
 
         const emptyCluster = {empty: true};
@@ -191,7 +191,7 @@ export default ['clustersController', [
                 $scope.selectItem($scope.clusters[0]);
         }
 
-        $loading.start('loadingClustersScreen');
+        Loading.start('loadingClustersScreen');
 
         // When landing on the page, get clusters and show them.
         $http.post('/api/v1/configuration/clusters/list')
@@ -258,7 +258,7 @@ export default ['clustersController', [
             .finally(function() {
                 $scope.ui.ready = true;
                 $scope.ui.inputForm.$setPristine();
-                $loading.finish('loadingClustersScreen');
+                Loading.finish('loadingClustersScreen');
             });
 
         $scope.selectItem = function(item, backup) {

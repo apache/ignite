@@ -17,8 +17,8 @@
 
 // Controller for IGFS screen.
 export default ['igfsController', [
-    '$scope', '$http', '$state', '$filter', '$timeout', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteClone', '$loading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'IgniteLegacyTable',
-    function($scope, $http, $state, $filter, $timeout, LegacyUtils, Messages, Confirm, Clone, $loading, ModelNormalizer, UnsavedChangesGuard, LegacyTable) {
+    '$scope', '$http', '$state', '$filter', '$timeout', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteClone', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'IgniteLegacyTable',
+    function($scope, $http, $state, $filter, $timeout, LegacyUtils, Messages, Confirm, Clone, Loading, ModelNormalizer, UnsavedChangesGuard, LegacyTable) {
         UnsavedChangesGuard.install($scope);
 
         const emptyIgfs = {empty: true};
@@ -132,7 +132,7 @@ export default ['igfsController', [
                 $scope.selectItem($scope.igfss[0]);
         }
 
-        $loading.start('loadingIgfsScreen');
+        Loading.start('loadingIgfsScreen');
 
         // When landing on the page, get IGFSs and show them.
         $http.post('/api/v1/configuration/igfs/list')
@@ -197,7 +197,7 @@ export default ['igfsController', [
             .finally(function() {
                 $scope.ui.ready = true;
                 $scope.ui.inputForm.$setPristine();
-                $loading.finish('loadingIgfsScreen');
+                Loading.finish('loadingIgfsScreen');
             });
 
         $scope.selectItem = function(item, backup) {

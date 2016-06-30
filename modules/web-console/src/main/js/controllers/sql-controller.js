@@ -17,8 +17,8 @@
 
 // Controller for SQL notebook screen.
 export default ['sqlController', [
-    '$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$modal', '$popover', '$loading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteAgentMonitor', 'IgniteChartColors', 'QueryNotebooks', 'uiGridConstants', 'uiGridExporterConstants',
-    function($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $modal, $popover, $loading, LegacyUtils, Messages, Confirm, agentMonitor, IgniteChartColors, QueryNotebooks, uiGridConstants, uiGridExporterConstants) {
+    '$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$modal', '$popover', 'IgniteLoading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteAgentMonitor', 'IgniteChartColors', 'QueryNotebooks', 'uiGridConstants', 'uiGridExporterConstants',
+    function($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $modal, $popover, Loading, LegacyUtils, Messages, Confirm, agentMonitor, IgniteChartColors, QueryNotebooks, uiGridConstants, uiGridExporterConstants) {
         let stopTopology = null;
 
         const _tryStopRefresh = function(paragraph) {
@@ -767,7 +767,7 @@ export default ['sqlController', [
                 });
 
         const _startTopologyRefresh = () => {
-            $loading.start('sqlLoading');
+            Loading.start('sqlLoading');
 
             agentMonitor.awaitAgent()
                 .then(_updateTopology)
@@ -775,7 +775,7 @@ export default ['sqlController', [
                     if ($root.IgniteDemoMode)
                         _.forEach($scope.notebook.paragraphs, $scope.execute);
 
-                    $loading.finish('sqlLoading');
+                    Loading.finish('sqlLoading');
 
                     stopTopology = $interval(_updateTopology, 5000, 0, false);
                 });
@@ -821,7 +821,7 @@ export default ['sqlController', [
             .catch(() => {
                 $scope.notebookLoadFailed = true;
 
-                $loading.finish('sqlLoading');
+                Loading.finish('sqlLoading');
             });
 
         $scope.renameNotebook = function(name) {
@@ -1537,7 +1537,7 @@ export default ['sqlController', [
         };
 
         $scope.importMetadata = function() {
-            $loading.start('loadingCacheMetadata');
+            Loading.start('loadingCacheMetadata');
 
             $scope.metadata = [];
 
@@ -1560,7 +1560,7 @@ export default ['sqlController', [
                     }), 'name');
                 })
                 .catch(Messages.showError)
-                .finally(() => $loading.finish('loadingCacheMetadata'));
+                .finally(() => Loading.finish('loadingCacheMetadata'));
         };
 
         $scope.showResultQuery = function(paragraph) {

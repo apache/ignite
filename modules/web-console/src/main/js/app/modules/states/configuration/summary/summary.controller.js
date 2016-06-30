@@ -20,13 +20,13 @@ import JSZip from 'jszip';
 import saver from 'file-saver';
 
 export default [
-    '$rootScope', '$scope', '$http', 'IgniteLegacyUtils', '$loading', '$filter', 'ConfigurationSummaryResource', 'JavaTypes', 'IgniteVersion', 'GeneratorDocker', 'GeneratorPom',
-    function($root, $scope, $http, LegacyUtils, $loading, $filter, Resource, JavaTypes, IgniteVersion, docker, pom) {
+    '$rootScope', '$scope', '$http', 'IgniteLegacyUtils', 'IgniteLoading', '$filter', 'ConfigurationSummaryResource', 'JavaTypes', 'IgniteVersion', 'GeneratorDocker', 'GeneratorPom',
+    function($root, $scope, $http, LegacyUtils, Loading, $filter, Resource, JavaTypes, IgniteVersion, docker, pom) {
         const ctrl = this;
 
         $scope.ui = { ready: false };
 
-        $loading.start('summaryPage');
+        Loading.start('summaryPage');
 
         Resource.read().then(({clusters}) => {
             $scope.clusters = clusters;
@@ -39,7 +39,7 @@ export default [
                 return { _id, name };
             });
 
-            $loading.finish('summaryPage');
+            Loading.finish('summaryPage');
 
             $scope.ui.ready = true;
 

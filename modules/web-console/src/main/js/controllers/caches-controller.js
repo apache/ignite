@@ -17,8 +17,8 @@
 
 // Controller for Caches screen.
 export default ['cachesController', [
-    '$scope', '$http', '$state', '$filter', '$timeout', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteClone', '$loading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard',
-    function($scope, $http, $state, $filter, $timeout, LegacyUtils, Messages, Confirm, Clone, $loading, ModelNormalizer, UnsavedChangesGuard) {
+    '$scope', '$http', '$state', '$filter', '$timeout', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteClone', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard',
+    function($scope, $http, $state, $filter, $timeout, LegacyUtils, Messages, Confirm, Clone, Loading, ModelNormalizer, UnsavedChangesGuard) {
         UnsavedChangesGuard.install($scope);
 
         const emptyCache = {empty: true};
@@ -77,7 +77,7 @@ export default ['cachesController', [
             }, []);
         }
 
-        $loading.start('loadingCachesScreen');
+        Loading.start('loadingCachesScreen');
 
         // When landing on the page, get caches and show them.
         $http.post('/api/v1/configuration/caches/list')
@@ -146,7 +146,7 @@ export default ['cachesController', [
             .finally(function() {
                 $scope.ui.ready = true;
                 $scope.ui.inputForm.$setPristine();
-                $loading.finish('loadingCachesScreen');
+                Loading.finish('loadingCachesScreen');
             });
 
         $scope.selectItem = function(item, backup) {
