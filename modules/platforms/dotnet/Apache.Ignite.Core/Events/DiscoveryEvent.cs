@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Events
 {
+    using System;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Globalization;
@@ -50,6 +51,17 @@ namespace Apache.Ignite.Core.Events
             var nodes = IgniteUtils.ReadNodes(r);
 
             _topologyNodes = nodes == null ? null : new ReadOnlyCollection<IClusterNode>(nodes);
+        }
+
+        /// <summary>
+        /// Writes this instance to a stream.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        internal void Write(IBinaryRawWriter writer)
+        {
+            writer.WriteGuid(_eventNode == null ? (Guid?) null : _eventNode.Id);
+            writer.WriteLong(_topologyVersion);
+            IgniteUtils.WriteNodes(writer, _topologyNodes);
         }
 
         /// <summary>

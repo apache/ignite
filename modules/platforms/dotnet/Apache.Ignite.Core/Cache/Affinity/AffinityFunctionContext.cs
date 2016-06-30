@@ -71,7 +71,21 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// <param name="writer">The writer.</param>
         internal void Write(IBinaryRawWriter writer)
         {
-            
+            if (_previousAssignment != null)
+            {
+                writer.WriteInt(_previousAssignment.Count);
+
+                foreach (var nodes in _previousAssignment)
+                    IgniteUtils.WriteNodes(writer, nodes);
+            }
+            else
+                writer.WriteInt(0);
+
+            writer.WriteInt(_backups);
+            IgniteUtils.WriteNodes(writer, _currentTopologySnapshot);
+            writer.WriteLong(_currentTopologyVersion.Version);
+            writer.WriteInt(_currentTopologyVersion.MinorVersion);
+            _discoveryEvent.Write(writer);
         }
 
         /// <summary>
