@@ -20,105 +20,138 @@
 // Fire me up!
 
 module.exports = {
-    implements: 'services/cacheService',
+    implements: 'services/cache',
     inject: ['require(lodash)',
-        'require(express)',
         'mongo',
         'errors']
 };
 
-module.exports.factory = (_, express, mongo, errors) => {
+module.exports.factory = (_, mongo, errors) => {
+
+
+    /**
+     * Convert remove status operation to own presentation.
+     * @param {RemoveResult} result - The results of remove operation.
+     */
+    const convertRemoveStatus = ({result}) => ({rowsAffected: result.n});
+
+    /**
+     * Update existing cache
+     * @param {Object} cache - The cache for updating
+     * @returns {Promise.<Integer>} that resolves cache id
+     */
+    const update = (cache) => {
+        const cacheId = cache._id;
+
+        return mongo.Cache.update({_id: cacheId}, cache, {upsert: true}).exec()
+            .then(() => mongo.Cluster.update({_id: {$in: cache.clusters}}, {$addToSet: {caches: cacheId}}, {multi: true}).exec())
+            .then(() => mongo.Cluster.update({_id: {$nin: cache.clusters}}, {$pull: {caches: cacheId}}, {multi: true}).exec())
+            .then(() => mongo.DomainModel.update({_id: {$in: cache.domains}}, {$addToSet: {caches: cacheId}}, {multi: true}).exec())
+            .then(() => mongo.DomainModel.update({_id: {$nin: cache.domains}}, {$pull: {caches: cacheId}}, {multi: true}).exec())
+            .then(() => cacheId);
+    };
+
+    /**
+     * Create new cache.
+     * @param {Object} cache - The cache for creation.
+     * @returns {Promise.<Integer>} that resolves cache id.
+     */
+    const create = (cache) => {
+        return mongo.Cache.create(cache)
+            .then((createdCache) =>
+                mongo.Cluster.update({_id: {$in: createdCache.clusters}}, {$addToSet: {caches: createdCache._id}}, {multi: true}).exec()
+                    .then(() => mongo.DomainModel.update({_id: {$in: createdCache.domains}}, {$addToSet: {caches: createdCache._id}}, {multi: true}).exec())
+                    .then(() => createdCache._id)
+            )
+    };
+
+    /**
+     * Remove all caches by space ids.
+     * @param {Integer[]} spaceIds - The space ids for cache deletion.
+     * @returns {Promise.<Integer>} that resolves number of affected rows.
+     */
+    const removeAllBySpaces = (spaceIds) => {
+        return mongo.Cluster.update({space: {$in: spaceIds}}, {caches: []}, {multi: true}).exec()
+            .then(() => mongo.DomainModel.update({space: {$in: spaceIds}}, {caches: []}, {multi: true}).exec())
+            .then(() => mongo.Cache.remove({space: {$in: spaceIds}}).exec())
+            .then(convertRemoveStatus)
+    };
+
+    /**
+     * Load cache by its name and space.
+     * @param {Object} cache - The cache object for load.
+     * @returns {Promise.<mongo.Cache>|null} that resolves cache if its exits, or null if not exitst.
+     */
+    const loadExistingCache = (cache) => {
+        return mongo.Cache.findOne({space: cache.space, name: cache.name}).exec();
+    };
 
     class CacheService {
-                
-        static update(cache) {
-            const cacheId = cache._id;
-
-            return mongo.Cache.update({_id: cacheId}, cache, {upsert: true}).exec()
-                .then(() => mongo.Cluster.update({_id: {$in: cache.clusters}}, {$addToSet: {caches: cacheId}}, {multi: true}).exec())
-                .then(() => mongo.Cluster.update({_id: {$nin: cache.clusters}}, {$pull: {caches: cacheId}}, {multi: true}).exec())
-                .then(() => mongo.DomainModel.update({_id: {$in: cache.domains}}, {$addToSet: {caches: cacheId}}, {multi: true}).exec())
-                .then(() => mongo.DomainModel.update({_id: {$nin: cache.domains}}, {$pull: {caches: cacheId}}, {multi: true}).exec())
-                .then(() => cacheId);
-        }
-
-        static create(cache) {
-            // TODO: Replace to mongo.Cache.create()
-            return (new mongo.Cache(cache)).save()
-                .then((cache) =>
-                    mongo.Cluster.update({_id: {$in: cache.clusters}}, {$addToSet: {caches: cache._id}}, {multi: true}).exec()
-                        .then(() => mongo.DomainModel.update({_id: {$in: cache.domains}}, {$addToSet: {caches: cache._id}}, {multi: true}).exec())
-                        .then(() => cache._id)
-                )
-        }
-
+        /**
+         * Create or update cache.
+         * @param {Object} cache - The cache.
+         * @returns {Promise.<Integer>} that resolves cache id of merge operation.
+         */
         static merge(cache) {
-            return this.loadByName(cache)
+            return loadExistingCache(cache)
                 .then((existingCache) => {
                     const cacheId = cache._id;
 
                     if (existingCache && cacheId !== existingCache._id.toString())
                         throw new errors.DuplicateKeyException('Cache with name: "' + existingCache.name + '" already exist.');
 
-                    if (cacheId) {
-                        return this.update(cache);
-                    }
+                    if (cacheId)
+                        return update(cache);
 
-                    return this.create(cache);
+                    return create(cache);
                 });
         }
 
-        static loadByName(cache) {
-            return mongo.Cache.findOne({space: cache.space, name: cache.name}).exec();
-        };
-
+        /**
+         * Get caches and linked objects by user.
+         * @param {Integer} userId - The user id that own caches.
+         * @param {Boolean} demo - The flag indicates that need lookup in demo space.
+         * @returns {Promise.<[mongo.Cache[], mongo.Cluster[], mongo.DomainModel[], mongo.Space[]]>} - contains requested caches and array of linked objects: clusters, domains, spaces.
+         */
         static listByUser(userId, demo) {
-            const result = {};
-            let spaceIds = [];
-
             // Get owned space and all accessed space.
             return mongo.spaces(userId, demo)
                 .then((spaces) => {
-                    result.spaces = spaces;
-                    spaceIds = spaces.map((space) => space._id);
+                    const spaceIds = spaces.map((space) => space._id);
 
-                    return mongo.Cluster.find({space: {$in: spaceIds}}).sort('name').lean().exec();
-                })
-                .then((clusters) => {
-                    result.clusters = clusters;
-
-                    return mongo.DomainModel.find({space: {$in: spaceIds}}).sort('name').lean().exec();
-                })
-                .then((domains) => {
-                    result.domains = domains;
-
-                    return mongo.Cache.find({space: {$in: spaceIds}}).sort('name').lean().exec();
-                })
-                .then((caches) => {
-                    result.caches = caches;
-
-                    return result;
-                })
+                    return Promise.all([
+                        mongo.Cluster.find({space: {$in: spaceIds}}).sort('name').lean().exec(),
+                        mongo.DomainModel.find({space: {$in: spaceIds}}).sort('name').lean().exec(),
+                        mongo.Cache.find({space: {$in: spaceIds}}).sort('name').lean().exec()
+                    ])
+                        .then(([clusters, domains, caches]) => ({caches, clusters, domains, spaces}));
+                });
         }
 
+        /**
+         * Remove cache.
+         * @param {Object} cache - The cache object with _id property.
+         * @returns {Promise.<{rowsAffected}>} - The number of affected rows.
+         */
         static remove(cache) {
             const cacheId = cache._id;
 
             return mongo.Cluster.update({caches: {$in: [cacheId]}}, {$pull: {caches: cacheId}}, {multi: true}).exec()
                 .then(() => mongo.DomainModel.update({caches: {$in: [cacheId]}}, {$pull: {caches: cacheId}}, {multi: true}).exec())
                 .then(() => mongo.Cache.remove(cache).exec())
-                .then(() => ({}))
-        };
+                .then(convertRemoveStatus);
+        }
 
-        static removeAll(user, demo) {
-            return mongo.spaceIds(user, demo)
-                .then((spaceIds) =>
-                    mongo.Cluster.update({space: {$in: spaceIds}}, {caches: []}, {multi: true}).exec()
-                        .then(() => mongo.DomainModel.update({space: {$in: spaceIds}}, {caches: []}, {multi: true}).exec())
-                        .then(() => mongo.Cache.remove({space: {$in: spaceIds}}).exec())
-                        .then(() => ({}))
-                );
-        };
+        /**
+         * Remove all caches by user.
+         * @param {Integer} userId - The user id that own caches.
+         * @param {Boolean} demo - The flag indicates that need lookup in demo space.
+         * @returns {Promise.<{rowsAffected}>} - The number of affected rows.
+         */
+        static removeAll(userId, demo) {
+            return mongo.spaceIds(userId, demo)
+                .then(removeAllBySpaces);
+        }
     }
 
     return CacheService;

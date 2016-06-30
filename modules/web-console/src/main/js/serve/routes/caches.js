@@ -21,7 +21,7 @@
 
 module.exports = {
     implements: 'caches-routes',
-    inject: ['require(lodash)', 'require(express)', 'mongo', 'services/cacheService']
+    inject: ['require(lodash)', 'require(express)', 'mongo', 'services/cache']
 };
 
 module.exports.factory = function(_, express, mongo, cacheService) {
@@ -30,14 +30,11 @@ module.exports.factory = function(_, express, mongo, cacheService) {
 
         /**
          * Get spaces and caches accessed for user account.
-         *
-         * @param req Request.
-         * @param res Response.
          */
         router.post('/list', (req, res) => {
             cacheService.listByUser(req.currentUserId(), req.header('IgniteDemoMode'))
                 .then(res.api.ok)
-                .catch(req.api.error);
+                .catch(res.api.error);
         });
 
         /**
