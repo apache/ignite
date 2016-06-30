@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -734,11 +735,11 @@ public class GridReduceQueryExecutor {
 
                     if (disconnectedErr != null)
                         cause = disconnectedErr;
-
-                    // Throw correct exception if the reduce query was cancelled by user.
-                    if ( e.getCause() instanceof SQLException && r.cancelled)
-                        throw cancellationException();
                 }
+
+                // Throw correct exception if the reduce query was cancelled by user.
+                if (e instanceof CancellationException)
+                    throw cancellationException();
 
                 throw new CacheException("Failed to run reduce query locally.", cause);
             }
@@ -1261,8 +1262,6 @@ public class GridReduceQueryExecutor {
 
         if ( run == null ) return;
 
-        run.cancelled = true;
-
         run.failed(cancellationException());
     }
 
@@ -1298,9 +1297,6 @@ public class GridReduceQueryExecutor {
 
         /** */
         public volatile RunnableFuture<ResultSet> fut;
-
-        /** */
-        public volatile boolean cancelled;
 
         /**
          * @param o Fail state object.

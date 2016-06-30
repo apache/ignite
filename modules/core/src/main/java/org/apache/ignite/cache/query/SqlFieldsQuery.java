@@ -125,18 +125,19 @@ public final class SqlFieldsQuery extends Query<List<?>> {
     }
 
     /**
-     * Gets the query execution timeout.
+     * Gets the query execution timeout in seconds.
      */
     public int getTimeout() {
         return timeout;
     }
 
     /**
-     * Sets the query execution timeout in seconds. Query will be automatically cancelled if the timeout is exceeded.
-     * @param timeout Timeout value or 0 to disable.
+     * Sets the query execution timeout. Query will be automatically cancelled if the timeout is exceeded.
+     * @param timeout Timeout value.
+     * @param timeUnit Time unit.
      */
-    public void setTimeout(int timeout) {
-        this.timeout = timeout;
+    public void setTimeout(int timeout, TimeUnit timeUnit) {
+        this.timeout = (int)TimeUnit.SECONDS.convert(timeout, timeUnit);
     }
 
     /**

@@ -54,6 +54,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RunnableFuture;
+import java.util.concurrent.TimeUnit;
 import javax.cache.Cache;
 import javax.cache.CacheException;
 import org.apache.ignite.IgniteCheckedException;
@@ -860,26 +861,27 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         @Nullable Collection<Object> params,
         boolean useStmtCache) throws IgniteCheckedException {
         try {
-            return new SqlQueryRunnableFuture(space, conn, sql, params, useStmtCache, 0).call();
+            return new SqlQueryCallable(space, conn, sql, params, useStmtCache).call();
+        }
+        catch(IgniteCheckedException e) {
+            throw e;
         }
         catch (Exception e) {
-            if (e instanceof IgniteCheckedException)
-                throw (IgniteCheckedException) e;
-
             throw new IgniteCheckedException(e);
         }
     }
 
     /**
      * Returns future suitable for running SQL query.
-     * Future can be using for query cancelling from another thread.
+     * Future can be used for query cancellation from another thread
+     * or running query with automatic cancellation on timeout.
      *
      * @param space Space name.
      * @param conn Connection,.
      * @param sql Sql query.
      * @param params Parameters.
      * @param useStmtCache If {@code true} uses statement cache.
-     * @param timeout Query timeout.
+     * @param timeout Query timeout in milliseconds.
      * @return Result.
      * @throws IgniteCheckedException If failed.
      */
@@ -888,16 +890,35 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         final String sql,
         @Nullable Collection<Object> params,
         boolean useStmtCache,
-        int timeout) throws IgniteCheckedException {
-        final SqlQueryRunnableFuture fut = new SqlQueryRunnableFuture(space, conn, sql, params, useStmtCache, timeout);
+        final int timeout) throws IgniteCheckedException {
+        final SqlQueryCallable fut = new SqlQueryCallable(space, conn, sql, params, useStmtCache);
 
         return new FutureTask<ResultSet>(fut) {
+            private GridTimeoutProcessor.CancelableTask timeoutTask;
+
+            @Override public void run() {
+                // Set timeout handler before run.
+                if (timeout > 0) {
+                    timeoutTask = ctx.timeout().schedule(new Runnable() {
+                        @Override public void run() {
+                            cancel(false);
+                        }
+                    }, timeout * 1000L, -1);
+                }
+
+                super.run();
+            }
+
             @Override public boolean cancel(boolean mayInterruptIfRunning) {
                 boolean cancelled = super.cancel(mayInterruptIfRunning);
 
                 if (cancelled)
                     try {
                         fut.cancel();
+
+                        // Prevent timeout closure to run if a query was cancelled before.
+                        if (timeoutTask != null)
+                            timeoutTask.close();
                     }
                     catch (SQLException e) {
                         IgniteH2Indexing.this.log.error("Failed to cancel SQL query " + sql, e);
@@ -909,7 +930,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
     }
 
     /** */
-    private class SqlQueryRunnableFuture implements Callable<ResultSet> {
+    private class SqlQueryCallable implements Callable<ResultSet> {
         /** */
         private final String space;
 
@@ -923,13 +944,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         private final Collection<Object> params;
 
         /** */
-        private final int timeout;
-
-        /** */
         private PreparedStatement stmt;
-
-        /** */
-        private GridTimeoutProcessor.CancelableTask timeoutTask;
 
         /**
          * @param space Space.
@@ -937,16 +952,14 @@ public class IgniteH2Indexing implements GridQueryIndexing {
          * @param sql Query.
          * @param params Params.
          * @param useStmtCache Use cache?
-         * @param timeout Timeout.
          */
-        public SqlQueryRunnableFuture(String space, Connection conn, String sql, Collection<Object> params,
-            boolean useStmtCache, int timeout) throws IgniteCheckedException {
+        public SqlQueryCallable(String space, Connection conn, String sql, Collection<Object> params,
+            boolean useStmtCache) throws IgniteCheckedException {
 
             this.space = space;
             this.conn = conn;
             this.sql = sql;
             this.params = params;
-            this.timeout = timeout;
 
             try {
                 stmt = prepareStatement(conn, sql, useStmtCache);
@@ -961,24 +974,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
             long start = U.currentTimeMillis();
 
             try {
-                if (this.timeout > 0) {
-                    timeoutTask = ctx.timeout().schedule(new Runnable() {
-                        @Override public void run() {
-                            try {
-                                cancel();
-                            }
-                            catch (SQLException e) {
-                                log.error("Failed to timeout SQL query " + sql, e);
-                            }
-                        }
-                    }, this.timeout * 1000L, -1);
-                }
-
                 ResultSet rs = executeSqlQuery(sql, stmt, params);
-
-                // Remove pending task from timer queue.
-                if (timeoutTask != null)
-                    timeoutTask.close();
 
                 long time = U.currentTimeMillis() - start;
 
@@ -1018,9 +1014,6 @@ public class IgniteH2Indexing implements GridQueryIndexing {
         /** */
         public void cancel() throws SQLException {
             stmt.cancel();
-
-            if (timeoutTask != null)
-                timeoutTask.close();
         }
     }
 
@@ -1141,7 +1134,7 @@ public class IgniteH2Indexing implements GridQueryIndexing {
 
         fqry.setArgs(qry.getArgs());
         fqry.setPageSize(qry.getPageSize());
-        fqry.setTimeout(qry.getTimeout());
+        fqry.setTimeout(qry.getTimeout(), TimeUnit.SECONDS);
 
         final QueryCursor<List<?>> res = queryTwoStep(cctx, fqry);
 

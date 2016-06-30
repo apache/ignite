@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.replicated;
+package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.Arrays;
 import java.util.List;
@@ -45,8 +45,9 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
  * Tests distributed fields query resources cleanup on node failure.
+ * Grids must be restarted after each test.
  */
-public class IgniteCacheReplicatedFieldsQueryNodeFailSelfTest extends GridCommonAbstractTest {
+public class IgniteCacheQueryStopNodeFailSelfTest extends GridCommonAbstractTest {
     /** */
     private static final String KEY_CROSS_JOIN_QRY = "select a._key, b._key from String a, String b";
 
@@ -59,7 +60,7 @@ public class IgniteCacheReplicatedFieldsQueryNodeFailSelfTest extends GridCommon
     /**
      * Default constructor.
      */
-    public IgniteCacheReplicatedFieldsQueryNodeFailSelfTest() {
+    public IgniteCacheQueryStopNodeFailSelfTest() {
         super(false);
     }
 
@@ -116,14 +117,14 @@ public class IgniteCacheReplicatedFieldsQueryNodeFailSelfTest extends GridCommon
     }
 
     /**
-     * Tests stopping two-step query on initiator node fail.
+     * Tests stopping two-step query on executor node fail.
      */
     public void testRemoteQueryExecutionStopServerNodeFail1() throws Exception {
         testQueryStopOnNodeFail(10_000, 4, KEY_CROSS_JOIN_QRY, 3_000, 0, 1);
     }
 
     /**
-     * Tests stopping two-step query on initiator node fail.
+     * Tests stopping two-step query on executor node fail.
      */
     public void testRemoteQueryExecutionStopServerNodeFail2() throws Exception {
         testQueryStopOnNodeFail(10_000, 4, KEY_CROSS_JOIN_QRY, 3_000, 0, 2);
@@ -164,7 +165,7 @@ public class IgniteCacheReplicatedFieldsQueryNodeFailSelfTest extends GridCommon
                     }
 
                     if (failGridIdx != -1) {
-                        // After node failure query must be restarted excluding failing node.
+                        // After the node failure query must be restarted excluding failing node.
                         client.scheduler().runLocal(new Runnable() {
                             @Override public void run() {
                                 try {

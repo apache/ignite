@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.ignite.internal.processors.cache.distributed.replicated;
+package org.apache.ignite.internal.processors.cache.distributed.near;
 
 import java.util.Arrays;
 import java.util.List;
@@ -41,22 +41,22 @@ import static org.apache.ignite.cache.CachePeekMode.ALL;
 /**
  * Tests distributed fields query resources cleanup on cancellation by various reasons.
  */
-public class IgniteCacheReplicatedFieldsQueryStopSelfTest extends IgniteCacheAbstractQuerySelfTest {
+public class IgniteCacheQueryStopSelfTest extends IgniteCacheAbstractQuerySelfTest {
     /** */
-    private static final String CROSS_KEY_JOIN_QRY = "select a._key, b._key from String a, String b";
+    private static final String KEY_CROSS_JOIN_QRY = "select a._key, b._key from String a, String b";
 
     /** */
     private static final String GROUP_QRY = "select a._key, count(*) from String a group by a._key";
 
     /** */
-    private static final String CROSS_VAL_JOIN_QRY = "select a._val, b._val from String a, String b";
+    private static final String VAL_CROSS_JOIN_QRY = "select a._val, b._val from String a, String b";
 
     /** */
     private static final String SIMPLE_QRY = "select a._key from String a";
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
-        return 1;
+        return 3;
     }
 
     /** {@inheritDoc} */
@@ -68,28 +68,28 @@ public class IgniteCacheReplicatedFieldsQueryStopSelfTest extends IgniteCacheAbs
      * Tests stopping two-step long query on timeout.
      */
     public void testRemoteQueryExecutionTimeout() throws Exception {
-        testQueryTimeout(10_000, 4, CROSS_KEY_JOIN_QRY, 3);
+        testQueryTimeout(10_000, 4, KEY_CROSS_JOIN_QRY, 3);
     }
 
     /**
      * Tests stopping two-step long query while result set is being generated on remote nodes.
      */
     public void testRemoteQueryExecutionStop1() throws Exception {
-        testQueryStop(10_000, 4, CROSS_KEY_JOIN_QRY, 500);
+        testQueryStop(10_000, 4, KEY_CROSS_JOIN_QRY, 500);
     }
 
     /**
      * Tests stopping two-step long query while result set is being generated on remote nodes.
      */
     public void testRemoteQueryExecutionStop2() throws Exception {
-        testQueryStop(10_000, 4, CROSS_KEY_JOIN_QRY, 1000);
+        testQueryStop(10_000, 4, KEY_CROSS_JOIN_QRY, 1000);
     }
 
     /**
      * Tests stopping two-step long query while result set is being generated on remote nodes.
      */
     public void testRemoteQueryExecutionStop3() throws Exception {
-        testQueryStop(10_000, 4, CROSS_KEY_JOIN_QRY, 3000);
+        testQueryStop(10_000, 4, KEY_CROSS_JOIN_QRY, 3000);
     }
 
     /**
@@ -117,21 +117,21 @@ public class IgniteCacheReplicatedFieldsQueryStopSelfTest extends IgniteCacheAbs
      * Tests stopping two step query while fetching data from remote nodes.
      */
     public void testRemoteQueryFetchngStop1() throws Exception {
-        testQueryStop(100_000, 512, CROSS_VAL_JOIN_QRY, 500);
+        testQueryStop(100_000, 512, VAL_CROSS_JOIN_QRY, 500);
     }
 
     /**
      * Tests stopping two step query while fetching data from remote nodes.
      */
     public void testRemoteQueryFetchngStop2() throws Exception {
-        testQueryStop(100_000, 512, CROSS_VAL_JOIN_QRY, 1_500);
+        testQueryStop(100_000, 512, VAL_CROSS_JOIN_QRY, 1_500);
     }
 
     /**
      * Tests stopping two step query while fetching data from remote nodes.
      */
     public void testRemoteQueryFetchngStop3() throws Exception {
-        testQueryStop(100_000, 512, CROSS_VAL_JOIN_QRY, 3000);
+        testQueryStop(100_000, 512, VAL_CROSS_JOIN_QRY, 3000);
     }
 
     /**
@@ -212,7 +212,7 @@ public class IgniteCacheReplicatedFieldsQueryStopSelfTest extends IgniteCacheAbs
             assertEquals(0, cache.localSize(ALL));
 
             SqlFieldsQuery sqlFldQry = new SqlFieldsQuery(sql);
-            sqlFldQry.setTimeout(qryTimeoutSecs);
+            sqlFldQry.setTimeout(qryTimeoutSecs, TimeUnit.SECONDS);
 
             final QueryCursor<?> cursor = cache.query(sqlFldQry);
 
