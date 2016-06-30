@@ -22,12 +22,8 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
-import org.apache.ignite.internal.cluster.IgniteClusterEx;
-import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
-import org.apache.ignite.internal.processors.platform.memory.PlatformInputStream;
 import org.apache.ignite.internal.processors.platform.memory.PlatformMemory;
 import org.apache.ignite.internal.processors.platform.memory.PlatformOutputStream;
 import org.apache.ignite.internal.processors.platform.utils.PlatformUtils;
@@ -38,7 +34,6 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -159,50 +154,17 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
         try (PlatformMemory outMem = ctx.memory().allocate()) {
             try (PlatformMemory inMem = ctx.memory().allocate()) {
                 PlatformOutputStream out = outMem.output();
-                BinaryRawWriterEx writer = ctx.writer(out);
+                BinaryRawWriterEx writer = ctx.writer(outMem);
 
                 // Write previous assignment
-                List<List<ClusterNode>> prevAssignment = ((GridAffinityFunctionContextImpl)affCtx).prevAssignment();
-
-                if (prevAssignment == null)
-                    writer.writeInt(-1);
-                else {
-                    writer.writeInt(prevAssignment.size());
-
-                    for (List<ClusterNode> part : prevAssignment)
-                        ctx.writeNodes(writer, part);
-                }
-
-                // Write other props
-                writer.writeInt(affCtx.backups());
-                ctx.writeNodes(writer, affCtx.currentTopologySnapshot());
-                writer.writeLong(affCtx.currentTopologyVersion().topologyVersion());
-                writer.writeInt(affCtx.currentTopologyVersion().minorTopologyVersion());
-                ctx.writeEvent(writer, affCtx.discoveryEvent());
+                PlatformAffinityFunctionSerializer.writeAffinityFunctionContext(affCtx, writer, ctx);
 
                 // Call platform
                 out.synchronize();
                 ctx.gateway().affinityFunctionAssignPartitions(ptr, outMem.pointer(), inMem.pointer());
 
-                PlatformInputStream in = inMem.input();
-                BinaryRawReaderEx reader = ctx.reader(in);
-
                 // Read result
-                int partCnt = in.readInt();
-                List<List<ClusterNode>> res = new ArrayList<>(partCnt);
-                IgniteClusterEx cluster = ctx.kernalContext().grid().cluster();
-
-                for (int i = 0; i < partCnt; i++) {
-                    int partSize = in.readInt();
-                    List<ClusterNode> part = new ArrayList<>(partSize);
-
-                    for (int j = 0; j < partSize; j++)
-                        part.add(cluster.node(reader.readUuid()));
-
-                    res.add(part);
-                }
-
-                return res;
+                return PlatformAffinityFunctionSerializer.readPartitionAssignment(ctx.reader(inMem), ctx);
             }
         }
     }
