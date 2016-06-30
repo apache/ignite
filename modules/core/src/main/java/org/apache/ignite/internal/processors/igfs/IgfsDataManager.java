@@ -188,28 +188,7 @@ public class IgfsDataManager extends IgfsManager {
 
         igfsSvc = igfsCtx.kernalContext().getIgfsExecutorService();
 
-<<<<<<< HEAD
-        delWorker = new AsyncDeleteWorker(igfsCtx.kernalContext().gridName(),
-=======
-        trashPurgeTimeout = igfsCtx.configuration().getTrashPurgeTimeout();
-
-        putExecSvc = igfsCtx.configuration().getDualModePutExecutorService();
-
-        if (putExecSvc != null)
-            putExecSvcShutdown = igfsCtx.configuration().getDualModePutExecutorServiceShutdown();
-        else {
-            int coresCnt = Runtime.getRuntime().availableProcessors();
-
-            // Note that we do not pre-start threads here as IGFS pool may not be needed.
-            putExecSvc = new IgniteThreadPoolExecutor(coresCnt, coresCnt, 0, new LinkedBlockingDeque<Runnable>());
-
-            putExecSvcShutdown = true;
-        }
-
-        maxPendingPuts = igfsCtx.configuration().getDualModeMaxPendingPutsSize();
-
         delWorker = new AsyncDeleteWorker(igfsCtx.kernalContext().instanceName(),
->>>>>>> commit
             "igfs-" + igfsName + "-delete-worker", log);
     }
 

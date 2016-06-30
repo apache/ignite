@@ -68,19 +68,8 @@ public class CacheAffinityCallSelfTest extends GridCommonAbstractTest {
         AlwaysFailoverSpi failSpi = new AlwaysFailoverSpi();
         cfg.setFailoverSpi(failSpi);
 
-<<<<<<< HEAD
         // Do not configure cache on client.
-        if (gridName.equals(getTestGridName(SRVS))) {
-=======
-        CacheConfiguration ccfg = defaultCacheConfiguration();
-        ccfg.setName(CACHE_NAME);
-        ccfg.setCacheMode(PARTITIONED);
-        ccfg.setBackups(1);
-
-        cfg.setCacheConfiguration(ccfg);
-
         if (instanceName.equals(getTestInstanceName(SRVS))) {
->>>>>>> try to fix GridCacheStoreValueBytesSelfTest.java's invalid link
             cfg.setClientMode(true);
 
             spi.setForceServerMode(true);

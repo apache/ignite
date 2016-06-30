@@ -253,7 +253,7 @@ public class TcpDiscoveryVmIpFinderSelfTest
     private static IgniteConfiguration config(String name, boolean client, boolean forceServerMode) {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName(name);
+        cfg.setInstanceName(name);
         cfg.setClientMode(client);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();

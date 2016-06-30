@@ -50,8 +50,8 @@ public class IgniteCacheContinuousQueryBackupQueueTest extends GridCommonAbstrac
     private static final int GRID_COUNT = 2;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         CacheConfiguration ccfg = new CacheConfiguration();
         ccfg.setCacheMode(PARTITIONED);

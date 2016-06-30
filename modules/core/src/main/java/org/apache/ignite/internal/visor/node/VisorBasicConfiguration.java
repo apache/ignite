@@ -118,11 +118,7 @@ public class VisorBasicConfiguration implements Serializable, LessNamingBean {
     public static VisorBasicConfiguration from(IgniteEx ignite, IgniteConfiguration c) {
         VisorBasicConfiguration cfg = new VisorBasicConfiguration();
 
-<<<<<<< HEAD
-        cfg.localInstanceName = c.getInstanceName();
-=======
         cfg.instanceName = c.getInstanceName();
->>>>>>> modified all gridName to instanceName where needed
         cfg.ggHome = getProperty(IGNITE_HOME, c.getIgniteHome());
         cfg.locHost = getProperty(IGNITE_LOCAL_HOST, c.getLocalHost());
         cfg.nodeId = ignite.localNode().id();

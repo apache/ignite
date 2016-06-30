@@ -39,8 +39,8 @@ public class IgniteCacheSyncRebalanceModeSelfTest extends GridCommonAbstractTest
     public static final String STATIC_CACHE_NAME = "static";
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         CacheConfiguration ccfg = new CacheConfiguration(STATIC_CACHE_NAME);
 

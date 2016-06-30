@@ -88,7 +88,7 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
      */
     public void testClosureFieldByResourceClassWithMultipleBeans() throws Exception {
         IgniteConfiguration anotherCfg = new IgniteConfiguration();
-        anotherCfg.setGridName("anotherGrid");
+        anotherCfg.setInstanceName("anotherGrid");
 
         Ignite anotherGrid = IgniteSpring.start(anotherCfg, new ClassPathXmlApplicationContext(
             "/org/apache/ignite/internal/processors/resource/spring-resource-with-duplicate-beans.xml"));
@@ -226,7 +226,7 @@ public class GridSpringResourceInjectionSelfTest extends GridCommonAbstractTest 
     @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     public void testClosureMethodWithResourceClassWithMultipleBeans() throws Exception {
         IgniteConfiguration anotherCfg = new IgniteConfiguration();
-        anotherCfg.setGridName("anotherGrid");
+        anotherCfg.setInstanceName("anotherGrid");
 
         Ignite anotherGrid = IgniteSpring.start(anotherCfg, new ClassPathXmlApplicationContext(
             "/org/apache/ignite/internal/processors/resource/spring-resource-with-duplicate-beans.xml"));

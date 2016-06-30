@@ -54,7 +54,7 @@
         <module>modules/hadoop</module>
         <module>modules/extdata/p2p</module>
         <module>modules/extdata/uri</module>
-        <module>modules/clients</module>
+        <module>modules/clients</module>git
         <module>modules/spring</module>
         <module>modules/web</module>
         <module>modules/aop</module>

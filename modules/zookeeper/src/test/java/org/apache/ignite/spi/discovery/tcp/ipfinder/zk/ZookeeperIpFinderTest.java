@@ -107,11 +107,7 @@ public class ZookeeperIpFinderTest extends GridCommonAbstractTest {
     /**
      * Enhances the default configuration with the {#TcpDiscoveryZookeeperIpFinder}.
      *
-<<<<<<< HEAD
      * @param instanceName Instance name.
-=======
-     * @param instanceName Grid name.
->>>>>>> modified all gridName to instanceName where needed
      * @return Ignite configuration.
      * @throws Exception If failed.
      */
