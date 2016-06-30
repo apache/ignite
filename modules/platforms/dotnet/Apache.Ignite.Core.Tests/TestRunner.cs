@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Tests
                 return;
             }
 
-            TestOne(typeof(AffinityFunctionTest), "TestInheritPredefinedFunction");
+            TestOne(typeof(AffinityFunctionTest), "TestInheritFairAffinity");
 
             //TestAll(typeof (AffinityFunctionSpringTest));
             //TestAllInAssembly();
