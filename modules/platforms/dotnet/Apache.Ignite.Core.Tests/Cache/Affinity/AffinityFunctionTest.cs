@@ -231,9 +231,13 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             var aff = _ignite.GetAffinity(cache.Name);
 
             Assert.AreEqual(PartitionCount, aff.Partitions);
+
+            // Test from map
             Assert.AreEqual(2, aff.GetPartition(1));
             Assert.AreEqual(3, aff.GetPartition(2));
-            Assert.AreEqual(4, aff.GetPartition(3));
+
+            // Test from base func
+            Assert.AreEqual(6, aff.GetPartition(33));
         }
 
         [Serializable]
