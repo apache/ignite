@@ -29,6 +29,7 @@ import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -139,7 +140,7 @@ public class PlatformAffinityFunctionSerializer {
      * @param partitions Partitions.
      * @param writer Writer.
      */
-    public static void writePartitionAssignment(List<List<ClusterNode>> partitions, BinaryRawWriterEx writer,
+    public static void writePartitionAssignment(Collection<List<ClusterNode>> partitions, BinaryRawWriterEx writer,
         PlatformContext ctx) {
         assert partitions != null;
         assert writer != null;

@@ -19,10 +19,14 @@ package org.apache.ignite.internal.processors.platform.cache.affinity;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.AffinityFunctionContext;
+import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+
+import java.util.List;
 
 /**
  * Platform affinity function target:
@@ -70,10 +74,13 @@ public class PlatformAffinityFunctionTarget extends PlatformAbstractTarget {
     @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader,
         BinaryRawWriterEx writer) throws IgniteCheckedException {
         if (type == OP_ASSIGN_PARTITIONS) {
-            // TODO: read context ( see PlatformAffFunc existing code - extract Serializer class).
-            baseFunc.assignPartitions(null);
+            AffinityFunctionContext affCtx =
+                PlatformAffinityFunctionSerializer.readAffinityFunctionContext(reader, platformContext());
 
-            // TODO: write result
+            final List<List<ClusterNode>> partitions = baseFunc.assignPartitions(affCtx);
+
+            PlatformAffinityFunctionSerializer.writePartitionAssignment(partitions, writer, platformContext());
+
             return;
         }
 
