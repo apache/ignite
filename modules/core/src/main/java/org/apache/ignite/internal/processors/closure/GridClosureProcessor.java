@@ -17,19 +17,6 @@
 
 package org.apache.ignite.internal.processors.closure;
 
-import java.io.Externalizable;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Executor;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.binary.BinaryObjectException;
@@ -49,8 +36,14 @@ import org.apache.ignite.internal.ComputeTaskInternalFuture;
 import org.apache.ignite.internal.GridClosureCallMode;
 import org.apache.ignite.internal.GridInternalWrapper;
 import org.apache.ignite.internal.GridKernalContext;
+import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.IgniteInternalFuture;
 import org.apache.ignite.internal.processors.GridProcessorAdapter;
+import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
+import org.apache.ignite.internal.processors.cache.GridCacheAdapter;
+import org.apache.ignite.internal.processors.cache.GridCacheContext;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
+import org.apache.ignite.internal.processors.cache.distributed.dht.GridReservable;
 import org.apache.ignite.internal.processors.resource.GridNoImplicitInjection;
 import org.apache.ignite.internal.util.GridSpinReadWriteLock;
 import org.apache.ignite.internal.util.IgniteUtils;
@@ -67,16 +60,34 @@ import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.internal.util.worker.GridWorker;
 import org.apache.ignite.internal.util.worker.GridWorkerFuture;
 import org.apache.ignite.lang.IgniteBiTuple;
+import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.lang.IgniteClosure;
+import org.apache.ignite.lang.IgniteInClosure;
 import org.apache.ignite.lang.IgniteProductVersion;
 import org.apache.ignite.lang.IgniteReducer;
 import org.apache.ignite.marshaller.Marshaller;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.resources.LoadBalancerResource;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.Externalizable;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executor;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
+
 import static org.apache.ignite.compute.ComputeJobResultPolicy.FAILOVER;
 import static org.apache.ignite.compute.ComputeJobResultPolicy.REDUCE;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_NO_FAILOVER;
 import static org.apache.ignite.internal.processors.task.GridTaskThreadContextKey.TC_SUBGRID;
 
@@ -502,6 +513,58 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         }
         catch (IgniteCheckedException e) {
             return ComputeTaskInternalFuture.finishedFuture(ctx, T4.class, e);
+        }
+        finally {
+            busyLock.readUnlock();
+        }
+    }
+
+    /**
+     * @param cacheName Cache name.
+     * @param affKey Affinity key.
+     * @param job Job.
+     * @param nodes Grid nodes.
+     * @return Job future.
+     */
+    public ComputeTaskInternalFuture<?> affinityRun(@Nullable final String cacheName, final Object affKey,
+        final Runnable job, @Nullable final Collection<ClusterNode> nodes,
+        @NotNull final Map<String, int[]> lockedParts) {
+        busyLock.readLock();
+
+        try {
+            IgniteCallable<ComputeTaskInternalFuture<AffinityJobWrapper.ResultWrapper<Void>>> affTaskSubmitter =
+                new IgniteCallable<ComputeTaskInternalFuture<AffinityJobWrapper.ResultWrapper<Void>>>() {
+                @Override public ComputeTaskInternalFuture<AffinityJobWrapper.ResultWrapper<Void>> call()
+                    throws IgniteCheckedException {
+                    if (F.isEmpty(nodes))
+                        return ComputeTaskInternalFuture.finishedFuture(ctx, T4.class, U.emptyTopologyException());
+
+                    // In case cache key is passed instead of affinity key.
+                    final Object affKey0 = ctx.affinity().affinityKey(cacheName, affKey);
+
+                    final ClusterNode node = ctx.affinity().mapKeyToNode(cacheName, affKey0);
+
+                    if (node == null)
+                        return ComputeTaskInternalFuture.finishedFuture(ctx, T4.class, U.emptyTopologyException());
+
+                    ctx.task().setThreadContext(TC_SUBGRID, nodes);
+                    AffinityJobWrapper jobWrapper = new AffinityJobWrapper(job, lockedParts);
+
+                    return ctx.task().execute(new T5<AffinityJobWrapper.ResultWrapper<Void>>(node, jobWrapper,
+                        affKey0, cacheName), null, false);
+                }
+            };
+
+            RetriableTaskFuture<Void> fut =
+                new RetriableTaskFuture<>(affTaskSubmitter.call(), affTaskSubmitter);
+            fut.retry();
+            return fut;
+        }
+        catch (IgniteCheckedException e) {
+            return ComputeTaskInternalFuture.finishedFuture(ctx, T4.class, e);
+        } catch (Exception e) {
+            log.warning("Unexpected exception", e);
+            return ComputeTaskInternalFuture.finishedFuture(ctx, T4.class, new IgniteCheckedException(e));
         }
         finally {
             busyLock.readUnlock();
@@ -2293,6 +2356,166 @@ public class GridClosureProcessor extends GridProcessorAdapter {
         /** {@inheritDoc} */
         @Override public String toString() {
             return S.toString(C4MLAV2.class, this, super.toString());
+        }
+    }
+
+    public static class AffinityJobWrapper<R> implements Callable<AffinityJobWrapper.ResultWrapper<R>> {
+
+        /** Ignite instance */
+        @IgniteInstanceResource
+        private IgniteEx ignite;
+
+        /** User's job. */
+        private Runnable jobRun;
+
+        /** User's call. */
+        private Callable<R> jobCall;
+
+        /** Partitions to lock */
+        private Map<String, int[]> partsToLock;
+
+        public AffinityJobWrapper(Runnable job, Map<String, int[]> partsToLock) {
+            jobRun = job;
+            this.partsToLock = partsToLock;
+        }
+
+        public AffinityJobWrapper(Callable<R> job, Map<String, int[]> partsToLock) {
+            jobCall = job;
+            this.partsToLock = partsToLock;
+        }
+
+        @Override public ResultWrapper<R> call() throws Exception {
+            assert jobRun != null || jobCall != null;
+            List<GridReservable> reservedParts = new ArrayList<>(partsToLock.size() * 16);
+            try {
+                // Retry: the job will be resubmitted in case the result wrapper is null
+                if (!lockPartitions(reservedParts))
+                    return null;
+
+                if (jobRun != null) {
+                    jobRun.run();
+                    return new ResultWrapper<>(null);
+                }
+                else
+                    return new ResultWrapper<>(jobCall.call());
+            }
+            finally {
+                // Release partitions
+                for (GridReservable r : reservedParts)
+                    r.release();
+            }
+        }
+
+        private boolean lockPartitions(List<GridReservable> reserved) {
+            GridKernalContext ctx = ignite.context();
+            for (Map.Entry<String, int[]> entry : partsToLock.entrySet()) {
+                GridCacheAdapter<?, ?> cacheAdapter = ctx.cache().internalCache(entry.getKey());
+                if (cacheAdapter == null)
+                    return false;
+
+                GridCacheContext<?, ?> cctx = cacheAdapter.context();
+                for (int partId : entry.getValue()) {
+                    GridDhtLocalPartition part = cctx.topology().localPartition(partId,
+                        AffinityTopologyVersion.NONE, false);
+
+                    if (part == null || part.state() != OWNING || !part.reserve()) {
+//                        System.out.println("Cannot reserve: " + entry.getKey() + ":" + partId);
+                        return false;
+                    }
+
+                    reserved.add(part);
+
+                    // Double check that we are still in owning state and partition contents are not cleared.
+                    if (part.state() != OWNING)
+                        return false;
+                }
+            }
+            return true;
+        }
+
+        /**
+         *
+         */
+        public static class ResultWrapper<R> {
+            /** */
+            private R res;
+
+            /**
+             * @param res Response.
+             */
+            public ResultWrapper(R res) {
+                this.res = res;
+            }
+
+            /**
+             */
+            public R get() {
+                return res;
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    private static class RetriableTaskFuture<R> extends ComputeTaskInternalFuture<R> {
+        /** */
+        private final Listener listener;
+        /** */
+        private ComputeTaskInternalFuture<AffinityJobWrapper.ResultWrapper<R>> fut;
+        /** */
+        private IgniteCallable<ComputeTaskInternalFuture<AffinityJobWrapper.ResultWrapper<R>>> affTaskSubmitter;
+
+        /**
+         * @param fut Future.
+         * @param affTaskSubmitter Aff task submitter.
+         */
+        RetriableTaskFuture(ComputeTaskInternalFuture<AffinityJobWrapper.ResultWrapper<R>> fut,
+            IgniteCallable<ComputeTaskInternalFuture<AffinityJobWrapper.ResultWrapper<R>>> affTaskSubmitter) {
+            super(fut.getTaskSession(), fut.getContext());
+            this.fut = fut;
+            this.affTaskSubmitter = affTaskSubmitter;
+            listener = new Listener();
+        }
+
+        /**
+         */
+        private void retry()  {
+            try {
+                fut = affTaskSubmitter.call();
+                fut.listen(listener);
+            }
+            catch (Throwable th) {
+                onDone(th);
+            }
+        }
+
+        private class Listener implements IgniteInClosure<IgniteInternalFuture<AffinityJobWrapper.ResultWrapper<R>>> {
+            /** */
+            private static final long serialVersionUID = 0L;
+
+            @Override public void apply(IgniteInternalFuture<AffinityJobWrapper.ResultWrapper<R>> fut) {
+                try {
+                    if (fut.error() != null)
+                        onDone(fut.error());
+
+                    AffinityJobWrapper.ResultWrapper<R> res = fut.get();
+                    if (res != null)
+                        onDone(res.get());
+                    else {
+                        // Delay on 10 ms before retry
+                        getContext().timeout().schedule(new Runnable() {
+                            @Override public void run() {
+                                System.out.println("+++ Retry");
+                                retry();
+                            }
+                        }, 10, -1);
+                    }
+                }
+                catch (Throwable e) {
+                    onDone(e);
+                }
+            }
         }
     }
 }
