@@ -9,7 +9,7 @@
     "test": "karma start karma.conf.js",
     "ci-test-backend": "cross-env NODE_ENV=test CONFIG_PATH='./test/backend/config/settings.json' mocha -u tdd --require babel-core/register --reporter mocha-teamcity-reporter --recursive ./test/backend/unit",
     "test-backend": "cross-env NODE_ENV=test CONFIG_PATH='./test/backend/config/settings.json' mocha -u tdd --require babel-core/register  --recursive ./test/backend/unit",
-    "eslint": "eslint --env node --format node_modules/eslint-friendly-formatter gulpfile.babel.js/ serve/"
+    "eslint": "eslint --env node --format node_modules/eslint-friendly-formatter gulpfile.babel.js/ serve/ app/ controllers/ generator/ ignite_modules/ ignite_modules_temp/"
   },
   "author": "",
   "contributors": [

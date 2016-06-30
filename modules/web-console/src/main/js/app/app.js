@@ -70,9 +70,8 @@ import igniteUiAceXml from './directives/ui-ace-xml/ui-ace-xml.directive';
 
 // Services.
 import ChartColors from './services/ChartColors.service';
-import Cleanup from './services/cleanup.service';
 import Clone from './services/Clone.service.js';
-import Confirm from './services/confirm.service';
+import Confirm from './services/Confirm.service.js';
 import ConfirmBatch from './services/ConfirmBatch.service.js';
 import CopyToClipboard from './services/CopyToClipboard.service';
 import Countries from './services/Countries.service';
@@ -80,6 +79,7 @@ import Focus from './services/Focus.service';
 import InetAddress from './services/InetAddress.service';
 import JavaTypes from './services/JavaTypes.service';
 import Messages from './services/Messages.service';
+import ModelNormalizer from './services/ModelNormalizer.service.js';
 import LegacyTable from './services/LegacyTable.service';
 import LegacyUtils from './services/LegacyUtils.service';
 import UnsavedChangesGuard from './services/UnsavedChangesGuard.service';
@@ -194,7 +194,6 @@ angular
 .directive(...igniteUiAceXml)
 // Services.
 .service(...ChartColors)
-.service(...Cleanup)
 .service(...Clone)
 .service(...Confirm)
 .service(...ConfirmBatch)
@@ -204,6 +203,7 @@ angular
 .service(...InetAddress)
 .service(...JavaTypes)
 .service(...Messages)
+.service(...ModelNormalizer)
 .service(...LegacyTable)
 .service(...LegacyUtils)
 .service(...UnsavedChangesGuard)

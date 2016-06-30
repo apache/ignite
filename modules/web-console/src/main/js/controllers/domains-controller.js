@@ -17,8 +17,8 @@
 
 // Controller for Domain model screen.
 export default ['domainsController', [
-    '$rootScope', '$scope', '$http', '$state', '$filter', '$timeout', '$modal', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteFocus', 'IgniteConfirm', 'IgniteConfirmBatch', 'IgniteClone', '$loading', '$cleanup', 'IgniteUnsavedChangesGuard', 'IgniteAgentMonitor', 'IgniteLegacyTable',
-    function($root, $scope, $http, $state, $filter, $timeout, $modal, LegacyUtils, Messages, Focus, Confirm, ConfirmBatch, Clone, $loading, $cleanup, UnsavedChangesGuard, IgniteAgentMonitor, LegacyTable) {
+    '$rootScope', '$scope', '$http', '$state', '$filter', '$timeout', '$modal', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteFocus', 'IgniteConfirm', 'IgniteConfirmBatch', 'IgniteClone', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'IgniteAgentMonitor', 'IgniteLegacyTable',
+    function($root, $scope, $http, $state, $filter, $timeout, $modal, LegacyUtils, Messages, Focus, Confirm, ConfirmBatch, Clone, Loading, ModelNormalizer, UnsavedChangesGuard, IgniteAgentMonitor, LegacyTable) {
         UnsavedChangesGuard.install($scope);
 
         const emptyDomain = {empty: true};
@@ -410,7 +410,7 @@ export default ['domainsController', [
                         }
 
                         // Get available JDBC drivers via agent.
-                        $loading.start('importDomainFromDb');
+                        Loading.start('importDomainFromDb');
 
                         $scope.jdbcDriverJars = [];
                         $scope.ui.selectedJdbcDriverJar = {};
@@ -451,7 +451,7 @@ export default ['domainsController', [
                             .finally(function() {
                                 $scope.importDomain.info = INFO_CONNECT_TO_DB;
 
-                                $loading.finish('importDomainFromDb');
+                                Loading.finish('importDomainFromDb');
                             });
                     });
             });
@@ -464,7 +464,7 @@ export default ['domainsController', [
             IgniteAgentMonitor.awaitAgent()
                 .then(function() {
                     $scope.importDomain.loadingOptions = LOADING_SCHEMAS;
-                    $loading.start('importDomainFromDb');
+                    Loading.start('importDomainFromDb');
 
                     if ($root.IgniteDemoMode)
                         return IgniteAgentMonitor.schemas($scope.demoConnection);
@@ -488,7 +488,7 @@ export default ['domainsController', [
                     $scope.importDomain.info = INFO_SELECT_SCHEMAS;
                 })
                 .catch(Messages.showError)
-                .finally(() => $loading.finish('importDomainFromDb'));
+                .finally(() => Loading.finish('importDomainFromDb'));
         }
 
         const DFLT_PARTITIONED_CACHE = {
@@ -588,7 +588,7 @@ export default ['domainsController', [
             IgniteAgentMonitor.awaitAgent()
                 .then(function() {
                     $scope.importDomain.loadingOptions = LOADING_TABLES;
-                    $loading.start('importDomainFromDb');
+                    Loading.start('importDomainFromDb');
 
                     $scope.importDomain.allTablesSelected = false;
 
@@ -625,7 +625,7 @@ export default ['domainsController', [
                     $scope.importDomain.info = INFO_SELECT_TABLES;
                 })
                 .catch(Messages.showError)
-                .finally(() => $loading.finish('importDomainFromDb'));
+                .finally(() => Loading.finish('importDomainFromDb'));
         }
 
         $scope.applyDefaults = function() {
@@ -674,7 +674,7 @@ export default ['domainsController', [
         function _saveBatch(batch) {
             if (batch && batch.length > 0) {
                 $scope.importDomain.loadingOptions = SAVING_DOMAINS;
-                $loading.start('importDomainFromDb');
+                Loading.start('importDomainFromDb');
 
                 $http.post('/api/v1/configuration/domains/save/batch', batch)
                     .success(function(savedBatch) {
@@ -715,7 +715,7 @@ export default ['domainsController', [
                     })
                     .error(Messages.showError)
                     .finally(() => {
-                        $loading.finish('importDomainFromDb');
+                        Loading.finish('importDomainFromDb');
 
                         importDomainModal.hide();
                     });
@@ -1055,7 +1055,7 @@ export default ['domainsController', [
         $scope.importCommon = {};
 
         // When landing on the page, get domain models and show them.
-        $loading.start('loadingDomainModelsScreen');
+        Loading.start('loadingDomainModelsScreen');
 
         $http.post('/api/v1/configuration/domains/list')
             .success(function(data) {
@@ -1108,14 +1108,14 @@ export default ['domainsController', [
                 }
 
                 $scope.$watch('ui.inputForm.$valid', function(valid) {
-                    if (valid && _.isEqual(__original_value, $cleanup($scope.backupItem)))
+                    if (valid && ModelNormalizer.isEqual(__original_value, $scope.backupItem))
                         $scope.ui.inputForm.$dirty = false;
                 });
 
                 $scope.$watch('backupItem', function(val) {
                     const form = $scope.ui.inputForm;
 
-                    if (form.$pristine || (form.$valid && _.isEqual(__original_value, $cleanup(val))))
+                    if (form.$pristine || (form.$valid && ModelNormalizer.isEqual(__original_value, val)))
                         form.$setPristine();
                     else
                         form.$setDirty();
@@ -1126,7 +1126,7 @@ export default ['domainsController', [
                 $scope.ui.ready = true;
                 $scope.ui.inputForm.$setPristine();
 
-                $loading.finish('loadingDomainModelsScreen');
+                Loading.finish('loadingDomainModelsScreen');
             });
 
         const clearFormDefaults = (ngFormCtrl) => {
@@ -1165,7 +1165,7 @@ export default ['domainsController', [
 
                 $scope.backupItem = angular.merge({}, blank, $scope.backupItem);
 
-                __original_value = $cleanup($scope.backupItem);
+                __original_value = ModelNormalizer.normalize($scope.backupItem);
 
                 if (LegacyUtils.isDefined($scope.backupItem) && !LegacyUtils.isDefined($scope.backupItem.queryMetadata))
                     $scope.backupItem.queryMetadata = 'Configuration';

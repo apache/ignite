@@ -18,7 +18,7 @@
 import templateUrl from './loading.jade';
 import './loading.css';
 
-export default ['igniteLoading', ['$loading', '$templateCache', '$compile', ($loading, $templateCache, $compile) => {
+export default ['igniteLoading', ['IgniteLoading', '$templateCache', '$compile', (Loading, $templateCache, $compile) => {
     const link = (scope, element) => {
         const compiledTemplate = $compile($templateCache.get(templateUrl));
 
@@ -30,7 +30,7 @@ export default ['igniteLoading', ['$loading', '$templateCache', '$compile', ($lo
             if (!scope.loading) {
                 scope.loading = loading;
 
-                $loading.add(scope.key || 'defaultSpinnerKey', scope.loading);
+                Loading.add(scope.key || 'defaultSpinnerKey', scope.loading);
                 element.append(scope.loading);
             }
         };

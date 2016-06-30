@@ -17,8 +17,8 @@
 
 // Controller for IGFS screen.
 export default ['igfsController', [
-    '$scope', '$http', '$state', '$filter', '$timeout', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteClone', '$loading', '$cleanup', 'IgniteUnsavedChangesGuard', 'IgniteLegacyTable',
-    function($scope, $http, $state, $filter, $timeout, LegacyUtils, Messages, Confirm, Clone, $loading, $cleanup, UnsavedChangesGuard, LegacyTable) {
+    '$scope', '$http', '$state', '$filter', '$timeout', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteClone', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard', 'IgniteLegacyTable',
+    function($scope, $http, $state, $filter, $timeout, LegacyUtils, Messages, Confirm, Clone, Loading, ModelNormalizer, UnsavedChangesGuard, LegacyTable) {
         UnsavedChangesGuard.install($scope);
 
         const emptyIgfs = {empty: true};
@@ -132,7 +132,7 @@ export default ['igfsController', [
                 $scope.selectItem($scope.igfss[0]);
         }
 
-        $loading.start('loadingIgfsScreen');
+        Loading.start('loadingIgfsScreen');
 
         // When landing on the page, get IGFSs and show them.
         $http.post('/api/v1/configuration/igfs/list')
@@ -180,14 +180,14 @@ export default ['igfsController', [
                 }
 
                 $scope.$watch('ui.inputForm.$valid', function(valid) {
-                    if (valid && _.isEqual(__original_value, $cleanup($scope.backupItem)))
+                    if (valid && ModelNormalizer.isEqual(__original_value, $scope.backupItem))
                         $scope.ui.inputForm.$dirty = false;
                 });
 
                 $scope.$watch('backupItem', function(val) {
                     const form = $scope.ui.inputForm;
 
-                    if (form.$pristine || (form.$valid && _.isEqual(__original_value, $cleanup(val))))
+                    if (form.$pristine || (form.$valid && ModelNormalizer.isEqual(__original_value, val)))
                         form.$setPristine();
                     else
                         form.$setDirty();
@@ -197,7 +197,7 @@ export default ['igfsController', [
             .finally(function() {
                 $scope.ui.ready = true;
                 $scope.ui.inputForm.$setPristine();
-                $loading.finish('loadingIgfsScreen');
+                Loading.finish('loadingIgfsScreen');
             });
 
         $scope.selectItem = function(item, backup) {
@@ -225,7 +225,7 @@ export default ['igfsController', [
 
                 $scope.backupItem = angular.merge({}, blank, $scope.backupItem);
 
-                __original_value = $cleanup($scope.backupItem);
+                __original_value = ModelNormalizer.normalize($scope.backupItem);
 
                 if (LegacyUtils.getQueryVariable('new'))
                     $state.go('base.configuration.igfs');

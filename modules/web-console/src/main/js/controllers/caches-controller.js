@@ -17,8 +17,8 @@
 
 // Controller for Caches screen.
 export default ['cachesController', [
-    '$scope', '$http', '$state', '$filter', '$timeout', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteClone', '$loading', '$cleanup', 'IgniteUnsavedChangesGuard',
-    function($scope, $http, $state, $filter, $timeout, LegacyUtils, Messages, Confirm, Clone, $loading, $cleanup, UnsavedChangesGuard) {
+    '$scope', '$http', '$state', '$filter', '$timeout', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteClone', 'IgniteLoading', 'IgniteModelNormalizer', 'IgniteUnsavedChangesGuard',
+    function($scope, $http, $state, $filter, $timeout, LegacyUtils, Messages, Confirm, Clone, Loading, ModelNormalizer, UnsavedChangesGuard) {
         UnsavedChangesGuard.install($scope);
 
         const emptyCache = {empty: true};
@@ -77,7 +77,7 @@ export default ['cachesController', [
             }, []);
         }
 
-        $loading.start('loadingCachesScreen');
+        Loading.start('loadingCachesScreen');
 
         // When landing on the page, get caches and show them.
         $http.post('/api/v1/configuration/caches/list')
@@ -129,14 +129,14 @@ export default ['cachesController', [
                 }
 
                 $scope.$watch('ui.inputForm.$valid', function(valid) {
-                    if (valid && _.isEqual(__original_value, $cleanup($scope.backupItem)))
+                    if (valid && ModelNormalizer.isEqual(__original_value, $scope.backupItem))
                         $scope.ui.inputForm.$dirty = false;
                 });
 
                 $scope.$watch('backupItem', function(val) {
                     const form = $scope.ui.inputForm;
 
-                    if (form.$pristine || (form.$valid && _.isEqual(__original_value, $cleanup(val))))
+                    if (form.$pristine || (form.$valid && ModelNormalizer.isEqual(__original_value, val)))
                         form.$setPristine();
                     else
                         form.$setDirty();
@@ -146,7 +146,7 @@ export default ['cachesController', [
             .finally(function() {
                 $scope.ui.ready = true;
                 $scope.ui.inputForm.$setPristine();
-                $loading.finish('loadingCachesScreen');
+                Loading.finish('loadingCachesScreen');
             });
 
         $scope.selectItem = function(item, backup) {
@@ -172,7 +172,7 @@ export default ['cachesController', [
 
                 $scope.backupItem = angular.merge({}, blank, $scope.backupItem);
 
-                __original_value = $cleanup($scope.backupItem);
+                __original_value = ModelNormalizer.normalize($scope.backupItem);
 
                 if (LegacyUtils.getQueryVariable('new'))
                     $state.go('base.configuration.caches');
