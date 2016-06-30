@@ -905,23 +905,20 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
      * @return sesId
      */
     private String getSessionIdFromCookie(URLConnection conn) {
-        String sessionCookieValue = null;
+        String sesCookieVal;
         String sesId = null;
-        Map<String, List<String>> headerFields = conn.getHeaderFields();
-        Set<String> headerFieldsSet = headerFields.keySet();
-        Iterator<String> hearerFieldsIter = headerFieldsSet.iterator();
+        Map<String, List<String>> hdrFields = conn.getHeaderFields();
+        Set<String> hdrFieldsSet = hdrFields.keySet();
 
-        while (hearerFieldsIter.hasNext()) {
-            String headerFieldKey = hearerFieldsIter.next();
+        for (final String hdrFieldKey : hdrFieldsSet) {
+            if ("Set-Cookie".equalsIgnoreCase(hdrFieldKey)) {
+                List<String> hdrFieldVal = hdrFields.get(hdrFieldKey);
 
-            if ("Set-Cookie".equalsIgnoreCase(headerFieldKey)) {
-                List<String> headerFieldValue = headerFields.get(headerFieldKey);
-
-                for (String headerValue : headerFieldValue) {
+                for (String headerValue : hdrFieldVal) {
                     String[] fields = headerValue.split(";");
-                    sessionCookieValue = fields[0];
-                    sesId = sessionCookieValue.substring(sessionCookieValue.indexOf("=")+1,
-                            sessionCookieValue.length());
+                    sesCookieVal = fields[0];
+                    sesId = sesCookieVal.substring(sesCookieVal.indexOf("=") + 1,
+                        sesCookieVal.length());
                 }
             }
         }
@@ -1113,10 +1110,10 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
                 res.getWriter().flush();
 
             } else if (req.getPathInfo().equals("/simple")) {
-                HttpSession session = req.getSession();
-                X.println(">>>", "Request session simple: " + session.getId(), ">>>");
+                HttpSession ses = req.getSession();
+                X.println(">>>", "Request session simple: " + ses.getId(), ">>>");
 
-                res.getWriter().write(session.getId());
+                res.getWriter().write(ses.getId());
 
                 res.getWriter().flush();
             }
@@ -1131,11 +1128,11 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
                     X.printerrln("Login failed.");
                 }
 
-                HttpSession session = req.getSession();
+                HttpSession ses = req.getSession();
 
-                X.println(">>>", "Logged In session: " + session.getId(), ">>>");
+                X.println(">>>", "Logged In session: " + ses.getId(), ">>>");
 
-                res.getWriter().write(session.getId());
+                res.getWriter().write(ses.getId());
 
                 res.getWriter().flush();
             }

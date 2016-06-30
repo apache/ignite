@@ -1089,7 +1089,8 @@ public class WebSessionFilter implements Filter {
         private void createSession(final String sesId) {
             try {
                 ses = createSessionV2(ses, sesId);
-            } catch (IOException e) {
+            }
+            catch (IOException e) {
                 throw new IgniteException(e);
             }
         }
