@@ -360,8 +360,6 @@ namespace ignite
 
                         converter << value;
 
-                        converter << value;
-
                         int64_t numValue;
 
                         converter >> numValue;
@@ -377,8 +375,6 @@ namespace ignite
                     case IGNITE_ODBC_C_TYPE_DOUBLE:
                     {
                         std::stringstream converter;
-
-                        converter << value;
 
                         converter << value;
 
@@ -559,10 +555,6 @@ namespace ignite
                     {
                         PutNum<int64_t>(value.ToInt64());
 
-                        converter << value;
-
-                        PutString(converter.str());
-
                         break;
                     }
 
@@ -582,25 +574,6 @@ namespace ignite
                         converter << value;
 
                         PutString(converter.str());
-
-                        common::FixedSizeArray<int8_t> bytesBuffer;
-
-                        const common::BigInteger& unscaled = zeroScaled.GetUnscaledValue();
-
-                        unscaled.MagnitudeToBytes(bytesBuffer);
-
-                        for (int32_t i = 0; i < SQL_MAX_NUMERIC_LEN; ++i)
-                        {
-                            int32_t bufIdx = bytesBuffer.GetSize() - 1 - i;
-                            if (bufIdx >= 0)
-                                numeric->val[i] = bytesBuffer[bufIdx];
-                            else
-                                numeric->val[i] = 0;
-                        }
-
-                        numeric->scale = 0;
-                        numeric->sign = unscaled.GetSign() < 0 ? 0 : 1;
-                        numeric->precision = unscaled.GetPrecision();
 
                         break;
                     }
@@ -727,11 +700,11 @@ namespace ignite
                     case IGNITE_ODBC_C_TYPE_BINARY:
                     case IGNITE_ODBC_C_TYPE_DEFAULT:
                     {
-                        SQL_NUMERIC_STRUCT* numeric =
-                            reinterpret_cast<SQL_NUMERIC_STRUCT*>(GetData());
+                        if (GetData())
+                            memcpy(GetData(), &value, std::min(static_cast<size_t>(buflen), sizeof(value)));
 
-                        common::Decimal zeroScaled;
-                        value.SetScale(0, zeroScaled);
+                        if (GetResLen())
+                            *GetResLen() = sizeof(value);
 
                         break;
                     }
@@ -745,12 +718,6 @@ namespace ignite
                     case IGNITE_ODBC_C_TYPE_UNSIGNED_LONG:
                     case IGNITE_ODBC_C_TYPE_SIGNED_BIGINT:
                     case IGNITE_ODBC_C_TYPE_UNSIGNED_BIGINT:
-                    {
-                        PutNum<int64_t>(value.ToInt64());
-
-                        break;
-                    }
-
                     case IGNITE_ODBC_C_TYPE_FLOAT:
                     case IGNITE_ODBC_C_TYPE_DOUBLE:
                     case IGNITE_ODBC_C_TYPE_NUMERIC:
@@ -992,8 +959,6 @@ namespace ignite
 
                         converter << str;
 
-                        converter << str;
-
                         converter >> res;
 
                         break;
@@ -1058,8 +1023,6 @@ namespace ignite
                         std::string str = GetString(static_cast<size_t>(buflen));
 
                         std::stringstream converter;
-
-                        converter << str;
 
                         converter << str;
 
