@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Impl.Binary;
@@ -29,6 +30,13 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
     /// </summary>
     internal class PlatformAffinityFunction : PlatformTarget, IAffinityFunction
     {
+        private enum  Op
+        {
+            Partition = 1,
+            RemoveNode = 2,
+            AssignPartitions = 3
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="PlatformAffinityFunction"/> class.
         /// </summary>
@@ -46,17 +54,21 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
 
         public int GetPartition(object key)
         {
-            throw new NotImplementedException();
+            return (int) DoOutOp((int) Op.Partition, w => w.WriteObject(key));
         }
 
         public void RemoveNode(Guid nodeId)
         {
-            throw new NotImplementedException();
+            DoOutOp((int) Op.RemoveNode, w => w.WriteGuid(nodeId));
         }
 
         public IEnumerable<IEnumerable<IClusterNode>> AssignPartitions(AffinityFunctionContext context)
         {
-            throw new NotImplementedException();
+            return DoOutInOp((int) Op.AssignPartitions, context.Write, s =>
+            {
+                // TODO
+                return Enumerable.Empty<IEnumerable<IClusterNode>>();
+            });
         }
     }
 }

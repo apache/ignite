@@ -66,6 +66,15 @@ namespace Apache.Ignite.Core.Cache.Affinity
         }
 
         /// <summary>
+        /// Writes this instance to the specified writer.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        internal void Write(IBinaryRawWriter writer)
+        {
+            
+        }
+
+        /// <summary>
         /// Gets the affinity assignment for given partition on previous topology version.
         /// First node in returned list is a primary node, other nodes are backups.
         /// </summary>

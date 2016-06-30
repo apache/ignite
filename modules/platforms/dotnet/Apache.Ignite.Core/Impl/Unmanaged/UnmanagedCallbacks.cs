@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
-    using System.IO;
     using System.Runtime.InteropServices;
     using System.Threading;
     using Apache.Ignite.Core.Cache.Affinity;
@@ -1165,38 +1164,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                     using (var outStream = IgniteManager.Memory.Get(outMemPtr).GetStream())
                     {
-                        var writer = _ignite.Marshaller.StartMarshal(outStream);
-
-                        var partCnt = 0;
-                        writer.WriteInt(partCnt);  // reserve size
-
-                        foreach (var part in parts)
-                        {
-                            if (part == null)
-                                throw new IgniteException(func.GetType() +
-                                                          ".AssignPartitions() returned invalid partition: null");
-
-                            partCnt++;
-
-                            var nodeCnt = 0;
-                            var cntPos = outStream.Position;
-                            writer.WriteInt(nodeCnt);  // reserve size
-
-                            foreach (var node in part)
-                            {
-                                nodeCnt++;
-                                writer.WriteGuid(node.Id);
-                            }
-
-                            var endPos = outStream.Position;
-                            outStream.Seek(cntPos, SeekOrigin.Begin);
-                            outStream.WriteInt(nodeCnt);
-                            outStream.Seek(endPos, SeekOrigin.Begin);
-                        }
-
-                        outStream.SynchronizeOutput();
-                        outStream.Seek(0, SeekOrigin.Begin);
-                        writer.WriteInt(partCnt);
+                        AffinityFunctionBase.WritePartitions(parts, outStream, _ignite.Marshaller);
                     }
                 }
             });

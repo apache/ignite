@@ -20,11 +20,14 @@ namespace Apache.Ignite.Core.Cache.Affinity
     using System;
     using System.Collections.Generic;
     using System.ComponentModel;
+    using System.IO;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity.Fair;
     using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
+    using Apache.Ignite.Core.Impl.Binary;
+    using Apache.Ignite.Core.Impl.Memory;
 
     /// <summary>
     /// Base class for predefined affinity functions.
@@ -205,9 +208,55 @@ namespace Apache.Ignite.Core.Cache.Affinity
             }
         }
 
-        internal unsafe void SetBaseFunction(IAffinityFunction baseFunc)
+        /// <summary>
+        /// Sets the base function.
+        /// </summary>
+        /// <param name="baseFunc">The base function.</param>
+        internal void SetBaseFunction(IAffinityFunction baseFunc)
         {
             _baseFunction = baseFunc;
+        }
+
+        /// <summary>
+        /// Writes the partitions assignment to a stream.
+        /// </summary>
+        /// <param name="parts">The parts.</param>
+        /// <param name="outStream">The out stream.</param>
+        /// <param name="marsh">The marshaller.</param>
+        internal static void WritePartitions(IEnumerable<IEnumerable<IClusterNode>> parts, 
+            PlatformMemoryStream outStream, Marshaller marsh)
+        {
+            var writer = marsh.StartMarshal(outStream);
+
+            var partCnt = 0;
+            writer.WriteInt(partCnt); // reserve size
+
+            foreach (var part in parts)
+            {
+                if (part == null)
+                    throw new IgniteException("IAffinityFunction.AssignPartitions() returned invalid partition: null");
+
+                partCnt++;
+
+                var nodeCnt = 0;
+                var cntPos = outStream.Position;
+                writer.WriteInt(nodeCnt); // reserve size
+
+                foreach (var node in part)
+                {
+                    nodeCnt++;
+                    writer.WriteGuid(node.Id);
+                }
+
+                var endPos = outStream.Position;
+                outStream.Seek(cntPos, SeekOrigin.Begin);
+                outStream.WriteInt(nodeCnt);
+                outStream.Seek(endPos, SeekOrigin.Begin);
+            }
+
+            outStream.SynchronizeOutput();
+            outStream.Seek(0, SeekOrigin.Begin);
+            writer.WriteInt(partCnt);
         }
 
         /// <summary>
