@@ -194,6 +194,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\include\ignite\cache\cache.h" />
     <ClInclude Include="..\..\include\ignite\cache\cache_entry.h" />
+    <ClInclude Include="..\..\include\ignite\cache\cache_entry_processor.h" />
     <ClInclude Include="..\..\include\ignite\cache\cache_peek_mode.h" />
     <ClInclude Include="..\..\include\ignite\cache\mutable_cache_entry.h" />
     <ClInclude Include="..\..\include\ignite\cache\query\query.h" />

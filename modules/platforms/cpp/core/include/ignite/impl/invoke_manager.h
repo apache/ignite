@@ -21,99 +21,25 @@
 #include <map>
 
 #include <ignite/common/common.h>
+#include <ignite/cache/cache_entry_processor.h>
+
 #include <ignite/impl/binary/binary_reader_impl.h>
 #include <ignite/impl/binary/binary_writer_impl.h>
 #include <ignite/impl/cache/cache_entry_processor_holder.h>
-
-/**
- * @def IGNITE_CACHE_ENTRY_PROCESSOR_INVOKER_NAME
- * Function name in which user Invoke callbacks are registred.
- */
-#define IGNITE_CACHE_ENTRY_PROCESSOR_REGISTRATOR_NAME "ignite_impl_RegisterProcessors"
-
-/**
- * @def IGNITE_CACHE_ENTRY_PROCESSOR_LIST_BEGIN_IMPL
- * Declares beginning of the function in which user Invoke callbacks are
- * registred.
- */
-#define IGNITE_CACHE_ENTRY_PROCESSOR_LIST_BEGIN_IMPL \
-    extern "C" IGNITE_IMPORT_EXPORT \
-    void ignite_impl_RegisterProcessors(ignite::impl::InvokeManager& im) \
-    { \
-        using namespace ignite::impl;
-
-/**
- * @def IGNITE_CACHE_ENTRY_PROCESSOR_LIST_END_IMPL
- * Declares end of the function in which user Invoke callbacks are registred.
- */
-#define IGNITE_CACHE_ENTRY_PROCESSOR_LIST_END_IMPL \
-    }
-
-/**
- * @def IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE_IMPL
- * Declares user Invoke callback inside user Invoke callbacks function.
- *
- * @param ProcessorType Class to be declared as a processor.
- * @param KeyType Type of the cache key.
- * @param ValueType Type of the cache value.
- * @param ResultType Type of the resulting value.
- * @param ArgumentType Type of the argument.
- */
-#define IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE_IMPL(ProcessorType, KeyType, ValueType, ResultType, ArgumentType) \
-    im.RegisterProcessor(ProcessorType::GetJobId(), &CallCacheEntryProcessor<ProcessorType, KeyType, ValueType, ResultType, ArgumentType>);
 
 namespace ignite
 {
     namespace impl
     {
         /**
-         * Cache entry processor invoker.
-         * Deserializes cache entry and processor using provided reader, invokes
-         * cache enrty processor, gets reasult and serizlizes it using provided
-         * writer.
-         *
-         * @param reader Reader.
-         * @param writer Writer.
-         */
-        template<typename P, typename K, typename V, typename R, typename A>
-        void CallCacheEntryProcessor(impl::binary::BinaryReaderImpl& reader, impl::binary::BinaryWriterImpl& writer)
-        {
-            typedef cache::CacheEntryProcessorHolder<P, A> ProcessorHolder;
-
-            K key = reader.ReadObject<K>();
-            V value;
-
-            bool exists = reader.TryReadObject<V>(value);
-
-            bool isLocal = reader.ReadBool();
-
-            // For C++ client we currently always writing processor as an
-            // object, no matter if it's local or not.
-            assert(!isLocal);
-
-            cache::MutableCacheEntryState entryState;
-
-            ProcessorHolder procHolder = reader.ReadObject<ProcessorHolder>();
-
-            R res = procHolder.template Process<R, K, V>(key, value, exists, entryState);
-
-            writer.WriteInt8(static_cast<int8_t>(entryState));
-
-            if (entryState == cache::ENTRY_STATE_VALUE_SET)
-                writer.WriteTopObject(value);
-
-            writer.WriteTopObject(res);
-        }
-
-        /**
          * Invoke manager.
          * Used to register and invoke cache entry processors.
          */
         class InvokeManager
         {
-            typedef ignite::common::dynamic::Module Module;
-            typedef ignite::impl::binary::BinaryReaderImpl BinaryReaderImpl;
-            typedef ignite::impl::binary::BinaryWriterImpl BinaryWriterImpl;
+            typedef common::dynamic::Module Module;
+            typedef impl::binary::BinaryReaderImpl BinaryReaderImpl;
+            typedef impl::binary::BinaryWriterImpl BinaryWriterImpl;
             typedef bool (JobInvoker)(int64_t, BinaryReaderImpl&, BinaryWriterImpl&);
             typedef void (EntryProcessor)(BinaryReaderImpl&, BinaryWriterImpl&);
 
@@ -168,6 +94,12 @@ namespace ignite
                         "Entry processor with the specified id is already registred.");
 
                 processors[id] = proc;
+            }
+
+            template<typename P>
+            void RegisterProcessor()
+            {
+                RegisterProcessor(P::GetJobId(), &P::CacheEntryProcessor::InternalProcess);
             }
 
         private:

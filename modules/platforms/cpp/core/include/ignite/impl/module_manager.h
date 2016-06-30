@@ -30,6 +30,8 @@
  */
 #define IGNITE_MODULE_INIT_CALLBACK_NAME "IgniteModuleInit"
 
+#define IGNITE_EXPORTED_CALL \
+    extern "C" IGNITE_IMPORT_EXPORT
 
 namespace ignite
 {

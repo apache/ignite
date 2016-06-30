@@ -1482,7 +1482,7 @@ namespace ignite
                 ProcessorHolder procHolder(processor, arg);
 
                 // We need to store job here because In3Operation class stores
-                // references
+                // references.
                 int64_t jobId = P::GetJobId();
 
                 impl::In3Operation<int64_t, K, ProcessorHolder> inOp(jobId, key, procHolder);

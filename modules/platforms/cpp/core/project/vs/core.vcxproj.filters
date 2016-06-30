@@ -156,6 +156,9 @@
     <ClInclude Include="..\..\include\ignite\impl\cluster\cluster_group_impl.h">
       <Filter>Code\impl\cluster</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\cache\cache_entry_processor.h">
+      <Filter>Code\cache</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Code">

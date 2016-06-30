@@ -28,6 +28,9 @@
 #include "ignite/ignite.h"
 #include "ignite/ignition.h"
 
+#include "ignite/impl/invoke_manager.h"
+#include "ignite/cache/cache_entry_processor.h"
+
 using namespace boost::unit_test;
 
 using namespace ignite;
@@ -37,7 +40,7 @@ using namespace ignite::common;
 /**
  * CacheEntryModifier class for invoke tests.
  */
-class CacheEntryModifier
+class CacheEntryModifier : public CacheEntryProcessor<CacheEntryModifier, int, int, int, int>
 {
 public:
     /**
@@ -86,7 +89,7 @@ public:
      *
      * @return New value of entry multiplied by two.
      */
-    int Process(MutableCacheEntry<int, int>& entry, const int& arg)
+    virtual int Process(MutableCacheEntry<int, int>& entry, const int& arg)
     {
         if (entry.IsExists())
             entry.SetValue(entry.GetValue() - arg - num);
@@ -154,7 +157,7 @@ namespace ignite
 /**
  * Divisor class for invoke tests.
  */
-class Divisor
+class Divisor : public CacheEntryProcessor<Divisor, int, int, double, double>
 {
 public:
     /**
@@ -203,7 +206,7 @@ public:
      *
      * @return New value before cast to int.
      */
-    double Process(MutableCacheEntry<int, int>& entry, const double& arg)
+    virtual double Process(MutableCacheEntry<int, int>& entry, const double& arg)
     {
         double res = 0.0;
 
@@ -275,7 +278,7 @@ namespace ignite
 /**
  * Character remover class for invoke tests.
  */
-class CharRemover
+class CharRemover : public CacheEntryProcessor<CharRemover, std::string, std::string, int, bool>
 {
 public:
     /**
@@ -324,7 +327,7 @@ public:
      *
      * @return New value before cast to int.
      */
-    int Process(MutableCacheEntry<std::string, std::string>& entry, const bool& replaceWithSpace)
+    virtual int Process(MutableCacheEntry<std::string, std::string>& entry, const bool& replaceWithSpace)
     {
         int res = 0;
 
@@ -403,14 +406,12 @@ namespace ignite
     }
 }
 
-/**
- * List CacheEntryModifier as a cache entry processor.
- */
-IGNITE_CACHE_ENTRY_PROCESSOR_LIST_BEGIN
-    IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE(CacheEntryModifier, int, int, int, int)
-    IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE(Divisor, int, int, double, double)
-    IGNITE_CACHE_ENTRY_PROCESSOR_DECLARE(CharRemover, std::string, std::string, int, bool)
-IGNITE_CACHE_ENTRY_PROCESSOR_LIST_END
+IGNITE_EXPORTED_CALL void IgniteModuleInit(ignite::impl::InvokeManager& im)
+{
+    im.RegisterProcessor<CacheEntryModifier>();
+    im.RegisterProcessor<Divisor>();
+    im.RegisterProcessor<CharRemover>();
+}
 
 /**
  * Test setup fixture.
