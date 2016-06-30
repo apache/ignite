@@ -17,6 +17,7 @@
 
 namespace Apache.Ignite.Core.Cache.Affinity
 {
+    using System;
     using System.Collections.Generic;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
@@ -85,7 +86,21 @@ namespace Apache.Ignite.Core.Cache.Affinity
             IgniteUtils.WriteNodes(writer, _currentTopologySnapshot);
             writer.WriteLong(_currentTopologyVersion.Version);
             writer.WriteInt(_currentTopologyVersion.MinorVersion);
-            _discoveryEvent.Write(writer);
+
+            WriteDiscoveryEvent(writer, _discoveryEvent);
+        }
+
+        /// <summary>
+        /// Writes the discovery event.
+        /// </summary>
+        private static void WriteDiscoveryEvent(IBinaryRawWriter writer, DiscoveryEvent evt)
+        {
+            // NOTE: this method intentionally writes only part of the DiscoveryEvent properties.
+            // Java side does not need others.
+            writer.WriteGuid(evt.Node == null ? (Guid?) null : evt.Node.Id);
+            writer.WriteString(evt.Message);
+            writer.WriteInt(evt.Type);
+            writer.WriteGuid(evt.EventNode == null ? (Guid?) null : evt.EventNode.Id);
         }
 
         /// <summary>

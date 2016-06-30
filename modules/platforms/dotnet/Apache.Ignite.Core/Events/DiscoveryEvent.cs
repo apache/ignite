@@ -54,17 +54,6 @@ namespace Apache.Ignite.Core.Events
         }
 
         /// <summary>
-        /// Writes this instance to a stream.
-        /// </summary>
-        /// <param name="writer">The writer.</param>
-        internal void Write(IBinaryRawWriter writer)
-        {
-            writer.WriteGuid(_eventNode == null ? (Guid?) null : _eventNode.Id);
-            writer.WriteLong(_topologyVersion);
-            IgniteUtils.WriteNodes(writer, _topologyNodes);
-        }
-
-        /// <summary>
         /// Gets node that caused this event to be generated. It is potentially different from the node on which this 
         /// event was recorded. For example, node A locally recorded the event that a remote node B joined the topology. 
         /// In this case this method will return ID of B. 
