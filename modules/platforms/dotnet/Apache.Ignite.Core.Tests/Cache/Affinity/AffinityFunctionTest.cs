@@ -302,7 +302,17 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         [Serializable]
         private class FairAffinityFunctionInheritor : FairAffinityFunction
         {
-            // No-op.
+            private static readonly Dictionary<int, int> PartitionMap = new Dictionary<int, int> {{1, 2}, {2, 3}};
+
+            public override int GetPartition(object key)
+            {
+                int res;
+
+                if (PartitionMap.TryGetValue((int)key, out res))
+                    return res;
+
+                return base.GetPartition(key);
+            }
         }
     }
 }

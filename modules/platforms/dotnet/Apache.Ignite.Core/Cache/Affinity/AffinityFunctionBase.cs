@@ -46,11 +46,19 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// <summary> The default value for <see cref="Partitions"/> property. </summary>
         public const int DefaultPartitions = 1024;
 
+        /** */
+        private int _partitions = DefaultPartitions;
+
+
         /// <summary>
         /// Gets or sets the total number of partitions.
         /// </summary>
         [DefaultValue(DefaultPartitions)]
-        public int Partitions { get; set; }
+        public virtual int Partitions
+        {
+            get { return _partitions; }
+            set { _partitions = value; }
+        }
 
         /// <summary>
         /// Gets partition number for a given key starting from 0. Partitioned caches
@@ -67,7 +75,7 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// <returns>
         /// Partition number for a given key.
         /// </returns>
-        public int GetPartition(object key)
+        public virtual int GetPartition(object key)
         {
             throw GetDirectUsageError();
         }
@@ -77,7 +85,7 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// disconnected node from affinity mapping.
         /// </summary>
         /// <param name="nodeId">The node identifier.</param>
-        public void RemoveNode(Guid nodeId)
+        public virtual void RemoveNode(Guid nodeId)
         {
             throw GetDirectUsageError();
         }
@@ -97,7 +105,7 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// A collection of partitions, where each partition is a collection of nodes,
         /// where first node is a primary node, and other nodes are backup nodes.
         /// </returns>
-        public IEnumerable<IEnumerable<IClusterNode>> AssignPartitions(AffinityFunctionContext context)
+        public virtual IEnumerable<IEnumerable<IClusterNode>> AssignPartitions(AffinityFunctionContext context)
         {
             throw GetDirectUsageError();
         }
@@ -105,14 +113,14 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// <summary>
         /// Gets or sets a value indicating whether to exclude same-host-neighbors from being backups of each other.
         /// </summary>
-        public bool ExcludeNeighbors { get; set; }
+        public virtual bool ExcludeNeighbors { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="AffinityFunctionBase"/> class.
         /// </summary>
         internal AffinityFunctionBase()
         {
-            Partitions = DefaultPartitions;
+            // No-op.
         }
 
         /// <summary>
