@@ -188,15 +188,15 @@ namespace Apache.Ignite.Core.Cache.Affinity
                 writer.WriteByte(TypeCodeUser);
                 writer.WriteInt(fun.Partitions); // partition count is written once and can not be changed.
                 writer.WriteBoolean(false); // Exclude neighbors
-                writer.WriteByte((byte) UserOverrideFlags.None); // Override flags
+                writer.WriteByte((byte) UserOverrides.None); // Override flags
                 WriteUserFunc(writer, fun); // User func
             }
         }
 
-        private static UserOverrideFlags GetOverrideFlags(Type funcType)
+        private static UserOverrides GetOverrideFlags(Type funcType)
         {
             // TODO
-            return UserOverrideFlags.None;
+            return UserOverrides.None;
         }
 
         /// <summary>
@@ -219,11 +219,12 @@ namespace Apache.Ignite.Core.Cache.Affinity
         }
 
         [Flags]
-        private enum UserOverrideFlags : byte
+        private enum UserOverrides : byte
         {
             None = 0,
-
-            
+            GetPartition = 1,
+            RemoveNode = 1 << 1,
+            AssignPartitions = 1 << 2
         }
     }
 }
