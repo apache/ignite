@@ -1116,7 +1116,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
                     var reader = _ignite.Marshaller.StartUnmarshal(stream);
-
+                        
                     var funcOrTypeName = reader.ReadObject<object>();
 
                     var func = funcOrTypeName as IAffinityFunction
@@ -1129,7 +1129,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                     if (affBase != null)
                         affBase.SetBaseFunction(new PlatformAffinityFunction(
-                            _ignite.InteropProcessor.ChangeTarget(target), _ignite.Marshaller));
+                            _ignite.InteropProcessor.ChangeTarget(baseFunc), _ignite.Marshaller));
 
                     return _handleRegistry.Allocate(func);
                 }

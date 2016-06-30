@@ -218,22 +218,21 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         }
 
         /// <summary>
-        /// Tests user-defined function that inherits predefined function.
+        /// Tests customized fair affinity.
         /// </summary>
         [Test]
-        public void TestInheritPredefinedFunction()
+        public void TestInheritFairAffinity()
         {
-            var ex = Assert.Throws<IgniteException>(() =>
-                _ignite.CreateCache<int, int>(
-                    new CacheConfiguration("failCache3")
-                    {
-                        AffinityFunction = new FairAffinityFunctionInheritor()
-                    }));
+            var cache = _ignite.CreateCache<int, int>(new CacheConfiguration("fairCache")
+            {
+                AffinityFunction = new FairAffinityFunctionInheritor()
+            });
 
-            Assert.AreEqual("User-defined AffinityFunction can not inherit from " +
-                            "Apache.Ignite.Core.Cache.Affinity.AffinityFunctionBase: " +
-                            "Apache.Ignite.Core.Tests.Cache.Affinity.AffinityFunctionTest" +
-                            "+FairAffinityFunctionInheritor", ex.Message);
+            var aff = _ignite.GetAffinity(cache.Name);
+
+            Assert.AreEqual(PartitionCount, aff.Partitions);
+            Assert.AreEqual(2, aff.GetPartition(1));
+            Assert.AreEqual(3, aff.GetPartition(2));
         }
 
         [Serializable]
@@ -303,6 +302,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         private class FairAffinityFunctionInheritor : FairAffinityFunction
         {
             private static readonly Dictionary<int, int> PartitionMap = new Dictionary<int, int> {{1, 2}, {2, 3}};
+
+            public override int Partitions
+            {
+                get { return PartitionCount; }
+                set { throw new NotSupportedException(); }
+            }
 
             public override int GetPartition(object key)
             {

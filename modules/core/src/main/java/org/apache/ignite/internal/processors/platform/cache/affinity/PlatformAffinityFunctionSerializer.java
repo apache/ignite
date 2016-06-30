@@ -48,6 +48,13 @@ public class PlatformAffinityFunctionSerializer {
         assert writer != null;
         assert ctx != null;
 
+        ctx.writeNodes(writer, affCtx.currentTopologySnapshot());
+        writer.writeInt(affCtx.backups());
+        writer.writeLong(affCtx.currentTopologyVersion().topologyVersion());
+        writer.writeInt(affCtx.currentTopologyVersion().minorTopologyVersion());
+        ctx.writeEvent(writer, affCtx.discoveryEvent());
+
+        // Write previous assignment
         List<List<ClusterNode>> prevAssignment = ((GridAffinityFunctionContextImpl)affCtx).prevAssignment();
 
         if (prevAssignment == null)
@@ -58,13 +65,6 @@ public class PlatformAffinityFunctionSerializer {
             for (List<ClusterNode> part : prevAssignment)
                 ctx.writeNodes(writer, part);
         }
-
-        // Write other props
-        writer.writeInt(affCtx.backups());
-        ctx.writeNodes(writer, affCtx.currentTopologySnapshot());
-        writer.writeLong(affCtx.currentTopologyVersion().topologyVersion());
-        writer.writeInt(affCtx.currentTopologyVersion().minorTopologyVersion());
-        ctx.writeEvent(writer, affCtx.discoveryEvent());
     }
 
     /**
@@ -78,7 +78,16 @@ public class PlatformAffinityFunctionSerializer {
         assert ctx != null;
 
         List<ClusterNode> topSnapshot = readNodes(reader, ctx);
+        int backups = reader.readInt();
+        AffinityTopologyVersion topVer = new AffinityTopologyVersion(reader.readLong(), reader.readInt());
 
+        // NOTE: this event won't be entirely valid, since new id and timestamp will be generated.
+        // This is not an issue with current Affinity implementations,
+        // and platform only allows overriding predefined implementations.
+        DiscoveryEvent discoEvt = new DiscoveryEvent(readNode(reader, ctx), reader.readString(), reader.readInt(),
+            readNode(reader, ctx));
+
+        // Read prev assignment
         List<List<ClusterNode>> prevAssignment = null;
 
         int partCnt = reader.readInt();
@@ -89,16 +98,6 @@ public class PlatformAffinityFunctionSerializer {
             for (int i = 0; i < partCnt; i++)
                 prevAssignment.add(readNodes(reader, ctx));
         }
-
-        // NOTE: this event won't be entirely valid, since new id and timestamp will be generated.
-        // This is not an issue with current Affinity implementations,
-        // and platform only allows overriding predefined implementations.
-        DiscoveryEvent discoEvt = new DiscoveryEvent(readNode(reader, ctx), reader.readString(), reader.readInt(),
-            readNode(reader, ctx));
-
-        AffinityTopologyVersion topVer = new AffinityTopologyVersion(reader.readLong(), reader.readInt());
-
-        int backups = reader.readInt();
 
         return new GridAffinityFunctionContextImpl(topSnapshot, prevAssignment, discoEvt, topVer, backups);
     }

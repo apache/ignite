@@ -53,6 +53,12 @@ namespace Apache.Ignite.Core.Cache.Affinity
         {
             Debug.Assert(reader != null);
 
+            _currentTopologySnapshot = IgniteUtils.ReadNodes(reader);
+            _backups = reader.ReadInt();
+            _currentTopologyVersion = new AffinityTopologyVersion(reader.ReadLong(), reader.ReadInt());
+            _discoveryEvent = EventReader.Read<DiscoveryEvent>(reader);
+
+            // Prev assignment
             var cnt = reader.ReadInt();
 
             if (cnt > 0)
@@ -62,11 +68,6 @@ namespace Apache.Ignite.Core.Cache.Affinity
                 for (var i = 0; i < cnt; i++)
                     _previousAssignment.Add(IgniteUtils.ReadNodes(reader));
             }
-
-            _backups = reader.ReadInt();
-            _currentTopologySnapshot = IgniteUtils.ReadNodes(reader);
-            _currentTopologyVersion = new AffinityTopologyVersion(reader.ReadLong(), reader.ReadInt());
-            _discoveryEvent = EventReader.Read<DiscoveryEvent>(reader);
         }
 
         /// <summary>
@@ -77,6 +78,13 @@ namespace Apache.Ignite.Core.Cache.Affinity
         {
             Debug.Assert(writer != null);
 
+            IgniteUtils.WriteNodes(writer, _currentTopologySnapshot);
+            writer.WriteInt(_backups);
+            writer.WriteLong(_currentTopologyVersion.Version);
+            writer.WriteInt(_currentTopologyVersion.MinorVersion);
+            WriteDiscoveryEvent(writer, _discoveryEvent);
+
+            // Prev assignment
             if (_previousAssignment != null)
             {
                 writer.WriteInt(_previousAssignment.Count);
@@ -86,13 +94,6 @@ namespace Apache.Ignite.Core.Cache.Affinity
             }
             else
                 writer.WriteInt(0);
-
-            writer.WriteInt(_backups);
-            IgniteUtils.WriteNodes(writer, _currentTopologySnapshot);
-            writer.WriteLong(_currentTopologyVersion.Version);
-            writer.WriteInt(_currentTopologyVersion.MinorVersion);
-
-            WriteDiscoveryEvent(writer, _discoveryEvent);
         }
 
         /// <summary>
