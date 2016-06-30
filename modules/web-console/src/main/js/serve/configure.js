@@ -38,7 +38,7 @@ module.exports.factory = function(logger, cookieParser, bodyParser, session, con
             }));
 
             app.use(api);
-            
+
             app.use(cookieParser(settings.sessionSecret));
 
             app.use(bodyParser.json({limit: '50mb'}));

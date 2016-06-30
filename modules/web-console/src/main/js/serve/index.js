@@ -17,9 +17,9 @@
 
 'use strict';
 
-const http = require('http'),
-    https = require('https'),
-    fireUp = require('./injector');
+import http from 'http';
+import https from 'https';
+import fireUp from './injector';
 
 /**
  * Event listener for HTTP server "error" event.
@@ -28,7 +28,7 @@ const _onError = (port, error) => {
     if (error.syscall !== 'listen')
         throw error;
 
-    var bind = typeof port === 'string' ? 'Pipe ' + port : 'Port ' + port;
+    const bind = typeof port === 'string' ? 'Pipe ' + port : 'Port ' + port;
 
     // Handle specific listen errors with friendly messages.
     switch (error.code) {
@@ -51,7 +51,7 @@ const _onError = (port, error) => {
  * Event listener for HTTP server "listening" event.
  */
 const _onListening = (addr) => {
-    var bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr.port;
+    const bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr.port;
 
     console.log('Start listening on ' + bind);
 };
