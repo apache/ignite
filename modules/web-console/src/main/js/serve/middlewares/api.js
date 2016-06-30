@@ -19,20 +19,20 @@
 
 // Fire me up!
 
-const sendServerError = (err) => {
+function sendServerError(err) {
     err.httpCode = 500;
 
     this.api.error(err)
-};
+}
 
-const sendError = (err) => {
+function sendError(err) {
     // TODO: removed code from error
     this.status(err.httpCode || err.code || 500).send(err.message);
-};
+}
 
-const sendOk = (data) => {
+function sendOk(data) {
     this.status(200).json(data);
-};
+}
 
 module.exports = {
     implements: 'middlewares/api',
