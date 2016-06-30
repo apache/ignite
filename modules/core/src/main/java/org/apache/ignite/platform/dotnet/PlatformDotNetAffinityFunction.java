@@ -187,7 +187,8 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
 
             out.synchronize();
 
-            long ptr = ctx.gateway().affinityFunctionInit(mem.pointer());
+            // TODO: How do we provide a proper target? Through initPartitions!
+            long ptr = ctx.gateway().affinityFunctionInit(mem.pointer(), null);
 
             func = new PlatformAffinityFunction(ctx, ptr, partitions);
         }

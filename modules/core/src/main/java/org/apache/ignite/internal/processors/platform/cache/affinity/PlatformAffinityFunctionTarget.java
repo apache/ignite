@@ -43,6 +43,7 @@ public class PlatformAffinityFunctionTarget extends PlatformAbstractTarget {
     protected PlatformAffinityFunctionTarget(PlatformContext platformCtx, AffinityFunction baseFunc) {
         super(platformCtx);
 
+        assert baseFunc != null;
         this.baseFunc = baseFunc;
     }
 

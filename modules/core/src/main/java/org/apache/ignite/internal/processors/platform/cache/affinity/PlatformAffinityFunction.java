@@ -244,7 +244,9 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
 
             out.synchronize();
 
-            ptr = ctx.gateway().affinityFunctionInit(mem.pointer());
+            // TODO: proper target!
+            final PlatformAffinityFunctionTarget baseTarget = new PlatformAffinityFunctionTarget(ctx, this);
+            ptr = ctx.gateway().affinityFunctionInit(mem.pointer(), baseTarget);
         }
     }
 

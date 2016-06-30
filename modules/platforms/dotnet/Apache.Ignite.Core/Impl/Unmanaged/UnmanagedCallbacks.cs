@@ -166,7 +166,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void OnClientDisconnectedDelegate(void* target);
         private delegate void OnClientReconnectedDelegate(void* target, bool clusterRestarted);
 
-        private delegate long AffinityFunctionInitDelegate(void* target, long memPtr);
+        private delegate long AffinityFunctionInitDelegate(void* target, long memPtr, void* baseFunc);
         private delegate int AffinityFunctionPartitionDelegate(void* target, long ptr, long memPtr);
         private delegate void AffinityFunctionAssignPartitionsDelegate(void* target, long ptr, long inMemPtr, long outMemPtr);
         private delegate void AffinityFunctionRemoveNodeDelegate(void* target, long ptr, long memPtr);
@@ -1109,7 +1109,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region AffinityFunction
 
-        private long AffinityFunctionInit(void* target, long memPtr)
+        private long AffinityFunctionInit(void* target, long memPtr, void* baseFunc)
         {
             return SafeCall(() =>
             {
