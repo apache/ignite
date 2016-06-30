@@ -17,19 +17,20 @@
 
 'use strict';
 
-class AppError extends Error {
+class AppErrorException extends Error {
     constructor(message) {
         super(message);
+
         this.name = this.constructor.name;
         this.code = 400;
         this.httpCode = 400;
         this.message = message;
-        if (typeof Error.captureStackTrace === 'function') {
+
+        if (typeof Error.captureStackTrace === 'function')
             Error.captureStackTrace(this, this.constructor);
-        } else {
+        else
             this.stack = (new Error(message)).stack;
-        }
     }
 }
 
-module.exports = AppError;
+module.exports = AppErrorException;

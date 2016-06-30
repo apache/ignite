@@ -17,9 +17,9 @@
 
 'use strict';
 
-import AppError from './AppError';
+import AppErrorException from './AppError';
 
-class DuplicateKeyException extends AppError {
+class DuplicateKeyException extends AppErrorException {
     constructor(message) {
         super(message);
     }

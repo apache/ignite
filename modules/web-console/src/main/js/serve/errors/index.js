@@ -22,8 +22,8 @@
 module.exports = {
     implements: 'errors',
     factory: () => ({
-        AppError: require('./AppError'),
+        AppErrorException: require('./AppErrorException'),
         DuplicateKeyException: require('./DuplicateKeyException'),
-        ServerError: require('./ServerError')
+        ServerErrorException: require('./ServerErrorException')
     })
 };
