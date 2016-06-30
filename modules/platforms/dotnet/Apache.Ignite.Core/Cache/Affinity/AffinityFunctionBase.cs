@@ -128,6 +128,7 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// </summary>
         internal static IAffinityFunction Read(IBinaryRawReader reader)
         {
+            // TODO
             AffinityFunctionBase fun;
 
             var typeCode = reader.ReadByte();
@@ -181,7 +182,8 @@ namespace Apache.Ignite.Core.Cache.Affinity
                 writer.WriteInt(p.Partitions);
                 writer.WriteBoolean(p.ExcludeNeighbors);
                 writer.WriteByte((byte) GetOverrideFlags(p.GetType())); // Override flags
-                writer.WriteObject<object>(null); // TODO: User func if there are override flags
+                // TODO: User func only if there are override flags
+                WriteUserFunc(writer, fun); // User func
             }
             else
             {
@@ -193,6 +195,9 @@ namespace Apache.Ignite.Core.Cache.Affinity
             }
         }
 
+        /// <summary>
+        /// Gets the override flags.
+        /// </summary>
         private static UserOverrides GetOverrideFlags(Type funcType)
         {
             // TODO
