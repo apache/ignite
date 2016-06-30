@@ -30,6 +30,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cache;
+    using Apache.Ignite.Core.Impl.Cache.Affinity;
     using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Cache.Store;
     using Apache.Ignite.Core.Impl.Common;
@@ -1124,6 +1125,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                                    reader.ReadDictionaryAsGeneric<string, object>());
 
                     ResourceProcessor.Inject(func, _ignite);
+
+                    var affBase = func as AffinityFunctionBase;
+
+                    if (affBase != null)
+                        affBase.SetBaseFunction(new PlatformAffinityFunction(_ignite.InteropProcessor,
+                            _ignite.Marshaller));
 
                     return _handleRegistry.Allocate(func);
                 }

@@ -50,6 +50,9 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /** */
         private int _partitions = DefaultPartitions;
 
+        /** */
+        private IAffinityFunction _baseFunction;
+
 
         /// <summary>
         /// Gets or sets the total number of partitions.
@@ -78,7 +81,9 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// </returns>
         public virtual int GetPartition(object key)
         {
-            throw GetDirectUsageError();
+            ThrowIfUninitialized();
+
+            return _baseFunction.GetPartition(key);
         }
 
         /// <summary>
@@ -88,7 +93,9 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// <param name="nodeId">The node identifier.</param>
         public virtual void RemoveNode(Guid nodeId)
         {
-            throw GetDirectUsageError();
+            ThrowIfUninitialized();
+
+            _baseFunction.RemoveNode(nodeId);
         }
 
         /// <summary>
@@ -108,7 +115,9 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// </returns>
         public virtual IEnumerable<IEnumerable<IClusterNode>> AssignPartitions(AffinityFunctionContext context)
         {
-            throw GetDirectUsageError();
+            ThrowIfUninitialized();
+
+            return _baseFunction.AssignPartitions(context);
         }
 
         /// <summary>
@@ -196,6 +205,11 @@ namespace Apache.Ignite.Core.Cache.Affinity
             }
         }
 
+        internal unsafe void SetBaseFunction(IAffinityFunction baseFunc)
+        {
+            _baseFunction = baseFunc;
+        }
+
         /// <summary>
         /// Gets the override flags.
         /// </summary>
@@ -219,9 +233,10 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// <summary>
         /// Gets the direct usage error.
         /// </summary>
-        private Exception GetDirectUsageError()
+        private void ThrowIfUninitialized()
         {
-            return new IgniteException(GetType() + " can not be used directly.");
+            if (_baseFunction == null)
+                throw new IgniteException(GetType() + " has not yet been initialized.");
         }
 
         [Flags]
