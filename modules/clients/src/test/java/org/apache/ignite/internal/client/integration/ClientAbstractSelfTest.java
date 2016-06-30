@@ -502,8 +502,8 @@ public abstract class ClientAbstractSelfTest extends GridCommonAbstractTest {
 
         GridClientCompute compute = client.compute();
 
-        Assert.assertEquals(17, compute.execute(taskName, taskArg));
-        Assert.assertEquals(17, compute.executeAsync(taskName, taskArg).get());
+        assertEquals(17, compute.execute(taskName, taskArg));
+        assertEquals(17, compute.executeAsync(taskName, taskArg).get());
     }
 
     /**

@@ -23,6 +23,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
     using System.Linq;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Affinity;
+    using Apache.Ignite.Core.Cache.Affinity.Fair;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
@@ -216,6 +217,25 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             Assert.AreEqual("User error", ex.InnerException.Message);
         }
 
+        /// <summary>
+        /// Tests user-defined function that inherits predefined function.
+        /// </summary>
+        [Test]
+        public void TestInheritPredefinedFunction()
+        {
+            var ex = Assert.Throws<IgniteException>(() =>
+                _ignite.CreateCache<int, int>(
+                    new CacheConfiguration("failCache3")
+                    {
+                        AffinityFunction = new FairAffinityFunctionInheritor()
+                    }));
+
+            Assert.AreEqual("User-defined AffinityFunction can not inherit from " +
+                            "Apache.Ignite.Core.Cache.Affinity.AffinityFunctionBase: " +
+                            "Apache.Ignite.Core.Tests.Cache.Affinity.AffinityFunctionTest" +
+                            "+FairAffinityFunctionInheritor", ex.Message);
+        }
+
         [Serializable]
         private class SimpleAffinityFunction : IAffinityFunction
         {
@@ -277,6 +297,12 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             {
                 return Enumerable.Range(0, Partitions).Select(x => context.CurrentTopologySnapshot);
             }
+        }
+
+        [Serializable]
+        private class FairAffinityFunctionInheritor : FairAffinityFunction
+        {
+            // No-op.
         }
     }
 }

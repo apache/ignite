@@ -684,6 +684,7 @@ namespace Apache.Ignite.Core.Tests.Services
         {
             foreach (var grid in Grids)
                 Assert.IsTrue(
+                    // ReSharper disable once AccessToForEachVariableInClosure
                     TestUtils.WaitForCondition(() => grid.GetServices()
                         .GetService<ITestIgniteService>(name) == null, 5000));
         }

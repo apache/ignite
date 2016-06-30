@@ -163,6 +163,7 @@ namespace Apache.Ignite.Core.Cache.Affinity
 
             if (p != null)
             {
+                ValidateAffinityFunctionType(p.GetType());
                 writer.WriteByte(p is FairAffinityFunction ? TypeCodeFair : TypeCodeRendezvous);
                 writer.WriteInt(p.Partitions);
                 writer.WriteBoolean(p.ExcludeNeighbors);
@@ -177,6 +178,18 @@ namespace Apache.Ignite.Core.Cache.Affinity
                 writer.WriteObject(fun);
                 writer.WriteInt(fun.Partitions);  // partition count is written once and can not be changed.
             }
+        }
+
+        /// <summary>
+        /// Validates the type of the affinity function.
+        /// </summary>
+        private static void ValidateAffinityFunctionType(Type funcType)
+        {
+            if (funcType == typeof(FairAffinityFunction) || funcType == typeof(RendezvousAffinityFunction))
+                return;
+
+            throw new IgniteException(string.Format("User-defined AffinityFunction can not inherit from {0}: {1}",
+                typeof(AffinityFunctionBase), funcType));
         }
 
         /// <summary>
