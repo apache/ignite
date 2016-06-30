@@ -65,6 +65,15 @@ public enum IgfsMode {
      */
     DUAL_ASYNC;
 
+    /**
+     * Answers if directory of this mode can contain a subdirectory of the given mode.
+     *
+     * @return {@code true} if directory of this mode can contain a directory of the given mode.
+     */
+    public boolean canContain(IgfsMode subdirectoryMode) {
+        return subdirectoryMode == PRIMARY || this != PRIMARY;
+    }
+
     /** Enumerated values. */
     private static final IgfsMode[] VALS = values();
 

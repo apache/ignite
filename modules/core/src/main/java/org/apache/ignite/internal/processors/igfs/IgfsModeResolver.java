@@ -17,13 +17,8 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import org.apache.ignite.*;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
@@ -37,11 +32,20 @@ public class IgfsModeResolver {
     /** Maximum size of map with cached path modes. */
     private static final int MAX_PATH_CACHE = 1000;
 
+    /** Depth-based comparator. Longest paths go first. */
+    private static final Comparator<Map.Entry<IgfsPath, IgfsMode>> CMP
+        = new Comparator<Map.Entry<IgfsPath, IgfsMode>>() {
+        @Override public int compare(Map.Entry<IgfsPath, IgfsMode> o1,
+            Map.Entry<IgfsPath, IgfsMode> o2) {
+            return o2.getKey().components().size() - o1.getKey().components().size();
+        }
+    };
+
     /** Default mode. */
     private final IgfsMode dfltMode;
 
     /** Modes for particular paths. Ordered from longest to shortest. */
-    private ArrayList<T2<IgfsPath, IgfsMode>> modes;
+    private List<T2<IgfsPath, IgfsMode>> modes;
 
     /** Cached modes per path. */
     private Map<IgfsPath, IgfsMode> modesCache;
@@ -51,29 +55,80 @@ public class IgfsModeResolver {
 
     /**
      * @param dfltMode Default IGFS mode.
-     * @param modes List of configured modes.
+     * @param modes List of configured modes. The order is significant as modes are added in order of occurrence.
      */
-    public IgfsModeResolver(IgfsMode dfltMode, @Nullable List<T2<IgfsPath, IgfsMode>> modes) {
+    public IgfsModeResolver(IgfsMode dfltMode, @Nullable List<T2<IgfsPath, IgfsMode>> modes) throws IgniteCheckedException {
         assert dfltMode != null;
 
         this.dfltMode = dfltMode;
 
-        if (modes != null) {
-            ArrayList<T2<IgfsPath, IgfsMode>> modes0 = new ArrayList<>(modes);
+        // TODO: we assume that "modes" collection does not contain root folder, right?
 
-            // Sort paths, longest first.
-            Collections.sort(modes0, new Comparator<Map.Entry<IgfsPath, IgfsMode>>() {
-                @Override public int compare(Map.Entry<IgfsPath, IgfsMode> o1,
-                    Map.Entry<IgfsPath, IgfsMode> o2) {
-                    return o2.getKey().components().size() - o1.getKey().components().size();
-                }
-            });
+        if (modes != null) {
+            List<T2<IgfsPath, IgfsMode>> modes0 = filterModes(this.dfltMode, modes);
 
             this.modes = modes0;
 
             modesCache = new GridBoundedConcurrentLinkedHashMap<>(MAX_PATH_CACHE);
             childrenModesCache = new GridBoundedConcurrentLinkedHashMap<>(MAX_PATH_CACHE);
         }
+    }
+
+    /**
+     * Checks, filters and sorts the modes.
+     *
+     * @param dfltMode The root mode. Must always be not null.
+     * @param modes The subdirectory modes.
+     * @return TODO
+     * @throws IgniteCheckedException
+     */
+    private List<T2<IgfsPath, IgfsMode>> filterModes(IgfsMode dfltMode, @Nullable List<T2<IgfsPath, IgfsMode>> modes) throws IgniteCheckedException {
+        if (modes == null)
+            return null;
+
+        Collections.sort(modes, CMP);
+
+        Collections.reverse(modes); // Need ascending depth order for input (shallow first).
+
+        final List<T2<IgfsPath, IgfsMode>> consistentModes = new LinkedList<>();
+
+        // Add root as the first (the least deep):
+        addIfConsistent(consistentModes, new T2<>(new IgfsPath("/"), dfltMode));
+
+        assert consistentModes.size() == 1;
+
+        for (T2<IgfsPath, IgfsMode> m: modes)
+            addIfConsistent(consistentModes, m);
+
+        return consistentModes;
+    }
+
+    /**
+     *
+     * @param consistentList NB: this list is sorted in descending order (deepest first).
+     * @param pairToAdd
+     * @throws IgniteCheckedException
+     */
+    private void addIfConsistent(List<T2<IgfsPath, IgfsMode>> consistentList, T2<IgfsPath, IgfsMode> pairToAdd) throws IgniteCheckedException {
+        for (T2<IgfsPath, IgfsMode> consistent: consistentList) {
+            if (startsWith(pairToAdd.getKey(), consistent.getKey())) {
+                // We're adding a subdirectory to an existing root:
+                if (consistent.getValue() == pairToAdd.getValue())
+                    // No reason to add a subpath of the same mode, just ignoring it.
+                    return;
+
+                if (!consistent.getValue().canContain(pairToAdd.getValue()))
+                    // TODO: beautify the message:
+                    throw new IgniteCheckedException("Upper level directory " + consistent
+                        + " cannot contain subdirectory " + pairToAdd + " due to the mode incompatibility.");
+
+                // TODO: assert we always went through this break statement in the loop (any dir is a subdir of root):
+                break; // finish
+            }
+        }
+
+        // Add to the 1st position (depest first):
+        consistentList.add(0, pairToAdd);
     }
 
     /**

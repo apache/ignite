@@ -196,11 +196,12 @@ public final class IgfsImpl implements IgfsEx {
             ((LifecycleAware) secondaryFs).start();
 
         /* Default IGFS mode. */
-        IgfsMode dfltMode;
+        final IgfsMode dfltMode;
 
         if (secondaryFs == null) {
-            if (cfg.getDefaultMode() == PROXY)
-                throw new IgniteCheckedException("Mode cannot be PROXY if secondary file system hasn't been defined.");
+            if (cfg.getDefaultMode() != PRIMARY)
+                throw new IgniteCheckedException("Mode can only be PRIMARY if secondary file system hasn't been " +
+                    "defined.");
 
             dfltMode = PRIMARY;
         }
@@ -211,19 +212,25 @@ public final class IgfsImpl implements IgfsEx {
         Map<String, IgfsMode> dfltModes = new LinkedHashMap<>(4, 1.0f);
 
         if (cfg.isInitializeDefaultPathModes()) {
-            dfltModes.put("/ignite/primary", PRIMARY);
+            if (dfltMode != PRIMARY)
+                dfltModes.put("/ignite/primary", PRIMARY);
 
             if (secondaryFs != null) {
-                dfltModes.put("/ignite/proxy", PROXY);
-                dfltModes.put("/ignite/sync", DUAL_SYNC);
-                dfltModes.put("/ignite/async", DUAL_ASYNC);
+                if (dfltMode != PROXY)
+                    dfltModes.put("/ignite/proxy", PROXY);
+
+                if (dfltMode != DUAL_SYNC)
+                    dfltModes.put("/ignite/sync", DUAL_SYNC);
+
+                if (dfltMode != DUAL_ASYNC)
+                    dfltModes.put("/ignite/async", DUAL_ASYNC);
             }
         }
 
         cfgModes.putAll(dfltModes);
 
-        if (igfsCtx.configuration().getPathModes() != null) {
-            for (Map.Entry<String, IgfsMode> e : igfsCtx.configuration().getPathModes().entrySet()) {
+        if (cfg.getPathModes() != null) {
+            for (Map.Entry<String, IgfsMode> e : cfg.getPathModes().entrySet()) {
                 if (!dfltModes.containsKey(e.getKey()))
                     cfgModes.put(e.getKey(), e.getValue());
                 else
@@ -238,6 +245,7 @@ public final class IgfsImpl implements IgfsEx {
             modes = new ArrayList<>(cfgModes.size());
 
             for (Map.Entry<String, IgfsMode> mode : cfgModes.entrySet()) {
+                // ???? TODO: why PROXY is possible if secondaryFs == null ?
                 IgfsMode mode0 = secondaryFs == null ? mode.getValue() == PROXY ? PROXY : PRIMARY : mode.getValue();
 
                 try {
