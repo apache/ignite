@@ -29,6 +29,7 @@ namespace Apache.Ignite.Core.Cache.Affinity
     /// <summary>
     /// Base class for predefined affinity functions.
     /// </summary>
+    [Serializable]
     public abstract class AffinityFunctionBase : IAffinityFunction
     {
         /** */
