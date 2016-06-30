@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.platform.cache.affinity;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
@@ -62,6 +63,12 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
     private int partitions;
 
     /** */
+    private AffinityFunction baseFunc;
+
+    /** */
+    private byte overrideFlags;
+
+    /** */
     private transient Ignite ignite;
 
     /** */
@@ -70,8 +77,6 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
     /** */
     private transient long ptr;
 
-    /** */
-    private transient AffinityFunction baseFunc = null; // TODO
 
     /**
      * Ctor for serialization.
@@ -87,9 +92,11 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
      * @param func User fun object.
      * @param partitions Number of partitions.
      */
-    public PlatformAffinityFunction(Object func, int partitions) {
+    public PlatformAffinityFunction(Object func, int partitions, byte overrideFlags, AffinityFunction baseFunc) {
         userFunc = func;
         this.partitions = partitions;
+        this.overrideFlags = overrideFlags;
+        this.baseFunc = baseFunc;
     }
 
     /**
@@ -222,12 +229,16 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
     @Override public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(userFunc);
         out.writeInt(partitions);
+        out.writeByte(overrideFlags);
+        out.writeObject(baseFunc);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         userFunc = in.readObject();
         partitions = in.readInt();
+        overrideFlags = in.readByte();
+        baseFunc = (AffinityFunction)in.readObject();
     }
 
     /** {@inheritDoc} */

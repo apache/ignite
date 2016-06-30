@@ -28,6 +28,7 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -241,29 +242,36 @@ public class PlatformConfigurationUtils {
     private static AffinityFunction readAffinityFunction(BinaryRawReaderEx in) {
         byte plcTyp = in.readByte();
 
+        if (plcTyp == 0)
+            return null;
+
+        int partitions = in.readInt();
+        boolean exclNeighbours = in.readBoolean();
+        byte overrideFlags = in.readByte();
+        Object userFunc = in.readObjectDetached();
+
+        AffinityFunction baseFunc = null;
+
         switch (plcTyp) {
-            case 0:
-                break;
             case 1: {
                 FairAffinityFunction f = new FairAffinityFunction();
-                f.setPartitions(in.readInt());
-                f.setExcludeNeighbors(in.readBoolean());
-                return f;
+                f.setPartitions(partitions);
+                f.setExcludeNeighbors(exclNeighbours);
+                baseFunc = f;
+                break;
             }
             case 2: {
                 RendezvousAffinityFunction f = new RendezvousAffinityFunction();
-                f.setPartitions(in.readInt());
-                f.setExcludeNeighbors(in.readBoolean());
-                return f;
-            }
-            case 3: {
-                return new PlatformAffinityFunction(in.readObjectDetached(), in.readInt());
+                f.setPartitions(partitions);
+                f.setExcludeNeighbors(exclNeighbours);
+                baseFunc = f;
+                break;
             }
             default:
-                assert false;
+                assert plcTyp == 3;
         }
 
-        return null;
+        return new PlatformAffinityFunction(userFunc, partitions, overrideFlags, baseFunc);
     }
 
     /**
