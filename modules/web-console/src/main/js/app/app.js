@@ -71,7 +71,7 @@ import igniteUiAceXml from './directives/ui-ace-xml/ui-ace-xml.directive';
 // Services.
 import ChartColors from './services/ChartColors.service';
 import Clone from './services/Clone.service.js';
-import Confirm from './services/confirm.service';
+import Confirm from './services/Confirm1.service.js';
 import ConfirmBatch from './services/ConfirmBatch.service.js';
 import CopyToClipboard from './services/CopyToClipboard.service';
 import Countries from './services/Countries.service';
