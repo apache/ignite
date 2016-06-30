@@ -70,7 +70,7 @@ public class PlatformAffinityFunctionTarget extends PlatformAbstractTarget {
     @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader,
         BinaryRawWriterEx writer) throws IgniteCheckedException {
         if (type == OP_ASSIGN_PARTITIONS) {
-            // TODO: read context
+            // TODO: read context ( see PlatformAffFunc existing code - extract Serializer class).
             baseFunc.assignPartitions(null);
 
             // TODO: write result
