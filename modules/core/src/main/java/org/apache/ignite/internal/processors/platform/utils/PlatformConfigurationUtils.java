@@ -294,6 +294,8 @@ public class PlatformConfigurationUtils {
      * @param f Affinity.
      */
     private static void writeAffinityFunction(BinaryRawWriter out, AffinityFunction f) {
+        // TODO:!
+
         if (f instanceof FairAffinityFunction) {
             out.writeByte((byte)1);
 

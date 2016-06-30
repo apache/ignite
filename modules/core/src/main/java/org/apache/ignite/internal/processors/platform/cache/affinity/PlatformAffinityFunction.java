@@ -19,7 +19,6 @@ package org.apache.ignite.internal.processors.platform.cache.affinity;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteException;
-import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
@@ -255,8 +254,10 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
 
             out.synchronize();
 
-            // TODO: proper target!
-            final PlatformAffinityFunctionTarget baseTarget = new PlatformAffinityFunctionTarget(ctx, this);
+            final PlatformAffinityFunctionTarget baseTarget = baseFunc != null
+                ? new PlatformAffinityFunctionTarget(ctx, baseFunc)
+                : null;
+
             ptr = ctx.gateway().affinityFunctionInit(mem.pointer(), baseTarget);
         }
     }
