@@ -103,19 +103,19 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
      *
      */
     public GridCacheDhtPreloadSelfTest() {
-        super(false /*start grid. */);
+        super(false /*start instance. */);
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
         disco.setIpFinder(ipFinder);
 
         cfg.setDiscoverySpi(disco);
-        cfg.setCacheConfiguration(cacheConfiguration(gridName));
+        cfg.setCacheConfiguration(cacheConfiguration(instanceName));
         cfg.setDeploymentMode(CONTINUOUS);
 
         return cfg;
@@ -124,10 +124,10 @@ public class GridCacheDhtPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * Gets cache configuration for grid with given name.
      *
-     * @param gridName Grid name.
+     * @param instanceName Instance name.
      * @return Cache configuration.
      */
-    protected CacheConfiguration cacheConfiguration(String gridName) {
+    protected CacheConfiguration cacheConfiguration(String instanceName) {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(PARTITIONED);

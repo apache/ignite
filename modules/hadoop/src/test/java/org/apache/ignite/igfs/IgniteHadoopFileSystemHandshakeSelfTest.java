@@ -55,7 +55,7 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
     private static final TcpDiscoveryIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** Grid name. */
-    private static final String GRID_NAME = "grid";
+    private static final String INSTANCE_NAME = "instance";
 
     /** IGFS name. */
     private static final String IGFS_NAME = "igfs";
@@ -84,17 +84,17 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
 
         tcp = true;
 
-        checkValid(IGFS_NAME + ":" + GRID_NAME + "@");
-        checkValid(IGFS_NAME + ":" + GRID_NAME + "@127.0.0.1");
-        checkValid(IGFS_NAME + ":" + GRID_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
+        checkValid(IGFS_NAME + ":" + INSTANCE_NAME + "@");
+        checkValid(IGFS_NAME + ":" + INSTANCE_NAME + "@127.0.0.1");
+        checkValid(IGFS_NAME + ":" + INSTANCE_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
 
         checkValid(IGFS_NAME + "@");
         checkValid(IGFS_NAME + "@127.0.0.1");
         checkValid(IGFS_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
 
-        checkValid(":" + GRID_NAME + "@");
-        checkValid(":" + GRID_NAME + "@127.0.0.1");
-        checkValid(":" + GRID_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
+        checkValid(":" + INSTANCE_NAME + "@");
+        checkValid(":" + INSTANCE_NAME + "@127.0.0.1");
+        checkValid(":" + INSTANCE_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
 
         checkValid("");
         checkValid("127.0.0.1");
@@ -102,14 +102,14 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
 
         tcp = false; // Embedded mode:
 
-        checkValid(IGFS_NAME + ":" + GRID_NAME + "@");
-        checkValid(IGFS_NAME + ":" + GRID_NAME + "@" + HOST_PORT_UNUSED);
+        checkValid(IGFS_NAME + ":" + INSTANCE_NAME + "@");
+        checkValid(IGFS_NAME + ":" + INSTANCE_NAME + "@" + HOST_PORT_UNUSED);
 
         checkValid(IGFS_NAME + "@"); // Embedded mode fails, but remote tcp succeeds.
         checkInvalid(IGFS_NAME + "@" + HOST_PORT_UNUSED);
 
-        checkValid(":" + GRID_NAME + "@"); // Embedded mode fails, but remote tcp succeeds.
-        checkInvalid(":" + GRID_NAME + "@" + HOST_PORT_UNUSED);
+        checkValid(":" + INSTANCE_NAME + "@"); // Embedded mode fails, but remote tcp succeeds.
+        checkInvalid(":" + INSTANCE_NAME + "@" + HOST_PORT_UNUSED);
 
         checkValid("@"); // Embedded mode fails, but remote tcp succeeds.
         checkInvalid("@" + HOST_PORT_UNUSED);
@@ -125,17 +125,17 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
 
         tcp = true;
 
-        checkInvalid(IGFS_NAME + ":" + GRID_NAME + "@");
-        checkInvalid(IGFS_NAME + ":" + GRID_NAME + "@127.0.0.1");
-        checkInvalid(IGFS_NAME + ":" + GRID_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
+        checkInvalid(IGFS_NAME + ":" + INSTANCE_NAME + "@");
+        checkInvalid(IGFS_NAME + ":" + INSTANCE_NAME + "@127.0.0.1");
+        checkInvalid(IGFS_NAME + ":" + INSTANCE_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
 
         checkValid(IGFS_NAME + "@");
         checkValid(IGFS_NAME + "@127.0.0.1");
         checkValid(IGFS_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
 
-        checkInvalid(":" + GRID_NAME + "@");
-        checkInvalid(":" + GRID_NAME + "@127.0.0.1");
-        checkInvalid(":" + GRID_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
+        checkInvalid(":" + INSTANCE_NAME + "@");
+        checkInvalid(":" + INSTANCE_NAME + "@127.0.0.1");
+        checkInvalid(":" + INSTANCE_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
 
         checkValid("");
         checkValid("127.0.0.1");
@@ -143,14 +143,14 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
 
         tcp = false; // Embedded mode:
 
-        checkInvalid(IGFS_NAME + ":" + GRID_NAME + "@");
-        checkInvalid(IGFS_NAME + ":" + GRID_NAME + "@" + HOST_PORT_UNUSED);
+        checkInvalid(IGFS_NAME + ":" + INSTANCE_NAME + "@");
+        checkInvalid(IGFS_NAME + ":" + INSTANCE_NAME + "@" + HOST_PORT_UNUSED);
 
         checkValid(IGFS_NAME + "@");
         checkValid(IGFS_NAME + "@" + HOST_PORT_UNUSED);
 
-        checkInvalid(":" + GRID_NAME + "@");
-        checkInvalid(":" + GRID_NAME + "@" + HOST_PORT_UNUSED);
+        checkInvalid(":" + INSTANCE_NAME + "@");
+        checkInvalid(":" + INSTANCE_NAME + "@" + HOST_PORT_UNUSED);
 
         checkValid("@"); // Embedded mode fails, but remote tcp succeeds.
         checkInvalid("@" + HOST_PORT_UNUSED);
@@ -166,17 +166,17 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
 
         tcp = true;
 
-        checkInvalid(IGFS_NAME + ":" + GRID_NAME + "@");
-        checkInvalid(IGFS_NAME + ":" + GRID_NAME + "@127.0.0.1");
-        checkInvalid(IGFS_NAME + ":" + GRID_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
+        checkInvalid(IGFS_NAME + ":" + INSTANCE_NAME + "@");
+        checkInvalid(IGFS_NAME + ":" + INSTANCE_NAME + "@127.0.0.1");
+        checkInvalid(IGFS_NAME + ":" + INSTANCE_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
 
         checkInvalid(IGFS_NAME + "@");
         checkInvalid(IGFS_NAME + "@127.0.0.1");
         checkInvalid(IGFS_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
 
-        checkValid(":" + GRID_NAME + "@");
-        checkValid(":" + GRID_NAME + "@127.0.0.1");
-        checkValid(":" + GRID_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
+        checkValid(":" + INSTANCE_NAME + "@");
+        checkValid(":" + INSTANCE_NAME + "@127.0.0.1");
+        checkValid(":" + INSTANCE_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
 
         checkValid("");
         checkValid("127.0.0.1");
@@ -184,14 +184,14 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
 
         tcp = false; // Embedded mode:
 
-        checkInvalid(IGFS_NAME + ":" + GRID_NAME + "@");
-        checkInvalid(IGFS_NAME + ":" + GRID_NAME + "@" + HOST_PORT_UNUSED);
+        checkInvalid(IGFS_NAME + ":" + INSTANCE_NAME + "@");
+        checkInvalid(IGFS_NAME + ":" + INSTANCE_NAME + "@" + HOST_PORT_UNUSED);
 
         checkInvalid(IGFS_NAME + "@");
         checkInvalid(IGFS_NAME + "@" + HOST_PORT_UNUSED);
 
-        checkValid(":" + GRID_NAME + "@");
-        checkValid(":" + GRID_NAME + "@" + HOST_PORT_UNUSED);
+        checkValid(":" + INSTANCE_NAME + "@");
+        checkValid(":" + INSTANCE_NAME + "@" + HOST_PORT_UNUSED);
 
         checkValid("@"); // NB: in embedded mode this fails, but remote TCP still succeeds.
         checkInvalid("@" + HOST_PORT_UNUSED);
@@ -207,17 +207,17 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
 
         tcp = true;
 
-        checkInvalid(IGFS_NAME + ":" + GRID_NAME + "@");
-        checkInvalid(IGFS_NAME + ":" + GRID_NAME + "@127.0.0.1");
-        checkInvalid(IGFS_NAME + ":" + GRID_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
+        checkInvalid(IGFS_NAME + ":" + INSTANCE_NAME + "@");
+        checkInvalid(IGFS_NAME + ":" + INSTANCE_NAME + "@127.0.0.1");
+        checkInvalid(IGFS_NAME + ":" + INSTANCE_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
 
         checkInvalid(IGFS_NAME + "@");
         checkInvalid(IGFS_NAME + "@127.0.0.1");
         checkInvalid(IGFS_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
 
-        checkInvalid(":" + GRID_NAME + "@");
-        checkInvalid(":" + GRID_NAME + "@127.0.0.1");
-        checkInvalid(":" + GRID_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
+        checkInvalid(":" + INSTANCE_NAME + "@");
+        checkInvalid(":" + INSTANCE_NAME + "@127.0.0.1");
+        checkInvalid(":" + INSTANCE_NAME + "@127.0.0.1:" + DFLT_IPC_PORT);
 
         checkValid("");
         checkValid("127.0.0.1");
@@ -225,14 +225,14 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
 
         tcp = false; // Embedded mode:
 
-        checkInvalid(IGFS_NAME + ":" + GRID_NAME + "@");
-        checkInvalid(IGFS_NAME + ":" + GRID_NAME + "@" + HOST_PORT_UNUSED);
+        checkInvalid(IGFS_NAME + ":" + INSTANCE_NAME + "@");
+        checkInvalid(IGFS_NAME + ":" + INSTANCE_NAME + "@" + HOST_PORT_UNUSED);
 
         checkInvalid(IGFS_NAME + "@");
         checkInvalid(IGFS_NAME + "@" + HOST_PORT_UNUSED);
 
-        checkInvalid(":" + GRID_NAME + "@");
-        checkInvalid(":" + GRID_NAME + "@" + HOST_PORT_UNUSED);
+        checkInvalid(":" + INSTANCE_NAME + "@");
+        checkInvalid(":" + INSTANCE_NAME + "@" + HOST_PORT_UNUSED);
 
         checkValid("@");
         checkValid("@" + HOST_PORT_UNUSED);
@@ -241,12 +241,12 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
     /**
      * Perform startup.
      *
-     * @param dfltGridName Default Grid name.
+     * @param dfltInstanceName Default Grid instance name.
      * @param dfltIgfsName Default IGFS name.
      * @throws Exception If failed.
      */
-    private void startUp(boolean dfltGridName, boolean dfltIgfsName) throws Exception {
-        Ignite ignite = G.start(gridConfiguration(dfltGridName, dfltIgfsName));
+    private void startUp(boolean dfltInstanceName, boolean dfltIgfsName) throws Exception {
+        Ignite ignite = G.start(gridConfiguration(dfltInstanceName, dfltIgfsName));
 
         IgniteFileSystem igfs = ignite.fileSystem(dfltIgfsName ? null : IGFS_NAME);
 
@@ -256,13 +256,13 @@ public class IgniteHadoopFileSystemHandshakeSelfTest extends IgfsCommonAbstractT
     /**
      * Create Grid configuration.
      *
-     * @param dfltGridName Default Grid name.
+     * @param dfltInstanceName Default Grid instance name.
      * @param dfltIgfsName Default IGFS name.
      * @return Grid configuration.
      * @throws Exception If failed.
      */
-    private IgniteConfiguration gridConfiguration(boolean dfltGridName, boolean dfltIgfsName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(dfltGridName ? null : GRID_NAME);
+    private IgniteConfiguration gridConfiguration(boolean dfltInstanceName, boolean dfltIgfsName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(dfltInstanceName ? null : INSTANCE_NAME);
 
         cfg.setLocalHost("127.0.0.1");
         cfg.setConnectorConfiguration(null);

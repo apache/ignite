@@ -342,7 +342,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
     /**
      * Start grid with IGFS.
      *
-     * @param gridName Grid name.
+     * @param instanceName Instance name.
      * @param igfsName IGFS name
      * @param mode IGFS mode.
      * @param secondaryFs Secondary file system (optional).
@@ -352,7 +352,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
      * @throws Exception If failed.
      */
     @SuppressWarnings("unchecked")
-    protected Ignite startGridWithIgfs(String gridName, String igfsName, IgfsMode mode,
+    protected Ignite startGridWithIgfs(String instanceName, String igfsName, IgfsMode mode,
         @Nullable IgfsSecondaryFileSystem secondaryFs, @Nullable IgfsIpcEndpointConfiguration restCfg,
         TcpDiscoveryIpFinder ipFinder) throws Exception {
         FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
@@ -394,7 +394,7 @@ public abstract class IgfsAbstractSelfTest extends IgfsCommonAbstractTest {
         if (useOptimizedMarshaller())
             cfg.setMarshaller(new OptimizedMarshaller());
 
-        cfg.setGridName(gridName);
+        cfg.setInstanceName(instanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 

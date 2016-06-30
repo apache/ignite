@@ -49,8 +49,8 @@ public class HadoopMapReduceEmbeddedSelfTest extends HadoopMapReduceTest {
         .put("flags", new HashMap<String, Boolean>());
 
     /** {@inheritDoc} */
-    @Override public HadoopConfiguration hadoopConfiguration(String gridName) {
-        HadoopConfiguration cfg = super.hadoopConfiguration(gridName);
+    @Override public HadoopConfiguration hadoopConfiguration(String instanceName) {
+        HadoopConfiguration cfg = super.hadoopConfiguration(instanceName);
 
         // TODO: IGNITE-404: Uncomment when fixed.
         //cfg.setExternalExecution(false);

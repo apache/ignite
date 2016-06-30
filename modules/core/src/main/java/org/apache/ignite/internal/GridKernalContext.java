@@ -92,8 +92,17 @@ public interface GridKernalContext extends Iterable<GridComponent> {
      * Gets grid name.
      *
      * @return Grid name.
+     * @deprecated Use {@link #instanceName} instead.
      */
+    @Deprecated
     public String gridName();
+
+    /**
+     * Gets instance name.
+     *
+     * @return Instance name.
+     */
+    public String instanceName();
 
     /**
      * Gets logger for given category.

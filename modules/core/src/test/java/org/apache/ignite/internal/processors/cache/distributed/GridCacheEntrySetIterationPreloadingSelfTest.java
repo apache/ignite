@@ -52,8 +52,8 @@ public class GridCacheEntrySetIterationPreloadingSelfTest extends GridCacheAbstr
         return CacheAtomicityMode.ATOMIC;
     }
 
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String instanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(instanceName);
 
         ccfg.setRebalanceMode(CacheRebalanceMode.SYNC);
 

@@ -73,16 +73,16 @@ public class IgniteCacheP2pUnmarshallingErrorTest extends IgniteCacheAbstractTes
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
-        if (getTestGridName(0).equals(gridName)) {
+        if (getTestInstanceName(0).equals(instanceName)) {
             cfg.setClientMode(true);
 
             cfg.setCacheConfiguration();
         }
 
-        if (getTestGridName(10).equals(gridName)) {
+        if (getTestInstanceName(10).equals(instanceName)) {
             CacheConfiguration cc = cfg.getCacheConfiguration()[0];
             cc.setRebalanceDelay(-1);
         }

@@ -66,7 +66,7 @@ public abstract class GridAbstractExamplesTest extends GridCommonAbstractTest {
         info("Config for remote nodes [name=" + name + ", cfg=" + cfg + ", dflt=" + defaultConfig() + "]");
 
         for (int i = 0; i < RMT_NODES_CNT; i++)
-            startGrid(getTestGridName(i), cfg);
+            startGrid(getTestInstanceName(i), cfg);
     }
 
     /**

@@ -47,8 +47,8 @@ public class VisorBasicConfiguration implements Serializable, LessNamingBean {
     /** */
     private static final long serialVersionUID = 0L;
 
-    /** Grid name. */
-    private String gridName;
+    /** Instance name*/
+    private String instanceName;
 
     /** IGNITE_HOME determined at startup. */
     private String ggHome;
@@ -118,7 +118,7 @@ public class VisorBasicConfiguration implements Serializable, LessNamingBean {
     public static VisorBasicConfiguration from(IgniteEx ignite, IgniteConfiguration c) {
         VisorBasicConfiguration cfg = new VisorBasicConfiguration();
 
-        cfg.gridName = c.getGridName();
+        cfg.instanceName = c.getInstanceName();
         cfg.ggHome = getProperty(IGNITE_HOME, c.getIgniteHome());
         cfg.locHost = getProperty(IGNITE_LOCAL_HOST, c.getLocalHost());
         cfg.nodeId = ignite.localNode().id();
@@ -146,8 +146,13 @@ public class VisorBasicConfiguration implements Serializable, LessNamingBean {
     /**
      * @return Grid name.
      */
+    @Deprecated
     @Nullable public String gridName() {
-        return gridName;
+        return instanceName;
+    }
+
+    @Nullable public String instanceName() {
+        return instanceName;
     }
 
     /**

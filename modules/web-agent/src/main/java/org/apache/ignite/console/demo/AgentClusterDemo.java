@@ -325,14 +325,14 @@ public class AgentClusterDemo {
 
     /**
      * Configure node.
-     * @param gridIdx Grid name index.
+     * @param gridIdx Instance name index.
      * @param client If {@code true} then start client node.
      * @return IgniteConfiguration
      */
     private static  IgniteConfiguration igniteConfiguration(int gridIdx, boolean client) {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName((client ? "demo-server-" : "demo-client-") + gridIdx);
+        cfg.setInstanceName((client ? "demo-server-" : "demo-client-") + gridIdx);
         cfg.setLocalHost("127.0.0.1");
         cfg.setIncludeEventTypes(EVTS_DISCOVERY);
 

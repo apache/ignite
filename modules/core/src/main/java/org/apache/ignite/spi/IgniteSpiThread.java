@@ -43,12 +43,12 @@ public abstract class IgniteSpiThread extends IgniteThread {
     /**
      * Creates thread with given {@code name}.
      *
-     * @param gridName Name of grid this thread is created in.
+     * @param instanceName Name of grid instance this thread is created in.
      * @param name Thread's name.
      * @param log Grid logger to use.
      */
-    protected IgniteSpiThread(String gridName, String name, IgniteLogger log) {
-        super(gridName, DFLT_GRP, createName(cntr.incrementAndGet(), name, gridName));
+    protected IgniteSpiThread(String instanceName, String name, IgniteLogger log) {
+        super(instanceName, DFLT_GRP, createName(cntr.incrementAndGet(), name, instanceName));
 
         assert log != null;
 

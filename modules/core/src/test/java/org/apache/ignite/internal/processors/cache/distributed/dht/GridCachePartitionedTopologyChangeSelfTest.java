@@ -77,8 +77,8 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(instanceName);
 
         // Discovery.
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
@@ -468,7 +468,7 @@ public class GridCachePartitionedTopologyChangeSelfTest extends GridCommonAbstra
             }, EVT_NODE_LEFT, EVT_NODE_FAILED);
 
             // Now stop the node.
-            stopGrid(getTestGridName(3), true);
+            stopGrid(getTestInstanceName(3), true);
 
             leaveLatch.await();
 

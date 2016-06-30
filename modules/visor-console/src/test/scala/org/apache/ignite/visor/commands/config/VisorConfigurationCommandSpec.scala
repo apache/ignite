@@ -36,7 +36,7 @@ class VisorConfigurationCommandSpec extends VisorRuntimeBaseSpec(1) {
     override def config(name: String): IgniteConfiguration = {
         val cfg = new IgniteConfiguration
 
-        cfg.setGridName(name)
+        cfg.setInstanceName(name)
         cfg.setIncludeEventTypes(EVTS_ALL: _*)
 
         cfg

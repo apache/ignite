@@ -65,8 +65,8 @@ public class IgniteCacheBinaryObjectsScanSelfTest extends GridCommonAbstractTest
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -78,7 +78,7 @@ public class IgniteCacheBinaryObjectsScanSelfTest extends GridCommonAbstractTest
         cfg.setMarshaller(null);
         cfg.setPeerClassLoadingEnabled(false);
 
-        if ("client".equals(gridName)) {
+        if ("client".equals(instanceName)) {
             cfg.setClientMode(true);
 
             cfg.setClassLoader(ldr);

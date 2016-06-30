@@ -604,7 +604,7 @@ class ScheduleFutureImpl<R> implements SchedulerFuture<R> {
                     fut.onDone(e);
                 }
                 catch (RuntimeException | Error e) {
-                    U.warn(null, "Failed to notify chained future (is grid stopped?) [grid=" + ctx.gridName() +
+                    U.warn(null, "Failed to notify chained future (is instance stopped?) [grid=" + ctx.instanceName() +
                         ", doneCb=" + doneCb + ", err=" + e.getMessage() + ']');
 
                     fut.onDone(e);

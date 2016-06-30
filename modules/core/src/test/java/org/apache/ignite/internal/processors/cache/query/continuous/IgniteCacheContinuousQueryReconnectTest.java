@@ -50,8 +50,8 @@ public class IgniteCacheContinuousQueryReconnectTest extends GridCommonAbstractT
     private volatile boolean isClient = false;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         CacheConfiguration ccfg = new CacheConfiguration();
 

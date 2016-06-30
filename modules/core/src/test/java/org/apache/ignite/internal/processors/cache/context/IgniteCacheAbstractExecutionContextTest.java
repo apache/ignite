@@ -39,8 +39,8 @@ public abstract class IgniteCacheAbstractExecutionContextTest extends IgniteCach
     public static final int ITER_CNT = 1000;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setClassLoader(new UsersClassLoader());
 
@@ -48,8 +48,8 @@ public abstract class IgniteCacheAbstractExecutionContextTest extends IgniteCach
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cacheConfiguration = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String instanceName) throws Exception {
+        CacheConfiguration cacheConfiguration = super.cacheConfiguration(instanceName);
 
         cacheConfiguration.setBackups(1);
 

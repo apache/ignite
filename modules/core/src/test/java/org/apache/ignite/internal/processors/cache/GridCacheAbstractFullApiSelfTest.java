@@ -178,7 +178,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
+    @Override protected int instanceCount() {
         return 1;
     }
 
@@ -195,8 +195,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
@@ -209,8 +209,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String instanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(instanceName);
 
         if (memoryMode() == OFFHEAP_TIERED || memoryMode() == OFFHEAP_VALUES) {
             ccfg.setMemoryMode(memoryMode());
@@ -240,7 +240,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 awaitPartitionMapExchange();
             }
             else {
-                int cnt = gridCount();
+                int cnt = instanceCount();
 
                 assert cnt >= 1 : "At least one grid must be started";
 
@@ -262,7 +262,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             cacheCfgMap = null;
         }
 
-        for (int i = 0; i < gridCount(); i++)
+        for (int i = 0; i < instanceCount(); i++)
             info("Grid " + i + ": " + grid(i).localNode().id());
     }
 
@@ -332,20 +332,20 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected Ignite startGrid(String gridName, GridSpringResourceContext ctx) throws Exception {
+    @Override protected Ignite startGrid(String instanceName, GridSpringResourceContext ctx) throws Exception {
         if (cacheCfgMap == null)
-            return super.startGrid(gridName, ctx);
+            return super.startGrid(instanceName, ctx);
 
-        IgniteConfiguration cfg = getConfiguration(gridName);
+        IgniteConfiguration cfg = getConfiguration(instanceName);
 
-        cacheCfgMap.put(gridName, cfg.getCacheConfiguration());
+        cacheCfgMap.put(instanceName, cfg.getCacheConfiguration());
 
         cfg.setCacheConfiguration();
 
-        if (!isRemoteJvm(gridName))
+        if (!isRemoteJvm(instanceName))
             return IgnitionEx.start(optimize(cfg), ctx);
         else
-            return startRemoteGrid(gridName, optimize(cfg), ctx);
+            return startRemoteGrid(instanceName, optimize(cfg), ctx);
     }
 
     /** {@inheritDoc} */
@@ -398,7 +398,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         // Put in primary nodes to avoid near readers which will prevent entry from being cleared.
         Map<ClusterNode, Collection<String>> mapped = grid(0).<String>affinity(null).mapKeysToNodes(map.keySet());
 
-        for (int i = 0; i < gridCount(); i++) {
+        for (int i = 0; i < instanceCount(); i++) {
             Collection<String> keys = mapped.get(grid(i).localNode());
 
             if (!F.isEmpty(keys)) {
@@ -411,7 +411,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         mapped = grid(0).<String>affinity(null).mapKeysToNodes(map.keySet());
 
-        for (int i = 0; i < gridCount(); i++) {
+        for (int i = 0; i < instanceCount(); i++) {
             // Will actually delete entry from map.
             CU.invalidate(jcache(i), "key0");
 
@@ -422,10 +422,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assert jcache(i).localSize() != 0 || F.isEmpty(keysCol);
         }
 
-        for (int i = 0; i < gridCount(); i++)
+        for (int i = 0; i < instanceCount(); i++)
             executeOnLocalOrRemoteJvm(i, new CheckCacheSizeTask(map));
 
-        for (int i = 0; i < gridCount(); i++) {
+        for (int i = 0; i < instanceCount(); i++) {
             Collection<String> keysCol = mapped.get(grid(i).localNode());
 
             assertEquals("Failed check for grid: " + i, !F.isEmpty(keysCol) ? keysCol.size() : 0,
@@ -434,19 +434,19 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         int globalPrimarySize = map.size();
 
-        for (int i = 0; i < gridCount(); i++)
+        for (int i = 0; i < instanceCount(); i++)
             assertEquals(globalPrimarySize, jcache(i).size(PRIMARY));
 
         int times = 1;
 
         if (cacheMode() == REPLICATED)
-            times = gridCount();
+            times = instanceCount();
         else if (cacheMode() == PARTITIONED)
-            times = Math.min(gridCount(), jcache().getConfiguration(CacheConfiguration.class).getBackups() + 1);
+            times = Math.min(instanceCount(), jcache().getConfiguration(CacheConfiguration.class).getBackups() + 1);
 
         int globalSize = globalPrimarySize * times;
 
-        for (int i = 0; i < gridCount(); i++)
+        for (int i = 0; i < instanceCount(); i++)
             assertEquals(globalSize, jcache(i).size(ALL));
     }
 
@@ -1101,7 +1101,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertEquals((Integer)2, cache.get("key2"));
         assertNull(cache.get("key3"));
 
-        for (int i = 0; i < gridCount(); i++)
+        for (int i = 0; i < instanceCount(); i++)
             assertNull("Failed for cache: " + i, jcache(i).localPeek("key3", ONHEAP));
 
         cache.remove("key1");
@@ -1116,7 +1116,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertEquals((Integer)2, cache.get("key2"));
         assertNull(cache.get("key3"));
 
-        for (int i = 0; i < gridCount(); i++)
+        for (int i = 0; i < instanceCount(); i++)
             assertNull(jcache(i).localPeek("key3", ONHEAP));
     }
 
@@ -1155,7 +1155,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertEquals((Integer)2, cache.get("key2"));
         assertNull(cache.get("key3"));
 
-        for (int i = 0; i < gridCount(); i++)
+        for (int i = 0; i < instanceCount(); i++)
             assertNull("Failed for cache: " + i, jcache(i).localPeek("key3", ONHEAP));
 
         cache.remove("key1");
@@ -1170,7 +1170,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertEquals((Integer)2, cache.get("key2"));
         assertNull(cache.get("key3"));
 
-        for (int i = 0; i < gridCount(); i++)
+        for (int i = 0; i < instanceCount(); i++)
             assertNull(jcache(i).localPeek("key3", ONHEAP));
     }
 
@@ -1240,7 +1240,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         Map<String, EntryProcessorResult<String>> res = cache.invokeAll(F.asSet("key1", "key2", "key3"), RMV_PROCESSOR);
 
-        for (int i = 0; i < gridCount(); i++) {
+        for (int i = 0; i < instanceCount(); i++) {
             assertNull(jcache(i).localPeek("key1", ONHEAP));
             assertNull(jcache(i).localPeek("key2", ONHEAP));
             assertNull(jcache(i).localPeek("key3", ONHEAP));
@@ -1402,7 +1402,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assertEquals(exp, cache.get(key));
 
-        for (int i = 0; i < gridCount(); i++) {
+        for (int i = 0; i < instanceCount(); i++) {
             if (ignite(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key))
                 assertEquals(exp, peek(jcache(i), key));
         }
@@ -1600,7 +1600,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertEquals((Integer)2, cache.get("key2"));
         assertNull(cache.get("key3"));
 
-        for (int i = 0; i < gridCount(); i++)
+        for (int i = 0; i < instanceCount(); i++)
             assertNull(jcache(i).localPeek("key3", ONHEAP));
     }
 
@@ -1633,7 +1633,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         assertNull(cache.invoke("k1", c));
         assertNull(cache.get("k1"));
 
-        for (int i = 0; i < gridCount(); i++)
+        for (int i = 0; i < instanceCount(); i++)
             assertNull(jcache(i).localPeek("k1", ONHEAP));
 
         final EntryProcessor<String, Integer, Integer> errProcessor = new FailedEntryProcessor();
@@ -2049,7 +2049,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         assert cache.getAndPutIfAbsent("key", 2) != null;
 
-        for (int i = 0; i < gridCount(); i++) {
+        for (int i = 0; i < instanceCount(); i++) {
             info("Peek on node [i=" + i + ", id=" + grid(i).localNode().id() + ", val=" +
                 grid(i).cache(null).localPeek("key", ONHEAP) + ']');
         }
@@ -2373,7 +2373,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assert cache.replace("key2", 5, 6);
         }
 
-        for (int i = 0; i < gridCount(); i++) {
+        for (int i = 0; i < instanceCount(); i++) {
             info("Peek key on grid [i=" + i + ", nodeId=" + grid(i).localNode().id() +
                 ", peekVal=" + grid(i).cache(null).localPeek("key", ONHEAP) + ']');
 
@@ -2679,7 +2679,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             for (int i = 0; i < cnt; i++)
                 cache.remove(String.valueOf(i));
 
-            for (int g = 0; g < gridCount(); g++)
+            for (int g = 0; g < instanceCount(); g++)
                 executeOnLocalOrRemoteJvm(g, new CheckEntriesDeletedTask(cnt));
         }
     }
@@ -2703,10 +2703,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (String key : keys)
             putToStore(key, Integer.parseInt(key));
 
-        for (int g = 0; g < gridCount(); g++)
+        for (int g = 0; g < instanceCount(); g++)
             grid(g).cache(null).localLoadCache(null);
 
-        for (int g = 0; g < gridCount(); g++) {
+        for (int g = 0; g < instanceCount(); g++) {
             for (int i = 0; i < cnt; i++) {
                 String key = String.valueOf(i);
 
@@ -2839,14 +2839,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         atomicClockModeDelay(cache);
 
         if (async) {
-            IgniteCache<String, Integer> asyncCache0 = jcache(gridCount() > 1 ? 1 : 0).withAsync();
+            IgniteCache<String, Integer> asyncCache0 = jcache(instanceCount() > 1 ? 1 : 0).withAsync();
 
             asyncCache0.removeAll();
 
             asyncCache0.future().get();
         }
         else
-            jcache(gridCount() > 1 ? 1 : 0).removeAll();
+            jcache(instanceCount() > 1 ? 1 : 0).removeAll();
 
         assertEquals(0, cache.localSize());
         long entryCnt = hugeRemoveAllEntryCount();
@@ -3030,7 +3030,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         boolean affNode = ignite.context().cache().internalCache(null).context().affinityNode();
 
         if (!affNode) {
-            if (gridCount() < 2)
+            if (instanceCount() < 2)
                 return;
 
             ignite = grid(1);
@@ -3058,7 +3058,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         cache.clear();
 
-        for (int g = 0; g < gridCount(); g++) {
+        for (int g = 0; g < instanceCount(); g++) {
             Ignite grid0 = grid(g);
 
             grid0.cache(null).removeAll();
@@ -3098,10 +3098,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         for (String key : keys)
             assertNull(peek(cache, key));
 
-        for (i = 0; i < gridCount(); i++)
+        for (i = 0; i < instanceCount(); i++)
             jcache(i).clear();
 
-        for (i = 0; i < gridCount(); i++)
+        for (i = 0; i < instanceCount(); i++)
             assert jcache(i).localSize() == 0;
 
         for (Map.Entry<String, Integer> entry : vals.entrySet())
@@ -3174,7 +3174,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 try {
-                    for (int i = 0; i < gridCount(); i++) {
+                    for (int i = 0; i < instanceCount(); i++) {
                         GridCacheAdapter<Object, Object> cache = ((IgniteKernal)ignite(i)).internalCache();
 
                         for (String key : keys0) {
@@ -3234,7 +3234,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     protected void globalClearAll(boolean async) throws Exception {
         // Save entries only on their primary nodes. If we didn't do so, clearLocally() will not remove all entries
         // because some of them were blocked due to having readers.
-        for (int i = 0; i < gridCount(); i++) {
+        for (int i = 0; i < instanceCount(); i++) {
             for (String key : primaryKeysForCache(jcache(i), 3, 100_000))
                 jcache(i).put(key, 1);
         }
@@ -3249,7 +3249,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         else
             jcache().clear();
 
-        for (int i = 0; i < gridCount(); i++)
+        for (int i = 0; i < instanceCount(); i++)
             assert jcache(i).localSize() == 0;
     }
 
@@ -3473,7 +3473,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         Affinity<String> aff = ignite(0).affinity(null);
 
-        for (int i = 0; i < gridCount(); i++) {
+        for (int i = 0; i < instanceCount(); i++) {
             if (aff.isPrimary(grid(i).cluster().localNode(), key))
                 assertEquals((Integer)1, peek(jcache(i), key));
 
@@ -3644,9 +3644,9 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 tx.close();
         }
 
-        long[] expireTimes = new long[gridCount()];
+        long[] expireTimes = new long[instanceCount()];
 
-        for (int i = 0; i < gridCount(); i++) {
+        for (int i = 0; i < instanceCount(); i++) {
             if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
                 GridCacheAdapter<String, Integer> cache = internalCache(jcache(i));
 
@@ -3679,7 +3679,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 tx.close();
         }
 
-        for (int i = 0; i < gridCount(); i++) {
+        for (int i = 0; i < instanceCount(); i++) {
             if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
                 GridCacheAdapter<String, Integer> cache = internalCache(jcache(i));
 
@@ -3712,7 +3712,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
                 tx.close();
         }
 
-        for (int i = 0; i < gridCount(); i++) {
+        for (int i = 0; i < instanceCount(); i++) {
             if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
                 GridCacheAdapter<String, Integer> cache = internalCache(jcache(i));
 
@@ -3749,7 +3749,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         log.info("Put 4 done");
 
-        for (int i = 0; i < gridCount(); i++) {
+        for (int i = 0; i < instanceCount(); i++) {
             if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
                 GridCacheAdapter<String, Integer> cache = internalCache(jcache(i));
 
@@ -3866,7 +3866,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         Affinity<String> aff = ignite(0).affinity(null);
 
-        for (int i = 0; i < gridCount(); i++) {
+        for (int i = 0; i < instanceCount(); i++) {
             if (aff.isPrimaryOrBackup(grid(i).cluster().localNode(), key1))
                 assertEquals((Integer)1, peek(jcache(i), key1));
 
@@ -3908,7 +3908,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             info("Local keys (primary + backup): " + locKeys);
         }
 
-        for (int i = 0; i < gridCount(); i++)
+        for (int i = 0; i < instanceCount(); i++)
             grid(i).events().localListen(
                 new SwapEvtsLocalListener(swapEvts, unswapEvts), EVT_CACHE_OBJECT_SWAPPED, EVT_CACHE_OBJECT_UNSWAPPED);
 
@@ -4227,7 +4227,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         Map<String, Integer> map = new HashMap<>();
 
-        for (int i = 0; i < gridCount(); i++) {
+        for (int i = 0; i < instanceCount(); i++) {
             for (Cache.Entry<String, Integer> entry : jcache(i))
                 map.put(entry.getKey(), entry.getValue());
         }
@@ -4248,7 +4248,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         if (nearEnabled())
             assertEquals(keys.size(), jcache().localSize(CachePeekMode.ALL));
         else {
-            for (int i = 0; i < gridCount(); i++)
+            for (int i = 0; i < instanceCount(); i++)
                 executeOnLocalOrRemoteJvm(i, new CheckEntriesTask(keys));
         }
     }
@@ -4262,7 +4262,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             assertEquals("Invalid key size: " + jcache().localSize(ALL),
                 keys.size(), jcache().localSize(ALL));
         else {
-            for (int i = 0; i < gridCount(); i++)
+            for (int i = 0; i < instanceCount(); i++)
                 executeOnLocalOrRemoteJvm(i, new CheckKeySizeTask(keys));
         }
     }
@@ -4278,7 +4278,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         else {
             boolean contains = false;
 
-            for (int i = 0; i < gridCount(); i++)
+            for (int i = 0; i < instanceCount(); i++)
                 if (containsKey(jcache(i), key)) {
                     contains = true;
 
@@ -4300,7 +4300,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         UUID nodeId = node.id();
 
-        for (int i = 0; i < gridCount(); i++) {
+        for (int i = 0; i < instanceCount(); i++) {
             if (grid(i).localNode().id().equals(nodeId))
                 return ignite(i);
         }
@@ -4348,7 +4348,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             cache.put(i, i);
 
         // Try to initialize readers in case when near cache is enabled.
-        for (int i = 0; i < gridCount(); i++) {
+        for (int i = 0; i < instanceCount(); i++) {
             cache = grid(i).cache(null);
 
             for (int k = 0; k < KEYS; k++)
@@ -4519,7 +4519,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @param entries Expected entries in the cache.
      */
     private void checkIteratorCache(Map<String, Integer> entries) {
-        for (int i = 0; i < gridCount(); ++i)
+        for (int i = 0; i < instanceCount(); ++i)
             checkIteratorCache(jcache(i), entries);
     }
 
@@ -4548,7 +4548,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * Checks iterators are cleared.
      */
     private void checkIteratorsCleared() {
-        for (int j = 0; j < gridCount(); j++)
+        for (int j = 0; j < instanceCount(); j++)
             executeOnLocalOrRemoteJvm(j, new CheckIteratorTask());
     }
 
@@ -4564,7 +4564,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             }
             catch (AssertionFailedError e) {
                 if (i == 9) {
-                    for (int j = 0; j < gridCount(); j++)
+                    for (int j = 0; j < instanceCount(); j++)
                         executeOnLocalOrRemoteJvm(j, new PrintIteratorStateTask());
 
                     throw e;
@@ -4638,7 +4638,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             if (keyToRmv.equals(key)) {
                 Collection<ClusterNode> nodes = grid(0).affinity(null).mapKeyToPrimaryAndBackups(key);
 
-                for (int j = 0; j < gridCount(); ++j) {
+                for (int j = 0; j < instanceCount(); ++j) {
                     if (nodes.contains(grid(j).localNode()) && grid(j) != primaryIgnite(key))
                         assertTrue("Not found on backup removed key ", grid(j).cache(null).localPeek(key) != null);
                 }
@@ -4660,7 +4660,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         Set<String> keysToRmv = new HashSet<>();
 
-        for (int i = 0; i < gridCount(); ++i) {
+        for (int i = 0; i < instanceCount(); ++i) {
             List<String> gridKeys = keys.get(grid(i).name());
 
             if (gridKeys.size() > 2) {
@@ -4705,7 +4705,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         // because some of them were blocked due to having readers.
         Map<String, List<String>> keys = new HashMap<>();
 
-        for (int i = 0; i < gridCount(); ++i)
+        for (int i = 0; i < instanceCount(); ++i)
             keys.put(grid(i).name(), new ArrayList<String>());
 
         for (int i = 0; i < 500; ++i) {
@@ -4787,7 +4787,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             boolean found = false;
 
-            for (int j = 0; j < gridCount(); j++) {
+            for (int j = 0; j < instanceCount(); j++) {
                 if (jcache(j).localPeek(key) != null)
                     found = true;
             }

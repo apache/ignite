@@ -109,7 +109,7 @@ public class OdbcProcessor extends GridProcessorAdapter {
                             .listener(new OdbcNioListener(ctx, busyLock, odbcCfg.getMaxOpenCursors()))
                             .logger(log)
                             .selectorCount(DFLT_SELECTOR_CNT)
-                            .gridName(ctx.gridName())
+                            .instanceName(ctx.instanceName())
                             .tcpNoDelay(DFLT_TCP_NODELAY)
                             .directBuffer(DFLT_TCP_DIRECT_BUF)
                             .byteOrder(ByteOrder.nativeOrder())

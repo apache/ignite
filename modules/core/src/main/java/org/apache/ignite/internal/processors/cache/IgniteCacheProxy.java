@@ -1867,7 +1867,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
      * </pre>
      * <p> Note that this method makes sense only if cache is working in binary mode ({@code
      * CacheConfiguration#isBinaryEnabled()} returns {@code true}. If not, this method is no-op and will return
-     * current projection.
+     * currentprojection.
      *
      * @return Projection for binary objects.
      */

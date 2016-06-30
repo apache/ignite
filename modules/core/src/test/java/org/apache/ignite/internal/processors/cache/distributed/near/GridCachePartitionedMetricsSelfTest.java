@@ -30,11 +30,11 @@ import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
  */
 public class GridCachePartitionedMetricsSelfTest extends GridCacheTransactionalAbstractMetricsSelfTest {
     /** */
-    private static final int GRID_CNT = 2;
+    private static final int INSTANCE_CNT = 2;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
 
@@ -42,11 +42,11 @@ public class GridCachePartitionedMetricsSelfTest extends GridCacheTransactionalA
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String instanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(instanceName);
 
         cfg.setCacheMode(PARTITIONED);
-        cfg.setBackups(gridCount() - 1);
+        cfg.setBackups(instanceCount() - 1);
         cfg.setRebalanceMode(SYNC);
         cfg.setWriteSynchronizationMode(FULL_SYNC);
 
@@ -54,7 +54,7 @@ public class GridCachePartitionedMetricsSelfTest extends GridCacheTransactionalA
     }
 
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
-        return GRID_CNT;
+    @Override protected int instanceCount() {
+        return INSTANCE_CNT;
     }
 }

@@ -154,8 +154,8 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(instanceName);
 
         c.setLocalHost(HOST);
 
@@ -234,7 +234,7 @@ public abstract class ClientAbstractMultiNodeSelfTest extends GridCommonAbstract
 
     /** {@inheritDoc} */
     @Override protected void afterTestsStopped() throws Exception {
-        info("Stopping grids.");
+        info("Stopping instances.");
 
         stopAllGrids();
     }

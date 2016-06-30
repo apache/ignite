@@ -530,7 +530,7 @@ public interface Ignite extends AutoCloseable {
 
     /**
      * Closes {@code this} instance of grid. This method is identical to calling
-     * {@link G#stop(String, boolean) G.stop(gridName, true)}.
+     * {@link G#stop(String, boolean) G.stop(instanceName, true)}.
      * <p>
      * The method is invoked automatically on objects managed by the
      * {@code try-with-resources} statement.

@@ -46,7 +46,7 @@
     </bean>
 
     <bean id="grid.cfg.2" class="org.apache.ignite.configuration.IgniteConfiguration" singleton="true">
-        <property name="gridName" value="gridName2"/>
+        <property name="instanceName" value="instance2"/>
 
         <property name="connectorConfiguration"><null/></property>
 

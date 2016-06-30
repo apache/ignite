@@ -99,8 +99,8 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"IfMayBeConditional"})
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         UUID id = nodeId.get();
 
@@ -335,7 +335,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
 
                                 U.sleep(50);
 
-                                Thread.currentThread().setName("stop-server-" + getTestGridName(stopIdx));
+                                Thread.currentThread().setName("stop-server-" + getTestInstanceName(stopIdx));
 
                                 log.info("Stop server: " + stopIdx);
 
@@ -344,7 +344,7 @@ public class TcpDiscoveryMultiThreadedTest extends GridCommonAbstractTest {
                                 // Generate unique name to simplify debugging.
                                 int startIdx = srvStartIdx.getAndIncrement();
 
-                                Thread.currentThread().setName("start-server-" + getTestGridName(startIdx));
+                                Thread.currentThread().setName("start-server-" + getTestInstanceName(startIdx));
 
                                 log.info("Start server: " + startIdx);
 

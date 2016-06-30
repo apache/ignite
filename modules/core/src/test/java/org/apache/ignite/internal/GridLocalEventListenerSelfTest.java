@@ -35,10 +35,10 @@ public class GridLocalEventListenerSelfTest extends GridCommonAbstractTest {
     private final CountDownLatch fired = new CountDownLatch(1);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
-        int idx = getTestGridIndex(gridName);
+        int idx = getTestInstanceIndex(instanceName);
 
         if (idx == 0) {
             Map<IgnitePredicate<? extends Event>, int[]> lsnrs = new HashMap<>();

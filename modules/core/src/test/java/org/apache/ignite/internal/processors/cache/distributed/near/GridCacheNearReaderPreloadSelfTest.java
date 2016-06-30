@@ -116,11 +116,11 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
      * Create configuration for data node.
      *
      * @param ipFinder IP finder.
-     * @param gridName Grid name.
+     * @param instanceName Instance name.
      * @return Configuration for data node.
      * @throws IgniteCheckedException If failed.
      */
-    private IgniteConfiguration dataNode(TcpDiscoveryIpFinder ipFinder, String gridName)
+    private IgniteConfiguration dataNode(TcpDiscoveryIpFinder ipFinder, String instanceName)
         throws Exception {
         CacheConfiguration ccfg = new CacheConfiguration();
 
@@ -131,7 +131,7 @@ public class GridCacheNearReaderPreloadSelfTest extends GridCommonAbstractTest {
         ccfg.setWriteSynchronizationMode(FULL_SYNC);
         ccfg.setBackups(1);
 
-        IgniteConfiguration cfg = getConfiguration(gridName);
+        IgniteConfiguration cfg = getConfiguration(instanceName);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 

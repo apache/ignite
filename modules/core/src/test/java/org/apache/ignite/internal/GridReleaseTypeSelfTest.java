@@ -42,8 +42,8 @@ public class GridReleaseTypeSelfTest extends GridCommonAbstractTest {
     private boolean clientMode;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         if (clientMode)
             cfg.setClientMode(true);

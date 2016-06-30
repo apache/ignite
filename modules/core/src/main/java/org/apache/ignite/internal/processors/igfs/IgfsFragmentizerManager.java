@@ -356,7 +356,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
          * Constructor.
          */
         protected FragmentizerCoordinator() {
-            super(igfsCtx.kernalContext().gridName(), "fragmentizer-coordinator",
+            super(igfsCtx.kernalContext().instanceName(), "fragmentizer-coordinator",
                 igfsCtx.kernalContext().log(IgfsFragmentizerManager.class));
 
             igfsCtx.kernalContext().event().addLocalEventListener(this, EVT_NODE_LEFT, EVT_NODE_FAILED);
@@ -669,7 +669,7 @@ public class IgfsFragmentizerManager extends IgfsManager {
          * Constructor.
          */
         protected FragmentizerWorker() {
-            super(igfsCtx.kernalContext().gridName(), "fragmentizer-worker",
+            super(igfsCtx.kernalContext().instanceName(), "fragmentizer-worker",
                 igfsCtx.kernalContext().log(IgfsFragmentizerManager.class));
         }
 

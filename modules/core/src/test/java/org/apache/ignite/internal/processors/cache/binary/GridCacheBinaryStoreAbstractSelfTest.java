@@ -53,8 +53,8 @@ public abstract class GridCacheBinaryStoreAbstractSelfTest extends GridCommonAbs
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         BinaryConfiguration bCfg = new BinaryConfiguration();
 

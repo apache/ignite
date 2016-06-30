@@ -59,7 +59,7 @@ public class TcpDiscoverySpiConfigSelfTest extends GridSpiAbstractConfigTest<Tcp
             spi.setLocalPortRange(0);
             cfg.setDiscoverySpi(spi);
 
-            startGrid(cfg.getGridName(), cfg);
+            startGrid(cfg.getInstanceName(), cfg);
         }
         finally {
             stopAllGrids();

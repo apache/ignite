@@ -49,8 +49,8 @@ public abstract class GridSingleSplitsNewNodesAbstractLoadTest extends GridCommo
 
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setCommunicationSpi(new TcpCommunicationSpi());
 
@@ -95,7 +95,7 @@ public abstract class GridSingleSplitsNewNodesAbstractLoadTest extends GridCommo
      * @throws Exception If task execution failed.
      */
     public void testLoad() throws Exception {
-        final Ignite ignite = startGrid(getTestGridName());
+        final Ignite ignite = startGrid(getTestInstanceName());
 
         try {
             final long end = getTestDurationInMinutes() * 60 * 1000 + System.currentTimeMillis();
@@ -176,7 +176,7 @@ public abstract class GridSingleSplitsNewNodesAbstractLoadTest extends GridCommo
             info("Final test statistics: " + stats);
         }
         finally {
-            G.stop(getTestGridName(), false);
+            G.stop(getTestInstanceName(), false);
         }
     }
 }

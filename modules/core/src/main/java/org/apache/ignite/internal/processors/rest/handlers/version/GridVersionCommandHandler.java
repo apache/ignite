@@ -61,7 +61,7 @@ public class GridVersionCommandHandler extends GridRestCommandHandlerAdapter {
                 return new GridFinishedFuture<>(new GridRestResponse(VER_STR));
 
             case NAME:
-                return new GridFinishedFuture<>(new GridRestResponse(ctx.gridName()));
+                return new GridFinishedFuture<>(new GridRestResponse(ctx.instanceName()));
         }
 
         return new GridFinishedFuture<>();

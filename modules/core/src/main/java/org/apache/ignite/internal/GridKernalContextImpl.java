@@ -561,9 +561,19 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
         return locNode != null ? locNode.id() : config().getNodeId();
     }
 
-    /** {@inheritDoc} */
+    /**
+     *  {@inheritDoc}
+     *
+     *  @deprecated Use {@link #instanceName()} instead.
+     */
+    @Deprecated
     @Override public String gridName() {
-        return cfg.getGridName();
+        return cfg.getInstanceName();
+    }
+
+    /** {@inheritDoc} */
+    @Override public String instanceName() {
+        return cfg.getInstanceName();
     }
 
     /** {@inheritDoc} */
@@ -819,7 +829,7 @@ public class GridKernalContextImpl implements GridKernalContext, Externalizable 
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>> ");
-        X.println(">>> Grid memory stats [grid=" + gridName() + ']');
+        X.println(">>> Grid memory stats [grid=" + instanceName() + ']');
 
         for (GridComponent comp : comps)
             comp.printMemoryStats();

@@ -160,18 +160,18 @@ public class HadoopShuffleJob<T> implements AutoCloseable {
     }
 
     /**
-     * @param gridName Grid name.
+     * @param instanceName Grid instance name.
      * @param io IO Closure for sending messages.
      */
     @SuppressWarnings("BusyWait")
-    public void startSending(String gridName, IgniteInClosure2X<T, HadoopShuffleMessage> io) {
+    public void startSending(String instanceName, IgniteInClosure2X<T, HadoopShuffleMessage> io) {
         assert snd == null;
         assert io != null;
 
         this.io = io;
 
         if (!flushed) {
-            snd = new GridWorker(gridName, "hadoop-shuffle-" + job.id(), log) {
+            snd = new GridWorker(instanceName, "hadoop-shuffle-" + job.id(), log) {
                 @Override protected void body() throws InterruptedException {
                     try {
                         while (!isCancelled()) {

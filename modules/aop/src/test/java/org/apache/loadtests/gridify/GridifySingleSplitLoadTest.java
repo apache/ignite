@@ -46,7 +46,7 @@ public class GridifySingleSplitLoadTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings("ConstantConditions")
-    @Override public String getTestGridName() {
+    @Override public String getTestInstanceName() {
         // Gridify task has empty grid name by default so we need to change it
         // here.
         return null;
@@ -101,7 +101,7 @@ public class GridifySingleSplitLoadTest extends GridCommonAbstractTest {
      */
     @SuppressWarnings("unchecked")
     public void testGridifyLoad() throws Exception {
-        Ignite ignite = G.ignite(getTestGridName());
+        Ignite ignite = G.ignite(getTestInstanceName());
 
         ignite.compute().localDeployTask(GridifyLoadTestTask.class, GridifyLoadTestTask.class.getClassLoader());
 

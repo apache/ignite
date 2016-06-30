@@ -94,7 +94,7 @@ public abstract class GridSpiAbstractConfigTest<T extends IgniteSpi> extends Gri
                 if (!(spi instanceof DiscoverySpi))
                     spi.getNodeAttributes();
 
-                spi.spiStart(getTestGridName());
+                spi.spiStart(getTestInstanceName());
             }
             catch (IgniteSpiException e) {
                 info("SPI start thrown exception: " + e);

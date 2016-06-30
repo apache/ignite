@@ -363,11 +363,11 @@ object IgniteRDDSpec {
     /**
      * Gets ignite configuration.
      *
-     * @param gridName Grid name.
+     * @param instanceName Grid name.
      * @param client Client mode flag.
      * @return Ignite configuration.
      */
-    def configuration(gridName: String, client: Boolean): IgniteConfiguration = {
+    def configuration(instanceName: String, client: Boolean): IgniteConfiguration = {
         val cfg = new IgniteConfiguration
 
         val discoSpi = new TcpDiscoverySpi
@@ -376,11 +376,11 @@ object IgniteRDDSpec {
 
         cfg.setDiscoverySpi(discoSpi)
 
-        cfg.setCacheConfiguration(cacheConfiguration(gridName))
+        cfg.setCacheConfiguration(cacheConfiguration(instanceName))
 
         cfg.setClientMode(client)
 
-        cfg.setGridName(gridName)
+        cfg.setInstanceName(instanceName)
 
         cfg
     }
@@ -388,10 +388,10 @@ object IgniteRDDSpec {
     /**
      * Gets cache configuration for the given grid name.
      *
-     * @param gridName Grid name.
+     * @param instanceName Grid name.
      * @return Cache configuration.
      */
-    def cacheConfiguration(gridName: String): CacheConfiguration[Object, Object] = {
+    def cacheConfiguration(instanceName: String): CacheConfiguration[Object, Object] = {
         val ccfg = new CacheConfiguration[Object, Object]()
 
         ccfg.setBackups(1)

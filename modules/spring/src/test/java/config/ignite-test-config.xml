@@ -27,7 +27,7 @@
     <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="localHost" value="127.0.0.1" />
 
-        <property name="gridName" value="config-in-classpath"/>
+        <property name="instanceName" value="config-in-classpath"/>
 
         <!-- Explicitly configure TCP discovery SPI to provide list of initial nodes. -->
         <property name="discoverySpi">

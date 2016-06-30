@@ -50,7 +50,7 @@ public class HadoopExecutorService {
     private final int maxTasks;
 
     /** */
-    private final String gridName;
+    private final String instanceName;
 
     /** */
     private final IgniteLogger log;
@@ -84,17 +84,17 @@ public class HadoopExecutorService {
 
     /**
      * @param log Logger.
-     * @param gridName Grid name.
+     * @param instanceName Instance name.
      * @param maxTasks Max number of tasks.
      * @param maxQueue Max queue length.
      */
-    public HadoopExecutorService(IgniteLogger log, String gridName, int maxTasks, int maxQueue) {
+    public HadoopExecutorService(IgniteLogger log, String instanceName, int maxTasks, int maxQueue) {
         assert maxTasks > 0 : maxTasks;
         assert maxQueue > 0 : maxQueue;
 
         this.maxTasks = maxTasks;
         this.queue = new LinkedBlockingQueue<>(maxQueue);
-        this.gridName = gridName;
+        this.instanceName = instanceName;
         this.log = log.getLogger(HadoopExecutorService.class);
     }
 
@@ -180,7 +180,7 @@ public class HadoopExecutorService {
         else
             workerName = task.toString();
 
-        GridWorker w = new GridWorker(gridName, workerName, log, lsnr) {
+        GridWorker w = new GridWorker(instanceName, workerName, log, lsnr) {
             @Override protected void body() {
                 try {
                     task.call();

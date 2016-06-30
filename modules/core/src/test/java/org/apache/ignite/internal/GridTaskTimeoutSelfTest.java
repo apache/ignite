@@ -70,7 +70,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
      * @param execId Execution ID.
      */
     private void checkTimedOutEvents(final IgniteUuid execId) {
-        Ignite ignite = G.ignite(getTestGridName());
+        Ignite ignite = G.ignite(getTestInstanceName());
 
         Collection<Event> evts = ignite.events().localQuery(new PE() {
             @Override public boolean apply(Event evt) {
@@ -85,7 +85,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSynchronousTimeout() throws Exception {
-        Ignite ignite = G.ignite(getTestGridName());
+        Ignite ignite = G.ignite(getTestInstanceName());
 
         ignite.compute().localDeployTask(GridTaskTimeoutTestTask.class, GridTaskTimeoutTestTask.class.getClassLoader());
 
@@ -110,7 +110,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testAsynchronousTimeout() throws Exception {
-        Ignite ignite = G.ignite(getTestGridName());
+        Ignite ignite = G.ignite(getTestInstanceName());
 
         ignite.compute().localDeployTask(GridTaskTimeoutTestTask.class, GridTaskTimeoutTestTask.class.getClassLoader());
 
@@ -127,7 +127,7 @@ public class GridTaskTimeoutSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testSynchronousTimeoutMultithreaded() throws Exception {
-        final Ignite ignite = G.ignite(getTestGridName());
+        final Ignite ignite = G.ignite(getTestInstanceName());
 
         final AtomicBoolean finish = new AtomicBoolean();
 

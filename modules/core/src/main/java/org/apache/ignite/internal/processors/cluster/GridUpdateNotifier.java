@@ -90,8 +90,8 @@ class GridUpdateNotifier {
     /** HTML parsing helper. */
     private final DocumentBuilder documentBuilder;
 
-    /** Grid name. */
-    private final String gridName;
+    /** Instance name. */
+    private final String instanceName;
 
     /** Whether or not to report only new version. */
     private volatile boolean reportOnlyNew;
@@ -120,14 +120,14 @@ class GridUpdateNotifier {
     /**
      * Creates new notifier with default values.
      *
-     * @param gridName gridName
+     * @param instanceName instanceName
      * @param ver Compound Ignite version.
      * @param gw Kernal gateway.
      * @param pluginProviders Kernal gateway.
      * @param reportOnlyNew Whether or not to report only new version.
      * @throws IgniteCheckedException If failed.
      */
-    GridUpdateNotifier(String gridName, String ver, GridKernalGateway gw, Collection<PluginProvider> pluginProviders,
+    GridUpdateNotifier(String instanceName, String ver, GridKernalGateway gw, Collection<PluginProvider> pluginProviders,
         boolean reportOnlyNew) throws IgniteCheckedException {
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
@@ -147,7 +147,7 @@ class GridUpdateNotifier {
 
             url = "http://ignite.run/update_status_ignite.php";
 
-            this.gridName = gridName == null ? "null" : gridName;
+            this.instanceName = instanceName == null ? "null" : instanceName;
             this.gw = gw;
 
             SB pluginsBuilder = new SB();
@@ -328,7 +328,7 @@ class GridUpdateNotifier {
          * @param log Logger.
          */
         UpdateChecker(IgniteLogger log) {
-            super(gridName, "grid-version-checker", log);
+            super(instanceName, "grid-version-checker", log);
 
             this.log = log.getLogger(getClass());
         }
@@ -339,7 +339,7 @@ class GridUpdateNotifier {
                 String stackTrace = gw != null ? gw.userStackTrace() : null;
 
                 String postParams =
-                    "gridName=" + encode(gridName, CHARSET) +
+                    "instanceName=" + encode(instanceName, CHARSET) +
                     (!F.isEmpty(UPD_STATUS_PARAMS) ? "&" + UPD_STATUS_PARAMS : "") +
                     (topSize > 0 ? "&topSize=" + topSize : "") +
                     (!F.isEmpty(stackTrace) ? "&stackTrace=" + encode(stackTrace, CHARSET) : "") +

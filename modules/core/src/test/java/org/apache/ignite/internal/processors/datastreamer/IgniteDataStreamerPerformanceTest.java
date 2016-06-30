@@ -58,8 +58,8 @@ public class IgniteDataStreamerPerformanceTest extends GridCommonAbstractTest {
     private String[] vals = new String[2048];
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 

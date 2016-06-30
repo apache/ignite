@@ -65,8 +65,8 @@ public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTe
     private static final int ENTRY_COUNT = 100;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -75,9 +75,9 @@ public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTe
 
         cfg.setDiscoverySpi(discoSpi);
 
-        cfg.setCacheConfiguration(cacheConfiguration(gridName));
+        cfg.setCacheConfiguration(cacheConfiguration(instanceName));
 
-        if (getTestGridName(3).equals(gridName)) {
+        if (getTestInstanceName(3).equals(instanceName)) {
             cfg.setClientMode(true);
 
             discoSpi.setForceServerMode(true);
@@ -93,10 +93,10 @@ public class IgniteCacheNearRestartRollbackSelfTest extends GridCommonAbstractTe
     }
 
     /**
-     * @param gridName Grid name.
+     * @param instanceName Instance name.
      * @return Cache configuration.
      */
-    protected CacheConfiguration<Object, Object> cacheConfiguration(String gridName) {
+    protected CacheConfiguration<Object, Object> cacheConfiguration(String instanceName) {
         CacheConfiguration<Object, Object> ccfg = new CacheConfiguration<>();
 
         ccfg.setAtomicityMode(CacheAtomicityMode.TRANSACTIONAL);

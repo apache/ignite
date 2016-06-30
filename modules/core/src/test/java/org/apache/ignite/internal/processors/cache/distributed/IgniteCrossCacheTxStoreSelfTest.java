@@ -50,8 +50,8 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
     private static Map<String, CacheStore> secondStores = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         CacheConfiguration cfg1 = cacheConfiguration("cacheA", new FirstStoreFactory());
         CacheConfiguration cfg2 = cacheConfiguration("cacheB", new FirstStoreFactory());
@@ -359,12 +359,12 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
     private static class FirstStoreFactory implements Factory<CacheStore> {
         /** {@inheritDoc} */
         @Override public CacheStore create() {
-            String gridName = startingGrid.get();
+            String instanceName = startingGrid.get();
 
-            CacheStore store = firstStores.get(gridName);
+            CacheStore store = firstStores.get(instanceName);
 
             if (store == null)
-                store = F.addIfAbsent(firstStores, gridName, new TestStore());
+                store = F.addIfAbsent(firstStores, instanceName, new TestStore());
 
             return store;
         }
@@ -376,12 +376,12 @@ public class IgniteCrossCacheTxStoreSelfTest extends GridCommonAbstractTest {
     private static class SecondStoreFactory implements Factory<CacheStore> {
         /** {@inheritDoc} */
         @Override public CacheStore create() {
-            String gridName = startingGrid.get();
+            String instanceName = startingGrid.get();
 
-            CacheStore store = secondStores.get(gridName);
+            CacheStore store = secondStores.get(instanceName);
 
             if (store == null)
-                store = F.addIfAbsent(secondStores, gridName, new TestStore());
+                store = F.addIfAbsent(secondStores, instanceName, new TestStore());
 
             return store;
         }

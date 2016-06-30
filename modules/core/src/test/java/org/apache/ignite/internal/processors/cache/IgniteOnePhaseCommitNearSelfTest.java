@@ -58,10 +58,10 @@ public class IgniteOnePhaseCommitNearSelfTest extends GridCommonAbstractTest {
     private static Map<Class<?>, AtomicInteger> msgCntMap = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
-        cfg.setCacheConfiguration(cacheConfiguration(gridName));
+        cfg.setCacheConfiguration(cacheConfiguration(instanceName));
 
         cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
 
@@ -71,10 +71,10 @@ public class IgniteOnePhaseCommitNearSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param gridName Grid name.
+     * @param instanceName Grid name.
      * @return Cache configuration.
      */
-    protected CacheConfiguration cacheConfiguration(String gridName) {
+    protected CacheConfiguration cacheConfiguration(String instanceName) {
         CacheConfiguration ccfg = new CacheConfiguration();
 
         ccfg.setBackups(backups);

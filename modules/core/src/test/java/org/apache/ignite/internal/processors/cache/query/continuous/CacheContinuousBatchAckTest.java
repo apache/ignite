@@ -76,15 +76,15 @@ public class CacheContinuousBatchAckTest extends GridCommonAbstractTest implemen
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
-        if (gridName.endsWith(CLIENT)) {
+        if (instanceName.endsWith(CLIENT)) {
             cfg.setClientMode(true);
 
             cfg.setCommunicationSpi(new FailedTcpCommunicationSpi(true, false));
         }
-        else if (gridName.endsWith(SERVER2))
+        else if (instanceName.endsWith(SERVER2))
             cfg.setCommunicationSpi(new FailedTcpCommunicationSpi(false, true));
         else
             cfg.setCommunicationSpi(new FailedTcpCommunicationSpi(false, false));

@@ -71,7 +71,7 @@ public class ClientStartNodeTask extends TaskSingleJobSplitAdapter<String, Integ
 
     /** {@inheritDoc} */
     @Override protected Object executeJob(int gridSize, String type) {
-        log.info(">>> Starting new grid node [currGridSize=" + gridSize + ", arg=" + type + "]");
+        log.info(">>> Starting new instance node [currGridSize=" + gridSize + ", arg=" + type + "]");
 
         if (type == null)
             throw new IllegalArgumentException("Node type to start should be specified.");
@@ -79,15 +79,15 @@ public class ClientStartNodeTask extends TaskSingleJobSplitAdapter<String, Integ
         IgniteConfiguration cfg = getConfig(type);
 
         // Generate unique for this VM grid name.
-        String gridName = cfg.getGridName() + " (" + UUID.randomUUID() + ")";
+        String instanceName = cfg.getInstanceName() + " (" + UUID.randomUUID() + ")";
 
-        // Update grid name (required to be unique).
-        cfg.setGridName(gridName);
+        // Update instance name (required to be unique).
+        cfg.setInstanceName(instanceName);
 
         // Start new node in current VM.
         Ignite g =  G.start(cfg);
 
-        log.info(">>> Grid started [nodeId=" + g.cluster().localNode().id() + ", name='" + g.name() + "']");
+        log.info(">>> Instance started [nodeId=" + g.cluster().localNode().id() + ", name='" + g.name() + "']");
 
         return true;
     }
@@ -178,11 +178,11 @@ public class ClientStartNodeTask extends TaskSingleJobSplitAdapter<String, Integ
         // Wait for node stops.
         //U.sleep(1000);
 
-        Collection<String> gridNames = new ArrayList<>();
+        Collection<String> instanceNames = new ArrayList<>();
 
         for (Ignite g : G.allGrids())
-            gridNames.add(g.name());
+            instanceNames.add(g.name());
 
-        parent.log().info(">>> Available grids: " + gridNames);
+        parent.log().info(">>> Available instances: " + instanceNames);
     }
 }

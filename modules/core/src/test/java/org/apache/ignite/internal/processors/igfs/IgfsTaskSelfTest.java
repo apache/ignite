@@ -149,7 +149,7 @@ public class IgfsTaskSelfTest extends IgfsCommonAbstractTest {
         cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
         cfg.setFileSystemConfiguration(igfsCfg);
 
-        cfg.setGridName("node-" + idx);
+        cfg.setInstanceName("node-" + idx);
 
         return cfg;
     }

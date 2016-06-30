@@ -164,7 +164,7 @@ class VisorNodeCommand extends VisorConsoleCommand {
 
                         val m = node.metrics
 
-                        val gridName: String = node.attribute(ATTR_GRID_NAME)
+                        val instanceName: String = node.attribute(ATTR_GRID_NAME)
 
                         val ver = U.productVersion(node)
                         val verStr = ver.major() + "." + ver.minor() + "." + ver.maintenance() +
@@ -183,7 +183,7 @@ class VisorNodeCommand extends VisorConsoleCommand {
                             t += ("JRE information", node.attribute(ATTR_JIT_NAME))
                             t += ("Non-loopback IPs", node.attribute(ATTR_IPS))
                             t += ("Enabled MACs", node.attribute(ATTR_MACS))
-                            t += ("Grid name", escapeName(gridName))
+                            t += ("Grid name", escapeName(instanceName))
                             t += ("JVM start time", formatDateTime(m.getStartTime))
                             t += ("Node start time", formatDateTime(m.getNodeStartTime))
                             t += ("Up time", X.timeSpan2HMSM(m.getUpTime))
@@ -238,7 +238,7 @@ class VisorNodeCommand extends VisorConsoleCommand {
                             t += ("Language runtime", node.attribute(ATTR_LANG_RUNTIME))
                             t += ("Ignite version", verStr)
                             t += ("JRE information", node.attribute(ATTR_JIT_NAME))
-                            t += ("Grid name", escapeName(gridName))
+                            t += ("Grid name", escapeName(instanceName))
                             t += ("JVM start time", formatDateTime(m.getStartTime))
                             t += ("Node start time", formatDateTime(m.getNodeStartTime))
                             t += ("Up time", X.timeSpan2HMSM(m.getUpTime))

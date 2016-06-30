@@ -47,8 +47,8 @@ public class GridSpringTransactionManagerSelfTest extends GridCommonAbstractTest
      * {@inheritDoc}
      */
     @Override
-    protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         CacheConfiguration cache = new CacheConfiguration();
 
@@ -70,8 +70,8 @@ public class GridSpringTransactionManagerSelfTest extends GridCommonAbstractTest
      * {@inheritDoc}
      */
     @Override
-    public String getTestGridName() {
-        return "testGrid";
+    public String getTestInstanceName() {
+        return "testInstance";
     }
 
     /**

@@ -37,7 +37,7 @@ public abstract class CacheVersionedEntryAbstractTest extends GridCacheAbstractS
     private static final int ENTRIES_NUM = 500;
 
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
+    @Override protected int instanceCount() {
         return 2;
     }
 

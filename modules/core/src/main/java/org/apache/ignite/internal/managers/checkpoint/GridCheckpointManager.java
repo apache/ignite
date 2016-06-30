@@ -405,7 +405,7 @@ public class GridCheckpointManager extends GridManagerAdapter<CheckpointSpi> {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> Checkpoint manager memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> Checkpoint manager memory stats [grid=" + ctx.instanceName() + ']');
         X.println(">>>  keyMap: " + (keyMap != null ? keyMap.size() : 0));
     }
 

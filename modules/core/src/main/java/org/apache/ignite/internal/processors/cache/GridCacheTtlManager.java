@@ -103,7 +103,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> TTL processor memory stats [grid=" + cctx.gridName() + ", cache=" + cctx.name() + ']');
+        X.println(">>> TTL processor memory stats [grid=" + cctx.instanceName() + ", cache=" + cctx.name() + ']');
         X.println(">>>   pendingEntriesSize: " + pendingEntries.size());
     }
 
@@ -160,7 +160,7 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
          * Creates cleanup worker.
          */
         protected CleanupWorker() {
-            super(cctx.gridName(), "ttl-cleanup-worker-" + cctx.name(), cctx.logger(GridCacheTtlManager.class));
+            super(cctx.instanceName(), "ttl-cleanup-worker-" + cctx.name(), cctx.logger(GridCacheTtlManager.class));
         }
 
         /** {@inheritDoc} */

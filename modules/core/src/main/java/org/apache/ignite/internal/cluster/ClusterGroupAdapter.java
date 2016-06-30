@@ -84,7 +84,11 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
     private transient IgniteServices svcs;
 
     /** Grid name. */
+    @Deprecated
     private String gridName;
+
+    /** Instance name*/
+    private String instanceName;
 
     /** Subject ID. */
     protected UUID subjId;
@@ -188,7 +192,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
         this.ctx = ctx;
 
-        gridName = ctx.gridName();
+        instanceName = ctx.instanceName();
     }
 
     /** {@inheritDoc} */
@@ -699,7 +703,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeString(out, gridName);
+        U.writeString(out, instanceName);
         U.writeUuid(out, subjId);
 
         out.writeBoolean(ids != null);
@@ -712,7 +716,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        gridName = U.readString(in);
+        instanceName = U.readString(in);
         subjId = U.readUuid(in);
 
         if (in.readBoolean())
@@ -729,7 +733,7 @@ public class ClusterGroupAdapter implements ClusterGroupEx, Externalizable {
      */
     protected Object readResolve() throws ObjectStreamException {
         try {
-            IgniteKernal g = IgnitionEx.gridx(gridName);
+            IgniteKernal g = IgnitionEx.gridx(instanceName);
 
             return ids != null ? new ClusterGroupAdapter(g.context(), subjId, ids) :
                 new ClusterGroupAdapter(g.context(), subjId, p);

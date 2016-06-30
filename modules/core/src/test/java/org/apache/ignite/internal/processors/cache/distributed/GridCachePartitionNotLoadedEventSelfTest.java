@@ -55,21 +55,21 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
     private int backupCnt;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
         disco.setIpFinder(ipFinder);
         cfg.setDiscoverySpi(disco);
 
-        if (gridName.matches(".*\\d")) {
+        if (instanceName.matches(".*\\d")) {
             String idStr = UUID.randomUUID().toString();
 
             char[] chars = idStr.toCharArray();
 
             chars[chars.length - 3] = '0';
             chars[chars.length - 2] = '0';
-            chars[chars.length - 1] = gridName.charAt(gridName.length() - 1);
+            chars[chars.length - 1] = instanceName.charAt(instanceName.length() - 1);
 
             cfg.setNodeId(UUID.fromString(new String(chars)));
         }

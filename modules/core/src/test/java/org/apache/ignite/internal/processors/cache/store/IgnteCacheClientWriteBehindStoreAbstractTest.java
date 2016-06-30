@@ -49,13 +49,13 @@ public abstract class IgnteCacheClientWriteBehindStoreAbstractTest extends Ignit
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String instanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(instanceName);
 
         ccfg.setWriteBehindEnabled(true);
         ccfg.setWriteBehindBatchSize(10);
 
-        if (getTestGridName(2).equals(gridName)) {
+        if (getTestInstanceName(2).equals(instanceName)) {
             ccfg.setCacheStoreFactory(null);
             ccfg.setWriteThrough(false);
             ccfg.setReadThrough(false);
@@ -66,10 +66,10 @@ public abstract class IgnteCacheClientWriteBehindStoreAbstractTest extends Ignit
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
-        if (getTestGridName(2).equals(gridName))
+        if (getTestInstanceName(2).equals(instanceName))
             cfg.setClientMode(true);
 
         return cfg;

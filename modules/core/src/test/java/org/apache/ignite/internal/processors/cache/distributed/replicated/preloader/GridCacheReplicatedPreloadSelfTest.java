@@ -116,8 +116,8 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -125,11 +125,11 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(disco);
 
-        cfg.setCacheConfiguration(cacheConfiguration(gridName));
+        cfg.setCacheConfiguration(cacheConfiguration(instanceName));
 
         cfg.setDeploymentMode(CONTINUOUS);
 
-        cfg.setUserAttributes(F.asMap("EVEN", !gridName.endsWith("0") && !gridName.endsWith("2")));
+        cfg.setUserAttributes(F.asMap("EVEN", !instanceName.endsWith("0") && !instanceName.endsWith("2")));
 
         MemoryEventStorageSpi spi = new MemoryEventStorageSpi();
 
@@ -140,7 +140,7 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
         if (disableP2p)
             cfg.setPeerClassLoadingEnabled(false);
 
-        if (getTestGridName(1).equals(gridName) || useExtClassLoader ||
+        if (getTestInstanceName(1).equals(instanceName) || useExtClassLoader ||
             cfg.getMarshaller() instanceof BinaryMarshaller)
             cfg.setClassLoader(getExternalClassLoader());
 
@@ -163,10 +163,10 @@ public class GridCacheReplicatedPreloadSelfTest extends GridCommonAbstractTest {
     /**
      * Gets cache configuration for grid with specified name.
      *
-     * @param gridName Grid name.
+     * @param instanceName Instance name.
      * @return Cache configuration.
      */
-    CacheConfiguration cacheConfiguration(String gridName) {
+    CacheConfiguration cacheConfiguration(String instanceName) {
         CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
         cacheCfg.setCacheMode(REPLICATED);

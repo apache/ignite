@@ -300,10 +300,10 @@ public class JavaStandaloneIgniteRDDSelfTest extends GridCommonAbstractTest {
     }
 
     /**
-     * @param gridName Grid name.
+     * @param instanceName Grid instance name.
      * @param client Client.
      */
-    private static IgniteConfiguration getConfiguration(String gridName, boolean client) throws Exception {
+    private static IgniteConfiguration getConfiguration(String instanceName, boolean client) throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
@@ -316,7 +316,7 @@ public class JavaStandaloneIgniteRDDSelfTest extends GridCommonAbstractTest {
 
         cfg.setClientMode(client);
 
-        cfg.setGridName(gridName);
+        cfg.setInstanceName(instanceName);
 
         return cfg;
     }

@@ -149,16 +149,16 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
     private boolean reconnectDisabled;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         TcpDiscoverySpi disco = getDiscoverySpi();
 
         disco.setMaxMissedClientHeartbeats(maxMissedClientHbs);
 
-        if (gridName.startsWith("server"))
+        if (instanceName.startsWith("server"))
             disco.setIpFinder(IP_FINDER);
-        else if (gridName.startsWith("client")) {
+        else if (instanceName.startsWith("client")) {
             cfg.setClientMode(true);
 
             TcpDiscoveryVmIpFinder ipFinder;
@@ -196,9 +196,9 @@ public class TcpClientDiscoverySpiSelfTest extends GridCommonAbstractTest {
                 disco.setSocketTimeout(2000);
             }
             else {
-                disco.setAckTimeout(gridName.startsWith("client") ? TcpDiscoverySpi.DFLT_ACK_TIMEOUT_CLIENT :
+                disco.setAckTimeout(instanceName.startsWith("client") ? TcpDiscoverySpi.DFLT_ACK_TIMEOUT_CLIENT :
                     TcpDiscoverySpi.DFLT_ACK_TIMEOUT);
-                disco.setSocketTimeout(gridName.startsWith("client") ? TcpDiscoverySpi.DFLT_SOCK_TIMEOUT_CLIENT :
+                disco.setSocketTimeout(instanceName.startsWith("client") ? TcpDiscoverySpi.DFLT_SOCK_TIMEOUT_CLIENT :
                     TcpDiscoverySpi.DFLT_SOCK_TIMEOUT);
             }
         }

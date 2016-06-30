@@ -73,7 +73,7 @@ public class ClusterNodeLocalMapImpl<K, V> extends ConcurrentHashMap8<K, V> impl
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeString(out, ctx.gridName());
+        U.writeString(out, ctx.instanceName());
     }
 
     /** {@inheritDoc} */

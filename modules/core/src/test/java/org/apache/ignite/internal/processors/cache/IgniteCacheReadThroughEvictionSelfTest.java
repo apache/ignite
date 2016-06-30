@@ -216,7 +216,7 @@ public class IgniteCacheReadThroughEvictionSelfTest extends IgniteCacheConfigVar
      * @return Variation test configuration.
      */
     private CacheConfiguration<Object, Object> variationConfig(String suffix) {
-        CacheConfiguration ccfg = testsCfg.configurationFactory().cacheConfiguration(getTestGridName(testedNodeIdx));
+        CacheConfiguration ccfg = testsCfg.configurationFactory().cacheConfiguration(getTestInstanceName(testedNodeIdx));
 
         ccfg.setName(cacheName() + "_" + suffix);
 

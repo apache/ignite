@@ -27,7 +27,7 @@
     <bean parent="ignite.cfg">
         <property name="clientMode" value="true"/>
 
-        <property name="gridName" value="client"/>
+        <property name="instanceName" value="client"/>
     </bean>
 
 </beans>

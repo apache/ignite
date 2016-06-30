@@ -47,15 +47,15 @@ public abstract class IgniteTopologyValidatorAbstractCacheTest extends IgniteCac
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration iCfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration iCfg = super.getConfiguration(instanceName);
 
-        CacheConfiguration cCfg0 = cacheConfiguration(gridName);
+        CacheConfiguration cCfg0 = cacheConfiguration(instanceName);
 
-        CacheConfiguration cCfg1 = cacheConfiguration(gridName);
+        CacheConfiguration cCfg1 = cacheConfiguration(instanceName);
         cCfg1.setName(CACHE_NAME_1);
 
-        CacheConfiguration cCfg2 = cacheConfiguration(gridName);
+        CacheConfiguration cCfg2 = cacheConfiguration(instanceName);
         cCfg2.setName(CACHE_NAME_2);
 
         iCfg.setCacheConfiguration(cCfg0, cCfg1, cCfg2);

@@ -54,7 +54,7 @@
         GridJobStealingCollisionSpi and GridJobStealingFailoverSPI.
     -->
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
-        <property name="gridName" value="sslnode"/>
+        <property name="instanceName" value="sslnode"/>
 
         <!-- Set to local host address. -->
         <property name="localHost" value="127.0.0.1"/>

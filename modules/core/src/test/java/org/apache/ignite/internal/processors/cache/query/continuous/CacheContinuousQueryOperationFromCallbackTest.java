@@ -98,8 +98,8 @@ public class CacheContinuousQueryOperationFromCallbackTest extends GridCommonAbs
     private static AtomicInteger filterCbCntr = new AtomicInteger(0);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setSystemThreadPoolSize(SYSTEM_POOL_SIZE);
 

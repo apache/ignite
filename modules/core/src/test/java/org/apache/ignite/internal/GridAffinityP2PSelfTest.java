@@ -80,8 +80,8 @@ public class GridAffinityP2PSelfTest extends GridCommonAbstractTest {
 
     /** {@inheritDoc} */
     @SuppressWarnings({"unchecked"})
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(instanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -92,10 +92,10 @@ public class GridAffinityP2PSelfTest extends GridCommonAbstractTest {
 
         c.setDeploymentMode(depMode);
 
-        if (gridName.endsWith("1"))
+        if (instanceName.endsWith("1"))
             c.setCacheConfiguration(); // Empty cache configuration.
         else {
-            assert gridName.endsWith("2") || gridName.endsWith("3");
+            assert instanceName.endsWith("2") || instanceName.endsWith("3");
 
             CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -108,7 +108,7 @@ public class GridAffinityP2PSelfTest extends GridCommonAbstractTest {
                 .newInstance());
 
             c.setCacheConfiguration(cc);
-            c.setUserAttributes(F.asMap(GridCacheModuloAffinityFunction.IDX_ATTR, gridName.endsWith("2") ? 0 : 1));
+            c.setUserAttributes(F.asMap(GridCacheModuloAffinityFunction.IDX_ATTR, instanceName.endsWith("2") ? 0 : 1));
         }
 
         return c;

@@ -63,7 +63,7 @@ public class GridTaskListenerSelfTest extends GridCommonAbstractTest {
             }
         };
 
-        Ignite ignite = G.ignite(getTestGridName());
+        Ignite ignite = G.ignite(getTestInstanceName());
 
         assert ignite != null;
 

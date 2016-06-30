@@ -36,8 +36,8 @@ import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
  */
 public class SqlFieldsQuerySelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setLocalHost("127.0.0.1");
 

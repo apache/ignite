@@ -58,10 +58,10 @@ public class IgniteCacheManyAsyncOperationsTest extends IgniteCacheAbstractTest 
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
-        if (gridName.equals(getTestGridName(2)))
+        if (instanceName.equals(getTestInstanceName(2)))
             cfg.setClientMode(true);
 
         return cfg;

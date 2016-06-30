@@ -408,8 +408,8 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -476,11 +476,11 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param accessType Hibernate L2 cache access type.
-     * @param gridName Grid name.
+     * @param instanceName Grid instance name.
      * @return Hibernate configuration.
      */
     protected Configuration hibernateConfiguration(org.hibernate.cache.spi.access.AccessType accessType,
-        String gridName) {
+        String instanceName) {
         Configuration cfg = new Configuration();
 
         cfg.addAnnotatedClass(Entity.class);
@@ -507,7 +507,7 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
 
         cfg.setProperty(RELEASE_CONNECTIONS, "on_close");
 
-        cfg.setProperty(GRID_NAME_PROPERTY, gridName);
+        cfg.setProperty(GRID_NAME_PROPERTY, instanceName);
 
         // Use the same cache for Entity and Entity2.
         cfg.setProperty(REGION_CACHE_PROPERTY + ENTITY2_NAME, ENTITY_NAME);
@@ -1905,20 +1905,20 @@ public class HibernateL2CacheSelfTest extends GridCommonAbstractTest {
      * @param accessType Cache access type.
      */
     private void createSessionFactories(AccessType accessType) {
-        sesFactory1 = startHibernate(accessType, getTestGridName(0));
+        sesFactory1 = startHibernate(accessType, getTestInstanceName(0));
 
-        sesFactory2 = startHibernate(accessType, getTestGridName(1));
+        sesFactory2 = startHibernate(accessType, getTestInstanceName(1));
     }
 
     /**
      * Starts Hibernate.
      *
      * @param accessType Cache access type.
-     * @param gridName Grid name.
+     * @param instanceName Grid instance name.
      * @return Session factory.
      */
-    private SessionFactory startHibernate(org.hibernate.cache.spi.access.AccessType accessType, String gridName) {
-        Configuration cfg = hibernateConfiguration(accessType, gridName);
+    private SessionFactory startHibernate(org.hibernate.cache.spi.access.AccessType accessType, String instanceName) {
+        Configuration cfg = hibernateConfiguration(accessType, instanceName);
 
         ServiceRegistryBuilder builder = registryBuilder();
 

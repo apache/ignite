@@ -85,8 +85,8 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
 
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
 
@@ -98,12 +98,12 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
 
         cfg.setMarshaller(marshaller());
 
-        cfg.setUserAttributes(Collections.singletonMap(NODE_NAME_ATTR, gridName));
+        cfg.setUserAttributes(Collections.singletonMap(NODE_NAME_ATTR, instanceName));
 
-        if (grp1.contains(gridName))
+        if (grp1.contains(instanceName))
             cfg.setClassLoader(extClsLdr1);
 
-        if (grp2.contains(gridName))
+        if (grp2.contains(instanceName))
             cfg.setClassLoader(extClsLdr2);
 
         cfg.setClientMode(client);
@@ -123,10 +123,10 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
         super.beforeTest();
 
         for (int i = 0; i < GRID_CNT; i += 2)
-            grp1.add(getTestGridName(i));
+            grp1.add(getTestInstanceName(i));
 
         for (int i = 1; i < GRID_CNT; i += 2)
-            grp2.add(getTestGridName(i));
+            grp2.add(getTestInstanceName(i));
     }
 
     /** {@inheritDoc} */
@@ -251,9 +251,9 @@ public class IgniteServiceDeployment2ClassLoadersDefaultMarshallerTest extends G
         /** {@inheritDoc} */
         @SuppressWarnings("SuspiciousMethodCalls")
         @Override public boolean apply(ClusterNode node) {
-            Object gridName = node.attribute(NODE_NAME_ATTR);
+            Object instanceName = node.attribute(NODE_NAME_ATTR);
 
-            return grp.contains(gridName);
+            return grp.contains(instanceName);
         }
     }
 }

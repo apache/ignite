@@ -1484,7 +1484,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws IgniteSpiException {
+    @Override public void spiStart(String instanceName) throws IgniteSpiException {
         assert locHost != null;
 
         // Start SPI start stopwatch.
@@ -1528,7 +1528,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                 ", slowClientQueueLimit=" + slowClientQueueLimit + ']');
         }
 
-        registerMBean(gridName, this, TcpCommunicationSpiMBean.class);
+        registerMBean(instanceName, this, TcpCommunicationSpiMBean.class);
 
         connectGate = new ConnectGateway();
 
@@ -1540,7 +1540,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
 
         nioSrvr.start();
 
-        commWorker = new CommunicationWorker(gridName);
+        commWorker = new CommunicationWorker(instanceName);
 
         commWorker.start();
 
@@ -1695,7 +1695,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
                         .listener(srvLsnr)
                         .logger(log)
                         .selectorCount(selectorsCnt)
-                        .gridName(gridName)
+                        .instanceName(instanceName)
                         .tcpNoDelay(tcpNoDelay)
                         .directBuffer(directBuf)
                         .byteOrder(ByteOrder.nativeOrder())
@@ -1762,7 +1762,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         for (int port = shmemPort; port < shmemPort + locPortRange; port++) {
             try {
                 IpcSharedMemoryServerEndpoint srv =
-                    new IpcSharedMemoryServerEndpoint(log, ignite.configuration().getNodeId(), gridName);
+                    new IpcSharedMemoryServerEndpoint(log, ignite.configuration().getNodeId(), instanceName);
 
                 srv.setPort(port);
 
@@ -2915,7 +2915,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
          * @param srv Server.
          */
         ShmemAcceptWorker(IpcSharedMemoryServerEndpoint srv) {
-            super(gridName, "shmem-communication-acceptor", TcpCommunicationSpi.this.log);
+            super(instanceName, "shmem-communication-acceptor", TcpCommunicationSpi.this.log);
 
             this.srv = srv;
         }
@@ -2959,7 +2959,7 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
          * @param endpoint Endpoint.
          */
         private ShmemWorker(IpcEndpoint endpoint) {
-            super(gridName, "shmem-worker", TcpCommunicationSpi.this.log);
+            super(instanceName, "shmem-worker", TcpCommunicationSpi.this.log);
 
             this.endpoint = endpoint;
         }
@@ -3061,10 +3061,10 @@ public class TcpCommunicationSpi extends IgniteSpiAdapter
         private final BlockingQueue<GridNioRecoveryDescriptor> q = new LinkedBlockingQueue<>();
 
         /**
-         * @param gridName Grid name.
+         * @param instanceName Grid instance name.
          */
-        private CommunicationWorker(String gridName) {
-            super(gridName, "tcp-comm-worker", log);
+        private CommunicationWorker(String instanceName) {
+            super(instanceName, "tcp-comm-worker", log);
         }
 
         /** {@inheritDoc} */

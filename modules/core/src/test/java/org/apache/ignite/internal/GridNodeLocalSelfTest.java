@@ -42,7 +42,7 @@ public class GridNodeLocalSelfTest extends GridCommonAbstractTest {
      * @throws Exception If test failed.
      */
     public void testNodeLocal() throws Exception {
-        Ignite g = G.ignite(getTestGridName());
+        Ignite g = G.ignite(getTestInstanceName());
 
         String keyStr = "key";
         int keyNum = 1;

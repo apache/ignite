@@ -71,8 +71,8 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -101,20 +101,20 @@ public class GridCacheConfigurationValidationSelfTest extends GridCommonAbstract
         namedCacheCfg.setAffinity(new RendezvousAffinityFunction());
 
         // Modify cache config according to test parameters.
-        if (gridName.contains(WRONG_PRELOAD_MODE_GRID_NAME))
+        if (instanceName.contains(WRONG_PRELOAD_MODE_GRID_NAME))
             dfltCacheCfg.setRebalanceMode(SYNC);
-        else if (gridName.contains(WRONG_CACHE_MODE_GRID_NAME))
+        else if (instanceName.contains(WRONG_CACHE_MODE_GRID_NAME))
             dfltCacheCfg.setCacheMode(REPLICATED);
-        else if (gridName.contains(WRONG_AFFINITY_GRID_NAME))
+        else if (instanceName.contains(WRONG_AFFINITY_GRID_NAME))
             dfltCacheCfg.setAffinity(new TestRendezvousAffinityFunction());
-        else if (gridName.contains(WRONG_AFFINITY_MAPPER_GRID_NAME))
+        else if (instanceName.contains(WRONG_AFFINITY_MAPPER_GRID_NAME))
             dfltCacheCfg.setAffinityMapper(new TestCacheDefaultAffinityKeyMapper());
-        else if (gridName.contains(WRONG_OFF_HEAP_GRID_NAME))
+        else if (instanceName.contains(WRONG_OFF_HEAP_GRID_NAME))
             dfltCacheCfg.setMemoryMode(OFFHEAP_VALUES);
 
-        if (gridName.contains(DUP_CACHES_GRID_NAME))
+        if (instanceName.contains(DUP_CACHES_GRID_NAME))
             cfg.setCacheConfiguration(namedCacheCfg, namedCacheCfg);
-        else if (gridName.contains(DUP_DFLT_CACHES_GRID_NAME))
+        else if (instanceName.contains(DUP_DFLT_CACHES_GRID_NAME))
             cfg.setCacheConfiguration(dfltCacheCfg, dfltCacheCfg);
         else
             // Normal configuration.

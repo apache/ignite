@@ -172,7 +172,7 @@ public abstract class GridCacheStoreManagerAdapter extends GridCacheManagerAdapt
             return cfgStore;
 
         GridCacheWriteBehindStore store = new GridCacheWriteBehindStore(this,
-            ctx.gridName(),
+            ctx.instanceName(),
             cfg.getName(),
             ctx.log(GridCacheWriteBehindStore.class),
             cfgStore);

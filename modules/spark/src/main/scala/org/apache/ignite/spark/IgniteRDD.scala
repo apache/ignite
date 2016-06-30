@@ -293,6 +293,10 @@ class IgniteRDD[K, V] (
         ensureCache().removeAll()
     }
 
+    def withKeepBinary(): IgniteRDD[K ,V] = {
+
+    }
+
     /**
      * Returns `IgniteRDD` that will operate with binary objects. This method
      * behaves similar to [[org.apache.ignite.IgniteCache#withKeepBinary]].

@@ -83,7 +83,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testExecuteFailed() throws Exception {
-        Ignite ignite = G.ignite(getTestGridName());
+        Ignite ignite = G.ignite(getTestInstanceName());
 
         ignite.compute().localDeployTask(GridTaskFailedTestTask.class, GridTaskFailedTestTask.class.getClassLoader());
 
@@ -113,7 +113,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testMapFailed() throws Exception {
-        Ignite ignite = G.ignite(getTestGridName());
+        Ignite ignite = G.ignite(getTestInstanceName());
 
         ignite.compute().localDeployTask(GridTaskFailedTestTask.class, GridTaskFailedTestTask.class.getClassLoader());
 
@@ -143,7 +143,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testResultFailed() throws Exception {
-        Ignite ignite = G.ignite(getTestGridName());
+        Ignite ignite = G.ignite(getTestInstanceName());
 
         ignite.compute().localDeployTask(GridTaskFailedTestTask.class, GridTaskFailedTestTask.class.getClassLoader());
 
@@ -173,7 +173,7 @@ public class GridRuntimeExceptionSelfTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     public void testReduceFailed() throws Exception {
-        Ignite ignite = G.ignite(getTestGridName());
+        Ignite ignite = G.ignite(getTestInstanceName());
 
         ignite.compute().localDeployTask(GridTaskFailedTestTask.class, GridTaskFailedTestTask.class.getClassLoader());
 

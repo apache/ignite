@@ -235,7 +235,7 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
 
             // This name is required to be unique in order to avoid collisions with
             // ThreadWorkerGroups running in the same JVM by other routers/nodes.
-            String gridName = "router-" + id;
+            String instanceName = "router-" + id;
 
             GridNioFilter[] filters;
 
@@ -257,7 +257,7 @@ public class GridTcpRouterImpl implements GridTcpRouter, GridTcpRouterMBean, Lif
                 .listener(lsnr)
                 .logger(log)
                 .selectorCount(Runtime.getRuntime().availableProcessors())
-                .gridName(gridName)
+                .instanceName(instanceName)
                 .tcpNoDelay(tcpNoDelay)
                 .directBuffer(false)
                 .byteOrder(ByteOrder.nativeOrder())

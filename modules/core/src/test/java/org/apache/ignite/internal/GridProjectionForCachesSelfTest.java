@@ -51,17 +51,17 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
     private Ignite ignite;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setDiscoverySpi(discoverySpi());
 
         List<CacheConfiguration> ccfgs = new ArrayList<>();
 
-        if (gridName.equals(getTestGridName(0)))
-            ccfgs.add(cacheConfiguration(null, new AttributeFilter(getTestGridName(0)), false));
-        else if (gridName.equals(getTestGridName(2)) || gridName.equals(getTestGridName(3)))
-            ccfgs.add(cacheConfiguration(CACHE_NAME, new AttributeFilter(getTestGridName(2), getTestGridName(3)), true));
+        if (instanceName.equals(getTestInstanceName(0)))
+            ccfgs.add(cacheConfiguration(null, new AttributeFilter(getTestInstanceName(0)), false));
+        else if (instanceName.equals(getTestInstanceName(2)) || instanceName.equals(getTestInstanceName(3)))
+            ccfgs.add(cacheConfiguration(CACHE_NAME, new AttributeFilter(getTestInstanceName(2), getTestInstanceName(3)), true));
 
         cfg.setCacheConfiguration(ccfgs.toArray(new CacheConfiguration[ccfgs.size()]));
 
@@ -296,10 +296,10 @@ public class GridProjectionForCachesSelfTest extends GridCommonAbstractTest {
 
         /** {@inheritDoc} */
         @Override public boolean apply(ClusterNode node) {
-            String gridName = node.attribute(IgniteNodeAttributes.ATTR_GRID_NAME);
+            String instanceName= node.attribute(IgniteNodeAttributes.ATTR_GRID_NAME);
 
             for (String attr : attrs) {
-                if (F.eq(attr, gridName))
+                if (F.eq(attr, instanceName))
                     return true;
             }
 

@@ -38,7 +38,7 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  */
 public class IgniteCacheNearOffheapGetSelfTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
+    @Override protected int instanceCount() {
         return 4;
     }
 
@@ -47,7 +47,7 @@ public class IgniteCacheNearOffheapGetSelfTest extends GridCacheAbstractSelfTest
         super.beforeTestsStarted();
 
         if (nearEnabled())
-            grid(gridCount() - 1).getOrCreateCache(new CacheConfiguration(), nearConfiguration());
+            grid(instanceCount() - 1).getOrCreateCache(new CacheConfiguration(), nearConfiguration());
     }
 
     /** {@inheritDoc} */
@@ -61,10 +61,10 @@ public class IgniteCacheNearOffheapGetSelfTest extends GridCacheAbstractSelfTest
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
-        if (getTestGridName(gridCount() - 1).equals(gridName)) {
+        if (getTestInstanceName(instanceCount() - 1).equals(instanceName)) {
             cfg.setClientMode(true);
 
             cfg.setCacheConfiguration();
@@ -75,8 +75,8 @@ public class IgniteCacheNearOffheapGetSelfTest extends GridCacheAbstractSelfTest
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String instanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(instanceName);
 
         cfg.setBackups(1);
         cfg.setMemoryMode(CacheMemoryMode.OFFHEAP_TIERED);
@@ -99,10 +99,10 @@ public class IgniteCacheNearOffheapGetSelfTest extends GridCacheAbstractSelfTest
      */
     public void testGetFromNear() throws Exception {
 
-        IgniteCache<Object, Object> nearOnly = ignite(gridCount() - 1).cache(null);
+        IgniteCache<Object, Object> nearOnly = ignite(instanceCount() - 1).cache(null);
 
         // Start extra node.
-        IgniteEx ignite = startGrid(gridCount());
+        IgniteEx ignite = startGrid(instanceCount());
 
         try {
             final int keyCnt = 30;
@@ -123,14 +123,14 @@ public class IgniteCacheNearOffheapGetSelfTest extends GridCacheAbstractSelfTest
                     invalidatedKeys.add(i);
             }
 
-            stopGrid(gridCount());
+            stopGrid(instanceCount());
 
             for (Integer key : invalidatedKeys)
                 assertEquals(key, nearOnly.get(key));
         }
         finally {
-            if (Ignition.state(getTestGridName(gridCount())) == IgniteState.STARTED)
-                stopGrid(gridCount());
+            if (Ignition.state(getTestInstanceName(instanceCount())) == IgniteState.STARTED)
+                stopGrid(instanceCount());
         }
     }
 }

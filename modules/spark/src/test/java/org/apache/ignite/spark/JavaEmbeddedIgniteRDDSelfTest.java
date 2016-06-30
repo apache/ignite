@@ -47,7 +47,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
     private static AtomicInteger cntr = new AtomicInteger(1);
 
     /** Grid names. */
-    private static ThreadLocal<Integer> gridNames = new ThreadLocal<Integer>() {
+    private static ThreadLocal<Integer> instanceNames = new ThreadLocal<Integer>() {
         @Override protected Integer initialValue() {
             return cntr.getAndIncrement();
         }
@@ -276,12 +276,12 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
     private static TcpDiscoveryVmIpFinder FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /**
-     * @param gridName Grid name.
+     * @param instanceName Grid instance name.
      * @param client Client.
      * @throws Exception If failed.
      * @return Confiuration.
      */
-    private static IgniteConfiguration getConfiguration(String gridName, boolean client) throws Exception {
+    private static IgniteConfiguration getConfiguration(String instanceName, boolean client) throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
@@ -294,7 +294,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
 
         cfg.setClientMode(client);
 
-        cfg.setGridName(gridName);
+        cfg.setInstanceName(instanceName);
 
         return cfg;
     }
@@ -323,7 +323,7 @@ public class JavaEmbeddedIgniteRDDSelfTest extends GridCommonAbstractTest {
         /** {@inheritDoc} */
         @Override public IgniteConfiguration apply() {
             try {
-                return getConfiguration("worker-" + gridNames.get(), false);
+                return getConfiguration("worker-" + instanceNames.get(), false);
             }
             catch (Exception e) {
                 throw new RuntimeException(e);

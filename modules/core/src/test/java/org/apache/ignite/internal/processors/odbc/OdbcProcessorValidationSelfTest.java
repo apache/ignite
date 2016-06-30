@@ -125,7 +125,7 @@ public class OdbcProcessorValidationSelfTest extends GridCommonAbstractTest {
     private void check(OdbcConfiguration odbcCfg, boolean success) throws Exception {
         final IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName(OdbcProcessorValidationSelfTest.class.getName() + "-" + NODE_IDX_GEN.incrementAndGet());
+        cfg.setInstanceName(OdbcProcessorValidationSelfTest.class.getName() + "-" + NODE_IDX_GEN.incrementAndGet());
         cfg.setLocalHost("127.0.0.1");
         cfg.setOdbcConfiguration(odbcCfg);
 

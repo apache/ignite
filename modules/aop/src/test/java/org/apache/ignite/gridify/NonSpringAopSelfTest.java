@@ -51,7 +51,7 @@ public class NonSpringAopSelfTest extends AbstractAopTest {
     }
 
     /** {@inheritDoc} */
-    @Override public String getTestGridName() {
+    @Override public String getTestInstanceName() {
         return "TestAopTarget";
     }
 }

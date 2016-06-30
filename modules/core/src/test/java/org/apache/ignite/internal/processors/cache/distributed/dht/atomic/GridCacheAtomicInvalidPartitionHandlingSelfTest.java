@@ -89,8 +89,8 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
     private TestMemoryMode memMode;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setDiscoverySpi(new TcpDiscoverySpi().setIpFinder(IP_FINDER).setForceServerMode(true));
 
@@ -104,7 +104,7 @@ public class GridCacheAtomicInvalidPartitionHandlingSelfTest extends GridCommonA
 
         cfg.setCommunicationSpi(spi);
 
-        if (testClientNode() && getTestGridName(0).equals(gridName))
+        if (testClientNode() && getTestInstanceName(0).equals(instanceName))
             cfg.setClientMode(true);
 
         GridTestUtils.setMemoryMode(cfg, ccfg, memMode, 100, 1024);

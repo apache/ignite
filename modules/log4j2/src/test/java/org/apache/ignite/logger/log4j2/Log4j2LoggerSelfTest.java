@@ -153,12 +153,12 @@ public class Log4j2LoggerSelfTest extends TestCase {
     /**
      * Creates grid configuration.
      *
-     * @param gridName Grid name.
+     * @param instanceName Instance name.
      * @param logPath Logger configuration path.
      * @return Grid configuration.
      * @throws Exception If error occurred.
      */
-    private static IgniteConfiguration getConfiguration(String gridName, String logPath)
+    private static IgniteConfiguration getConfiguration(String instanceName, String logPath)
         throws Exception {
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 
@@ -167,7 +167,7 @@ public class Log4j2LoggerSelfTest extends TestCase {
         }});
 
         return new IgniteConfiguration()
-            .setGridName(gridName)
+            .setInstanceName(instanceName)
             .setGridLogger(new Log4J2Logger(logPath))
             .setConnectorConfiguration(null)
             .setDiscoverySpi(disco);

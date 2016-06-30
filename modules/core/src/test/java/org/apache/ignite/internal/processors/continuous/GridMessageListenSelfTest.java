@@ -89,8 +89,8 @@ public class GridMessageListenSelfTest extends GridCommonAbstractTest {
     private static CountDownLatch latch;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         if (include)
             cfg.setUserAttributes(F.asMap(INC_ATTR, true));

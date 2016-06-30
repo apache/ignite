@@ -68,8 +68,8 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setFailoverSpi(new AlwaysFailoverSpi());
 
@@ -99,8 +99,8 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
         }
         finally {
             // Do not cancel but wait.
-            G.stop(getTestGridName(1), false);
-            G.stop(getTestGridName(2), false);
+            G.stop(getTestInstanceName(1), false);
+            G.stop(getTestInstanceName(2), false);
         }
 
         assert fut != null;
@@ -133,8 +133,8 @@ public class GridStopWithWaitSelfTest extends GridCommonAbstractTest {
         }
         finally {
             // Do not cancel but wait.
-            G.stop(getTestGridName(1), false);
-            G.stop(getTestGridName(2), false);
+            G.stop(getTestInstanceName(1), false);
+            G.stop(getTestInstanceName(2), false);
         }
 
         assert fut != null;

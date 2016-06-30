@@ -55,8 +55,8 @@ public class GridCacheRabalancingDelayedPartitionMapExchangeSelfTest extends Gri
     private volatile boolean record = false;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration iCfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration iCfg = super.getConfiguration(instanceName);
 
         TcpCommunicationSpi commSpi = new DelayableCommunicationSpi();
 

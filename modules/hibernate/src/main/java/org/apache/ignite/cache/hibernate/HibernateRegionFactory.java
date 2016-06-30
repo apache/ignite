@@ -102,7 +102,7 @@ public class HibernateRegionFactory implements RegionFactory {
     /** {@inheritDoc} */
     @Override public void start(Settings settings, Properties props) throws CacheException {
         String gridCfg = props.getProperty(GRID_CONFIG_PROPERTY);
-        String gridName = props.getProperty(GRID_NAME_PROPERTY);
+        String instanceName = props.getProperty(GRID_NAME_PROPERTY);
 
         if (gridCfg != null) {
             try {
@@ -113,7 +113,7 @@ public class HibernateRegionFactory implements RegionFactory {
             }
         }
         else
-            ignite = Ignition.ignite(gridName);
+            ignite = Ignition.ignite(instanceName);
 
         String accessType = props.getProperty(DFLT_ACCESS_TYPE_PROPERTY, NONSTRICT_READ_WRITE.name());
 
@@ -147,7 +147,7 @@ public class HibernateRegionFactory implements RegionFactory {
         IgniteLogger log = ignite.log().getLogger(HibernateRegionFactory.class);
 
         if (log.isDebugEnabled())
-            log.debug("HibernateRegionFactory started [grid=" + gridName + ']');
+            log.debug("HibernateRegionFactory started [grid=" + instanceName + ']');
     }
 
     /** {@inheritDoc} */

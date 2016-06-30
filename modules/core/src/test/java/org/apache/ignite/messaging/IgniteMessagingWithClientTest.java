@@ -51,12 +51,12 @@ public class IgniteMessagingWithClientTest extends GridCommonAbstractTest implem
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setMarshaller(new OptimizedMarshaller(false));
 
-        if (gridName.equals(getTestGridName(2))) {
+        if (instanceName.equals(getTestInstanceName(2))) {
             cfg.setClientMode(true);
 
             ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);

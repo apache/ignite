@@ -426,7 +426,7 @@ public abstract class AbstractDiscoverySelfTest<T extends IgniteSpi> extends Gri
                     ignite.setStaticCfg(cfg);
                 }
 
-                spi.spiStart(getTestGridName() + i);
+                spi.spiStart(getTestInstanceName() + i);
 
                 spis.add(spi);
 

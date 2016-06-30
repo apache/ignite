@@ -55,14 +55,14 @@ public class IgniteCacheIncrementTxTest extends GridCommonAbstractTest {
     private static final int SRVS = 4;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(IP_FINDER);
 
         ((TcpCommunicationSpi)cfg.getCommunicationSpi()).setSharedMemoryPort(-1);
 
-        if (getTestGridName(SRVS).equals(gridName))
+        if (getTestInstanceName(SRVS).equals(instanceName))
             cfg.setClientMode(true);
 
         return cfg;

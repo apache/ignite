@@ -467,7 +467,7 @@ $generatorJava.clusterGeneral = function(cluster, clientNearCfg, res) {
 
     $generatorJava.declareVariable(res, 'cfg', 'org.apache.ignite.configuration.IgniteConfiguration');
 
-    $generatorJava.property(res, 'cfg', cluster, 'name', null, 'setGridName');
+    $generatorJava.property(res, 'cfg', cluster, 'name', null, 'setInstanceName');
     res.needEmptyLine = true;
 
     $generatorJava.property(res, 'cfg', cluster, 'localHost');

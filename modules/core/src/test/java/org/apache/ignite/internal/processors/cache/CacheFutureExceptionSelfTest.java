@@ -48,10 +48,10 @@ public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
     private static volatile boolean fail;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName(gridName);
+        cfg.setInstanceName(instanceName);
 
         TcpDiscoverySpi spi = new TcpDiscoverySpi();
 
@@ -59,7 +59,7 @@ public class CacheFutureExceptionSelfTest extends GridCommonAbstractTest {
 
         cfg.setDiscoverySpi(spi);
 
-        if (gridName.equals(getTestGridName(1)))
+        if (instanceName.equals(getTestInstanceName(1)))
             cfg.setClientMode(true);
 
         return cfg;

@@ -79,7 +79,7 @@ public class GridNoopManagerSelfTest extends GridCommonAbstractTest {
      */
     private static class Spi extends IgniteSpiAdapter implements TestSpi {
         /** {@inheritDoc} */
-        @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+        @Override public void spiStart(@Nullable String instanceName) throws IgniteSpiException {
             // No-op.
         }
 

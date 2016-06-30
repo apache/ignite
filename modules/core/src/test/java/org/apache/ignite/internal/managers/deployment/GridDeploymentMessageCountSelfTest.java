@@ -57,8 +57,8 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
     private Map<String, MessageCountingCommunicationSpi> commSpis = new ConcurrentHashMap8<>();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -77,7 +77,7 @@ public class GridDeploymentMessageCountSelfTest extends GridCommonAbstractTest {
 
         MessageCountingCommunicationSpi commSpi = new MessageCountingCommunicationSpi();
 
-        commSpis.put(gridName, commSpi);
+        commSpis.put(instanceName, commSpi);
 
         cfg.setCommunicationSpi(commSpi);
 

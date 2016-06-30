@@ -27,11 +27,11 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  */
 public class GridCacheReplicatedMetricsSelfTest extends GridCacheTransactionalAbstractMetricsSelfTest {
     /** */
-    private static final int GRID_CNT = 2;
+    private static final int INSTANCE_CNT = 2;
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String instanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(instanceName);
 
         cfg.setCacheMode(REPLICATED);
 
@@ -40,6 +40,6 @@ public class GridCacheReplicatedMetricsSelfTest extends GridCacheTransactionalAb
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
-        return GRID_CNT;
+        return INSTANCE_CNT;
     }
 }

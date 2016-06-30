@@ -158,8 +158,8 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
     /** Local host name. */
     private String host;
 
-    /** Grid name. */
-    private String gridName;
+    /** Grid instance name. */
+    private String instanceName;
 
     /** Task that takes care about outdated files. */
     private SharedFsTimeoutTask timeoutTask;
@@ -206,13 +206,13 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws IgniteSpiException {
+    @Override public void spiStart(String instanceName) throws IgniteSpiException {
         // Start SPI start stopwatch.
         startStopwatch();
 
         assertParameter(!F.isEmpty(dirPaths), "!F.isEmpty(dirPaths)");
 
-        this.gridName = gridName;
+        this.instanceName = instanceName;
 
         marsh = ignite.configuration().getMarshaller() instanceof BinaryMarshaller ? new JdkMarshaller() :
             ignite.configuration().getMarshaller();
@@ -225,7 +225,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
         if (!folder.isDirectory())
             throw new IgniteSpiException("Checkpoint directory path is not a valid directory: " + curDirPath);
 
-        registerMBean(gridName, this, SharedFsCheckpointSpiMBean.class);
+        registerMBean(instanceName, this, SharedFsCheckpointSpiMBean.class);
 
         // Ack parameters.
         if (log.isDebugEnabled()) {
@@ -343,7 +343,7 @@ public class SharedFsCheckpointSpi extends IgniteSpiAdapter implements Checkpoin
                 }
             }
 
-            timeoutTask = new SharedFsTimeoutTask(gridName, marsh, log);
+            timeoutTask = new SharedFsTimeoutTask(instanceName, marsh, log);
 
             timeoutTask.setCheckpointListener(lsnr);
 

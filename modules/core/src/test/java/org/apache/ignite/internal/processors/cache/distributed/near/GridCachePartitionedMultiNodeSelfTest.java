@@ -30,13 +30,13 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  */
 public class GridCachePartitionedMultiNodeSelfTest extends GridCacheMultiNodeAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(instanceName);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
         cc.setCacheMode(PARTITIONED);
-        cc.setBackups(2); // 1 + backups == gridCnt.
+        cc.setBackups(2); // 1 + backups == instanceCnt.
         cc.setWriteSynchronizationMode(CacheWriteSynchronizationMode.FULL_SYNC);
         cc.setAtomicityMode(TRANSACTIONAL);
 

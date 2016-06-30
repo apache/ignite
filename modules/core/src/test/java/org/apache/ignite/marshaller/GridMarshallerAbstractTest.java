@@ -89,7 +89,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     private static Marshaller marsh;
 
     /** */
-    private static String gridName;
+    private static String localInstanceName;
 
     /** Closure job. */
     protected IgniteInClosure<String> c1 = new IgniteInClosure<String>() {
@@ -129,8 +129,8 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String localInstanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(localInstanceName);
 
         CacheConfiguration namedCache = new CacheConfiguration();
 
@@ -151,7 +151,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
         marsh = grid().configuration().getMarshaller();
-        gridName = grid().configuration().getGridName();
+        localInstanceName = grid().configuration().getInstanceName();
     }
 
     /**
@@ -847,7 +847,7 @@ public abstract class GridMarshallerAbstractTest extends GridCommonAbstractTest 
         });
 
         // Any deserialization has to be executed under a thread, that contains the grid name.
-        new IgniteThread(gridName, "unmarshal-thread", f).start();
+        new IgniteThread(localInstanceName, "unmarshal-thread", f).start();
 
         try {
             return f.get();

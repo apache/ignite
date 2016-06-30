@@ -249,7 +249,7 @@ public class IgfsProcessor extends IgfsProcessorAdapter {
     /** {@inheritDoc} */
     @Override public void printMemoryStats() {
         X.println(">>>");
-        X.println(">>> IGFS processor memory stats [grid=" + ctx.gridName() + ']');
+        X.println(">>> IGFS processor memory stats [grid=" + ctx.instanceName() + ']');
         X.println(">>>   igfsCacheSize: " + igfsCache.size());
     }
 

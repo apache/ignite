@@ -100,18 +100,18 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     /** */
     private static final IgnitePredicate<ClusterNode> serverNode = new P1<ClusterNode>() {
         @Override public boolean apply(ClusterNode n) {
-            String gridName = G.ignite(n.id()).name();
+            String instanceName = G.ignite(n.id()).name();
 
-            return gridName != null && gridName.contains("server");
+            return instanceName != null && instanceName.contains("server");
         }
     };
 
     /** */
     private static final IgnitePredicate<ClusterNode> clientNode = new P1<ClusterNode>() {
         @Override public boolean apply(ClusterNode n) {
-            String gridName = G.ignite(n.id()).name();
+            String instanceName = G.ignite(n.id()).name();
 
-            return gridName != null && gridName.contains("client");
+            return instanceName != null && instanceName.contains("client");
         }
     };
 
@@ -122,8 +122,8 @@ public class GridCacheConcurrentTxMultiNodeTest extends GridCommonAbstractTest {
     private boolean cacheOn;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(instanceName);
 
         c.getTransactionConfiguration().setDefaultTxConcurrency(PESSIMISTIC);
         c.getTransactionConfiguration().setDefaultTxIsolation(REPEATABLE_READ);

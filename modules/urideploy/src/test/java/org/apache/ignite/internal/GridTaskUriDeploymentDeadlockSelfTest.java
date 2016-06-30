@@ -38,15 +38,15 @@ import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
  */
 public class GridTaskUriDeploymentDeadlockSelfTest extends GridCommonAbstractTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(instanceName);
 
         UriDeploymentSpi deploymentSpi = new UriDeploymentSpi();
 
         deploymentSpi.setUriList(
             Arrays.asList(U.resolveIgniteUrl("modules/extdata/uri/target/resources/").toURI().toString()));
 
-        if (gridName.endsWith("2")) {
+        if (instanceName.endsWith("2")) {
             // Delay deployment for 2nd grid only.
             Field f = deploymentSpi.getClass().getDeclaredField("delayOnNewOrUpdatedFile");
 

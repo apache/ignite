@@ -38,11 +38,11 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
  * Tests near-only cache.
  */
 public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbstractSelfTest {
-    /** Grid cnt. */
-    private static AtomicInteger gridCnt;
+    /** Instance cnt. */
+    private static AtomicInteger instanceCnt;
 
-    /** Near-only cache grid name. */
-    private static String nearOnlyGridName;
+    /** Near-only cache instance name. */
+    private static String nearOnlyInstanceName;
 
     /** {@inheritDoc} */
     @Override protected int gridCount() {
@@ -51,24 +51,24 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
 
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
-        gridCnt = new AtomicInteger();
+        instanceCnt = new AtomicInteger();
 
         super.beforeTestsStarted();
 
         if (nearEnabled())
-            grid(nearOnlyGridName).createNearCache(null, nearConfiguration());
+            grid(nearOnlyInstanceName).createNearCache(null, nearConfiguration());
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
-        int cnt = gridCnt.incrementAndGet();
+        int cnt = instanceCnt.incrementAndGet();
 
         if ((cnt == gridCount() && isClientStartedLast()) || (cnt == 1 && !isClientStartedLast())) {
             cfg.setClientMode(true);
 
-            nearOnlyGridName = gridName;
+            nearOnlyInstanceName = instanceName;
         }
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setForceServerMode(true);
@@ -78,8 +78,8 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String instanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(instanceName);
 
         cfg.setCacheStoreFactory(null);
         cfg.setReadThrough(false);
@@ -194,7 +194,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
         for (int i = 0; i < gridCount(); i++) {
             Ignite g = grid(i);
 
-            if (F.eq(g.name(), nearOnlyGridName)) {
+            if (F.eq(g.name(), nearOnlyInstanceName)) {
                 for (int k = 0; k < 10000; k++) {
                     IgniteCache<Object, Object> cache = g.cache(null);
 
@@ -230,9 +230,9 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
      * @return Near only cache for this test.
      */
     protected IgniteCache<Object, Object> nearOnlyCache() {
-        assert nearOnlyGridName != null;
+        assert nearOnlyInstanceName != null;
 
-        return G.ignite(nearOnlyGridName).cache(null);
+        return G.ignite(nearOnlyInstanceName).cache(null);
     }
 
     /**
@@ -240,7 +240,7 @@ public abstract class GridCacheClientModesAbstractSelfTest extends GridCacheAbst
      */
     protected IgniteCache<Object, Object> dhtCache() {
         for (int i = 0; i < gridCount(); i++) {
-            if (!nearOnlyGridName.equals(grid(i).name()))
+            if (!nearOnlyInstanceName.equals(grid(i).name()))
                 return grid(i).cache(null);
         }
 

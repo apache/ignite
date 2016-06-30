@@ -61,7 +61,7 @@ import org.jetbrains.annotations.Nullable;
  * <pre name="code" class="xml">
  * &lt;bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration"&gt;
  *     ...
- *     &lt;property name="gridName" value="grid"/&gt;
+ *     &lt;property name="instanceName" value="instance"/&gt;
  *     &lt;property name="userAttributes"&gt;
  *         &lt;map&gt;
  *             &lt;entry key="group" value="worker"/&gt;

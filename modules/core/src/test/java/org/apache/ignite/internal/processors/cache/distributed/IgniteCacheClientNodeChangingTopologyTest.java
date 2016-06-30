@@ -120,10 +120,10 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     private volatile CyclicBarrier updateBarrier;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
-        cfg.setConsistentId(gridName);
+        cfg.setConsistentId(instanceName);
 
         ((TcpDiscoverySpi)cfg.getDiscoverySpi()).setIpFinder(ipFinder).setForceServerMode(true);
 
@@ -704,7 +704,7 @@ public class IgniteCacheClientNodeChangingTopologyTest extends GridCommonAbstrac
     private IgniteBiTuple<Integer, Integer> findKeys(Ignite ignite, ClusterNode...nodes) {
         ClusterNode newNode = new TcpDiscoveryNode();
 
-        GridTestUtils.setFieldValue(newNode, "consistentId", getTestGridName(4));
+        GridTestUtils.setFieldValue(newNode, "consistentId", getTestInstanceName(4));
         GridTestUtils.setFieldValue(newNode, "id", UUID.randomUUID());
 
         List<ClusterNode> topNodes = new ArrayList<>();

@@ -51,8 +51,8 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setEventStorageSpi(new GridTestRuntimeExceptionSpi());
         cfg.setDeploymentSpi(new GridTestCheckedExceptionSpi());
@@ -105,7 +105,7 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
     @IgniteSpiMultipleInstancesSupport(true)
     private static class GridTestRuntimeExceptionSpi extends IgniteSpiAdapter implements EventStorageSpi {
         /** {@inheritDoc} */
-        @Override public void spiStart(String gridName) throws IgniteSpiException {
+        @Override public void spiStart(String instanceName) throws IgniteSpiException {
             startStopwatch();
         }
 
@@ -131,7 +131,7 @@ public class GridSpiExceptionSelfTest extends GridCommonAbstractTest {
     @IgniteSpiMultipleInstancesSupport(true)
     private static class GridTestCheckedExceptionSpi extends IgniteSpiAdapter implements DeploymentSpi {
         /** {@inheritDoc} */
-        @Override public void spiStart(@Nullable String gridName) throws IgniteSpiException {
+        @Override public void spiStart(@Nullable String instanceName) throws IgniteSpiException {
             startStopwatch();
         }
 

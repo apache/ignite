@@ -667,9 +667,18 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /**
      * @return Grid name.
+     * @deprecated Use {@link #instanceName()} instead.
      */
+    @Deprecated
     public String gridName() {
         return ctx.gridName();
+    }
+
+    /**
+     * @return Instance name.
+     */
+    public String instanceName() {
+        return ctx.instanceName();
     }
 
     /**
@@ -1947,7 +1956,7 @@ public class GridCacheContext<K, V> implements Externalizable {
      */
     public void printMemoryStats() {
         X.println(">>> ");
-        X.println(">>> Cache memory stats [grid=" + ctx.gridName() + ", cache=" + name() + ']');
+        X.println(">>> Cache memory stats [grid=" + ctx.instanceName() + ", cache=" + name() + ']');
 
         cache().printMemoryStats();
 
@@ -2016,7 +2025,7 @@ public class GridCacheContext<K, V> implements Externalizable {
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        U.writeString(out, gridName());
+        U.writeString(out, instanceName());
         U.writeString(out, namex());
     }
 

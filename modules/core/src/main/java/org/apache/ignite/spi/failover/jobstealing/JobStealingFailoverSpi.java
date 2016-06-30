@@ -173,7 +173,7 @@ public class JobStealingFailoverSpi extends IgniteSpiAdapter implements Failover
     }
 
     /** {@inheritDoc} */
-    @Override public void spiStart(String gridName) throws IgniteSpiException {
+    @Override public void spiStart(String instanceName) throws IgniteSpiException {
         // Start SPI start stopwatch.
         startStopwatch();
 
@@ -182,7 +182,7 @@ public class JobStealingFailoverSpi extends IgniteSpiAdapter implements Failover
         if (log.isDebugEnabled())
             log.debug(configInfo("maxFailoverAttempts", maxFailoverAttempts));
 
-        registerMBean(gridName, this, JobStealingFailoverSpiMBean.class);
+        registerMBean(instanceName, this, JobStealingFailoverSpiMBean.class);
 
         // Ack ok start.
         if (log.isDebugEnabled())

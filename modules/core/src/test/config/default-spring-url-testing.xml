@@ -36,7 +36,7 @@
         <!--
             Specify grid instance name.
         -->
-        <property name="gridName" value="grid_with_url_config"/>
+        <property name="instanceName" value="instance_with_url_config"/>
 
         <property name="connectorConfiguration"><null/></property>
     </bean>

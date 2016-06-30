@@ -101,12 +101,12 @@ public abstract class GridCacheContinuousQueryAbstractSelfTest extends GridCommo
 
     /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setPeerClassLoadingEnabled(peerClassLoadingEnabled());
 
-        if (!gridName.equals(NO_CACHE_GRID_NAME)) {
+        if (!instanceName.equals(NO_CACHE_GRID_NAME)) {
             CacheConfiguration cacheCfg = defaultCacheConfiguration();
 
             cacheCfg.setCacheMode(cacheMode());

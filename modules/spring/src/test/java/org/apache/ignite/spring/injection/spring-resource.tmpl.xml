@@ -38,7 +38,7 @@
             <bean id="ignite.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
                 <property name="localHost" value="127.0.0.1"/>
 
-                <property name="gridName" value="springTest@GRID_IDX@"/>
+                <property name="instanceName" value="springTest@GRID_IDX@"/>
 
                 <property name="discoverySpi">
                     <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">

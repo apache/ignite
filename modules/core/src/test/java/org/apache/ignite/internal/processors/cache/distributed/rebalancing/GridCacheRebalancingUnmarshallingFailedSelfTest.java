@@ -96,8 +96,8 @@ public class GridCacheRebalancingUnmarshallingFailedSelfTest extends GridCommonA
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration iCfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration iCfg = super.getConfiguration(instanceName);
 
         CacheConfiguration<TestKey, Integer> cfg = new CacheConfiguration<>();
 

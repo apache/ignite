@@ -109,7 +109,7 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
 
             data.idx = i;
 
-            data.ignite = startGridWithIgfs(getTestGridName(i), igfsMode, null);
+            data.ignite = startGridWithIgfs(getTestInstanceName(i), igfsMode, null);
 
             data.igfsImpl = (IgfsImpl) data.ignite.fileSystem("igfs");
 
@@ -123,13 +123,13 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
     /**
      * Start grid with IGFS.
      *
-     * @param gridName Grid name.
+     * @param instanceName Instance name.
      * @param mode IGFS mode.
      * @param secondaryFs Secondary file system (optional).
      * @return Started grid instance.
      * @throws Exception If failed.
      */
-    protected Ignite startGridWithIgfs(String gridName, IgfsMode mode, @Nullable IgfsSecondaryFileSystem secondaryFs)
+    protected Ignite startGridWithIgfs(String instanceName, IgfsMode mode, @Nullable IgfsSecondaryFileSystem secondaryFs)
         throws Exception {
         final FileSystemConfiguration igfsCfg = new FileSystemConfiguration();
 
@@ -158,14 +158,14 @@ public class IgfsBackupFailoverSelfTest extends IgfsCommonAbstractTest {
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName(gridName);
+        cfg.setInstanceName(instanceName);
 
         cfg.setCacheConfiguration(dataCacheCfg, metaCacheCfg);
         cfg.setFileSystemConfiguration(igfsCfg);
 
         cfg.setLocalHost("127.0.0.1");
 
-        return startGrid(gridName, cfg);
+        return startGrid(instanceName, cfg);
     }
 
     /** {@inheritDoc} */

@@ -47,7 +47,7 @@ public class GridCacheSynchronousEvictionsFailoverSelfTest extends GridCacheAbst
     }
 
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
+    @Override protected int instanceCount() {
         return 3;
     }
 
@@ -62,8 +62,8 @@ public class GridCacheSynchronousEvictionsFailoverSelfTest extends GridCacheAbst
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration ccfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String instanceName) throws Exception {
+        CacheConfiguration ccfg = super.cacheConfiguration(instanceName);
 
         ccfg.setSwapEnabled(false);
         ccfg.setEvictSynchronized(true);

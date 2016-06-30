@@ -790,11 +790,11 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
 
     /**
      * @param cfg Configuration.
-     * @param gridName Grid name.
+     * @param instanceName Grid instance name.
      * @param servlet Servlet.
      * @return Servlet container web context for this test.
      */
-    protected WebAppContext getWebContext(@Nullable String cfg, @Nullable String gridName,
+    protected WebAppContext getWebContext(@Nullable String cfg, @Nullable String instanceName,
         boolean keepBinaryFlag, HttpServlet servlet) {
         final String path = keepBinaryFlag ? "modules/core/src/test/webapp" : "modules/web/src/test/webapp2";
 
@@ -802,7 +802,7 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
             "/ignitetest");
 
         ctx.setInitParameter("IgniteConfigurationFilePath", cfg);
-        ctx.setInitParameter("IgniteWebSessionsGridName", gridName);
+        ctx.setInitParameter("IgniteWebSessionsGridName", instanceName);
         ctx.setInitParameter("IgniteWebSessionsCacheName", getCacheName());
         ctx.setInitParameter("IgniteWebSessionsMaximumRetriesOnFail", "100");
         ctx.setInitParameter("IgniteWebSessionsKeepBinary", Boolean.toString(keepBinaryFlag));
@@ -817,16 +817,16 @@ public class WebSessionSelfTest extends GridCommonAbstractTest {
      *
      * @param port Port number.
      * @param cfg Configuration.
-     * @param gridName Grid name.
+     * @param instanceName Grid instance name.
      * @param servlet Servlet.
      * @return Server.
      * @throws Exception In case of error.
      */
-    private Server startServer(int port, @Nullable String cfg, @Nullable String gridName, HttpServlet servlet)
+    private Server startServer(int port, @Nullable String cfg, @Nullable String instanceName, HttpServlet servlet)
         throws Exception {
         Server srv = new Server(port);
 
-        WebAppContext ctx = getWebContext(cfg, gridName, keepBinary(), servlet);
+        WebAppContext ctx = getWebContext(cfg, instanceName, keepBinary(), servlet);
 
         srv.setHandler(ctx);
 

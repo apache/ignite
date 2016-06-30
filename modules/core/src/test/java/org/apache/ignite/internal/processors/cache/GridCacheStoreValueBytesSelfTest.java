@@ -31,7 +31,11 @@ import static org.apache.ignite.cache.CacheMode.REPLICATED;
 import static org.apache.ignite.cache.CacheWriteSynchronizationMode.FULL_SYNC;
 
 /**
+<<<<<<< HEAD
  * Test for {@link CacheConfiguration#isStoreKeepBinary()}.
+=======
+ * Test for {@link org.apache.ignite.configuration.CacheConfiguration#isStoreKeepBinary()}.
+>>>>>>> try to fix GridCacheStoreValueBytesSelfTest.java's invalid link
  */
 public class GridCacheStoreValueBytesSelfTest extends GridCommonAbstractTest {
     /** */
@@ -41,8 +45,8 @@ public class GridCacheStoreValueBytesSelfTest extends GridCommonAbstractTest {
     private static TcpDiscoveryIpFinder ipFinder = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         TcpDiscoverySpi disco = new TcpDiscoverySpi();
 

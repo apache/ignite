@@ -46,8 +46,8 @@ public class GridAddressResolverSelfTest extends GridCommonAbstractTest {
     private static final TcpDiscoveryVmIpFinder IP_FINDER = new TcpDiscoveryVmIpFinder(true);
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(final String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(final String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
         discoSpi.setIpFinder(IP_FINDER);
@@ -59,7 +59,7 @@ public class GridAddressResolverSelfTest extends GridCommonAbstractTest {
                 Set<InetSocketAddress> set = new HashSet<>();
 
                 set.add(addr);
-                set.add(gridName.contains("0") ? addr0 : addr1);
+                set.add(instanceName.contains("0") ? addr0 : addr1);
 
                 return set;
             }

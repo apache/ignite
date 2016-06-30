@@ -62,15 +62,15 @@ public class IgniteServiceConfigVariationsFullApiTest extends IgniteConfigVariat
     };
 
     /** {@inheritDoc} */
-    @Override protected boolean expectedClient(String testGridName) {
+    @Override protected boolean expectedClient(String testInstanceName) {
         int i = testsCfg.gridCount();
 
         if (i < 5)
-            return super.expectedClient(testGridName);
+            return super.expectedClient(testInstanceName);
 
         // Use two client nodes if grid index 5 or greater.
-        return getTestGridName(CLIENT_NODE_IDX).equals(testGridName)
-            || getTestGridName(CLIENT_NODE_IDX_2).equals(testGridName);
+        return getTestInstanceName(CLIENT_NODE_IDX).equals(testInstanceName)
+            || getTestInstanceName(CLIENT_NODE_IDX_2).equals(testInstanceName);
     }
 
     /**

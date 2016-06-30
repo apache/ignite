@@ -43,7 +43,7 @@ public class GridCachePartitionedAffinityHashIdResolverSelfTest extends GridComm
     private AffinityNodeHashResolver rslvr;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
         RendezvousAffinityFunction aff = new RendezvousAffinityFunction();
 
         aff.setHashIdResolver(rslvr);
@@ -57,7 +57,7 @@ public class GridCachePartitionedAffinityHashIdResolverSelfTest extends GridComm
 
         disco.setIpFinder(ipFinder);
 
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setCacheConfiguration(cacheCfg);
         cfg.setDiscoverySpi(disco);

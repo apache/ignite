@@ -33,13 +33,13 @@ abstract class VisorRuntimeBaseSpec(private[this] val num: Int) extends FunSpec 
     /**
      * Gets grid configuration.
      *
-     * @param name Grid name.
+     * @param name Grid instance name.
      * @return Grid configuration.
      */
     protected def config(name: String): IgniteConfiguration = {
         val cfg = new IgniteConfiguration
 
-        cfg.setGridName(name)
+        cfg.setInstanceName(name)
 
         cfg
     }

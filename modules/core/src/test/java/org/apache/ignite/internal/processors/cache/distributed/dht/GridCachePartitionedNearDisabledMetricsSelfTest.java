@@ -36,8 +36,8 @@ public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheAb
     private static final int GRID_CNT = 2;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.getTransactionConfiguration().setTxSerializableEnabled(true);
 
@@ -45,8 +45,8 @@ public class GridCachePartitionedNearDisabledMetricsSelfTest extends GridCacheAb
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String instanceName) throws Exception {
+        CacheConfiguration cfg = super.cacheConfiguration(instanceName);
 
         cfg.setCacheMode(PARTITIONED);
         cfg.setBackups(gridCount() - 1);

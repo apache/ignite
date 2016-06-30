@@ -66,7 +66,7 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
     public void testFailoverTask() throws Exception {
         isFailoverCalled = false;
 
-        Ignite ignite = G.ignite(getTestGridName());
+        Ignite ignite = G.ignite(getTestInstanceName());
 
         ignite.compute().localDeployTask(GridTestFailoverTask.class, GridTestFailoverTask.class.getClassLoader());
 
@@ -90,7 +90,7 @@ public class GridAlwaysFailoverSpiFailSelfTest extends GridCommonAbstractTest {
     public void testNoneFailoverTask() throws Exception {
         isFailoverCalled = false;
 
-        Ignite ignite = G.ignite(getTestGridName());
+        Ignite ignite = G.ignite(getTestInstanceName());
 
         ignite.compute().localDeployTask(GridTestFailoverTask.class, GridTestFailoverTask.class.getClassLoader());
 

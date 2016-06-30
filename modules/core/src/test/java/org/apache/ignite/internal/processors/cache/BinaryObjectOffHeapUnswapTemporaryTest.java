@@ -69,8 +69,8 @@ public class BinaryObjectOffHeapUnswapTemporaryTest extends GridCommonAbstractTe
     private CacheAtomicityMode atomicityMode;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(instanceName);
 
         c.setMarshaller(new BinaryMarshaller());
         c.setSwapSpaceSpi(new FileSwapSpaceSpi());

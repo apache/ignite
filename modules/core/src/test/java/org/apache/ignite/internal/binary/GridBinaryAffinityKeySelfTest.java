@@ -57,8 +57,8 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
     private static int GRID_CNT = 5;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         BinaryTypeConfiguration typeCfg = new BinaryTypeConfiguration();
 
@@ -77,7 +77,7 @@ public class GridBinaryAffinityKeySelfTest extends GridCommonAbstractTest {
 
         cfg.setMarshaller(new BinaryMarshaller());
 
-        if (!gridName.equals(getTestGridName(GRID_CNT))) {
+        if (!instanceName.equals(getTestInstanceName(GRID_CNT))) {
             CacheConfiguration cacheCfg = new CacheConfiguration();
 
             cacheCfg.setCacheMode(PARTITIONED);

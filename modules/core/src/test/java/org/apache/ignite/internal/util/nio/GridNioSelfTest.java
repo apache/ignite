@@ -618,7 +618,7 @@ public class GridNioSelfTest extends GridCommonAbstractTest {
             .listener(lsnr)
             .logger(log)
             .selectorCount(Runtime.getRuntime().availableProcessors())
-            .gridName("nio-test-grid")
+            .instanceName("nio-test-instance")
             .tcpNoDelay(true)
             .directBuffer(true)
             .byteOrder(ByteOrder.nativeOrder())

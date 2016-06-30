@@ -133,7 +133,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName("igfs-grid");
+        cfg.setInstanceName("igfs-grid");
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -189,7 +189,7 @@ public class IgfsModesSelfTest extends IgfsCommonAbstractTest {
 
         IgniteConfiguration cfg = new IgniteConfiguration();
 
-        cfg.setGridName("igfs-grid-secondary");
+        cfg.setInstanceName("igfs-instance-secondary");
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 

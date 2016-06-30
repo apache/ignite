@@ -99,8 +99,8 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
 
@@ -131,10 +131,10 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
         return cfg;
     }
     /**
-     * @param gridName Grid name.
+     * @param instanceName Grid instance name.
      * @return Hibernate configuration.
      */
-    protected Configuration hibernateConfiguration(String gridName) {
+    protected Configuration hibernateConfiguration(String instanceName) {
         Configuration cfg = new Configuration();
 
         cfg.addAnnotatedClass(Entity1.class);
@@ -156,7 +156,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
 
         cfg.setProperty(RELEASE_CONNECTIONS, "on_close");
 
-        cfg.setProperty(GRID_NAME_PROPERTY, gridName);
+        cfg.setProperty(GRID_NAME_PROPERTY, instanceName);
 
         cfg.setProperty(REGION_CACHE_PROPERTY + ENTITY1_NAME, "cache1");
         cfg.setProperty(REGION_CACHE_PROPERTY + ENTITY2_NAME, "cache2");
@@ -194,7 +194,7 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
      */
     @SuppressWarnings("unchecked")
     private void testCacheUsage(int expCache1, int expCache2, int expCache3, int expCacheE3, int expCacheE4) {
-        SessionFactory sesFactory = startHibernate(getTestGridName(0));
+        SessionFactory sesFactory = startHibernate(getTestInstanceName(0));
 
         try {
             Session ses = sesFactory.openSession();
@@ -280,11 +280,11 @@ public class HibernateL2CacheConfigurationSelfTest extends GridCommonAbstractTes
     }
 
     /**
-     * @param gridName Name of the grid providing caches.
+     * @param instanceName Name of the grid instance providing caches.
      * @return Session factory.
      */
-    private SessionFactory startHibernate(String gridName) {
-        Configuration cfg = hibernateConfiguration(gridName);
+    private SessionFactory startHibernate(String instanceName) {
+        Configuration cfg = hibernateConfiguration(instanceName);
 
         ServiceRegistryBuilder builder = new ServiceRegistryBuilder();
 

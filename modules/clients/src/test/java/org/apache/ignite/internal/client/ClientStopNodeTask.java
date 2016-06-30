@@ -106,7 +106,7 @@ public class ClientStopNodeTask extends ComputeTaskSplitAdapter<String, Integer>
         @Override public Object execute() {
             log.info(">>> Stop node [nodeId=" + ignite.cluster().localNode().id() + ", name='" + ignite.name() + "']");
 
-            String prefix = ClientStartNodeTask.getConfig(gridType).getGridName() + " (";
+            String prefix = ClientStartNodeTask.getConfig(gridType).getInstanceName() + " (";
 
             if (!ignite.name().startsWith(prefix)) {
                 int stoppedCnt = 0;
@@ -114,7 +114,7 @@ public class ClientStopNodeTask extends ComputeTaskSplitAdapter<String, Integer>
                 for (Ignite g : G.allGrids())
                     if (g.name().startsWith(prefix)) {
                         try {
-                            log.info(">>> Grid stopping [nodeId=" + g.cluster().localNode().id() +
+                            log.info(">>> Instance stopping [nodeId=" + g.cluster().localNode().id() +
                                 ", name='" + g.name() + "']");
 
                             G.stop(g.name(), true);
@@ -122,7 +122,7 @@ public class ClientStopNodeTask extends ComputeTaskSplitAdapter<String, Integer>
                             stoppedCnt++;
                         }
                         catch (IllegalStateException e) {
-                            log.warning("Failed to stop grid.", e);
+                            log.warning("Failed to stop instance.", e);
                         }
                     }
 

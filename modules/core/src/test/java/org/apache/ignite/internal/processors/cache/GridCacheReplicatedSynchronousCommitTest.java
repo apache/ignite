@@ -67,8 +67,8 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration c = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration c = super.getConfiguration(instanceName);
 
         CacheConfiguration cc = defaultCacheConfiguration();
 
@@ -78,7 +78,7 @@ public class GridCacheReplicatedSynchronousCommitTest extends GridCommonAbstract
 
         c.setCacheConfiguration(cc);
 
-        TestCommunicationSpi commSpi = new TestCommunicationSpi(gridName.equals(NO_COMMIT));
+        TestCommunicationSpi commSpi = new TestCommunicationSpi(instanceName.equals(NO_COMMIT));
 
         c.setCommunicationSpi(commSpi);
 

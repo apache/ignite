@@ -68,7 +68,7 @@ class VisorCacheCommandSpec extends VisorRuntimeBaseSpec(1) {
     {
         val cfg = new IgniteConfiguration
 
-        cfg.setGridName(name)
+        cfg.setInstanceName(name)
         cfg.setLocalHost("127.0.0.1")
         cfg.setCacheConfiguration(cacheConfig("replicated"))
 

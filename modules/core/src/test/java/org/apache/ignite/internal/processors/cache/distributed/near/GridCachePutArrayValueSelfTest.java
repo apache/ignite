@@ -34,13 +34,13 @@ import static org.apache.ignite.cache.CacheMode.PARTITIONED;
  */
 public class GridCachePutArrayValueSelfTest extends GridCacheAbstractSelfTest {
     /** {@inheritDoc} */
-    @Override protected int gridCount() {
+    @Override protected int instanceCount() {
         return 4;
     }
 
     /** {@inheritDoc} */
-    @Override protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
-        CacheConfiguration cacheCfg = super.cacheConfiguration(gridName);
+    @Override protected CacheConfiguration cacheConfiguration(String instanceName) throws Exception {
+        CacheConfiguration cacheCfg = super.cacheConfiguration(instanceName);
 
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(1);
@@ -52,7 +52,7 @@ public class GridCachePutArrayValueSelfTest extends GridCacheAbstractSelfTest {
      * @throws Exception If failed.
      */
     public void testInternalKeys() throws Exception {
-        assert gridCount() >= 2;
+        assert instanceCount() >= 2;
 
         IgniteCache<InternalKey, Object> jcache = grid(0).cache(null);
 

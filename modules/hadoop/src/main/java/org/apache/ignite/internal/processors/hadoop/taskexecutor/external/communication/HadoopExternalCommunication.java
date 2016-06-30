@@ -174,8 +174,8 @@ public class HadoopExternalCommunication {
     /** Message notification executor service. */
     private ExecutorService execSvc;
 
-    /** Grid name. */
-    private String gridName;
+    /** Grid instance name. */
+    private String instanceName;
 
     /** Complex variable that represents this node IP address. */
     private volatile InetAddress locHost;
@@ -253,7 +253,7 @@ public class HadoopExternalCommunication {
      * @param marsh Marshaller to use.
      * @param log Logger.
      * @param execSvc Executor service for message notification.
-     * @param gridName Grid name.
+     * @param instanceName Grid name.
      */
     public HadoopExternalCommunication(
         UUID parentNodeId,
@@ -261,14 +261,14 @@ public class HadoopExternalCommunication {
         Marshaller marsh,
         IgniteLogger log,
         ExecutorService execSvc,
-        String gridName
+        String instanceName
     ) {
         locProcDesc = new HadoopProcessDescriptor(parentNodeId, procId);
 
         this.marsh = marsh;
         this.log = log.getLogger(HadoopExternalCommunication.class);
         this.execSvc = execSvc;
-        this.gridName = gridName;
+        this.instanceName = instanceName;
     }
 
     /**
@@ -603,7 +603,7 @@ public class HadoopExternalCommunication {
      */
     private GridNioFilter[] filters() {
         return new GridNioFilter[] {
-            new GridNioAsyncNotifyFilter(gridName, execSvc, log),
+            new GridNioAsyncNotifyFilter(instanceName, execSvc, log),
             new HandshakeAndBackpressureFilter(),
             new HadoopMarshallerFilter(marsh),
             new GridNioCodecFilter(new GridBufferedParser(directBuf, ByteOrder.nativeOrder()), log, false)
@@ -632,7 +632,7 @@ public class HadoopExternalCommunication {
                         .listener(srvLsnr)
                         .logger(log.getLogger(GridNioServer.class))
                         .selectorCount(selectorsCnt)
-                        .gridName(gridName)
+                        .instanceName(instanceName)
                         .tcpNoDelay(tcpNoDelay)
                         .directBuffer(directBuf)
                         .byteOrder(ByteOrder.nativeOrder())
@@ -685,7 +685,7 @@ public class HadoopExternalCommunication {
             try {
                 IpcSharedMemoryServerEndpoint srv = new IpcSharedMemoryServerEndpoint(
                     log.getLogger(IpcSharedMemoryServerEndpoint.class),
-                    locProcDesc.processId(), gridName);
+                    locProcDesc.processId(), instanceName);
 
                 srv.setPort(port);
 
@@ -1123,7 +1123,7 @@ public class HadoopExternalCommunication {
          * @param srv Server.
          */
         ShmemAcceptWorker(IpcSharedMemoryServerEndpoint srv) {
-            super(gridName, "shmem-communication-acceptor", HadoopExternalCommunication.this.log);
+            super(instanceName, "shmem-communication-acceptor", HadoopExternalCommunication.this.log);
 
             this.srv = srv;
         }
@@ -1170,7 +1170,7 @@ public class HadoopExternalCommunication {
          * @param endpoint Endpoint.
          */
         private ShmemWorker(IpcEndpoint endpoint, boolean accepted) {
-            super(gridName, "shmem-worker", HadoopExternalCommunication.this.log);
+            super(instanceName, "shmem-worker", HadoopExternalCommunication.this.log);
 
             this.endpoint = endpoint;
 

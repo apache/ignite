@@ -50,8 +50,8 @@ public abstract class GridCacheBinaryObjectsAbstractDataStreamerSelfTest extends
     private static final int THREAD_CNT = 64;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         CacheConfiguration cacheCfg = new CacheConfiguration();
 

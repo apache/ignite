@@ -94,8 +94,8 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
     private boolean syncRebalance;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setClientMode(clientMode);
 
@@ -216,7 +216,7 @@ public class CacheScanPartitionQueryFallbackSelfTest extends GridCommonAbstractT
 
                             Thread.sleep(3000);
 
-                            info("Will stop grid: " + getTestGridName(id));
+                            info("Will stop instance: " + getTestInstanceName(id));
 
                             stopGrid(id);
 

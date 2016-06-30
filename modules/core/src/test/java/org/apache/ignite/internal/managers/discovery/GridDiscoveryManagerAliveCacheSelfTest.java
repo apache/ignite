@@ -90,8 +90,8 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         CacheConfiguration cCfg = defaultCacheConfiguration();
 
@@ -103,7 +103,7 @@ public class GridDiscoveryManagerAliveCacheSelfTest extends GridCommonAbstractTe
 
         TcpDiscoverySpi disc = new TcpDiscoverySpi();
 
-        if (clientMode && ((gridName.charAt(gridName.length() - 1) - '0') & 1) != 0)
+        if (clientMode && ((instanceName.charAt(instanceName.length() - 1) - '0') & 1) != 0)
             cfg.setClientMode(true);
         else
             disc.setMaxMissedClientHeartbeats(50);

@@ -77,8 +77,8 @@ public class ClientFailedInitSelfTest extends GridCommonAbstractTest {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         assert cfg.getConnectorConfiguration() == null;
 
@@ -195,7 +195,7 @@ public class ClientFailedInitSelfTest extends GridCommonAbstractTest {
             try {
                 c.compute().nodes();
 
-                fail("Nodes list should fail while grid is stopped.");
+                fail("Nodes list should fail while instance is stopped.");
             }
             catch (GridClientDisconnectedException e) {
                 assertTrue(X.hasCause(e, GridClientException.class));

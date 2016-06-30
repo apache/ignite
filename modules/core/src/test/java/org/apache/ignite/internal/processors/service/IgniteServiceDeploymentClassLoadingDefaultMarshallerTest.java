@@ -62,8 +62,8 @@ public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends Gr
     private Set<String> extClsLdrGrids = new HashSet<>();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setPeerClassLoadingEnabled(false);
 
@@ -75,13 +75,13 @@ public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends Gr
 
         cfg.setMarshaller(marshaller());
 
-        cfg.setUserAttributes(Collections.singletonMap(NODE_NAME_ATTR, gridName));
+        cfg.setUserAttributes(Collections.singletonMap(NODE_NAME_ATTR, instanceName));
 
-        if (getTestGridName(CLIENT_NODE_WITH_EXT_CLASS_LOADER).equals(gridName)
-            || getTestGridName(CLIENT_NODE).equals(gridName))
+        if (getTestInstanceName(CLIENT_NODE_WITH_EXT_CLASS_LOADER).equals(instanceName)
+            || getTestInstanceName(CLIENT_NODE).equals(instanceName))
             cfg.setClientMode(true);
 
-        if (extClsLdrGrids.contains(gridName))
+        if (extClsLdrGrids.contains(instanceName))
             cfg.setClassLoader(extClsLdr);
 
         return cfg;
@@ -100,8 +100,8 @@ public class IgniteServiceDeploymentClassLoadingDefaultMarshallerTest extends Gr
 
         extClsLdrGrids.clear();
 
-        extClsLdrGrids.add(getTestGridName(SERVER_NODE_WITH_EXT_CLASS_LOADER));
-        extClsLdrGrids.add(getTestGridName(CLIENT_NODE_WITH_EXT_CLASS_LOADER));
+        extClsLdrGrids.add(getTestInstanceName(SERVER_NODE_WITH_EXT_CLASS_LOADER));
+        extClsLdrGrids.add(getTestInstanceName(CLIENT_NODE_WITH_EXT_CLASS_LOADER));
     }
 
     /** {@inheritDoc} */

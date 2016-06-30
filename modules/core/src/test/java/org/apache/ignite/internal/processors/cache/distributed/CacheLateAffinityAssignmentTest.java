@@ -138,15 +138,15 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
     private boolean skipCheckOrder;
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration cfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration cfg = super.getConfiguration(instanceName);
 
         cfg.setLateAffinityAssignment(true);
 
         TestRecordingCommunicationSpi commSpi;
 
         if (spiC != null)
-            commSpi = spiC.apply(gridName);
+            commSpi = spiC.apply(instanceName);
         else
             commSpi = new TestRecordingCommunicationSpi();
 
@@ -166,7 +166,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
         CacheConfiguration[] ccfg;
 
         if (cacheC != null)
-            ccfg = cacheC.apply(gridName);
+            ccfg = cacheC.apply(instanceName);
         else
             ccfg = new CacheConfiguration[]{cacheConfiguration()};
 
@@ -174,7 +174,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
             cfg.setCacheConfiguration(ccfg);
 
         if (clientC != null) {
-            client = clientC.apply(gridName);
+            client = clientC.apply(instanceName);
 
             discoSpi.setJoinTimeout(30_000);
         }
@@ -313,15 +313,15 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     public void testAffinitySimpleSequentialStartNoCacheOnCoordinator() throws Exception {
         cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String gridName) {
-                if (gridName.equals(getTestGridName(0)))
+            @Override public CacheConfiguration[] apply(String instanceName) {
+                if (instanceName.equals(getTestInstanceName(0)))
                     return null;
 
                 return new CacheConfiguration[]{cacheConfiguration()};
             }
         };
 
-        cacheNodeFilter = new CacheNodeFilter(F.asList(getTestGridName(0)));
+        cacheNodeFilter = new CacheNodeFilter(F.asList(getTestInstanceName(0)));
 
         testAffinitySimpleSequentialStart();
 
@@ -333,15 +333,15 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     public void testAffinitySimpleNoCacheOnCoordinator1() throws Exception {
         cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String gridName) {
-                if (gridName.equals(getTestGridName(1)))
+            @Override public CacheConfiguration[] apply(String instanceName) {
+                if (instanceName.equals(getTestInstanceName(1)))
                     return null;
 
                 return new CacheConfiguration[]{cacheConfiguration()};
             }
         };
 
-        cacheNodeFilter = new CacheNodeFilter(F.asList(getTestGridName(1)));
+        cacheNodeFilter = new CacheNodeFilter(F.asList(getTestInstanceName(1)));
 
         startServer(0, 1);
 
@@ -372,15 +372,15 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     public void testAffinitySimpleNoCacheOnCoordinator2() throws Exception {
         cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String gridName) {
-                if (gridName.equals(getTestGridName(1)) || gridName.equals(getTestGridName(2)))
+            @Override public CacheConfiguration[] apply(String instanceName) {
+                if (instanceName.equals(getTestInstanceName(1)) || instanceName.equals(getTestInstanceName(2)))
                     return null;
 
                 return new CacheConfiguration[]{cacheConfiguration()};
             }
         };
 
-        cacheNodeFilter = new CacheNodeFilter(F.asList(getTestGridName(1), getTestGridName(2)));
+        cacheNodeFilter = new CacheNodeFilter(F.asList(getTestInstanceName(1), getTestInstanceName(2)));
 
         startServer(0, 1);
         startServer(1, 2);
@@ -423,12 +423,12 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     public void testCreateCloseClientCacheOnCoordinator1() throws Exception {
         cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String gridName) {
+            @Override public CacheConfiguration[] apply(String instanceName) {
                 return null;
             }
         };
 
-        cacheNodeFilter = new CacheNodeFilter(F.asList(getTestGridName(0)));
+        cacheNodeFilter = new CacheNodeFilter(F.asList(getTestInstanceName(0)));
 
         Ignite ignite0 = startServer(0, 1);
 
@@ -448,15 +448,15 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     public void testCreateCloseClientCacheOnCoordinator2() throws Exception {
         cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String gridName) {
-                if (gridName.equals(getTestGridName(0)))
+            @Override public CacheConfiguration[] apply(String instanceName) {
+                if (instanceName.equals(getTestInstanceName(0)))
                     return null;
 
                 return new CacheConfiguration[]{cacheConfiguration()};
             }
         };
 
-        cacheNodeFilter = new CacheNodeFilter(F.asList(getTestGridName(0)));
+        cacheNodeFilter = new CacheNodeFilter(F.asList(getTestInstanceName(0)));
 
         Ignite ignite0 = startServer(0, 1);
 
@@ -509,7 +509,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     private void cacheDestroyAndCreate(boolean cacheOnCrd) throws Exception {
         if (!cacheOnCrd)
-            cacheNodeFilter = new CacheNodeFilter(Collections.singletonList(getTestGridName(0)));
+            cacheNodeFilter = new CacheNodeFilter(Collections.singletonList(getTestInstanceName(0)));
 
         startServer(0, 1);
 
@@ -1226,8 +1226,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     public void testClientCacheStartClose() throws Exception {
         cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String gridName) {
-                if (gridName.equals(getTestGridName(1)))
+            @Override public CacheConfiguration[] apply(String instanceName) {
+                if (instanceName.equals(getTestInstanceName(1)))
                     return null;
 
                 return new CacheConfiguration[]{cacheConfiguration()};
@@ -1604,8 +1604,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      */
     private void concurrentStartStaticCaches(boolean withClients) throws Exception {
         cacheC = new IgniteClosure<String, CacheConfiguration[]>() {
-            @Override public CacheConfiguration[] apply(String gridName) {
-                int caches = getTestGridIndex(gridName) + 1;
+            @Override public CacheConfiguration[] apply(String instanceName) {
+                int caches = getTestInstanceIndex(instanceName) + 1;
 
                 CacheConfiguration[] ccfgs = new CacheConfiguration[caches];
 
@@ -1623,8 +1623,8 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
 
         if (withClients) {
             clientC = new IgniteClosure<String, Boolean>() {
-                @Override public Boolean apply(String gridName) {
-                    int idx = getTestGridIndex(gridName);
+                @Override public Boolean apply(String instanceName) {
+                    int idx = getTestInstanceIndex(instanceName);
 
                     return idx % 3 == 2;
                 }
@@ -2338,7 +2338,7 @@ public class CacheLateAffinityAssignmentTest extends GridCommonAbstractTest {
      * @throws Exception If failed.
      */
     private void stopNode(int idx, long topVer) throws Exception {
-        stopNode(getTestGridName(idx), topVer);
+        stopNode(getTestInstanceName(idx), topVer);
     }
 
     /**

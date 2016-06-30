@@ -99,8 +99,8 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
     private final ConcurrentHashMap<Class, AtomicInteger> map = new ConcurrentHashMap<>();
 
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration iCfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration iCfg = super.getConfiguration(instanceName);
 
         ((TcpDiscoverySpi)iCfg.getDiscoverySpi()).setIpFinder(ipFinder);
         ((TcpDiscoverySpi)iCfg.getDiscoverySpi()).setForceServerMode(true);
@@ -112,7 +112,7 @@ public class GridCacheRebalancingSyncSelfTest extends GridCommonAbstractTest {
 
         iCfg.setCommunicationSpi(commSpi);
 
-        if (getTestGridName(10).equals(gridName))
+        if (getTestInstanceName(10).equals(instanceName))
             iCfg.setClientMode(true);
 
         CacheConfiguration<Integer, Integer> cachePCfg = new CacheConfiguration<>();

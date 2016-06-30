@@ -30,8 +30,8 @@ import org.apache.ignite.spi.discovery.tcp.TestTcpDiscoverySpi;
  */
 public class GridCacheRebalancingAsyncSelfTest extends GridCacheRebalancingSyncSelfTest {
     /** {@inheritDoc} */
-    @Override protected IgniteConfiguration getConfiguration(String gridName) throws Exception {
-        IgniteConfiguration iCfg = super.getConfiguration(gridName);
+    @Override protected IgniteConfiguration getConfiguration(String instanceName) throws Exception {
+        IgniteConfiguration iCfg = super.getConfiguration(instanceName);
 
         for (CacheConfiguration cacheCfg : iCfg.getCacheConfiguration())
             cacheCfg.setRebalanceMode(CacheRebalanceMode.ASYNC);

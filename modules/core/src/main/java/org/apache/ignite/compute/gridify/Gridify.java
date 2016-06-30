@@ -186,5 +186,5 @@ public @interface Gridify {
      * Refer to {@link org.apache.ignite.Ignition} for information about named grids.
      */
     @SuppressWarnings({"JavaDoc"})
-    String gridName() default "";
+    String instanceName() default "";
 }

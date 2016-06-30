@@ -139,7 +139,7 @@ public class GridCacheQueueCleanupSelfTest extends IgniteCollectionAbstractTest 
         assertTrue(GridTestUtils.waitForCondition(new PAX() {
             @Override public boolean applyx() {
                 for (int i = 0; i < gridCount(); i++) {
-                    if (getTestGridName(i).equals(killGridName))
+                    if (getTestInstanceName(i).equals(killGridName))
                         continue;
 
                     Iterator<GridCacheEntryEx<Object, Object>> entries =
