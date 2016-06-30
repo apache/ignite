@@ -88,9 +88,15 @@ class WebSessionV2 implements HttpSession {
     private final HttpSession genuineSes;
 
     /**
+     * Constructs new web session.
+     *
      * @param id Session ID.
-     * @param ses Session.
-     * @param isNew Is new flag.
+     * @param ses Genuine session. Attributes will be copied from it and {@link #invalidate()}
+     *            action will be delegated to it.
+     * @param isNew Whether session is new.
+     * @param ctx Servlet context.
+     * @param entity Entity to be wrapped. If {@code null} passed new entity will be created.
+     * @param marshaller Grid marshaller.
      */
     WebSessionV2(final String id, final @Nullable HttpSession ses, final boolean isNew, final ServletContext ctx,
         @Nullable WebSessionEntity entity, final Marshaller marshaller) {

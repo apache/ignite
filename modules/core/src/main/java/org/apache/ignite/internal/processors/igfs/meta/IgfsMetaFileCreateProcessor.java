@@ -49,7 +49,10 @@ public class IgfsMetaFileCreateProcessor implements EntryProcessor<IgniteUuid, I
     private static final long serialVersionUID = 0L;
 
     /** Create time. */
-    private long createTime;
+    private long accessTime;
+
+    /** Modification time. */
+    private long modificationTime;
 
     /** Properties. */
     private Map<String, String> props;
@@ -66,6 +69,9 @@ public class IgfsMetaFileCreateProcessor implements EntryProcessor<IgniteUuid, I
     /** Evict exclude flag. */
     private boolean evictExclude;
 
+    /** File length. */
+    private long len;
+
     /**
      * Constructor.
      */
@@ -76,21 +82,25 @@ public class IgfsMetaFileCreateProcessor implements EntryProcessor<IgniteUuid, I
     /**
      * Constructor.
      *
-     * @param createTime Create time.
+     * @param accessTime Access time.
+     * @param modificationTime Modification time.
      * @param props Properties.
      * @param blockSize Block size.
      * @param affKey Affinity key.
      * @param lockId Lock ID.
      * @param evictExclude Evict exclude flag.
+     * @param len File length.
      */
-    public IgfsMetaFileCreateProcessor(long createTime, Map<String, String> props, int blockSize,
-        @Nullable IgniteUuid affKey, IgniteUuid lockId, boolean evictExclude) {
-        this.createTime = createTime;
+    public IgfsMetaFileCreateProcessor(long accessTime, long modificationTime, Map<String, String> props,
+        int blockSize, @Nullable IgniteUuid affKey, IgniteUuid lockId, boolean evictExclude, long len) {
+        this.accessTime = accessTime;
+        this.modificationTime = modificationTime;
         this.props = props;
         this.blockSize = blockSize;
         this.affKey = affKey;
         this.lockId = lockId;
         this.evictExclude = evictExclude;
+        this.len = len;
     }
 
     /** {@inheritDoc} */
@@ -99,13 +109,13 @@ public class IgfsMetaFileCreateProcessor implements EntryProcessor<IgniteUuid, I
         IgfsEntryInfo info = IgfsUtils.createFile(
             entry.getKey(),
             blockSize,
-            0L,
+            len,
             affKey,
             lockId,
             evictExclude,
             props,
-            createTime,
-            createTime
+            accessTime,
+            modificationTime
         );
 
         entry.setValue(info);
@@ -115,7 +125,8 @@ public class IgfsMetaFileCreateProcessor implements EntryProcessor<IgniteUuid, I
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeLong(createTime);
+        out.writeLong(accessTime);
+        out.writeLong(modificationTime);
 
         IgfsUtils.writeProperties(out, props);
 
@@ -123,11 +134,14 @@ public class IgfsMetaFileCreateProcessor implements EntryProcessor<IgniteUuid, I
         U.writeGridUuid(out, affKey);
         U.writeGridUuid(out, lockId);
         out.writeBoolean(evictExclude);
+
+        out.writeLong(len);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        createTime = in.readLong();
+        accessTime = in.readLong();
+        modificationTime = in.readLong();
 
         props = IgfsUtils.readProperties(in);
 
@@ -135,13 +149,16 @@ public class IgfsMetaFileCreateProcessor implements EntryProcessor<IgniteUuid, I
         affKey = U.readGridUuid(in);
         lockId = U.readGridUuid(in);
         evictExclude = in.readBoolean();
+
+        len = in.readLong();
     }
 
     /** {@inheritDoc} */
     @Override public void writeBinary(BinaryWriter writer) throws BinaryObjectException {
         BinaryRawWriter out = writer.rawWriter();
 
-        out.writeLong(createTime);
+        out.writeLong(accessTime);
+        out.writeLong(modificationTime);
 
         IgfsUtils.writeProperties(out, props);
 
@@ -149,13 +166,16 @@ public class IgfsMetaFileCreateProcessor implements EntryProcessor<IgniteUuid, I
         BinaryUtils.writeIgniteUuid(out, affKey);
         BinaryUtils.writeIgniteUuid(out, lockId);
         out.writeBoolean(evictExclude);
+
+        out.writeLong(len);
     }
 
     /** {@inheritDoc} */
     @Override public void readBinary(BinaryReader reader) throws BinaryObjectException {
         BinaryRawReader in = reader.rawReader();
 
-        createTime = in.readLong();
+        accessTime = in.readLong();
+        modificationTime = in.readLong();
 
         props = IgfsUtils.readProperties(in);
 
@@ -163,6 +183,8 @@ public class IgfsMetaFileCreateProcessor implements EntryProcessor<IgniteUuid, I
         affKey = BinaryUtils.readIgniteUuid(in);
         lockId = BinaryUtils.readIgniteUuid(in);
         evictExclude = in.readBoolean();
+
+        len = in.readLong();
     }
 
     /** {@inheritDoc} */

@@ -149,6 +149,9 @@ public class GridCacheUtils {
     /** Keep serialized flag. */
     public static final int KEEP_BINARY_FLAG_MASK = 0x2;
 
+    /** Flag indicating that old value for 'invoke' operation was non null on primary node. */
+    public static final int OLD_VAL_ON_PRIMARY = 0x4;
+
     /** Empty predicate array. */
     private static final IgnitePredicate[] EMPTY = new IgnitePredicate[0];
 

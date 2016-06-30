@@ -30,6 +30,7 @@ import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.store.jdbc.CacheJdbcPojoStoreFactory;
 import org.apache.ignite.cache.store.jdbc.JdbcType;
 import org.apache.ignite.cache.store.jdbc.JdbcTypeField;
+import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.tostring.GridToStringInclude;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiTuple;
@@ -39,7 +40,7 @@ import javax.cache.configuration.Factory;
 /**
  * Data transfer object for {@link CacheTypeMetadata}.
  */
-public class VisorCacheTypeMetadata implements Serializable {
+public class VisorCacheTypeMetadata implements Serializable, LessNamingBean {
     /** */
     private static final long serialVersionUID = 0L;
 

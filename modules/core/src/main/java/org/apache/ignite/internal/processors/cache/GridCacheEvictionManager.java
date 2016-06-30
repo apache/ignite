@@ -1389,7 +1389,7 @@ public class GridCacheEvictionManager extends GridCacheManagerAdapter {
         if (log.isDebugEnabled())
             log.debug("Notifying eviction policy with entry: " + e);
 
-        if (filter == null || filter.evictAllowed(e.wrapLazyValue()))
+        if (filter == null || filter.evictAllowed(e.wrapLazyValue(cctx.keepBinary())))
             plc.onEntryAccessed(e.obsoleteOrDeleted(), e.wrapEviction());
     }
 

@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
     using System.Collections;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
@@ -560,6 +561,26 @@ namespace Apache.Ignite.Core.Tests.Compute
         }
 
         /// <summary>
+        /// Tests ForServers projection.
+        /// </summary>
+        [Test]
+        public void TestForServers()
+        {
+            var cluster = _grid1.GetCluster();
+
+            var servers = cluster.ForServers().GetNodes();
+            Assert.AreEqual(2, servers.Count);
+            Assert.IsTrue(servers.All(x => !x.IsClient));
+
+            var serverAndClient =
+                cluster.ForNodeIds(new[] { _grid2, _grid3 }.Select(x => x.GetCluster().GetLocalNode().Id));
+            Assert.AreEqual(1, serverAndClient.ForServers().GetNodes().Count);
+
+            var client = cluster.ForNodeIds(new[] { _grid3 }.Select(x => x.GetCluster().GetLocalNode().Id));
+            Assert.AreEqual(0, client.ForServers().GetNodes().Count);
+        }
+
+        /// <summary>
         /// Test for attribute projection.
         /// </summary>
         [Test]
@@ -957,47 +978,25 @@ namespace Apache.Ignite.Core.Tests.Compute
         /// Test running broadcast task.
         /// </summary>
         [Test]
-        public void TestBroadcastTask()
+        public void TestBroadcastTask([Values(false, true)] bool isAsync)
         {
-            var res = _grid1.GetCompute().ExecuteJavaTask<ICollection>(BroadcastTask, null).OfType<Guid>().ToList();
+            var execTask =
+                isAsync
+                    ? (Func<ICompute, List<Guid>>) (
+                        c => c.ExecuteJavaTaskAsync<ICollection>(BroadcastTask, null).Result.OfType<Guid>().ToList())
+                    : c => c.ExecuteJavaTask<ICollection>(BroadcastTask, null).OfType<Guid>().ToList();
 
-            Assert.AreEqual(3, res.Count);
+            var res = execTask(_grid1.GetCompute());
+
+            Assert.AreEqual(2, res.Count);
             Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).GetNodes().Count);
             Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(1)).GetNodes().Count);
-            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(2)).GetNodes().Count);
 
             var prj = _grid1.GetCluster().ForPredicate(node => res.Take(2).Contains(node.Id));
 
             Assert.AreEqual(2, prj.GetNodes().Count);
 
-            var filteredRes = prj.GetCompute().ExecuteJavaTask<ICollection>(BroadcastTask, null).OfType<Guid>().ToList();
-
-            Assert.AreEqual(2, filteredRes.Count);
-            Assert.IsTrue(filteredRes.Contains(res.ElementAt(0)));
-            Assert.IsTrue(filteredRes.Contains(res.ElementAt(1)));
-        }
-
-        /// <summary>
-        /// Test running broadcast task in async mode.
-        /// </summary>
-        [Test]
-        public void TestBroadcastTaskAsync()
-        {
-            var gridCompute = _grid1.GetCompute();
-
-            var res = gridCompute.ExecuteJavaTaskAsync<ICollection>(BroadcastTask, null).Result.OfType<Guid>().ToList();
-
-            Assert.AreEqual(3, res.Count);
-            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).GetNodes().Count);
-            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(1)).GetNodes().Count);
-            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(2)).GetNodes().Count);
-
-            var prj = _grid1.GetCluster().ForPredicate(node => res.Take(2).Contains(node.Id));
-
-            Assert.AreEqual(2, prj.GetNodes().Count);
-
-            var compute = prj.GetCompute();
-            var filteredRes = compute.ExecuteJavaTaskAsync<IList>(BroadcastTask, null).Result;
+            var filteredRes = execTask(prj.GetCompute());
 
             Assert.AreEqual(2, filteredRes.Count);
             Assert.IsTrue(filteredRes.Contains(res.ElementAt(0)));
@@ -1010,11 +1009,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestBroadcastAction()
         {
-            ComputeAction.InvokeCount = 0;
+            var id = Guid.NewGuid();
             
-            _grid1.GetCompute().Broadcast(new ComputeAction());
+            _grid1.GetCompute().Broadcast(new ComputeAction(id));
 
-            Assert.AreEqual(_grid1.GetCluster().GetNodes().Count, ComputeAction.InvokeCount);
+            Assert.AreEqual(2, ComputeAction.InvokeCount(id));
         }
 
         /// <summary>
@@ -1023,11 +1022,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestRunAction()
         {
-            ComputeAction.InvokeCount = 0;
-            
-            _grid1.GetCompute().Run(new ComputeAction());
+            var id = Guid.NewGuid();
 
-            Assert.AreEqual(1, ComputeAction.InvokeCount);
+            _grid1.GetCompute().Run(new ComputeAction(id));
+
+            Assert.AreEqual(1, ComputeAction.InvokeCount(id));
         }
 
         /// <summary>
@@ -1055,13 +1054,13 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestRunActions()
         {
-            ComputeAction.InvokeCount = 0;
+            var id = Guid.NewGuid();
 
-            var actions = Enumerable.Range(0, 10).Select(x => new ComputeAction());
+            var actions = Enumerable.Range(0, 10).Select(x => new ComputeAction(id));
             
             _grid1.GetCompute().Run(actions);
 
-            Assert.AreEqual(10, ComputeAction.InvokeCount);
+            Assert.AreEqual(10, ComputeAction.InvokeCount(id));
         }
 
         /// <summary>
@@ -1125,10 +1124,9 @@ namespace Apache.Ignite.Core.Tests.Compute
             var res = _grid1.GetCompute().WithNoFailover().ExecuteJavaTask<ICollection>(BroadcastTask, null)
                 .OfType<Guid>().ToList();
 
-            Assert.AreEqual(3, res.Count);
+            Assert.AreEqual(2, res.Count);
             Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).GetNodes().Count);
             Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(1)).GetNodes().Count);
-            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(2)).GetNodes().Count);
         }
 
         /// <summary>
@@ -1140,10 +1138,9 @@ namespace Apache.Ignite.Core.Tests.Compute
             var res = _grid1.GetCompute().WithTimeout(1000).ExecuteJavaTask<ICollection>(BroadcastTask, null)
                 .OfType<Guid>().ToList();
 
-            Assert.AreEqual(3, res.Count);
+            Assert.AreEqual(2, res.Count);
             Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(0)).GetNodes().Count);
             Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(1)).GetNodes().Count);
-            Assert.AreEqual(1, _grid1.GetCluster().ForNodeIds(res.ElementAt(2)).GetNodes().Count);
         }
 
         /// <summary>
@@ -1155,7 +1152,7 @@ namespace Apache.Ignite.Core.Tests.Compute
             int res = _grid1.GetCompute().Execute<NetSimpleJobArgument, NetSimpleJobResult, NetSimpleTaskResult>(
                     typeof(NetSimpleTask), new NetSimpleJobArgument(1)).Res;
 
-            Assert.AreEqual(_grid1.GetCompute().ClusterGroup.GetNodes().Count, res);
+            Assert.AreEqual(2, res);
         }
 
         /// <summary>
@@ -1328,15 +1325,32 @@ namespace Apache.Ignite.Core.Tests.Compute
         #pragma warning disable 649
         private IIgnite _grid;
 
-        public static int InvokeCount;
+        public static ConcurrentBag<Guid> Invokes = new ConcurrentBag<Guid>();
 
         public static Guid LastNodeId;
+
+        public Guid Id { get; set; }
+
+        public ComputeAction()
+        {
+            // No-op.
+        }
+
+        public ComputeAction(Guid id)
+        {
+            Id = id;
+        }
 
         public void Invoke()
         {
             Thread.Sleep(10);
-            Interlocked.Increment(ref InvokeCount);
+            Invokes.Add(Id);
             LastNodeId = _grid.GetCluster().GetLocalNode().Id;
+        }
+
+        public static int InvokeCount(Guid id)
+        {
+            return Invokes.Count(x => x == id);
         }
     }
 
