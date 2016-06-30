@@ -18,7 +18,7 @@
 import gulp from 'gulp';
 import {Server} from 'karma';
 
-import {srcDir, destDir, rootDir} from '../paths';
+import {rootDir} from '../paths';
 
 gulp.task('test', (cb) => {
     new Server({
@@ -30,14 +30,14 @@ gulp.task('test', (cb) => {
 
         // List of files / patterns to load in the browser.
         files: [
-          'test/**/*.test.js'
+            'test/**/*.test.js'
         ],
 
         plugins: [
-          require('karma-babel-preprocessor'),
-          require('karma-phantomjs-launcher'),
-          require('karma-webpack'),
-          require('karma-jasmine')
+            require('karma-babel-preprocessor'),
+            require('karma-phantomjs-launcher'),
+            require('karma-webpack'),
+            require('karma-jasmine')
         ],
 
         // Preprocess matching files before serving them to the browser
@@ -47,15 +47,15 @@ gulp.task('test', (cb) => {
         },
 
         webpack: {
-          devtool: 'inline-source-map',
-          module: {
-            loaders: [
-              {test: /\.js/, loaders: ['babel'], exclude: /node_modules/}
-            ]
-          },
-          resolve: {
-            extensions: ["", ".js"]
-          }
+            devtool: 'inline-source-map',
+            module: {
+                loaders: [
+                    {test: /\.js/, loaders: ['babel'], exclude: /node_modules/}
+                ]
+            },
+            resolve: {
+                extensions: ['', '.js']
+            }
         },
 
         // Test results reporter to use

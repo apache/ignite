@@ -21,10 +21,10 @@
 
 module.exports = {
     implements: 'services/space',
-    inject: ['mongo']
+    inject: ['mongo', 'errors']
 };
 
-module.exports.factory = (mongo) => {
+module.exports.factory = (mongo, errors) => {
 
     class SpaceService {
         /**
