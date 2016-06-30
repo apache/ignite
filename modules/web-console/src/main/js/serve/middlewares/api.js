@@ -22,7 +22,7 @@
 function sendServerError(err) {
     err.httpCode = 500;
 
-    this.api.error(err)
+    this.api.error(err);
 }
 
 function sendError(err) {

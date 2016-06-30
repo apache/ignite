@@ -26,7 +26,7 @@ let cacheService;
 let mongo;
 let errors;
 
-suite('SpaceService', () => {
+suite('CacheService', () => {
 
     const injectSpaceInCaches = (spaceId) => {
         return testCaches.map((cache) => ({...cache, space: spaceId}));
@@ -64,12 +64,21 @@ suite('SpaceService', () => {
             .catch(done);
     });
 
-    test('double save same cache', (done) => {
+    test('Try to save same cache twice.', (done) => {
         return cacheService.merge(testCaches[0])
             .then(() => cacheService.merge(testCaches[0]))
             .catch((err) => {
                 assert.instanceOf(err, errors.DuplicateKeyException);
+                done();
+            })
+            .then(done);
+    });
 
+    test('Try to save null cache.', (done) => {
+        return cacheService.merge({})
+            .then(done)
+            .catch((err) => {
+                assert.instanceOf(err, errors.DuplicateKeyException);
                 done();
             });
     });

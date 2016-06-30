@@ -78,6 +78,10 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
         }
     });
 
+    result.errCodes = {
+        DUPLICATE_KEY_ERROR: 11000,
+        DUPLICATE_KEY_UPDATE_ERROR: 11001
+    };
     // Define Account model.
     result.Account = mongoose.model('Account', AccountSchema);
 
@@ -129,8 +133,8 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
 
     // Define Cache schema.
     const CacheSchema = new Schema({
-        space: {type: ObjectId, ref: 'Space', index: true},
-        name: String,
+        space: {type: ObjectId, ref: 'Space', index: true, required: true},
+        name: {type: String, required: true},
         clusters: [{type: ObjectId, ref: 'Cluster'}],
         domains: [{type: ObjectId, ref: 'DomainModel'}],
         cacheMode: {type: String, enum: ['PARTITIONED', 'REPLICATED', 'LOCAL']},
@@ -212,7 +216,7 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
         writeBehindFlushFrequency: Number,
         writeBehindFlushThreadCount: Number,
 
-        invalidate: Boolean,
+        // invalidate: Boolean,
         defaultLockTimeout: Number,
         atomicWriteOrderMode: {type: String, enum: ['CLOCK', 'PRIMARY']},
         writeSynchronizationMode: {type: String, enum: ['FULL_SYNC', 'FULL_ASYNC', 'PRIMARY_SYNC']},
@@ -252,6 +256,8 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
         },
         demo: Boolean
     });
+
+    CacheSchema.index({name: 1, space: 1}, {unique: true});
 
     // Install deep populate plugin.
     CacheSchema.plugin(deepPopulate, {
@@ -641,6 +647,8 @@ module.exports.factory = function(deepPopulatePlugin, passportMongo, settings, p
         res.status(err.code || 500).send(err.message);
     };
 
+
+    // TODO Remove after refactoring spaceService.
     /**
      * Query for user spaces.
      *

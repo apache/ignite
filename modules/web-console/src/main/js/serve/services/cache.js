@@ -63,6 +63,10 @@ module.exports.factory = (_, mongo, errors) => {
                     .then(() => mongo.DomainModel.update({_id: {$in: createdCache.domains}}, {$addToSet: {caches: createdCache._id}}, {multi: true}).exec())
                     .then(() => createdCache._id)
             )
+            .catch((err) => {
+                if (err.code === mongo.errCodes.DUPLICATE_KEY_ERROR)
+                    throw new errors.DuplicateKeyException('Cache with name: "' + cache.name + '" already exist.');
+            });
     };
 
     /**
@@ -78,14 +82,8 @@ module.exports.factory = (_, mongo, errors) => {
     };
 
     /**
-     * Load cache by its name and space.
-     * @param {Object} cache - The cache object for load.
-     * @returns {Promise.<mongo.Cache>|null} that resolves cache if its exits, or null if not exitst.
+     * Service for manipulate Cache entities.
      */
-    const loadExistingCache = (cache) => {
-        return mongo.Cache.findOne({space: cache.space, name: cache.name}).exec();
-    };
-
     class CacheService {
         /**
          * Create or update cache.
@@ -93,18 +91,10 @@ module.exports.factory = (_, mongo, errors) => {
          * @returns {Promise.<Integer>} that resolves cache id of merge operation.
          */
         static merge(cache) {
-            return loadExistingCache(cache)
-                .then((existingCache) => {
-                    const cacheId = cache._id;
+            if (cache._id)
+                return update(cache);
 
-                    if (existingCache && cacheId !== existingCache._id.toString())
-                        throw new errors.DuplicateKeyException('Cache with name: "' + existingCache.name + '" already exist.');
-
-                    if (cacheId)
-                        return update(cache);
-
-                    return create(cache);
-                });
+            return create(cache);
         }
 
         /**
