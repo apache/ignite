@@ -181,17 +181,28 @@ namespace Apache.Ignite.Core.Cache.Affinity
                 writer.WriteByte(p is FairAffinityFunction ? TypeCodeFair : TypeCodeRendezvous);
                 writer.WriteInt(p.Partitions);
                 writer.WriteBoolean(p.ExcludeNeighbors);
+                writer.WriteByte(0);  // Override flags
+                writer.WriteObject<object>(null);  // TODO: User func if there are override flags
             }
             else
             {
                 writer.WriteByte(TypeCodeUser);
-
-                if (!fun.GetType().IsSerializable)
-                    throw new IgniteException("AffinityFunction should be serializable.");
-
-                writer.WriteObject(fun);
                 writer.WriteInt(fun.Partitions);  // partition count is written once and can not be changed.
+                writer.WriteBoolean(false);   // Exclude neighbors
+                writer.WriteByte(0);  // Override flags
+                WriteUserFunc(writer, fun);  // User func
             }
+        }
+
+        /// <summary>
+        /// Writes the user function.
+        /// </summary>
+        private static void WriteUserFunc(IBinaryRawWriter writer, IAffinityFunction fun)
+        {
+            if (!fun.GetType().IsSerializable)
+                throw new IgniteException("AffinityFunction should be serializable.");
+
+            writer.WriteObject(fun);
         }
 
         /// <summary>
