@@ -146,11 +146,6 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public BinaryType rawType() throws BinaryObjectException {
-        return BinaryUtils.type(ctx, this);
-    }
-
-    /** {@inheritDoc} */
     @SuppressWarnings("unchecked")
     @Nullable @Override public <F> F field(String fieldName) throws BinaryObjectException {
         return (F) reader(null).unmarshalField(fieldName);

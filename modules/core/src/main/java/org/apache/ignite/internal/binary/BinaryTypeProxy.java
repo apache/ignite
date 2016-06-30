@@ -18,7 +18,6 @@
 package org.apache.ignite.internal.binary;
 
 import org.apache.ignite.binary.BinaryField;
-import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.internal.S;
@@ -87,16 +86,13 @@ public class BinaryTypeProxy implements BinaryType {
     }
 
     /**
-     * @return Target type.
+     * @return Target ype.
      */
     private BinaryType target() {
         if (target == null) {
             synchronized (this) {
                 if (target == null) {
                     target = ctx.metadata(typeId);
-
-                    if (target == null)
-                        throw new BinaryObjectException("Failed to get binary type details [typeId=" + typeId + ']');
                 }
             }
         }
