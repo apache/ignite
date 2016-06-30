@@ -1155,7 +1155,7 @@ public class GridCacheContext<K, V> implements Externalizable {
         GridCacheEntryEx e,
         @Nullable IgnitePredicate<Cache.Entry<K1, V1>>[] p
     ) throws IgniteCheckedException {
-        return F.isEmpty(p) || isAll(e.<K1, V1>wrapLazyValue(), p);
+        return F.isEmpty(p) || isAll(e.<K1, V1>wrapLazyValue(keepBinary()), p);
     }
 
     /**
@@ -1687,14 +1687,15 @@ public class GridCacheContext<K, V> implements Externalizable {
      * @return {@code True} if OFFHEAP_TIERED memory mode is enabled.
      */
     public boolean offheapTiered() {
-        return cacheCfg.getMemoryMode() == OFFHEAP_TIERED && isOffHeapEnabled();
+        return cacheCfg != null && cacheCfg.getMemoryMode() == OFFHEAP_TIERED && isOffHeapEnabled();
     }
 
     /**
      * @return {@code True} if should use entry with offheap value pointer.
      */
     public boolean useOffheapEntry() {
-        return cacheCfg.getMemoryMode() == OFFHEAP_TIERED || cacheCfg.getMemoryMode() == OFFHEAP_VALUES;
+        return cacheCfg != null &&
+            (cacheCfg.getMemoryMode() == OFFHEAP_TIERED || cacheCfg.getMemoryMode() == OFFHEAP_VALUES);
     }
 
     /**

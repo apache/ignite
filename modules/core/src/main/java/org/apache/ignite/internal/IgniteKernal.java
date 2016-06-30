@@ -115,7 +115,7 @@ import org.apache.ignite.internal.processors.continuous.GridContinuousProcessor;
 import org.apache.ignite.internal.processors.datastreamer.DataStreamProcessor;
 import org.apache.ignite.internal.processors.datastructures.DataStructuresProcessor;
 import org.apache.ignite.internal.processors.hadoop.Hadoop;
-import org.apache.ignite.internal.processors.hadoop.HadoopNoopProcessor;
+import org.apache.ignite.internal.processors.hadoop.HadoopProcessorAdapter;
 import org.apache.ignite.internal.processors.job.GridJobProcessor;
 import org.apache.ignite.internal.processors.jobmetrics.GridJobMetricsProcessor;
 import org.apache.ignite.internal.processors.nodevalidation.DiscoveryNodeValidationProcessor;
@@ -1111,26 +1111,48 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
      * Create Hadoop component.
      *
      * @return Non-null Hadoop component: workable or no-op.
-     * @throws IgniteCheckedException if the component is mandatory and cannot be initialized.
+     * @throws IgniteCheckedException If the component is mandatory and cannot be initialized.
      */
-    private GridComponent createHadoopComponent() throws IgniteCheckedException {
-        GridComponent cmp;
+    private HadoopProcessorAdapter createHadoopComponent() throws IgniteCheckedException {
+        boolean mandatory = cfg.getHadoopConfiguration() != null;
 
-        if (cfg.isPeerClassLoadingEnabled()) {
-            cmp = IgniteComponentType.HADOOP.createIfInClassPath(ctx, false);
+        if (mandatory) {
+            if (cfg.isPeerClassLoadingEnabled())
+                throw new IgniteCheckedException("Hadoop module cannot be used with peer class loading enabled " +
+                    "(set IgniteConfiguration.peerClassLoadingEnabled to \"false\").");
 
-            if (!(cmp instanceof HadoopNoopProcessor)) {
-                U.warn(log, "Hadoop module is found in classpath, but it will not be started because peer class " +
-                    "loading is enabled (set IgniteConfiguration.peerClassLoadingEnabled to \"false\" to start " +
-                    "Hadoop module).");
+            HadoopProcessorAdapter res = IgniteComponentType.HADOOP.createIfInClassPath(ctx, true);
 
-                cmp = IgniteComponentType.HADOOP.create(ctx, true/*no-op*/);
-            }
+            res.validateEnvironment();
+
+            return res;
         }
-        else
-            cmp = IgniteComponentType.HADOOP.createIfInClassPath(ctx, cfg.getHadoopConfiguration() != null);
+        else {
+            HadoopProcessorAdapter cmp = null;
 
-        return cmp;
+            if (IgniteComponentType.HADOOP.inClassPath() && cfg.isPeerClassLoadingEnabled()) {
+                U.warn(log, "Hadoop module is found in classpath, but will not be started because peer class " +
+                    "loading is enabled (set IgniteConfiguration.peerClassLoadingEnabled to \"false\" if you want " +
+                    "to use Hadoop module).");
+            }
+            else {
+                cmp = IgniteComponentType.HADOOP.createIfInClassPath(ctx, false);
+
+                try {
+                    cmp.validateEnvironment();
+                }
+                catch (IgniteException | IgniteCheckedException e) {
+                    U.quietAndWarn(log, "Hadoop module will not start due to exception: " + e.getMessage());
+
+                    cmp = null;
+                }
+            }
+
+            if (cmp == null)
+                cmp = IgniteComponentType.HADOOP.create(ctx, true);
+
+            return cmp;
+        }
     }
 
     /**
@@ -1907,11 +1929,6 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
                 Thread.currentThread().interrupt();
 
             try {
-                GridCacheProcessor cache = ctx.cache();
-
-                if (cache != null)
-                    cache.blockGateways();
-
                 assert gw.getState() == STARTED || gw.getState() == STARTING || gw.getState() == DISCONNECTED;
 
                 // No more kernal calls from this point on.
@@ -1925,6 +1942,12 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
             finally {
                 gw.writeUnlock();
             }
+
+            // Stopping cache operations.
+            GridCacheProcessor cache = ctx.cache();
+
+            if (cache != null)
+                cache.blockGateways();
 
             // Unregister MBeans.
             if (!(

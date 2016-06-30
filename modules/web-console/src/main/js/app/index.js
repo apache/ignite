@@ -56,10 +56,11 @@ import 'angular-motion/dist/angular-motion.css!';
 import './decorator/select';
 import './decorator/tooltip';
 
-import './modules/Demo/Demo.module';
-import './modules/form/form.module';
 import './services/JavaTypes.service.js';
-import './modules/QueryNotebooks/QueryNotebooks.provider';
+import './modules/form/form.module';
+import './modules/agent/agent.module.js';
+import './modules/query-notebooks/query-notebooks.module';
+import './modules/Demo/Demo.module.js';
 
 import './modules/states/signin.state';
 import './modules/states/logout.state';
@@ -100,7 +101,6 @@ import confirm from './services/confirm.service';
 import IgniteInetAddress from './services/InetAddress.service';
 import IgniteCountries from './services/Countries.service';
 import IgniteChartColors from './services/ChartColors.service';
-import IgniteAgentMonitor from './services/AgentMonitor.service';
 import JavaTypes from './services/JavaTypes.service';
 
 // Providers.
@@ -149,13 +149,14 @@ angular
     'ui.router',
     'gridster',
     // Base modules.
+    'ignite-console.ace',
+    'ignite-console.Form',
     'ignite-console.user',
     'ignite-console.branding',
-    'ignite-console.Form',
-    'ignite-console.QueryNotebooks',
-    'ignite-console.ace',
-    'ignite-console.demo',
     'ignite-console.socket',
+    'ignite-console.agent',
+    'ignite-console.query-notebooks',
+    'ignite-console.demo',
     // States.
     'ignite-console.states.login',
     'ignite-console.states.logout',
@@ -193,7 +194,6 @@ angular
 .service(...IgniteInetAddress)
 .service(...IgniteCountries)
 .service(...IgniteChartColors)
-.service(...IgniteAgentMonitor)
 .service(...JavaTypes)
 // Providers.
 // Filters.
