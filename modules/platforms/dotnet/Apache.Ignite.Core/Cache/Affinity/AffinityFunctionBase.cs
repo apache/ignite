@@ -167,6 +167,12 @@ namespace Apache.Ignite.Core.Cache.Affinity
                 return;
             }
 
+            // 1) Type code
+            // 2) Partitions
+            // 3) ExcludeNeighbors
+            // 4) Override flags
+            // 5) User object
+
             var p = fun as AffinityFunctionBase;
 
             if (p != null)
