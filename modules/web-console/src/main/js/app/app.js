@@ -17,10 +17,11 @@
 
 import '../public/stylesheets/style.scss';
 
+import './app.config';
+
 import './decorator/select';
 import './decorator/tooltip';
 
-import './services/JavaTypes.service.js';
 import './modules/form/form.module';
 import './modules/agent/agent.module.js';
 import './modules/query-notebooks/query-notebooks.module';
@@ -48,30 +49,47 @@ import './modules/loading/loading.module';
 // endignite
 
 // Directives.
-import igniteHideOnStateChange from './directives/hide-on-state-change/hide-on-state-change.directive';
-import igniteInformation from './directives/information/information.directive';
-import igniteUiAceTabs from './directives/ui-ace-tabs.directive';
-import igniteUiAceXml from './directives/ui-ace-xml/ui-ace-xml.directive';
-import igniteUiAceJava from './directives/ui-ace-java/ui-ace-java.directive';
-import igniteUiAcePom from './directives/ui-ace-pom/ui-ace-pom.directive';
-import igniteUiAceDocker from './directives/ui-ace-docker/ui-ace-docker.directive';
-import igniteUiAcePojos from './directives/ui-ace-pojos/ui-ace-pojos.directive';
+import igniteAutoFocus from './directives/auto-focus.directive.js';
 import igniteBsAffixUpdate from './directives/bs-affix-update.directive';
 import igniteCentered from './directives/centered/centered.directive.js';
+import igniteCopyToClipboard from './directives/copy-to-clipboard.directive.js';
+import igniteHideOnStateChange from './directives/hide-on-state-change/hide-on-state-change.directive';
+import igniteInformation from './directives/information/information.directive';
+import igniteMatch from './directives/match.directive.js';
+import igniteOnClickFocus from './directives/on-click-focus.directive.js';
+import igniteOnEnter from './directives/on-enter.directive.js';
+import igniteOnEnterFocusMove from './directives/on-enter-focus-move.directive.js';
+import igniteOnEscape from './directives/on-escape.directive.js';
+import igniteRetainSelection from './directives/retain-selection.directive.js';
+import igniteUiAceDocker from './directives/ui-ace-docker/ui-ace-docker.directive';
+import igniteUiAceJava from './directives/ui-ace-java/ui-ace-java.directive';
+import igniteUiAcePojos from './directives/ui-ace-pojos/ui-ace-pojos.directive';
+import igniteUiAcePom from './directives/ui-ace-pom/ui-ace-pom.directive';
+import igniteUiAceTabs from './directives/ui-ace-tabs.directive';
+import igniteUiAceXml from './directives/ui-ace-xml/ui-ace-xml.directive';
 
 // Services.
-import cleanup from './services/cleanup.service';
-import confirm from './services/confirm.service';
-import IgniteInetAddress from './services/InetAddress.service';
-import IgniteCountries from './services/Countries.service';
-import IgniteChartColors from './services/ChartColors.service';
+import ChartColors from './services/ChartColors.service';
+import Cleanup from './services/cleanup.service';
+import Clone from './services/Clone.service.js';
+import Confirm from './services/confirm.service';
+import ConfirmBatch from './services/ConfirmBatch.service.js';
+import CopyToClipboard from './services/CopyToClipboard.service';
+import Countries from './services/Countries.service';
+import Focus from './services/Focus.service';
+import InetAddress from './services/InetAddress.service';
 import JavaTypes from './services/JavaTypes.service';
+import Messages from './services/Messages.service';
+import LegacyTable from './services/LegacyTable.service';
+import LegacyUtils from './services/LegacyUtils.service';
+import UnsavedChangesGuard from './services/UnsavedChangesGuard.service';
 
 // Providers.
 
 // Filters.
-import hasPojo from './filters/hasPojo.filter';
 import byName from './filters/byName.filter';
+import domainsValidation from './filters/domainsValidation.filter';
+import hasPojo from './filters/hasPojo.filter';
 
 // Generators
 import $generatorCommon from 'generator/generator-common';
@@ -88,17 +106,17 @@ window.$generatorProperties = $generatorProperties;
 window.$generatorReadme = $generatorReadme;
 window.$generatorXml = $generatorXml;
 
-// Add legacy logic;
-import consoleModule from 'controllers/common-module';
-window.consoleModule = consoleModule;
-
-import 'controllers/admin-controller';
-import 'controllers/caches-controller';
-import 'controllers/clusters-controller';
-import 'controllers/domains-controller';
-import 'controllers/igfs-controller';
-import 'controllers/profile-controller';
-import 'controllers/sql-controller';
+// Controllers
+import admin from 'controllers/admin-controller';
+import caches from 'controllers/caches-controller';
+import clusters from 'controllers/clusters-controller';
+import domains from 'controllers/domains-controller';
+import igfs from 'controllers/igfs-controller';
+import profile from 'controllers/profile-controller';
+import sql from 'controllers/sql-controller';
+import auth from './controllers/auth.controller';
+import notebooks from './controllers/notebooks.controller';
+import resetPassword from './controllers/reset-password.controller';
 
 // Inject external modules.
 import 'ignite_modules_temp/index';
@@ -107,13 +125,25 @@ import baseTemplate from '../views/base.jade';
 
 angular
 .module('ignite-console', [
-    'ngRetina',
-    'btford.socket-io',
+    // Optional AngularJS modules.
     'ngAnimate',
     'ngSanitize',
+    // Third party libs.
+    'ngRetina',
+    'btford.socket-io',
     'mgcrea.ngStrap',
     'ui.router',
     'gridster',
+    'dndLists',
+    'nvd3',
+    'smart-table',
+    'treeControl',
+    'ui.grid',
+    'ui.grid.saveState',
+    'ui.grid.selection',
+    'ui.grid.resizeColumns',
+    'ui.grid.autoResize',
+    'ui.grid.exporter',
     // Base modules.
     'ignite-console.ace',
     'ignite-console.Form',
@@ -138,32 +168,59 @@ angular
     'ignite-console.getting-started',
     'ignite-console.version',
     'ignite-console.loading',
-    // Ignite legacy module.
-    'ignite-console.legacy',
+    // Ignite configuration module.
+    'ignite-console.config',
     // Ignite modules.
     'ignite-console.modules'
 ])
 // Directives.
-.directive(...igniteHideOnStateChange)
-.directive(...igniteInformation)
-.directive(...igniteUiAceTabs)
-.directive(...igniteUiAceXml)
-.directive(...igniteUiAceJava)
-.directive(...igniteUiAcePom)
-.directive(...igniteUiAceDocker)
-.directive(...igniteUiAcePojos)
+.directive(...igniteAutoFocus)
 .directive(...igniteBsAffixUpdate)
 .directive(...igniteCentered)
+.directive(...igniteCopyToClipboard)
+.directive(...igniteHideOnStateChange)
+.directive(...igniteInformation)
+.directive(...igniteMatch)
+.directive(...igniteOnClickFocus)
+.directive(...igniteOnEnter)
+.directive(...igniteOnEnterFocusMove)
+.directive(...igniteOnEscape)
+.directive(...igniteRetainSelection)
+.directive(...igniteUiAceDocker)
+.directive(...igniteUiAceJava)
+.directive(...igniteUiAcePojos)
+.directive(...igniteUiAcePom)
+.directive(...igniteUiAceTabs)
+.directive(...igniteUiAceXml)
 // Services.
-.service(...cleanup)
-.service(...confirm)
-.service(...IgniteInetAddress)
-.service(...IgniteCountries)
-.service(...IgniteChartColors)
+.service(...ChartColors)
+.service(...Cleanup)
+.service(...Clone)
+.service(...Confirm)
+.service(...ConfirmBatch)
+.service(...CopyToClipboard)
+.service(...Countries)
+.service(...Focus)
+.service(...InetAddress)
 .service(...JavaTypes)
-// Providers.
+.service(...Messages)
+.service(...LegacyTable)
+.service(...LegacyUtils)
+.service(...UnsavedChangesGuard)
+// Controllers.
+.controller(...admin)
+.controller(...auth)
+.controller(...notebooks)
+.controller(...resetPassword)
+.controller(...caches)
+.controller(...clusters)
+.controller(...domains)
+.controller(...igfs)
+.controller(...profile)
+.controller(...sql)
 // Filters.
 .filter(...hasPojo)
+.filter(...domainsValidation)
 .filter(...byName)
 .config(['$stateProvider', '$locationProvider', '$urlRouterProvider', ($stateProvider, $locationProvider, $urlRouterProvider) => {
     // Set up the states.
@@ -183,17 +240,13 @@ angular
 
     $locationProvider.html5Mode(true);
 }])
-.config(['$animateProvider', ($animateProvider) => {
-    $animateProvider.classNameFilter(/^((?!(fa-spin)).)*$/);
-}])
-.run(['$rootScope', ($root) => {
+.run(['$rootScope', '$state', 'MetaTags', 'gettingStarted', ($root, $state, $meta, gettingStarted) => {
     $root._ = _;
-}])
-.run(['$rootScope', '$state', 'MetaTags', 'Auth', 'User', 'IgniteAgentMonitor', ($root, $state, $meta, Auth, User, agentMonitor) => {
     $root.$state = $state;
-
     $root.$meta = $meta;
-
+    $root.gettingStarted = gettingStarted;
+}])
+.run(['$rootScope', 'Auth', 'User', 'IgniteAgentMonitor', ($root, Auth, User, agentMonitor) => {
     if (Auth.authorized) {
         User.read()
             .then((user) => $root.$broadcast('user', user))
@@ -204,4 +257,20 @@ angular
     $root.$on('$stateChangeStart', () => {
         _.forEach(angular.element('.modal'), (m) => angular.element(m).scope().$hide());
     });
-}]);
+}])
+.run(['$rootScope', '$http', '$state', 'IgniteMessages', 'User',
+    ($root, $http, $state, Messages, User) => { // eslint-disable-line no-shadow
+        $root.revertIdentity = () => {
+            $http
+                .get('/api/v1/admin/revert/identity')
+                .then(User.read)
+                .then((user) => {
+                    $root.$broadcast('user', user);
+
+                    $state.go('settings.admin');
+                })
+                .catch(Messages.showError);
+        };
+    }
+]);
+

@@ -16,12 +16,10 @@
  */
 
 // Controller for Caches screen.
-import consoleModule from 'controllers/common-module';
-
-consoleModule.controller('cachesController', [
-    '$scope', '$http', '$state', '$filter', '$timeout', '$common', '$confirm', '$clone', '$loading', '$cleanup', '$unsavedChangesGuard',
-    function($scope, $http, $state, $filter, $timeout, $common, $confirm, $clone, $loading, $cleanup, $unsavedChangesGuard) {
-        $unsavedChangesGuard.install($scope);
+export default ['cachesController', [
+    '$scope', '$http', '$state', '$filter', '$timeout', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteClone', '$loading', '$cleanup', 'IgniteUnsavedChangesGuard',
+    function($scope, $http, $state, $filter, $timeout, LegacyUtils, Messages, Confirm, Clone, $loading, $cleanup, UnsavedChangesGuard) {
+        UnsavedChangesGuard.install($scope);
 
         const emptyCache = {empty: true};
 
@@ -36,15 +34,15 @@ consoleModule.controller('cachesController', [
         // We need to initialize backupItem with empty object in order to properly used from angular directives.
         $scope.backupItem = emptyCache;
 
-        $scope.ui = $common.formUI();
+        $scope.ui = LegacyUtils.formUI();
         $scope.ui.activePanels = [0];
         $scope.ui.topPanels = [0, 1, 2, 3];
 
-        $scope.hidePopover = $common.hidePopover;
-        $scope.saveBtnTipText = $common.saveBtnTipText;
-        $scope.widthIsSufficient = $common.widthIsSufficient;
+        $scope.hidePopover = LegacyUtils.hidePopover;
+        $scope.saveBtnTipText = LegacyUtils.saveBtnTipText;
+        $scope.widthIsSufficient = LegacyUtils.widthIsSufficient;
 
-        const showPopoverMessage = $common.showPopoverMessage;
+        const showPopoverMessage = LegacyUtils.showPopoverMessage;
 
         $scope.contentVisible = function() {
             const item = $scope.backupItem;
@@ -55,7 +53,7 @@ consoleModule.controller('cachesController', [
         $scope.toggleExpanded = function() {
             $scope.ui.expanded = !$scope.ui.expanded;
 
-            $common.hidePopover();
+            LegacyUtils.hidePopover();
         };
 
         $scope.caches = [];
@@ -144,9 +142,7 @@ consoleModule.controller('cachesController', [
                         form.$setDirty();
                 }, true);
             })
-            .catch(function(errMsg) {
-                $common.showError(errMsg);
-            })
+            .catch(Messages.showError)
             .finally(function() {
                 $scope.ui.ready = true;
                 $scope.ui.inputForm.$setPristine();
@@ -178,11 +174,11 @@ consoleModule.controller('cachesController', [
 
                 __original_value = $cleanup($scope.backupItem);
 
-                if ($common.getQueryVariable('new'))
+                if (LegacyUtils.getQueryVariable('new'))
                     $state.go('base.configuration.caches');
             }
 
-            $common.confirmUnsavedChanges($scope.backupItem && $scope.ui.inputForm.$dirty, selectItem);
+            LegacyUtils.confirmUnsavedChanges($scope.backupItem && $scope.ui.inputForm.$dirty, selectItem);
         };
 
         $scope.linkId = () => $scope.backupItem._id ? $scope.backupItem._id : 'create';
@@ -203,7 +199,7 @@ consoleModule.controller('cachesController', [
 
         // Add new cache.
         $scope.createItem = function(linkId) {
-            $timeout(() => $common.ensureActivePanel($scope.ui, 'general', 'cacheName'));
+            $timeout(() => LegacyUtils.ensureActivePanel($scope.ui, 'general', 'cacheName'));
 
             $scope.selectItem(null, prepareNewItem(linkId));
         };
@@ -229,7 +225,7 @@ consoleModule.controller('cachesController', [
             const failCluster = _.find(clusters, (cluster) => {
                 const caches = clusterCaches(cluster);
 
-                checkRes = $common.checkCachesDataSources(caches, $scope.backupItem);
+                checkRes = LegacyUtils.checkCachesDataSources(caches, $scope.backupItem);
 
                 return !checkRes.checked;
             });
@@ -238,8 +234,8 @@ consoleModule.controller('cachesController', [
                 return showPopoverMessage($scope.ui, 'store', checkRes.firstCache.cacheStoreFactory.kind === 'CacheJdbcPojoStoreFactory' ? 'pojoDialect' : 'blobDialect',
                     'Found cache "' + checkRes.secondCache.name + '" in cluster "' + failCluster.label + '" ' +
                     'with the same data source bean name "' + checkRes.firstCache.cacheStoreFactory[checkRes.firstCache.cacheStoreFactory.kind].dataSourceBean +
-                    '" and different database: "' + $common.cacheStoreJdbcDialectsLabel(checkRes.firstDB) + '" in current cache and "' +
-                    $common.cacheStoreJdbcDialectsLabel(checkRes.secondDB) + '" in "' + checkRes.secondCache.name + '"', 10000);
+                    '" and different database: "' + LegacyUtils.cacheStoreJdbcDialectsLabel(checkRes.firstDB) + '" in current cache and "' +
+                    LegacyUtils.cacheStoreJdbcDialectsLabel(checkRes.secondDB) + '" in "' + checkRes.secondCache.name + '"', 10000);
             }
 
             return true;
@@ -253,7 +249,7 @@ consoleModule.controller('cachesController', [
             const failCluster = _.find(clusters, (cluster) => {
                 const caches = clusterCaches(cluster);
 
-                checkRes = $common.checkCacheSQLSchemas(caches, $scope.backupItem);
+                checkRes = LegacyUtils.checkCacheSQLSchemas(caches, $scope.backupItem);
 
                 return !checkRes.checked;
             });
@@ -268,7 +264,7 @@ consoleModule.controller('cachesController', [
         }
 
         function checkStoreFactoryBean(storeFactory, beanFieldId) {
-            if (!$common.isValidJavaIdentifier('Data source bean', storeFactory.dataSourceBean, beanFieldId, $scope.ui, 'store'))
+            if (!LegacyUtils.isValidJavaIdentifier('Data source bean', storeFactory.dataSourceBean, beanFieldId, $scope.ui, 'store'))
                 return false;
 
             return checkDataSources();
@@ -302,21 +298,21 @@ consoleModule.controller('cachesController', [
 
         // Check cache logical consistency.
         function validate(item) {
-            $common.hidePopover();
+            LegacyUtils.hidePopover();
 
-            if ($common.isEmptyString(item.name))
+            if (LegacyUtils.isEmptyString(item.name))
                 return showPopoverMessage($scope.ui, 'general', 'cacheName', 'Cache name should not be empty!');
 
-            if (item.memoryMode === 'ONHEAP_TIERED' && item.offHeapMaxMemory > 0 && !$common.isDefined(item.evictionPolicy.kind))
+            if (item.memoryMode === 'ONHEAP_TIERED' && item.offHeapMaxMemory > 0 && !LegacyUtils.isDefined(item.evictionPolicy.kind))
                 return showPopoverMessage($scope.ui, 'memory', 'evictionPolicyKind', 'Eviction policy should not be configured!');
 
-            if (!$common.checkFieldValidators($scope.ui))
+            if (!LegacyUtils.checkFieldValidators($scope.ui))
                 return false;
 
             if (item.memoryMode === 'OFFHEAP_VALUES' && !_.isEmpty(item.domains))
                 return showPopoverMessage($scope.ui, 'memory', 'memoryMode', 'Query indexing could not be enabled while values are stored off-heap!');
 
-            if (item.memoryMode === 'OFFHEAP_TIERED' && (!$common.isDefined(item.offHeapMaxMemory) || item.offHeapMaxMemory < 0))
+            if (item.memoryMode === 'OFFHEAP_TIERED' && (!LegacyUtils.isDefined(item.offHeapMaxMemory) || item.offHeapMaxMemory < 0))
                 return showPopoverMessage($scope.ui, 'memory', 'offHeapMaxMemory', 'Off-heap max memory should be specified!');
 
             if (!checkSQLSchemas())
@@ -366,18 +362,16 @@ consoleModule.controller('cachesController', [
 
                     $scope.selectItem(item);
 
-                    $common.showInfo('Cache "' + item.name + '" saved.');
+                    Messages.showInfo('Cache "' + item.name + '" saved.');
                 })
-                .error(function(errMsg) {
-                    $common.showError(errMsg);
-                });
+                .error(Messages.showError);
         }
 
         // Save cache.
         $scope.saveItem = function() {
             const item = $scope.backupItem;
 
-            angular.extend(item, $common.autoCacheStoreConfiguration(item, cacheDomains(item)));
+            angular.extend(item, LegacyUtils.autoCacheStoreConfiguration(item, cacheDomains(item)));
 
             if (validate(item))
                 save(item);
@@ -392,7 +386,7 @@ consoleModule.controller('cachesController', [
         // Clone cache with new name.
         $scope.cloneItem = function() {
             if (validate($scope.backupItem)) {
-                $clone.confirm($scope.backupItem.name, _cacheNames()).then(function(newName) {
+                Clone.confirm($scope.backupItem.name, _cacheNames()).then(function(newName) {
                     const item = angular.copy($scope.backupItem);
 
                     delete item._id;
@@ -410,13 +404,13 @@ consoleModule.controller('cachesController', [
         $scope.removeItem = function() {
             const selectedItem = $scope.selectedItem;
 
-            $confirm.confirm('Are you sure you want to remove cache: "' + selectedItem.name + '"?')
+            Confirm.confirm('Are you sure you want to remove cache: "' + selectedItem.name + '"?')
                 .then(function() {
                     const _id = selectedItem._id;
 
                     $http.post('/api/v1/configuration/caches/remove', {_id})
                         .success(function() {
-                            $common.showInfo('Cache has been removed: ' + selectedItem.name);
+                            Messages.showInfo('Cache has been removed: ' + selectedItem.name);
 
                             const caches = $scope.caches;
 
@@ -438,19 +432,17 @@ consoleModule.controller('cachesController', [
                                 _.forEach($scope.domains, (domain) => _.remove(domain.meta.caches, (id) => id === _id));
                             }
                         })
-                        .error(function(errMsg) {
-                            $common.showError(errMsg);
-                        });
+                        .error(Messages.showError);
                 });
         };
 
         // Remove all caches from db.
         $scope.removeAllItems = function() {
-            $confirm.confirm('Are you sure you want to remove all caches?')
+            Confirm.confirm('Are you sure you want to remove all caches?')
                 .then(function() {
                     $http.post('/api/v1/configuration/caches/remove/all')
                         .success(function() {
-                            $common.showInfo('All caches have been removed');
+                            Messages.showInfo('All caches have been removed');
 
                             $scope.caches = [];
 
@@ -460,18 +452,16 @@ consoleModule.controller('cachesController', [
                             $scope.backupItem = emptyCache;
                             $scope.ui.inputForm.$setPristine();
                         })
-                        .error(function(errMsg) {
-                            $common.showError(errMsg);
-                        });
+                        .error(Messages.showError);
                 });
         };
 
         $scope.resetAll = function() {
-            $confirm.confirm('Are you sure you want to undo all changes for current cache?')
+            Confirm.confirm('Are you sure you want to undo all changes for current cache?')
                 .then(function() {
                     $scope.backupItem = $scope.selectedItem ? angular.copy($scope.selectedItem) : prepareNewItem();
                     $scope.ui.inputForm.$setPristine();
                 });
         };
-    }]
-);
+    }
+]];

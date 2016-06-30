@@ -15,7 +15,7 @@
     limitations under the License.
 
 mixin btn-toolbar(btn, click, tip, focusId)
-    i.btn.btn-default.fa(class=btn ng-click=click bs-tooltip='' data-title=tip on-click-focus=focusId data-trigger='hover' data-placement='bottom')
+    i.btn.btn-default.fa(class=btn ng-click=click bs-tooltip='' data-title=tip ignite-on-click-focus=focusId data-trigger='hover' data-placement='bottom')
 
 mixin btn-toolbar-data(btn, kind, tip)
     i.btn.btn-default.fa(class=btn ng-click='setResult(paragraph, "#{kind}")' ng-class='{active: resultEq(paragraph, "#{kind}")}' bs-tooltip='' data-title=tip data-trigger='hover' data-placement='bottom')
@@ -52,7 +52,7 @@ mixin notebook-rename
         h1.col-sm-6(ng-show='notebook.edit')
             i.btn.fa.fa-floppy-o(ng-show='notebook.editName' ng-click='renameNotebook(notebook.editName)' bs-tooltip data-title='Save notebook name' data-trigger='hover')
             .input-tip
-                input.form-control(ng-model='notebook.editName' required on-enter='renameNotebook(notebook.editName)' on-escape='notebook.edit = false;')
+                input.form-control(ng-model='notebook.editName' required ignite-on-enter='renameNotebook(notebook.editName)' ignite-on-escape='notebook.edit = false;')
         h1.pull-right
             a.dropdown-toggle(data-toggle='dropdown' bs-dropdown='scrollParagraphs' data-placement='bottom-right') Scroll to query
                 span.caret
@@ -80,7 +80,7 @@ mixin paragraph-rename
         i.tipLabel.fa(style='float: left;' ng-class='paragraphExpanded(paragraph) ? "fa-chevron-circle-down" : "fa-chevron-circle-right"')
         i.tipLabel.fa.fa-floppy-o(style='float: right;' ng-show='paragraph.editName' ng-click='renameParagraph(paragraph, paragraph.editName); $event.stopPropagation();' bs-tooltip data-title='Save query name' data-trigger='hover')
         .input-tip
-            input.form-control(id='paragraph-name-{{paragraph.id}}' ng-model='paragraph.editName' required ng-click='$event.stopPropagation();' on-enter='renameParagraph(paragraph, paragraph.editName)' on-escape='paragraph.edit = false')
+            input.form-control(id='paragraph-name-{{paragraph.id}}' ng-model='paragraph.editName' required ng-click='$event.stopPropagation();' ignite-on-enter='renameParagraph(paragraph, paragraph.editName)' ignite-on-escape='paragraph.edit = false')
 
 mixin query-controls
     .sql-controls

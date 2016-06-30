@@ -17,7 +17,7 @@
 
 import templateUrl from './dropdown.jade';
 
-export default ['igniteFormFieldDropdown', ['IgniteFormGUID', '$table', (guid, $table) => {
+export default ['igniteFormFieldDropdown', ['IgniteFormGUID', 'IgniteLegacyTable', (guid, LegacyTable) => {
     const controller = () => {};
 
     const link = (scope, $element, attrs, [form, label]) => {
@@ -48,9 +48,8 @@ export default ['igniteFormFieldDropdown', ['IgniteFormGUID', '$table', (guid, $
         scope.$watch(() => form.$pristine, setAsDefault);
         scope.$watch('value', setAsDefault);
 
-        // TODO LEGACY
         scope.tableReset = () => {
-            $table.tableSaveAndReset();
+            LegacyTable.tableSaveAndReset();
         };
     };
 

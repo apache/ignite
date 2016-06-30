@@ -20,6 +20,7 @@ import webpack from 'webpack';
 import autoprefixer from 'autoprefixer-core';
 import jade from 'jade';
 import progressPlugin from './plugins/progress';
+import eslintFormatter from 'eslint-friendly-formatter';
 
 import ExtractTextPlugin from 'extract-text-webpack-plugin';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
@@ -146,7 +147,8 @@ export default () => {
         // ESLint loader configuration.
         eslint: {
             failOnWarning: false,
-            failOnError: false
+            failOnError: false,
+            formatter: eslintFormatter
         },
 
         // Load plugins.

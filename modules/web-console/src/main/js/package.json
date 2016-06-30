@@ -8,7 +8,8 @@
     "build": "cross-env NODE_ENV=production gulp build",
     "test": "karma start karma.conf.js",
     "ci-test-backend": "cross-env NODE_ENV=test CONFIG_PATH='./test/backend/config/settings.json' mocha -u tdd --require babel-core/register --reporter mocha-teamcity-reporter --recursive ./test/backend/unit",
-    "test-backend": "cross-env NODE_ENV=test CONFIG_PATH='./test/backend/config/settings.json' mocha -u tdd --require babel-core/register  --recursive ./test/backend/unit"
+    "test-backend": "cross-env NODE_ENV=test CONFIG_PATH='./test/backend/config/settings.json' mocha -u tdd --require babel-core/register  --recursive ./test/backend/unit",
+    "eslint": "eslint --env node --format node_modules/eslint-friendly-formatter gulpfile.babel.js/ serve/"
   },
   "author": "",
   "contributors": [
@@ -96,6 +97,7 @@
     "cross-env": "^1.0.7",
     "css-loader": "^0.23.0",
     "eslint": "^2.9.0",
+    "eslint-friendly-formatter": "^2.0.5",
     "eslint-loader": "^1.0.0",
     "expose-loader": "^0.7.1",
     "extract-text-webpack-plugin": "^1.0.1",

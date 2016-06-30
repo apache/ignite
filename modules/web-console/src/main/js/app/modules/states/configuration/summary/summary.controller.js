@@ -17,10 +17,11 @@
 
 import _ from 'lodash';
 import JSZip from 'jszip';
+import saver from 'file-saver';
 
 export default [
-    '$rootScope', '$scope', '$http', '$common', '$loading', '$filter', 'ConfigurationSummaryResource', 'JavaTypes', 'IgniteVersion', 'GeneratorDocker', 'GeneratorPom',
-    function($root, $scope, $http, $common, $loading, $filter, Resource, JavaTypes, IgniteVersion, docker, pom) {
+    '$rootScope', '$scope', '$http', 'IgniteLegacyUtils', '$loading', '$filter', 'ConfigurationSummaryResource', 'JavaTypes', 'IgniteVersion', 'GeneratorDocker', 'GeneratorPom',
+    function($root, $scope, $http, LegacyUtils, $loading, $filter, Resource, JavaTypes, IgniteVersion, docker, pom) {
         const ctrl = this;
 
         $scope.ui = { ready: false };
@@ -53,7 +54,7 @@ export default [
             return !row || !row._id || _.findIndex(rows, (item) => item._id === row._id) >= 0;
         };
 
-        $scope.widthIsSufficient = $common.widthIsSufficient;
+        $scope.widthIsSufficient = LegacyUtils.widthIsSufficient;
         $scope.dialects = {};
 
         $scope.projectStructureOptions = {
@@ -326,10 +327,8 @@ export default [
 
             $generatorOptional.optionalContent(zip, cluster);
 
-            const blob = zip.generate({type: 'blob', compression: 'DEFLATE', mimeType: 'application/octet-stream'});
-
-            // Download archive.
-            saveAs(blob, cluster.name + '-project.zip');
+            zip.generateAsync({type: 'blob', compression: 'DEFLATE', mimeType: 'application/octet-stream'})
+                .then((blob) => saver.saveAs(blob, cluster.name + '-project.zip'));
         };
 
         /**
