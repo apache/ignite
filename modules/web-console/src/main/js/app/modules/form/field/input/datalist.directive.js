@@ -17,7 +17,7 @@
 
 import templateUrl from './datalist.jade';
 
-export default ['igniteFormFieldInputDatalist', ['IgniteFormGUID', '$table', (guid, $table) => {
+export default ['igniteFormFieldInputDatalist', ['IgniteFormGUID', 'IgniteLegacyTable', (guid, LegacyTable) => {
     const link = (scope, element, attrs, [ngModel, form, label], transclude) => {
         const {id, ngModelName} = scope;
 
@@ -86,9 +86,8 @@ export default ['igniteFormFieldInputDatalist', ['IgniteFormGUID', '$table', (gu
             scope.value = ngModel.$modelValue;
         };
 
-        // TODO LEGACY
         scope.tableReset = () => {
-            $table.tableSaveAndReset();
+            LegacyTable.tableSaveAndReset();
         };
 
         transclude(scope.$parent, function(clone, tscope) {

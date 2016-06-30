@@ -16,11 +16,9 @@
  */
 
 // Controller for SQL notebook screen.
-import consoleModule from 'controllers/common-module';
-
-consoleModule.controller('sqlController', [
-    '$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$modal', '$popover', '$loading', '$common', '$confirm', 'IgniteAgentMonitor', 'IgniteChartColors', 'QueryNotebooks', 'uiGridConstants', 'uiGridExporterConstants',
-    function($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $modal, $popover, $loading, $common, $confirm, agentMonitor, IgniteChartColors, QueryNotebooks, uiGridConstants, uiGridExporterConstants) {
+export default ['sqlController', [
+    '$rootScope', '$scope', '$http', '$q', '$timeout', '$interval', '$animate', '$location', '$anchorScroll', '$state', '$modal', '$popover', '$loading', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteConfirm', 'IgniteAgentMonitor', 'IgniteChartColors', 'QueryNotebooks', 'uiGridConstants', 'uiGridExporterConstants',
+    function($root, $scope, $http, $q, $timeout, $interval, $animate, $location, $anchorScroll, $state, $modal, $popover, $loading, LegacyUtils, Messages, Confirm, agentMonitor, IgniteChartColors, QueryNotebooks, uiGridConstants, uiGridExporterConstants) {
         let stopTopology = null;
 
         const _tryStopRefresh = function(paragraph) {
@@ -48,7 +46,7 @@ consoleModule.controller('sqlController', [
 
         $scope.aggregateFxs = ['FIRST', 'LAST', 'MIN', 'MAX', 'SUM', 'AVG', 'COUNT'];
 
-        $scope.modes = $common.mkOptions(['PARTITIONED', 'REPLICATED', 'LOCAL']);
+        $scope.modes = LegacyUtils.mkOptions(['PARTITIONED', 'REPLICATED', 'LOCAL']);
 
         $scope.loadingText = $root.IgniteDemoMode ? 'Demo grid is starting. Please wait...' : 'Loading notebook screen...';
 
@@ -78,10 +76,6 @@ consoleModule.controller('sqlController', [
         };
 
         $scope.maskCacheName = (cacheName) => _.isEmpty(cacheName) ? '<default>' : cacheName;
-
-        const _handleException = function(err) {
-            $common.showError(err);
-        };
 
         // Time line X axis descriptor.
         const TIME_LINE = {value: -1, type: 'java.sql.Date', label: 'TIME_LINE'};
@@ -856,7 +850,7 @@ consoleModule.controller('sqlController', [
                     .catch((err) => {
                         $scope.notebook.name = prevName;
 
-                        _handleException(err);
+                        Messages.showError(err);
                     });
             }
             else
@@ -864,7 +858,7 @@ consoleModule.controller('sqlController', [
         };
 
         $scope.removeNotebook = function() {
-            $confirm.confirm('Are you sure you want to remove: "' + $scope.notebook.name + '"?')
+            Confirm.confirm('Are you sure you want to remove: "' + $scope.notebook.name + '"?')
                 .then(function() {
                     return QueryNotebooks.remove($scope.notebook);
                 })
@@ -874,7 +868,7 @@ consoleModule.controller('sqlController', [
                     else
                         $state.go('base.configuration.clusters');
                 })
-                .catch(_handleException);
+                .catch(Messages.showError);
         };
 
         $scope.renameParagraph = function(paragraph, newName) {
@@ -887,8 +881,8 @@ consoleModule.controller('sqlController', [
                 $scope.rebuildScrollParagraphs();
 
                 QueryNotebooks.save($scope.notebook)
-                    .then(function() { paragraph.edit = false; })
-                    .catch(_handleException);
+                    .then(() => paragraph.edit = false)
+                    .catch(Messages.showError);
             }
             else
                 paragraph.edit = false;
@@ -935,7 +929,7 @@ consoleModule.controller('sqlController', [
             if (!_.isEmpty(paragraph.charts)) {
                 const chart = paragraph.charts[0].api.getScope().chart;
 
-                if (!$common.isDefined(paragraph.chartsOptions))
+                if (!LegacyUtils.isDefined(paragraph.chartsOptions))
                     paragraph.chartsOptions = {barChart: {stacked: true}, areaChart: {style: 'stack'}};
 
                 switch (paragraph.result) {
@@ -973,7 +967,7 @@ consoleModule.controller('sqlController', [
         };
 
         $scope.removeParagraph = function(paragraph) {
-            $confirm.confirm('Are you sure you want to remove: "' + paragraph.name + '"?')
+            Confirm.confirm('Are you sure you want to remove: "' + paragraph.name + '"?')
                 .then(function() {
                     $scope.stopRefresh(paragraph);
 
@@ -993,7 +987,7 @@ consoleModule.controller('sqlController', [
                     $scope.rebuildScrollParagraphs();
 
                     QueryNotebooks.save($scope.notebook)
-                        .catch(_handleException);
+                        .catch(Messages.showError);
                 });
         };
 
@@ -1014,7 +1008,7 @@ consoleModule.controller('sqlController', [
         };
 
         const _notObjectType = function(cls) {
-            return $common.isJavaBuiltInClass(cls);
+            return LegacyUtils.isJavaBuiltInClass(cls);
         };
 
         function _retainColumns(allCols, curCols, acceptableType, xAxis, unwantedCols) {
@@ -1061,7 +1055,7 @@ consoleModule.controller('sqlController', [
 
                 _.forEach(colsByTypes, function(colsByType, typeName) {
                     _.forEach(colsByType, function(col, ix) {
-                        col.fieldName = (needType && !$common.isEmptyString(typeName) ? typeName + '.' : '') + fieldName + (ix > 0 ? ix : '');
+                        col.fieldName = (needType && !LegacyUtils.isEmptyString(typeName) ? typeName + '.' : '') + fieldName + (ix > 0 ? ix : '');
                     });
                 });
             });
@@ -1132,10 +1126,10 @@ consoleModule.controller('sqlController', [
 
                 paragraph.chartColumns = [];
 
-                if (!$common.isDefined(paragraph.chartKeyCols))
+                if (!LegacyUtils.isDefined(paragraph.chartKeyCols))
                     paragraph.chartKeyCols = [];
 
-                if (!$common.isDefined(paragraph.chartValCols))
+                if (!LegacyUtils.isDefined(paragraph.chartValCols))
                     paragraph.chartValCols = [];
 
                 if (res.fieldsMetadata.length <= 2) {
@@ -1248,7 +1242,7 @@ consoleModule.controller('sqlController', [
 
         $scope.execute = function(paragraph) {
             QueryNotebooks.save($scope.notebook)
-                .catch(_handleException);
+                .catch(Messages.showError);
 
             paragraph.prevQuery = paragraph.queryArgs ? paragraph.queryArgs.query : paragraph.query;
 
@@ -1280,7 +1274,7 @@ consoleModule.controller('sqlController', [
         };
 
         $scope.queryExecuted = function(paragraph) {
-            return $common.isDefined(paragraph.queryArgs);
+            return LegacyUtils.isDefined(paragraph.queryArgs);
         };
 
         const _cancelRefresh = function(paragraph) {
@@ -1297,7 +1291,7 @@ consoleModule.controller('sqlController', [
 
         $scope.explain = function(paragraph) {
             QueryNotebooks.save($scope.notebook)
-                .catch(_handleException);
+                .catch(Messages.showError);
 
             _cancelRefresh(paragraph);
 
@@ -1324,7 +1318,7 @@ consoleModule.controller('sqlController', [
 
         $scope.scan = function(paragraph) {
             QueryNotebooks.save($scope.notebook)
-                .catch(_handleException);
+                .catch(Messages.showError);
 
             _cancelRefresh(paragraph);
 
@@ -1441,7 +1435,7 @@ consoleModule.controller('sqlController', [
                 csvContent += cols.join(';') + '\n';
             });
 
-            $common.download('application/octet-stream;charset=utf-8', fileName, escape(csvContent));
+            LegacyUtils.download('application/octet-stream;charset=utf-8', fileName, escape(csvContent));
         };
 
         $scope.exportCsv = function(paragraph) {
@@ -1459,7 +1453,7 @@ consoleModule.controller('sqlController', [
 
             agentMonitor.queryGetAll(args.cacheName, args.query)
                 .then((res) => _export(paragraph.name + '-all.csv', paragraph.columnFilter, res.fieldsMetadata, res.items))
-                .catch((err) => $common.showError(err))
+                .catch(Messages.showError)
                 .finally(() => paragraph.ace.focus());
         };
 
@@ -1468,9 +1462,7 @@ consoleModule.controller('sqlController', [
         //        .success(function(item) {
         //            _export(paragraph.name + '-all.csv', item.meta, item.rows);
         //    })
-        //    .error(function(errMsg) {
-        //        $common.showError(errMsg);
-        //    });
+        //    .error(Messages.showError);
         // };
 
         $scope.rateAsString = function(paragraph) {
@@ -1567,12 +1559,12 @@ consoleModule.controller('sqlController', [
                         return cache;
                     }), 'name');
                 })
-                .catch(_handleException)
+                .catch(Messages.showError)
                 .finally(() => $loading.finish('loadingCacheMetadata'));
         };
 
         $scope.showResultQuery = function(paragraph) {
-            if ($common.isDefined(paragraph)) {
+            if (LegacyUtils.isDefined(paragraph)) {
                 const scope = $scope.$new();
 
                 if (_.isNil(paragraph.queryArgs.query)) {
@@ -1592,5 +1584,5 @@ consoleModule.controller('sqlController', [
                 $modal({scope, template: '/templates/message.html', placement: 'center', show: true});
             }
         };
-    }]
-);
+    }
+]];

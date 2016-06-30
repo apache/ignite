@@ -16,18 +16,16 @@
  */
 
 // Controller for Profile screen.
-import consoleModule from 'controllers/common-module';
-
-consoleModule.controller('profileController', [
-    '$rootScope', '$scope', '$http', '$common', '$focus', '$confirm', 'IgniteCountries', 'User',
-    function($root, $scope, $http, $common, $focus, $confirm, Countries, User) {
+export default ['profileController', [
+    '$rootScope', '$scope', '$http', 'IgniteLegacyUtils', 'IgniteMessages', 'IgniteFocus', 'IgniteConfirm', 'IgniteCountries', 'User',
+    function($root, $scope, $http, LegacyUtils, Messages, Focus, Confirm, Countries, User) {
         $scope.user = angular.copy($root.user);
 
         $scope.countries = Countries.getAll();
 
         $scope.generateToken = () => {
-            $confirm.confirm('Are you sure you want to change security token?')
-                .then(() => $scope.user.token = $common.randomString(20));
+            Confirm.confirm('Are you sure you want to change security token?')
+                .then(() => $scope.user.token = LegacyUtils.randomString(20));
         };
 
         const _passwordValid = () => {
@@ -54,7 +52,7 @@ consoleModule.controller('profileController', [
             $scope.expandedPassword = !$scope.expandedPassword;
 
             if ($scope.expandedPassword)
-                $focus('profile_password');
+                Focus.move('profile_password');
             else {
                 delete $scope.user.password;
                 delete $scope.user.confirm;
@@ -83,11 +81,11 @@ consoleModule.controller('profileController', [
                     if ($scope.expandedToken)
                         $scope.toggleToken();
 
-                    $common.showInfo('Profile saved.');
+                    Messages.showInfo('Profile saved.');
 
-                    $focus('profile-username');
+                    Focus.move('profile-username');
                 })
-                .catch((err) => $common.showError('Failed to save profile: ' + $common.errorMessage(err)));
+                .catch((err) => Messages.showError(Messages.errorMessage('Failed to save profile: ', err)));
         };
-    }]
-);
+    }
+]];
