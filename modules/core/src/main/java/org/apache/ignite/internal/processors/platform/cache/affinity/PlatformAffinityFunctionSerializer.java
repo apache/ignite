@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.platform.cache.affinity;
 
 import org.apache.ignite.binary.BinaryRawReader;
+import org.apache.ignite.binary.BinaryRawWriter;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -43,6 +44,10 @@ public class PlatformAffinityFunctionSerializer {
      */
     public static void writeAffinityFunctionContext(AffinityFunctionContext affCtx, BinaryRawWriterEx writer,
         PlatformContext ctx) {
+        assert affCtx != null;
+        assert writer != null;
+        assert ctx != null;
+
         List<List<ClusterNode>> prevAssignment = ((GridAffinityFunctionContextImpl)affCtx).prevAssignment();
 
         if (prevAssignment == null)
@@ -69,6 +74,9 @@ public class PlatformAffinityFunctionSerializer {
      */
     public static AffinityFunctionContext readAffinityFunctionContext(BinaryRawReader reader,
         PlatformContext ctx) {
+        assert reader != null;
+        assert ctx != null;
+
         List<ClusterNode> topSnapshot = readNodes(reader, ctx);
 
         List<List<ClusterNode>> prevAssignment = null;
@@ -103,6 +111,9 @@ public class PlatformAffinityFunctionSerializer {
      * @return Node list.
      */
     private static List<ClusterNode> readNodes(BinaryRawReader reader, PlatformContext ctx) {
+        assert reader != null;
+        assert ctx != null;
+
         int nodeCnt = reader.readInt();
         List<ClusterNode> nodes = new ArrayList<>(nodeCnt);
 
@@ -124,6 +135,17 @@ public class PlatformAffinityFunctionSerializer {
     }
 
     /**
+     * Writes the partition assignment to a stream.
+     *
+     * @param partitions Partitions.
+     * @param writer Writer.
+     */
+    public static void writePartitionAssignment(List<List<ClusterNode>> partitions, BinaryRawWriter writer) {
+        assert partitions != null;
+        assert writer != null;
+    }
+
+    /**
      * Reads the partition assignment.
      *
      * @param reader Reader.
@@ -132,6 +154,9 @@ public class PlatformAffinityFunctionSerializer {
      */
     @NotNull
     public static List<List<ClusterNode>> readPartitionAssignment(BinaryRawReader reader, PlatformContext ctx) {
+        assert reader != null;
+        assert ctx != null;
+
         int partCnt = reader.readInt();
         List<List<ClusterNode>> res = new ArrayList<>(partCnt);
         IgniteClusterEx cluster = ctx.kernalContext().grid().cluster();

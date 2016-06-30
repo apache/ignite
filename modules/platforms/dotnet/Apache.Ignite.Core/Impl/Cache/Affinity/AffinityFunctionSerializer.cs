@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using System.IO;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity;
@@ -52,6 +53,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
         /// </summary>
         internal static void Write(IBinaryRawWriter writer, IAffinityFunction fun)
         {
+            Debug.Assert(writer != null);
+
             if (fun == null)
             {
                 writer.WriteByte(TypeCodeNull);
@@ -90,6 +93,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
         /// </summary>
         internal static IAffinityFunction Read(IBinaryRawReader reader)
         {
+            Debug.Assert(reader != null);
+
             // TODO
             AffinityFunctionBase fun;
 
@@ -129,6 +134,10 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
         internal static void WritePartitions(IEnumerable<IEnumerable<IClusterNode>> parts,
             PlatformMemoryStream stream, Marshaller marsh)
         {
+            Debug.Assert(parts != null);
+            Debug.Assert(stream != null);
+            Debug.Assert(marsh != null);
+
             IBinaryRawWriter writer = marsh.StartMarshal(stream);
 
             var partCnt = 0;
@@ -170,6 +179,9 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
         /// <returns>Partitions assignment.</returns>
         internal static IEnumerable<IEnumerable<IClusterNode>> ReadPartitions(IBinaryStream stream, Marshaller marsh)
         {
+            Debug.Assert(stream != null);
+            Debug.Assert(marsh != null);
+
             IBinaryRawReader reader = marsh.StartUnmarshal(stream);
 
             var partCnt = reader.ReadInt();

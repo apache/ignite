@@ -19,6 +19,7 @@ namespace Apache.Ignite.Core.Cache.Affinity
 {
     using System;
     using System.Collections.Generic;
+    using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Events;
@@ -50,6 +51,8 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// <param name="reader">The reader.</param>
         internal AffinityFunctionContext(IBinaryRawReader reader)
         {
+            Debug.Assert(reader != null);
+
             var cnt = reader.ReadInt();
 
             if (cnt > 0)
@@ -72,6 +75,8 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// <param name="writer">The writer.</param>
         internal void Write(IBinaryRawWriter writer)
         {
+            Debug.Assert(writer != null);
+
             if (_previousAssignment != null)
             {
                 writer.WriteInt(_previousAssignment.Count);
