@@ -61,6 +61,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_ATOMIC_CACHE_DELETE_HISTORY_SIZE;
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_OBJECT_UNLOADED;
+import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
 import static org.apache.ignite.internal.processors.cache.IgniteCacheOffheapManager.CacheDataStore;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.LOST;
@@ -138,6 +139,8 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
     GridDhtLocalPartition(GridCacheContext cctx, int id, GridCacheMapEntryFactory entryFactory) {
         assert cctx != null;
+
+        U.dumpStack("Creating partition [cache=" + cctx.name() + ", id=" + id + ']');
 
         this.id = id;
         this.cctx = cctx;
@@ -554,6 +557,9 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
         }
     }
 
+    /**
+     * @return {@code True} if partition state changed.
+     */
     boolean markLost() {
         while (true) {
             long reservations = state.get();
@@ -566,6 +572,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
             if (casState(reservations, LOST)) {
                 if (log.isDebugEnabled())
                     log.debug("Marked partition as LOST: " + this);
+                U.debug("Marked partition as LOST: " + this + ", was=" + GridDhtPartitionState.fromOrdinal(ord));
 
                 // No need to keep history any more.
                 evictHist = null;
@@ -573,7 +580,6 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
                 return true;
             }
         }
-
     }
 
     /**
@@ -669,7 +675,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
         int ord = (int)(reservations >> 32);
 
-        if (ord != RENTING.ordinal() || (reservations & 0xFFFF) != 0 || groupReserved())
+        if ((ord != RENTING.ordinal() && ord != LOST.ordinal()) || (reservations & 0xFFFF) != 0 || groupReserved())
             return;
 
         // Attempt to evict partition entries from cache.

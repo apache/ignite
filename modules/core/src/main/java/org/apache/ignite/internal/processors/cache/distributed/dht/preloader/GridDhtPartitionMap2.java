@@ -227,12 +227,10 @@ public class GridDhtPartitionMap2 implements Comparable<GridDhtPartitionMap2>, E
         for (Map.Entry<Integer, GridDhtPartitionState> entry : map.entrySet()) {
             int ordinal = entry.getValue().ordinal();
 
-            assert ordinal == (ordinal & 0x3);
-            assert entry.getKey() == (entry.getKey() & 0x3FFF);
+            assert entry.getKey() <= 0xFFFF;
 
-            int coded = (ordinal << 14) | entry.getKey();
-
-            out.writeShort((short)coded);
+            out.writeShort(entry.getKey());
+            out.write(ordinal);
 
             i++;
         }
@@ -260,10 +258,8 @@ public class GridDhtPartitionMap2 implements Comparable<GridDhtPartitionMap2>, E
         map = U.newHashMap(size);
 
         for (int i = 0; i < size; i++) {
-            int entry = in.readShort() & 0xFFFF;
-
-            int part = entry & 0x3FFF;
-            int ordinal = entry >> 14;
+            int part = in.readShort() & 0xFFFF;
+            int ordinal = in.readByte() & 0xFF;
 
             put(part, GridDhtPartitionState.fromOrdinal(ordinal));
         }

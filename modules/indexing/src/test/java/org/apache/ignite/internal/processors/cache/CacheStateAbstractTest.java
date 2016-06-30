@@ -18,6 +18,7 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -58,13 +59,8 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
     protected abstract CacheConfiguration cacheConfiguration(String cacheName);
 
     /** {@inheritDoc} */
-    @Override protected void beforeTestsStarted() throws Exception {
-        G.stopAll(true);
-    }
-
-    /** {@inheritDoc} */
     @Override protected void afterTest() throws Exception {
-        G.stopAll(true);
+        stopAllGrids();
     }
 
     /**
@@ -328,16 +324,16 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
         if (cacheConfiguration(null).getBackups() != 0 || cacheConfiguration(null).getCacheMode() != CacheMode.PARTITIONED)
             return;
 
-        final IgniteEx ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
-        final IgniteEx ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
+        final IgniteEx ignite1 = startGrid(0);
+        final IgniteEx ignite2 = startGrid(1);
 
-        final IgniteCache cache1 = ignite1.cache(null);
-        final IgniteCache cache2 = ignite2.cache(null);
+        final IgniteCache<Integer, Integer> cache1 = ignite1.cache(null);
+        final IgniteCache<Integer, Integer> cache2 = ignite2.cache(null);
 
         assert cache1.active();
         assert cache2.active();
 
-        Set<Integer> ignite2Parts = new HashSet<>();
+        Collection<Integer> ignite2Parts = new HashSet<>();
 
         for (int p : ignite2.affinity(null).allPartitions(ignite2.localNode())) {
             ignite2Parts.add(p);
@@ -356,7 +352,7 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
         final int partition = part;
 
         cache1.put(partition, 1);
-        assert cache2.get(partition).equals(1);
+        assertEquals((Integer)1, cache2.get(partition));
 
         ignite1.close();
 

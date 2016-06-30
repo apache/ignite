@@ -82,7 +82,7 @@ public class DynamicCacheDescriptor {
     private AffinityTopologyVersion rcvdFromVer;
 
     /** */
-    private Boolean active;
+    private CacheState cacheState;
 
     /**
      * @param ctx Context.
@@ -306,17 +306,17 @@ public class DynamicCacheDescriptor {
     }
 
     /**
-     * @return Cache active state.
+     * @return Cache state.
      */
-    public Boolean active() {
-        return active;
+    public CacheState state() {
+        return cacheState;
     }
 
     /**
-     * @param active Cache active state.
+     * @param cacheState Cache state.
      */
-    public void active(Boolean active) {
-        this.active = active;
+    public void state(CacheState cacheState) {
+        this.cacheState = cacheState;
     }
 
     /** {@inheritDoc} */

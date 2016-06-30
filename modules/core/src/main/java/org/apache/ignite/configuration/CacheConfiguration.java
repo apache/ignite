@@ -50,6 +50,7 @@ import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.cache.CacheRebalanceMode;
 import org.apache.ignite.cache.CacheTypeMetadata;
 import org.apache.ignite.cache.CacheWriteSynchronizationMode;
+import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
@@ -206,6 +207,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
 
     /** Default threshold for concurrent loading of keys from {@link CacheStore}. */
     public static final int DFLT_CONCURRENT_LOAD_ALL_THRESHOLD = 5;
+
+    /** Default partition loss policy. */
+    public static final PartitionLossPolicy DFLT_PARTITION_LOSS_POLICY = PartitionLossPolicy.IGNORE_ALL;
 
     /** Cache name. */
     private String name;
@@ -382,6 +386,9 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
     /** Query entities. */
     private Collection<QueryEntity> qryEntities;
 
+    /** Partition loss policy. */
+    private PartitionLossPolicy partitionLossPolicy = DFLT_PARTITION_LOSS_POLICY;
+
     /** Empty constructor (all values are initialized to their defaults). */
     public CacheConfiguration() {
         /* No-op. */
@@ -444,6 +451,7 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
         name = cc.getName();
         nearCfg = cc.getNearConfiguration();
         nodeFilter = cc.getNodeFilter();
+        partitionLossPolicy = cc.getPartitionLossPolicy();
         pluginCfgs = cc.getPluginConfigurations();
         qryEntities = cc.getQueryEntities() == Collections.<QueryEntity>emptyList() ? null : cc.getQueryEntities();
         readFromBackup = cc.isReadFromBackup();
@@ -1972,6 +1980,28 @@ public class CacheConfiguration<K, V> extends MutableConfiguration<K, V> {
      */
     public Collection<QueryEntity> getQueryEntities() {
         return qryEntities != null ? qryEntities : Collections.<QueryEntity>emptyList();
+    }
+
+    /**
+     * Gets partition loss policy. This policy defines how Ignite will react to a situation when all nodes for
+     * some partition leave the cluster.
+     *
+     * @return Partition loss policy.
+     * @see PartitionLossPolicy
+     */
+    public PartitionLossPolicy getPartitionLossPolicy() {
+        return partitionLossPolicy;
+    }
+
+    /**
+     * Sets partition loss policy. This policy defines how Ignite will react to a situation when all nodes for
+     * some partition leave the cluster.
+     *
+     * @param partitionLossPolicy Partition loss policy.
+     * @see PartitionLossPolicy
+     */
+    public void setPartitionLossPolicy(PartitionLossPolicy partitionLossPolicy) {
+        this.partitionLossPolicy = partitionLossPolicy;
     }
 
     /**

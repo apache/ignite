@@ -263,8 +263,6 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             exchangeFuture(msg.exchangeId(), null, null, null).onAffinityChangeMessage(customEvt.eventNode(), msg);
                     }
                     else if (customEvt.customMessage() instanceof NodeActivatedMessage) {
-                        NodeActivatedMessage msg = (NodeActivatedMessage)customEvt.customMessage();
-
                         exchId = exchangeId(n.id(), affinityTopologyVersion(e), e.type());
 
                         exchFut = exchangeFuture(exchId, e, null, null);
@@ -356,12 +354,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         assert startTime > 0;
 
         // Generate dummy discovery event for local node joining.
-        DiscoveryEvent discoEvt;
-
-        if (loc.isClient() || loc.isDaemon())
-            discoEvt = cctx.discovery().localJoinEvent();
-        else
-            discoEvt = cctx.discovery().localActivationEvent();
+        DiscoveryEvent discoEvt = loc.isClient() || loc.isDaemon() ?
+            cctx.discovery().localJoinEvent() :
+            cctx.discovery().localActivationEvent();
 
         GridDhtPartitionExchangeId exchId = initialExchangeId();
 
@@ -1290,9 +1285,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             IgniteInternalFuture asyncStartFut = null;
 
             while (!isCancelled()) {
-                GridDhtPartitionsExchangeFuture exchFut = null;
-
                 cnt++;
+
+                GridDhtPartitionsExchangeFuture exchFut = null;
 
                 try {
                     boolean preloadFinished = true;
@@ -1398,7 +1393,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                             assignsMap = new HashMap<>();
 
                             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                                if (!cacheCtx.active())
+                                if (cacheCtx.state() == CacheState.INACTIVE)
                                     continue;
 
                                 long delay = cacheCtx.config().getRebalanceDelay();
@@ -1442,14 +1437,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                         }
 
                         Callable<Boolean> marshR = null;
-                        List<Callable<Boolean>> orderedRs = new ArrayList<>(size);
+                        Collection<Callable<Boolean>> orderedRs = new ArrayList<>(size);
 
                         //Ordered rebalance scheduling.
                         for (Integer order : orderMap.keySet()) {
                             for (Integer cacheId : orderMap.get(order)) {
                                 GridCacheContext<K, V> cacheCtx = cctx.cacheContext(cacheId);
 
-                                List<String> waitList = new ArrayList<>(size - 1);
+                                Collection<String> waitList = new ArrayList<>(size - 1);
 
                                 for (List<Integer> cIds : orderMap.headMap(order).values()) {
                                     for (Integer cId : cIds)
@@ -1490,7 +1485,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                     }
                                     catch (Exception ex) {
                                         if (log.isDebugEnabled())
-                                            log.debug("Failed to send initial demand request to node");
+                                            log.debug("Failed to send initial demand request to node: " + ex);
 
                                         continue;
                                     }
@@ -1515,7 +1510,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                                         }
                                         catch (Exception ex) {
                                             if (log.isDebugEnabled())
-                                                log.debug("Failed to send initial demand request to node");
+                                                log.debug("Failed to send initial demand request to node: " + ex);
 
                                             return false;
                                         }
@@ -1541,7 +1536,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 catch (IgniteInterruptedCheckedException e) {
                     throw e;
                 }
-                catch (IgniteClientDisconnectedCheckedException e) {
+                catch (IgniteClientDisconnectedCheckedException ignore) {
                     return;
                 }
                 catch (IgniteCheckedException e) {

@@ -33,9 +33,11 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.DiscoveryEvent;
+import org.apache.ignite.events.EventType;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignment;
+import org.apache.ignite.internal.processors.cache.CacheState;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMapEntryFactory;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
@@ -51,11 +53,9 @@ import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.jetbrains.annotations.Nullable;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
-import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.RENTING;
@@ -181,25 +181,18 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
      * @throws IgniteCheckedException If failed.
      */
     private boolean waitForRent() throws IgniteCheckedException {
-        boolean changed = false;
-
         GridDhtLocalPartition[] locPartsCopy = new GridDhtLocalPartition[locParts.length];
 
         lock.readLock().lock();
 
         try {
-            for (int i = 0; i < locParts.length; i++)
-                locPartsCopy[i] = locParts[i];
+            System.arraycopy(locParts, 0, locPartsCopy, 0, locParts.length);
         }
         finally {
             lock.readLock().unlock();
         }
 
-        GridDhtLocalPartition part;
-
-        for (int i = 0; i < locPartsCopy.length; i++) {
-            part = locPartsCopy[i];
-
+        for (GridDhtLocalPartition part : locPartsCopy) {
             if (part == null)
                 continue;
 
@@ -221,23 +214,26 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         lock.writeLock().lock();
 
         try {
+            boolean changed = false;
+
             for (int i = 0; i < locParts.length; i++) {
-                part = locParts[i];
+                GridDhtLocalPartition part = locParts[i];
 
                 if (part == null)
                     continue;
 
                 if (part.state() == EVICTED) {
                     locParts[i] = null;
+
                     changed = true;
                 }
             }
+
+            return changed;
         }
         finally {
             lock.writeLock().unlock();
         }
-
-        return changed;
     }
 
     /** {@inheritDoc} */
@@ -788,9 +784,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         lock.readLock().lock();
 
         try {
-            for (int i = 0; i < locParts.length; i++) {
-                GridDhtLocalPartition part = locParts[i];
-
+            for (GridDhtLocalPartition part : locParts) {
                 if (part != null)
                     list.add(part);
             }
@@ -1318,9 +1312,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
     }
 
     /** {@inheritDoc} */
-    @Override public boolean detectLostPartitions() {
-        boolean changed = false;
-
+    @Override public boolean detectLostPartitions(DiscoveryEvent discoEvt) {
         lock.writeLock().lock();
 
         try {
@@ -1351,40 +1343,38 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                 }
             }
 
+            boolean changed = false;
+
             if (lost != null) {
-                long nextUpd = updateSeq.incrementAndGet();
-
-                node2part.updateSequence(nextUpd);
-
                 // Update partition state on all nodes.
                 for (Integer part : lost) {
-                    for (UUID nodeId : part2node.get(part)) {
-                        GridDhtPartitionMap2 partMap = node2part.get(nodeId);
-
-                        partMap.updateSequence(nextUpd, topVer);
-
-                        partMap.put(part, LOST);
-                    }
+                    long updSeq = updateSeq.incrementAndGet();
 
                     GridDhtLocalPartition locPart = localPartition(part, topVer, false);
 
-                    if (locPart != null)
-                        changed |= locPart.markLost();
+                    if (locPart != null) {
+                        boolean marked = locPart.markLost();
+
+                        if (marked)
+                            updateLocal(locPart.id(), cctx.localNodeId(), locPart.state(), updSeq);
+
+                        changed |= marked;
+
+                        if (cctx.events().isRecordable(EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST)) {
+                            cctx.events().addPreloadEvent(locPart.id(), EVT_CACHE_REBALANCE_PART_DATA_LOST,
+                                discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());
+                        }
+                    }
                 }
 
+                cctx.state(CacheState.RECOVERY);
             }
+
+            return changed;
         }
         finally {
             lock.writeLock().unlock();
         }
-
-        return changed;
-    }
-
-    /** {@inheritDoc} */
-    @Override public boolean hasLostPartitions() {
-        // TODO GG-10882
-        throw new NotImplementedException();
     }
 
     /** {@inheritDoc} */
@@ -1662,9 +1652,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         try {
             Map<Integer, Long> res = new HashMap<>(cntrMap);
 
-            for (int i = 0; i < locParts.length; i++) {
-                GridDhtLocalPartition part = locParts[i];
-
+            for (GridDhtLocalPartition part : locParts) {
                 if (part == null)
                     continue;
 
@@ -1696,9 +1684,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         lock.readLock().lock();
 
         try {
-            for (int i = 0; i < locParts.length; i++) {
-                GridDhtLocalPartition part = locParts[i];
-
+            for (GridDhtLocalPartition part : locParts) {
                 if (part == null)
                     continue;
 

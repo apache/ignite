@@ -23,6 +23,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.affinity.Affinity;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheRebalancingEvent;
@@ -81,6 +82,7 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
         cacheCfg.setCacheMode(PARTITIONED);
         cacheCfg.setBackups(backupCnt);
         cacheCfg.setWriteSynchronizationMode(FULL_SYNC);
+        cacheCfg.setAffinity(new RendezvousAffinityFunction(false, 32));
 
         cfg.setCacheConfiguration(cacheCfg);
 
@@ -101,10 +103,13 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
         startGrid(0);
         startGrid(1);
         startGrid(2);
+        startGrid(3);
 
-        final PartitionNotFullyLoadedListener lsnr = new PartitionNotFullyLoadedListener();
+        final PartitionNotFullyLoadedListener lsnr1 = new PartitionNotFullyLoadedListener();
+        final PartitionNotFullyLoadedListener lsnr2 = new PartitionNotFullyLoadedListener();
 
-        ignite(2).events().localListen(lsnr, EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST);
+        ignite(2).events().localListen(lsnr1, EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST);
+        ignite(3).events().localListen(lsnr1, EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST);
 
         Affinity<Integer> aff = ignite(0).affinity(null);
 
@@ -124,6 +129,8 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
         TestTcpCommunicationSpi.stop(ignite(0));
         TestTcpCommunicationSpi.stop(ignite(1));
 
+        info(">>>>> About to stop grids");
+
         stopGrid(0, true);
         stopGrid(1, true);
 
@@ -133,7 +140,13 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
 
         GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
-                return !lsnr.lostParts.isEmpty();
+                return !lsnr1.lostParts.isEmpty();
+            }
+        }, getTestTimeout());
+
+        GridTestUtils.waitForCondition(new GridAbsPredicate() {
+            @Override public boolean apply() {
+                return !lsnr2.lostParts.isEmpty();
             }
         }, getTestTimeout());
     }

@@ -2059,12 +2059,13 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public boolean active() {
-        return delegate.context().active();
+        return delegate.context().state() == CacheState.ACTIVE;
     }
 
     /** {@inheritDoc} */
     @Override public IgniteFuture<?> active(boolean active) {
-        return new IgniteFutureImpl<>(ctx.kernalContext().cache().changeCacheState(getName(), active));
+        return new IgniteFutureImpl<>(ctx.kernalContext().cache().changeCacheState(getName(),
+            active ? CacheState.ACTIVE : CacheState.INACTIVE));
     }
 
     /** {@inheritDoc} */

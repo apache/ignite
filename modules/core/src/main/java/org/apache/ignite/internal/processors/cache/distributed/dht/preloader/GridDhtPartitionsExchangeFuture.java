@@ -51,13 +51,13 @@ import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityAssignmentCache;
 import org.apache.ignite.internal.processors.cache.CacheAffinityChangeMessage;
 import org.apache.ignite.internal.processors.cache.CacheInvalidStateException;
+import org.apache.ignite.internal.processors.cache.CacheState;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeBatch;
 import org.apache.ignite.internal.processors.cache.DynamicCacheChangeRequest;
 import org.apache.ignite.internal.processors.cache.DynamicCacheDescriptor;
 import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
-import org.apache.ignite.internal.processors.cache.KeyCacheObject;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
@@ -90,7 +90,7 @@ import static org.apache.ignite.internal.managers.communication.GridIoPolicy.SYS
 /**
  * Future for exchanging partition maps.
  */
-@SuppressWarnings("TypeMayBeWeakened")
+@SuppressWarnings({"TypeMayBeWeakened", "unchecked"})
 public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityTopologyVersion>
     implements Comparable<GridDhtPartitionsExchangeFuture>, GridDhtTopologyFuture {
     /** */
@@ -173,7 +173,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private final Object mux = new Object();
 
     /** Logger. */
-    private IgniteLogger log;
+    private final IgniteLogger log;
 
     /** Dynamic cache change requests. */
     private Collection<DynamicCacheChangeRequest> reqs;
@@ -222,6 +222,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         this.discoEvt = discoEvt;
         this.cctx = cctx;
 
+        log = cctx.logger(getClass());
+
         onDone(exchId.topologyVersion());
     }
 
@@ -241,6 +243,8 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         this.exchId = exchId;
         this.discoEvt = discoEvt;
         this.cctx = cctx;
+
+        log = cctx.logger(getClass());
 
         reassign = true;
 
@@ -1129,11 +1133,11 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         if (err != null)
             return err;
 
-        if (!cctx.active())
+        if (cctx.state() == CacheState.INACTIVE)
             return new CacheInvalidStateException("Failed to perform cache operation " +
-                "(cache state is not valid): " + cctx.name());
+                "(cache state is not activated): " + cctx.name());
 
-        if (cctx.topology().hasLostPartitions()) {
+        if (cctx.state() == CacheState.RECOVERY) {
             if (key != null) {
                 int p = cctx.affinity().partition(key);
 
@@ -1366,7 +1370,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         assert crd.isLocal();
 
         for (GridCacheContext cacheCtx : cctx.cacheContexts())
-            cacheCtx.topology().detectLostPartitions();
+            cacheCtx.topology().detectLostPartitions(discoEvt);
     }
 
     /**
@@ -1399,7 +1403,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                             if (cctx.database().persistenceEnabled())
                                 assignRolesByCounters(cacheCtx.topology());
 
-                            cacheCtx.active(true);
+                            cacheCtx.state(req.state());
                         }
                     }
                 }

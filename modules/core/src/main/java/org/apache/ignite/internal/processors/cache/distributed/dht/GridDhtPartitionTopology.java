@@ -24,6 +24,7 @@ import java.util.Set;
 import java.util.UUID;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.IgniteInterruptedCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.distributed.dht.preloader.GridDhtPartitionExchangeId;
@@ -231,14 +232,10 @@ public interface GridDhtPartitionTopology {
      * <p>
      * This method should be called on topology coordinator after all partition messages are received.
      *
+     * @param discoEvt Discovery event for which we detect lost partitions.
      * @return {@code True} if partitons state got updated.
      */
-    public boolean detectLostPartitions();
-
-    /**
-     * @return {@code True} if there is at least one lost partition in current cache topology.
-     */
-    public boolean hasLostPartitions();
+    public boolean detectLostPartitions(DiscoveryEvent discoEvt);
 
     /**
      * @return Partition update counters.

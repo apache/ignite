@@ -612,6 +612,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             desc.locallyConfigured(true);
             desc.staticallyConfigured(true);
             desc.receivedFrom(ctx.localNodeId());
+            desc.state(sharedCtx.database().cacheDefaultState(cfg));
 
             if (!template) {
                 registeredCaches.put(masked, desc);
@@ -752,9 +753,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     caches.put(maskNull(name), cache);
 
-                    assert desc.active() != null;
+                    assert desc.state() != null;
 
-                    cache.context().active(desc.active());
+                    cache.context().state(desc.state());
 
                     startCache(cache);
 
@@ -1778,7 +1779,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                     assert cache != null;
 
-                    cache.context().active(req.active());
+                    cache.context().state(req.state());
                 }
 
                 if (req.stop()) {
@@ -1908,7 +1909,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 req.receivedFrom(desc.receivedFrom());
 
-                req.active(desc.active());
+                req.state(desc.state());
 
                 reqs.add(req);
 
@@ -1935,7 +1936,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
                 req.receivedFrom(desc.receivedFrom());
 
-                req.active(desc.active());
+                req.state(desc.state());
 
                 reqs.add(req);
             }
@@ -2000,7 +2001,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 true,
                                 req.deploymentId());
 
-                            desc.active(req.active());
+                            desc.state(req.state());
 
                             registeredTemplates.put(maskNull(req.cacheName()), desc);
                         }
@@ -2023,9 +2024,9 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                             if (existing.locallyConfigured()) {
                                 existing.addRemoteConfiguration(rmtNodeId, req.startCacheConfiguration());
 
-                                if (req.active() != null) {
-                                    if (existing.active() == null)
-                                        existing.active(req.active());
+                                if (req.state() != null) {
+                                    if (existing.state() == null)
+                                        existing.state(req.state());
                                 }
 
                                 ctx.discovery().setCacheFilter(
@@ -2045,7 +2046,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                                 false,
                                 req.deploymentId());
 
-                            desc.active(req.active());
+                            desc.state(req.state());
 
                             // Received statically configured cache.
                             if (req.initiatingNodeId() == null)
@@ -2402,10 +2403,10 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
     /**
      * @param cacheName Cache name.
-     * @param active Cache active flag.
+     * @param state Cache state.
      * @return Future that will be completed when state is changed.
      */
-    public IgniteInternalFuture<?> changeCacheState(String cacheName, boolean active) {
+    public IgniteInternalFuture<?> changeCacheState(String cacheName, CacheState state) {
         IgniteCacheProxy<?, ?> proxy = jCacheProxies.get(maskNull(cacheName));
 
         if (proxy == null || proxy.proxyClosed())
@@ -2415,7 +2416,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
 
         DynamicCacheChangeRequest t = new DynamicCacheChangeRequest(UUID.randomUUID(), cacheName, ctx.localNodeId());
 
-        t.active(active);
+        t.state(state);
 
         return F.first(initiateCacheChanges(F.asList(t), false));
     }
@@ -2623,7 +2624,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                         startDesc.startTopologyVersion(newTopVer);
 
                         if (req.activation())
-                            startDesc.active(req.active());
+                            startDesc.state(req.state());
 
                         DynamicCacheDescriptor old = registeredCaches.put(maskNull(ccfg.getName()), startDesc);
 
@@ -2679,7 +2680,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             }
             else if (req.activation()) {
                 if (desc != null) {
-                    desc.active(req.active());
+                    desc.state(req.state());
 
                     needExchange = true;
                 }
