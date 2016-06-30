@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "cross-env NODE_ENV=development gulp watch",
     "build": "cross-env NODE_ENV=production gulp build",
-    "eslint": "eslint --env node --format node_modules/eslint-friendly-formatter gulpfile.babel.js/ serve/"
+    "eslint": "eslint --env node --format node_modules/eslint-friendly-formatter gulpfile.babel.js/ serve/ app/ controllers/ generator/ ignite_modules/ ignite_modules_temp/"
   },
   "author": "",
   "contributors": [
