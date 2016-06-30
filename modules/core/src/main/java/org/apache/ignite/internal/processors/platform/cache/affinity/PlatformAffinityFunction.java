@@ -154,7 +154,7 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
         try (PlatformMemory outMem = ctx.memory().allocate()) {
             try (PlatformMemory inMem = ctx.memory().allocate()) {
                 PlatformOutputStream out = outMem.output();
-                BinaryRawWriterEx writer = ctx.writer(outMem);
+                BinaryRawWriterEx writer = ctx.writer(out);
 
                 // Write previous assignment
                 PlatformAffinityFunctionSerializer.writeAffinityFunctionContext(affCtx, writer, ctx);

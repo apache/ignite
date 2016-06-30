@@ -1128,8 +1128,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                     var affBase = func as AffinityFunctionBase;
 
                     if (affBase != null)
-                        affBase.SetBaseFunction(new PlatformAffinityFunction(_ignite.InteropProcessor,
-                            _ignite.Marshaller));
+                        affBase.SetBaseFunction(new PlatformAffinityFunction(
+                            _ignite.InteropProcessor.ChangeTarget(target), _ignite.Marshaller));
 
                     return _handleRegistry.Allocate(func);
                 }
