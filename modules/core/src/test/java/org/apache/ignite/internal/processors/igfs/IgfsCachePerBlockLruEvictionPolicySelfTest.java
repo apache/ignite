@@ -102,14 +102,14 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
         igfsCfg.setMetaCacheName("metaCache");
         igfsCfg.setName(IGFS_PRIMARY);
         igfsCfg.setBlockSize(512);
-        igfsCfg.setDefaultMode(PRIMARY);
+        igfsCfg.setDefaultMode(DUAL_SYNC);
         igfsCfg.setPrefetchBlocks(1);
         igfsCfg.setSequentialReadsBeforePrefetch(Integer.MAX_VALUE);
         igfsCfg.setSecondaryFileSystem(secondaryFs.asSecondary());
 
         Map<String, IgfsMode> pathModes = new HashMap<>();
 
-        pathModes.put(FILE_RMT.toString(), DUAL_SYNC);
+        pathModes.put(FILE.toString(), PRIMARY);
 
         igfsCfg.setPathModes(pathModes);
 

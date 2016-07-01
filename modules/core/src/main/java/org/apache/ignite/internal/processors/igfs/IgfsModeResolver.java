@@ -62,12 +62,8 @@ public class IgfsModeResolver {
 
         this.dfltMode = dfltMode;
 
-        // TODO: we assume that "modes" collection does not contain root folder, right?
-
         if (modes != null) {
-            List<T2<IgfsPath, IgfsMode>> modes0 = filterModes(this.dfltMode, modes);
-
-            this.modes = modes0;
+            this.modes = filterModes(this.dfltMode, modes);
 
             modesCache = new GridBoundedConcurrentLinkedHashMap<>(MAX_PATH_CACHE);
             childrenModesCache = new GridBoundedConcurrentLinkedHashMap<>(MAX_PATH_CACHE);
@@ -79,10 +75,11 @@ public class IgfsModeResolver {
      *
      * @param dfltMode The root mode. Must always be not null.
      * @param modes The subdirectory modes.
-     * @return TODO
-     * @throws IgniteCheckedException
+     * @return Descending list of filtered and checked modes.
+     * @throws IgniteCheckedException On error or
      */
-    private List<T2<IgfsPath, IgfsMode>> filterModes(IgfsMode dfltMode, @Nullable List<T2<IgfsPath, IgfsMode>> modes) throws IgniteCheckedException {
+    private List<T2<IgfsPath, IgfsMode>> filterModes(IgfsMode dfltMode, @Nullable List<T2<IgfsPath, IgfsMode>> modes)
+        throws IgniteCheckedException {
         if (modes == null)
             return null;
 
@@ -92,13 +89,19 @@ public class IgfsModeResolver {
 
         final List<T2<IgfsPath, IgfsMode>> consistentModes = new LinkedList<>();
 
-        // Add root as the first (the least deep):
-        addIfConsistent(consistentModes, new T2<>(new IgfsPath("/"), dfltMode));
+        // Add root with default mode as the first (the least deep):
+        final T2<IgfsPath, IgfsMode> root = new T2<>(new IgfsPath("/"), dfltMode);
+        addIfConsistent(consistentModes, root);
 
         assert consistentModes.size() == 1;
 
         for (T2<IgfsPath, IgfsMode> m: modes)
             addIfConsistent(consistentModes, m);
+
+        // Remove root, because this class contract is that root mode is not contained in the list.
+        T2<IgfsPath, IgfsMode> expRoot = consistentModes.remove(consistentModes.size() - 1);
+
+        assert expRoot == root;
 
         return consistentModes;
     }
@@ -106,26 +109,36 @@ public class IgfsModeResolver {
     /**
      *
      * @param consistentList NB: this list is sorted in descending order (deepest first).
-     * @param pairToAdd
+     * @param pairToAdd The pairs come in ascending order. The incoming piar is deeper than any element of {@code consistentList}.
      * @throws IgniteCheckedException
      */
-    private void addIfConsistent(List<T2<IgfsPath, IgfsMode>> consistentList, T2<IgfsPath, IgfsMode> pairToAdd) throws IgniteCheckedException {
+    private void addIfConsistent(List<T2<IgfsPath, IgfsMode>> consistentList, T2<IgfsPath, IgfsMode> pairToAdd)
+        throws IgniteCheckedException {
+        assert pairToAdd.getValue() != null;
+
+        boolean parentFound = consistentList.isEmpty();
+
         for (T2<IgfsPath, IgfsMode> consistent: consistentList) {
             if (startsWith(pairToAdd.getKey(), consistent.getKey())) {
+                assert consistent.getValue() != null;
+
                 // We're adding a subdirectory to an existing root:
                 if (consistent.getValue() == pairToAdd.getValue())
-                    // No reason to add a subpath of the same mode, just ignoring it.
+                    // No reason to add a sub-path of the same mode, ignoring this pair.
                     return;
 
                 if (!consistent.getValue().canContain(pairToAdd.getValue()))
-                    // TODO: beautify the message:
-                    throw new IgniteCheckedException("Upper level directory " + consistent
-                        + " cannot contain subdirectory " + pairToAdd + " due to the mode incompatibility.");
+                    throw new IgniteCheckedException("Subdirectory " + pairToAdd.getKey() + " mode "
+                        + pairToAdd.getValue() + " is not compatible with upper level "
+                        + consistent.getKey() + " directory mode " + consistent.getValue() + ".");
 
-                // TODO: assert we always went through this break statement in the loop (any dir is a subdir of root):
-                break; // finish
+                parentFound = true;
+
+                break;
             }
         }
+
+        assert parentFound;
 
         // Add to the 1st position (depest first):
         consistentList.add(0, pairToAdd);
@@ -180,11 +193,11 @@ public class IgfsModeResolver {
             if (children == null) {
                 children = new HashSet<>(IgfsMode.values().length, 1.0f);
 
-                IgfsMode pathDefault = dfltMode;
+                IgfsMode pathDflt = dfltMode;
 
                 for (T2<IgfsPath, IgfsMode> child : modes) {
                     if (startsWith(path, child.getKey())) {
-                        pathDefault = child.getValue();
+                        pathDflt = child.getValue();
 
                         break;
                     }
@@ -192,7 +205,7 @@ public class IgfsModeResolver {
                         children.add(child.getValue());
                 }
 
-                children.add(pathDefault);
+                children.add(pathDflt);
 
                 childrenModesCache.put(path, children);
             }

@@ -70,8 +70,17 @@ public enum IgfsMode {
      *
      * @return {@code true} if directory of this mode can contain a directory of the given mode.
      */
+    @SuppressWarnings("SimplifiableIfStatement")
     public boolean canContain(IgfsMode subdirectoryMode) {
-        return subdirectoryMode == PRIMARY || this != PRIMARY;
+        // PRIMARY can contain PRIMARY only:
+        if (this == PRIMARY)
+            return subdirectoryMode == PRIMARY;
+
+        // PROXY can contain PROXY only:
+        if (this == PROXY)
+            return subdirectoryMode == PROXY;
+
+        return true;
     }
 
     /** Enumerated values. */
