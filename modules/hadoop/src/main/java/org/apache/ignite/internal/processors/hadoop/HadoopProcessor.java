@@ -17,10 +17,6 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.configuration.HadoopConfiguration;
 import org.apache.ignite.hadoop.mapreduce.IgniteHadoopMapReducePlanner;
@@ -34,6 +30,11 @@ import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Hadoop processor.
@@ -86,27 +87,8 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
             c.start(hctx);
 
         hadoop = new HadoopImpl(this);
-    }
 
-    /** {@inheritDoc} */
-    @Override public String toString() {
-        return S.toString(HadoopProcessor.class, this);
-    }
-
-    /** {@inheritDoc} */
-    @Override public void stop(boolean cancel) throws IgniteCheckedException {
-        super.stop(cancel);
-
-        if (hctx == null)
-            return;
-
-        List<HadoopComponent> components = hctx.components();
-
-        for (ListIterator<HadoopComponent> it = components.listIterator(components.size()); it.hasPrevious();) {
-            HadoopComponent c = it.previous();
-
-            c.stop(cancel);
-        }
+        ctx.addNodeAttribute(HadoopAttributes.NAME, new HadoopAttributes(cfg));
     }
 
     /** {@inheritDoc} */
@@ -133,6 +115,22 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
             HadoopComponent c = it.previous();
 
             c.onKernalStop(cancel);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public void stop(boolean cancel) throws IgniteCheckedException {
+        super.stop(cancel);
+
+        if (hctx == null)
+            return;
+
+        List<HadoopComponent> components = hctx.components();
+
+        for (ListIterator<HadoopComponent> it = components.listIterator(components.size()); it.hasPrevious();) {
+            HadoopComponent c = it.previous();
+
+            c.stop(cancel);
         }
     }
 
@@ -216,5 +214,10 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
     private void initializeDefaults(HadoopConfiguration cfg) {
         if (cfg.getMapReducePlanner() == null)
             cfg.setMapReducePlanner(new IgniteHadoopMapReducePlanner());
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(HadoopProcessor.class, this);
     }
 }
