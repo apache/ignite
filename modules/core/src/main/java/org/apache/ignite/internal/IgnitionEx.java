@@ -1689,6 +1689,9 @@ public class IgnitionEx {
                 0,
                 new LinkedBlockingQueue<Runnable>());
 
+            // Pre-start all threads to avoid HadoopClassLoader leaks.
+            ((ThreadPoolExecutor)igfsExecSvc).prestartAllCoreThreads();
+
             // Note that we do not pre-start threads here as this pool may not be needed.
             callbackExecSvc = new IgniteStripedThreadPoolExecutor(
                 cfg.getAsyncCallbackPoolSize(),

@@ -332,14 +332,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Query
         /// Tests aggregates with all clause.
         /// </summary>
         [Test]
-        [Ignore("IGNITE-2563")]
         public void TestAggregatesAll()
         {
             var ints = GetPersonCache().AsCacheQueryable().Select(x => x.Key);
 
-            Assert.IsTrue(ints.Where(x => x > -10).All(x => x < PersonCount && x >= 0));
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+            var ex = Assert.Throws<NotSupportedException>(() => ints.Where(x => x > -10)
+                .All(x => x < PersonCount && x >= 0));
 
-            Assert.IsFalse(ints.All(x => x < PersonCount / 2));
+            Assert.IsTrue(ex.Message.StartsWith("Operator is not supported: All"));
         }
 
         /// <summary>

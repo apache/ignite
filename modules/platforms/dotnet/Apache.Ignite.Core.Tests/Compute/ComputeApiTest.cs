@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Compute
 {
     using System;
     using System.Collections;
+    using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
     using System.Threading;
@@ -1008,11 +1009,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestBroadcastAction()
         {
-            ComputeAction.InvokeCount = 0;
+            var id = Guid.NewGuid();
             
-            _grid1.GetCompute().Broadcast(new ComputeAction());
+            _grid1.GetCompute().Broadcast(new ComputeAction(id));
 
-            Assert.AreEqual(2, ComputeAction.InvokeCount);
+            Assert.AreEqual(2, ComputeAction.InvokeCount(id));
         }
 
         /// <summary>
@@ -1021,11 +1022,11 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestRunAction()
         {
-            ComputeAction.InvokeCount = 0;
-            
-            _grid1.GetCompute().Run(new ComputeAction());
+            var id = Guid.NewGuid();
 
-            Assert.AreEqual(1, ComputeAction.InvokeCount);
+            _grid1.GetCompute().Run(new ComputeAction(id));
+
+            Assert.AreEqual(1, ComputeAction.InvokeCount(id));
         }
 
         /// <summary>
@@ -1053,13 +1054,13 @@ namespace Apache.Ignite.Core.Tests.Compute
         [Test]
         public void TestRunActions()
         {
-            ComputeAction.InvokeCount = 0;
+            var id = Guid.NewGuid();
 
-            var actions = Enumerable.Range(0, 10).Select(x => new ComputeAction());
+            var actions = Enumerable.Range(0, 10).Select(x => new ComputeAction(id));
             
             _grid1.GetCompute().Run(actions);
 
-            Assert.AreEqual(10, ComputeAction.InvokeCount);
+            Assert.AreEqual(10, ComputeAction.InvokeCount(id));
         }
 
         /// <summary>
@@ -1324,15 +1325,32 @@ namespace Apache.Ignite.Core.Tests.Compute
         #pragma warning disable 649
         private IIgnite _grid;
 
-        public static int InvokeCount;
+        public static ConcurrentBag<Guid> Invokes = new ConcurrentBag<Guid>();
 
         public static Guid LastNodeId;
+
+        public Guid Id { get; set; }
+
+        public ComputeAction()
+        {
+            // No-op.
+        }
+
+        public ComputeAction(Guid id)
+        {
+            Id = id;
+        }
 
         public void Invoke()
         {
             Thread.Sleep(10);
-            Interlocked.Increment(ref InvokeCount);
+            Invokes.Add(Id);
             LastNodeId = _grid.GetCluster().GetLocalNode().Id;
+        }
+
+        public static int InvokeCount(Guid id)
+        {
+            return Invokes.Count(x => x == id);
         }
     }
 

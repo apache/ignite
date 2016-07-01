@@ -1715,8 +1715,8 @@ GENERATE_LEGEND        = YES
 
 DOT_CLEANUP            = YES
 
-;INPUT=core binary
-;EXCLUDE=core/include/ignite/impl core/os/linux/include/ignite/impl core/os/linux/src/impl core/os/win/include/ignite/impl core/os/win/src/impl core/src/impl binary/include/ignite/impl binary/src/impl
+;INPUT=core binary common
+;EXCLUDE=core/include/ignite/impl core/os/linux/include/ignite/impl core/os/linux/src/impl core/os/win/include/ignite/impl core/os/win/src/impl core/src/impl binary/include/ignite/impl binary/src/impl common/include/ignite/common common/os
 ;STRIP_FROM_PATH=core/include/ignite core/src binary/include/ignite binary/src
 ;OUTPUT_DIRECTORY=../../clients/target/cppdoc
 ;PROJECT_LOGO=../../../assembly/docfiles/ignite_logo.png
