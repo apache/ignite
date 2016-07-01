@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Affinity.Fair;
+    using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
     using Apache.Ignite.Core.Cache.Configuration;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Common;
@@ -225,7 +226,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         {
             var cache = _ignite.CreateCache<int, int>(new CacheConfiguration("fairCache")
             {
-                AffinityFunction = new FairAffinityFunctionInheritor()
+                AffinityFunction = new FairAffinityFunctionEx()
             });
 
             var aff = _ignite.GetAffinity(cache.Name);
@@ -235,6 +236,29 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             // Test from map
             Assert.AreEqual(2, aff.GetPartition(1));
             Assert.AreEqual(3, aff.GetPartition(2));
+
+            // Test from base func
+            Assert.AreEqual(6, aff.GetPartition(33));
+        }
+
+        /// <summary>
+        /// Tests customized rendezvous affinity.
+        /// </summary>
+        [Test]
+        public void TestInheritRendezvousAffinity()
+        {
+            var cache = _ignite.CreateCache<int, int>(new CacheConfiguration("rendezvousCache")
+            {
+                AffinityFunction = new RendezvousAffinityFunctionEx()
+            });
+
+            var aff = _ignite.GetAffinity(cache.Name);
+
+            Assert.AreEqual(PartitionCount, aff.Partitions);
+
+            // Test from map
+            Assert.AreEqual(3, aff.GetPartition(1));
+            Assert.AreEqual(4, aff.GetPartition(2));
 
             // Test from base func
             Assert.AreEqual(6, aff.GetPartition(33));
@@ -304,9 +328,31 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         }
 
         [Serializable]
-        private class FairAffinityFunctionInheritor : FairAffinityFunction
+        private class FairAffinityFunctionEx : FairAffinityFunction
         {
             private static readonly Dictionary<int, int> PartitionMap = new Dictionary<int, int> {{1, 2}, {2, 3}};
+
+            public override int Partitions
+            {
+                get { return PartitionCount; }
+                set { throw new NotSupportedException(); }
+            }
+
+            public override int GetPartition(object key)
+            {
+                int res;
+
+                if (PartitionMap.TryGetValue((int)key, out res))
+                    return res;
+
+                return base.GetPartition(key);
+            }
+        }
+
+        [Serializable]
+        private class RendezvousAffinityFunctionEx : RendezvousAffinityFunction
+        {
+            private static readonly Dictionary<int, int> PartitionMap = new Dictionary<int, int> {{1, 3}, {2, 4}};
 
             public override int Partitions
             {
