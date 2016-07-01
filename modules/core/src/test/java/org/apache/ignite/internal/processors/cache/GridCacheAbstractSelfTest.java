@@ -95,10 +95,15 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     @Override protected void afterTestsStopped() throws Exception {
         stopAllGrids();
 
-        storeStgy.resetStore();
+        if (storeStgy != null)
+            storeStgy.resetStore();
     }
 
-    /** Initialize {@link #storeStgy} with respect to the nature of the test */
+    /**
+     * Initializes {@link #storeStgy} with respect to the nature of the test.
+     *
+     * @throws IgniteCheckedException If failed.
+     */
     void initStoreStrategy() throws IgniteCheckedException {
         if (storeStgy == null)
             storeStgy = isMultiJvm() ? new H2CacheStoreStrategy() : new MapCacheStoreStrategy();
@@ -216,6 +221,7 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
         Factory<? extends CacheStore<Object, Object>> storeFactory = storeStgy.getStoreFactory();
+
         CacheStore<?, ?> store = storeFactory.create();
 
         if (store != null) {

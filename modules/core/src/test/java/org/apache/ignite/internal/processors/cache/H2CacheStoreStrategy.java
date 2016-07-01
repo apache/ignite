@@ -47,21 +47,22 @@ import org.h2.jdbcx.JdbcConnectionPool;
 import org.h2.tools.RunScript;
 import org.h2.tools.Server;
 
-/** {@link TestCacheStoreStrategy} backed by H2 in-memory database */
+/**
+ * {@link TestCacheStoreStrategy} backed by H2 in-memory database.
+ */
 public class H2CacheStoreStrategy implements TestCacheStoreStrategy {
-    /** Pool to get {@link Connection}s from */
+    /** Pool to get {@link Connection}s from. */
     private final JdbcConnectionPool dataSrc;
 
-    /** Script that creates CACHE table */
+    /** Script that creates CACHE table. */
     private static final String CREATE_CACHE_TABLE =
         "create table if not exists CACHE(k binary not null, v binary not null, PRIMARY KEY(k));";
 
-    /** Script that creates STATS table */
+    /** Script that creates STATS table. */
     private static final String CREATE_STATS_TABLES =
         "create table if not exists READS(id bigint auto_increment);\n" +
         "create table if not exists WRITES(id bigint auto_increment);\n" +
         "create table if not exists REMOVES(id bigint auto_increment);";
-
 
     /** Script that populates STATS table */
     private static final String POPULATE_STATS_TABLE =
@@ -69,7 +70,10 @@ public class H2CacheStoreStrategy implements TestCacheStoreStrategy {
         "delete from WRITES;\n" +
         "delete from REMOVES;";
 
-    /** */
+
+    /**
+     * @throws IgniteCheckedException If failed.
+     */
     public H2CacheStoreStrategy() throws IgniteCheckedException {
         try {
             Server.createTcpServer().start();
@@ -101,8 +105,12 @@ public class H2CacheStoreStrategy implements TestCacheStoreStrategy {
         return queryStats("removes");
     }
 
-    private int queryStats(String table) {
-        return querySingleInt("select count(*) from " + table, "Failed to query store stats [table=" + table + "]");
+    /**
+     * @param tbl Table name.
+     * @return Update statistics.
+     */
+    private int queryStats(String tbl) {
+        return querySingleInt("select count(*) from " + tbl, "Failed to query store stats [table=" + tbl + "]");
     }
 
     /** {@inheritDoc} */
@@ -203,10 +211,11 @@ public class H2CacheStoreStrategy implements TestCacheStoreStrategy {
     }
 
     /**
-     * Retrieve single int value from {@link ResultSet} returned by given query
-     * @param qry Query string (fully populated, with params)
-     * @param errorMsg Message for {@link IgniteException} to bear in case of failure
-     * @return requested value
+     * Retrieves single int value from {@link ResultSet} returned by given query.
+     *
+     * @param qry Query string (fully populated, with params).
+     * @param errorMsg Message for {@link IgniteException} to bear in case of failure.
+     * @return Requested value
      */
     private int querySingleInt(String qry, String errorMsg) {
         Connection conn = null;
@@ -232,8 +241,8 @@ public class H2CacheStoreStrategy implements TestCacheStoreStrategy {
     }
 
     /** {@inheritDoc} */
-    @Override public void updateCacheConfiguration(CacheConfiguration<Object, Object> configuration) {
-        configuration.setCacheStoreSessionListenerFactories(new H2CacheStoreSessionListenerFactory());
+    @Override public void updateCacheConfiguration(CacheConfiguration<Object, Object> cfg) {
+        cfg.setCacheStoreSessionListenerFactories(new H2CacheStoreSessionListenerFactory());
     }
 
     /** {@inheritDoc} */
@@ -241,7 +250,7 @@ public class H2CacheStoreStrategy implements TestCacheStoreStrategy {
         return new H2StoreFactory();
     }
 
-    /** Serializable H2 backed cache store factory */
+    /** Serializable H2 backed cache store factory. */
     public static class H2StoreFactory implements Factory<CacheStore<Object, Object>> {
         /** {@inheritDoc} */
         @Override public CacheStore<Object, Object> create() {
@@ -249,7 +258,7 @@ public class H2CacheStoreStrategy implements TestCacheStoreStrategy {
         }
     }
 
-    /** Serializable {@link Factory} producing H2 backed {@link CacheStoreSessionListener}s */
+    /** Serializable {@link Factory} producing H2 backed {@link CacheStoreSessionListener}s. */
     public static class H2CacheStoreSessionListenerFactory implements Factory<CacheStoreSessionListener> {
         /**
          * @return Connection pool
@@ -280,6 +289,8 @@ public class H2CacheStoreStrategy implements TestCacheStoreStrategy {
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, Object... args) {
             Connection conn = ses.attachment();
+            assert conn != null;
+
             Statement stmt = null;
             ResultSet rs = null;
             try {
@@ -336,11 +347,12 @@ public class H2CacheStoreStrategy implements TestCacheStoreStrategy {
         }
 
         /**
-         * Select from H2 and deserialize from bytes the value pointed at by <tt>key</tt>
-         * @param conn {@link Connection} to use
-         * @param key key to llok for the value by
-         * @return Stored object or null if the key is missing from DB
-         * @throws SQLException
+         * Selects from H2 and deserialize from bytes the value pointed by key.
+         *
+         * @param conn {@link Connection} to use.
+         * @param key Key to look for.
+         * @return Stored object or null if the key is missing from DB.
+         * @throws SQLException If failed.
          */
         static Object getFromDb(Connection conn, Object key) throws SQLException {
             PreparedStatement stmt = null;
@@ -358,11 +370,12 @@ public class H2CacheStoreStrategy implements TestCacheStoreStrategy {
         }
 
         /**
-         * Put key-value pair to H2
-         * @param conn {@link Connection} to use
-         * @param key key
-         * @param val value
-         * @throws SQLException if failed
+         * Puts key-value pair to H2.
+         *
+         * @param conn {@link Connection} to use.
+         * @param key Key.
+         * @param val Value.
+         * @throws SQLException If failed.
          */
         static void putToDb(Connection conn, Object key, Object val) throws SQLException {
             PreparedStatement stmt = null;
@@ -378,10 +391,11 @@ public class H2CacheStoreStrategy implements TestCacheStoreStrategy {
         }
 
         /**
-         * Remove given key and its value from H2
-         * @param conn {@link Connection} to invoke query upon
-         * @param key to remove
-         * @throws SQLException if failed
+         * Removes given key and its value from H2.
+         *
+         * @param conn {@link Connection} to invoke query upon.
+         * @param key Key to remove.
+         * @throws SQLException if failed.
          */
         static void removeFromDb(Connection conn, Object key) throws SQLException {
             PreparedStatement stmt = null;
@@ -396,16 +410,17 @@ public class H2CacheStoreStrategy implements TestCacheStoreStrategy {
         }
 
         /**
-         * Increment stored stats for given operation
-         * @param tableName field name
+         * Increments stored stats for given operation.
+         *
+         * @param tblName Table name
          */
-        private void updateStats(String tableName) {
+        private void updateStats(String tblName) {
             Connection conn = ses.attachment();
             assert conn != null;
             Statement stmt = null;
             try {
                 stmt = conn.createStatement();
-                stmt.executeUpdate("insert into " + tableName + " default values");
+                stmt.executeUpdate("insert into " + tblName + " default values");
             }
             catch (SQLException e) {
                 throw new IgniteException("Failed to update H2 store usage stats", e);
@@ -416,9 +431,10 @@ public class H2CacheStoreStrategy implements TestCacheStoreStrategy {
         }
 
         /**
-         * Turn given arbitrary {@link Object} to byte array
-         * @param obj {@link Object} to serialize
-         * @return bytes representation of given {@link Object}
+         * Turns given arbitrary object to byte array.
+         *
+         * @param obj Object to serialize
+         * @return Bytes representation of given object.
          */
         static byte[] serialize(Object obj) {
             try (ByteArrayOutputStream b = new ByteArrayOutputStream()) {
@@ -433,9 +449,10 @@ public class H2CacheStoreStrategy implements TestCacheStoreStrategy {
         }
 
         /**
-         * Deserialize an object from its byte array representation
-         * @param bytes byte array representation of the {@link Object}
-         * @return deserialized {@link Object}
+         * Deserializes an object from its byte array representation.
+         *
+         * @param bytes Byte array representation of the object.
+         * @return Deserialized object.
          */
         public static Object deserialize(byte[] bytes) {
             try (ByteArrayInputStream b = new ByteArrayInputStream(bytes)) {

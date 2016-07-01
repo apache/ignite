@@ -223,10 +223,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     /** {@inheritDoc} */
     @Override protected void beforeTestsStarted() throws Exception {
         initStoreStrategy();
+
         if (cacheStartType() == CacheStartMode.STATIC)
             super.beforeTestsStarted();
         else {
-            initStoreStrategy();
             cacheCfgMap = Collections.synchronizedMap(new HashMap<String, CacheConfiguration[]>());
 
             if (cacheStartType() == CacheStartMode.NODES_THEN_CACHES) {
@@ -269,9 +269,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
-     * Checks that skipStore flag gets overriden inside a transaction.
-     *
-     * @throws Exception if failed.
+     * Checks that skipStore flag gets overridden inside a transaction.
      */
     public void testWriteThroughTx() {
         String key = "writeThroughKey";
@@ -297,9 +295,7 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     }
 
     /**
-     * Checks that skipStore flag gets overriden inside a transaction.
-     *
-     * @throws Exception if failed.
+     * Checks that skipStore flag gets overridden inside a transaction.
      */
     public void testNoReadThroughTx() {
         String key = "writeThroughKey";

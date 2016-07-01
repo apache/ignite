@@ -28,7 +28,9 @@ import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.jsr166.ConcurrentHashMap8;
 
-/** {@link TestCacheStoreStrategy} implemented as a wrapper around {@link #map} */
+/**
+ * {@link TestCacheStoreStrategy} implemented as a wrapper around {@link #map}
+ */
 public class MapCacheStoreStrategy implements TestCacheStoreStrategy {
     /** Removes counter. */
     private final static AtomicInteger removes = new AtomicInteger();
@@ -97,7 +99,7 @@ public class MapCacheStoreStrategy implements TestCacheStoreStrategy {
     }
 
     /** {@inheritDoc} */
-    @Override public void updateCacheConfiguration(CacheConfiguration<Object, Object> configuration) {
+    @Override public void updateCacheConfiguration(CacheConfiguration<Object, Object> cfg) {
         // No-op.
     }
 
@@ -116,7 +118,6 @@ public class MapCacheStoreStrategy implements TestCacheStoreStrategy {
 
     /** {@link CacheStore} backed by {@link #map} */
     public static class MapCacheStore extends CacheStoreAdapter<Object, Object> {
-
         /** {@inheritDoc} */
         @Override public void loadCache(IgniteBiInClosure<Object, Object> clo, Object... args) {
             for (Map.Entry<Object, Object> e : map.entrySet())
