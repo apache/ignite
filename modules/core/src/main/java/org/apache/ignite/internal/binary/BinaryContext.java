@@ -70,9 +70,25 @@ import org.apache.ignite.internal.processors.igfs.IgfsFileAffinityRange;
 import org.apache.ignite.internal.processors.igfs.IgfsFileInfo;
 import org.apache.ignite.internal.processors.igfs.IgfsFileMap;
 import org.apache.ignite.internal.processors.igfs.IgfsListingEntry;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientAffinityCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientDeleteCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientExistsCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientInfoCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientListFilesCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientListPathsCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientMkdirsCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientRenameCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientSetTimesCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientSizeCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientSummaryCallable;
+import org.apache.ignite.internal.processors.igfs.client.IgfsClientUpdateCallable;
+import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaIdsForPathCallable;
+import org.apache.ignite.internal.processors.igfs.client.meta.IgfsClientMetaInfoForPathCallable;
+import org.apache.ignite.internal.processors.igfs.data.IgfsDataPutProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryCreateProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingAddProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingRemoveProcessor;
+import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingRenameProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaDirectoryListingReplaceProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileCreateProcessor;
 import org.apache.ignite.internal.processors.igfs.meta.IgfsMetaFileLockProcessor;
@@ -126,9 +142,12 @@ public class BinaryContext {
         sysClss.add(IgfsFileMap.class.getName());
         sysClss.add(IgfsListingEntry.class.getName());
 
+        sysClss.add(IgfsDataPutProcessor.class.getName());
+
         sysClss.add(IgfsMetaDirectoryCreateProcessor.class.getName());
         sysClss.add(IgfsMetaDirectoryListingAddProcessor.class.getName());
         sysClss.add(IgfsMetaDirectoryListingRemoveProcessor.class.getName());
+        sysClss.add(IgfsMetaDirectoryListingRenameProcessor.class.getName());
         sysClss.add(IgfsMetaDirectoryListingReplaceProcessor.class.getName());
         sysClss.add(IgfsMetaFileCreateProcessor.class.getName());
         sysClss.add(IgfsMetaFileLockProcessor.class.getName());
@@ -138,6 +157,22 @@ public class BinaryContext {
         sysClss.add(IgfsMetaFileUnlockProcessor.class.getName());
         sysClss.add(IgfsMetaUpdatePropertiesProcessor.class.getName());
         sysClss.add(IgfsMetaUpdateTimesProcessor.class.getName());
+
+        sysClss.add(IgfsClientMetaIdsForPathCallable.class.getName());
+        sysClss.add(IgfsClientMetaInfoForPathCallable.class.getName());
+
+        sysClss.add(IgfsClientAffinityCallable.class.getName());
+        sysClss.add(IgfsClientDeleteCallable.class.getName());
+        sysClss.add(IgfsClientExistsCallable.class.getName());
+        sysClss.add(IgfsClientInfoCallable.class.getName());
+        sysClss.add(IgfsClientListFilesCallable.class.getName());
+        sysClss.add(IgfsClientListPathsCallable.class.getName());
+        sysClss.add(IgfsClientMkdirsCallable.class.getName());
+        sysClss.add(IgfsClientRenameCallable.class.getName());
+        sysClss.add(IgfsClientSetTimesCallable.class.getName());
+        sysClss.add(IgfsClientSizeCallable.class.getName());
+        sysClss.add(IgfsClientSummaryCallable.class.getName());
+        sysClss.add(IgfsClientUpdateCallable.class.getName());
 
         // Closure processor classes.
         sysClss.add(GridClosureProcessor.C1V2.class.getName());
