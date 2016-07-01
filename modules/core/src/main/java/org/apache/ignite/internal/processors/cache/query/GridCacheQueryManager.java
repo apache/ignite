@@ -257,6 +257,7 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
      * Stops query manager.
      *
      * @param cancel Cancel queries.
+     * @param destroy Cache destroy flag..
      */
     @SuppressWarnings({"LockAcquiredButNotSafelyReleased"})
     @Override public final void stop0(boolean cancel, boolean destroy) {

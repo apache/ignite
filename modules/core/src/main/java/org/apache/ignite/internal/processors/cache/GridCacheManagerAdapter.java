@@ -88,6 +88,7 @@ public class GridCacheManagerAdapter<K, V> implements GridCacheManager<K, V> {
 
     /**
      * @param cancel Cancel flag.
+     * @param destroy Cache destroy flag.
      */
     protected void stop0(boolean cancel, boolean destroy) {
         // No-op.
