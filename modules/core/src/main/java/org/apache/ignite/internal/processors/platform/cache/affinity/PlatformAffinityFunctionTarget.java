@@ -18,6 +18,7 @@
 package org.apache.ignite.internal.processors.platform.cache.affinity;
 
 import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
@@ -45,6 +46,9 @@ public class PlatformAffinityFunctionTarget extends PlatformAbstractTarget {
 
     /** Inner function to delegate calls to. */
     private final AffinityFunction baseFunc;
+
+    /** Thread local to hold the current affinity function context. */
+    private static final ThreadLocal<AffinityFunctionContext> currentAffCtx = new ThreadLocal<>();
 
     /**
      * Constructor.
@@ -81,8 +85,11 @@ public class PlatformAffinityFunctionTarget extends PlatformAbstractTarget {
     @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader,
         BinaryRawWriterEx writer) throws IgniteCheckedException {
         if (type == OP_ASSIGN_PARTITIONS) {
-            AffinityFunctionContext affCtx =
-                PlatformAffinityFunctionSerializer.readAffinityFunctionContext(reader, platformContext());
+            AffinityFunctionContext affCtx = currentAffCtx.get();
+
+            if (affCtx == null)
+                throw new IgniteException("Thread-local AffinityFunctionContext is null. " +
+                        "This may indicate an unsupported call to the base AffinityFunction");
 
             final List<List<ClusterNode>> partitions = baseFunc.assignPartitions(affCtx);
 
@@ -92,5 +99,14 @@ public class PlatformAffinityFunctionTarget extends PlatformAbstractTarget {
         }
 
         super.processInStreamOutStream(type, reader, writer);
+    }
+
+    /**
+     * Sets the context for current operation.
+     *
+     * @param ctx Context.
+     */
+    void setCurrentAffinityFunctionContext(AffinityFunctionContext ctx) {
+        currentAffCtx.set(ctx);
     }
 }

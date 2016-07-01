@@ -71,6 +71,9 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
     /** */
     private transient long ptr;
 
+    /** */
+    private transient PlatformAffinityFunctionTarget baseTarget;
+
 
     /**
      * Ctor for serialization.
@@ -159,9 +162,15 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
                 // Write previous assignment
                 PlatformAffinityFunctionSerializer.writeAffinityFunctionContext(affCtx, writer, ctx);
 
-                // Call platform
                 out.synchronize();
+
+                // Call platform
+                // We can not restore original AffinityFunctionContext after the call to platform,
+                // due to DiscoveryEvent (when node leaves, we can't get it by id anymore).
+                // Secondly, AffinityFunctionContext can't be changed by the user.
+                baseTarget.setCurrentAffinityFunctionContext(affCtx);
                 ctx.gateway().affinityFunctionAssignPartitions(ptr, outMem.pointer(), inMem.pointer());
+                baseTarget.setCurrentAffinityFunctionContext(null);
 
                 // Read result
                 return PlatformAffinityFunctionSerializer.readPartitionAssignment(ctx.reader(inMem), ctx);
@@ -216,7 +225,7 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
 
             out.synchronize();
 
-            final PlatformAffinityFunctionTarget baseTarget = baseFunc != null
+            baseTarget = baseFunc != null
                 ? new PlatformAffinityFunctionTarget(ctx, baseFunc)
                 : null;
 
