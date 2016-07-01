@@ -14,6 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <utility>
+
 #include <ignite/ignite_error.h>
 #include <ignite/common/utils.h>
 
@@ -61,14 +63,8 @@ namespace ignite
         {
             IgniteError tmp(other);
 
-            int tmpCode = code;
-            char* tmpMsg = msg;
-            
-            code = tmp.code;
-            msg = tmp.msg;
-
-            tmp.code = tmpCode;
-            tmp.msg = tmpMsg;
+            std::swap(code, tmp.code);
+            std::swap(msg, tmp.msg);
         }
 
         return *this;

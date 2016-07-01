@@ -133,6 +133,7 @@ IgniteAtomicReferenceClose @130
 IgniteProcessorCreateNearCache @131
 IgniteProcessorGetOrCreateNearCache @132
 IgniteProcessorGetCacheNames @133
-IgniteProcessorRegisterClass @134
-IgniteProcessorGetClass @135
-IgniteReleaseChars @136
+IgniteProjectionForServers @134
+IgniteProcessorRegisterClass @135
+IgniteProcessorGetClass @136
+IgniteReleaseChars @137

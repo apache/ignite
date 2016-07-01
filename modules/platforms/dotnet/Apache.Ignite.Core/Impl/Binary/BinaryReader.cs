@@ -22,7 +22,6 @@ namespace Apache.Ignite.Core.Impl.Binary
     using System.Collections.Generic;
     using System.Diagnostics.CodeAnalysis;
     using System.IO;
-    using System.Runtime.Serialization;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Binary.Structure;
@@ -676,8 +675,8 @@ namespace Apache.Ignite.Core.Impl.Binary
                 else
                 {
                     // Find descriptor.
-                    var desc = hdr.TypeId == BinaryUtils.TypeUnregistered 
-                        ? _marsh.GetDescriptor(Type.GetType(ReadString(), true)) 
+                    var desc = hdr.TypeId == BinaryUtils.TypeUnregistered
+                        ? _marsh.GetDescriptor(Type.GetType(ReadString(), true))
                         : _marsh.GetDescriptor(hdr.IsUserType, hdr.TypeId);
 
                     // Instantiate object. 
@@ -696,47 +695,16 @@ namespace Apache.Ignite.Core.Impl.Binary
                     _frame.Raw = false;
 
                     // Read object.
-                    object obj;
+                    Stream.Seek(pos + BinaryObjectHeader.Size, SeekOrigin.Begin);
 
-                    var sysSerializer = desc.Serializer as IBinarySystemTypeSerializer;
-
-                    if (sysSerializer != null)
-                        obj = sysSerializer.ReadInstance(this);
-                    else
-                    {
-                        try
-                        {
-                            obj = FormatterServices.GetUninitializedObject(desc.Type);
-
-                            // Save handle.
-                            AddHandle(pos, obj);
-                        }
-                        catch (Exception e)
-                        {
-                            throw new BinaryObjectException("Failed to create type instance: " +
-                                                        desc.Type.AssemblyQualifiedName, e);
-                        }
-
-                        desc.Serializer.ReadBinary(obj, this);
-                    }
+                    var obj = desc.Serializer.ReadBinary<T>(this, desc.Type, pos);
 
                     _frame.Struct.UpdateReaderStructure();
 
                     // Restore old frame.
                     _frame = oldFrame;
 
-                    // Process wrappers. We could introduce a common interface, but for only 2 if-else is faster.
-                    var wrappedSerializable = obj as SerializableObjectHolder;
-
-                    if (wrappedSerializable != null) 
-                        return (T) wrappedSerializable.Item;
-
-                    var wrappedDateTime = obj as DateTimeHolder;
-
-                    if (wrappedDateTime != null)
-                        return TypeCaster<T>.Cast(wrappedDateTime.Item);
-                    
-                    return (T) obj;
+                    return obj;
                 }
             }
             finally

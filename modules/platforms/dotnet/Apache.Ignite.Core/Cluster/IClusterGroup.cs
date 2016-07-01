@@ -180,6 +180,12 @@ namespace Apache.Ignite.Core.Cluster
         IClusterGroup ForDotNet();
 
         /// <summary>
+        /// Creates a cluster group of nodes started in server mode (<see cref="IgniteConfiguration.ClientMode"/>).
+        /// </summary>
+        /// <returns>Cluster group of nodes started in server mode.</returns>
+        IClusterGroup ForServers();
+
+        /// <summary>
         /// Gets read-only collections of nodes in this projection.
         /// </summary>
         /// <returns>All nodes in this projection.</returns>

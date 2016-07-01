@@ -508,8 +508,6 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
                                     null,
                                     /*swap*/true,
                                     /*read-through*/false,
-                                    /*fail-fast*/true,
-                                    /*unmarshal*/true,
                                     /**update-metrics*/false,
                                     /*event*/!skipVals,
                                     /*temporary*/false,
@@ -1054,7 +1052,7 @@ public class GridDhtColocatedCache<K, V> extends GridDhtTransactionalCacheAdapte
 
             IgniteInternalFuture<GridCacheReturn> txFut = tx.lockAllAsync(cacheCtx,
                 keys,
-                tx.implicit(),
+                retval,
                 txRead,
                 accessTtl,
                 skipStore,

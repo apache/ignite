@@ -1109,9 +1109,9 @@ namespace Apache.Ignite.Core.Impl.Binary
             // Writing normal object.
             var pos = _stream.Position;
 
-            // Dealing with handles.
-            if (!(desc.Serializer is IBinarySystemTypeSerializer) && WriteHandle(pos, obj))
-                return;
+                // Dealing with handles.
+                if (desc.Serializer.SupportsHandles && WriteHandle(pos, obj))
+                    return;
 
             // Skip header length as not everything is known now
             _stream.Seek(BinaryObjectHeader.Size, SeekOrigin.Current);

@@ -25,9 +25,11 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.Lock;
 import javax.cache.event.CacheEntryEvent;
 import javax.cache.event.CacheEntryListenerException;
@@ -72,6 +74,9 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     /** Non-volatile on purpose. */
     private int failedCnt;
 
+    /** */
+    private ContinuousQueryListener lsnr;
+
     /**
      * @param plugins Plugins.
      * @throws IgniteCheckedException In case of error.
@@ -98,6 +103,22 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
     }
 
     /**
+     * @param ctx Context.
+     * @throws IgniteCheckedException If failed.
+     */
+    public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException {
+        if (ctx.clientNode()) {
+            lsnr = new ContinuousQueryListener(ctx.log(MarshallerContextImpl.class), workDir);
+
+            ctx.continuous().registerStaticRoutine(
+                CU.MARSH_CACHE_NAME,
+                lsnr,
+                null,
+                null);
+        }
+    }
+
+    /**
      * @param ctx Kernal context.
      * @throws IgniteCheckedException In case of error.
      */
@@ -110,11 +131,11 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
             GridCacheContext<Integer, String> cacheCtx = cache.context();
 
             cacheCtx.continuousQueries().executeInternalQuery(
-                new ContinuousQueryListener(ctx.log(MarshallerContextImpl.class), workDir, fileExt),
-                null,
-                cacheCtx.affinityNode(),
-                true,
-                false
+                    new ContinuousQueryListener(ctx.log(MarshallerContextImpl.class), workDir, fileExt),
+                    null,
+                    cacheCtx.affinityNode(),
+                    true,
+                    false
             );
         }
 
@@ -122,6 +143,49 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
 
         latch.countDown();
     }
+
+
+                        /**
+                         * @param ctx Kernal context.
+                         * @throws IgniteCheckedException In case of error.
+                         */
+                    public void onMarshallerCacheStarted(GridKernalContext ctx) throws IgniteCheckedException {
+                        assert ctx != null;
+
+                        log = ctx.log(MarshallerContextImpl.class);
+
+                        cache = ctx.cache().marshallerCache();
+
+                        if (ctx.cache().marshallerCache().context().affinityNode()) {
+                            ctx.cache().marshallerCache().context().continuousQueries().executeInternalQuery(
+                                    new ContinuousQueryListener(log, workDir),
+                                    null,
+                                    true,
+                                    true,
+                                    false
+                            );
+                        }
+                        else {
+                            if (lsnr != null) {
+                                ctx.closure().runLocalSafe(new Runnable() {
+                                    @SuppressWarnings("unchecked")
+                                    @Override public void run() {
+                                        try {
+                                            Iterable entries = cache.context().continuousQueries().existingEntries(false, null);
+
+                                            lsnr.onUpdated(entries);
+                                        }
+                                        catch (IgniteCheckedException e) {
+                                            U.error(log, "Failed to load marshaller cache entries: " + e, e);
+                                        }
+                                    }
+                                });
+                            }
+                        }
+
+                        latch.countDown();
+                    }
+
 
     /**
      * Release marshaller context.
@@ -189,7 +253,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                 File file = new File(workDir, fileName);
 
                 try (FileInputStream in = new FileInputStream(file)) {
-                    FileLock fileLock = in.getChannel().lock(0L, Long.MAX_VALUE, true);
+                    FileLock fileLock = fileLock(in.getChannel(), true);
 
                     assert fileLock != null : fileName;
 
@@ -220,6 +284,26 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
      */
     private static Lock fileLock(String fileName) {
         return fileLock.getLock(fileName.hashCode());
+    }
+
+    /**
+     * @param ch File channel.
+     * @param shared Shared.
+     */
+    private static FileLock fileLock(
+        FileChannel ch,
+        boolean shared
+    ) throws IOException, IgniteInterruptedCheckedException {
+        ThreadLocalRandom rnd = ThreadLocalRandom.current();
+
+        while (true) {
+            FileLock fileLock = ch.tryLock(0L, Long.MAX_VALUE, shared);
+
+            if (fileLock == null)
+                U.sleep(rnd.nextLong(50));
+            else
+                return fileLock;
+        }
     }
 
     /**
@@ -263,7 +347,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                         File file = new File(workDir, fileName);
 
                         try (FileOutputStream out = new FileOutputStream(file)) {
-                            FileLock fileLock = out.getChannel().lock(0L, Long.MAX_VALUE, false);
+                            FileLock fileLock = fileLock(out.getChannel(), false);
 
                             assert fileLock != null : fileName;
 
@@ -276,6 +360,9 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                         catch (IOException e) {
                             U.error(log, "Failed to write class name to file [id=" + evt.getKey() +
                                 ", clsName=" + evt.getValue() + ", file=" + file.getAbsolutePath() + ']', e);
+                        }
+                        catch (IgniteInterruptedCheckedException e) {
+                            U.error(log, "Interrupted while waiting for acquiring file lock: " + file, e);
                         }
                     }
                     finally {

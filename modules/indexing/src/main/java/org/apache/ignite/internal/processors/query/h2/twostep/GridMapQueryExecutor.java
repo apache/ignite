@@ -277,7 +277,7 @@ public class GridMapQueryExecutor {
             if (cctx == null) // Cache was not found, probably was not deployed yet.
                 return false;
 
-            if (cctx.isLocal())
+            if (cctx.isLocal() || !cctx.rebalanceEnabled())
                 continue;
 
             // For replicated cache topology version does not make sense.

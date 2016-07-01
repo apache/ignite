@@ -90,8 +90,8 @@ module.exports.factory = function(_, express, mongo) {
 
                     return (new mongo.Cache(params)).save()
                         .then((cache) =>
-                            mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {caches: cacheId}}, {multi: true}).exec()
-                                .then(() => mongo.DomainModel.update({_id: {$in: domains}}, {$addToSet: {caches: cacheId}}, {multi: true}).exec())
+                            mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {caches: cache._id}}, {multi: true}).exec()
+                                .then(() => mongo.DomainModel.update({_id: {$in: domains}}, {$addToSet: {caches: cache._id}}, {multi: true}).exec())
                                 .then(() => res.send(cache._id))
                         );
                 })

@@ -88,7 +88,8 @@ public class PlatformCallbackGateway {
      * @param objPtr Object pointer.
      */
     public void cacheStoreDestroy(long objPtr) {
-        enter();
+        if (!lock.enterBusy())
+            return;  // no need to destroy stores on grid stop
 
         try {
             PlatformCallbackUtils.cacheStoreDestroy(envPtr, objPtr);
@@ -947,6 +948,93 @@ public class PlatformCallbackGateway {
         block();
 
         PlatformCallbackUtils.onStop(envPtr);
+    }
+
+    /**
+     * Initializes affinity function.
+     *
+     * @param memPtr Pointer to a stream with serialized affinity function.
+     * @return Affinity function pointer.
+     */
+    public long affinityFunctionInit(long memPtr) {
+        enter();
+
+        try {
+            return PlatformCallbackUtils.affinityFunctionInit(envPtr, memPtr);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Gets the partition from affinity function.
+     *
+     * @param ptr Affinity function pointer.
+     * @param memPtr Pointer to a stream with key object.
+     * @return Partition number for a given key.
+     */
+    public int affinityFunctionPartition(long ptr, long memPtr) {
+        enter();
+
+        try {
+            return PlatformCallbackUtils.affinityFunctionPartition(envPtr, ptr, memPtr);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Assigns the affinity partitions.
+     *
+     * @param ptr Affinity function pointer.
+     * @param outMemPtr Pointer to a stream with affinity context.
+     * @param inMemPtr Pointer to a stream with result.
+     */
+    public void affinityFunctionAssignPartitions(long ptr, long outMemPtr, long inMemPtr){
+        enter();
+
+        try {
+            PlatformCallbackUtils.affinityFunctionAssignPartitions(envPtr, ptr, outMemPtr, inMemPtr);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Removes the node from affinity function.
+     *
+     * @param ptr Affinity function pointer.
+     * @param memPtr Pointer to a stream with node id.
+     */
+    public void affinityFunctionRemoveNode(long ptr, long memPtr) {
+        enter();
+
+        try {
+            PlatformCallbackUtils.affinityFunctionRemoveNode(envPtr, ptr, memPtr);
+        }
+        finally {
+            leave();
+        }
+    }
+
+    /**
+     * Destroys the affinity function.
+     *
+     * @param ptr Affinity function pointer.
+     */
+    public void affinityFunctionDestroy(long ptr) {
+        if (!lock.enterBusy())
+            return;  // skip: destroy is not necessary during shutdown.
+
+        try {
+            PlatformCallbackUtils.affinityFunctionDestroy(envPtr, ptr);
+        }
+        finally {
+            leave();
+        }
     }
 
     /**

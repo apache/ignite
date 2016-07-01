@@ -50,7 +50,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             new CopyOnWriteConcurrentDictionary<string, IBinaryTypeDescriptor>();
 
         /** ID to descriptor map. */
-        private readonly CopyOnWriteConcurrentDictionary<long, IBinaryTypeDescriptor> _idToDesc = 
+        private readonly CopyOnWriteConcurrentDictionary<long, IBinaryTypeDescriptor> _idToDesc =
             new CopyOnWriteConcurrentDictionary<long, IBinaryTypeDescriptor>();
 
         /** Cached metadatas. */
@@ -505,7 +505,11 @@ namespace Apache.Ignite.Core.Impl.Binary
                             "Configuration value: IsEnum={0}, actual type: IsEnum={1}",
                             typeCfg.IsEnum, type.IsEnum));
 
+                // Type is found.
+                var typeName = BinaryUtils.GetTypeName(type);
+                int typeId = BinaryUtils.TypeId(typeName, nameMapper, idMapper);
                 var affKeyFld = typeCfg.AffinityKeyFieldName ?? GetAffinityKeyFieldNameFromAttribute(type);
+                var serializer = GetSerializer(cfg, typeCfg, type, typeId, nameMapper, idMapper);
 
                 AddType(type, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, serializer,
                     affKeyFld, type.IsEnum);
@@ -520,6 +524,29 @@ namespace Apache.Ignite.Core.Impl.Binary
                 AddType(null, typeId, typeName, true, keepDeserialized, nameMapper, idMapper, null,
                     typeCfg.AffinityKeyFieldName, typeCfg.IsEnum);
             }
+        }
+
+        /// <summary>
+        /// Gets the serializer.
+        /// </summary>
+        private static IBinarySerializerInternal GetSerializer(BinaryConfiguration cfg, BinaryTypeConfiguration typeCfg,
+            Type type, int typeId, IBinaryNameMapper nameMapper, IBinaryIdMapper idMapper)
+        {
+            var serializer = typeCfg.Serializer ?? cfg.DefaultSerializer;
+
+            if (serializer == null)
+            {
+                if (type.GetInterfaces().Contains(typeof(IBinarizable)))
+                    return BinarizableSerializer.Instance;
+
+                serializer = new BinaryReflectiveSerializer();
+            }
+
+            var refSerializer = serializer as BinaryReflectiveSerializer;
+
+            return refSerializer != null
+                ? refSerializer.Register(type, typeId, nameMapper, idMapper)
+                : new UserSerializerProxy(serializer);
         }
 
         /// <summary>
@@ -541,18 +568,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         }
 
         /// <summary>
-        /// Gets the <see cref="BinarizableSerializer"/> for a type if it is compatible.
-        /// </summary>
-        /// <param name="type">The type.</param>
-        /// <returns>Resulting <see cref="BinarizableSerializer"/>, or null.</returns>
-        private static IBinarySerializer GetBinarizableSerializer(Type type)
-        {
-            return type.GetInterfaces().Contains(typeof (IBinarizable)) 
-                ? BinarizableSerializer.Instance 
-                : null;
-        }
-
-        /// <summary>
         /// Add type.
         /// </summary>
         /// <param name="type">Type.</param>
@@ -567,7 +582,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <param name="isEnum">Enum flag.</param>
         private void AddType(Type type, int typeId, string typeName, bool userType, 
             bool keepDeserialized, IBinaryNameMapper nameMapper, IBinaryIdMapper idMapper,
-            IBinarySerializer serializer, string affKeyFieldName, bool isEnum)
+            IBinarySerializerInternal serializer, string affKeyFieldName, bool isEnum)
         {
             long typeKey = BinaryUtils.TypeKey(userType, typeId);
 
@@ -603,12 +618,13 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Adds a predefined system type.
         /// </summary>
-        private void AddSystemType<T>(int typeId, Func<BinaryReader, T> ctor, string affKeyFldName = null)
+        private void AddSystemType<T>(int typeId, Func<BinaryReader, T> ctor, string affKeyFldName = null,
+            IBinarySerializerInternal serializer = null)
             where T : IBinaryWriteAware
         {
             var type = typeof(T);
 
-            var serializer = new BinarySystemTypeSerializer<T>(ctor);
+            serializer = serializer ?? new BinarySystemTypeSerializer<T>(ctor);
 
             if (typeId == 0)
                 typeId = BinaryUtils.TypeId(type.Name, null, null);
@@ -631,8 +647,10 @@ namespace Apache.Ignite.Core.Impl.Binary
             AddSystemType(BinaryUtils.TypeComputeFuncJob, w => new ComputeFuncJob(w));
             AddSystemType(BinaryUtils.TypeComputeActionJob, w => new ComputeActionJob(w));
             AddSystemType(BinaryUtils.TypeContinuousQueryRemoteFilterHolder, w => new ContinuousQueryFilterHolder(w));
-            AddSystemType(BinaryUtils.TypeSerializableHolder, w => new SerializableObjectHolder(w));
-            AddSystemType(BinaryUtils.TypeDateTimeHolder, w => new DateTimeHolder(w));
+            AddSystemType(BinaryUtils.TypeSerializableHolder, w => new SerializableObjectHolder(w),
+                serializer: new SerializableSerializer());
+            AddSystemType(BinaryUtils.TypeDateTimeHolder, w => new DateTimeHolder(w),
+                serializer: new DateTimeSerializer());
             AddSystemType(BinaryUtils.TypeCacheEntryProcessorHolder, w => new CacheEntryProcessorHolder(w));
             AddSystemType(BinaryUtils.TypeCacheEntryPredicateHolder, w => new CacheEntryFilterHolder(w));
             AddSystemType(BinaryUtils.TypeMessageListenerHolder, w => new MessageListenerHolder(w));
