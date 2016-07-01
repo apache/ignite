@@ -17,8 +17,14 @@
 
 package org.apache.ignite.internal.processors.igfs;
 
-import java.util.*;
-import org.apache.ignite.*;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
@@ -54,10 +60,14 @@ public class IgfsModeResolver {
     private Map<IgfsPath, Set<IgfsMode>> childrenModesCache;
 
     /**
+     * Constructor
+     *
      * @param dfltMode Default IGFS mode.
      * @param modes List of configured modes. The order is significant as modes are added in order of occurrence.
+     * @throws IgniteCheckedException On error.
      */
-    public IgfsModeResolver(IgfsMode dfltMode, @Nullable List<T2<IgfsPath, IgfsMode>> modes) throws IgniteCheckedException {
+    public IgfsModeResolver(IgfsMode dfltMode, @Nullable List<T2<IgfsPath, IgfsMode>> modes)
+        throws IgniteCheckedException {
         assert dfltMode != null;
 
         this.dfltMode = dfltMode;
@@ -107,10 +117,12 @@ public class IgfsModeResolver {
     }
 
     /**
+     * Adds mode pair.
      *
-     * @param consistentList NB: this list is sorted in descending order (deepest first).
-     * @param pairToAdd The pairs come in ascending order. The incoming piar is deeper than any element of {@code consistentList}.
-     * @throws IgniteCheckedException
+     * @param consistentList List sorted in descending order (deepest first).
+     * @param pairToAdd The pairs come in ascending order. The incoming piar is deeper than any element of
+     * {@code consistentList}.
+     * @throws IgniteCheckedException If such pair cannot be added.
      */
     private void addIfConsistent(List<T2<IgfsPath, IgfsMode>> consistentList, T2<IgfsPath, IgfsMode> pairToAdd)
         throws IgniteCheckedException {

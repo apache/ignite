@@ -238,7 +238,6 @@ public final class IgfsImpl implements IgfsEx {
             modes = new ArrayList<>(cfgModes.size());
 
             for (Map.Entry<String, IgfsMode> mode : cfgModes.entrySet()) {
-                // ???? TODO: why PROXY is possible if secondaryFs == null ?
                 IgfsMode mode0 = secondaryFs == null ? mode.getValue() == PROXY ? PROXY : PRIMARY : mode.getValue();
 
                 try {
@@ -936,7 +935,8 @@ public final class IgfsImpl implements IgfsEx {
 
                     IgfsSecondaryInputStreamDescriptor desc = meta.openDual(secondaryFs, path, bufSize0);
 
-                    IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(igfsCtx, path, desc.info(), cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, desc.reader(), metrics);
+                    IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(igfsCtx, path, desc.info(),
+                        cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, desc.reader(), metrics);
 
                     IgfsUtils.sendEvents(igfsCtx.kernalContext(), path, EVT_IGFS_FILE_OPENED_READ);
 
@@ -952,7 +952,8 @@ public final class IgfsImpl implements IgfsEx {
                     throw new IgfsPathIsDirectoryException("Failed to open file (not a file): " + path);
 
                 // Input stream to read data from grid cache with separate blocks.
-                IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(igfsCtx, path, info, cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, null, metrics);
+                IgfsEventAwareInputStream os = new IgfsEventAwareInputStream(igfsCtx, path, info,
+                    cfg.getPrefetchBlocks(), seqReadsBeforePrefetch, null, metrics);
 
                 IgfsUtils.sendEvents(igfsCtx.kernalContext(), path, EVT_IGFS_FILE_OPENED_READ);
 
@@ -1026,14 +1027,24 @@ public final class IgfsImpl implements IgfsEx {
                 IgfsSecondaryFileSystemCreateContext secondaryCtx = null;
 
                 if (mode != PRIMARY)
-                    secondaryCtx = new IgfsSecondaryFileSystemCreateContext(secondaryFs, path, overwrite, simpleCreate, fileProps, (short)replication, groupBlockSize(), bufSize);
+                    secondaryCtx = new IgfsSecondaryFileSystemCreateContext(secondaryFs, path, overwrite, simpleCreate,
+                        fileProps, (short)replication, groupBlockSize(), bufSize);
 
                 // Await for async ops completion if in DUAL mode.
                 if (mode != PRIMARY)
                     await(path);
 
                 // Perform create.
-                IgfsCreateResult res = meta.create(path, dirProps, overwrite, cfg.getBlockSize(), affKey, evictExclude(path, mode == PRIMARY), fileProps, secondaryCtx);
+                IgfsCreateResult res = meta.create(
+                    path,
+                    dirProps,
+                    overwrite,
+                    cfg.getBlockSize(),
+                    affKey,
+                    evictExclude(path, mode == PRIMARY),
+                    fileProps,
+                    secondaryCtx
+                );
 
                 assert res != null;
 
@@ -1217,7 +1228,22 @@ public final class IgfsImpl implements IgfsEx {
                     }
                 }
 
-                return new IgfsMetricsAdapter(igfsCtx.data().spaceSize(), igfsCtx.data().maxSpaceSize(), secondarySpaceSize, sum.directoriesCount(), sum.filesCount(), metrics.filesOpenedForRead(), metrics.filesOpenedForWrite(), metrics.readBlocks(), metrics.readBlocksSecondary(), metrics.writeBlocks(), metrics.writeBlocksSecondary(), metrics.readBytes(), metrics.readBytesTime(), metrics.writeBytes(), metrics.writeBytesTime());
+                return new IgfsMetricsAdapter(
+                    igfsCtx.data().spaceSize(),
+                    igfsCtx.data().maxSpaceSize(),
+                    secondarySpaceSize,
+                    sum.directoriesCount(),
+                    sum.filesCount(),
+                    metrics.filesOpenedForRead(),
+                    metrics.filesOpenedForWrite(),
+                    metrics.readBlocks(),
+                    metrics.readBlocksSecondary(),
+                    metrics.writeBlocks(),
+                    metrics.writeBlocksSecondary(),
+                    metrics.readBytes(),
+                    metrics.readBytesTime(),
+                    metrics.writeBytes(),
+                    metrics.writeBytesTime());
             }
         });
     }
