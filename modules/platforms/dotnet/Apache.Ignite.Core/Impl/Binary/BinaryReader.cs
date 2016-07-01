@@ -695,8 +695,6 @@ namespace Apache.Ignite.Core.Impl.Binary
                     _frame.Raw = false;
 
                     // Read object.
-                    Stream.Seek(pos + BinaryObjectHeader.Size, SeekOrigin.Begin);
-
                     var obj = desc.Serializer.ReadBinary<T>(this, desc.Type, pos);
 
                     _frame.Struct.UpdateReaderStructure();
