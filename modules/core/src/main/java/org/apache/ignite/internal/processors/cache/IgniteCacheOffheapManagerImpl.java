@@ -118,14 +118,15 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     }
 
     /** {@inheritDoc} */
-    @Override protected void stop0(final boolean cancel) {
-        super.stop0(cancel);
+    @Override protected void stop0(final boolean cancel, final boolean destroy) {
+        super.stop0(cancel, destroy);
 
-        try {
-            metaStore.dropAllRootPages();
-        }
-        catch (IgniteCheckedException e) {
-            throw new IgniteException(e.getMessage(), e);
+        if (destroy) {
+            try {
+                metaStore.dropAllRootPages();
+            } catch (IgniteCheckedException e) {
+                throw new IgniteException(e.getMessage(), e);
+            }
         }
     }
 

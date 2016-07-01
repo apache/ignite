@@ -1071,7 +1071,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
                 for (ListIterator<GridCacheManager> it = dhtMgrs.listIterator(dhtMgrs.size()); it.hasPrevious();) {
                     GridCacheManager mgr = it.previous();
 
-                    mgr.stop(cancel);
+                    mgr.stop(cancel, destroy);
                 }
             }
         }
@@ -1085,7 +1085,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
             GridCacheManager mgr = it.previous();
 
             if (!excludes.contains(mgr))
-                mgr.stop(cancel);
+                mgr.stop(cancel, destroy);
         }
 
         ctx.kernalContext().query().onCacheStop(ctx);

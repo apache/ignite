@@ -84,7 +84,7 @@ public interface IgniteCacheOffheapManager extends GridCacheManager {
 
     /**
      * @param part Partition.
-     * @throws IgniteCheckedException
+     * @throws IgniteCheckedException If failed.
      */
     public void destroyCacheDataStore(int part) throws IgniteCheckedException;
 
