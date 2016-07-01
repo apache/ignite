@@ -305,6 +305,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         [Test]
         public void TestSimpleInheritance()
         {
+            // TODO: This test somehow causes HandleRegistryNotEmpty
+
             var cache = _ignite.CreateCache<int, int>(new CacheConfiguration("simpleInherit")
             {
                 AffinityFunction = new SimpleOverride()
