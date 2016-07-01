@@ -202,7 +202,7 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
                 loc.mapred());
         }
         catch (IOException ioe) {
-            throw new IgniteCheckedException(ioe);
+            throw new IgniteCheckedException(ioe.getMessage(), ioe);
         }
 
         HadoopClassLoader.hadoopUrls();
