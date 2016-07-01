@@ -142,10 +142,7 @@ public class BinaryObjectOffheapImpl extends BinaryObjectExImpl implements Exter
 
     /** {@inheritDoc} */
     @Nullable @Override public BinaryType type() throws BinaryObjectException {
-        if (ctx == null)
-            throw new BinaryObjectException("BinaryContext is not set for the object.");
-
-        return ctx.metadata(typeId());
+        return BinaryUtils.typeProxy(ctx, this);
     }
 
     /** {@inheritDoc} */
