@@ -15,93 +15,99 @@
  * limitations under the License.
  */
 
-var path = require('path');
-var webpack = require('webpack');
+const path = require('path');
+const webpack = require('webpack');
 
-var basePath = path.resolve('./');
+const basePath = path.resolve('./');
 
 module.exports = function(config) {
-  config.set({
-    // Base path that will be used to resolve all patterns (eg. files, exclude).
-    basePath: basePath,
+    config.set({
+        // Base path that will be used to resolve all patterns (eg. files, exclude).
+        basePath: basePath,
 
-    // Frameworks to use available frameworks: https://npmjs.org/browse/keyword/karma-adapter
-    frameworks: ['mocha'],
+        // Frameworks to use available frameworks: https://npmjs.org/browse/keyword/karma-adapter
+        frameworks: ['mocha'],
 
-    // List of files / patterns to load in the browser.
-    files: [
-      'test/**/*.test.js'
-    ],
+        // List of files / patterns to load in the browser.
+        files: [
+            'test/frontend/**/*.test.js'
+        ],
 
-    plugins: [
-      require('karma-phantomjs-launcher'),
-      require('karma-teamcity-reporter'),
-      require('karma-webpack'),
-      require('karma-mocha')
-    ],
+        plugins: [
+            require('karma-phantomjs-launcher'),
+            require('karma-teamcity-reporter'),
+            require('karma-webpack'),
+            require('karma-mocha')
+        ],
 
-    // Preprocess matching files before serving them to the browser
-    // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor.
-    preprocessors: {
-        'test/**/*.js': ['webpack']
-    },
+        // Preprocess matching files before serving them to the browser
+        // available preprocessors: https://npmjs.org/browse/keyword/karma-preprocessor.
+        preprocessors: {
+            'test/frontend/**/*.js': ['webpack']
+        },
 
-    webpack: {
-        module: {
-            loaders: [
-                {
-                    test: /\.json$/,
-                    loader: 'json'
-                },
-                {
-                    test: /\.js$/, 
-                    loader: 'babel', 
-                    exclude: /node_modules/
-                }
+        webpack: {
+            module: {
+                loaders: [
+                    {
+                        test: /\.json$/,
+                        loader: 'json'
+                    },
+                    {
+                        test: /\.js$/,
+                        loader: 'babel',
+                        exclude: /node_modules/
+                    }
+                ]
+            },
+            resolve: {
+                extensions: ["", ".js"]
+            },
+            plugins: [
+                new webpack.ProvidePlugin({
+                    _: 'lodash'
+                })
             ]
         },
-        resolve: {
-            extensions: ["", ".js"]
+
+        webpackMiddleware: {
+            noInfo: true
         },
-        plugins: [
-            new webpack.ProvidePlugin({
-                _: 'lodash'
-            })
-        ]
-    },
 
-    webpackMiddleware: {
-      noInfo: true
-    },
+        // Test results reporter to use
+        // possible values: 'dots', 'progress'
+        // available reporters: https://npmjs.org/browse/keyword/karma-reporter.
+        reporters: ['teamcity'],
 
-    // Test results reporter to use
-    // possible values: 'dots', 'progress'
-    // available reporters: https://npmjs.org/browse/keyword/karma-reporter.
-    reporters: ['teamcity'],
+        // web server port
+        port: 9876,
 
-    // web server port
-    port: 9876,
+        // enable / disable colors in the output (reporters and logs)
+        colors: true,
 
-    // enable / disable colors in the output (reporters and logs)
-    colors: true,
+        // level of logging
+        // possible values: config.LOG_DISABLE || config.LOG_ERROR || config.LOG_WARN || config.LOG_INFO || config.LOG_DEBUG
+        logLevel: config.LOG_INFO,
 
-    // level of logging
-    // possible values: config.LOG_DISABLE || config.LOG_ERROR || config.LOG_WARN || config.LOG_INFO || config.LOG_DEBUG
-    logLevel: config.LOG_INFO,
+        // enable / disable watching file and executing tests whenever any file changes
+        autoWatch: true,
 
-    // enable / disable watching file and executing tests whenever any file changes
-    autoWatch: true,
+        // start these browsers
+        // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
+        browsers: ['PhantomJS'],
 
-    // start these browsers
-    // available browser launchers: https://npmjs.org/browse/keyword/karma-launcher
-    browsers: ['PhantomJS'],
+        // Continuous Integration mode
+        // if true, Karma captures browsers, runs the tests and exits
+        singleRun: true,
 
-    // Continuous Integration mode
-    // if true, Karma captures browsers, runs the tests and exits
-    singleRun: true,
+        // Concurrency level
+        // how many browser should be started simultaneous
+        concurrency: Infinity,
 
-    // Concurrency level
-    // how many browser should be started simultaneous
-    concurrency: Infinity
-  });
+        client: {
+            mocha: {
+                ui: 'tdd'
+            }
+        }
+    });
 };

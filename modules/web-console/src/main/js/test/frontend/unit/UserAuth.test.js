@@ -15,13 +15,21 @@
  * limitations under the License.
  */
 
-import AuthService from '../../app/modules/user/Auth.service'
+import AuthService from '../../../app/modules/user/Auth.service';
 
-describe('Auth Service Test', () => {
-    describe('Test authorization', () => {
-      it('User Auth', () => {
-        throw new Error('User Auth error')
-      })
+suite('AuthServiceTestsSuite', () => {
+    test('SignIn', (done) => {
+        // TODO IGNITE-3262 Add test.
+        done();
     });
 
+    test('SignUp', (done) => {
+        // TODO IGNITE-3262 Add test.
+        done();
+    });
+
+    test('Logout', (done) => {
+        // TODO IGNITE-3262 Add test.
+        done();
+    });
 });

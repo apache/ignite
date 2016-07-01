@@ -4,6 +4,7 @@
   {"short": "Byte", "full": "java.lang.Byte"},
   {"short": "Character", "full": "java.lang.Character"},
   {"short": "Date", "full": "java.sql.Date"},
+  {"short": "Date", "full": "java.util.Date"},
   {"short": "Double", "full": "java.lang.Double"},
   {"short": "Float", "full": "java.lang.Float"},
   {"short": "Integer", "full": "java.lang.Integer"},
