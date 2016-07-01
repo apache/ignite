@@ -94,7 +94,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
@@ -670,8 +669,8 @@ public final class IgfsImpl implements IgfsEx {
                     log.debug("Rename file [src=" + src + ", dest=" + dest + ']');
 
                 IgfsMode mode = resolveMode(src);
-
-                Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(src);
+//
+//                Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(src);
 
                 if (src.equals(dest))
                     return null; // Rename to itself is a no-op.
@@ -689,8 +688,8 @@ public final class IgfsImpl implements IgfsEx {
                     throw new IgfsInvalidPathException("Cannot move file to a path with different eviction " +
                         "exclude setting (need to copy and remove)");
 
-                if (!childrenModes.equals(Collections.singleton(PRIMARY))) {
-                    assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
+                if (mode != PRIMARY) {
+                    assert mode == DUAL_SYNC || mode == DUAL_ASYNC; // PROXY mode explicit usage is forbidden.
 
                     await(src, dest);
 
@@ -721,9 +720,9 @@ public final class IgfsImpl implements IgfsEx {
                 if (IgfsPath.SLASH.equals(path.toString()))
                     return false;
 
-                Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
+                IgfsMode mode = resolveMode(path);
 
-                boolean dual = childrenModes.contains(DUAL_SYNC) || childrenModes.contains(DUAL_ASYNC);
+                boolean dual = mode == DUAL_SYNC || mode == DUAL_ASYNC;
 
                 if (dual)
                     await(path);
@@ -794,11 +793,9 @@ public final class IgfsImpl implements IgfsEx {
 
                 IgfsMode mode = resolveMode(path);
 
-                Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
-
                 Collection<String> files = new HashSet<>();
 
-                if (childrenModes.contains(DUAL_SYNC) || childrenModes.contains(DUAL_ASYNC)) {
+                if (mode == DUAL_SYNC || mode == DUAL_ASYNC) {
                     assert secondaryFs != null;
 
                     try {
@@ -844,11 +841,9 @@ public final class IgfsImpl implements IgfsEx {
 
                 IgfsMode mode = resolveMode(path);
 
-                Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
-
                 Collection<IgfsFile> files = new HashSet<>();
 
-                if (childrenModes.contains(DUAL_SYNC) || childrenModes.contains(DUAL_ASYNC)) {
+                if (mode == DUAL_SYNC || mode == DUAL_ASYNC) {
                     assert secondaryFs != null;
 
                     try {

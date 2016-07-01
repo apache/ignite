@@ -84,41 +84,6 @@ public class IgfsModeResolverSelfTest extends TestCase {
     /**
      * @throws Exception If failed.
      */
-    public void testResolveChildren() throws Exception {
-        assertEquals(new HashSet<IgfsMode>() {{
-            add(DUAL_SYNC);
-            add(DUAL_ASYNC);
-            add(PRIMARY);
-            add(PROXY);
-        }}, reslvr.resolveChildrenModes(new IgfsPath("/")));
-        assertEquals(new HashSet<IgfsMode>(){{ add(DUAL_SYNC); add(DUAL_ASYNC); add(PRIMARY); add(PROXY);}},
-            reslvr.resolveChildrenModes(new IgfsPath("/a")));
-        assertEquals(new HashSet<IgfsMode>() {{ add(DUAL_SYNC); }}, reslvr.resolveChildrenModes(new IgfsPath("/a/1")));
-
-        assertEquals(new HashSet<IgfsMode>(){{add(DUAL_ASYNC); add(PROXY);}},
-            reslvr.resolveChildrenModes(new IgfsPath("/a/b")));
-        assertEquals(new HashSet<IgfsMode>(){{add(DUAL_ASYNC); }},
-            reslvr.resolveChildrenModes(new IgfsPath("/a/b/3")));
-
-        assertEquals(new HashSet<IgfsMode>() {{
-            add(DUAL_ASYNC);
-            add(PROXY);
-        }}, reslvr.resolveChildrenModes(new IgfsPath("/a/b/c")));
-
-        assertEquals(new HashSet<IgfsMode>(){{add(DUAL_ASYNC);}},
-            reslvr.resolveChildrenModes(new IgfsPath("/a/b/c/2")));
-
-        assertEquals(new HashSet<IgfsMode>() {{
-            add(PROXY);
-        }}, reslvr.resolveChildrenModes(new IgfsPath("/a/b/c/d")));
-
-        assertEquals(new HashSet<IgfsMode>(){{add(PROXY);}},
-            reslvr.resolveChildrenModes(new IgfsPath("/a/b/c/d/e")));
-    }
-
-    /**
-     * @throws Exception If failed.
-     */
     public void testModesValidation() throws Exception {
         // Another mode inside PRIMARY directory:
         try {

@@ -659,21 +659,16 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
         try {
             IgfsPath srcPath = convert(src);
             IgfsPath dstPath = convert(dst);
-            Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(srcPath);
 
-            if (childrenModes.contains(PROXY)) {
-                if (clientLog.isLogEnabled())
-                    clientLog.logRename(srcPath, PROXY, dstPath);
+            IgfsMode srcMode = modeRslvr.resolveMode(srcPath);
 
+            if (clientLog.isLogEnabled())
+                clientLog.logRename(srcPath, srcMode, dstPath);
+
+            if (srcMode == PROXY)
                 secondaryFileSystem().rename(toSecondary(src), toSecondary(dst));
-            }
-            else {
-                if (clientLog.isLogEnabled())
-                    clientLog.logRename(srcPath, modeRslvr.resolveMode(srcPath), dstPath);
-
+            else
                 rmtClient.rename(srcPath, dstPath);
-            }
-
         }
         finally {
             leaveBusy();
@@ -688,10 +683,10 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
 
         try {
             IgfsPath path = convert(f);
-            IgfsMode mode = modeRslvr.resolveMode(path);
-            Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(path);
 
-            if (childrenModes.contains(PROXY)) {
+            IgfsMode mode = modeRslvr.resolveMode(path);
+
+            if (mode == PROXY) {
                 if (clientLog.isLogEnabled())
                     clientLog.logDelete(path, PROXY, recursive);
 

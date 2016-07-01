@@ -19,11 +19,9 @@ package org.apache.ignite.internal.processors.igfs;
 
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
@@ -56,9 +54,6 @@ public class IgfsModeResolver {
     /** Cached modes per path. */
     private Map<IgfsPath, IgfsMode> modesCache;
 
-    /** Cached children modes per path. */
-    private Map<IgfsPath, Set<IgfsMode>> childrenModesCache;
-
     /**
      * Constructor
      *
@@ -76,7 +71,6 @@ public class IgfsModeResolver {
             this.modes = filterModes(this.dfltMode, modes);
 
             modesCache = new GridBoundedConcurrentLinkedHashMap<>(MAX_PATH_CACHE);
-            childrenModesCache = new GridBoundedConcurrentLinkedHashMap<>(MAX_PATH_CACHE);
         }
     }
 
@@ -187,42 +181,6 @@ public class IgfsModeResolver {
             }
 
             return mode;
-        }
-    }
-
-    /**
-     * @param path Path.
-     * @return Set of all modes that children paths could have.
-     */
-    public Set<IgfsMode> resolveChildrenModes(IgfsPath path) {
-        assert path != null;
-
-        if (modes == null)
-            return Collections.singleton(dfltMode);
-        else {
-            Set<IgfsMode> children = childrenModesCache.get(path);
-
-            if (children == null) {
-                children = new HashSet<>(IgfsMode.values().length, 1.0f);
-
-                IgfsMode pathDflt = dfltMode;
-
-                for (T2<IgfsPath, IgfsMode> child : modes) {
-                    if (startsWith(path, child.getKey())) {
-                        pathDflt = child.getValue();
-
-                        break;
-                    }
-                    else if (startsWith(child.getKey(), path))
-                        children.add(child.getValue());
-                }
-
-                children.add(pathDflt);
-
-                childrenModesCache.put(path, children);
-            }
-
-            return children;
         }
     }
 
