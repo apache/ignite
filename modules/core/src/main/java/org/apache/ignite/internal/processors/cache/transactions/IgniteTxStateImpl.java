@@ -109,8 +109,11 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteCheckedException validateTopology(GridCacheSharedContext cctx,
-        GridDhtTopologyFuture topFut) {
+    @Override public IgniteCheckedException validateTopology(
+        GridCacheSharedContext cctx,
+        boolean read,
+        GridDhtTopologyFuture topFut
+    ) {
 
         Map<Integer, Set<KeyCacheObject>> keysByCacheId = new HashMap<>();
 
@@ -132,7 +135,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
             assert ctx != null : cacheId;
 
-            Throwable err = topFut.validateCache(ctx, null, e.getValue());
+            Throwable err = topFut.validateCache(ctx, read, null, e.getValue());
 
             if (err != null) {
                 if (invalidCaches != null)

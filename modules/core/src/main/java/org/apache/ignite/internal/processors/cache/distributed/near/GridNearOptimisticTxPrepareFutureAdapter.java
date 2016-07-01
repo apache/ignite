@@ -124,7 +124,7 @@ public abstract class GridNearOptimisticTxPrepareFutureAdapter extends GridNearT
         }
 
         if (topVer != null) {
-            IgniteCheckedException err = tx.txState().validateTopology(cctx, topFut);
+            IgniteCheckedException err = tx.txState().validateTopology(cctx, tx.writeMap().isEmpty(), topFut);
 
             if (err != null) {
                 onDone(err);

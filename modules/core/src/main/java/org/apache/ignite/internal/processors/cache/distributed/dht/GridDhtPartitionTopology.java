@@ -238,6 +238,11 @@ public interface GridDhtPartitionTopology {
     public boolean detectLostPartitions(DiscoveryEvent discoEvt);
 
     /**
+     * @return Collection of lost partitions, if any.
+     */
+    public Collection<Integer> lostPartitions();
+
+    /**
      * @return Partition update counters.
      */
     public Map<Integer, Long> updateCounters();

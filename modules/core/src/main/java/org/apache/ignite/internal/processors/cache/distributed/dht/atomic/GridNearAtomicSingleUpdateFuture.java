@@ -396,7 +396,7 @@ public class GridNearAtomicSingleUpdateFuture extends GridNearAtomicAbstractUpda
             GridDhtTopologyFuture fut = cache.topology().topologyVersionFuture();
 
             if (fut.isDone()) {
-                Throwable err = fut.validateCache(cctx, key, null);
+                Throwable err = fut.validateCache(cctx, false, key, null);
 
                 if (err != null) {
                     onDone(err);

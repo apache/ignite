@@ -466,7 +466,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> active(boolean active) {
+    @Override public void active(boolean active) {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 
@@ -476,12 +476,12 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> clearLostPartitions() {
+    @Override public void clearLostPartitions() {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> resetLostPartitions() {
+    @Override public void resetLostPartitions() {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 

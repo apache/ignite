@@ -56,6 +56,7 @@ import org.jetbrains.annotations.Nullable;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.EVICTED;
+import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.LOST;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.MOVING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.OWNING;
 import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState.RENTING;
@@ -1365,6 +1366,18 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                                 discoEvt.eventNode(), discoEvt.type(), discoEvt.timestamp());
                         }
                     }
+                    // Update map for remote node.
+                    else {
+                        Set<UUID> nodeIds = part2node.get(part);
+
+                        if (nodeIds != null) {
+                            for (UUID nodeId : nodeIds) {
+                                GridDhtPartitionMap2 nodeMap = node2part.get(nodeId);
+
+                                nodeMap.put(part, LOST);
+                            }
+                        }
+                    }
                 }
 
                 cctx.state(CacheState.RECOVERY);
@@ -1374,6 +1387,41 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
         }
         finally {
             lock.writeLock().unlock();
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override public Collection<Integer> lostPartitions() {
+        lock.readLock().lock();
+
+        try {
+            Collection<Integer> res = null;
+
+            int parts = cctx.affinity().partitions();
+
+            for (int part = 0; part < parts; part++) {
+                Set<UUID> nodeIds = part2node.get(part);
+
+                if (nodeIds != null) {
+                    for (UUID node : nodeIds) {
+                        GridDhtPartitionMap2 map = node2part.get(node);
+
+                        if (map.get(part) == LOST) {
+                            if (res == null)
+                                res = new ArrayList<>(parts - part);
+
+                            res.add(part);
+
+                            break;
+                        }
+                    }
+                }
+            }
+
+            return res == null ? Collections.<Integer>emptyList() : res;
+        }
+        finally {
+            lock.readLock().unlock();
         }
     }
 

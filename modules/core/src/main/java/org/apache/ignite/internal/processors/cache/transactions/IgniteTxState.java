@@ -63,10 +63,14 @@ public interface IgniteTxState {
 
     /**
      * @param cctx Context.
+     * @param read {@code True} if validating for a read operation, {@code false} for write.
      * @param topFut Topology future.
      * @return Error if validation failed.
      */
-    public IgniteCheckedException validateTopology(GridCacheSharedContext cctx, GridDhtTopologyFuture topFut);
+    public IgniteCheckedException validateTopology(
+        GridCacheSharedContext cctx,
+        boolean read,
+        GridDhtTopologyFuture topFut);
 
     /**
      * @param cctx Context.

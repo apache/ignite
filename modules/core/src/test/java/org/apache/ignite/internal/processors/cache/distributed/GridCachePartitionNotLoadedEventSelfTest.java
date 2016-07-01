@@ -105,11 +105,13 @@ public class GridCachePartitionNotLoadedEventSelfTest extends GridCommonAbstract
         startGrid(2);
         startGrid(3);
 
+        awaitPartitionMapExchange();
+
         final PartitionNotFullyLoadedListener lsnr1 = new PartitionNotFullyLoadedListener();
         final PartitionNotFullyLoadedListener lsnr2 = new PartitionNotFullyLoadedListener();
 
         ignite(2).events().localListen(lsnr1, EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST);
-        ignite(3).events().localListen(lsnr1, EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST);
+        ignite(3).events().localListen(lsnr2, EventType.EVT_CACHE_REBALANCE_PART_DATA_LOST);
 
         Affinity<Integer> aff = ignite(0).affinity(null);
 

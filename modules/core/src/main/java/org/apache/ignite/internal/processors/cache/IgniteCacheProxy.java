@@ -86,7 +86,6 @@ import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.mxbean.CacheMetricsMXBean;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.jetbrains.annotations.Nullable;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 /**
  * Cache proxy.
@@ -321,7 +320,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
         try {
             CacheOperationContext prj0 = opCtx != null ? opCtx.withExpiryPolicy(plc) :
-                new CacheOperationContext(false, null, false, plc, false, null);
+                new CacheOperationContext(false, null, false, plc, false, null, false);
 
             return new IgniteCacheProxy<>(ctx, delegate, prj0, isAsync(), lock);
         }
@@ -353,7 +352,7 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                 return this;
 
             CacheOperationContext opCtx0 = opCtx != null ? opCtx.setNoRetries(true) :
-                new CacheOperationContext(false, null, false, null, true, null);
+                new CacheOperationContext(false, null, false, null, true, null, false);
 
             return new IgniteCacheProxy<>(ctx,
                 delegate,
@@ -368,7 +367,28 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
 
     /** {@inheritDoc} */
     @Override public IgniteCache<K, V> withPartitionRecover() {
-        throw new NotImplementedException();
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
+
+        try {
+            boolean recovery = opCtx != null && opCtx.recovery();
+
+            if (recovery)
+                return this;
+
+            CacheOperationContext opCtx0 = opCtx != null ? opCtx.setRecovery(true) :
+                new CacheOperationContext(false, null, false, null, false, null, true);
+
+            return new IgniteCacheProxy<>(ctx,
+                delegate,
+                opCtx0,
+                isAsync(),
+                lock);
+        }
+        finally {
+            onLeave(gate, prev);
+        }
     }
 
     /** {@inheritDoc} */
@@ -1860,7 +1880,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     true,
                     opCtx != null ? opCtx.expiry() : null,
                     opCtx != null && opCtx.noRetries(),
-                    opCtx != null ? opCtx.dataCenterId() : null);
+                    opCtx != null ? opCtx.dataCenterId() : null,
+                    opCtx != null && opCtx.recovery());
 
             return new IgniteCacheProxy<>((GridCacheContext<K1, V1>)ctx,
                 (IgniteInternalCache<K1, V1>)delegate,
@@ -1893,7 +1914,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     opCtx != null && opCtx.isKeepBinary(),
                     opCtx != null ? opCtx.expiry() : null,
                     opCtx != null && opCtx.noRetries(),
-                    dataCenterId);
+                    dataCenterId,
+                    opCtx != null && opCtx.recovery());
 
             return new IgniteCacheProxy<>(ctx,
                 delegate,
@@ -1926,7 +1948,8 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
                     opCtx != null && opCtx.isKeepBinary(),
                     opCtx != null ? opCtx.expiry() : null,
                     opCtx != null && opCtx.noRetries(),
-                    opCtx != null ? opCtx.dataCenterId() : null);
+                    opCtx != null ? opCtx.dataCenterId() : null,
+                    opCtx != null && opCtx.recovery());
 
             return new IgniteCacheProxy<>(ctx,
                 delegate,
@@ -2063,24 +2086,73 @@ public class IgniteCacheProxy<K, V> extends AsyncSupportAdapter<IgniteCache<K, V
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> active(boolean active) {
-        return new IgniteFutureImpl<>(ctx.kernalContext().cache().changeCacheState(getName(),
-            active ? CacheState.ACTIVE : CacheState.INACTIVE));
+    @Override public void active(boolean active) {
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
+
+        try {
+            IgniteInternalFuture<?> fut = ctx.kernalContext().cache().changeCacheState(getName(),
+                active ? CacheState.ACTIVE : CacheState.INACTIVE);
+
+            if (isAsync())
+                setFuture(fut);
+            else {
+                try {
+                    fut.get();
+                }
+                catch (IgniteCheckedException e) {
+                    throw CU.convertToCacheException(e);
+                }
+            }
+        }
+        finally {
+            onLeave(gate, prev);
+        }
     }
 
     /** {@inheritDoc} */
     @Override public Collection<Integer> lostPartitions() {
-        throw new NotImplementedException();
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
+
+        try {
+            return delegate.lostPartitions();
+        }
+        finally {
+            onLeave(gate, prev);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> clearLostPartitions() {
-        throw new NotImplementedException();
+    @Override public void clearLostPartitions() {
+        GridCacheGateway<K, V> gate = this.gate;
+
+        CacheOperationContext prev = onEnter(gate, opCtx);
+
+        try {
+            IgniteInternalFuture<?> fut = delegate.clearLostPartitions();
+
+            if (isAsync())
+                setFuture(fut);
+            else {
+                try {
+                    fut.get();
+                }
+                catch (IgniteCheckedException e) {
+                    throw CU.convertToCacheException(e);
+                }
+            }
+        }
+        finally {
+            onLeave(gate, prev);
+        }
     }
 
     /** {@inheritDoc} */
-    @Override public IgniteFuture<?> resetLostPartitions() {
-        throw new NotImplementedException();
+    @Override public void resetLostPartitions() {
+        active(true);
     }
 
     /** {@inheritDoc} */

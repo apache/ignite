@@ -870,9 +870,8 @@ public interface IgniteCache<K, V> extends Cache<K, V>, IgniteAsyncSupport {
      * Changes cache active flag.
      *
      * @param active New value of active flag.
-     * @return Future that will be done when state is changed.
      */
-    public IgniteFuture<?> active(boolean active);
+    public void active(boolean active);
 
     /**
      * Gets a collection of lost partition IDs.
@@ -884,15 +883,13 @@ public interface IgniteCache<K, V> extends Cache<K, V>, IgniteAsyncSupport {
     /**
      * Clear data in lost partitions. This method is neither transactional nor atomic. A user must make
      * sure there are no concurrent updates to the lost partitions while this method is in progress.
-     *
-     * @return Future that will be done when data is cleared.
      */
-    public IgniteFuture<?> clearLostPartitions();
+    @IgniteAsyncSupported
+    public void clearLostPartitions();
 
     /**
      * Clears partition's lost state and moves cache to a normal mode.
-     *
-     * @return Future that will be done when partition state is reset.
      */
-    public IgniteFuture<?> resetLostPartitions();
+    @IgniteAsyncSupported
+    public void resetLostPartitions();
 }

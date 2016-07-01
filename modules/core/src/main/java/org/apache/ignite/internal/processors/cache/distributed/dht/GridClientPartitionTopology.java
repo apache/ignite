@@ -738,6 +738,13 @@ public class GridClientPartitionTopology implements GridDhtPartitionTopology {
         return false;
     }
 
+    /** {@inheritDoc} */
+    @Override public Collection<Integer> lostPartitions() {
+        assert false;
+
+        return Collections.emptyList();
+    }
+
     /**
      * Updates value for single partition.
      *

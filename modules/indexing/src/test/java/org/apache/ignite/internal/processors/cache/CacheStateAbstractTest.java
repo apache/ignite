@@ -24,6 +24,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import javax.cache.CacheException;
+
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheMode;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -68,8 +70,8 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     public void testStatePropagation() throws Exception {
-        IgniteEx ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
-        IgniteEx ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
+        Ignite ignite1 = G.start(getConfiguration("test1"));
+        Ignite ignite2 = G.start(getConfiguration("test2"));
 
         final IgniteCache cache1 = ignite1.cache(null);
         final IgniteCache cache2 = ignite2.cache(null);
@@ -77,7 +79,7 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
         assert cache1.active();
         assert cache2.active();
 
-        cache1.active(false).get();
+        cache1.active(false);
 
         assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -85,7 +87,7 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
             }
         }, 5000);
 
-        IgniteEx ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
+        Ignite ignite3 = G.start(getConfiguration("test3"));
 
         final IgniteCache cache3 = ignite3.cache(null);
 
@@ -95,7 +97,7 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
             }
         }, 5000);
 
-        cache3.active(true).get();
+        cache3.active(true);
 
         assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -109,11 +111,11 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     public void testDeactivationWithPendingLock() throws Exception {
-        IgniteEx ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
-        IgniteEx ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
+        Ignite ignite1 = G.start(getConfiguration("test1"));
+        Ignite ignite2 = G.start(getConfiguration("test2"));
 
-        final IgniteCache cache1 = ignite1.cache(null);
-        final IgniteCache cache2 = ignite2.cache(null);
+        final IgniteCache<Integer, Integer> cache1 = ignite1.cache(null);
+        final IgniteCache<Integer, Integer> cache2 = ignite2.cache(null);
 
         assert cache1.active() && cache2.active();
 
@@ -124,7 +126,7 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
         try {
             IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
                 @Override public void run() {
-                    cache1.active(false).get();
+                    cache1.active(false);
                 }
             }, 1);
 
@@ -143,17 +145,14 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
             }
         }, 5000);
 
-        boolean ex = false;
-
         try {
             cache1.lock(2).lock();
+
+            fail("Should fail when accessing lock on inactive state.");
         }
         catch (CacheException e) {
-            ex = true;
-            assert e.getMessage().equals("Failed to perform cache operation (cache state is not valid): null");
+            assertEquals("Failed to perform cache operation (cache state is not valid): null", e.getMessage());
         }
-
-        assert ex;
     }
 
     /**
@@ -161,11 +160,11 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     public void testDeactivationWithPendingTransaction() throws Exception {
-        IgniteEx ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
-        IgniteEx ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
+        Ignite ignite1 = G.start(getConfiguration("test1"));
+        Ignite ignite2 = G.start(getConfiguration("test2"));
 
-        final IgniteCache cache1 = ignite1.cache(null);
-        final IgniteCache cache2 = ignite2.cache(null);
+        final IgniteCache<Integer, Integer> cache1 = ignite1.cache(null);
+        final IgniteCache<Integer, Integer> cache2 = ignite2.cache(null);
 
         assert cache1.active() && cache2.active();
 
@@ -175,7 +174,7 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
 
         IgniteInternalFuture<?> fut = multithreadedAsync(new Runnable() {
             @Override public void run() {
-                cache1.active(false).get();
+                cache1.active(false);
             }
         }, 1);
 
@@ -194,18 +193,15 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
             }
         }, 5000);
 
-        boolean ex = false;
-
         try {
             cache1.put(3, 3);
+
+            fail("Should get an exception while writing to a lost partition.");
         }
-        catch (CacheException e) {
-            ex = true;
+        catch (CacheException ignore) {
         }
 
-        assert ex;
-
-        cache1.active(true).get();
+        cache1.active(true);
 
         assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -222,11 +218,11 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
      * @throws Exception If fails.
      */
     public void testNoRebalancingWhenInactive() throws Exception {
-        IgniteEx ignite1 = (IgniteEx)G.start(getConfiguration("test1"));
-        IgniteEx ignite2 = (IgniteEx)G.start(getConfiguration("test2"));
+        Ignite ignite1 = G.start(getConfiguration("test1"));
+        Ignite ignite2 = G.start(getConfiguration("test2"));
 
-        final IgniteCache cache1 = ignite1.cache(null);
-        final IgniteCache cache2 = ignite2.cache(null);
+        final IgniteCache<Integer, Integer> cache1 = ignite1.cache(null);
+        final IgniteCache<Integer, Integer> cache2 = ignite2.cache(null);
 
         assert cache1.active();
         assert cache2.active();
@@ -234,7 +230,7 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
         cache1.put(1, 1);
         cache1.put(2, 2);
 
-        cache1.active(false).get();
+        cache1.active(false);
 
         assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -242,9 +238,9 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
             }
         }, 5000);
 
-        IgniteEx ignite3 = (IgniteEx)G.start(getConfiguration("test3"));
+        Ignite ignite3 = G.start(getConfiguration("test3"));
 
-        final IgniteCache cache3 = ignite3.cache(null);
+        final IgniteCache<Integer, Integer> cache3 = ignite3.cache(null);
 
         assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -257,7 +253,7 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
 
         awaitPartitionMapExchange();
 
-        cache3.active(true).get();
+        cache3.active(true);
 
         assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -283,7 +279,7 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
 
         final IgniteCache cache1 = ignite1.cache(null);
 
-        cache1.active(false).get();
+        cache1.active(false);
 
         assert !cache1.active();
 
@@ -303,7 +299,7 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
         part2.updateCounter(20);
         part3.updateCounter(5);
 
-        cache1.active(true).get();
+        cache1.active(true);
 
         assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
@@ -362,16 +358,13 @@ public abstract class CacheStateAbstractTest extends GridCommonAbstractTest {
             }
         }, 5000);
 
-        boolean ex = false;
-
         try {
             cache2.get(partition);
-        }
-        catch (CacheException e) {
-            ex = true;
-        }
 
-        assert ex;
+            fail("Should get an exception while reading lost partition.");
+        }
+        catch (CacheException ignore) {
+        }
 
         cache2.resetLostPartitions();
 

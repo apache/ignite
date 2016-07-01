@@ -35,6 +35,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.IgniteSystemProperties;
+import org.apache.ignite.cache.PartitionLossPolicy;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.events.DiscoveryEvent;
@@ -60,7 +61,6 @@ import org.apache.ignite.internal.processors.cache.GridCacheMvccCandidate;
 import org.apache.ignite.internal.processors.cache.GridCacheSharedContext;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridClientPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtLocalPartition;
-import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionState;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtPartitionTopology;
 import org.apache.ignite.internal.processors.cache.distributed.dht.GridDhtTopologyFuture;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteTxKey;
@@ -81,6 +81,7 @@ import org.apache.ignite.internal.managers.discovery.NodeActivatedMessage;
 import org.jetbrains.annotations.Nullable;
 import org.jsr166.ConcurrentHashMap8;
 
+import static org.apache.ignite.cache.PartitionLossPolicy.*;
 import static org.apache.ignite.events.EventType.EVT_NODE_FAILED;
 import static org.apache.ignite.events.EventType.EVT_NODE_JOINED;
 import static org.apache.ignite.events.EventType.EVT_NODE_LEFT;
@@ -182,7 +183,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     private CacheAffinityChangeMessage affChangeMsg;
 
     /** Cache validation results. */
-    private volatile Map<Integer, Boolean> cacheValidRes;
+    private volatile Map<Integer, CacheValidation> cacheValidRes;
 
     /** Skip preload flag. */
     private boolean skipPreload;
@@ -1076,18 +1077,24 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 }
             }
 
-            Map<Integer, Boolean> m = null;
+            if (!crd.isLocal() && (discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED))
+                detectLostPartitions();
+
+            Map<Integer, CacheValidation> m = new HashMap<>(cctx.cacheContexts().size());
 
             for (GridCacheContext cacheCtx : cctx.cacheContexts()) {
-                if (cacheCtx.config().getTopologyValidator() != null && !CU.isSystemCache(cacheCtx.name())) {
-                    if (m == null)
-                        m = new HashMap<>();
+                Collection<Integer> lostParts = cacheCtx.isLocal() ?
+                    Collections.<Integer>emptyList() : cacheCtx.topology().lostPartitions();
 
-                    m.put(cacheCtx.cacheId(), cacheCtx.config().getTopologyValidator().validate(discoEvt.topologyNodes()));
-                }
+                boolean valid = true;
+
+                if (cacheCtx.config().getTopologyValidator() != null && !CU.isSystemCache(cacheCtx.name()))
+                    valid = cacheCtx.config().getTopologyValidator().validate(discoEvt.topologyNodes());
+
+                m.put(cacheCtx.cacheId(), new CacheValidation(valid, lostParts));
             }
 
-            cacheValidRes = m != null ? m : Collections.<Integer, Boolean>emptyMap();
+            cacheValidRes = m;
         }
 
         cctx.exchange().onExchangeDone(this, err);
@@ -1118,13 +1125,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     }
 
     /** {@inheritDoc} */
-    @Nullable @Override public Throwable validateCache(GridCacheContext cctx) {
-        return validateCache(cctx, null, null);
-    }
-
-    /** {@inheritDoc} */
     @Nullable @Override public Throwable validateCache(
         GridCacheContext cctx,
+        boolean read,
         @Nullable Object key,
         @Nullable Collection<?> keys
     ) {
@@ -1135,48 +1138,44 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         if (cctx.state() == CacheState.INACTIVE)
             return new CacheInvalidStateException("Failed to perform cache operation " +
-                "(cache state is not activated): " + cctx.name());
+                "(cache is not activated): " + cctx.name());
+
+        PartitionLossPolicy partLossPolicy = cctx.config().getPartitionLossPolicy();
 
         if (cctx.state() == CacheState.RECOVERY) {
+            if (!read && (partLossPolicy == READ_ONLY_SAFE || partLossPolicy == READ_ONLY_ALL))
+                return new IgniteCheckedException("Failed to write to cache (cache is moved to a read-only state): " +
+                    cctx.name());
+        }
+
+        if (cctx.state() == CacheState.RECOVERY || cctx.config().getTopologyValidator() != null) {
+            CacheValidation validation = cacheValidRes.get(cctx.cacheId());
+
+            if (validation == null)
+                return null;
+
+            if (!validation.valid)
+                return new IgniteCheckedException("Failed to perform cache operation " +
+                    "(cache topology is not valid): " + cctx.name());
+
             if (key != null) {
                 int p = cctx.affinity().partition(key);
 
-                GridDhtLocalPartition part = cctx.topology().localPartition(p, topologyVersion(), false);
-
-                assert part != null;
-
-                if (part.state() == GridDhtPartitionState.LOST)
+                if (validation.lostParts.contains(p))
                     return new CacheInvalidStateException("Failed to execute cache operation " +
                         "(all partition owners have left the grid, partition data has been lost) [" +
                         "cacheName=" + cctx.name() + ", part=" + p + ", key=" + key + ']');
             }
 
             if (keys != null) {
-                Collection<Integer> parts = new HashSet<>(keys.size(), 1.0f);
-
                 for (Object k : keys) {
                     int p = cctx.affinity().partition(k);
 
-                    if (parts.add(p)) {
-                        GridDhtLocalPartition part = cctx.topology().localPartition(p, topologyVersion(), false);
-
-                        assert part != null;
-
-                        if (part.state() == GridDhtPartitionState.LOST)
-                            return new CacheInvalidStateException("Failed to execute cache operation " +
-                                "(all partition owners have left the grid, partition data has been lost) [" +
-                                "cacheName=" + cctx.name() + ", part=" + p + ", key=" + key + ']');
-                    }
+                    if (validation.lostParts.contains(p))
+                        return new CacheInvalidStateException("Failed to execute cache operation " +
+                            "(all partition owners have left the grid, partition data has been lost) [" +
+                            "cacheName=" + cctx.name() + ", part=" + p + ", key=" + key + ']');
                 }
-            }
-        }
-
-        if (cctx.config().getTopologyValidator() != null) {
-            Boolean res = cacheValidRes.get(cctx.cacheId());
-
-            if (res != null && !res) {
-                return new IgniteCheckedException("Failed to perform cache operation " +
-                    "(cache topology is not valid): " + cctx.name());
             }
         }
 
@@ -1367,8 +1366,6 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
      * Detect lost partitions.
      */
     private void detectLostPartitions() {
-        assert crd.isLocal();
-
         for (GridCacheContext cacheCtx : cctx.cacheContexts())
             cacheCtx.topology().detectLostPartitions(discoEvt);
     }
@@ -1807,6 +1804,26 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
         ALL,
         /** */
         NONE
+    }
+
+    /**
+     * Cache validation result.
+     */
+    private static class CacheValidation {
+        /** Topology validation result. */
+        private boolean valid;
+
+        /** Lost partitions on this topology version. */
+        private Collection<Integer> lostParts;
+
+        /**
+         * @param valid Valid flag.
+         * @param lostParts Lost partitions.
+         */
+        private CacheValidation(boolean valid, Collection<Integer> lostParts) {
+            this.valid = valid;
+            this.lostParts = lostParts;
+        }
     }
 
     /** {@inheritDoc} */
