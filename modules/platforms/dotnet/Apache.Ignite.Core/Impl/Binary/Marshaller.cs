@@ -57,9 +57,6 @@ namespace Apache.Ignite.Core.Impl.Binary
         private volatile IDictionary<int, BinaryTypeHolder> _metas = new Dictionary<int, BinaryTypeHolder>();
 
         /** */
-        private readonly BinaryReflectiveSerializer _defaultSerializer = new BinaryReflectiveSerializer();
-
-        /** */
         private Ignite _ignite;
 
         /** */
@@ -94,13 +91,15 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (typeCfgs != null)
                 foreach (BinaryTypeConfiguration typeCfg in typeCfgs)
-                    AddUserType(typeCfg, typeResolver);
+                    AddUserType(cfg, typeCfg, typeResolver);
 
             var typeNames = _cfg.Types;
 
             if (typeNames != null)
                 foreach (string typeName in typeNames)
-                    AddUserType(new BinaryTypeConfiguration(typeName), typeResolver);
+                    AddUserType(cfg, new BinaryTypeConfiguration(typeName), typeResolver);
+
+            _cfg = cfg;
         }
 
         /// <summary>
@@ -457,8 +456,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>Descriptor.</returns>
         private BinaryFullTypeDescriptor AddUserType(Type type, int typeId, string typeName, bool registered)
         {
-            var ser = new BinaryReflectiveSerializer();
-            ser.Register(type, typeId, _cfg.DefaultNameMapper, _cfg.DefaultIdMapper);
+            var ser = new BinaryReflectiveSerializer()
+                .Register(type, typeId, _cfg.DefaultNameMapper, _cfg.DefaultIdMapper);
 
             var desc = new BinaryFullTypeDescriptor(type, typeId, typeName, true, _cfg.DefaultNameMapper,
                 _cfg.DefaultIdMapper, ser, false, null, false, registered);
@@ -469,9 +468,11 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <summary>
         /// Add user type.
         /// </summary>
+        /// <param name="cfg">The binary configuration.</param>
         /// <param name="typeCfg">Type configuration.</param>
         /// <param name="typeResolver">The type resolver.</param>
-        private void AddUserType(BinaryTypeConfiguration typeCfg, TypeResolver typeResolver)
+        /// <exception cref="BinaryObjectException"></exception>
+        private void AddUserType(BinaryConfiguration cfg, BinaryTypeConfiguration typeCfg, TypeResolver typeResolver)
         {
             // Get converter/mapper/serializer.
             IBinaryNameMapper nameMapper = typeCfg.NameMapper ?? _cfg.DefaultNameMapper;
@@ -485,19 +486,6 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             if (type != null)
             {
-                // Type is found.
-                var typeName = BinaryUtils.GetTypeName(type);
-
-                int typeId = BinaryUtils.TypeId(typeName, nameMapper, idMapper);
-
-                var serializer = typeCfg.Serializer ?? _cfg.DefaultSerializer
-                                 ?? GetBinarizableSerializer(type) ?? _defaultSerializer;
-
-                var refSerializer = serializer as BinaryReflectiveSerializer;
-
-                if (refSerializer != null)
-                    refSerializer.Register(type, typeId, nameMapper, idMapper);
-
                 if (typeCfg.IsEnum != type.IsEnum)
                     throw new BinaryObjectException(
                         string.Format(
