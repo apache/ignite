@@ -75,17 +75,20 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
                 writer.WriteByte(p is FairAffinityFunction ? TypeCodeFair : TypeCodeRendezvous);
                 writer.WriteInt(p.Partitions);
                 writer.WriteBoolean(p.ExcludeNeighbors);
-                writer.WriteByte((byte)GetOverrideFlags(p.GetType())); // Override flags
-                // TODO: User func only if there are override flags
-                WriteUserFunc(writer, fun); // User func
+
+                var overrideFlags = GetOverrideFlags(p.GetType());
+                writer.WriteByte((byte) overrideFlags);
+
+                // Do not write user func if there is nothing overridden
+                WriteUserFunc(writer, overrideFlags != UserOverrides.None ? fun : null);
             }
             else
             {
                 writer.WriteByte(TypeCodeUser);
-                writer.WriteInt(fun.Partitions); // partition count is written once and can not be changed.
+                writer.WriteInt(fun.Partitions);
                 writer.WriteBoolean(false); // Exclude neighbors
-                writer.WriteByte((byte)UserOverrides.None); // Override flags
-                WriteUserFunc(writer, fun); // User func
+                writer.WriteByte((byte) UserOverrides.All);
+                WriteUserFunc(writer, fun);
             }
         }
 
@@ -238,7 +241,8 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
             None = 0,
             GetPartition = 1,
             RemoveNode = 1 << 1,
-            AssignPartitions = 1 << 2
+            AssignPartitions = 1 << 2,
+            All = GetPartition | RemoveNode | AssignPartitions
         }
     }
 }

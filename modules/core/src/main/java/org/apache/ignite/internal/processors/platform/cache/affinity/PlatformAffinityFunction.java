@@ -217,6 +217,10 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
+        // userFunc is null when there is nothing overridden
+        if (userFunc == null)
+            return;
+
         assert ignite != null;
         ctx = PlatformUtils.platformContext(ignite);
         assert ctx != null;
@@ -239,6 +243,9 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
 
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteException {
+        if (ptr == 0)
+            return;
+
         assert ctx != null;
 
         ctx.gateway().affinityFunctionDestroy(ptr);
