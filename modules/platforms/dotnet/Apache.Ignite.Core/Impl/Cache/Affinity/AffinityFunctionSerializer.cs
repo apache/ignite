@@ -212,7 +212,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
                 var methodName = method.ToString();
 
                 if (map.TargetMethods.Single(x => x.Name == methodName).DeclaringType != typeof(AffinityFunctionBase))
-                    res &= method;
+                    res |= method;
             }
 
             return res;
