@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.IO;
+    using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Affinity.Fair;
@@ -199,8 +200,22 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
         /// </summary>
         private static UserOverrides GetOverrideFlags(Type funcType)
         {
-            // TODO
-            return UserOverrides.None;
+            var res = UserOverrides.None;
+
+            var methods = new[] {UserOverrides.GetPartition, UserOverrides.AssignPartitions, UserOverrides.RemoveNode};
+
+            var map = funcType.GetInterfaceMap(typeof(IAffinityFunction));
+
+            foreach (var method in methods)
+            {
+                // Find whether user type overrides IAffinityFunction method from AffinityFunctionBase.
+                var methodName = method.ToString();
+
+                if (map.TargetMethods.Single(x => x.Name == methodName).DeclaringType != typeof(AffinityFunctionBase))
+                    res &= method;
+            }
+
+            return res;
         }
 
         /// <summary>
