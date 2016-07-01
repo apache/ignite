@@ -2200,6 +2200,20 @@ public class BinaryUtils {
     }
 
     /**
+     * Create binary type which is used by users.
+     *
+     * @param ctx Context.
+     * @param obj Binary object.
+     * @return Binary type.
+     */
+    public static BinaryType type(BinaryContext ctx, BinaryObjectEx obj) {
+        if (ctx == null)
+            throw new BinaryObjectException("BinaryContext is not set for the object.");
+
+        return ctx.metadata(obj.typeId());
+    }
+
+    /**
      * Enum type.
      */
     private static class EnumType {
