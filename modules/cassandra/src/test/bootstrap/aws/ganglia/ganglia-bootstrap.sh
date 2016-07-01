@@ -28,7 +28,7 @@ AWS_CLI_DOWNLOAD_URL=https://s3.amazonaws.com/aws-cli/awscli-bundle.zip
 JDK_DOWNLOAD_URL=http://download.oracle.com/otn-pub/java/jdk/8u77-b03/jdk-8u77-linux-x64.tar.gz
 
 # URL to download Ignite-Cassandra tests package - you should previously package and upload it to this place
-TESTS_PACKAGE_DONLOAD_URL=s3://<bucket>/<folder>/ignite-cassandra-tests-<version>.zip
+TESTS_PACKAGE_DONLOAD_URL=s3://hli-datalake-sdrad-pdx/dev/apps/gvcfparser/test/ignite-cassandra-tests-1.7.0-SNAPSHOT.zip
 
 # Terminates script execution and upload logs to S3
 terminate()
@@ -296,159 +296,14 @@ createGmondSenderReceiverConfig()
 # Downloads and setup Ganglia (and dependency) packages
 setupGangliaPackages()
 {
-    echo "[INFO] Installing Ganglia master required packages"
-
-    yum -y install httpd apr-devel apr-util check-devel cairo-devel pango-devel pango \
-    libxml2-devel glib2-devel dbus-devel freetype-devel freetype \
-    libpng-devel libart_lgpl-devel fontconfig-devel gcc-c++ expat-devel \
-    python-devel libXrender-devel perl-devel perl-CPAN gettext git sysstat \
-    automake autoconf ltmain.sh pkg-config gperf libtool pcre-devel libconfuse-devel \
-    php-devel php-pear
-
-    if [ $? -ne 0 ]; then
-        terminate "Failed to install all Ganglia required packages"
-    fi
-
-    echo "[INFO] Installing rrdtool"
-
-    downloadPackage "$RRD_DOWNLOAD_URL" "/opt/rrdtool.tar.gz" "rrdtool"
-
-    tar -xvzf /opt/rrdtool.tar.gz -C /opt
-    if [ $? -ne 0 ]; then
-        terminate "Failed to untar rrdtool tarball"
-    fi
-
-    rm -Rf /opt/rrdtool.tar.gz
-
-    unzipDir=$(ls /opt | grep "rrdtool")
-    if [ "$unzipDir" != "rrdtool" ]; then
-        mv /opt/$unzipDir /opt/rrdtool
-    fi
-
-    export PKG_CONFIG_PATH=/usr/lib/pkgconfig/
-
-    pushd /opt/rrdtool
-
-    ./configure --prefix=/usr/local/rrdtool
-    if [ $? -ne 0 ]; then
-        terminate "Failed to configure rrdtool"
-    fi
-
-    make
-    if [ $? -ne 0 ]; then
-        terminate "Failed to make rrdtool"
-    fi
-
-    make install
-    if [ $? -ne 0 ]; then
-        terminate "Failed to install rrdtool"
-    fi
-
-    ln -s /usr/local/rrdtool/bin/rrdtool /usr/bin/rrdtool
-    mkdir -p /var/lib/ganglia/rrds
-
-    chown -R nobody:nobody /usr/local/rrdtool /var/lib/ganglia/rrds /usr/bin/rrdtool
-
-    rm -Rf /opt/rrdtool
-
-    popd
-
-    echo "[INFO] rrdtool successfully installed"
-
-    echo "[INFO] Installig ganglia-core"
-
-    git clone $GANGLIA_CORE_DOWNLOAD_URL /opt/monitor-core
-
-    if [ $? -ne 0 ]; then
-        terminate "Failed to clone ganglia-core from github: $GANGLIA_CORE_DOWNLOAD_URL"
-    fi
-
-    pushd /opt/monitor-core
-
-    git checkout efe9b5e5712ea74c04e3b15a06eb21900e18db40
-
-    ./bootstrap
-
-    if [ $? -ne 0 ]; then
-        terminate "Failed to prepare ganglia-core for compilation"
-    fi
-
-    ./configure --with-gmetad --with-librrd=/usr/local/rrdtool
-
-    if [ $? -ne 0 ]; then
-        terminate "Failed to configure ganglia-core"
-    fi
-
-    make
-    if [ $? -ne 0 ]; then
-        terminate "Failed to make ganglia-core"
-    fi
-
-    make install
-    if [ $? -ne 0 ]; then
-        terminate "Failed to install ganglia-core"
-    fi
-
-    rm -Rf /opt/monitor-core
-
-    popd
-
-    echo "[INFO] ganglia-core successfully installed"
-
-    echo "[INFO] Installing ganglia-web"
-
-    git clone $GANGLIA_WEB_DOWNLOAD_URL /opt/web
-
-    if [ $? -ne 0 ]; then
-        terminate "Failed to clone ganglia-web from github: $GANGLIA_WEB_DOWNLOAD_URL"
-    fi
-
-    cat /opt/web/Makefile | sed -r "s/GDESTDIR = \/usr\/share\/ganglia-webfrontend/GDESTDIR = \/opt\/ganglia-web/g" > /opt/web/Makefile1
-    cat /opt/web/Makefile1 | sed -r "s/GCONFDIR = \/etc\/ganglia-web/GCONFDIR = \/opt\/ganglia-web/g" > /opt/web/Makefile2
-    cat /opt/web/Makefile2 | sed -r "s/GWEB_STATEDIR = \/var\/lib\/ganglia-web/GWEB_STATEDIR = \/opt\/ganglia-web/g" > /opt/web/Makefile3
-    cat /opt/web/Makefile3 | sed -r "s/APACHE_USER = www-data/APACHE_USER = apache/g" > /opt/web/Makefile4
-
-    rm -f /opt/web/Makefile
-    cp /opt/web/Makefile4 /opt/web/Makefile
-    rm -f /opt/web/Makefile1 /opt/web/Makefile2 /opt/web/Makefile3 /opt/web/Makefile4
-
-    pushd /opt/web
-
-    git checkout f2b19c7cacfc8c51921be801b92f8ed0bd4901ae
-
-    make
-
-    if [ $? -ne 0 ]; then
-        terminate "Failed to make ganglia-web"
-    fi
-
-    make install
-
-    if [ $? -ne 0 ]; then
-        terminate "Failed to install ganglia-web"
-    fi
-
-    rm -Rf /opt/web
-
-    popd
-
-    echo "" >> /etc/httpd/conf/httpd.conf
-    echo "Alias /ganglia /opt/ganglia-web" >> /etc/httpd/conf/httpd.conf
-    echo "<Directory \"/opt/ganglia-web\">" >> /etc/httpd/conf/httpd.conf
-    echo "       AllowOverride All" >> /etc/httpd/conf/httpd.conf
-    echo "       Order allow,deny" >> /etc/httpd/conf/httpd.conf
-    echo "       Allow from all" >> /etc/httpd/conf/httpd.conf
-    echo "       Deny from none" >> /etc/httpd/conf/httpd.conf
-    echo "</Directory>" >> /etc/httpd/conf/httpd.conf
-
-    echo "[INFO] ganglia-web successfully installed"
+    installGangliaPackages "master"
 
     HOST_NAME=$(hostname -f | tr '[:upper:]' '[:lower:]')
 
     echo "data_source \"cassandra\" ${HOST_NAME}:8641" > /opt/gmetad.conf
     echo "data_source \"ignite\" ${HOST_NAME}:8642" >> /opt/gmetad.conf
     echo "data_source \"test\" ${HOST_NAME}:8643" >> /opt/gmetad.conf
-    echo "data_source \"ganglia\" ${HOST_NAME}:8644" >> /opt/gmetad.conf
+    #echo "data_source \"ganglia\" ${HOST_NAME}:8644" >> /opt/gmetad.conf
     echo "setuid_username \"nobody\"" >> /opt/gmetad.conf
     echo "case_sensitive_hostnames 0" >> /opt/gmetad.conf
 
@@ -457,7 +312,7 @@ setupGangliaPackages()
     createGmondReceiverConfig cassandra 8641
     createGmondReceiverConfig ignite 8642
     createGmondReceiverConfig test 8643
-    createGmondSenderReceiverConfig ganglia 8644
+    #createGmondSenderReceiverConfig ganglia 8644
 }
 
 # Starts 'gmond' receiver damon
@@ -553,7 +408,7 @@ registerNode
 startGmondReceiver cassandra
 startGmondReceiver ignite
 startGmondReceiver test
-startGmondReceiver ganglia
+#startGmondReceiver ganglia
 startGmetadCollector
 startHttpdService
 

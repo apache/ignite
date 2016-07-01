@@ -28,7 +28,7 @@ AWS_CLI_DOWNLOAD_URL=https://s3.amazonaws.com/aws-cli/awscli-bundle.zip
 JDK_DOWNLOAD_URL=http://download.oracle.com/otn-pub/java/jdk/8u77-b03/jdk-8u77-linux-x64.tar.gz
 
 # URL to download Ignite-Cassandra tests package - you should previously package and upload it to this place
-TESTS_PACKAGE_DONLOAD_URL=s3://<bucket>/<folder>/ignite-cassandra-tests-<version>.zip
+TESTS_PACKAGE_DONLOAD_URL=s3://hli-datalake-sdrad-pdx/dev/apps/gvcfparser/test/ignite-cassandra-tests-1.7.0-SNAPSHOT.zip
 
 # Terminates script execution and upload logs to S3
 terminate()
@@ -244,8 +244,6 @@ setupTestsPackage()
 
     echo "[INFO] Logs collector daemon started: $!"
 
-    . /opt/ignite-cassandra-tests/bootstrap/aws/ganglia/agent-bootstrap.sh
-
     echo "----------------------------------------------------------------------------------------"
     printInstanceInfo
     echo "----------------------------------------------------------------------------------------"
@@ -255,6 +253,22 @@ setupTestsPackage()
     ###################################################
     # Extra configuration specific only for test node #
     ###################################################
+
+    echo "[INFO] Installing bc package"
+
+    yum -y install bc
+
+    if [ $? -ne 0 ]; then
+        terminate "Failed to install bc package"
+    fi
+
+    echo "[INFO] Installing zip package"
+
+    yum -y install zip
+
+    if [ $? -ne 0 ]; then
+        terminate "Failed to install zip package"
+    fi
 
     echo "[INFO] Creating 'ignite' group"
     exists=$(cat /etc/group | grep ignite)

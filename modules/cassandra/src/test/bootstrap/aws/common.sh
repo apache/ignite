@@ -939,6 +939,254 @@ waitAllTestNodesCompletedTests()
     echo "[INFO] Congratulation, all $TEST_NODES_COUNT test nodes have completed their tests"
 }
 
+# Installs all required Ganglia packages
+installGangliaPackages()
+{
+    if [ "$1" == "master" ]; then
+        echo "[INFO] Installing Ganglia master required packages"
+    else
+        echo "[INFO] Installing Ganglia agent required packages"
+    fi
+
+    isAmazonLinux=$(cat "/etc/issue" | grep "Amazon Linux")
+
+    if [ -z "$isAmazonLinux" ]; then
+        setenforce 0
+
+        if [ $? -ne 0 ]; then
+            terminate "Failed to turn off SELinux"
+        fi
+
+        downloadPackage "$EPEL_DOWNLOAD_URL" "/opt/epel.rpm" "EPEL"
+
+        rpm -Uvh /opt/epel.rpm
+        if [ $? -ne 0 ]; then
+            terminate "Failed to setup EPEL repository"
+        fi
+
+        rm -f /opt/epel.rpm
+    fi
+
+    yum -y install apr-devel apr-util check-devel cairo-devel pango-devel pango \
+    libxml2-devel glib2-devel dbus-devel freetype-devel freetype \
+    libpng-devel libart_lgpl-devel fontconfig-devel gcc-c++ expat-devel \
+    python-devel libXrender-devel perl-devel perl-CPAN gettext git sysstat \
+    automake autoconf ltmain.sh pkg-config gperf libtool pcre-devel libconfuse-devel
+
+    if [ $? -ne 0 ]; then
+        terminate "Failed to install all Ganglia required packages"
+    fi
+
+    if [ "$1" == "master" ]; then
+        yum -y install httpd php php-devel php-pear
+
+        if [ $? -ne 0 ]; then
+            terminate "Failed to install all Ganglia required packages"
+        fi
+
+        if [ -z "$isAmazonLinux" ]; then
+            yum -y install liberation-sans-fonts
+
+            if [ $? -ne 0 ]; then
+                terminate "Failed to install liberation-sans-fonts package"
+            fi
+        fi
+    fi
+
+    if [ -z "$isAmazonLinux" ]; then
+        downloadPackage "$GPERF_DOWNLOAD_URL" "/opt/gperf.tar.gz" "gperf"
+
+        tar -xvzf /opt/gperf.tar.gz -C /opt
+        if [ $? -ne 0 ]; then
+            terminate "Failed to untar gperf tarball"
+        fi
+
+        rm -Rf /opt/gperf.tar.gz
+
+        unzipDir=$(ls /opt | grep "gperf")
+
+        pushd /opt/$unzipDir
+
+        ./configure
+        if [ $? -ne 0 ]; then
+            terminate "Failed to configure gperf"
+        fi
+
+        make
+        if [ $? -ne 0 ]; then
+            terminate "Failed to make gperf"
+        fi
+
+        make install
+        if [ $? -ne 0 ]; then
+            terminate "Failed to install gperf"
+        fi
+
+        echo "[INFO] gperf tool successfully installed"
+
+        popd
+    fi
+
+    echo "[INFO] Installing rrdtool"
+
+    downloadPackage "$RRD_DOWNLOAD_URL" "/opt/rrdtool.tar.gz" "rrdtool"
+
+    tar -xvzf /opt/rrdtool.tar.gz -C /opt
+    if [ $? -ne 0 ]; then
+        terminate "Failed to untar rrdtool tarball"
+    fi
+
+    rm -Rf /opt/rrdtool.tar.gz
+
+    unzipDir=$(ls /opt | grep "rrdtool")
+    if [ "$unzipDir" != "rrdtool" ]; then
+        mv /opt/$unzipDir /opt/rrdtool
+    fi
+
+    export PKG_CONFIG_PATH=/usr/lib/pkgconfig/
+
+    pushd /opt/rrdtool
+
+    ./configure --prefix=/usr/local/rrdtool
+    if [ $? -ne 0 ]; then
+        terminate "Failed to configure rrdtool"
+    fi
+
+    make
+    if [ $? -ne 0 ]; then
+        terminate "Failed to make rrdtool"
+    fi
+
+    make install
+    if [ $? -ne 0 ]; then
+        terminate "Failed to install rrdtool"
+    fi
+
+    ln -s /usr/local/rrdtool/bin/rrdtool /usr/bin/rrdtool
+    mkdir -p /var/lib/ganglia/rrds
+
+    chown -R nobody:nobody /usr/local/rrdtool /var/lib/ganglia/rrds /usr/bin/rrdtool
+
+    rm -Rf /opt/rrdtool
+
+    popd
+
+    echo "[INFO] rrdtool successfully installed"
+
+    echo "[INFO] Installig ganglia-core"
+
+    git clone $GANGLIA_CORE_DOWNLOAD_URL /opt/monitor-core
+
+    if [ $? -ne 0 ]; then
+        terminate "Failed to clone ganglia-core from github: $GANGLIA_CORE_DOWNLOAD_URL"
+    fi
+
+    pushd /opt/monitor-core
+
+    git checkout efe9b5e5712ea74c04e3b15a06eb21900e18db40
+
+    ./bootstrap
+
+    if [ $? -ne 0 ]; then
+        terminate "Failed to prepare ganglia-core for compilation"
+    fi
+
+    ./configure --with-gmetad --with-librrd=/usr/local/rrdtool
+
+    if [ $? -ne 0 ]; then
+        terminate "Failed to configure ganglia-core"
+    fi
+
+    make
+    if [ $? -ne 0 ]; then
+        terminate "Failed to make ganglia-core"
+    fi
+
+    make install
+    if [ $? -ne 0 ]; then
+        terminate "Failed to install ganglia-core"
+    fi
+
+    rm -Rf /opt/monitor-core
+
+    popd
+
+    echo "[INFO] ganglia-core successfully installed"
+
+    if [ "$1" != "master" ]; then
+        return 0
+    fi
+
+    echo "[INFO] Installing ganglia-web"
+
+    git clone $GANGLIA_WEB_DOWNLOAD_URL /opt/web
+
+    if [ $? -ne 0 ]; then
+        terminate "Failed to clone ganglia-web from github: $GANGLIA_WEB_DOWNLOAD_URL"
+    fi
+
+    cat /opt/web/Makefile | sed -r "s/GDESTDIR = \/usr\/share\/ganglia-webfrontend/GDESTDIR = \/opt\/ganglia-web/g" > /opt/web/Makefile1
+    cat /opt/web/Makefile1 | sed -r "s/GCONFDIR = \/etc\/ganglia-web/GCONFDIR = \/opt\/ganglia-web/g" > /opt/web/Makefile2
+    cat /opt/web/Makefile2 | sed -r "s/GWEB_STATEDIR = \/var\/lib\/ganglia-web/GWEB_STATEDIR = \/opt\/ganglia-web/g" > /opt/web/Makefile3
+    cat /opt/web/Makefile3 | sed -r "s/APACHE_USER = www-data/APACHE_USER = apache/g" > /opt/web/Makefile4
+
+    rm -f /opt/web/Makefile
+    cp /opt/web/Makefile4 /opt/web/Makefile
+    rm -f /opt/web/Makefile1 /opt/web/Makefile2 /opt/web/Makefile3 /opt/web/Makefile4
+
+    pushd /opt/web
+
+    git checkout f2b19c7cacfc8c51921be801b92f8ed0bd4901ae
+
+    make
+
+    if [ $? -ne 0 ]; then
+        terminate "Failed to make ganglia-web"
+    fi
+
+    make install
+
+    if [ $? -ne 0 ]; then
+        terminate "Failed to install ganglia-web"
+    fi
+
+    rm -Rf /opt/web
+
+    popd
+
+    echo "" >> /etc/httpd/conf/httpd.conf
+    echo "Alias /ganglia /opt/ganglia-web" >> /etc/httpd/conf/httpd.conf
+    echo "<Directory \"/opt/ganglia-web\">" >> /etc/httpd/conf/httpd.conf
+    echo "       AllowOverride All" >> /etc/httpd/conf/httpd.conf
+    echo "       Order allow,deny" >> /etc/httpd/conf/httpd.conf
+
+    if [ -z "$isAmazonLinux" ]; then
+        echo "       Require all granted" >> /etc/httpd/conf/httpd.conf
+    fi
+
+    echo "       Allow from all" >> /etc/httpd/conf/httpd.conf
+    echo "       Deny from none" >> /etc/httpd/conf/httpd.conf
+    echo "</Directory>" >> /etc/httpd/conf/httpd.conf
+
+    echo "[INFO] ganglia-web successfully installed"
+}
+
+# Installs and run Ganglia agent ('gmond' daemon)
+bootstrapGangliaAgent()
+{
+    echo "[INFO]-----------------------------------------------------------------"
+    echo "[INFO] Bootstrapping Ganglia agent"
+    echo "[INFO]-----------------------------------------------------------------"
+
+    installGangliaPackages
+
+    echo "[INFO] Running ganglia agent daemon to discover Ganglia master"
+
+    /opt/ignite-cassandra-tests/bootstrap/aws/ganglia/agent-start.sh $1 $2 > /opt/ganglia-agent.log &
+
+    echo "[INFO] Ganglia daemon job id: $!"
+}
+
 # Attaches environment configuration settings
 . $( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/env.sh
 
