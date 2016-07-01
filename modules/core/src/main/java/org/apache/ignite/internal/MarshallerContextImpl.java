@@ -118,29 +118,6 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         }
     }
 
-    /*public void onMarshallerCacheStarted(GridKernalContext ctx) throws IgniteCheckedException {
-        assert ctx != null;
-
-        cache = ctx.cache().internalCache(cacheName);
-
-        if (!ctx.isDaemon()) {
-            GridCacheContext<Integer, String> cacheCtx = cache.context();
-
-            cacheCtx.continuousQueries().executeInternalQuery(
-                    new ContinuousQueryListener(ctx.log(MarshallerContextImpl.class), workDir, fileExt),
-                    null,
-                    cacheCtx.affinityNode(),
-                    true,
-                    false
-            );
-        }
-
-        log = ctx.log(MarshallerContextImpl.class);
-
-        latch.countDown();
-    }*/
-
-
     /**
      * @param ctx Kernal context.
      * @throws IgniteCheckedException In case of error.
@@ -161,17 +138,18 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
                     true,
                     false
             );
-        } else {
+        }
+        else {
             if (lsnr != null) {
                 ctx.closure().runLocalSafe(new Runnable() {
                     @SuppressWarnings("unchecked")
-                    @Override
-                    public void run() {
+                    @Override public void run() {
                         try {
                             Iterable entries = cacheCtx.continuousQueries().existingEntries(false, null);
 
                             lsnr.onUpdated(entries);
-                        } catch (IgniteCheckedException e) {
+                        }
+                        catch (IgniteCheckedException e) {
                             U.error(log, "Failed to load marshaller cache entries: " + e, e);
                         }
                     }
