@@ -111,7 +111,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
             lsnr = new ContinuousQueryListener(ctx.log(MarshallerContextImpl.class), workDir, fileExt);
 
             ctx.continuous().registerStaticRoutine(
-                CU.MARSH_CACHE_NAME,
+                cacheName,
                 lsnr,
                 null,
                 null);
