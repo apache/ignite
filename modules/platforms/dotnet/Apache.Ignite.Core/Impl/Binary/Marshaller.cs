@@ -454,8 +454,7 @@ namespace Apache.Ignite.Core.Impl.Binary
         /// <returns>Descriptor.</returns>
         private BinaryFullTypeDescriptor AddUserType(Type type, int typeId, string typeName, bool registered)
         {
-            var ser = new BinaryReflectiveSerializer()
-                .Register(type, typeId, _cfg.DefaultNameMapper, _cfg.DefaultIdMapper);
+            var ser = GetSerializer(_cfg, null, type, typeId, null, null);
 
             var desc = new BinaryFullTypeDescriptor(type, typeId, typeName, true, _cfg.DefaultNameMapper,
                 _cfg.DefaultIdMapper, ser, false, null, false, registered);
@@ -518,7 +517,8 @@ namespace Apache.Ignite.Core.Impl.Binary
         private static IBinarySerializerInternal GetSerializer(BinaryConfiguration cfg, BinaryTypeConfiguration typeCfg,
             Type type, int typeId, IBinaryNameMapper nameMapper, IBinaryIdMapper idMapper)
         {
-            var serializer = typeCfg.Serializer ?? cfg.DefaultSerializer;
+            var serializer = (typeCfg != null ? typeCfg.Serializer : null) ??
+                             (cfg != null ? cfg.DefaultSerializer : null);
 
             if (serializer == null)
             {
