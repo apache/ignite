@@ -45,6 +45,15 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
     private static final long serialVersionUID = 0L;
 
     /** */
+    private static final byte FLAG_PARTITION = 1;
+
+    /** */
+    private static final byte FLAG_REMOVE_NODE = 1 << 1;
+
+    /** */
+    private static final byte FLAG_ASSIGN_PARTITIONS = 1 << 2;
+
+    /** */
     private Object userFunc;
 
     /**
@@ -133,6 +142,12 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
 
     /** {@inheritDoc} */
     @Override public int partition(Object key) {
+        if ((overrideFlags & FLAG_PARTITION) == 0) {
+            assert baseFunc != null;
+
+            return baseFunc.partition(key);
+        }
+
         assert ctx != null;
         assert ptr != 0;
 
@@ -150,6 +165,12 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
 
     /** {@inheritDoc} */
     @Override public List<List<ClusterNode>> assignPartitions(AffinityFunctionContext affCtx) {
+        if ((overrideFlags & FLAG_ASSIGN_PARTITIONS) == 0) {
+            assert baseFunc != null;
+
+            return baseFunc.assignPartitions(affCtx);
+        }
+
         assert ctx != null;
         assert ptr != 0;
         assert affCtx != null;
@@ -184,6 +205,14 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
 
     /** {@inheritDoc} */
     @Override public void removeNode(UUID nodeId) {
+        if ((overrideFlags & FLAG_REMOVE_NODE) == 0) {
+            assert baseFunc != null;
+
+            baseFunc.removeNode(nodeId);
+
+            return;
+        }
+
         assert ctx != null;
         assert ptr != 0;
 
