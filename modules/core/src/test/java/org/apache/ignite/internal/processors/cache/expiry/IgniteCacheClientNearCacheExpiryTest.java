@@ -97,6 +97,8 @@ public class IgniteCacheClientNearCacheExpiryTest extends IgniteCacheAbstractTes
 
         U.sleep(1000);
 
+        assertEquals(100, cache.size());
+
         for (int i = 0 ; i < 100; i++)
             assertEquals(i, cacheWithExpiry.localPeek(i));
 
