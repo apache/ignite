@@ -31,12 +31,12 @@
 
 # EC2 tagging related settings
 export EC2_INSTANCE_REGION=us-west-2
-export EC2_OWNER_TAG=igor_rudyak@epam.com
-export EC2_PROJECT_TAG=swe-gvcf-parser
-export EC2_CASSANDRA_TAG=GVCF-PARSER-DEV-C
-export EC2_IGNITE_TAG=GVCF-PARSER-DEV-I
-export EC2_TEST_TAG=GVCF-PARSER-DEV-T
-export EC2_GANGLIA_TAG=GVCF-PARSER-DEV-G
+export EC2_OWNER_TAG=ignite@apache.org
+export EC2_PROJECT_TAG=ignite
+export EC2_CASSANDRA_TAG=CASSANDRA
+export EC2_IGNITE_TAG=IGNITE
+export EC2_TEST_TAG=TEST
+export EC2_GANGLIA_TAG=GANGLIA
 
 # Tests summary settings
 export CASSANDRA_NODES_COUNT=3
@@ -51,7 +51,7 @@ export SERVICE_STARTUP_TIME=10
 export SERVICE_START_ATTEMPTS=3
 
 # Root S3 folder
-export S3_ROOT=s3://hli-datalake-sdrad-pdx/dev/apps/gvcfparser
+export S3_ROOT=s3://<bucket>/<folder>
 
 # S3 folder for downloads. You should put here ignite load tests jar archive
 # (you can also download here other required artifacts like Cassandra, Ignite and etc)
