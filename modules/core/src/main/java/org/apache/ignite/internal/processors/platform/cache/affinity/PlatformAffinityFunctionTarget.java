@@ -25,6 +25,7 @@ import org.apache.ignite.internal.binary.BinaryRawReaderEx;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractTarget;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import java.util.List;
 
@@ -56,6 +57,12 @@ public class PlatformAffinityFunctionTarget extends PlatformAbstractTarget {
 
         assert baseFunc != null;
         this.baseFunc = baseFunc;
+
+        try {
+            platformCtx.kernalContext().resource().injectGeneric(baseFunc);
+        } catch (IgniteCheckedException e) {
+            throw U.convertException(e);
+        }
     }
 
     /** {@inheritDoc} */
