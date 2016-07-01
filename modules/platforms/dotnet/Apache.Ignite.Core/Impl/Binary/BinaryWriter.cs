@@ -1080,6 +1080,7 @@ namespace Apache.Ignite.Core.Impl.Binary
             // Are we dealing with a well-known type?
             var handler = BinarySystemHandlers.GetWriteHandler(type);
 
+            // TODO: Improve serializable logic
             if (handler != null)
             {
                 if (handler.SupportsHandles && WriteHandle(_stream.Position, obj))

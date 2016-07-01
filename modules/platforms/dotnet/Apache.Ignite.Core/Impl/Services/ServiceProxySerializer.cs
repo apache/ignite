@@ -182,7 +182,7 @@ namespace Apache.Ignite.Core.Impl.Services
 
             var handler = BinarySystemHandlers.GetWriteHandler(type);
 
-            if (handler != null && !handler.IsSerializable)
+            if (handler != null)
                 return null;
 
             if (type.IsArray)
