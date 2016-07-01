@@ -226,7 +226,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
         /// </summary>
         private static void WriteUserFunc(IBinaryRawWriter writer, IAffinityFunction fun)
         {
-            if (!fun.GetType().IsSerializable)
+            if (fun != null && !fun.GetType().IsSerializable)
                 throw new IgniteException("AffinityFunction should be serializable.");
 
             writer.WriteObject(fun);

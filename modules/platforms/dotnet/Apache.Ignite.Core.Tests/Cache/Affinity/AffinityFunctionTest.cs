@@ -298,6 +298,25 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             }
         }
 
+        /// <summary>
+        /// Tests the AffinityFunction with simple inheritance: none of the methods are overridden,
+        /// so there are no callbacks, and user object is not passed over the wire.
+        /// </summary>
+        [Test]
+        public void TestSimpleInheritance()
+        {
+            var cache = _ignite.CreateCache<int, int>(new CacheConfiguration("simpleInherit")
+            {
+                AffinityFunction = new SimpleOverride()
+            });
+
+            var aff = _ignite.GetAffinity(cache.Name);
+
+            Assert.AreEqual(PartitionCount, aff.Partitions);
+            Assert.AreEqual(6, aff.GetPartition(33));
+            Assert.AreEqual(7, aff.GetPartition(34));
+        }
+
         [Serializable]
         private class SimpleAffinityFunction : IAffinityFunction
         {
@@ -435,6 +454,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
                 return res;
             }
+        }
+
+        /// <summary>
+        /// Override only properties, so this func won't be passed over the wire.
+        /// </summary>
+        private class SimpleOverride : FairAffinityFunction
+        {
+            public override int Partitions
+            {
+                get { return PartitionCount; }
+                set { throw new NotSupportedException(); }
+            }
+
+            public override bool ExcludeNeighbors { get; set; }
         }
     }
 }
