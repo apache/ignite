@@ -108,7 +108,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
      */
     public void onContinuousProcessorStarted(GridKernalContext ctx) throws IgniteCheckedException {
         if (ctx.clientNode()) {
-            lsnr = new ContinuousQueryListener(ctx.log(MarshallerContextImpl.class), workDir);
+            lsnr = new ContinuousQueryListener(ctx.log(MarshallerContextImpl.class), workDir, fileExt);
 
             ctx.continuous().registerStaticRoutine(
                 CU.MARSH_CACHE_NAME,
@@ -118,11 +118,7 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         }
     }
 
-    /**
-     * @param ctx Kernal context.
-     * @throws IgniteCheckedException In case of error.
-     */
-    public void onMarshallerCacheStarted(GridKernalContext ctx) throws IgniteCheckedException {
+    /*public void onMarshallerCacheStarted(GridKernalContext ctx) throws IgniteCheckedException {
         assert ctx != null;
 
         cache = ctx.cache().internalCache(cacheName);
@@ -142,50 +138,49 @@ public class MarshallerContextImpl extends MarshallerContextAdapter {
         log = ctx.log(MarshallerContextImpl.class);
 
         latch.countDown();
-    }
+    }*/
 
 
-                        /**
-                         * @param ctx Kernal context.
-                         * @throws IgniteCheckedException In case of error.
-                         */
-                    public void onMarshallerCacheStarted(GridKernalContext ctx) throws IgniteCheckedException {
-                        assert ctx != null;
+    /**
+     * @param ctx Kernal context.
+     * @throws IgniteCheckedException In case of error.
+     */
+    public void onMarshallerCacheStarted(GridKernalContext ctx) throws IgniteCheckedException {
+        assert ctx != null;
 
-                        log = ctx.log(MarshallerContextImpl.class);
+        log = ctx.log(MarshallerContextImpl.class);
 
-                        cache = ctx.cache().marshallerCache();
+        cache = ctx.cache().internalCache(cacheName);
+        final GridCacheContext<Integer, String> cacheCtx = cache.context();
 
-                        if (ctx.cache().marshallerCache().context().affinityNode()) {
-                            ctx.cache().marshallerCache().context().continuousQueries().executeInternalQuery(
-                                    new ContinuousQueryListener(log, workDir),
-                                    null,
-                                    true,
-                                    true,
-                                    false
-                            );
+        if (cacheCtx.affinityNode()) {
+            cacheCtx.continuousQueries().executeInternalQuery(
+                    new ContinuousQueryListener(log, workDir, fileExt),
+                    null,
+                    true,
+                    true,
+                    false
+            );
+        } else {
+            if (lsnr != null) {
+                ctx.closure().runLocalSafe(new Runnable() {
+                    @SuppressWarnings("unchecked")
+                    @Override
+                    public void run() {
+                        try {
+                            Iterable entries = cacheCtx.continuousQueries().existingEntries(false, null);
+
+                            lsnr.onUpdated(entries);
+                        } catch (IgniteCheckedException e) {
+                            U.error(log, "Failed to load marshaller cache entries: " + e, e);
                         }
-                        else {
-                            if (lsnr != null) {
-                                ctx.closure().runLocalSafe(new Runnable() {
-                                    @SuppressWarnings("unchecked")
-                                    @Override public void run() {
-                                        try {
-                                            Iterable entries = cache.context().continuousQueries().existingEntries(false, null);
-
-                                            lsnr.onUpdated(entries);
-                                        }
-                                        catch (IgniteCheckedException e) {
-                                            U.error(log, "Failed to load marshaller cache entries: " + e, e);
-                                        }
-                                    }
-                                });
-                            }
-                        }
-
-                        latch.countDown();
                     }
+                });
+            }
+        }
 
+        latch.countDown();
+    }
 
     /**
      * Release marshaller context.
