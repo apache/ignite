@@ -21,6 +21,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
     using System.Collections.Concurrent;
     using System.Collections.Generic;
     using System.Linq;
+    using System.Threading;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Affinity;
     using Apache.Ignite.Core.Cache.Affinity.Fair;
@@ -239,6 +240,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         [Test]
         public void TestInheritFairAffinity()
         {
+            Assert.Greater(RendezvousAffinityFunctionEx.AssignCount, 2);
+
             var caches = new[]
             {
                 _ignite.GetCache<int, int>(CacheNameFair),
@@ -269,6 +272,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         [Test]
         public void TestInheritRendezvousAffinity()
         {
+            Assert.Greater(RendezvousAffinityFunctionEx.AssignCount, 2);
+
             var caches = new[]
             {
                 _ignite.GetCache<int, int>(CacheNameRendezvous),
@@ -359,6 +364,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         [Serializable]
         private class FairAffinityFunctionEx : FairAffinityFunction
         {
+            public static int AssignCount;
+
             private static readonly Dictionary<int, int> PartitionMap = new Dictionary<int, int> {{1, 2}, {2, 3}};
 
             public override int Partitions
@@ -384,13 +391,19 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
             public override IEnumerable<IEnumerable<IClusterNode>> AssignPartitions(AffinityFunctionContext context)
             {
-                return base.AssignPartitions(context).Reverse();
+                var res = base.AssignPartitions(context).Reverse();
+
+                Interlocked.Increment(ref AssignCount);
+
+                return res;
             }
         }
 
         [Serializable]
         private class RendezvousAffinityFunctionEx : RendezvousAffinityFunction
         {
+            public static int AssignCount;
+
             private static readonly Dictionary<int, int> PartitionMap = new Dictionary<int, int> {{1, 3}, {2, 4}};
 
             public override int Partitions
@@ -416,7 +429,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
             public override IEnumerable<IEnumerable<IClusterNode>> AssignPartitions(AffinityFunctionContext context)
             {
-                return base.AssignPartitions(context).Reverse();
+                var res = base.AssignPartitions(context).Reverse();
+
+                Interlocked.Increment(ref AssignCount);
+
+                return res;
             }
         }
     }

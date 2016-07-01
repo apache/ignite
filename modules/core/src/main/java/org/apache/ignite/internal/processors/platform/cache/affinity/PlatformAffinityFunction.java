@@ -168,9 +168,13 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
                 // We can not restore original AffinityFunctionContext after the call to platform,
                 // due to DiscoveryEvent (when node leaves, we can't get it by id anymore).
                 // Secondly, AffinityFunctionContext can't be changed by the user.
-                baseTarget.setCurrentAffinityFunctionContext(affCtx);
+                if (baseTarget != null)
+                    baseTarget.setCurrentAffinityFunctionContext(affCtx);
+
                 ctx.gateway().affinityFunctionAssignPartitions(ptr, outMem.pointer(), inMem.pointer());
-                baseTarget.setCurrentAffinityFunctionContext(null);
+
+                if (baseTarget != null)
+                    baseTarget.setCurrentAffinityFunctionContext(null);
 
                 // Read result
                 return PlatformAffinityFunctionSerializer.readPartitionAssignment(ctx.reader(inMem), ctx);

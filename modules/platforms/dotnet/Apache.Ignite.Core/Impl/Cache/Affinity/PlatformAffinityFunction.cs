@@ -67,8 +67,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
         /** <inheritdoc /> */
         public IEnumerable<IEnumerable<IClusterNode>> AssignPartitions(AffinityFunctionContext context)
         {
-            return DoOutInOp((int) Op.AssignPartitions, context.Write, s =>
-                AffinityFunctionSerializer.ReadPartitions(s, Marshaller));
+            return DoInOp((int) Op.AssignPartitions, s => AffinityFunctionSerializer.ReadPartitions(s, Marshaller));
         }
     }
 }

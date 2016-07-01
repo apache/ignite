@@ -17,7 +17,6 @@
 
 namespace Apache.Ignite.Core.Cache.Affinity
 {
-    using System;
     using System.Collections.Generic;
     using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
@@ -68,45 +67,6 @@ namespace Apache.Ignite.Core.Cache.Affinity
                 for (var i = 0; i < cnt; i++)
                     _previousAssignment.Add(IgniteUtils.ReadNodes(reader));
             }
-        }
-
-        /// <summary>
-        /// Writes this instance to the specified writer.
-        /// </summary>
-        /// <param name="writer">The writer.</param>
-        internal void Write(IBinaryRawWriter writer)
-        {
-            Debug.Assert(writer != null);
-
-            IgniteUtils.WriteNodes(writer, _currentTopologySnapshot);
-            writer.WriteInt(_backups);
-            writer.WriteLong(_currentTopologyVersion.Version);
-            writer.WriteInt(_currentTopologyVersion.MinorVersion);
-            WriteDiscoveryEvent(writer, _discoveryEvent);
-
-            // Prev assignment
-            if (_previousAssignment != null)
-            {
-                writer.WriteInt(_previousAssignment.Count);
-
-                foreach (var nodes in _previousAssignment)
-                    IgniteUtils.WriteNodes(writer, nodes);
-            }
-            else
-                writer.WriteInt(0);
-        }
-
-        /// <summary>
-        /// Writes the discovery event.
-        /// </summary>
-        private static void WriteDiscoveryEvent(IBinaryRawWriter writer, DiscoveryEvent evt)
-        {
-            // NOTE: this method intentionally writes only part of the DiscoveryEvent properties.
-            // Java side does not need others.
-            writer.WriteGuid(evt.Node == null ? (Guid?) null : evt.Node.Id);
-            writer.WriteString(evt.Message);
-            writer.WriteInt(evt.Type);
-            writer.WriteGuid(evt.EventNode == null ? (Guid?) null : evt.EventNode.Id);
         }
 
         /// <summary>
