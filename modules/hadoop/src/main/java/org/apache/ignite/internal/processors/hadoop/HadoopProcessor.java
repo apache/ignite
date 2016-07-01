@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.hadoop.jobtracker.HadoopJobTracker;
 import org.apache.ignite.internal.processors.hadoop.shuffle.HadoopShuffle;
 import org.apache.ignite.internal.processors.hadoop.taskexecutor.HadoopEmbeddedTaskExecutor;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.internal.util.typedef.internal.U;
 
@@ -190,14 +191,13 @@ public class HadoopProcessor extends HadoopProcessorAdapter {
     @Override public void validateEnvironment() throws IgniteCheckedException {
         // Perform some static checks as early as possible, so that any recoverable exceptions are thrown here.
         try {
-            HadoopLocations loc = HadoopClasspathUtils.hadoopLocations();
+            HadoopLocations loc = HadoopClasspathUtils.locations();
 
-            if (loc.home() != null)
-                U.quietAndInfo(log, "HADOOP_HOME is set to " + loc.home());
+            if (!F.isEmpty(loc.home()))
+                U.quietAndInfo(log, HadoopClasspathUtils.HOME + " is set to " + loc.home());
 
-            U.quietAndInfo(log, "HADOOP_COMMON_HOME is set to " + loc.commonHome());
-            U.quietAndInfo(log, "HADOOP_HDFS_HOME is set to " + loc.hdfsHome());
-            U.quietAndInfo(log, "HADOOP_MAPRED_HOME is set to " + loc.mapredHome());
+            U.quietAndInfo(log, "Resolved Hadoop classpath locations: " + loc.common() + ", " + loc.hdfs() + ", " +
+                loc.mapred());
         }
         catch (IOException ioe) {
             throw new IgniteCheckedException(ioe.getMessage(), ioe);
