@@ -314,7 +314,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
             Assert.AreEqual(PartitionCount, aff.Partitions);
             Assert.AreEqual(6, aff.GetPartition(33));
-            Assert.AreEqual(7, aff.GetPartition(34));
+            Assert.AreEqual(4, aff.GetPartition(34));
         }
 
         [Serializable]
