@@ -21,10 +21,7 @@
 
 module.exports = {
     implements: 'services/cache',
-    inject: ['require(lodash)',
-        'mongo',
-        'services/space',
-        'errors']
+    inject: ['require(lodash)', 'mongo', 'services/space', 'errors']
 };
 
 module.exports.factory = (_, mongo, spaceService, errors) => {
@@ -37,7 +34,7 @@ module.exports.factory = (_, mongo, spaceService, errors) => {
     /**
      * Update existing cache
      * @param {Object} cache - The cache for updating
-     * @returns {Promise.<Integer>} that resolves cache id
+     * @returns {Promise.<Number>} that resolves cache id
      */
     const update = (cache) => {
         const cacheId = cache._id;
@@ -53,7 +50,7 @@ module.exports.factory = (_, mongo, spaceService, errors) => {
     /**
      * Create new cache.
      * @param {Object} cache - The cache for creation.
-     * @returns {Promise.<Integer>} that resolves cache id.
+     * @returns {Promise.<Number>} that resolves cache id.
      */
     const create = (cache) => {
         return mongo.Cache.create(cache)
@@ -70,8 +67,8 @@ module.exports.factory = (_, mongo, spaceService, errors) => {
 
     /**
      * Remove all caches by space ids.
-     * @param {Integer[]} spaceIds - The space ids for cache deletion.
-     * @returns {Promise.<Integer>} that resolves number of affected rows.
+     * @param {Number[]} spaceIds - The space ids for cache deletion.
+     * @returns {Promise.<Number>} that resolves number of affected rows.
      */
     const removeAllBySpaces = (spaceIds) => {
         return mongo.Cluster.update({space: {$in: spaceIds}}, {caches: []}, {multi: true}).exec()
@@ -86,7 +83,7 @@ module.exports.factory = (_, mongo, spaceService, errors) => {
         /**
          * Create or update cache.
          * @param {Object} cache - The cache.
-         * @returns {Promise.<Integer>} that resolves cache id of merge operation.
+         * @returns {Promise.<Number>} that resolves cache id of merge operation.
          */
         static merge(cache) {
             if (cache._id)
@@ -122,7 +119,7 @@ module.exports.factory = (_, mongo, spaceService, errors) => {
          * @returns {Promise.<{rowsAffected}>} - The number of affected rows.
          */
         static remove(cacheId) {
-            if(!cacheId)
+            if (!cacheId)
                 throw new errors.IllegalArgumentException('Cache id can not be undefined or null');
 
             return mongo.Cluster.update({caches: {$in: [cacheId]}}, {$pull: {caches: cacheId}}, {multi: true}).exec()

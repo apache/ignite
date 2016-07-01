@@ -21,7 +21,7 @@ import { assert } from 'chai';
 
 const { nonBuiltInClass, fullClassName, validIdentifier, validPackage, packageSpecified, isKeywords, isJavaPrimitive} = JavaTypes[1]();
 
-describe('JavaTypes Service Test', () => {
+describe('JavaTypesTestsSuite', () => {
     describe('nonBuiltInClass', () => {
         it('BigDecimal', () => {
             assert.equal(nonBuiltInClass('BigDecimal'), false);

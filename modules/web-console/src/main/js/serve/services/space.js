@@ -25,7 +25,6 @@ module.exports = {
 };
 
 module.exports.factory = (mongo, errors) => {
-
     class SpaceService {
         /**
          * Query for user spaces.
@@ -38,7 +37,7 @@ module.exports.factory = (mongo, errors) => {
             return mongo.Space.find({owner: userId, demo: !!demo}).lean().exec()
                 .then((spaces) => {
                     if (!spaces.length)
-                        throw new errors.NotFoundException('Spaces not found');
+                        throw new errors.NotFoundException('Failed to find space');
 
                     return spaces;
                 });
@@ -55,7 +54,6 @@ module.exports.factory = (mongo, errors) => {
             return this.spaces(userId, demo)
                 .then((spaces) => spaces.map((space) => space._id));
         }
-
     }
 
     return SpaceService;

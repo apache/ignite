@@ -25,25 +25,23 @@ let cacheService;
 let mongo;
 let errors;
 
-suite('CacheService', () => {
-
+suite('CacheServiceTestsSuite', () => {
     const prepareUserSpaces = () => {
         return mongo.Account.create(testAccounts)
             .then((accounts) => {
-                return Promise.all(accounts.map((account)=> {
-                    return mongo.Space.create([
+                return Promise.all(accounts.map((account) => mongo.Space.create([
                         {name: 'Personal space', owner: account._id, demo: false},
                         {name: 'Demo space', owner: account._id, demo: true}
                     ])
-                }))
-                    .then((spaces)=> {
-                        return [accounts, spaces];
-                    });
+                ))
+                    .then((spaces) => [accounts, spaces]);
             });
     };
 
     suiteSetup(() => {
-        return Promise.all([fireUp('services/cache'), fireUp('mongo'), fireUp('errors')])
+        return Promise.all([fireUp('services/cache'),
+            fireUp('mongo'),
+            fireUp('errors')])
             .then(([_cacheService, _mongo, _errors]) => {
                 mongo = _mongo;
                 cacheService = _cacheService;
@@ -59,99 +57,98 @@ suite('CacheService', () => {
         ]);
     });
 
-    test('Cache merge.', (done) => {
+    test('Create new cache', (done) => {
         cacheService.merge(testCaches[0])
             .then((cacheId) => {
                 assert.isNotNull(cacheId);
 
                 return cacheId;
             })
-            .then((cacheId) => {
-                return mongo.Cache.findById(cacheId)
-                    .then((cache) => {
-                        assert.isNotNull(cache);
-                    })
+            .then((cacheId) => mongo.Cache.findById(cacheId))
+            .then((cache) => {
+                assert.isNotNull(cache);
             })
             .then(done)
             .catch(done);
     });
 
-    test('Try to save same cache twice.', (done) => {
+    test('Update existed cache', (done) => {
+        const newName = 'NewUniqueName';
+
+        cacheService.merge(testCaches[0])
+            .then((cacheId) => {
+                const cacheBeforeMerge = {...testCaches[0], _id: cacheId, name: newName};
+
+                return cacheService.merge(cacheBeforeMerge);
+            })
+            .then((cacheId) => mongo.Cache.findById(cacheId))
+            .then((cacheAfterMerge) => {
+                assert.equal(newName, cacheAfterMerge.name);
+            })
+            .then(done)
+            .catch(done);
+    });
+
+    test('Create duplicated cache', (done) => {
         cacheService.merge(testCaches[0])
             .then(() => cacheService.merge(testCaches[0]))
             .catch((err) => {
                 assert.instanceOf(err, errors.DuplicateKeyException);
+
                 done();
             });
     });
 
-    test('Try to update cache.', (done) => {
-        cacheService.merge(testCaches[0])
-            .then((cacheId) => {
-                const cacheBeforeMerge = {...testCaches[0], _id: cacheId};
-                cacheBeforeMerge.name = 'NewUniqueName';
-
-                return cacheService.merge(cacheBeforeMerge)
-                    .then((cacheId) => {
-                        return mongo.Cache.findById(cacheId)
-                            .then((cacheAfterMerge) => {
-                                assert.equal(cacheBeforeMerge.name, cacheAfterMerge.name);
-                            })
-                            .then(done);
-                    });
-            })
-            .catch(done);
-    });
-
-
-    test('Remove cache.', (done) => {
+    test('Remove existed cache', (done) => {
         cacheService.merge(testCaches[0])
             .then((cacheId) => {
                 return mongo.Cache.findById(cacheId)
                     .then((cache) => cache._id)
                     .then(cacheService.remove)
-                    .then((results) => {
-                        assert.equal(results.rowsAffected, 1);
-
-                        return mongo.Cache.findById(cacheId)
-                            .then((notFoundCache) => {
-                                assert.isNull(notFoundCache);
-                            });
+                    .then(({rowsAffected}) => {
+                        assert.equal(rowsAffected, 1);
+                    })
+                    .then(() => mongo.Cache.findById(cacheId))
+                    .then((notFoundCache) => {
+                        assert.isNull(notFoundCache);
                     });
             })
             .then(done)
             .catch(done);
     });
 
-    test('Remove null cache must be throw exception.', (done) => {
+    test('Remove missed cache', (done) => {
         cacheService.merge(testCaches[0])
-            .then(()=> cacheService.remove())
+            .then(() => cacheService.remove())
             .catch((err) => {
                 assert.instanceOf(err, errors.IllegalArgumentException);
+
                 done();
-            })
+            });
     });
 
+    test('Remove cache without identifier', (done) => {
+        // TODO IGNITE-3262 Add test.
+        done();
+    });
 
-    test('Remove all caches by user.', (done) => {
+    test('Remove all caches in space', (done) => {
         prepareUserSpaces()
             .then(([accounts, spaces]) => {
                 const currentUser = accounts[0];
                 const userCache = {...testCaches[0], space: spaces[0][0]._id};
 
                 return cacheService.merge(userCache)
-                    .then(() => {
-                        return cacheService.removeAll(currentUser._id, false)
-                            .then(({rowsAffected})=> {
-                                assert.equal(rowsAffected, 1);
-                            })
-                    });
+                    .then(() => cacheService.removeAll(currentUser._id, false));
+            })
+            .then(({rowsAffected}) => {
+                assert.equal(rowsAffected, 1);
             })
             .then(done)
             .catch(done);
     });
 
-    test('Load all caches by space.', (done) => {
+    test('Get all caches by space', (done) => {
         prepareUserSpaces()
             .then(([accounts, spaces]) => {
                 const currentUser = accounts[0];
@@ -170,9 +167,18 @@ suite('CacheService', () => {
             .catch(done);
     });
 
-    // TODO
-    // test('Test link entities on merge', () => {})
+    test('Update linked entities on update cache', (done) => {
+        // TODO IGNITE-3262 Add test.
+        done();
+    });
 
-    // TODO
-    // test('Test link entities on remove', () => {})
+    test('Update linked entities on remove cache', (done) => {
+        // TODO IGNITE-3262 Add test.
+        done();
+    });
+
+    test('Update linked entities on remove all caches in space', (done) => {
+        // TODO IGNITE-3262 Add test.
+        done();
+    });
 });
