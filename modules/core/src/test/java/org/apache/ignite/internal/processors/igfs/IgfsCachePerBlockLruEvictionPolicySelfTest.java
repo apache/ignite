@@ -487,7 +487,8 @@ public class IgfsCachePerBlockLruEvictionPolicySelfTest extends IgfsCommonAbstra
      * @param curBlocks Current blocks.
      * @param curBytes Current bytes.
      */
-    private void checkEvictionPolicy(final int curBlocks, final long curBytes) throws IgniteInterruptedCheckedException {
+    private void checkEvictionPolicy(final int curBlocks, final long curBytes)
+        throws IgniteInterruptedCheckedException {
         assert GridTestUtils.waitForCondition(new GridAbsPredicate() {
             @Override public boolean apply() {
                 return evictPlc.getCurrentBlocks() == curBlocks && evictPlc.getCurrentSize() == curBytes;

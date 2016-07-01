@@ -136,7 +136,8 @@ public class IgfsModeResolverSelfTest extends TestCase {
         for (IgfsMode m: IgfsMode.values()) {
             if (m != IgfsMode.PRIMARY) {
                 try {
-                    IgfsModeResolver r = new IgfsModeResolver(PRIMARY, Arrays.asList(new T2<>(new IgfsPath("/a/"), DUAL_ASYNC)));
+                    IgfsModeResolver r = new IgfsModeResolver(PRIMARY, Arrays.asList(new T2<>(new IgfsPath("/a/"),
+                        DUAL_ASYNC)));
 
                     fail("IgniteCheckedException expected");
                 }
