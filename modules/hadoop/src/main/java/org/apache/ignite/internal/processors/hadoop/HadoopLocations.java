@@ -25,27 +25,42 @@ public class HadoopLocations {
     private final String home;
 
     /** Common home. */
-    private final String commonHome;
+    private final String common;
 
     /** HDFS home. */
-    private final String hdfsHome;
+    private final String hdfs;
 
     /** Mapred home. */
-    private final String mapredHome;
+    private final String mapred;
+
+    /** Whether common home exists. */
+    private final boolean commonExists;
+
+    /** Whether HDFS home exists. */
+    private final boolean hdfsExists;
+
+    /** Whether mapred home exists. */
+    private final boolean mapredExists;
 
     /**
      * Constructor.
      *
      * @param home Hadoop home.
-     * @param commonHome Common home.
-     * @param hdfsHome HDFS home.
-     * @param mapredHome Mapred home.
+     * @param common Common home.
+     * @param hdfs HDFS home.
+     * @param mapred Mapred home.
      */
-    public HadoopLocations(String home, String commonHome, String hdfsHome, String mapredHome) {
+    public HadoopLocations(String home, String common, String hdfs, String mapred) {
+        assert common != null && hdfs != null && mapred != null;
+
         this.home = home;
-        this.commonHome = commonHome;
-        this.hdfsHome = hdfsHome;
-        this.mapredHome = mapredHome;
+        this.common = common;
+        this.hdfs = hdfs;
+        this.mapred = mapred;
+
+        commonExists = HadoopClasspathUtils.exists(common);
+        hdfsExists = HadoopClasspathUtils.exists(hdfs);
+        mapredExists = HadoopClasspathUtils.exists(mapred);
     }
 
     /**
@@ -58,21 +73,51 @@ public class HadoopLocations {
     /**
      * @return Common home.
      */
-    public String commonHome() {
-        return commonHome;
+    public String common() {
+        return common;
     }
 
     /**
      * @return HDFS home.
      */
-    public String hdfsHome() {
-        return hdfsHome;
+    public String hdfs() {
+        return hdfs;
     }
 
     /**
      * @return Mapred home.
      */
-    public String mapredHome() {
-        return mapredHome;
+    public String mapred() {
+        return mapred;
+    }
+
+    /**
+     * @return Whether common home exists.
+     */
+    public boolean commonExists() {
+        return commonExists;
+    }
+
+    /**
+     * @return Whether HDFS home exists.
+     */
+    public boolean hdfsExists() {
+        return hdfsExists;
+    }
+
+    /**
+     * @return Whether mapred home exists.
+     */
+    public boolean mapredExists() {
+        return mapredExists;
+    }
+
+    /**
+     * Whether all required directories exists.
+     *
+     * @return {@code True} if exists.
+     */
+    public boolean valid() {
+        return commonExists && hdfsExists && mapredExists;
     }
 }
