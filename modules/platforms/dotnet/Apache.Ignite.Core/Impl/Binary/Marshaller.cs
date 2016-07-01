@@ -98,8 +98,6 @@ namespace Apache.Ignite.Core.Impl.Binary
             if (typeNames != null)
                 foreach (string typeName in typeNames)
                     AddUserType(cfg, new BinaryTypeConfiguration(typeName), typeResolver);
-
-            _cfg = cfg;
         }
 
         /// <summary>
