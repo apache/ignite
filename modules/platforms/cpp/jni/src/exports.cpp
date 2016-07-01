@@ -146,7 +146,6 @@ extern "C" {
         return ctx->ProcessorGetClass(static_cast<jobject>(obj), id, resLen);
     }
 
-
     long long IGNITE_CALL IgniteTargetInStreamOutLong(gcj::JniContext* ctx, void* obj, int opType, long long memPtr) {
         return ctx->TargetInStreamOutLong(static_cast<jobject>(obj), opType, memPtr);
     }
