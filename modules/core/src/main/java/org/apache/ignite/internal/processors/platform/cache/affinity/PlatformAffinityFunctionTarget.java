@@ -82,8 +82,7 @@ public class PlatformAffinityFunctionTarget extends PlatformAbstractTarget {
     }
 
     /** {@inheritDoc} */
-    @Override protected void processInStreamOutStream(int type, BinaryRawReaderEx reader,
-        BinaryRawWriterEx writer) throws IgniteCheckedException {
+    @Override protected void processOutStream(int type, BinaryRawWriterEx writer) throws IgniteCheckedException {
         if (type == OP_ASSIGN_PARTITIONS) {
             AffinityFunctionContext affCtx = currentAffCtx.get();
 
@@ -98,8 +97,10 @@ public class PlatformAffinityFunctionTarget extends PlatformAbstractTarget {
             return;
         }
 
-        super.processInStreamOutStream(type, reader, writer);
+        super.processOutStream(type, writer);
     }
+
+
 
     /**
      * Sets the context for current operation.

@@ -20,10 +20,8 @@ package org.apache.ignite.internal.processors.platform.cache.affinity;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.cache.affinity.AffinityFunctionContext;
 import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.events.DiscoveryEvent;
 import org.apache.ignite.internal.binary.BinaryRawWriterEx;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
-import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.affinity.GridAffinityFunctionContextImpl;
 import org.apache.ignite.internal.processors.platform.PlatformContext;
 import org.jetbrains.annotations.NotNull;
@@ -65,72 +63,6 @@ public class PlatformAffinityFunctionSerializer {
             for (List<ClusterNode> part : prevAssignment)
                 ctx.writeNodes(writer, part);
         }
-    }
-
-    /**
-     * Writes the affinity function context.
-     * @param reader Reader.
-     * @param ctx Platform context.
-     */
-    public static AffinityFunctionContext readAffinityFunctionContext(BinaryRawReader reader,
-        PlatformContext ctx) {
-        assert reader != null;
-        assert ctx != null;
-
-        List<ClusterNode> topSnapshot = readNodes(reader, ctx);
-        int backups = reader.readInt();
-        AffinityTopologyVersion topVer = new AffinityTopologyVersion(reader.readLong(), reader.readInt());
-
-        // NOTE: this event won't be entirely valid, since new id and timestamp will be generated.
-        // This is not an issue with current Affinity implementations,
-        // and platform only allows overriding predefined implementations.
-        DiscoveryEvent discoEvt = new DiscoveryEvent(readNode(reader, ctx), reader.readString(), reader.readInt(),
-            readNode(reader, ctx));
-
-        // Read prev assignment
-        List<List<ClusterNode>> prevAssignment = null;
-
-        int partCnt = reader.readInt();
-
-        if (partCnt > 0) {
-            prevAssignment = new ArrayList<>(partCnt);
-
-            for (int i = 0; i < partCnt; i++)
-                prevAssignment.add(readNodes(reader, ctx));
-        }
-
-        return new GridAffinityFunctionContextImpl(topSnapshot, prevAssignment, discoEvt, topVer, backups);
-    }
-
-    /**
-     * Reads nodes from a stream.
-     *
-     * @param reader Reader.
-     * @param ctx Platform context.
-     * @return Node list.
-     */
-    private static List<ClusterNode> readNodes(BinaryRawReader reader, PlatformContext ctx) {
-        assert reader != null;
-        assert ctx != null;
-
-        int nodeCnt = reader.readInt();
-        List<ClusterNode> nodes = new ArrayList<>(nodeCnt);
-
-        for (int i = 0; i < nodeCnt; i++)
-            nodes.add(readNode(reader, ctx));
-
-        return nodes;
-    }
-
-    /**
-     * Reads node from a stream.
-     *
-     * @param reader Reader.
-     * @param ctx Platform context.
-     * @return Node.
-     */
-    private static ClusterNode readNode(BinaryRawReader reader, PlatformContext ctx) {
-        return ctx.kernalContext().grid().cluster().node(reader.readUuid());
     }
 
     /**
