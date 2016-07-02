@@ -31,6 +31,11 @@ import java.util.UUID;
 import java.util.concurrent.Callable;
 import javax.cache.expiry.Duration;
 import javax.cache.expiry.ModifiedExpiryPolicy;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.EntryProcessorResult;
+import javax.cache.processor.MutableEntry;
+
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
@@ -55,6 +60,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheSqlMetadata;
 import org.apache.ignite.internal.processors.cache.transactions.IgniteInternalTx;
 import org.apache.ignite.internal.processors.rest.GridRestCommand;
 import org.apache.ignite.internal.processors.rest.GridRestResponse;
+import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandler;
 import org.apache.ignite.internal.processors.rest.handlers.GridRestCommandHandlerAdapter;
 import org.apache.ignite.internal.processors.rest.request.GridRestCacheRequest;
 import org.apache.ignite.internal.processors.rest.request.GridRestRequest;
@@ -205,22 +211,33 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         if (val == null)
             throw new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("val"));
 
+        if (!cache.containsKey(key))
+            throw new IgniteCheckedException("Failing append or prepend operation (Invalid keys are not allowed).");
+
         return ctx.closure().callLocalSafe(new Callable<Object>() {
             @Override public Object call() throws Exception {
-                try (IgniteInternalTx tx = cache.txStartEx(PESSIMISTIC, REPEATABLE_READ)) {
-                    Object curVal = cache.get(key);
+                cache.invoke(key, new EntryProcessor<Object, Object, Object>() {
+                    @Override public Object process(MutableEntry<Object, Object> entry,
+                                                    Object... objects) throws EntryProcessorException {
+                        try {
 
-                    if (curVal == null)
-                        return false;
+                            Object curVal = cache.get(key);
+                            if (curVal == null)
+                                return false;
 
-                    // Modify current value with appendix one.
-                    Object newVal = appendOrPrepend(curVal, val, !prepend);
+                            // Modify current value with appendix one.
+                            Object newVal = appendOrPrepend(curVal, val, !prepend);
 
-                    // Put new value asynchronously.
-                    cache.put(key, newVal);
+                            // Put new value asynchronously.
+                            cache.put(key, newVal);
 
-                    tx.commit();
-                }
+                            return true;
+
+                        } catch (IgniteCheckedException e) {
+                            throw new EntryProcessorException(e.getMessage());
+                        }
+                    }
+                });
 
                 return true;
             }
