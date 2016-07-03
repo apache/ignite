@@ -215,7 +215,7 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             if (prepend) {
                 throw new IgniteCheckedException("Failing prepend operation (Invalid key is not allowed).");
             } else if (!prepend) {
-                throw new IgniteCheckedException("Failing append operation (Invalid keys is not allowed).");
+                throw new IgniteCheckedException("Failing append operation (Invalid key is not allowed).");
             }
         }
         return ctx.closure().callLocalSafe(new Callable<Object>() {
