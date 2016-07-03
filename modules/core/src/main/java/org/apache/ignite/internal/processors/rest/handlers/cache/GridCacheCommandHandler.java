@@ -199,9 +199,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @throws IgniteCheckedException In case of any exception.
      */
     private static IgniteInternalFuture<?> appendOrPrepend(
-            final GridKernalContext ctx,
-            final IgniteInternalCache<Object, Object> cache,
-            final Object key, GridRestCacheRequest req, final boolean prepend) throws IgniteCheckedException {
+        final GridKernalContext ctx,
+        final IgniteInternalCache<Object, Object> cache,
+        final Object key, GridRestCacheRequest req, final boolean prepend) throws IgniteCheckedException {
         assert cache != null;
         assert key != null;
         assert req != null;
@@ -222,8 +222,8 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
             @Override
             public Object call() throws Exception {
                 try {
-
                     Object curVal = cache.get(key);
+
                     if (curVal == null)
                         return false;
 
