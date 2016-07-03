@@ -176,7 +176,13 @@ public class GridCacheCommandHandlerSelfTest extends GridCommonAbstractTest {
         req.key(key);
         req.value(newVal);
 
-        assertFalse("Expects failure due to no value in cache.", (Boolean)hnd.handleAsync(req).get().getResponse());
+        try {
+            hnd.handleAsync(req).get().getResponse();
+            fail("Expects failed with Failing append or prepend operation message.");
+        } catch (IgniteCheckedException e){
+            info("Got expected exception: " + e);
+            assertTrue(e.getMessage().startsWith("Failing"));
+        }
 
         T res;
 

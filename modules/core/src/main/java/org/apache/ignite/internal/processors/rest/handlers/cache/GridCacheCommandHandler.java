@@ -199,9 +199,9 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
      * @throws IgniteCheckedException In case of any exception.
      */
     private static IgniteInternalFuture<?> appendOrPrepend(
-        final GridKernalContext ctx,
-        final IgniteInternalCache<Object, Object> cache,
-        final Object key, GridRestCacheRequest req, final boolean prepend) throws IgniteCheckedException {
+            final GridKernalContext ctx,
+            final IgniteInternalCache<Object, Object> cache,
+            final Object key, GridRestCacheRequest req, final boolean prepend) throws IgniteCheckedException {
         assert cache != null;
         assert key != null;
         assert req != null;
@@ -211,35 +211,33 @@ public class GridCacheCommandHandler extends GridRestCommandHandlerAdapter {
         if (val == null)
             throw new IgniteCheckedException(GridRestCommandHandlerAdapter.missingParameter("val"));
 
-        if (!cache.containsKey(key))
-            throw new IgniteCheckedException("Failing append or prepend operation (Invalid keys are not allowed).");
-
+        if (!cache.containsKey(key)) {
+            if (prepend) {
+                throw new IgniteCheckedException("Failing prepend operation (Invalid key is not allowed).");
+            } else if (!prepend) {
+                throw new IgniteCheckedException("Failing append operation (Invalid keys is not allowed).");
+            }
+        }
         return ctx.closure().callLocalSafe(new Callable<Object>() {
-            @Override public Object call() throws Exception {
-                cache.invoke(key, new EntryProcessor<Object, Object, Object>() {
-                    @Override public Object process(MutableEntry<Object, Object> entry,
-                                                    Object... objects) throws EntryProcessorException {
-                        try {
+            @Override
+            public Object call() throws Exception {
+                try {
 
-                            Object curVal = cache.get(key);
-                            if (curVal == null)
-                                return false;
+                    Object curVal = cache.get(key);
+                    if (curVal == null)
+                        return false;
 
-                            // Modify current value with appendix one.
-                            Object newVal = appendOrPrepend(curVal, val, !prepend);
+                    // Modify current value with appendix one.
+                    Object newVal = appendOrPrepend(curVal, val, !prepend);
 
-                            // Put new value asynchronously.
-                            cache.put(key, newVal);
+                    // Put new value asynchronously.
+                    cache.put(key, newVal);
 
-                            return true;
+                    return true;
 
-                        } catch (IgniteCheckedException e) {
-                            throw new EntryProcessorException(e.getMessage());
-                        }
-                    }
-                });
-
-                return true;
+                } catch (IgniteCheckedException e) {
+                    throw new EntryProcessorException(e.getMessage());
+                }
             }
         }, false);
     }
