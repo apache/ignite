@@ -111,7 +111,7 @@ public class IgfsModeResolver {
      * @param prefix Prefix.
      * @return {@code true} if path starts with prefix, {@code false} if not.
      */
-    private static boolean startsWith(IgfsPath path, IgfsPath prefix) {
+    static boolean startsWith(IgfsPath path, IgfsPath prefix) {
         String pathStr = path.toString();
         String prefStr = prefix.toString();
 

@@ -726,8 +726,6 @@ public final class IgfsImpl implements IgfsEx {
                     log.debug("Rename file [src=" + src + ", dest=" + dest + ']');
 
                 IgfsMode mode = resolveMode(src);
-//
-//                Set<IgfsMode> childrenModes = modeRslvr.resolveChildrenModes(src);
 
                 if (src.equals(dest))
                     return null; // Rename to itself is a no-op.
