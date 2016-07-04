@@ -90,15 +90,6 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         }
 
         /// <summary>
-        /// Tests the inherited functions.
-        /// </summary>
-        [Test]
-        public void TestInherit()
-        {
-            // TODO
-        }
-
-        /// <summary>
         /// Validates the affinity function.
         /// </summary>
         /// <param name="cache">The cache.</param>
