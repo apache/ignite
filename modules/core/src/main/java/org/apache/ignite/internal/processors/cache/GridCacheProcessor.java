@@ -449,7 +449,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
      */
     private List<GridCacheManager> dhtManagers(GridCacheContext ctx) {
         return F.asList(ctx.store(), ctx.events(), ctx.evicts(), ctx.queries(), ctx.continuousQueries(),
-            ctx.dr(), ctx.offheap());
+            ctx.dr(), ctx.offheap(), ctx.ttl());
     }
 
     /**
@@ -461,7 +461,7 @@ public class GridCacheProcessor extends GridProcessorAdapter {
         if (ctx.config().getCacheMode() == LOCAL || !isNearEnabled(ctx))
             return Collections.emptyList();
         else
-            return F.asList(ctx.queries(), ctx.continuousQueries(), ctx.store(), ctx.offheap());
+            return F.asList(ctx.queries(), ctx.continuousQueries(), ctx.store(), ctx.offheap(), ctx.ttl());
     }
 
     /**

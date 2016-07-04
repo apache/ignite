@@ -2700,11 +2700,11 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert ttl != CU.TTL_ZERO && ttl != CU.TTL_NOT_CHANGED && ttl >= 0 : ttl;
 
         // TODO GG-11133 near cache entry cleanup ttl queue if needed.
-//        long oldExpireTime = expireTimeExtras();
-//
-//        if (addTracked && oldExpireTime != 0 && (expireTime != oldExpireTime || isStartVersion())
-//            && cctx.config().isEagerTtl())
-//            cctx.ttl().removeTrackedEntry(this);
+        long oldExpireTime = expireTimeExtras();
+
+        if (addTracked && oldExpireTime != 0 && (expireTime != oldExpireTime || isStartVersion())
+            && cctx.config().isEagerTtl() && cctx.ttl().isNearTtl())
+            cctx.ttl().removeNearTrackedEntry(this);
 
         value(val);
 
@@ -2713,10 +2713,10 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         this.ver = ver;
 
         // TODO GG-11133 near cache entry cleanup ttl queue if needed.
-//        if (addTracked && expireTime != 0 &&
-//            (expireTime != oldExpireTime || isStartVersion()) &&
-//            cctx.config().isEagerTtl())
-//            cctx.ttl().addTrackedEntry(this);
+        if (addTracked && expireTime != 0 &&
+            (expireTime != oldExpireTime || isStartVersion()) &&
+            cctx.config().isEagerTtl() && cctx.ttl().isNearTtl())
+            cctx.ttl().addNearTrackedEntry(this);
     }
 
     /**
@@ -3351,6 +3351,9 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
                     }
                     else
                         obsolete = true;
+
+                    if (cctx.ttl().isNearTtl())
+                        cctx.ttl().removeNearTrackedEntry(this);
                 }
             }
         }

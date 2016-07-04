@@ -33,8 +33,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jsr166.LongAdder8;
 
 /**
- * Eagerly removes expired entries from cache when
- * {@link CacheConfiguration#isEagerTtl()} flag is set.
+ * Eagerly removes expired entries from cache when {@link CacheConfiguration#isEagerTtl()} flag is set.
  */
 @SuppressWarnings("NakedNotify")
 public class GridCacheTtlManager extends GridCacheManagerAdapter {
@@ -47,143 +46,8 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     /** */
     private boolean cleanupEnabled;
 
-    /** {@inheritDoc} */
-    @Override protected void start0() throws IgniteCheckedException {
-        boolean cleanupDisabled = cctx.kernalContext().isDaemon() ||
-            !cctx.config().isEagerTtl() ||
-            CU.isAtomicsCache(cctx.name()) ||
-            CU.isMarshallerCache(cctx.name()) ||
-            CU.isUtilityCache(cctx.name()) ||
-            (cctx.kernalContext().clientNode() && cctx.config().getNearConfiguration() == null);
-
-        if (cleanupDisabled)
-            return;
-
-        cleanupEnabled = true;
-
-        // TODO GG-11133 for near cache use existing collection.
-        if(!cctx.isNear())
-            pentries = cctx.offheap().createPendingEntries();
-        else
-            pentries = new GridConcurrentSkipListSetEx();
-
-        cleanupWorker = new CleanupWorker();
-    }
-
-    /**
-     * @return {@code True} If eager cleanup enabled.
-     */
-    public boolean eagerCleanupEnabled() {
-        return cleanupEnabled;
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void onKernalStart0() throws IgniteCheckedException {
-        if (cleanupWorker != null)
-            new IgniteThread(cleanupWorker).start();
-    }
-
-    /** {@inheritDoc} */
-    @Override protected void onKernalStop0(boolean cancel) {
-        U.cancel(cleanupWorker);
-        U.join(cleanupWorker, log);
-    }
-
-    /**
-     * @return The size of pending entries.
-     */
-    public int pendingSize() {
-        return pentries.pendingSize();
-    }
-
-    /** {@inheritDoc} */
-    @Override public void printMemoryStats() {
-        X.println(">>>");
-        X.println(">>> TTL processor memory stats [grid=" + cctx.gridName() + ", cache=" + cctx.name() + ']');
-        X.println(">>>   pendingEntriesSize: " + pentries.pendingSize());
-    }
-
-    /**
-     * Expires entries by TTL.
-     */
-    public void expire() {
-        if (!cleanupEnabled)
-            return;
-
-        long now = U.currentTimeMillis();
-
-        GridCacheVersion obsoleteVer = null;
-
-        try {
-            while (true) {
-                // TODO GG-11133 skip cursor creation if there are no pending entries (can maintain and check size).
-                IgniteCacheOffheapManager.ExpiredEntriesCursor expiredEntriesCursor = pentries.expired(now);
-
-                // TODO GG-11231 (do not use 'while (cursor.next()) as workaround for GG-11231).
-                if (expiredEntriesCursor.next()) {
-                    GridCacheEntryEx entry = expiredEntriesCursor.get();
-
-                    if (obsoleteVer == null)
-                        obsoleteVer = cctx.versions().next();
-
-                    if (log.isTraceEnabled())
-                        log.trace("Trying to remove expired entry from cache: " + entry);
-
-                    boolean touch = true;
-
-                    while (true) {
-                        try {
-                            if (entry.onTtlExpired(obsoleteVer))
-                                touch = false;
-
-                            break;
-                        }
-                        catch (GridCacheEntryRemovedException e0) {
-                            entry = entry.context().cache().entryEx(entry.key());
-                        }
-                    }
-
-                    if (touch)
-                        entry.context().evicts().touch(entry, null);
-                }
-                else
-                    break;
-            }
-        }
-        catch (IgniteCheckedException e) {
-            U.error(log, "Failed to process expired entries: " + e, e);
-        }
-    }
-
-    /**
-     * Entry cleanup worker.
-     */
-    private class CleanupWorker extends GridWorker {
-        /**
-         * Creates cleanup worker.
-         */
-        protected CleanupWorker() {
-            super(cctx.gridName(), "ttl-cleanup-worker-" + cctx.name(), cctx.logger(GridCacheTtlManager.class));
-        }
-
-        /** {@inheritDoc} */
-        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
-            while (!isCancelled()) {
-                expire();
-
-                long time = pentries.firstExpired();
-
-                if (time > 0) {
-                    long waitTime = time - U.currentTimeMillis();
-
-                    if (waitTime > 0)
-                        U.sleep(waitTime);
-                }
-                else
-                    U.sleep(500);
-            }
-        }
-    }
+    /** */
+    private boolean nearTtl;
 
     /**
      * @param cctx1 First cache context.
@@ -229,6 +93,149 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         return res;
     }
 
+    /** {@inheritDoc} */
+    @Override protected void start0() throws IgniteCheckedException {
+        boolean cleanupDisabled = cctx.kernalContext().isDaemon() ||
+            !cctx.config().isEagerTtl() ||
+            CU.isAtomicsCache(cctx.name()) ||
+            CU.isMarshallerCache(cctx.name()) ||
+            CU.isUtilityCache(cctx.name()) ||
+            (!cctx.affinityNode() && cctx.config().getNearConfiguration() == null);
+
+        if (cleanupDisabled)
+            return;
+
+        cleanupEnabled = true;
+
+        nearTtl = !cctx.affinityNode() && cctx.config().getNearConfiguration() != null;
+
+        // TODO GG-11133 for near cache use existing collection.
+        if (nearTtl)
+            pentries = new GridConcurrentSkipListSetEx();
+        else
+            pentries = cctx.offheap().createPendingEntries();
+
+        cleanupWorker = new CleanupWorker();
+    }
+
+    /**
+     * @return {@code True} If eager cleanup enabled.
+     */
+    public boolean eagerCleanupEnabled() {
+        return cleanupEnabled;
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onKernalStart0() throws IgniteCheckedException {
+        if (cleanupWorker != null)
+            new IgniteThread(cleanupWorker).start();
+    }
+
+    /** {@inheritDoc} */
+    @Override protected void onKernalStop0(boolean cancel) {
+        U.cancel(cleanupWorker);
+        U.join(cleanupWorker, log);
+    }
+
+    /**
+     * Adds tracked entry to ttl processor.
+     *
+     * @param entry Entry to add.
+     */
+    public void addNearTrackedEntry(GridCacheMapEntry entry) {
+        assert Thread.holdsLock(entry);
+        assert cleanupWorker != null;
+        assert nearTtl = true;
+
+        ((GridConcurrentSkipListSetEx)pentries).add(new EntryWrapper(entry));
+    }
+
+    /**
+     * @retunr true if the TTL manager is set up for near client cache
+     */
+    public boolean isNearTtl() {
+        return nearTtl;
+    }
+
+    /**
+     * @param entry Entry to remove.
+     */
+    public void removeNearTrackedEntry(GridCacheEntryEx entry) {
+        assert Thread.holdsLock(entry);
+        assert cleanupWorker != null;
+        assert nearTtl = true;
+
+        ((GridConcurrentSkipListSetEx)pentries).remove(new EntryWrapper(entry));
+    }
+
+    /**
+     * @return The size of pending entries.
+     */
+    public int pendingSize() {
+        return pentries.pendingSize();
+    }
+
+    /** {@inheritDoc} */
+    @Override public void printMemoryStats() {
+        X.println(">>>");
+        X.println(">>> TTL processor memory stats [grid=" + cctx.gridName() + ", cache=" + cctx.name() + ']');
+        X.println(">>>   pendingEntriesSize: " + pentries.pendingSize());
+    }
+
+    /**
+     * Expires entries by TTL.
+     */
+    public void expire() {
+        if (!cleanupEnabled)
+            return;
+
+        long now = U.currentTimeMillis();
+
+        GridCacheVersion obsoleteVer = null;
+
+        try {
+            while (true) {
+                // TODO GG-11133 skip cursor creation if there are no pending entries (can maintain and check size).
+
+                IgniteCacheOffheapManager.ExpiredEntriesCursor expiredEntriesCursor = pentries.expired(now);
+
+                // TODO GG-11231 (do not use 'while (cursor.next()) as workaround for GG-11231).
+                if (expiredEntriesCursor.next()) {
+                    GridCacheEntryEx pendingEntry = expiredEntriesCursor.get();
+
+                    if (obsoleteVer == null)
+                        obsoleteVer = cctx.versions().next();
+
+                    if (log.isTraceEnabled())
+                        log.trace("Trying to remove expired entry from cache: " + pendingEntry);
+
+                    boolean touch = true;
+
+                    GridCacheEntryEx entry = pendingEntry;
+                    while (true) {
+                        try {
+                            if (entry.onTtlExpired(obsoleteVer))
+                                touch = false;
+
+                            break;
+                        }
+                        catch (GridCacheEntryRemovedException e0) {
+                            entry = entry.context().cache().entryEx(entry.key());
+                        }
+                    }
+
+                    if (touch)
+                        entry.context().evicts().touch(entry, null);
+                }
+                else
+                    break;
+            }
+        }
+        catch (IgniteCheckedException e) {
+            U.error(log, "Failed to process expired entries: " + e, e);
+        }
+    }
+
     /**
      * Entry wrapper.
      */
@@ -237,12 +244,12 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         private final long expireTime;
 
         /** Entry. */
-        private final GridCacheMapEntry entry;
+        private final GridCacheEntryEx entry;
 
         /**
          * @param entry Cache entry to create wrapper for.
          */
-        private EntryWrapper(GridCacheMapEntry entry) {
+        private EntryWrapper(GridCacheEntryEx entry) {
             expireTime = entry.expireTimeUnlocked();
 
             assert expireTime != 0;
@@ -290,12 +297,8 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
     }
 
     /**
-     * Provides additional method {@code #sizex()}. NOTE: Only the following methods supports this addition:
-     * <ul>
-     *     <li>{@code #add()}</li>
-     *     <li>{@code #remove()}</li>
-     *     <li>{@code #pollFirst()}</li>
-     * <ul/>
+     * Provides additional method {@code #sizex()}. NOTE: Only the following methods supports this addition: <ul>
+     * <li>{@code #add()}</li> <li>{@code #remove()}</li> <li>{@code #pollFirst()}</li> <ul/>
      */
     private static class GridConcurrentSkipListSetEx extends GridConcurrentSkipListSet<EntryWrapper>
         implements IgniteCacheOffheapManager.PendingEntries {
@@ -346,12 +349,13 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
         public IgniteCacheOffheapManager.ExpiredEntriesCursor expired(final long time) throws IgniteCheckedException {
             return new IgniteCacheOffheapManager.ExpiredEntriesCursor() {
                 private EntryWrapper cur;
-                @Override public boolean next() throws IgniteCheckedException {
+
+                @Override public boolean next() {
                     cur = firstx();
                     return cur != null && cur.expireTime <= time;
                 }
 
-                @Override public GridCacheEntryEx get() throws IgniteCheckedException {
+                @Override public GridCacheEntryEx get() {
                     return (cur != null) ? cur.entry : null;
                 }
             };
@@ -365,6 +369,36 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
             EntryWrapper first = firstx();
 
             return (first != null) ? first.expireTime : 0;
+        }
+    }
+
+    /**
+     * Entry cleanup worker.
+     */
+    private class CleanupWorker extends GridWorker {
+        /**
+         * Creates cleanup worker.
+         */
+        protected CleanupWorker() {
+            super(cctx.gridName(), "ttl-cleanup-worker-" + cctx.name(), cctx.logger(GridCacheTtlManager.class));
+        }
+
+        /** {@inheritDoc} */
+        @Override protected void body() throws InterruptedException, IgniteInterruptedCheckedException {
+            while (!isCancelled()) {
+                expire();
+
+                long time = pentries.firstExpired();
+
+                if (time > 0) {
+                    long waitTime = time - U.currentTimeMillis();
+
+                    if (waitTime > 0)
+                        U.sleep(waitTime);
+                }
+                else
+                    U.sleep(500);
+            }
         }
     }
 }
