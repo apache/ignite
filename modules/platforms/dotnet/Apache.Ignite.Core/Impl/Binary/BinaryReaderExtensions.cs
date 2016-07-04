@@ -67,5 +67,29 @@ namespace Apache.Ignite.Core.Impl.Binary
 
             return TimeSpan.FromMilliseconds(ms);
         }
+
+        /// <summary>
+        /// Reads the nullable TimeSpan.
+        /// </summary>
+        public static TimeSpan? ReadTimeSpanNullable(this IBinaryRawReader reader)
+        {
+            return reader.ReadBoolean() ? reader.ReadLongAsTimespan() : (TimeSpan?) null;
+        }
+        
+        /// <summary>
+        /// Reads the nullable int.
+        /// </summary>
+        public static int? ReadIntNullable(this IBinaryRawReader reader)
+        {
+            return reader.ReadBoolean() ? reader.ReadInt() : (int?) null;
+        }
+
+        /// <summary>
+        /// Reads the nullable bool.
+        /// </summary>
+        public static bool? ReadBooleanNullable(this IBinaryRawReader reader)
+        {
+            return reader.ReadBoolean() ? reader.ReadBoolean() : (bool?) null;
+        }
     }
 }

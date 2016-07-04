@@ -27,6 +27,7 @@ endif
 
 if COND_CORE
   MAYBE_CORE = core
+  MAYBE_JNI = jni
 
 if COND_TESTS
     MAYBE_CORE_TESTS = core-test
@@ -34,13 +35,15 @@ endif
 endif
 
 if COND_NODE
+  MAYBE_CORE = core
+  MAYBE_JNI = jni
   MAYBE_NODE = ignite
 endif
 
 SUBDIRS = \
     common \
     binary \
-    jni \
+    $(MAYBE_JNI) \
     $(MAYBE_ODBC) \
     $(MAYBE_CORE) \
     $(MAYBE_NODE) \

@@ -27,6 +27,10 @@ namespace Apache.Ignite.Core.Cache.Configuration
     using System.Linq;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
+    using Apache.Ignite.Core.Cache.Affinity;
+    using Apache.Ignite.Core.Cache.Affinity.Fair;
+    using Apache.Ignite.Core.Cache.Affinity.Rendezvous;
+    using Apache.Ignite.Core.Cache.Eviction;
     using Apache.Ignite.Core.Cache.Store;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Impl.Binary;
@@ -269,10 +273,13 @@ namespace Apache.Ignite.Core.Cache.Configuration
             QueryEntities = count == 0 ? null : Enumerable.Range(0, count).Select(x => new QueryEntity(reader)).ToList();
 
             NearConfiguration = reader.ReadBoolean() ? new NearCacheConfiguration(reader) : null;
+
+            EvictionPolicy = EvictionPolicyBase.Read(reader);
+            AffinityFunction = AffinityFunctionBase.Read(reader);
         }
 
         /// <summary>
-        /// Writes this instane to the specified writer.
+        /// Writes this instance to the specified writer.
         /// </summary>
         /// <param name="writer">The writer.</param>
         internal void Write(IBinaryRawWriter writer)
@@ -339,6 +346,9 @@ namespace Apache.Ignite.Core.Cache.Configuration
             }
             else
                 writer.WriteBoolean(false);
+
+            EvictionPolicyBase.Write(writer, EvictionPolicy);
+            AffinityFunctionBase.Write(writer, AffinityFunction);
         }
 
         /// <summary>
@@ -581,7 +591,7 @@ namespace Apache.Ignite.Core.Cache.Configuration
         public bool ReadFromBackup { get; set; }
 
         /// <summary>
-        /// Gets or sets flag indicating whether copy of of the value stored in cache should be created
+        /// Gets or sets flag indicating whether copy of the value stored in cache should be created
         /// for cache operation implying return value. 
         /// </summary>
         [DefaultValue(DefaultCopyOnRead)]
@@ -648,5 +658,19 @@ namespace Apache.Ignite.Core.Cache.Configuration
         /// Gets or sets the near cache configuration.
         /// </summary>
         public NearCacheConfiguration NearConfiguration { get; set; }
+
+        /// <summary>
+        /// Gets or sets the eviction policy.
+        /// Null value means disabled evictions.
+        /// </summary>
+        public IEvictionPolicy EvictionPolicy { get; set; }
+
+        /// <summary>
+        /// Gets or sets the affinity function to provide mapping from keys to nodes.
+        /// <para />
+        /// Predefined implementations: 
+        /// <see cref="RendezvousAffinityFunction"/>, <see cref="FairAffinityFunction"/>.
+        /// </summary>
+        public IAffinityFunction AffinityFunction { get; set; }
     }
 }

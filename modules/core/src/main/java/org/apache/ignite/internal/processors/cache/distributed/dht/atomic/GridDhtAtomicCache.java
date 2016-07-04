@@ -39,6 +39,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.internal.IgniteInternalFuture;
+import org.apache.ignite.internal.NodeStoppingException;
 import org.apache.ignite.internal.cluster.ClusterTopologyCheckedException;
 import org.apache.ignite.internal.processors.affinity.AffinityTopologyVersion;
 import org.apache.ignite.internal.processors.cache.CacheEntryPredicate;
@@ -1370,8 +1371,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                     null,
                                     /*swap*/true,
                                     /*read-through*/false,
-                                    /*fail-fast*/true,
-                                    /*unmarshal*/true,
                                     /**update-metrics*/false,
                                     /*event*/!skipVals,
                                     /*temporary*/false,
@@ -1466,15 +1465,62 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     ) {
         IgniteInternalFuture<Object> forceFut = preldr.request(req.keys(), req.topologyVersion());
 
-        if (forceFut == null || forceFut.isDone())
+        if (forceFut == null || forceFut.isDone()) {
+            try {
+                if (forceFut != null)
+                    forceFut.get();
+            }
+            catch (NodeStoppingException e) {
+                return;
+            }
+            catch (IgniteCheckedException e) {
+                onForceKeysError(nodeId, req, completionCb, e);
+
+                return;
+            }
+
             updateAllAsyncInternal0(nodeId, req, completionCb);
+        }
         else {
             forceFut.listen(new CI1<IgniteInternalFuture<Object>>() {
-                @Override public void apply(IgniteInternalFuture<Object> t) {
+                @Override public void apply(IgniteInternalFuture<Object> fut) {
+                    try {
+                        fut.get();
+                    }
+                    catch (NodeStoppingException e) {
+                        return;
+                    }
+                    catch (IgniteCheckedException e) {
+                        onForceKeysError(nodeId, req, completionCb, e);
+
+                        return;
+                    }
+
                     updateAllAsyncInternal0(nodeId, req, completionCb);
                 }
             });
         }
+    }
+
+    /**
+     * @param nodeId Node ID.
+     * @param req Update request.
+     * @param completionCb Completion callback.
+     * @param e Error.
+     */
+    private void onForceKeysError(final UUID nodeId,
+        final GridNearAtomicUpdateRequest req,
+        final CI2<GridNearAtomicUpdateRequest, GridNearAtomicUpdateResponse> completionCb,
+        IgniteCheckedException e
+    ) {
+        GridNearAtomicUpdateResponse res = new GridNearAtomicUpdateResponse(ctx.cacheId(),
+            nodeId,
+            req.futureVersion(),
+            ctx.deploymentEnabled());
+
+        res.addFailedKeys(req.keys(), e);
+
+        completionCb.apply(req, res);
     }
 
     /**
@@ -1800,8 +1846,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         null,
                         /*read swap*/true,
                         /*read through*/true,
-                        /*fail fast*/false,
-                        /*unmarshal*/true,
                         /*metrics*/true,
                         /*event*/true,
                         /*temporary*/true,
@@ -1826,7 +1870,10 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             if (invokeRes == null)
                                 invokeRes = new GridCacheReturn(node.isLocal());
 
-                            invokeRes.addEntryProcessResult(ctx, entry.key(), invokeEntry.key(), computed, null);
+                            computed = ctx.unwrapTemporary(computed);
+
+                            invokeRes.addEntryProcessResult(ctx, entry.key(), invokeEntry.key(), computed, null,
+                                req.keepBinary());
                         }
 
                         if (!invokeEntry.modified())
@@ -1840,7 +1887,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                         if (invokeRes == null)
                             invokeRes = new GridCacheReturn(node.isLocal());
 
-                        invokeRes.addEntryProcessResult(ctx, entry.key(), invokeEntry.key(), null, e);
+                        invokeRes.addEntryProcessResult(ctx, entry.key(), invokeEntry.key(), null, e, req.keepBinary());
 
                         updated = old;
                     }
@@ -1957,8 +2004,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                              null,
                             /*read swap*/true,
                             /*read through*/ctx.loadPreviousValue(),
-                            /*fail fast*/false,
-                            /*unmarshal*/true,
                             /*metrics*/true,
                             /*event*/true,
                             /*temporary*/true,
@@ -1974,8 +2019,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                                 entry.key(),
                                 old,
                                 req.keepBinary()),
-                            updated.value(
-                                ctx.cacheObjectContext(),
+                            ctx.unwrapBinaryIfNeeded(
+                                updated, 
+                                req.keepBinary(), 
                                 false));
 
                         if (val == null)
@@ -2003,8 +2049,6 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             null,
                             /*read swap*/true,
                             /*read through*/ctx.loadPreviousValue(),
-                            /*fail fast*/false,
-                            /*unmarshal*/true,
                             /*metrics*/true,
                             /*event*/true,
                             /*temporary*/true,
@@ -2318,7 +2362,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                             k,
                             null,
                             compRes.get1(),
-                            compRes.get2());
+                            compRes.get2(),
+                            req.keepBinary());
                     }
                 }
                 else {

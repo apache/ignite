@@ -20,9 +20,9 @@
 <!-- 
 
 Creating NuGet package:
-1) Build Apache.Ignite.sln (x64 configuration)
+1) Build Apache.Ignite.sln (AnyCPU configuration)
 2) Create package (use csproj instead of nuspec so that template substitution works): 
-   nuget pack Apache.Ignite.Linq.csproj -Prop Configuration=Release -Prop Platform=x64
+   nuget pack Apache.Ignite.Linq.csproj -Prop Configuration=Release -Prop Platform=AnyCPU
 
 -->
 
@@ -50,7 +50,7 @@ More info: https://apacheignite-net.readme.io/
             LINQ Provider for Apache Ignite
         </summary>
         <releaseNotes></releaseNotes>
-        <copyright>Copyright 2015</copyright>
+        <copyright>Copyright 2016</copyright>
         <tags>Apache Ignite In-Memory Distributed Computing SQL NoSQL LINQ Grid Map Reduce Cache linqpad-samples</tags>
         <dependencies>
             <dependency id="Apache.Ignite" version="[$version$]" />
