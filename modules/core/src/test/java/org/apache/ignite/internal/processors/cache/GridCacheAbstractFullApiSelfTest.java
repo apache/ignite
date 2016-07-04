@@ -69,6 +69,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.PA;
@@ -3559,9 +3560,6 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
      * @throws Exception If failed.
      */
     private void checkTtl(boolean inTx, boolean oldEntry) throws Exception {
-        if (isMultiJvm())
-            fail("https://issues.apache.org/jira/browse/IGNITE-1089");
-
         if (memoryMode() == OFFHEAP_TIERED)
             return;
 
@@ -3573,22 +3571,17 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         final String key = primaryKeysForCache(jcache(), 1).get(0);
 
-        GridCacheAdapter<String, Integer> internalCache = internalCache(fullCache());
-
-        if (internalCache.isNear())
-            internalCache = internalCache.context().near().dht();
-
-        GridCacheEntryEx entry;
+        IgnitePair<Long> entryTtl;
 
         if (oldEntry) {
             c.put(key, 1);
 
-            entry = internalCache.peekEx(key);
+            entryTtl = entryTtl(fullCache(), key);
 
-            assert entry != null;
-
-            assertEquals(0, entry.ttl());
-            assertEquals(0, entry.expireTime());
+            assertNotNull(entryTtl.get1());
+            assertNotNull(entryTtl.get2());
+            assertEquals((Long)0L, entryTtl.get1());
+            assertEquals((Long)0L, entryTtl.get2());
         }
 
         long startTime = System.currentTimeMillis();
@@ -3605,10 +3598,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             }
 
             if (oldEntry) {
-                entry = internalCache.peekEx(key);
+                entryTtl = entryTtl(fullCache(), key);
 
-                assertEquals(0, entry.ttl());
-                assertEquals(0, entry.expireTime());
+                assertEquals((Long)0L, entryTtl.get1());
+                assertEquals((Long)0L, entryTtl.get2());
             }
         }
 
@@ -3630,18 +3623,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < gridCount(); i++) {
             if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
-                GridCacheAdapter<String, Integer> cache = internalCache(jcache(i));
+                IgnitePair<Long> curEntryTtl = entryTtl(jcache(i), key);
 
-                if (cache.context().isNear())
-                    cache = cache.context().near().dht();
+                assertNotNull(curEntryTtl.get1());
+                assertNotNull(curEntryTtl.get2());
+                assertEquals(ttl, (long) curEntryTtl.get1());
+                assertTrue(curEntryTtl.get2() > startTime);
 
-                GridCacheEntryEx curEntry = cache.peekEx(key);
-
-                assertEquals(ttl, curEntry.ttl());
-
-                assert curEntry.expireTime() > startTime;
-
-                expireTimes[i] = curEntry.expireTime();
+                expireTimes[i] = curEntryTtl.get2();
             }
         }
 
@@ -3663,18 +3652,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < gridCount(); i++) {
             if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
-                GridCacheAdapter<String, Integer> cache = internalCache(jcache(i));
+                IgnitePair<Long> curEntryTtl = entryTtl(jcache(i), key);
 
-                if (cache.context().isNear())
-                    cache = cache.context().near().dht();
+                assertNotNull(curEntryTtl.get1());
+                assertNotNull(curEntryTtl.get2());
+                assertEquals(ttl, (long) curEntryTtl.get1());
+                assertTrue(curEntryTtl.get2() > startTime);
 
-                GridCacheEntryEx curEntry = cache.peekEx(key);
-
-                assertEquals(ttl, curEntry.ttl());
-
-                assert curEntry.expireTime() > startTime;
-
-                expireTimes[i] = curEntry.expireTime();
+                expireTimes[i] = curEntryTtl.get2();
             }
         }
 
@@ -3696,18 +3681,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < gridCount(); i++) {
             if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
-                GridCacheAdapter<String, Integer> cache = internalCache(jcache(i));
+                IgnitePair<Long> curEntryTtl = entryTtl(jcache(i), key);
 
-                if (cache.context().isNear())
-                    cache = cache.context().near().dht();
+                assertNotNull(curEntryTtl.get1());
+                assertNotNull(curEntryTtl.get2());
+                assertEquals(ttl, (long) curEntryTtl.get1());
+                assertTrue(curEntryTtl.get2() > startTime);
 
-                GridCacheEntryEx curEntry = cache.peekEx(key);
-
-                assertEquals(ttl, curEntry.ttl());
-
-                assert curEntry.expireTime() > startTime;
-
-                expireTimes[i] = curEntry.expireTime();
+                expireTimes[i] = curEntryTtl.get2();
             }
         }
 
@@ -3733,15 +3714,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         for (int i = 0; i < gridCount(); i++) {
             if (grid(i).affinity(null).isPrimaryOrBackup(grid(i).localNode(), key)) {
-                GridCacheAdapter<String, Integer> cache = internalCache(jcache(i));
+                IgnitePair<Long> curEntryTtl = entryTtl(jcache(i), key);
 
-                if (cache.context().isNear())
-                    cache = cache.context().near().dht();
-
-                GridCacheEntryEx curEntry = cache.peekEx(key);
-
-                assertEquals(ttl, curEntry.ttl());
-                assertEquals(expireTimes[i], curEntry.expireTime());
+                assertNotNull(curEntryTtl.get1());
+                assertNotNull(curEntryTtl.get2());
+                assertEquals(ttl, (long)curEntryTtl.get1());
+                assertEquals(expireTimes[i], (long)curEntryTtl.get2());
             }
         }
 
@@ -3777,21 +3755,24 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             }
         }, Math.min(ttl * 10, getTestTimeout())));
 
-        if (internalCache.isLocal())
-            return;
+        IgniteCache fullCache = fullCache();
+
+        if (!isMultiJvmObject(fullCache)) {
+            GridCacheAdapter internalCache = internalCache(fullCache);
+
+            if (internalCache.isLocal())
+                return;
+        }
 
         assert c.get(key) == null;
 
-        internalCache = internalCache(fullCache());
-
-        if (internalCache.isNear())
-            internalCache = internalCache.context().near().dht();
-
         // Ensure that old TTL and expire time are not longer "visible".
-        entry = internalCache.peekEx(key);
+        entryTtl = entryTtl(fullCache(), key);
 
-        assertEquals(0, entry.ttl());
-        assertEquals(0, entry.expireTime());
+        assertNotNull(entryTtl.get1());
+        assertNotNull(entryTtl.get2());
+        assertEquals(0, (long)entryTtl.get1());
+        assertEquals(0, (long)entryTtl.get2());
 
         // Ensure that next update will not pick old expire time.
 
@@ -3810,12 +3791,14 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
         U.sleep(2000);
 
-        entry = internalCache.peekEx(key);
+        entryTtl = entryTtl(fullCache(), key);
 
         assertEquals((Integer)10, c.get(key));
 
-        assertEquals(0, entry.ttl());
-        assertEquals(0, entry.expireTime());
+        assertNotNull(entryTtl.get1());
+        assertNotNull(entryTtl.get2());
+        assertEquals(0, (long)entryTtl.get1());
+        assertEquals(0, (long)entryTtl.get2());
     }
 
     /**
@@ -4316,6 +4299,15 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
     protected List<String> primaryKeysForCache(IgniteCache<String, Integer> cache, int cnt)
         throws IgniteCheckedException {
         return primaryKeysForCache(cache, cnt, 1);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param key Entry key.
+     * @return Pair [ttl, expireTime]; both values null if entry not found
+     */
+    protected IgnitePair<Long> entryTtl(IgniteCache cache, String key) {
+        return executeOnLocalOrRemoteJvm(cache, new EntryTtlTask(key, true));
     }
 
     /**
@@ -5607,6 +5599,40 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
             }
 
             throw new IgniteException("Unable to find " + cnt + " keys as primary for cache.");
+        }
+    }
+
+    /**
+     *
+     */
+    public static class EntryTtlTask implements TestCacheCallable<String, Integer, IgnitePair<Long>> {
+        /** Entry key. */
+        private final String key;
+
+        /** Check cache for nearness, use DHT cache if it is near. */
+        private final boolean useDhtForNearCache;
+
+        /**
+         * @param key Entry key.
+         * @param useDhtForNearCache Check cache for nearness, use DHT cache if it is near.
+         */
+        public EntryTtlTask(String key, boolean useDhtForNearCache) {
+            this.key = key;
+            this.useDhtForNearCache = useDhtForNearCache;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgnitePair<Long> call(Ignite ignite, IgniteCache<String, Integer> cache) throws Exception {
+            GridCacheAdapter<?, ?> internalCache = internalCache0(cache);
+
+            if (useDhtForNearCache && internalCache.context().isNear())
+                internalCache = internalCache.context().near().dht();
+
+            GridCacheEntryEx entry = internalCache.peekEx(key);
+
+            return entry != null ?
+                new IgnitePair<>(entry.ttl(), entry.expireTime()) :
+                new IgnitePair<Long>(null, null);
         }
     }
 
