@@ -95,25 +95,32 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         /// <param name="cache">The cache.</param>
         private static void ValidateAffinityFunction(ICache<int, int> cache)
         {
-            Assert.IsNull(cache.GetConfiguration().AffinityFunction);
-
             var aff = cache.Ignite.GetAffinity(cache.Name);
             Assert.AreEqual(5, aff.Partitions);
             Assert.AreEqual(4, aff.GetPartition(2));
             Assert.AreEqual(3, aff.GetPartition(4));
 
-            var func = cache.GetConfiguration().AffinityFunction;
-            Assert.IsNotNull(func);
+            var func = (ITestFunc) cache.GetConfiguration().AffinityFunction;
+            Assert.AreEqual(5, func.Partitions);
+            Assert.AreEqual(1, func.Property1);
+            Assert.AreEqual("1", func.Property2);
         }
 
-        private class TestFunc : IAffinityFunction   // [Serializable] is not necessary
+        private interface ITestFunc : IAffinityFunction
+        {
+            int Property1 { get; set; }
+
+            string Property2 { get; set; }
+        }
+
+        private class TestFunc : ITestFunc   // [Serializable] is not necessary
         {
             [InstanceResource]
             private readonly IIgnite _ignite = null;
 
-            private int Property1 { get; set; }
+            public int Property1 { get; set; }
 
-            private string Property2 { get; set; }
+            public string Property2 { get; set; }
 
             public int Partitions
             {
@@ -140,20 +147,20 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             }
         }
 
-        private class TestFairFunc : FairAffinityFunction   // [Serializable] is not necessary
+        private class TestFairFunc : FairAffinityFunction, ITestFunc   // [Serializable] is not necessary
         {
             [InstanceResource]
             private readonly IIgnite _ignite = null;
 
-            private int Property1 { get; set; }
+            public int Property1 { get; set; }
 
-            private string Property2 { get; set; }
+            public string Property2 { get; set; }
 
             public override int GetPartition(object key)
             {
                 Assert.IsNotNull(_ignite);
-                Assert.AreEqual(2, Property1);
-                Assert.AreEqual("2", Property2);
+                Assert.AreEqual(1, Property1);
+                Assert.AreEqual("1", Property2);
 
                 var basePart = base.GetPartition(key);
                 Assert.Greater(basePart, -1);

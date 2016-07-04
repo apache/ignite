@@ -74,9 +74,9 @@
                             <property name="properties">
                                 <map>
                                     <entry key="Property1">
-                                        <value type="java.lang.Integer">2</value>
+                                        <value type="java.lang.Integer">1</value>
                                     </entry>
-                                    <entry key="Property2" value="2"/>
+                                    <entry key="Property2" value="1"/>
                                     <entry key="Partitions">
                                         <value type="java.lang.Integer">5</value>
                                     </entry>
@@ -94,9 +94,9 @@
                             <property name="properties">
                                 <map>
                                     <entry key="Property1">
-                                        <value type="java.lang.Integer">2</value>
+                                        <value type="java.lang.Integer">1</value>
                                     </entry>
-                                    <entry key="Property2" value="2"/>
+                                    <entry key="Property2" value="1"/>
                                     <entry key="Partitions">
                                         <value type="java.lang.Integer">5</value>
                                     </entry>
