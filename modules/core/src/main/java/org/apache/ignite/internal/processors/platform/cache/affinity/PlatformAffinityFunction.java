@@ -119,9 +119,31 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
         ignite = ctx.kernalContext().grid();
     }
 
-    /** {@inheritDoc} */
+    /**
+     * Gets the user func object.
+     *
+     * @return User func object.
+     */
     public Object getUserFunc() {
         return userFunc;
+    }
+
+    /**
+     * Gets the base func.
+     *
+     * @return Base func.
+     */
+    public AffinityFunction getBaseFunc() {
+        return baseFunc;
+    }
+
+    /**
+     * Gets the override flags.
+     *
+     * @return The override flags
+     */
+    public byte getOverrideFlags() {
+        return overrideFlags;
     }
 
     /** {@inheritDoc} */

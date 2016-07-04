@@ -28,7 +28,6 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
-import org.apache.ignite.cache.affinity.Affinity;
 import org.apache.ignite.cache.affinity.AffinityFunction;
 import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
 import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
@@ -289,36 +288,53 @@ public class PlatformConfigurationUtils {
     }
 
     /**
-     * Writes the eviction policy.
+     * Writes the affinity functions.
+     *
      * @param out Stream.
      * @param f Affinity.
      */
     private static void writeAffinityFunction(BinaryRawWriter out, AffinityFunction f) {
-        // TODO:!
-
         if (f instanceof FairAffinityFunction) {
-            out.writeByte((byte)1);
+            out.writeByte((byte) 1);
 
-            FairAffinityFunction f0 = (FairAffinityFunction)f;
+            FairAffinityFunction f0 = (FairAffinityFunction) f;
             out.writeInt(f0.getPartitions());
             out.writeBoolean(f0.isExcludeNeighbors());
-        }
-        else if (f instanceof RendezvousAffinityFunction) {
-            out.writeByte((byte)2);
+            out.writeByte((byte) 0);  // override flags
+            out.writeObject(null);  // user func
+        } else if (f instanceof RendezvousAffinityFunction) {
+            out.writeByte((byte) 2);
 
-            RendezvousAffinityFunction f0 = (RendezvousAffinityFunction)f;
+            RendezvousAffinityFunction f0 = (RendezvousAffinityFunction) f;
             out.writeInt(f0.getPartitions());
             out.writeBoolean(f0.isExcludeNeighbors());
-        }
-        else if (f instanceof PlatformAffinityFunction) {
-            out.writeByte((byte)3);
+            out.writeByte((byte) 0);  // override flags
+            out.writeObject(null);  // user func
+        } else if (f instanceof PlatformAffinityFunction) {
+            PlatformAffinityFunction f0 = (PlatformAffinityFunction) f;
+            AffinityFunction baseFunc = f0.getBaseFunc();
 
-            PlatformAffinityFunction f0 = (PlatformAffinityFunction)f;
-            out.writeObject(f0.getUserFunc());
-            out.writeInt(f.partitions());
-        }
-        else {
-            out.writeByte((byte)0);
+            if (baseFunc instanceof FairAffinityFunction) {
+                out.writeByte((byte) 1);
+                out.writeInt(f0.partitions());
+                out.writeBoolean(((FairAffinityFunction) baseFunc).isExcludeNeighbors());
+                out.writeByte(f0.getOverrideFlags());
+                out.writeObject(f0.getUserFunc());
+            } else if (baseFunc instanceof RendezvousAffinityFunction) {
+                out.writeByte((byte) 2);
+                out.writeInt(f0.partitions());
+                out.writeBoolean(((RendezvousAffinityFunction) baseFunc).isExcludeNeighbors());
+                out.writeByte(f0.getOverrideFlags());
+                out.writeObject(f0.getUserFunc());
+            } else {
+                out.writeByte((byte) 3);
+                out.writeInt(f0.partitions());
+                out.writeBoolean(false);  // exclude neighbors
+                out.writeByte(f0.getOverrideFlags());
+                out.writeObject(f0.getUserFunc());
+            }
+        } else {
+            out.writeByte((byte) 0);
         }
     }
 
