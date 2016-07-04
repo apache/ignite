@@ -318,12 +318,13 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected V get(K key, String taskName, boolean deserializeBinary, boolean needVer)
-        throws IgniteCheckedException {
+    @Nullable @Override public V get(K key, boolean deserializeBinary, boolean needVer) throws IgniteCheckedException {
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
         if (keyCheck)
             validateCacheKey(key);
+
+        String taskName = ctx.kernalContext().job().currentTaskName();
 
         CacheOperationContext opCtx = ctx.operationContextPerCall();
 
@@ -339,6 +340,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 subjId,
                 taskName,
                 deserializeBinary,
+                opCtx != null && opCtx.recovery(),
                 expiryPlc,
                 false,
                 skipStore,
@@ -354,7 +356,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
     }
 
     /** {@inheritDoc} */
-    @Override protected IgniteInternalFuture<V> getAsync(final K key,
+    @Override protected IgniteInternalFuture<V> getAsync(
+        final K key,
         final boolean forcePrimary,
         final boolean skipTx,
         @Nullable UUID subjId,
@@ -362,7 +365,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         final boolean deserializeBinary,
         final boolean skipVals,
         final boolean canRemap,
-        final boolean needVer) {
+        final boolean needVer
+    ) {
         ctx.checkSecurity(SecurityPermission.CACHE_READ);
 
         if (keyCheck)
@@ -373,10 +377,9 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         subjId = ctx.subjectIdPerCall(null, opCtx);
 
         final UUID subjId0 = subjId;
-
         final ExpiryPolicy expiryPlc = skipVals ? null : opCtx != null ? opCtx.expiry() : null;
-
         final boolean skipStore = opCtx != null && opCtx.skipStore();
+        final boolean recovery = opCtx != null && opCtx.recovery();
 
         return asyncOp(new CO<IgniteInternalFuture<V>>() {
             @Override public IgniteInternalFuture<V> apply() {
@@ -385,6 +388,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     subjId0,
                     taskName,
                     deserializeBinary,
+                    recovery,
                     expiryPlc,
                     skipVals,
                     skipStore,
@@ -402,6 +406,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         @Nullable UUID subjId,
         final String taskName,
         final boolean deserializeBinary,
+        final boolean recovery,
         final boolean skipVals,
         final boolean canRemap,
         final boolean needVer
@@ -431,6 +436,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                     subjId0,
                     taskName,
                     deserializeBinary,
+                    recovery,
                     expiryPlc,
                     skipVals,
                     skipStore,
@@ -956,6 +962,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             taskNameHash,
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.isKeepBinary(),
+            opCtx != null && opCtx.recovery(),
             opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
             waitTopFut);
 
@@ -1124,6 +1131,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 ctx.kernalContext().job().currentTaskNameHash(),
                 opCtx != null && opCtx.skipStore(),
                 opCtx != null && opCtx.isKeepBinary(),
+                opCtx != null && opCtx.recovery(),
                 opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
                 waitTopFut
             );
@@ -1147,6 +1155,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
                 ctx.kernalContext().job().currentTaskNameHash(),
                 opCtx != null && opCtx.skipStore(),
                 opCtx != null && opCtx.isKeepBinary(),
+                opCtx != null && opCtx.recovery(),
                 opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
                 waitTopFut);
         }
@@ -1229,6 +1238,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             taskNameHash,
             opCtx != null && opCtx.skipStore(),
             opCtx != null && opCtx.isKeepBinary(),
+            opCtx != null && opCtx.recovery(),
             opCtx != null && opCtx.noRetries() ? 1 : MAX_RETRIES,
             true);
 
@@ -1264,6 +1274,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         UUID subjId,
         String taskName,
         boolean deserializeBinary,
+        boolean recovery,
         @Nullable ExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean skipStore,
@@ -1287,7 +1298,8 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             skipVals,
             canRemap,
             needVer,
-            false);
+            false,
+            recovery);
 
         fut.init();
 
@@ -1313,6 +1325,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
         UUID subjId,
         String taskName,
         boolean deserializeBinary,
+        boolean recovery,
         @Nullable ExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean skipStore,
@@ -1435,6 +1448,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             subjId,
             taskName,
             deserializeBinary,
+            recovery,
             expiry,
             skipVals,
             canRemap,
@@ -2877,6 +2891,7 @@ public class GridDhtAtomicCache<K, V> extends GridDhtCacheAdapter<K, V> {
             req.taskNameHash(),
             req.skipStore(),
             req.keepBinary(),
+            req.recovery(),
             MAX_RETRIES,
             true);
 

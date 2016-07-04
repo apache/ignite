@@ -154,6 +154,9 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
     /** Keep binary. */
     private final boolean keepBinary;
 
+    /** */
+    private final boolean recovery;
+
     /**
      * @param cctx Registry.
      * @param keys Keys to lock.
@@ -175,7 +178,9 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         long accessTtl,
         CacheEntryPredicate[] filter,
         boolean skipStore,
-        boolean keepBinary) {
+        boolean keepBinary,
+        boolean recovery
+    ) {
         super(CU.boolReducer());
 
         assert keys != null;
@@ -190,6 +195,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         this.filter = filter;
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
+        this.recovery = recovery;
 
         ignoreInterrupts(true);
 
@@ -626,7 +632,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
         if (topVer != null) {
             for (GridDhtTopologyFuture fut : cctx.shared().exchange().exchangeFutures()) {
                 if (fut.topologyVersion().equals(topVer)) {
-                    Throwable err = fut.validateCache(cctx, read, null, keys);
+                    Throwable err = fut.validateCache(cctx, recovery, read, null, keys);
 
                     if (err != null) {
                         onDone(err);
@@ -677,7 +683,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
             GridDhtTopologyFuture fut = cctx.topologyVersionFuture();
 
             if (fut.isDone()) {
-                Throwable err = fut.validateCache(cctx, read, null, keys);
+                Throwable err = fut.validateCache(cctx, recovery, read, null, keys);
 
                 if (err != null) {
                     onDone(err);

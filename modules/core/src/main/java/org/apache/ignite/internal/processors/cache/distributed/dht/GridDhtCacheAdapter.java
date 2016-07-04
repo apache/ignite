@@ -239,7 +239,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
     /**
      * @return Cache map entry factory.
      */
-    protected GridCacheMapEntryFactory entryFactory() {
+    @Override protected GridCacheMapEntryFactory entryFactory() {
         return new GridCacheMapEntryFactory() {
             @Override public GridCacheMapEntry create(
                 GridCacheContext ctx,
@@ -591,14 +591,12 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
     /**
      * This method is used internally. Use
-     * {@link #getDhtAsync(UUID, long, Map, boolean, AffinityTopologyVersion, UUID, int, IgniteCacheExpiryPolicy, boolean)}
+     * {@link #getDhtAsync(UUID, long, Map, boolean, AffinityTopologyVersion, UUID, int, IgniteCacheExpiryPolicy, boolean, boolean)}
      * method instead to retrieve DHT value.
-     *
-     * @param keys {@inheritDoc}
+     *  @param keys {@inheritDoc}
      * @param forcePrimary {@inheritDoc}
      * @param skipTx {@inheritDoc}
-     * @param needVer Need version.
-     * @return {@inheritDoc}
+     * @param needVer Need version.  @return {@inheritDoc}
      */
     @Override public IgniteInternalFuture<Map<K, V>> getAllAsync(
         @Nullable Collection<? extends K> keys,
@@ -607,7 +605,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable UUID subjId,
         String taskName,
         boolean deserializeBinary,
-        boolean skipVals,
+        boolean recovery, boolean skipVals,
         boolean canRemap,
         boolean needVer
     ) {
@@ -619,6 +617,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             subjId,
             taskName,
             deserializeBinary,
+            opCtx != null && opCtx.recovery(),
             forcePrimary,
             null,
             skipVals,
@@ -643,7 +642,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         String taskName,
         @Nullable IgniteCacheExpiryPolicy expiry,
         boolean skipVals,
-        boolean canRemap
+        boolean canRemap,
+        boolean recovery
     ) {
         return getAllAsync0(keys,
             readThrough,
@@ -654,6 +654,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             expiry,
             skipVals,
             /*keep cache objects*/true,
+            recovery,
             canRemap,
             /*need version*/true);
     }
@@ -678,7 +679,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable UUID subjId,
         int taskNameHash,
         @Nullable IgniteCacheExpiryPolicy expiry,
-        boolean skipVals
+        boolean skipVals,
+        boolean recovery
     ) {
         GridDhtGetFuture<K, V> fut = new GridDhtGetFuture<>(ctx,
             msgId,
@@ -690,7 +692,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             subjId,
             taskNameHash,
             expiry,
-            skipVals);
+            skipVals,
+            recovery);
 
         fut.init();
 
@@ -720,7 +723,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
         @Nullable UUID subjId,
         int taskNameHash,
         @Nullable IgniteCacheExpiryPolicy expiry,
-        boolean skipVals
+        boolean skipVals,
+        boolean recovery
     ) {
         GridDhtGetSingleFuture<K, V> fut = new GridDhtGetSingleFuture<>(
             ctx,
@@ -734,7 +738,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
             subjId,
             taskNameHash,
             expiry,
-            skipVals);
+            skipVals,
+            recovery);
 
         fut.init();
 
@@ -761,7 +766,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 req.subjectId(),
                 req.taskNameHash(),
                 expiryPlc,
-                req.skipValues());
+                req.skipValues(),
+                req.recovery());
 
         fut.listen(new CI1<IgniteInternalFuture<GridCacheEntryInfo>>() {
             @Override public void apply(IgniteInternalFuture<GridCacheEntryInfo> f) {
@@ -811,7 +817,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                             req.addDeploymentInfo());
                     }
                 }
-                catch (NodeStoppingException e) {
+                catch (NodeStoppingException ignore) {
                     return;
                 }
                 catch (IgniteCheckedException e) {
@@ -861,7 +867,8 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
                 req.subjectId(),
                 req.taskNameHash(),
                 expiryPlc,
-                req.skipValues());
+                req.skipValues(),
+                req.recovery());
 
         fut.listen(new CI1<IgniteInternalFuture<Collection<GridCacheEntryInfo>>>() {
             @Override public void apply(IgniteInternalFuture<Collection<GridCacheEntryInfo>> f) {
@@ -879,7 +886,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                     res.entries(entries);
                 }
-                catch (NodeStoppingException e) {
+                catch (NodeStoppingException ignore) {
                     return;
                 }
                 catch (IgniteCheckedException e) {
@@ -1029,7 +1036,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
                             break;
                         }
-                        catch (GridCacheEntryRemovedException e) {
+                        catch (GridCacheEntryRemovedException ignore) {
                             if (log.isDebugEnabled())
                                 log.debug("Got removed entry: " + entry);
                         }
@@ -1198,7 +1205,7 @@ public abstract class GridDhtCacheAdapter<K, V> extends GridDistributedCacheAdap
 
             return !aff1.equals(aff2);
         }
-        catch (IllegalStateException e) {
+        catch (IllegalStateException ignore) {
             return true;
         }
     }

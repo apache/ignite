@@ -43,12 +43,16 @@ public interface GridDhtTopologyFuture extends IgniteInternalFuture<AffinityTopo
      * Returns error is cache topology is not valid.
      *
      * @param cctx Cache context.
+     * @param recovery {@code True} if cache operation is done in recovery mode. Then it will only check
+     *      for cache active state and topology validator result.
+     * @param read {@code True} if validating read operation, {@code false} if validating write.
      * @param key Key (optimization to avoid collection creation).
      * @param keys Keys involved in a cache operation.
      * @return valid ot not.
      */
     @Nullable public Throwable validateCache(
         GridCacheContext cctx,
+        boolean recovery,
         boolean read,
         @Nullable Object key,
         @Nullable Collection<?> keys);

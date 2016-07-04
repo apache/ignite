@@ -74,7 +74,7 @@ public abstract class IgniteTxRemoteStateAdapter implements IgniteTxRemoteState 
     }
 
     /** {@inheritDoc} */
-    @Override public void addActiveCache(GridCacheContext cacheCtx, IgniteTxLocalAdapter tx)
+    @Override public void addActiveCache(GridCacheContext cacheCtx, boolean recovery, IgniteTxLocalAdapter tx)
         throws IgniteCheckedException {
         assert false;
     }

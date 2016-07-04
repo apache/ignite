@@ -1324,15 +1324,19 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
             for (int p = 0; p < parts; p++) {
                 boolean foundOwner = false;
 
-                for (UUID nodeId : part2node.get(p)) {
-                    GridDhtPartitionMap2 partMap = node2part.get(nodeId);
+                Set<UUID> nodeIds = part2node.get(p);
 
-                    GridDhtPartitionState state = partMap.get(p);
+                if (nodeIds != null) {
+                    for (UUID nodeId : nodeIds) {
+                        GridDhtPartitionMap2 partMap = node2part.get(nodeId);
 
-                    if (state == OWNING) {
-                        foundOwner = true;
+                        GridDhtPartitionState state = partMap.get(p);
 
-                        break;
+                        if (state == OWNING) {
+                            foundOwner = true;
+
+                            break;
+                        }
                     }
                 }
 
@@ -1380,7 +1384,7 @@ import static org.apache.ignite.internal.processors.cache.distributed.dht.GridDh
                     }
                 }
 
-                cctx.state(CacheState.RECOVERY);
+                cctx.state(CacheState.NEEDS_RECOVERY);
             }
 
             return changed;

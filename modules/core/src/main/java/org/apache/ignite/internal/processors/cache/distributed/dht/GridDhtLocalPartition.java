@@ -671,7 +671,7 @@ public class GridDhtLocalPartition implements Comparable<GridDhtLocalPartition>,
 
         int ord = (int)(reservations >> 32);
 
-        if ((ord != RENTING.ordinal() && ord != LOST.ordinal()) || (reservations & 0xFFFF) != 0 || groupReserved())
+        if (ord != RENTING.ordinal() || (reservations & 0xFFFF) != 0 || groupReserved())
             return;
 
         // Attempt to evict partition entries from cache.

@@ -160,6 +160,9 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
     private boolean keepBinary;
 
     /** */
+    private boolean recovery;
+
+    /** */
     @GridDirectTransient
     private GridNearAtomicUpdateResponse res;
 
@@ -216,6 +219,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         int taskNameHash,
         boolean skipStore,
         boolean keepBinary,
+        boolean recovery,
         boolean clientReq,
         boolean addDepInfo,
         int maxEntryCnt
@@ -240,6 +244,7 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
         this.taskNameHash = taskNameHash;
         this.skipStore = skipStore;
         this.keepBinary = keepBinary;
+        this.recovery = recovery;
         this.clientReq = clientReq;
         this.addDepInfo = addDepInfo;
 
@@ -369,6 +374,13 @@ public class GridNearAtomicUpdateRequest extends GridCacheMessage implements Gri
      */
     public boolean keepBinary() {
         return keepBinary;
+    }
+
+    /**
+     * @return Recovery flag.
+     */
+    public boolean recovery() {
+        return recovery;
     }
 
     /**

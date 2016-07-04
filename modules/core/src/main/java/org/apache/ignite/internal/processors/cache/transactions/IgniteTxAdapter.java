@@ -797,7 +797,7 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter implement
     }
 
     /** {@inheritDoc} */
-    public final void errorWhenCommitting() {
+    @Override public final void errorWhenCommitting() {
         synchronized (this) {
             TransactionState prev = state;
 

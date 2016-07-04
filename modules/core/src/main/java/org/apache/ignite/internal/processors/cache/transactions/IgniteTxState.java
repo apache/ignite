@@ -89,7 +89,8 @@ public interface IgniteTxState {
      * @param tx Transaction.
      * @throws IgniteCheckedException If cache check failed.
      */
-    public void addActiveCache(GridCacheContext cacheCtx, IgniteTxLocalAdapter tx) throws IgniteCheckedException;
+    public void addActiveCache(GridCacheContext cacheCtx, boolean recovery, IgniteTxLocalAdapter tx)
+        throws IgniteCheckedException;
 
     /**
      * @param cctx Context.

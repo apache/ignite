@@ -134,11 +134,12 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
         int taskNameHash,
         boolean skipStore,
         boolean keepBinary,
+        boolean recovery,
         int remapCnt,
         boolean waitTopFut
     ) {
         super(cctx, cache, syncMode, op, invokeArgs, retval, rawRetval, expiryPlc, filter, subjId, taskNameHash,
-            skipStore, keepBinary, remapCnt, waitTopFut);
+            skipStore, keepBinary, recovery, remapCnt, waitTopFut);
 
         assert vals == null || vals.size() == keys.size();
         assert conflictPutVals == null || conflictPutVals.size() == keys.size();
@@ -509,7 +510,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             GridDhtTopologyFuture fut = cache.topology().topologyVersionFuture();
 
             if (fut.isDone()) {
-                Throwable err = fut.validateCache(cctx, false, null, keys);
+                Throwable err = fut.validateCache(cctx, recovery, false, null, keys);
 
                 if (err != null) {
                     onDone(err);
@@ -904,6 +905,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
                         taskNameHash,
                         skipStore,
                         keepBinary,
+                        recovery,
                         cctx.kernalContext().clientNode(),
                         cctx.deploymentEnabled(),
                         keys.size());
@@ -1004,6 +1006,7 @@ public class GridNearAtomicUpdateFuture extends GridNearAtomicAbstractUpdateFutu
             taskNameHash,
             skipStore,
             keepBinary,
+            recovery,
             cctx.kernalContext().clientNode(),
             cctx.deploymentEnabled(),
             1);

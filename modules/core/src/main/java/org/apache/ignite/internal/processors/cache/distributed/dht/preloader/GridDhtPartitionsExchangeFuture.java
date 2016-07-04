@@ -268,6 +268,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     ) {
         assert busyLock != null;
         assert exchId != null;
+        assert exchId.topologyVersion() != null;
 
         dummy = false;
         forcePreload = false;
@@ -1077,8 +1078,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
                 }
             }
 
-            if (!crd.isLocal() && (discoEvt.type() == EVT_NODE_LEFT || discoEvt.type() == EVT_NODE_FAILED))
-                detectLostPartitions();
+            detectLostPartitions();
 
             Map<Integer, CacheValidation> m = new HashMap<>(cctx.cacheContexts().size());
 
@@ -1127,6 +1127,7 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
     /** {@inheritDoc} */
     @Nullable @Override public Throwable validateCache(
         GridCacheContext cctx,
+        boolean recovery,
         boolean read,
         @Nullable Object key,
         @Nullable Collection<?> keys
@@ -1142,13 +1143,13 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
 
         PartitionLossPolicy partLossPolicy = cctx.config().getPartitionLossPolicy();
 
-        if (cctx.state() == CacheState.RECOVERY) {
+        if (cctx.state() == CacheState.NEEDS_RECOVERY && !recovery) {
             if (!read && (partLossPolicy == READ_ONLY_SAFE || partLossPolicy == READ_ONLY_ALL))
                 return new IgniteCheckedException("Failed to write to cache (cache is moved to a read-only state): " +
                     cctx.name());
         }
 
-        if (cctx.state() == CacheState.RECOVERY || cctx.config().getTopologyValidator() != null) {
+        if (cctx.state() == CacheState.NEEDS_RECOVERY || cctx.config().getTopologyValidator() != null) {
             CacheValidation validation = cacheValidRes.get(cctx.cacheId());
 
             if (validation == null)
@@ -1157,6 +1158,9 @@ public class GridDhtPartitionsExchangeFuture extends GridFutureAdapter<AffinityT
             if (!validation.valid)
                 return new IgniteCheckedException("Failed to perform cache operation " +
                     "(cache topology is not valid): " + cctx.name());
+
+            if (recovery || cctx.state() != CacheState.NEEDS_RECOVERY)
+                return null;
 
             if (key != null) {
                 int p = cctx.affinity().partition(key);

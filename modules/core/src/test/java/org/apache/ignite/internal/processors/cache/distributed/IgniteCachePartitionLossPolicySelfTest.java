@@ -212,8 +212,8 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
             }
             catch (CacheException e) {
                 assertTrue("Read exception should only be triggered in safe mode: " + e, safe);
-                assertTrue("Read exception should only be triggered for a lost partition: " + e,
-                    cache.lostPartitions().contains(i));
+                assertTrue("Read exception should only be triggered for a lost partition " +
+                    "[ex=" + e + ", part=" + i + ']', cache.lostPartitions().contains(i));
             }
         }
 
@@ -255,6 +255,9 @@ public class IgniteCachePartitionLossPolicySelfTest extends GridCommonAbstractTe
         startGrid(4);
 
         client = false;
+
+        for (int i = 0; i < 5; i++)
+            info(">>> Node [idx=" + i + ", nodeId=" + ignite(i).cluster().localNode().id() + ']');
 
         awaitPartitionMapExchange();
 

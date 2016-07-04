@@ -90,6 +90,9 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
     /** Skip values flag. Used for {@code containsKey} method. */
     private boolean skipVals;
 
+    /** Recovery flag. */
+    private boolean recovery;
+
     /** Topology version. */
     private AffinityTopologyVersion topVer;
 
@@ -136,7 +139,8 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
         int taskNameHash,
         long accessTtl,
         boolean skipVals,
-        boolean addDepInfo
+        boolean addDepInfo,
+        boolean recovery
     ) {
         assert futId != null;
         assert miniId != null;
@@ -164,6 +168,7 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
         this.accessTtl = accessTtl;
         this.skipVals = skipVals;
         this.addDepInfo = addDepInfo;
+        this.recovery = recovery;
     }
 
     /**
@@ -228,6 +233,13 @@ public class GridNearGetRequest extends GridCacheMessage implements GridCacheDep
      */
     public boolean skipValues() {
         return skipVals;
+    }
+
+    /**
+     * @return Recovery flag.
+     */
+    public boolean recovery() {
+        return recovery;
     }
 
     /**

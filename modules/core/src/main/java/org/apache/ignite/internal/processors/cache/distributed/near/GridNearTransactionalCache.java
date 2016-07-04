@@ -121,6 +121,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         @Nullable UUID subjId,
         String taskName,
         final boolean deserializeBinary,
+        boolean recovery,
         final boolean skipVals,
         boolean canRemap,
         final boolean needVer
@@ -162,6 +163,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             subjId,
             taskName,
             deserializeBinary,
+            recovery,
             skipVals ? null : opCtx != null ? opCtx.expiry() : null,
             skipVals,
             skipStore,
@@ -184,6 +186,7 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
         @Nullable Collection<KeyCacheObject> keys,
         boolean readThrough,
         boolean deserializeBinary,
+        boolean recovery,
         @Nullable IgniteCacheExpiryPolicy expiryPlc,
         boolean skipVals,
         boolean needVer) {
@@ -201,7 +204,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             skipVals,
             /*can remap*/true,
             needVer,
-            /*keepCacheObjects*/true);
+            /*keepCacheObjects*/true,
+            recovery);
 
         // init() will register future for responses if it has remote mappings.
         fut.init(topVer);
@@ -459,7 +463,8 @@ public class GridNearTransactionalCache<K, V> extends GridNearCacheAdapter<K, V>
             accessTtl,
             CU.empty0(),
             opCtx != null && opCtx.skipStore(),
-            opCtx != null && opCtx.isKeepBinary());
+            opCtx != null && opCtx.isKeepBinary(),
+            opCtx != null && opCtx.recovery());
 
         if (!ctx.mvcc().addFuture(fut))
             throw new IllegalStateException("Duplicate future ID: " + fut);

@@ -52,12 +52,16 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
     /** */
     private boolean init;
 
+    /** */
+    private boolean recovery;
+
     /** {@inheritDoc} */
-    @Override public void addActiveCache(GridCacheContext ctx, IgniteTxLocalAdapter tx)
+    @Override public void addActiveCache(GridCacheContext ctx, boolean recovery, IgniteTxLocalAdapter tx)
         throws IgniteCheckedException {
         assert cacheCtx == null : "Cache already set [cur=" + cacheCtx.name() + ", new=" + ctx.name() + ']';
 
         cacheCtx = ctx;
+        this.recovery = recovery;
 
         tx.activeCachesDeploymentEnabled(cacheCtx.deploymentEnabled());
     }
@@ -107,7 +111,7 @@ public class IgniteTxImplicitSingleStateImpl extends IgniteTxLocalStateAdapter {
         if (cacheCtx == null)
             return null;
 
-        Throwable err = topFut.validateCache(cacheCtx, read, null, entry);
+        Throwable err = topFut.validateCache(cacheCtx, recovery, read, null, entry);
 
         if (err != null) {
             return new IgniteCheckedException("Failed to perform cache operation (cache topology is not valid): " +

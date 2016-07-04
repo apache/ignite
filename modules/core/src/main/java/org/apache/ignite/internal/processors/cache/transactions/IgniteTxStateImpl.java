@@ -66,6 +66,10 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     @GridToStringExclude
     protected IgniteTxMap writeView;
 
+    /** */
+    @GridToStringInclude
+    protected Boolean recovery;
+
     /** {@inheritDoc} */
     @Override public boolean implicitSingle() {
         return false;
@@ -135,7 +139,7 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
 
             assert ctx != null : cacheId;
 
-            Throwable err = topFut.validateCache(ctx, read, null, e.getValue());
+            Throwable err = topFut.validateCache(ctx, recovery != null && recovery, read, null, e.getValue());
 
             if (err != null) {
                 if (invalidCaches != null)
@@ -210,11 +214,17 @@ public class IgniteTxStateImpl extends IgniteTxLocalStateAdapter {
     }
 
     /** {@inheritDoc} */
-    @Override public void addActiveCache(GridCacheContext cacheCtx, IgniteTxLocalAdapter tx)
+    @Override public void addActiveCache(GridCacheContext cacheCtx, boolean recovery, IgniteTxLocalAdapter tx)
         throws IgniteCheckedException {
         GridCacheSharedContext cctx = cacheCtx.shared();
 
         int cacheId = cacheCtx.cacheId();
+
+        if (this.recovery != null && this.recovery != recovery)
+            throw new IgniteCheckedException("Failed to enlist an entry to existing transaction " +
+                "(cannot transact between recovery and non-recovery caches).");
+
+        this.recovery = recovery;
 
         // Check if we can enlist new cache to transaction.
         if (!activeCacheIds.contains(cacheId)) {

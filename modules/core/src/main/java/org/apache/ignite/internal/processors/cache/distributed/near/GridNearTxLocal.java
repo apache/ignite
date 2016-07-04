@@ -329,6 +329,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         final boolean skipVals,
         final boolean needVer,
         boolean keepBinary,
+        boolean recovery,
         final GridInClosure3<KeyCacheObject, Object, GridCacheVersion> c
     ) {
         if (cacheCtx.isNear()) {
@@ -337,6 +338,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                 keys,
                 readThrough,
                 /*deserializeBinary*/false,
+                recovery,
                 accessPolicy(cacheCtx, keys),
                 skipVals,
                 needVer).chain(new C1<IgniteInternalFuture<Map<Object, Object>>, Void>() {
@@ -372,7 +374,8 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                     skipVals,
                     /*can remap*/true,
                     needVer,
-                    /*keepCacheObject*/true
+                    /*keepCacheObject*/true,
+                    recovery
                 ).chain(new C1<IgniteInternalFuture<Object>, Void>() {
                     @Override public Void apply(IgniteInternalFuture<Object> f) {
                         try {
@@ -399,6 +402,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                     CU.subjectId(this, cctx),
                     resolveTaskName(),
                     /*deserializeBinary*/false,
+                    recovery,
                     accessPolicy(cacheCtx, keys),
                     skipVals,
                     /*can remap*/true,
@@ -433,6 +437,7 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
                 skipVals,
                 keepBinary,
                 needVer,
+                recovery,
                 c);
         }
     }

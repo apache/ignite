@@ -70,7 +70,6 @@ import org.apache.ignite.internal.util.typedef.T2;
 import org.apache.ignite.internal.util.typedef.internal.A;
 import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.internal.util.typedef.internal.U;
-import org.apache.ignite.lang.IgniteBiClosure;
 import org.apache.ignite.lang.IgniteBiTuple;
 import org.apache.ignite.plugin.security.SecurityPermission;
 import org.apache.ignite.transactions.TransactionIsolation;
@@ -441,6 +440,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
         @Nullable UUID subjId,
         final String taskName,
         final boolean deserializeBinary,
+        boolean recovery,
         final boolean skipVals,
         boolean canRemap,
         final boolean needVer
@@ -596,6 +596,7 @@ public class GridLocalAtomicCache<K, V> extends GridLocalCache<K, V> {
             subjId,
             taskName,
             deserializeBinary,
+            opCtx != null && opCtx.recovery(),
             /*force primary*/false,
             expiry,
             skipVals,

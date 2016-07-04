@@ -284,7 +284,7 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
         if (dhtVer == null)
             return null;
         else {
-            CacheObject val0 = this.val;
+            CacheObject val0 = val;
 
             return F.t(dhtVer, val0);
         }
@@ -328,6 +328,8 @@ public class GridNearCacheEntry extends GridDistributedCacheEntry {
             subjId,
             taskName,
             true,
+            /*recovery should have already been checked*/
+            false,
             null,
             false,
             /*skip store*/false,
