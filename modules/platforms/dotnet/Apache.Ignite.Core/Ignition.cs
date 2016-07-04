@@ -355,8 +355,10 @@ namespace Apache.Ignite.Core
             var writer = reader.Marshaller.StartMarshal(outStream);
 
             for (var i = 0; i < cnt; i++)
-                // TODO: write ClassName+props wrapped in a special holder as a user object
-                AffinityFunctionSerializer.Write(writer, CreateObject<IAffinityFunction>(reader));
+            {
+                var objHolder = new ObjectInfoHolder(reader);
+                AffinityFunctionSerializer.Write(writer, objHolder.CreateInstance<IAffinityFunction>(), objHolder);
+            }
         }
 
         /// <summary>

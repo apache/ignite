@@ -38,7 +38,7 @@ namespace Apache.Ignite.Core.Impl.Common
         /// Initializes a new instance of the <see cref="ObjectInfoHolder"/> class.
         /// </summary>
         /// <param name="reader">The reader.</param>
-        internal ObjectInfoHolder(IBinaryRawReader reader)
+        public ObjectInfoHolder(IBinaryRawReader reader)
         {
             Debug.Assert(reader != null);
 
@@ -64,6 +64,13 @@ namespace Apache.Ignite.Core.Impl.Common
             get { return _properties; }
         }
 
+        /// <summary>
+        /// Creates an instance according to type name and properties.
+        /// </summary>
+        public T CreateInstance<T>()
+        {
+            return IgniteUtils.CreateInstance<T>(TypeName, Properties);
+        }
 
         /** <inheritdoc /> */
         public void WriteBinary(IBinaryWriter writer)

@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
         /// <summary>
         /// Writes the instance.
         /// </summary>
-        internal static void Write(IBinaryRawWriter writer, IAffinityFunction fun, bool skipUserFunc = false)
+        internal static void Write(IBinaryRawWriter writer, IAffinityFunction fun, object userFuncOverride = null)
         {
             Debug.Assert(writer != null);
 
@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
                 writer.WriteByte((byte) overrideFlags);
 
                 // Do not write user func if there is nothing overridden
-                WriteUserFunc(writer, overrideFlags != UserOverrides.None ? fun : null, skipUserFunc);
+                WriteUserFunc(writer, overrideFlags != UserOverrides.None ? fun : null, userFuncOverride);
             }
             else
             {
@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
                 writer.WriteInt(fun.Partitions);
                 writer.WriteBoolean(false); // Exclude neighbors
                 writer.WriteByte((byte) UserOverrides.All);
-                WriteUserFunc(writer, fun, skipUserFunc);
+                WriteUserFunc(writer, fun, userFuncOverride);
             }
         }
 
@@ -247,15 +247,18 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
         /// <summary>
         /// Writes the user function.
         /// </summary>
-        private static void WriteUserFunc(IBinaryRawWriter writer, IAffinityFunction fun, bool skipUserFunc)
+        private static void WriteUserFunc(IBinaryRawWriter writer, IAffinityFunction func, object funcOverride)
         {
-            if (skipUserFunc)
+            if (funcOverride != null)
+            {
+                writer.WriteObject(funcOverride);
                 return;
+            }
 
-            if (fun != null && !fun.GetType().IsSerializable)
+            if (func != null && !func.GetType().IsSerializable)
                 throw new IgniteException("AffinityFunction should be serializable.");
 
-            writer.WriteObject(fun);
+            writer.WriteObject(func);
         }
 
         /// <summary>
