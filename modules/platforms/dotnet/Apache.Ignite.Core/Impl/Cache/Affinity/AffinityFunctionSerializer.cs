@@ -99,31 +99,54 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
         {
             Debug.Assert(reader != null);
 
-            // TODO
+            var typeCode = reader.ReadByte();
+
+            if (typeCode == TypeCodeNull)
+                return null;
+
+            var partitions = reader.ReadInt();
+            var exclNeighbors = reader.ReadBoolean();
+            var overrideFlags = (UserOverrides)reader.ReadByte();
+            var userFunc = reader.ReadObject<IAffinityFunction>();
+
+            if (userFunc != null)
+            {
+                Debug.Assert(overrideFlags != UserOverrides.None);
+
+                var fair = userFunc as FairAffinityFunction;
+                if (fair != null)
+                {
+                    fair.Partitions = partitions;
+                    fair.ExcludeNeighbors = exclNeighbors;
+                }
+
+                var rendezvous = userFunc as RendezvousAffinityFunction;
+                if (rendezvous != null)
+                {
+                    rendezvous.Partitions = partitions;
+                    rendezvous.ExcludeNeighbors = exclNeighbors;
+                }
+
+                return userFunc;
+            }
+
+            Debug.Assert(overrideFlags == UserOverrides.None);
             AffinityFunctionBase fun;
 
-            var typeCode = reader.ReadByte();
             switch (typeCode)
             {
-                case TypeCodeNull:
-                    return null;
                 case TypeCodeFair:
                     fun = new FairAffinityFunction();
                     break;
                 case TypeCodeRendezvous:
                     fun = new RendezvousAffinityFunction();
                     break;
-                case TypeCodeUser:
-                    var f = reader.ReadObject<IAffinityFunction>();
-                    reader.ReadInt(); // skip partition count
-
-                    return f;
                 default:
                     throw new InvalidOperationException("Invalid AffinityFunction type code: " + typeCode);
             }
 
-            fun.Partitions = reader.ReadInt();
-            fun.ExcludeNeighbors = reader.ReadBoolean();
+            fun.Partitions = partitions;
+            fun.ExcludeNeighbors = exclNeighbors;
 
             return fun;
         }
