@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -297,10 +298,12 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
     public void testLatchMultinode1() throws Exception {
 //        fail("https://issues.apache.org/jira/browse/IGNITE-1802");
 
+        final String latchName = "l1" + UUID.randomUUID();
+
         if (gridCount() == 1)
             return;
 
-        IgniteCountDownLatch latch = grid(0).countDownLatch("l1", 10,
+        IgniteCountDownLatch latch = grid(0).countDownLatch(latchName, 10,
             true,
             true);
 
@@ -313,7 +316,7 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
 
             futs.add(GridTestUtils.runAsync(new Callable<Void>() {
                 @Override public Void call() throws Exception {
-                    IgniteCountDownLatch latch = ignite.countDownLatch("l1", 10,
+                    IgniteCountDownLatch latch = ignite.countDownLatch(latchName, 10,
                         true,
                         false);
 
