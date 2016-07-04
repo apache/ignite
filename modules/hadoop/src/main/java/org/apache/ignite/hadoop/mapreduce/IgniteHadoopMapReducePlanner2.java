@@ -17,16 +17,6 @@
 
 package org.apache.ignite.hadoop.mapreduce;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.UUID;
-
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterNode;
@@ -38,36 +28,56 @@ import org.apache.ignite.internal.processors.hadoop.HadoopInputSplit;
 import org.apache.ignite.internal.processors.hadoop.HadoopJob;
 import org.apache.ignite.internal.processors.hadoop.HadoopMapReducePlan;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsEndpoint;
-import org.apache.ignite.internal.processors.hadoop.planner.HadoopDefaultMapReducePlan;
 import org.apache.ignite.internal.processors.hadoop.planner.HadoopAbstractMapReducePlanner;
+import org.apache.ignite.internal.processors.hadoop.planner.HadoopDefaultMapReducePlan;
+import org.apache.ignite.internal.processors.hadoop.planner.HadoopMapReducePlanTopology;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.util.typedef.F;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.UUID;
 
 import static org.apache.ignite.IgniteFileSystem.IGFS_SCHEME;
 
 /**
  * Default map-reduce planner implementation.
  */
-public class IgniteHadoopMapReducePlanner extends HadoopAbstractMapReducePlanner {
+public class IgniteHadoopMapReducePlanner2 extends HadoopAbstractMapReducePlanner {
     /** {@inheritDoc} */
-    @Override public HadoopMapReducePlan preparePlan(HadoopJob job, Collection<ClusterNode> top,
+    @Override public HadoopMapReducePlan preparePlan(HadoopJob job, Collection<ClusterNode> nodes,
         @Nullable HadoopMapReducePlan oldPlan) throws IgniteCheckedException {
-        // Convert collection of topology nodes to collection of topology node IDs.
-        Collection<UUID> topIds = new HashSet<>(top.size(), 1.0f);
+        Collection<HadoopInputSplit> inputSplits = job.input();
+        int reducerCnt = job.info().reducers();
 
-        for (ClusterNode topNode : top)
+        if (reducerCnt < 0)
+            throw new IgniteCheckedException("Number of reducers must be non-negative, actual: " + reducerCnt);
+
+        HadoopMapReducePlanTopology top = topology(nodes);
+
+
+        // Convert collection of topology nodes to collection of topology node IDs.
+        Collection<UUID> topIds = new HashSet<>(nodes.size(), 1.0f);
+
+        for (ClusterNode topNode : nodes)
             topIds.add(topNode.id());
 
-        Map<UUID, Collection<HadoopInputSplit>> mappers = mappers(top, topIds, job.input());
+        Map<UUID, Collection<HadoopInputSplit>> mappers = mappers(nodes, topIds, job.input());
 
         int rdcCnt = job.info().reducers();
 
         if (rdcCnt < 0)
             throw new IgniteCheckedException("Number of reducers must be non-negative, actual: " + rdcCnt);
 
-        Map<UUID, int[]> reducers = reducers(top, mappers, rdcCnt);
+        Map<UUID, int[]> reducers = reducers(nodes, mappers, rdcCnt);
 
         return new HadoopDefaultMapReducePlan(mappers, reducers);
     }
