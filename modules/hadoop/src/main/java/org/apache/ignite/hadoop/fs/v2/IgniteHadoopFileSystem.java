@@ -80,7 +80,6 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.ignite.configuration.FileSystemConfiguration.DFLT_IGFS_LOG_BATCH_SIZE;
@@ -325,7 +324,6 @@ public class IgniteHadoopFileSystem extends AbstractFileSystem implements Closea
             catch (IgniteCheckedException ice) {
                 throw new IOException(ice);
             }
-
 
             boolean initSecondary = paths.defaultMode() == PROXY;
 
