@@ -53,15 +53,6 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
     /** Properties. */
     private Map<String, ?> props;
 
-    /**
-     * Partition count.
-     *
-     * 1) Java calls partitions() method very early (before LifecycleAware.start) during CacheConfiguration validation.
-     * 2) Partition count never changes.
-     * Therefore, we get the value on .NET side once, and pass it along with PlatformAffinity.
-     */
-    private int partitions;
-
     /** Inner function. */
     private transient PlatformAffinityFunction func;
 
@@ -110,7 +101,9 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
 
     /** {@inheritDoc} */
     @Override public int partitions() {
-        return partitions;
+        assert func != null;
+
+        return func.partitions();
     }
 
     /** {@inheritDoc} */
@@ -148,16 +141,12 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
 
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(typName);
-        out.writeObject(props);
-        out.writeInt(partitions);
+        out.writeObject(func);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        typName = (String)in.readObject();
-        props = (Map<String, ?>)in.readObject();
-        partitions = in.readInt();
+        func = (PlatformAffinityFunction) in.readObject();
     }
 
     /**
@@ -166,23 +155,23 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
      * @param func Underlying func.
      */
     public void init(PlatformAffinityFunction func) {
-        this.func = func;
-
         assert func != null;
 
-        partitions = func.partitions();
+        this.func = func;
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
-        if (func != null)
-            func.start();
+        assert func != null;
+
+        func.start();
     }
 
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteException {
-        if (func != null)
-            func.stop();
+        assert func != null;
+
+        func.stop();
     }
 
     /**
@@ -193,7 +182,8 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
     @SuppressWarnings("unused")
     @IgniteInstanceResource
     private void setIgnite(Ignite ignite) {
-        if (func != null)
-            func.setIgnite(ignite);
+        assert func != null;
+
+        func.setIgnite(ignite);
     }
 }
