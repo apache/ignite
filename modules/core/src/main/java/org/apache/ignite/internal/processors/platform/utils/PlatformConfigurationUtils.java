@@ -42,10 +42,7 @@ import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.*;
 import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
-import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
-import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration;
-import org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactoryNative;
-import org.apache.ignite.platform.dotnet.PlatformDotNetConfiguration;
+import org.apache.ignite.platform.dotnet.*;
 import org.apache.ignite.spi.communication.CommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpiMBean;
@@ -294,6 +291,9 @@ public class PlatformConfigurationUtils {
      * @param f Affinity.
      */
     private static void writeAffinityFunction(BinaryRawWriter out, AffinityFunction f) {
+        if (f instanceof PlatformDotNetAffinityFunction)
+            f = ((PlatformDotNetAffinityFunction)f).getFunc();
+
         if (f instanceof FairAffinityFunction) {
             out.writeByte((byte) 1);
 

@@ -107,7 +107,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
             var partitions = reader.ReadInt();
             var exclNeighbors = reader.ReadBoolean();
             var overrideFlags = (UserOverrides)reader.ReadByte();
-            var userFunc = reader.ReadObject<IAffinityFunction>();
+            var userFunc = reader.ReadObjectEx<IAffinityFunction>();
 
             if (userFunc != null)
             {

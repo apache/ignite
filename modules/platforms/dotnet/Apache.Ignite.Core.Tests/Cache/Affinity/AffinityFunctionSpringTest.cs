@@ -101,6 +101,9 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             Assert.AreEqual(5, aff.Partitions);
             Assert.AreEqual(4, aff.GetPartition(2));
             Assert.AreEqual(3, aff.GetPartition(4));
+
+            var func = cache.GetConfiguration().AffinityFunction;
+            Assert.IsNotNull(func);
         }
 
         private class TestFunc : IAffinityFunction   // [Serializable] is not necessary

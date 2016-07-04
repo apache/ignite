@@ -1117,10 +1117,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
                 {
                     var reader = _ignite.Marshaller.StartUnmarshal(stream);
                         
-                    var funcObj = reader.ReadObject<object>();
-
-                    var func = funcObj as IAffinityFunction
-                               ?? ((ObjectInfoHolder) funcObj).CreateInstance<IAffinityFunction>();
+                    var func = reader.ReadObjectEx<IAffinityFunction>();
 
                     ResourceProcessor.Inject(func, _ignite);
 

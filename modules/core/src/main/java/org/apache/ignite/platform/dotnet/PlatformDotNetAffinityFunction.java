@@ -175,6 +175,15 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
     }
 
     /**
+     * Gets the inner func.
+     *
+     * @return The inner func.
+     */
+    public PlatformAffinityFunction getFunc() {
+        return func;
+    }
+
+    /**
      * Injects the Ignite.
      *
      * @param ignite Ignite.
