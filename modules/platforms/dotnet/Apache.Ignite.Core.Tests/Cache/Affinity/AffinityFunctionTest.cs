@@ -100,8 +100,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         public void FixtureTearDown()
         {
             // Check that affinity handles are present
-            TestUtils.AssertHandleRegistryHasItems(_ignite, _ignite.GetCacheNames().Count, 0);
-            TestUtils.AssertHandleRegistryHasItems(_ignite2, _ignite.GetCacheNames().Count, 0);
+            TestUtils.AssertHandleRegistryHasItems(_ignite, _ignite.GetCacheNames().Count - 1, 0);
+            TestUtils.AssertHandleRegistryHasItems(_ignite2, _ignite.GetCacheNames().Count - 1, 0);
 
             // Destroy all caches
             _ignite.GetCacheNames().ToList().ForEach(_ignite.DestroyCache);
