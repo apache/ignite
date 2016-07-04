@@ -109,7 +109,6 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
         nearTtl = !cctx.affinityNode() && cctx.config().getNearConfiguration() != null;
 
-        // TODO GG-11133 for near cache use existing collection.
         if (nearTtl)
             pentries = new GridConcurrentSkipListSetEx();
         else
@@ -195,7 +194,8 @@ public class GridCacheTtlManager extends GridCacheManagerAdapter {
 
         try {
             while (true) {
-                // TODO GG-11133 skip cursor creation if there are no pending entries (can maintain and check size).
+                if (pendingSize() == 0)
+                    return;
 
                 IgniteCacheOffheapManager.ExpiredEntriesCursor expiredEntriesCursor = pentries.expired(now);
 

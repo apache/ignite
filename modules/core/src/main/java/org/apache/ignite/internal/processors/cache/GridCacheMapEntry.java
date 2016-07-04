@@ -2699,7 +2699,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert Thread.holdsLock(this);
         assert ttl != CU.TTL_ZERO && ttl != CU.TTL_NOT_CHANGED && ttl >= 0 : ttl;
 
-        // TODO GG-11133 near cache entry cleanup ttl queue if needed.
         long oldExpireTime = expireTimeExtras();
 
         if (addTracked && oldExpireTime != 0 && (expireTime != oldExpireTime || isStartVersion())
@@ -2712,7 +2711,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
 
         this.ver = ver;
 
-        // TODO GG-11133 near cache entry cleanup ttl queue if needed.
         if (addTracked && expireTime != 0 &&
             (expireTime != oldExpireTime || isStartVersion()) &&
             cctx.config().isEagerTtl() && cctx.ttl().isNearTtl())
@@ -3553,7 +3551,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
         assert Thread.holdsLock(this);
         assert val != null : "null values in update for key: " + key;
 
-        // TODO GG-11133 near cache entry cleanup ttl queue if needed.
         cctx.offheap().update(key, val, ver, expireTime, partition(), localPartition());
     }
 
@@ -3595,7 +3592,6 @@ public abstract class GridCacheMapEntry extends GridMetadataAwareAdapter impleme
     protected void removeValue(CacheObject prevVal, GridCacheVersion prevVer) throws IgniteCheckedException {
         assert Thread.holdsLock(this);
 
-        // TODO GG-11133 near cache entry cleanup ttl queue if needed.
         cctx.offheap().remove(key, prevVal, prevVer, partition(), localPartition());
     }
 

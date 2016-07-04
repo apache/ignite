@@ -781,6 +781,14 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         private long expTime;
 
         /**
+         * @param link Link.
+         */
+        DataRow(long link) {
+            this(0, link);
+            hash = key.hashCode();
+        }
+
+        /**
          * @param hash Hash code.
          * @param link Link.
          */
@@ -1192,9 +1200,8 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             this.expireTime = expireTime;
             this.link= link;
 
-            // TODO: GG-11133 DataRow should init only key.
             if (initKey)
-                key = new DataRow(0, link).key();
+                key = new DataRow(link).key();
         }
 
         /**
