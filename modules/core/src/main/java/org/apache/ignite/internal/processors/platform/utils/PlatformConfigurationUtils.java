@@ -238,7 +238,7 @@ public class PlatformConfigurationUtils {
      * @param in Stream.
      * @return Affinity function.
      */
-    private static AffinityFunction readAffinityFunction(BinaryRawReaderEx in) {
+    public static PlatformAffinityFunction readAffinityFunction(BinaryRawReaderEx in) {
         byte plcTyp = in.readByte();
 
         if (plcTyp == 0)

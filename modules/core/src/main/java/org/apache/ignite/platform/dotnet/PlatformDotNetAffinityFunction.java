@@ -164,35 +164,22 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
     }
 
     /**
-     * Initializes the partitions count.
+     * Initializes this instance.
      *
-     * @param partitions Number of partitions.
+     * @param func Underlying func.
      */
-    public void initPartitions(int partitions) {
-        this.partitions = partitions;
+    public void init(PlatformAffinityFunction func) {
+        this.func = func;
+
+        assert func != null;
+
+        partitions = func.partitions();
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
-        assert ignite != null;
-
-        PlatformContext ctx = PlatformUtils.platformContext(ignite);
-        assert ctx != null;
-
-        try (PlatformMemory mem = ctx.memory().allocate()) {
-            PlatformOutputStream out = mem.output();
-            BinaryRawWriterEx writer = ctx.writer(out);
-
-            write(writer);
-
-            out.synchronize();
-
-            // TODO: How do we provide a proper target? Through initPartitions!
-            long ptr = ctx.gateway().affinityFunctionInit(mem.pointer(), null);
-
-            // TODO
-            func = new PlatformAffinityFunction(ctx, ptr, partitions, (byte)0, null);
-        }
+        if (func != null)
+            func.start();
     }
 
     /** {@inheritDoc} */

@@ -106,21 +106,6 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
     }
 
     /**
-     * Ctor.
-     *
-     * @param ptr User func ptr.
-     * @param partitions Number of partitions.
-     */
-    public PlatformAffinityFunction(PlatformContext ctx, long ptr, int partitions, byte overrideFlags,
-                                    AffinityFunction baseFunc) {
-        this.ctx = ctx;
-        this.ptr = ptr;
-        this.partitions = partitions;
-
-        ignite = ctx.kernalContext().grid();
-    }
-
-    /**
      * Gets the user func object.
      *
      * @return User func object.
