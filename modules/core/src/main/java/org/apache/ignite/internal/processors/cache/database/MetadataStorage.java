@@ -72,7 +72,7 @@ public class MetadataStorage implements MetaStore {
             metaTree = new MetaTree(cacheId, pageMem, rootPage.pageId(), null, IndexInnerIO.VERSIONS,
                 IndexLeafIO.VERSIONS, rootPage.isAllocated());
 
-            // Reuse logic
+            // Reuse logic.
             reuseList = new ReuseList(cacheId, pageMem,
                 Runtime.getRuntime().availableProcessors() * 2, this);
         }
@@ -121,12 +121,8 @@ public class MetadataStorage implements MetaStore {
 
         final IndexItem row = metaTree.remove(new IndexItem(idxNameBytes, 0));
 
-        if (row != null) {
-            if (reuseList != null)
-                reuseList.add(new Bag(row.pageId));
-            else
-               pageMem.freePage(cacheId, row.pageId);
-        }
+        if (row != null)
+            reuseList.add(new Bag(row.pageId));
 
         return row != null ? new RootPage(new FullPageId(row.pageId, cacheId), false) : null;
     }
@@ -438,12 +434,15 @@ public class MetadataStorage implements MetaStore {
         /**
          * @param pageId Page ID.
          */
-        public Bag(final long pageId) {
+        private Bag(final long pageId) {
             this.pageId = pageId;
         }
 
         /** {@inheritDoc} */
         @Override public void addFreePage(final long pageId) {
+            if (this.pageId != 0)
+                throw new IllegalStateException("Only one page is allowed to be added to this bag.");
+
             this.pageId = pageId;
         }
 
