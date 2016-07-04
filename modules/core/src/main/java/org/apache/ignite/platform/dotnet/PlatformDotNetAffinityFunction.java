@@ -65,9 +65,6 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
     /** Inner function. */
     private transient PlatformAffinityFunction func;
 
-    /** Ignite. */
-    private transient Ignite ignite;
-
     /**
      * Gets .NET type name.
      *
@@ -196,6 +193,7 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
     @SuppressWarnings("unused")
     @IgniteInstanceResource
     private void setIgnite(Ignite ignite) {
-        this.ignite = ignite;
+        if (func != null)
+            func.setIgnite(ignite);
     }
 }

@@ -295,7 +295,7 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
      */
     @SuppressWarnings("unused")
     @IgniteInstanceResource
-    private void setIgnite(Ignite ignite) {
+    public void setIgnite(Ignite ignite) {
         this.ignite = ignite;
     }
 }
