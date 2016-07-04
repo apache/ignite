@@ -161,6 +161,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                 Assert.AreEqual(2, Property1);
                 Assert.AreEqual("2", Property2);
 
+                var basePart = base.GetPartition(key);
+                Assert.Greater(basePart, -1);
+                Assert.Less(basePart, Partitions);
+
                 return (int) key * 2 % 5;
             }
         }
