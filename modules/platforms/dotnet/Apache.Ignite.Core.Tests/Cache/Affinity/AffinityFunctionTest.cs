@@ -283,7 +283,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                 _ignite.GetCache<int, int>(CacheNameRendezvous),
                 _ignite.CreateCache<int, int>(new CacheConfiguration(CacheNameRendezvous + "2")
                 {
-                    AffinityFunction = new RendezvousAffinityFunctionEx()
+                    AffinityFunction = new RendezvousAffinityFunctionEx {Bar = "test"}
                 })
             };
 
@@ -398,7 +398,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             public override int Partitions
             {
                 get { return PartitionCount; }
-                set { throw new NotSupportedException(); }
+                set { Assert.AreEqual(Partitions, value); }
             }
 
             public int Foo { get; set; }
@@ -438,7 +438,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
             public override int Partitions
             {
                 get { return PartitionCount; }
-                set { throw new NotSupportedException(); }
+                set { Assert.AreEqual(Partitions, value); }
             }
 
             public string Bar { get; set; }
