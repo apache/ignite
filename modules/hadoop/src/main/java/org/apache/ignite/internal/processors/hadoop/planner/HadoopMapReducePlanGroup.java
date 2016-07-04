@@ -1,6 +1,24 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.ignite.internal.processors.hadoop.planner;
 
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.util.ArrayList;
@@ -15,16 +33,24 @@ public class HadoopMapReducePlanGroup {
     /** Nodes. */
     private ArrayList<ClusterNode> nodes;
 
+    /** MAC addresses. */
+    private final String macs;
+
     /** CPUs. */
     private final int cpus;
+
+    /** Mappers weight. */
+    private int mappersWeight;
 
     /**
      * Constructor.
      *
      * @param node First node in the group.
+     * @param macs MAC addresses.
      */
-    public HadoopMapReducePlanGroup(ClusterNode node) {
+    public HadoopMapReducePlanGroup(ClusterNode node, String macs) {
         this.node = node;
+        this.macs = macs;
 
         cpus = node.metrics().getTotalCpus();
     }
@@ -87,6 +113,35 @@ public class HadoopMapReducePlanGroup {
      */
     public int cpuCount() {
         return cpus;
+    }
+
+    /**
+     * Get mappers weight.
+     *
+     * @return Mappers weight.
+     */
+    public int mappersWeight() {
+        return mappersWeight;
+    }
+
+    /**
+     * Set mappers weight.
+     *
+     * @param mappersWeight Mappers weight.
+     */
+    public void mappersWeight(int mappersWeight) {
+        this.mappersWeight = mappersWeight;
+    }
+
+
+    /** {@inheritDoc} */
+    @Override public int hashCode() {
+        return macs.hashCode();
+    }
+
+    /** {@inheritDoc} */
+    @Override public boolean equals(Object obj) {
+        return obj instanceof HadoopMapReducePlanGroup && F.eq(macs, ((HadoopMapReducePlanGroup)obj).macs);
     }
 
     /** {@inheritDoc} */

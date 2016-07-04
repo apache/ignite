@@ -66,7 +66,7 @@ public abstract class HadoopAbstractMapReducePlanner implements HadoopMapReduceP
             HadoopMapReducePlanGroup grp = macsMap.get(macs);
 
             if (grp == null) {
-                grp = new HadoopMapReducePlanGroup(node);
+                grp = new HadoopMapReducePlanGroup(node, macs);
 
                 macsMap.put(macs, grp);
             }
@@ -85,7 +85,7 @@ public abstract class HadoopAbstractMapReducePlanner implements HadoopMapReduceP
             }
         }
 
-        return new HadoopMapReducePlanTopology(idToGrp, hostToGrp);
+        return new HadoopMapReducePlanTopology(new ArrayList<>(macsMap.values()), idToGrp, hostToGrp);
     }
 
 
