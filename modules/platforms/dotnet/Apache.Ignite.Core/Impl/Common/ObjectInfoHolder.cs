@@ -63,5 +63,17 @@ namespace Apache.Ignite.Core.Impl.Common
         {
             get { return _properties; }
         }
+
+
+        /** <inheritdoc /> */
+        public void WriteBinary(IBinaryWriter writer)
+        {
+            Debug.Assert(writer != null);
+
+            var w = writer.GetRawWriter();
+
+            w.WriteString(_typeName);
+            w.WriteDictionary(_properties);
+        }
     }
 }
