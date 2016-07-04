@@ -22,6 +22,8 @@ namespace Apache.Ignite.Core.Tests
     using System.Linq;
     using System.Reflection;
     using Apache.Ignite.Core.Tests.Binary;
+    using Apache.Ignite.Core.Tests.Cache.Affinity;
+    using Apache.Ignite.Core.Tests.Cache.Query;
     using Apache.Ignite.Core.Tests.Memory;
     using NUnit.ConsoleRunner;
 
@@ -46,9 +48,9 @@ namespace Apache.Ignite.Core.Tests
                 return;
             }
 
-            TestOne(typeof(BinaryStringTest), "Test");
+            //TestOne(typeof(BinaryStringTest), "Test");
 
-            //TestAll(typeof (CacheQueriesCodeConfigurationTest));
+            TestAll(typeof (AffinityFunctionSpringTest));
             //TestAllInAssembly();
         }
 

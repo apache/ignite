@@ -15,11 +15,16 @@
  * limitations under the License.
  */
 
+import angular from 'angular';
 import io from 'socket.io-client'; // eslint-disable-line no-unused-vars
 
 class IgniteAgentMonitor {
     constructor(socketFactory, $root, $q, $state, $modal, $common) {
         this._scope = $root.$new();
+
+        $root.$watch('user', () => {
+            this._scope.user = $root.user;
+        });
 
         $root.$on('$stateChangeStart', () => {
             this.stopWatch();
@@ -30,7 +35,8 @@ class IgniteAgentMonitor {
             scope: this._scope,
             templateUrl: '/templates/agent-download.html',
             show: false,
-            backdrop: 'static'
+            backdrop: 'static',
+            keyboard: false
         });
 
         const _modalHide = this._downloadAgentModal.hide;
@@ -72,9 +78,6 @@ class IgniteAgentMonitor {
         this._scope.hasAgents = null;
         this._scope.showModal = false;
 
-        this._evtOrderKey = $common.randomString(20);
-        this._evtThrottleCntrKey = $common.randomString(20);
-
         /**
          * @type {Socket}
          */
@@ -104,18 +107,17 @@ class IgniteAgentMonitor {
         if (this._scope.hasAgents)
             return this._$q.when();
 
-        if (this._scope.hasAgents !== null)
-            this.checkModal();
-
         const latch = this._$q.defer();
 
-        const offConnected = this._scope.$on('agent:connected', (event, success) => {
-            offConnected();
+        const offConnected = this._scope.$on('agent:watch', (event, state) => {
+            if (state !== 'DISCONNECTED')
+                offConnected();
 
-            if (success)
+            if (state === 'CONNECTED')
                 return latch.resolve();
 
-            latch.reject();
+            if (state === 'STOPPED')
+                return latch.reject('Agent watch stopped.');
         });
 
         return latch.promise;
@@ -124,23 +126,23 @@ class IgniteAgentMonitor {
     init() {
         this._socket = this._socketFactory();
 
-        this._socket.on('connect_error', () => {
+        const disconnectFn = () => {
             this._scope.hasAgents = false;
-        });
+
+            this.checkModal();
+
+            this._scope.$broadcast('agent:watch', 'DISCONNECTED');
+        };
+
+        this._socket.on('connect_error', disconnectFn);
+        this._socket.on('disconnect', disconnectFn);
 
         this._socket.on('agent:count', ({count}) => {
             this._scope.hasAgents = count > 0;
 
             this.checkModal();
 
-            if (this._scope.hasAgents)
-                this._scope.$broadcast('agent:connected', true);
-        });
-
-        this._socket.on('disconnect', () => {
-            this._scope.hasAgents = false;
-
-            this.checkModal();
+            this._scope.$broadcast('agent:watch', this._scope.hasAgents ? 'CONNECTED' : 'DISCONNECTED');
         });
     }
 
@@ -154,7 +156,16 @@ class IgniteAgentMonitor {
 
         this._scope.agentGoal = back.goal;
 
+        if (back.onDisconnect) {
+            this._scope.offDisconnect = this._scope.$on('agent:watch', (e, state) =>
+                state === 'DISCONNECTED' && back.onDisconnect());
+        }
+
         this._scope.showModal = true;
+
+        // Remove blinking on init.
+        if (this._scope.hasAgents !== null)
+            this.checkModal();
 
         return this.awaitAgent();
     }
@@ -168,7 +179,7 @@ class IgniteAgentMonitor {
      */
     _emit(event, ...args) {
         if (!this._socket)
-            return this._$q.reject('Failed to connect to agent');
+            return this._$q.reject('Failed to connect to server');
 
         const latch = this._$q.defer();
 
@@ -217,12 +228,14 @@ class IgniteAgentMonitor {
     }
 
     /**
-     * @param {String} errMsg
+     * @param {Object} err
      */
-    showNodeError(errMsg) {
-        this._downloadAgentModal.show();
+    showNodeError(err) {
+        if (this._scope.showModal) {
+            this._downloadAgentModal.$promise.then(this._downloadAgentModal.show);
 
-        this._$common.showError(errMsg);
+            this._$common.showError(err);
+        }
     }
 
     /**
@@ -290,48 +303,21 @@ class IgniteAgentMonitor {
         return this._rest('node:query:fetch', queryId, pageSize);
     }
 
-    collect() {
-        return this._rest('node:visor:collect', this._evtOrderKey, this._evtThrottleCntrKey);
-    }
-
-    /**
-     * Clear specified cache on specified node.
-     * @param {String} nid Node id.
-     * @param {String} cacheName Cache name.
-     * @returns {Promise}
-     */
-    cacheClear(nid, cacheName) {
-        return this._rest('node:cache:clear', nid, cacheName);
-    }
-
-    /**
-     * Stop specified cache on specified node.
-     * @param {String} nid Node id.
-     * @param {String} cacheName Cache name.
-     * @returns {Promise}
-     */
-    cacheStop(nid, cacheName) {
-        return this._rest('node:cache:stop', nid, cacheName);
-    }
-
-    /**
-     * Ping node.
-     * @param {String} nid Node id.
-     * @returns {Promise}
-     */
-    ping(nid) {
-        return this._rest('node:ping', nid);
-    }
-
     stopWatch() {
         this._scope.showModal = false;
 
         this.checkModal();
 
-        this._scope.$broadcast('agent:connected', false);
+        this._scope.offDisconnect && this._scope.offDisconnect();
+
+        this._scope.$broadcast('agent:watch', 'STOPPED');
     }
 }
 
 IgniteAgentMonitor.$inject = ['igniteSocketFactory', '$rootScope', '$q', '$state', '$modal', '$common'];
 
-export default ['IgniteAgentMonitor', IgniteAgentMonitor];
+angular
+    .module('ignite-console.agent', [
+
+    ])
+    .service('IgniteAgentMonitor', IgniteAgentMonitor);

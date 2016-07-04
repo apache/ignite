@@ -19,6 +19,7 @@ package org.apache.ignite.internal.visor.event;
 
 import java.io.Serializable;
 import java.util.UUID;
+import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.internal.S;
 import org.apache.ignite.lang.IgniteUuid;
 import org.jetbrains.annotations.Nullable;
@@ -26,7 +27,7 @@ import org.jetbrains.annotations.Nullable;
 /**
  * Base class for lightweight counterpart for various {@link org.apache.ignite.events.Event}.
  */
-public class VisorGridEvent implements Serializable {
+public class VisorGridEvent implements Serializable, LessNamingBean {
     /** */
     private static final long serialVersionUID = 0L;
 

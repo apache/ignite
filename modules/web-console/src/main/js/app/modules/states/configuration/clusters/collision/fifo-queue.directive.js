@@ -15,20 +15,13 @@
  * limitations under the License.
  */
 
-namespace Apache.Ignite.Core.Impl.Binary
-{
-    using Apache.Ignite.Core.Binary;
+import template from './fifo-queue.jade!';
 
-    /// <summary>
-    /// Serializer for system types that can create instances directly from a stream and does not support handles.
-    /// </summary>
-    internal interface IBinarySystemTypeSerializer : IBinarySerializer
-    {
-        /// <summary>
-        /// Reads the instance from a reader.
-        /// </summary>
-        /// <param name="reader">The reader.</param>
-        /// <returns>Deserialized instance.</returns>
-        object ReadInstance(BinaryReader reader);
-    }
-}
+export default ['igniteConfigurationClustersCollisionFifoQueue', [() => {
+    return {
+        scope: true,
+        restrict: 'E',
+        template,
+        replace: true
+    };
+}]];

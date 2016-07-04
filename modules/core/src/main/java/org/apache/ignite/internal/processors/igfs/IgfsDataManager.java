@@ -465,23 +465,13 @@ public class IgfsDataManager extends IgfsManager {
      * Notifies data manager that no further writes will be performed on stream.
      *
      * @param fileId File ID.
-     * @param await Await completion.
      * @throws IgniteCheckedException If failed.
      */
-    public void writeClose(IgniteUuid fileId, boolean await) throws IgniteCheckedException {
+    public void writeClose(IgniteUuid fileId) throws IgniteCheckedException {
         WriteCompletionFuture fut = pendingWrites.get(fileId);
 
-        if (fut != null) {
+        if (fut != null)
             fut.markWaitingLastAck();
-
-            if (await)
-                fut.get();
-        }
-        else {
-            if (log.isDebugEnabled())
-                log.debug("Failed to find write completion future for file in pending write map (most likely it was " +
-                    "failed): " + fileId);
-        }
     }
 
     /**

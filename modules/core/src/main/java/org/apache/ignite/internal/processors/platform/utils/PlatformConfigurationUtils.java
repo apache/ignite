@@ -28,6 +28,9 @@ import org.apache.ignite.cache.CacheWriteSynchronizationMode;
 import org.apache.ignite.cache.QueryEntity;
 import org.apache.ignite.cache.QueryIndex;
 import org.apache.ignite.cache.QueryIndexType;
+import org.apache.ignite.cache.affinity.AffinityFunction;
+import org.apache.ignite.cache.affinity.fair.FairAffinityFunction;
+import org.apache.ignite.cache.affinity.rendezvous.RendezvousAffinityFunction;
 import org.apache.ignite.cache.eviction.EvictionPolicy;
 import org.apache.ignite.cache.eviction.fifo.FifoEvictionPolicy;
 import org.apache.ignite.cache.eviction.lru.LruEvictionPolicy;
@@ -38,6 +41,7 @@ import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.configuration.NearCacheConfiguration;
 import org.apache.ignite.configuration.TransactionConfiguration;
 import org.apache.ignite.internal.binary.*;
+import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunction;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetBinaryTypeConfiguration;
 import org.apache.ignite.platform.dotnet.PlatformDotNetCacheStoreFactoryNative;
@@ -175,6 +179,7 @@ public class PlatformConfigurationUtils {
             ccfg.setNearConfiguration(readNearConfiguration(in));
 
         ccfg.setEvictionPolicy(readEvictionPolicy(in));
+        ccfg.setAffinity(readAffinityFunction(in));
 
         return ccfg;
     }
@@ -228,6 +233,40 @@ public class PlatformConfigurationUtils {
     }
 
     /**
+     * Reads the eviction policy.
+     *
+     * @param in Stream.
+     * @return Affinity function.
+     */
+    private static AffinityFunction readAffinityFunction(BinaryRawReaderEx in) {
+        byte plcTyp = in.readByte();
+
+        switch (plcTyp) {
+            case 0:
+                break;
+            case 1: {
+                FairAffinityFunction f = new FairAffinityFunction();
+                f.setPartitions(in.readInt());
+                f.setExcludeNeighbors(in.readBoolean());
+                return f;
+            }
+            case 2: {
+                RendezvousAffinityFunction f = new RendezvousAffinityFunction();
+                f.setPartitions(in.readInt());
+                f.setExcludeNeighbors(in.readBoolean());
+                return f;
+            }
+            case 3: {
+                return new PlatformAffinityFunction(in.readObjectDetached(), in.readInt());
+            }
+            default:
+                assert false;
+        }
+
+        return null;
+    }
+
+    /**
      * Reads the near config.
      *
      * @param out Stream.
@@ -239,6 +278,38 @@ public class PlatformConfigurationUtils {
 
         out.writeInt(cfg.getNearStartSize());
         writeEvictionPolicy(out, cfg.getNearEvictionPolicy());
+    }
+
+    /**
+     * Writes the eviction policy.
+     * @param out Stream.
+     * @param f Affinity.
+     */
+    private static void writeAffinityFunction(BinaryRawWriter out, AffinityFunction f) {
+        if (f instanceof FairAffinityFunction) {
+            out.writeByte((byte)1);
+
+            FairAffinityFunction f0 = (FairAffinityFunction)f;
+            out.writeInt(f0.getPartitions());
+            out.writeBoolean(f0.isExcludeNeighbors());
+        }
+        else if (f instanceof RendezvousAffinityFunction) {
+            out.writeByte((byte)2);
+
+            RendezvousAffinityFunction f0 = (RendezvousAffinityFunction)f;
+            out.writeInt(f0.getPartitions());
+            out.writeBoolean(f0.isExcludeNeighbors());
+        }
+        else if (f instanceof PlatformAffinityFunction) {
+            out.writeByte((byte)3);
+
+            PlatformAffinityFunction f0 = (PlatformAffinityFunction)f;
+            out.writeObject(f0.getUserFunc());
+            out.writeInt(f.partitions());
+        }
+        else {
+            out.writeByte((byte)0);
+        }
     }
 
     /**
@@ -627,6 +698,7 @@ public class PlatformConfigurationUtils {
             writer.writeBoolean(false);
 
         writeEvictionPolicy(writer, ccfg.getEvictionPolicy());
+        writeAffinityFunction(writer, ccfg.getAffinity());
     }
 
     /**

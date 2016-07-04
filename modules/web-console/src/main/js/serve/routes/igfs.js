@@ -82,7 +82,7 @@ module.exports.factory = function(_, express, mongo) {
 
                     return (new mongo.Igfs(params)).save()
                         .then((igfs) =>
-                            mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {igfss: igfsId}}, {multi: true}).exec()
+                            mongo.Cluster.update({_id: {$in: clusters}}, {$addToSet: {igfss: igfs._id}}, {multi: true}).exec()
                                 .then(() => res.send(igfs._id))
                         );
                 })

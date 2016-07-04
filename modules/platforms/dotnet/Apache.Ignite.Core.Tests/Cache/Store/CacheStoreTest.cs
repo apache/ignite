@@ -24,6 +24,7 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cache;
     using Apache.Ignite.Core.Cache.Store;
+    using Apache.Ignite.Core.Impl;
     using NUnit.Framework;
 
     /// <summary>
@@ -463,15 +464,19 @@ namespace Apache.Ignite.Core.Tests.Cache.Store
         [Test]
         public void TestDynamicStoreStart()
         {
-            var cache = GetTemplateStoreCache();
+            var grid = Ignition.GetIgnite(GridName);
+            var reg = ((Ignite) grid).HandleRegistry;
+            var handleCount = reg.Count;
 
+            var cache = GetTemplateStoreCache();
             Assert.IsNotNull(cache);
 
             cache.Put(1, cache.Name);
-
             Assert.AreEqual(cache.Name, CacheTestStore.Map[1]);
 
-            _storeCount++;
+            Assert.AreEqual(handleCount + 1, reg.Count);
+            grid.DestroyCache(cache.Name);
+            Assert.AreEqual(handleCount, reg.Count);
         }
 
         [Test]
