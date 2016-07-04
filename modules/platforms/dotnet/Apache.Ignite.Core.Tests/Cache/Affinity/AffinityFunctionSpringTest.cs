@@ -167,6 +167,15 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
                 return (int) key * 2 % 5;
             }
+
+            public override IEnumerable<IEnumerable<IClusterNode>> AssignPartitions(AffinityFunctionContext context)
+            {
+                var baseRes = base.AssignPartitions(context).ToList();  // test base call
+
+                Assert.AreEqual(Partitions, baseRes.Count);
+
+                return baseRes;
+            }
         }
     }
 }
