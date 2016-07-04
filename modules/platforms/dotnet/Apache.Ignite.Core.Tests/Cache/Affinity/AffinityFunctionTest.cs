@@ -79,11 +79,11 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                     },
                     new CacheConfiguration(CacheNameFair)
                     {
-                        AffinityFunction = new FairAffinityFunctionEx()
-                    }, 
+                        AffinityFunction = new FairAffinityFunctionEx {Foo = 25}
+                    },
                     new CacheConfiguration(CacheNameRendezvous)
                     {
-                        AffinityFunction = new RendezvousAffinityFunctionEx()
+                        AffinityFunction = new RendezvousAffinityFunctionEx {Bar = "test"}
                     }
                 }
             };
@@ -240,14 +240,14 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
         [Test]
         public void TestInheritFairAffinity()
         {
-            Assert.Greater(RendezvousAffinityFunctionEx.AssignCount, 2);
+            Assert.Greater(FairAffinityFunctionEx.AssignCount, 2);
 
             var caches = new[]
             {
                 _ignite.GetCache<int, int>(CacheNameFair),
                 _ignite.CreateCache<int, int>(new CacheConfiguration(CacheNameFair + "2")
                 {
-                    AffinityFunction = new FairAffinityFunctionEx()
+                    AffinityFunction = new FairAffinityFunctionEx {Foo = 25}
                 })
             };
 
@@ -263,6 +263,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
                 // Test from base func
                 Assert.AreEqual(6, aff.GetPartition(33));
+
+                // Check config
+                var func = (FairAffinityFunctionEx) cache.GetConfiguration().AffinityFunction;
+                Assert.AreEqual(25, func.Foo);
             }
         }
 
@@ -295,6 +299,10 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
 
                 // Test from base func
                 Assert.AreEqual(2, aff.GetPartition(42));
+
+                // Check config
+                var func = (RendezvousAffinityFunctionEx)cache.GetConfiguration().AffinityFunction;
+                Assert.AreEqual("test", func.Bar);
             }
         }
 
@@ -393,6 +401,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                 set { throw new NotSupportedException(); }
             }
 
+            public int Foo { get; set; }
+
             public override int GetPartition(object key)
             {
                 int res;
@@ -430,6 +440,8 @@ namespace Apache.Ignite.Core.Tests.Cache.Affinity
                 get { return PartitionCount; }
                 set { throw new NotSupportedException(); }
             }
+
+            public string Bar { get; set; }
 
             public override int GetPartition(object key)
             {
