@@ -3655,8 +3655,10 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         }, Math.min(ttl * 10, getTestTimeout())));
 
         IgniteCache srvNodeCache = serverNodeCache();
+
         if (!isMultiJvmObject(srvNodeCache)) {
             GridCacheAdapter internalCache = internalCache(srvNodeCache);
+
             if (internalCache.isLocal())
                 return;
         }
@@ -3668,8 +3670,8 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         assertNotNull(entryTtl.get1());
         assertNotNull(entryTtl.get2());
-        assertEquals(0, (long) entryTtl.get1());
-        assertEquals(0, (long) entryTtl.get2());
+        assertEquals(0, (long)entryTtl.get1());
+        assertEquals(0, (long)entryTtl.get2());
 
         // Ensure that next update will not pick old expire time.
 
@@ -3694,8 +3696,8 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         assertNotNull(entryTtl.get1());
         assertNotNull(entryTtl.get2());
-        assertEquals(0, (long) entryTtl.get1());
-        assertEquals(0, (long) entryTtl.get2());
+        assertEquals(0, (long)entryTtl.get1());
+        assertEquals(0, (long)entryTtl.get2());
     }
 
     /**
@@ -5634,7 +5636,9 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         /** */
         private final String key;
 
-        /** */
+        /**
+         * @param key Key.
+         */
         private EntryTtlTask(String key) {
             this.key = key;
         }
@@ -5642,9 +5646,12 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
         /** {@inheritDoc} */
         @Override public IgnitePair<Long> call(Ignite ignite, IgniteCache<String, Integer> cache) throws Exception {
             GridCacheAdapter<?, ?> internalCache = internalCache0(cache);
+
             if (internalCache.context().isNear())
                 internalCache = internalCache.context().near().dht();
+
             GridCacheEntryEx entry = internalCache.peekEx(key);
+
             return entry != null ?
                 new IgnitePair<>(entry.ttl(), entry.expireTime()) :
                 new IgnitePair<Long>(null, null);

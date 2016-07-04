@@ -3584,8 +3584,8 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
 
             assertNotNull(entryTtl.get1());
             assertNotNull(entryTtl.get2());
-            assertEquals((Long) 0L, entryTtl.get1());
-            assertEquals((Long) 0L, entryTtl.get2());
+            assertEquals((Long)0L, entryTtl.get1());
+            assertEquals((Long)0L, entryTtl.get2());
         }
 
         long startTime = System.currentTimeMillis();
@@ -3760,8 +3760,10 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         }, Math.min(ttl * 10, getTestTimeout())));
 
         IgniteCache fullCache = fullCache();
+
         if (!isMultiJvmObject(fullCache)) {
             GridCacheAdapter internalCache = internalCache(fullCache);
+
             if (internalCache.isLocal())
                 return;
         }
@@ -5672,9 +5674,12 @@ public abstract class GridCacheAbstractFullApiSelfTest extends GridCacheAbstract
         /** {@inheritDoc} */
         @Override public IgnitePair<Long> call(Ignite ignite, IgniteCache<String, Integer> cache) throws Exception {
             GridCacheAdapter<?, ?> internalCache = internalCache0(cache);
+
             if (useDhtForNearCache && internalCache.context().isNear())
                 internalCache = internalCache.context().near().dht();
+
             GridCacheEntryEx entry = internalCache.peekEx(key);
+
             return entry != null ?
                 new IgnitePair<>(entry.ttl(), entry.expireTime()) :
                 new IgnitePair<Long>(null, null);

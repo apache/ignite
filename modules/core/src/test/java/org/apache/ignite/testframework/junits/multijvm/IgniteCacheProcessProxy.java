@@ -444,6 +444,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 
+    /** {@inheritDoc} */
     @Override public CacheMetrics localMetrics() {
         throw new UnsupportedOperationException("Method should be supported.");
     }
@@ -453,6 +454,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         throw new UnsupportedOperationException("Method should be supported.");
     }
 
+    /** {@inheritDoc} */
     @Override public CacheMetricsMXBean localMxBean() {
         throw new UnsupportedOperationException("Method should be supported.");
     }
@@ -461,8 +463,6 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
     @Override public <K1, V1> IgniteCache<K1, V1> withKeepBinary() {
         throw new UnsupportedOperationException("Method should be supported.");
     }
-
-
 
     /**
      *
@@ -1490,7 +1490,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         /**
          * @param cacheName Cache name.
          * @param async Async.
-         * @param expiryPlc
+         * @param expiryPlc Optional expiry policy.
          */
         public CacheTaskAdapter(String cacheName, boolean async, ExpiryPolicy expiryPlc) {
             this.async = async;
@@ -1499,12 +1499,13 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
         }
 
         /**
-         * Returns cache instance.
+         * @return Cache instance.
          */
         protected IgniteCache<K, V> cache() {
             IgniteCache<K, V> cache = ignite.cache(cacheName);
 
             cache = expiryPlc != null ? cache.withExpiryPolicy(expiryPlc) : cache;
+
             return async ? cache.withAsync() : cache;
         }
     }

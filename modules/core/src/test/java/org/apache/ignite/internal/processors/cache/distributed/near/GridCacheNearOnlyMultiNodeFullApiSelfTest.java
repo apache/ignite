@@ -211,9 +211,10 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
      * @throws Exception If failed.
      */
     public void testReaderTtlTx() throws Exception {
-        // IgniteProcessProxy#transactions is not implemented
+        // IgniteProcessProxy#transactions is not implemented.
         if (isMultiJvm())
             return;
+
         checkReaderTtl(true);
     }
 
@@ -327,7 +328,7 @@ public class GridCacheNearOnlyMultiNodeFullApiSelfTest extends GridCachePartitio
             if (entryTtl != null) {
                 assertNotNull(entryTtl.get1());
                 assertNotNull(entryTtl.get2());
-                assertEquals(ttl, (long) entryTtl.get1());
+                assertEquals(ttl, (long)entryTtl.get1());
                 assertTrue(entryTtl.get2() > startTime);
                 expireTimes[i] = entryTtl.get2();
             }
