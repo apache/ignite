@@ -18,8 +18,6 @@
 package org.apache.ignite.internal.processors.igfs;
 
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import org.apache.ignite.IgniteCheckedException;
@@ -35,15 +33,6 @@ import org.jetbrains.annotations.Nullable;
 public class IgfsModeResolver {
     /** Maximum size of map with cached path modes. */
     private static final int MAX_PATH_CACHE = 1000;
-
-    /** Depth-based comparator. Longest paths go first. */
-    private static final Comparator<Map.Entry<IgfsPath, IgfsMode>> CMP
-        = new Comparator<Map.Entry<IgfsPath, IgfsMode>>() {
-        @Override public int compare(Map.Entry<IgfsPath, IgfsMode> o1,
-            Map.Entry<IgfsPath, IgfsMode> o2) {
-            return o2.getKey().components().size() - o1.getKey().components().size();
-        }
-    };
 
     /** Default mode. */
     private final IgfsMode dfltMode;
@@ -67,87 +56,10 @@ public class IgfsModeResolver {
 
         this.dfltMode = dfltMode;
 
-        if (modes != null) {
-            this.modes = filterModes(this.dfltMode, modes);
+        this.modes = modes;
 
+        if (modes != null)
             modesCache = new GridBoundedConcurrentLinkedHashMap<>(MAX_PATH_CACHE);
-        }
-    }
-
-    /**
-     * Checks, filters and sorts the modes.
-     *
-     * @param dfltMode The root mode. Must always be not null.
-     * @param modes The subdirectory modes.
-     * @return Descending list of filtered and checked modes.
-     * @throws IgniteCheckedException On error or
-     */
-    private List<T2<IgfsPath, IgfsMode>> filterModes(IgfsMode dfltMode, @Nullable List<T2<IgfsPath, IgfsMode>> modes)
-        throws IgniteCheckedException {
-        if (modes == null)
-            return null;
-
-        Collections.sort(modes, CMP);
-
-        Collections.reverse(modes); // Need ascending depth order for input (shallow first).
-
-        final List<T2<IgfsPath, IgfsMode>> consistentModes = new LinkedList<>();
-
-        // Add root with default mode as the first (the least deep):
-        final T2<IgfsPath, IgfsMode> root = new T2<>(new IgfsPath("/"), dfltMode);
-        addIfConsistent(consistentModes, root);
-
-        assert consistentModes.size() == 1;
-
-        for (T2<IgfsPath, IgfsMode> m: modes)
-            addIfConsistent(consistentModes, m);
-
-        // Remove root, because this class contract is that root mode is not contained in the list.
-        T2<IgfsPath, IgfsMode> expRoot = consistentModes.remove(consistentModes.size() - 1);
-
-        assert expRoot == root;
-
-        return consistentModes;
-    }
-
-    /**
-     * Adds mode pair.
-     *
-     * @param consistentList List sorted in descending order (deepest first).
-     * @param pairToAdd The pairs come in ascending order. The incoming piar is deeper than any element of
-     * {@code consistentList}.
-     * @throws IgniteCheckedException If such pair cannot be added.
-     */
-    private void addIfConsistent(List<T2<IgfsPath, IgfsMode>> consistentList, T2<IgfsPath, IgfsMode> pairToAdd)
-        throws IgniteCheckedException {
-        assert pairToAdd.getValue() != null;
-
-        boolean parentFound = consistentList.isEmpty();
-
-        for (T2<IgfsPath, IgfsMode> consistent: consistentList) {
-            if (startsWith(pairToAdd.getKey(), consistent.getKey())) {
-                assert consistent.getValue() != null;
-
-                // We're adding a subdirectory to an existing root:
-                if (consistent.getValue() == pairToAdd.getValue())
-                    // No reason to add a sub-path of the same mode, ignoring this pair.
-                    return;
-
-                if (!consistent.getValue().canContain(pairToAdd.getValue()))
-                    throw new IgniteCheckedException("Subdirectory " + pairToAdd.getKey() + " mode "
-                        + pairToAdd.getValue() + " is not compatible with upper level "
-                        + consistent.getKey() + " directory mode " + consistent.getValue() + ".");
-
-                parentFound = true;
-
-                break;
-            }
-        }
-
-        assert parentFound;
-
-        // Add to the 1st position (depest first):
-        consistentList.add(0, pairToAdd);
     }
 
     /**
@@ -200,22 +112,10 @@ public class IgfsModeResolver {
      * @return {@code true} if path starts with prefix, {@code false} if not.
      */
     private static boolean startsWith(IgfsPath path, IgfsPath prefix) {
-        List<String> p1Comps = path.components();
-        List<String> p2Comps = prefix.components();
+        String pathStr = path.toString();
+        String prefStr = prefix.toString();
 
-        if (p2Comps.size() > p1Comps.size())
-            return false;
-
-        for (int i = 0; i < p1Comps.size(); i++) {
-            if (i >= p2Comps.size() || p2Comps.get(i) == null)
-                // All prefix components already matched.
-                return true;
-
-            if (!p1Comps.get(i).equals(p2Comps.get(i)))
-                return false;
-        }
-
-        // Path and prefix components had same length and all of them matched.
-        return true;
+        return pathStr.startsWith(prefStr) &&
+            (pathStr.length() == prefStr.length() || "/".equals(prefStr) || pathStr.charAt(prefStr.length()) == '/');
     }
 }

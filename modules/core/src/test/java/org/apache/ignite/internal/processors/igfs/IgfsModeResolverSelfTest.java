@@ -36,9 +36,10 @@ public class IgfsModeResolverSelfTest extends TestCase {
     /** {@inheritDoc} */
     @Override protected void setUp() throws Exception {
         reslvr = new IgfsModeResolver(DUAL_SYNC, Arrays.asList(
+            new T2<>(new IgfsPath("/a/b/c/d"), PROXY),
             new T2<>(new IgfsPath("/a/P/"), PRIMARY),
-            new T2<>(new IgfsPath("/a/b/"), DUAL_ASYNC),
-            new T2<>(new IgfsPath("/a/b/c/d"), PROXY)));
+            new T2<>(new IgfsPath("/a/b/"), DUAL_ASYNC)
+        ));
     }
 
     /**
@@ -87,7 +88,7 @@ public class IgfsModeResolverSelfTest extends TestCase {
     public void testModesValidation() throws Exception {
         // Another mode inside PRIMARY directory:
         try {
-            IgfsModeResolver r = new IgfsModeResolver(DUAL_SYNC, Arrays.asList(
+            IgfsImpl.filterModes(DUAL_SYNC, Arrays.asList(
                 new T2<>(new IgfsPath("/a/"), PRIMARY),
                 new T2<>(new IgfsPath("/a/b/"), DUAL_ASYNC)));
 
@@ -101,7 +102,7 @@ public class IgfsModeResolverSelfTest extends TestCase {
         for (IgfsMode m: IgfsMode.values()) {
             if (m != IgfsMode.PRIMARY) {
                 try {
-                    IgfsModeResolver r = new IgfsModeResolver(PRIMARY, Arrays.asList(new T2<>(new IgfsPath("/a/"),
+                    IgfsImpl.filterModes(PRIMARY, Arrays.asList(new T2<>(new IgfsPath("/a/"),
                         DUAL_ASYNC)));
 
                     fail("IgniteCheckedException expected");
@@ -112,24 +113,31 @@ public class IgfsModeResolverSelfTest extends TestCase {
             }
         }
 
-        // Duplicated subfolders should be ignored:
-        IgfsModeResolver r = new IgfsModeResolver(DUAL_SYNC, Arrays.asList(
-            new T2<>(new IgfsPath("/a/b"), PRIMARY),
+        // Duplicated sub-folders should be ignored:
+        List<T2<IgfsPath, IgfsMode>> modes = IgfsImpl.filterModes(DUAL_SYNC, Arrays.asList(
+            new T2<>(new IgfsPath("/a"), PRIMARY),
             new T2<>(new IgfsPath("/c/d/"), PRIMARY),
             new T2<>(new IgfsPath("/c/d/e/f"), PRIMARY)
         ));
-        List<T2<IgfsPath, IgfsMode>> modes = r.modesOrdered();
         assertNotNull(modes);
         assertEquals(2, modes.size());
+        assertEquals(modes, Arrays.asList(
+            new T2<>(new IgfsPath("/c/d/"), PRIMARY),
+            new T2<>(new IgfsPath("/a"), PRIMARY)
+        ));
 
-        // Non-duplicated subfolders should not be ignored:
-        IgfsModeResolver r2 = new IgfsModeResolver(DUAL_SYNC, Arrays.asList(
+        // Non-duplicated sub-folders should not be ignored:
+        modes = IgfsImpl.filterModes(DUAL_SYNC, Arrays.asList(
             new T2<>(new IgfsPath("/a/b"), DUAL_ASYNC),
             new T2<>(new IgfsPath("/a/b/c"), DUAL_SYNC),
             new T2<>(new IgfsPath("/a/b/c/d"), DUAL_ASYNC)
         ));
-        List<T2<IgfsPath, IgfsMode>> modes2 = r2.modesOrdered();
-        assertNotNull(modes2);
-        assertEquals(3, modes2.size());
+        assertNotNull(modes);
+        assertEquals(modes.size(), 3);
+        assertEquals(modes, Arrays.asList(
+            new T2<>(new IgfsPath("/a/b/c/d"), DUAL_ASYNC),
+            new T2<>(new IgfsPath("/a/b/c"), DUAL_SYNC),
+            new T2<>(new IgfsPath("/a/b"), DUAL_ASYNC)
+        ));
     }
 }
