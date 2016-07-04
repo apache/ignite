@@ -52,7 +52,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
         /// <summary>
         /// Writes the instance.
         /// </summary>
-        internal static void Write(IBinaryRawWriter writer, IAffinityFunction fun)
+        internal static void Write(IBinaryRawWriter writer, IAffinityFunction fun, bool skipUserFunc = false)
         {
             Debug.Assert(writer != null);
 
@@ -80,7 +80,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
                 writer.WriteByte((byte) overrideFlags);
 
                 // Do not write user func if there is nothing overridden
-                WriteUserFunc(writer, overrideFlags != UserOverrides.None ? fun : null);
+                WriteUserFunc(writer, overrideFlags != UserOverrides.None ? fun : null, skipUserFunc);
             }
             else
             {
@@ -88,7 +88,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
                 writer.WriteInt(fun.Partitions);
                 writer.WriteBoolean(false); // Exclude neighbors
                 writer.WriteByte((byte) UserOverrides.All);
-                WriteUserFunc(writer, fun);
+                WriteUserFunc(writer, fun, skipUserFunc);
             }
         }
 
@@ -247,8 +247,11 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
         /// <summary>
         /// Writes the user function.
         /// </summary>
-        private static void WriteUserFunc(IBinaryRawWriter writer, IAffinityFunction fun)
+        private static void WriteUserFunc(IBinaryRawWriter writer, IAffinityFunction fun, bool skipUserFunc)
         {
+            if (skipUserFunc)
+                return;
+
             if (fun != null && !fun.GetType().IsSerializable)
                 throw new IgniteException("AffinityFunction should be serializable.");
 

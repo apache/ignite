@@ -190,7 +190,8 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
             // TODO: How do we provide a proper target? Through initPartitions!
             long ptr = ctx.gateway().affinityFunctionInit(mem.pointer(), null);
 
-            func = new PlatformAffinityFunction(ctx, ptr, partitions);
+            // TODO
+            func = new PlatformAffinityFunction(ctx, ptr, partitions, (byte)0, null);
         }
     }
 
@@ -205,6 +206,7 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
      *
      * @param ignite Ignite.
      */
+    @SuppressWarnings("unused")
     @IgniteInstanceResource
     private void setIgnite(Ignite ignite) {
         this.ignite = ignite;
