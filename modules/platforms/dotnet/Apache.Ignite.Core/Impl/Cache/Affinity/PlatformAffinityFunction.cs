@@ -29,6 +29,7 @@ namespace Apache.Ignite.Core.Impl.Cache.Affinity
     /// </summary>
     internal class PlatformAffinityFunction : PlatformTarget, IAffinityFunction
     {
+        /** Opcodes. */
         private enum  Op
         {
             Partition = 1,
