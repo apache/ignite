@@ -23,7 +23,7 @@ namespace Apache.Ignite.Core.Impl.Common
     using Apache.Ignite.Core.Impl.Binary;
 
     /// <summary>
-    /// Holds the information to instantiate an object and set it's properties.
+    /// Holds the information to instantiate an object and set its properties.
     /// Typically used for .NET objects defined in Spring XML.
     /// </summary>
     internal class ObjectInfoHolder : IBinaryWriteAware
