@@ -17,12 +17,16 @@
 
 namespace Apache.Ignite.Core.Cache.Affinity.Fair
 {
+    using System;
+
     /// <summary>
     /// Fair affinity function which tries to ensure that all nodes get equal number of partitions with 
     /// minimum amount of reassignments between existing nodes.
     /// </summary>
+    [Serializable]
     public class FairAffinityFunction : AffinityFunctionBase
     {
         // No-op.
+        // Actual implementation is in Java, see AffinityFunctionSerializer.Write method.
     }
 }

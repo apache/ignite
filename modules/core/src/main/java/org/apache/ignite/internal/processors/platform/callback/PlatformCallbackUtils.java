@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.platform.callback;
 
+import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunctionTarget;
+
 /**
  * Platform callback utility methods. Implemented in target platform. All methods in this class must be
  * package-visible and invoked only through {@link PlatformCallbackGateway}.
@@ -500,9 +502,10 @@ public class PlatformCallbackUtils {
      *
      * @param envPtr Environment pointer.
      * @param memPtr Pointer to a stream with serialized affinity function.
+     * @param baseFunc Optional func for base calls.
      * @return Affinity function pointer.
      */
-    static native long affinityFunctionInit(long envPtr, long memPtr);
+    static native long affinityFunctionInit(long envPtr, long memPtr, PlatformAffinityFunctionTarget baseFunc);
 
     /**
      * Gets the partition from affinity function.
