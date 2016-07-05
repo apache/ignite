@@ -39,8 +39,8 @@ public class HadoopMapReducePlanGroup {
     /** CPUs. */
     private final int cpus;
 
-    /** Mappers weight. */
-    private int mappersWeight;
+    /** Weight. */
+    private int weight;
 
     /**
      * Constructor.
@@ -116,21 +116,17 @@ public class HadoopMapReducePlanGroup {
     }
 
     /**
-     * Get mappers weight.
-     *
-     * @return Mappers weight.
+     * @return weight.
      */
-    public int mappersWeight() {
-        return mappersWeight;
+    public int weight() {
+        return weight;
     }
 
     /**
-     * Set mappers weight.
-     *
-     * @param mappersWeight Mappers weight.
+     * @param weight weight.
      */
-    public void mappersWeight(int mappersWeight) {
-        this.mappersWeight = mappersWeight;
+    public void weight(int weight) {
+        this.weight = weight;
     }
 
 
