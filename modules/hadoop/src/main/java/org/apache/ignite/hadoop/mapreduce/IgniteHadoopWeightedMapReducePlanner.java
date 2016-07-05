@@ -40,12 +40,14 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -390,7 +392,7 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
 
         // Assign the rest reducers.
         if (remaining > 0)
-            assignRemoteReducers(remaining, res);
+            assignRemoteReducers(remaining, top, mappers, res);
 
         return res;
     }
@@ -434,13 +436,85 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
     }
 
     /**
-     * Assign remote reducers.
+     * Assign remote reducers. Assign to the least loaded first.
      *
      * @param cnt Count.
+     * @param top Topology.
+     * @param mappers Mappers.
      * @param resMap Reducers result map.
      */
-    private void assignRemoteReducers(int cnt, Map<UUID, Integer> resMap) {
-        // TODO;
+    private void assignRemoteReducers(int cnt, HadoopMapReducePlanTopology top, Mappers mappers,
+        Map<UUID, Integer> resMap) {
+
+        TreeSet<HadoopMapReducePlanGroup> set = new TreeSet<>(new GroupWeightComparator());
+
+        set.addAll(top.groups());
+
+        while (cnt-- > 0) {
+            HadoopMapReducePlanGroup grp = set.first();
+
+            // Look for affinity nodes.
+            List<UUID> affIds = null;
+
+            for (int i = 0; i < grp.nodeCount(); i++) {
+                UUID nodeId = grp.node(i).id();
+
+                if (mappers.nodeToSplits.containsKey(nodeId)) {
+                    if (affIds == null)
+                        affIds = new ArrayList<>(2);
+
+                    affIds.add(nodeId);
+                }
+            }
+
+            // Select best node.
+            UUID id;
+            int newWeight;
+
+            if (affIds != null) {
+                id = affIds.get(ThreadLocalRandom.current().nextInt(affIds.size()));
+
+                newWeight = grp.weight() + locReducerWeight;
+            }
+            else {
+                id = grp.node(ThreadLocalRandom.current().nextInt(grp.nodeCount())).id();
+
+                newWeight = grp.weight() + rmtReducerWeight;
+            }
+
+            // Re-add entry with new weight.
+            boolean rmv = set.remove(grp);
+
+            assert rmv;
+
+            grp.weight(newWeight);
+
+            boolean add = set.add(grp);
+
+            assert add;
+
+            // Update result map.
+            Integer res = resMap.get(id);
+
+            resMap.put(id, res == null ? 1 : res + 1);
+        }
+    }
+
+    /**
+     * Comparator based on group's weight.
+     */
+    private static class GroupWeightComparator implements Comparator<HadoopMapReducePlanGroup> {
+        /** {@inheritDoc} */
+        @Override public int compare(HadoopMapReducePlanGroup first, HadoopMapReducePlanGroup second) {
+            int res = second.weight() - first.weight();
+
+            if (res < 0)
+                return -1;
+            else if (res > 0)
+                return 1;
+
+            return first.macs().compareTo(second.macs());
+        }
     }
 
     /**

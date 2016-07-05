@@ -75,6 +75,13 @@ public class HadoopMapReducePlanGroup {
     }
 
     /**
+     * @return MAC addresses.
+     */
+    public String macs() {
+        return macs;
+    }
+
+    /**
      * @return {@code True} if only sinle node present.
      */
     public boolean single() {
