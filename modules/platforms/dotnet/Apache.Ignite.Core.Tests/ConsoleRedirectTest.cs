@@ -104,7 +104,61 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestMultipleDomains()
         {
-            // TODO
+            Console.WriteLine("Starting test...");
+
+            RunInNewDomain();
+
+            Console.WriteLine("Test stopped.");
+        }
+
+        private static void RunInNewDomain()
+        {
+            AppDomain childDomain = null;
+
+            try
+            {
+                // Construct and initialize settings for a second AppDomain.
+                var domainSetup = new AppDomainSetup
+                {
+                    ApplicationBase = AppDomain.CurrentDomain.SetupInformation.ApplicationBase,
+                    ConfigurationFile = AppDomain.CurrentDomain.SetupInformation.ConfigurationFile,
+                    ApplicationName = AppDomain.CurrentDomain.SetupInformation.ApplicationName,
+                    LoaderOptimization = LoaderOptimization.MultiDomainHost
+                };
+
+                // Create the child AppDomain used for the service tool at runtime.
+                childDomain = AppDomain.CreateDomain(
+                    "Your Child AppDomain", null, domainSetup);
+
+                // Create an instance of the runtime in the second AppDomain. 
+                // A proxy to the object is returned.
+                var runtime = (IIgniteRunner)childDomain.CreateInstanceAndUnwrap(
+                    typeof(IgniteRunner).Assembly.FullName, typeof(IgniteRunner).FullName);
+
+                // start the runtime.  call will marshal into the child runtime appdomain
+                runtime.Run();
+            }
+            finally
+            {
+                // runtime has exited, finish off by unloading the runtime appdomain
+                if (childDomain != null) AppDomain.Unload(childDomain);
+            }
+        }
+
+        private interface IIgniteRunner
+        {
+            void Run();
+        }
+
+        private class IgniteRunner : MarshalByRefObject, IIgniteRunner
+        {
+            public void Run()
+            {
+                Console.WriteLine("Running in a new domain!");
+
+                var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
+                Ignition.Stop(ignite.Name, true);
+            }
         }
     }
 }
