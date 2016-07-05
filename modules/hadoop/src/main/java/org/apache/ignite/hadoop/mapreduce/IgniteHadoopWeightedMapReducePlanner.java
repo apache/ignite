@@ -644,16 +644,16 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
      */
     // TODO: Docs.
     public int getRemoteReducerWeight() {
-        return rmtMapperWeight;
+        return rmtReducerWeight;
     }
 
     /**
      * Set remote reducer weight. See {@link #getRemoteReducerWeight()} for more information.
      *
-     * @param rmtMapperWeight Remote reducer weight.
+     * @param rmtReducerWeight Remote reducer weight.
      */
-    public void setRemoteReducerWeight(int rmtMapperWeight) {
-        this.rmtMapperWeight = rmtMapperWeight;
+    public void setRemoteReducerWeight(int rmtReducerWeight) {
+        this.rmtReducerWeight = rmtReducerWeight;
     }
 
     /**
