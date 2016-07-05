@@ -195,7 +195,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             assert remainder == null;
 
-            mgr.writeClose(info.id(), false);
+            mgr.writeClose(info.id());
 
             fut.get(3000);
 
@@ -287,7 +287,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
 
             assert left2 == null;
 
-            mgr.writeClose(info.id(), false);
+            mgr.writeClose(info.id());
 
             fut.get(3000);
 
@@ -369,7 +369,7 @@ public class IgfsDataManagerSelfTest extends IgfsCommonAbstractTest {
                 assert left == null : "No remainder should be returned if flush is true: " + Arrays.toString(left);
             }
 
-            mgr.writeClose(info.id(), false);
+            mgr.writeClose(info.id());
 
             assertTrue(range.regionEqual(new IgfsFileAffinityRange(0, writesCnt * chunkSize - 1, null)));
 

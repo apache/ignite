@@ -19,12 +19,13 @@ package org.apache.ignite.internal.visor.igfs;
 
 import java.io.Serializable;
 import org.apache.ignite.igfs.IgfsMetrics;
+import org.apache.ignite.internal.LessNamingBean;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 /**
  * Data transfer object for {@link IgfsMetrics}.
  */
-public class VisorIgfsMetrics implements Serializable {
+public class VisorIgfsMetrics implements Serializable, LessNamingBean {
     /** */
     private static final long serialVersionUID = 0L;
 
