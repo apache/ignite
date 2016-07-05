@@ -333,10 +333,9 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
      * @param mappers Mappers.
      * @param reducerCnt Reducer count.
      * @return Reducers.
-     * @throws IgniteCheckedException If failed.
      */
     private Map<UUID, int[]> assignReducers(Collection<HadoopInputSplit> splits, HadoopMapReducePlanTopology top,
-        Mappers mappers, int reducerCnt) throws IgniteCheckedException {
+        Mappers mappers, int reducerCnt) {
         Map<UUID, Integer> reducers = assignReducers0(top, splits, mappers, reducerCnt);
 
         int cnt = 0;
@@ -365,11 +364,9 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
      * @param mappers Mappers.
      * @param reducerCnt Reducer count.
      * @return Reducers.
-     * @throws IgniteCheckedException If failed.
      */
     private Map<UUID, Integer> assignReducers0(HadoopMapReducePlanTopology top, Collection<HadoopInputSplit> splits,
-        Mappers mappers, int reducerCnt)
-        throws IgniteCheckedException {
+        Mappers mappers, int reducerCnt) {
         Map<UUID, Integer> res = new HashMap<>();
 
         // Assign reducers to splits.
@@ -762,10 +759,10 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
         /** Normal node. */
         NORMAL(0),
 
-        /** Affinity node. */
+        /** (likely) Affinity node. */
         HIGH(1),
 
-        /** Node with the highest priority (e.g. because it hosts more data than other nodes). */
+        /** (likely) Affinity node with the highest priority (e.g. because it hosts more data than other nodes). */
         HIGHEST(2);
 
         /** Value. */
