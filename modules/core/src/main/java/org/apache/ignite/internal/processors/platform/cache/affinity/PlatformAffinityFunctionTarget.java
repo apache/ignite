@@ -92,7 +92,7 @@ public class PlatformAffinityFunctionTarget extends PlatformAbstractTarget {
 
             final List<List<ClusterNode>> partitions = baseFunc.assignPartitions(affCtx);
 
-            PlatformAffinityFunctionSerializer.writePartitionAssignment(partitions, writer, platformContext());
+            PlatformAffinityUtils.writePartitionAssignment(partitions, writer, platformContext());
 
             return;
         }

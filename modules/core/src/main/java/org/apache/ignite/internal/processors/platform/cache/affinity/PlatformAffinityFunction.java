@@ -189,7 +189,7 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
                 BinaryRawWriterEx writer = ctx.writer(out);
 
                 // Write previous assignment
-                PlatformAffinityFunctionSerializer.writeAffinityFunctionContext(affCtx, writer, ctx);
+                PlatformAffinityUtils.writeAffinityFunctionContext(affCtx, writer, ctx);
 
                 out.synchronize();
 
@@ -200,13 +200,16 @@ public class PlatformAffinityFunction implements AffinityFunction, Externalizabl
                 if (baseTarget != null)
                     baseTarget.setCurrentAffinityFunctionContext(affCtx);
 
-                ctx.gateway().affinityFunctionAssignPartitions(ptr, outMem.pointer(), inMem.pointer());
-
-                if (baseTarget != null)
-                    baseTarget.setCurrentAffinityFunctionContext(null);
+                try {
+                    ctx.gateway().affinityFunctionAssignPartitions(ptr, outMem.pointer(), inMem.pointer());
+                }
+                finally {
+                    if (baseTarget != null)
+                        baseTarget.setCurrentAffinityFunctionContext(null);
+                }
 
                 // Read result
-                return PlatformAffinityFunctionSerializer.readPartitionAssignment(ctx.reader(inMem), ctx);
+                return PlatformAffinityUtils.readPartitionAssignment(ctx.reader(inMem), ctx);
             }
         }
     }

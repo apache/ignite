@@ -33,7 +33,7 @@ import java.util.List;
 /**
  * Affinity serialization functions.
  */
-public class PlatformAffinityFunctionSerializer {
+public class PlatformAffinityUtils {
     /**
      * Writes the affinity function context.
      * @param affCtx Affinity context.
