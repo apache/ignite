@@ -17,6 +17,9 @@
 
 #include <string>
 #include <exception>
+#include <vector>
+#include <algorithm>
+#include <stdexcept>
 
 #include "ignite/jni/utils.h"
 #include "ignite/common/concurrent.h"
@@ -440,7 +443,7 @@ namespace ignite
             gcc::CriticalSection CONSOLE_LOCK;
             JniJvm JVM;
             bool PRINT_EXCEPTION = false;
-            ConsoleWriteHandler consoleWrite;
+            std::vector<ConsoleWriteHandler> consoleWriteHandlers;
 
             /* HELPER METHODS. */
 
@@ -2506,8 +2509,22 @@ namespace ignite
             }
 
             void JniContext::SetConsoleHandler(ConsoleWriteHandler consoleHandler) {
+                if (!consoleHandler)
+                    throw std::invalid_argument("consoleHandler can not be null");
+
                 CONSOLE_LOCK.Enter();
-                consoleWrite = consoleHandler;
+                    
+                consoleWriteHandlers.push_back(consoleHandler);
+
+                CONSOLE_LOCK.Leave();
+            }
+
+            void JniContext::RemoveConsoleHandler(ConsoleWriteHandler consoleHandler) {
+                CONSOLE_LOCK.Enter();
+                    
+                consoleWriteHandlers.erase(remove(consoleWriteHandlers.begin(), consoleWriteHandlers.end(), 
+                    consoleHandler), consoleWriteHandlers.end());
+
                 CONSOLE_LOCK.Leave();
             }
 
@@ -2880,7 +2897,9 @@ namespace ignite
             JNIEXPORT void JNICALL JniConsoleWrite(JNIEnv *env, jclass cls, jstring str, jboolean isErr) {
                 CONSOLE_LOCK.Enter();
 
-                if (consoleWrite) {
+                if (consoleWriteHandlers.size() > 0) {
+                    ConsoleWriteHandler consoleWrite = consoleWriteHandlers.at(0);
+
                     const char* strChars = env->GetStringUTFChars(str, nullptr);
                     const int strCharsLen = env->GetStringUTFLength(str);
 

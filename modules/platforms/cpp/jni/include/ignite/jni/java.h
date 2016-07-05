@@ -508,6 +508,7 @@ namespace ignite
                 static void Detach();
                 static void Release(jobject obj);
                 static void SetConsoleHandler(ConsoleWriteHandler consoleHandler);
+                static void RemoveConsoleHandler(ConsoleWriteHandler consoleHandler);
 
                 jobject IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr);
                 jobject IgnitionStart(char* cfgPath, char* name, int factoryId, long long dataPtr, JniErrorInfo* errInfo);
