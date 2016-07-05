@@ -48,13 +48,13 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
     private static final long serialVersionUID = 0L;
 
     /** .NET type name. */
-    private String typName;
+    private transient String typName;
 
     /** Properties. */
-    private Map<String, ?> props;
+    private transient Map<String, ?> props;
 
     /** Inner function. */
-    private transient PlatformAffinityFunction func;
+    private PlatformAffinityFunction func;
 
     /**
      * Gets .NET type name.
@@ -125,18 +125,6 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
         assert func != null;
 
         func.removeNode(nodeId);
-    }
-
-    /**
-     * Writes this func to the writer.
-     *
-     * @param writer Writer.
-     */
-    public void write(BinaryRawWriter writer) {
-        assert writer != null;
-
-        writer.writeObject(typName);
-        writer.writeMap(props);
     }
 
     /** {@inheritDoc} */

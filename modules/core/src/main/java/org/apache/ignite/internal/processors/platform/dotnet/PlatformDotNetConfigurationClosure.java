@@ -197,8 +197,10 @@ public class PlatformDotNetConfigurationClosure extends PlatformAbstractConfigur
 
                 writer.writeInt(affFuncs.size());
 
-                for (PlatformDotNetAffinityFunction func : affFuncs)
-                    func.write(writer);
+                for (PlatformDotNetAffinityFunction func : affFuncs) {
+                    writer.writeString(func.getTypeName());
+                    writer.writeMap(func.getProperties());
+                }
 
                 out.synchronize();
 
