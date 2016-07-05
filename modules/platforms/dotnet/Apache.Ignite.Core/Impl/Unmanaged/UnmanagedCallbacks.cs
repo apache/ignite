@@ -940,7 +940,12 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         {
             SafeCall(() =>
             {
-                var svc = _handleRegistry.Get<IService>(svcPtr, true);
+                var svc = _handleRegistry.Get<IService>(svcPtr);
+
+                // Ignite does not guarantee that Cancel is called after Execute exits
+                // So missing handle is a valid situation
+                if (svc == null)
+                    return;   
 
                 using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
@@ -1136,7 +1141,13 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
             {
                 using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
-                    var func = _ignite.Marshaller.Unmarshal<IAffinityFunction>(stream);
+                    var reader = _ignite.Marshaller.StartUnmarshal(stream);
+
+                    var funcOrTypeName = reader.ReadObject<object>();
+
+                    var func = funcOrTypeName as IAffinityFunction
+                               ?? IgniteUtils.CreateInstance<IAffinityFunction>((string) funcOrTypeName,
+                                   reader.ReadDictionaryAsGeneric<string, object>());
 
                     ResourceProcessor.Inject(func, _ignite);
 

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.rest;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -36,8 +38,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.cache.CacheAtomicityMode;
 import org.apache.ignite.cache.CacheMode;
@@ -154,8 +154,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     }
 
     /**
-     * @return Port to use for rest. Needs to be changed over time
-     *      because Jetty has some delay before port unbind.
+     * @return Port to use for rest. Needs to be changed over time because Jetty has some delay before port unbind.
      */
     protected abstract int restPort();
 
@@ -339,7 +338,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     /**
      * @throws Exception If failed.
      */
-    public void testNullMapKeyAndValue()  throws Exception {
+    public void testNullMapKeyAndValue() throws Exception {
         Map<String, String> map1 = new HashMap<>();
         map1.put(null, null);
         map1.put("key", "value");
@@ -372,7 +371,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
     /**
      * @throws Exception If failed.
      */
-    public void testSimpleObject()  throws Exception {
+    public void testSimpleObject() throws Exception {
         SimplePerson p = new SimplePerson(1, "Test", java.sql.Date.valueOf("1977-01-26"), 1000.55, 39, "CIO", 25);
 
         jcache().put("simplePersonKey", p);
@@ -1004,18 +1003,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
      * @param metas Metadata for Ignite caches.
      * @throws Exception If failed.
      */
-    private void testMetadata(Collection<GridCacheSqlMetadata> metas) throws Exception {
-        Map<String, String> params = F.asMap("cmd", GridRestCommand.CACHE_METADATA.key());
-
-        String cacheNameArg = F.first(metas).cacheName();
-
-        if (cacheNameArg != null)
-            params.put("cacheName", cacheNameArg);
-
-        String ret = content(params);
-
-        info("Cache metadata result: " + ret);
-
+    private void testMetadata(Collection<GridCacheSqlMetadata> metas, String ret) throws Exception {
         JsonNode arr = jsonResponse(ret);
 
         assertTrue(arr.isArray());
@@ -1100,9 +1088,19 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         assertNotNull("Should have configured public cache!", cache);
 
-        Collection<GridCacheSqlMetadata> meta = cache.context().queries().sqlMetadata();
+        Collection<GridCacheSqlMetadata> metas = cache.context().queries().sqlMetadata();
 
-        testMetadata(meta);
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_METADATA.key()));
+
+        info("Cache metadata: " + ret);
+
+        testMetadata(metas, ret);
+
+        ret = content(F.asMap("cmd", GridRestCommand.CACHE_METADATA.key(), "cacheName", "person"));
+
+        info("Cache metadata with cacheName parameter: " + ret);
+
+        testMetadata(metas, ret);
     }
 
     /**
@@ -1118,7 +1116,17 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
 
         Collection<GridCacheSqlMetadata> metas = c.context().queries().sqlMetadata();
 
-        testMetadata(metas);
+        String ret = content(F.asMap("cmd", GridRestCommand.CACHE_METADATA.key()));
+
+        info("Cache metadata: " + ret);
+
+        testMetadata(metas, ret);
+
+        ret = content(F.asMap("cmd", GridRestCommand.CACHE_METADATA.key(), "cacheName", "person"));
+
+        info("Cache metadata with cacheName parameter: " + ret);
+
+        testMetadata(metas, ret);
     }
 
     /**
@@ -1897,6 +1905,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
         public String getLastName() {
             return lastName;
         }
+
         /**
          * @return Salary.
          */
@@ -2011,7 +2020,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
          * @param vals Values.
          * @return This helper for chaining method calls.
          */
-        public VisorGatewayArgument argument(Class cls, Object ... vals) {
+        public VisorGatewayArgument argument(Class cls, Object... vals) {
             put("p" + idx++, cls.getName());
 
             for (Object val : vals)
@@ -2027,7 +2036,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
          * @param vals Values.
          * @return This helper for chaining method calls.
          */
-        public VisorGatewayArgument collection(Class cls, Object ... vals) {
+        public VisorGatewayArgument collection(Class cls, Object... vals) {
             put("p" + idx++, Collection.class.getName());
             put("p" + idx++, cls.getName());
             put("p" + idx++, concat(vals, ";"));
@@ -2085,7 +2094,7 @@ public abstract class JettyRestProcessorAbstractSelfTest extends AbstractRestPro
          * @param vals Values.
          * @return This helper for chaining method calls.
          */
-        public VisorGatewayArgument set(Class cls, Object ... vals) {
+        public VisorGatewayArgument set(Class cls, Object... vals) {
             put("p" + idx++, Set.class.getName());
             put("p" + idx++, cls.getName());
             put("p" + idx++, concat(vals, ";"));
