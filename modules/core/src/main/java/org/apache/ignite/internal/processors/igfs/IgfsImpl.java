@@ -209,7 +209,7 @@ public final class IgfsImpl implements IgfsEx {
         Map<String, IgfsMode> cfgModes = new LinkedHashMap<>();
         Map<String, IgfsMode> dfltModes = new LinkedHashMap<>(4, 1.0f);
 
-        if (cfg.isInitializeDefaultPathModes() && dfltMode != PRIMARY && dfltMode != PROXY) {
+        if (cfg.isInitializeDefaultPathModes() && IgfsUtils.isDualMode(dfltMode)) {
             dfltModes.put("/ignite/primary", PRIMARY);
 
             if (secondaryFs != null) {
@@ -619,7 +619,7 @@ public final class IgfsImpl implements IgfsEx {
                 IgfsMode mode = resolveMode(path);
 
                 if (mode != PRIMARY) {
-                    assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
+                    assert IgfsUtils.isDualMode(mode);
 
                     await(path);
 
@@ -687,7 +687,7 @@ public final class IgfsImpl implements IgfsEx {
                         "exclude setting (need to copy and remove)");
 
                 if (mode != PRIMARY) {
-                    assert mode == DUAL_SYNC || mode == DUAL_ASYNC; // PROXY mode explicit usage is forbidden.
+                    assert IgfsUtils.isDualMode(mode); // PROXY mode explicit usage is forbidden.
 
                     await(src, dest);
 
@@ -720,7 +720,7 @@ public final class IgfsImpl implements IgfsEx {
 
                 IgfsMode mode = resolveMode(path);
 
-                boolean dual = mode == DUAL_SYNC || mode == DUAL_ASYNC;
+                boolean dual = IgfsUtils.isDualMode(mode);;
 
                 if (dual)
                     await(path);
@@ -764,7 +764,7 @@ public final class IgfsImpl implements IgfsEx {
                 if (mode == PRIMARY)
                     meta.mkdirs(path, props0);
                 else {
-                    assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
+                    assert IgfsUtils.isDualMode(mode);;
 
                     await(path);
 
@@ -793,7 +793,7 @@ public final class IgfsImpl implements IgfsEx {
 
                 Collection<String> files = new HashSet<>();
 
-                if (mode == DUAL_SYNC || mode == DUAL_ASYNC) {
+                if (IgfsUtils.isDualMode(mode)) {
                     assert secondaryFs != null;
 
                     try {
@@ -841,7 +841,7 @@ public final class IgfsImpl implements IgfsEx {
 
                 Collection<IgfsFile> files = new HashSet<>();
 
-                if (mode == DUAL_SYNC || mode == DUAL_ASYNC) {
+                if (IgfsUtils.isDualMode(mode)) {
                     assert secondaryFs != null;
 
                     try {
@@ -924,7 +924,7 @@ public final class IgfsImpl implements IgfsEx {
                 IgfsMode mode = resolveMode(path);
 
                 if (mode != PRIMARY) {
-                    assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
+                    assert IgfsUtils.isDualMode(mode);
 
                     IgfsSecondaryInputStreamDescriptor desc = meta.openDual(secondaryFs, path, bufSize0);
 
@@ -1073,7 +1073,7 @@ public final class IgfsImpl implements IgfsEx {
                 IgfsFileWorkerBatch batch;
 
                 if (mode != PRIMARY) {
-                    assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
+                    assert IgfsUtils.isDualMode(mode);
 
                     await(path);
 
@@ -1181,7 +1181,7 @@ public final class IgfsImpl implements IgfsEx {
                 IgfsEntryInfo info = meta.infoForPath(path);
 
                 if (info == null && mode != PRIMARY) {
-                    assert mode == DUAL_SYNC || mode == DUAL_ASYNC;
+                    assert IgfsUtils.isDualMode(mode);
                     assert secondaryFs != null;
 
                     // Synchronize
