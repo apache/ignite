@@ -391,7 +391,7 @@ public class IgfsMock implements IgfsEx {
     /**
      * Throw {@link UnsupportedOperationException}.
      */
-    private void throwUnsupported() {
+    private static void throwUnsupported() {
         throw new UnsupportedOperationException("Should not be called!");
     }
 }

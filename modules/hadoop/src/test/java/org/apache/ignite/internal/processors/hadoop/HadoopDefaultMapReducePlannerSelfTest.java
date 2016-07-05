@@ -425,7 +425,7 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
         top.add(node2);
         top.add(node3);
 
-        HadoopMapReducePlan plan = PLANNER.preparePlan(new MockJob(reducers, splitList), top, null);
+        HadoopMapReducePlan plan = PLANNER.preparePlan(new HadoopPlannerMockJob(splitList, reducers), top, null);
 
         PLAN.set(plan);
 
@@ -583,78 +583,6 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
             res = 31 * res + (int) (len ^ (len >>> 32));
 
             return res;
-        }
-    }
-
-    /**
-     * Mocked job.
-     */
-    private static class MockJob implements HadoopJob {
-        /** Reducers count. */
-        private final int reducers;
-
-        /** */
-        private Collection<HadoopInputSplit> splitList;
-
-        /**
-         * Constructor.
-         *
-         * @param reducers Reducers count.
-         * @param splitList Splits.
-         */
-        private MockJob(int reducers, Collection<HadoopInputSplit> splitList) {
-            this.reducers = reducers;
-            this.splitList = splitList;
-        }
-
-        /** {@inheritDoc} */
-        @Override public HadoopJobId id() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-        @Override public HadoopJobInfo info() {
-            return new HadoopDefaultJobInfo() {
-                @Override public int reducers() {
-                    return reducers;
-                }
-            };
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<HadoopInputSplit> input() throws IgniteCheckedException {
-            return splitList;
-        }
-
-        /** {@inheritDoc} */
-        @Override public HadoopTaskContext getTaskContext(HadoopTaskInfo info) throws IgniteCheckedException {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void initialize(boolean external, UUID nodeId) throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void dispose(boolean external) throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void prepareTaskEnvironment(HadoopTaskInfo info) throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void cleanupTaskEnvironment(HadoopTaskInfo info) throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void cleanupStagingDirectory() {
-            // No-op.
         }
     }
 
