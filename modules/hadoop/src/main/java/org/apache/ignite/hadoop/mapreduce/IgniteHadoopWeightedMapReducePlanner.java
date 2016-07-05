@@ -54,7 +54,7 @@ import static org.apache.ignite.IgniteFileSystem.IGFS_SCHEME;
  * Map-reduce planner which tries to assign map jobs to affinity nodes.
  */
 // TODO: Docs.
-public class IgniteHadoopAffinityMapReducePlanner extends HadoopAbstractMapReducePlanner {
+public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReducePlanner {
     /** Default local mapper weight. */
     public static final int DFLT_LOC_MAPPER_WEIGHT = 100;
 
@@ -477,7 +477,7 @@ public class IgniteHadoopAffinityMapReducePlanner extends HadoopAbstractMapReduc
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return S.toString(IgniteHadoopAffinityMapReducePlanner.class, this);
+        return S.toString(IgniteHadoopWeightedMapReducePlanner.class, this);
     }
 
     /**
