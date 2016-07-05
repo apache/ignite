@@ -381,9 +381,11 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
             HadoopInputSplit split = entry.getKey();
             int cnt = entry.getValue();
 
-            int assigned = assignLocalReducers(split, cnt, res);
+            if (cnt > 0) {
+                int assigned = assignLocalReducers(split, cnt, top, mappers, res);
 
-            remaining += cnt - assigned;
+                remaining += cnt - assigned;
+            }
         }
 
         // Assign the rest reducers.
@@ -418,7 +420,7 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
         // Assign more reducers to the node until threshold is reached.
         int res = 0;
 
-        while (grp.weight() < reducerMigrationThresholdWeight) {
+        while (res < cnt && grp.weight() < reducerMigrationThresholdWeight) {
             res++;
 
             grp.weight(grp.weight() + locReducerWeight);
