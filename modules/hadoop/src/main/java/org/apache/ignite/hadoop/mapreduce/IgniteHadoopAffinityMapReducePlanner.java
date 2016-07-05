@@ -27,6 +27,7 @@ import org.apache.ignite.internal.processors.hadoop.HadoopFileBlock;
 import org.apache.ignite.internal.processors.hadoop.HadoopInputSplit;
 import org.apache.ignite.internal.processors.hadoop.HadoopJob;
 import org.apache.ignite.internal.processors.hadoop.HadoopMapReducePlan;
+import org.apache.ignite.internal.processors.hadoop.HadoopUtils;
 import org.apache.ignite.internal.processors.hadoop.igfs.HadoopIgfsEndpoint;
 import org.apache.ignite.internal.processors.hadoop.planner.HadoopAbstractMapReducePlanner;
 import org.apache.ignite.internal.processors.hadoop.planner.HadoopDefaultMapReducePlan;
@@ -34,6 +35,7 @@ import org.apache.ignite.internal.processors.hadoop.planner.HadoopMapReducePlanG
 import org.apache.ignite.internal.processors.hadoop.planner.HadoopMapReducePlanTopology;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.S;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -43,7 +45,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -52,17 +53,42 @@ import static org.apache.ignite.IgniteFileSystem.IGFS_SCHEME;
 /**
  * Map-reduce planner which tries to assign map jobs to affinity nodes.
  */
+// TODO: Docs.
 public class IgniteHadoopAffinityMapReducePlanner extends HadoopAbstractMapReducePlanner {
-    /** Defautl value of affinity node preference factor. */
-    private static final float DFLT_AFF_NODE_PREFERENCE_FACTOR = 2.0f;
+    /** Default local mapper weight. */
+    public static final int DFLT_LOC_MAPPER_WEIGHT = 100;
 
-    /** Affinity node preference factor. */
-    private float affNodePreferenceFactor = DFLT_AFF_NODE_PREFERENCE_FACTOR;
+    /** Default remote mapper weight. */
+    public static final int DFLT_RMT_MAPPER_WEIGHT = 120;
+
+    /** Default local reducer weight. */
+    public static final int DFLT_LOC_REDUCER_WEIGHT = 100;
+
+    /** Default remote reducer weight. */
+    public static final int DFLT_RMT_REDUCER_WEIGHT = 120;
+
+    /** Default reducer migration threshold weight. */
+    public static final int DFLT_REDUCER_MIGRATION_THRESHOLD_WEIGHT = 1000;
+
+    /** Local mapper weight. */
+    private int locMapperWeight = DFLT_LOC_MAPPER_WEIGHT;
+
+    /** Remote mapper weight. */
+    private int rmtMapperWeight = DFLT_RMT_MAPPER_WEIGHT;
+
+    /** Local reducer weight. */
+    private int locReducerWeight = DFLT_LOC_REDUCER_WEIGHT;
+
+    /** Remote reducer weight. */
+    private int rmtReducerWeight = DFLT_RMT_REDUCER_WEIGHT;
+
+    /** Reducer migration threshold weight. */
+    private int reducerMigrationThresholdWeight = DFLT_REDUCER_MIGRATION_THRESHOLD_WEIGHT;
 
     /** {@inheritDoc} */
     @Override public HadoopMapReducePlan preparePlan(HadoopJob job, Collection<ClusterNode> nodes,
         @Nullable HadoopMapReducePlan oldPlan) throws IgniteCheckedException {
-        Collection<HadoopInputSplit> inputSplits = job.input();
+        List<HadoopInputSplit> splits = HadoopUtils.sortInputSplits(job.input());
         int reducerCnt = job.info().reducers();
 
         if (reducerCnt < 0)
@@ -70,33 +96,28 @@ public class IgniteHadoopAffinityMapReducePlanner extends HadoopAbstractMapReduc
 
         HadoopMapReducePlanTopology top = topology(nodes);
 
-        Map<UUID, Collection<HadoopInputSplit>> mappers = mappers(inputSplits, top);
+        Map<UUID, Collection<HadoopInputSplit>> mappers = assignMappers(splits, top);
 
-        Map<UUID, int[]> reducers = reducers(top, mappers, reducerCnt);
+        Map<UUID, int[]> reducers = assignReducers(top, mappers, reducerCnt);
 
         return new HadoopDefaultMapReducePlan(mappers, reducers);
     }
 
     /**
-     * Generate mappers.
+     * Assign mappers to nodes.
      *
-     * @param inputSplits Input splits.
+     * @param splits Input splits.
      * @param top Topology.
      * @return Mappers.
      * @throws IgniteCheckedException If failed.
      */
-    private Map<UUID, Collection<HadoopInputSplit>> mappers(Collection<HadoopInputSplit> inputSplits,
+    private Map<UUID, Collection<HadoopInputSplit>> assignMappers(Collection<HadoopInputSplit> splits,
         HadoopMapReducePlanTopology top) throws IgniteCheckedException {
         Map<UUID, Collection<HadoopInputSplit>> res = new HashMap<>();
 
-        // Sort input splits by length, the longest goes first. This way we ensure that the longest splits
-        // are processed first and assigned in the most efficient way.
-        for (HadoopInputSplit inputSplit : sortInputSplits(inputSplits)) {
+        for (HadoopInputSplit split : splits) {
             // Try getting IGFS affinity.
-            Collection<UUID> nodeIds = igfsAffinity(inputSplit);
-
-            if (nodeIds != null)
-                nodeIds = affinity(inputSplit, top);
+            Collection<UUID> nodeIds = affinityNodesForSplit(split, top);
 
             // Get best node.
             UUID node = bestMapperNode(nodeIds, top);
@@ -110,46 +131,48 @@ public class IgniteHadoopAffinityMapReducePlanner extends HadoopAbstractMapReduc
                 res.put(node, nodeSplits);
             }
 
-            nodeSplits.add(inputSplit);
+            nodeSplits.add(split);
         }
 
         return res;
     }
 
     /**
-     * Sort input splits by length. The longest split goes first.
+     * Get affinity nodes for the given input split.
      *
-     * @param inputSplits Original input splits.
-     * @return Sorted input splits.
+     * @param split Split.
+     * @param top Topology.
+     * @return Affintiy nodes.
+     * @throws IgniteCheckedException If failed.
      */
-    private List<HadoopInputSplit> sortInputSplits(Collection<HadoopInputSplit> inputSplits) {
-        int id = 0;
+    private Collection<UUID> affinityNodesForSplit(HadoopInputSplit split, HadoopMapReducePlanTopology top)
+        throws IgniteCheckedException {
+        Collection<UUID> nodeIds = igfsAffinityNodesForSplit(split);
 
-        TreeSet<SplitSortWrapper> sortedSplits = new TreeSet<>();
+        if (nodeIds == null) {
+            nodeIds = new HashSet<>();
 
-        for (HadoopInputSplit inputSplit : inputSplits) {
-            long len = inputSplit instanceof HadoopFileBlock ? ((HadoopFileBlock)inputSplit).length() : 0;
+            for (String host : split.hosts()) {
+                HadoopMapReducePlanGroup grp = top.groupForHost(host);
 
-            sortedSplits.add(new SplitSortWrapper(id++, inputSplit, len));
+                if (grp != null) {
+                    for (int i = 0; i < grp.nodeCount(); i++)
+                        nodeIds.add(grp.node(i).id());
+                }
+            }
         }
 
-        ArrayList<HadoopInputSplit> res = new ArrayList<>(sortedSplits.size());
-
-        for (SplitSortWrapper sortedSplit : sortedSplits)
-            res.add(sortedSplit.split);
-
-        return res;
-
+        return nodeIds;
     }
 
     /**
-     * Get IGFS affinity.
+     * Get IGFS affinity nodes for split if possible.
      *
      * @param split Input split.
      * @return IGFS affinity or {@code null} if IGFS is not available.
      * @throws IgniteCheckedException If failed.
      */
-    @Nullable private Collection<UUID> igfsAffinity(HadoopInputSplit split) throws IgniteCheckedException {
+    @Nullable private Collection<UUID> igfsAffinityNodesForSplit(HadoopInputSplit split) throws IgniteCheckedException {
         if (split instanceof HadoopFileBlock) {
             HadoopFileBlock split0 = (HadoopFileBlock)split;
 
@@ -210,107 +233,103 @@ public class IgniteHadoopAffinityMapReducePlanner extends HadoopAbstractMapReduc
     }
 
     /**
-     * Get affinity.
+     * Find best mapper node.
      *
-     * @param split Input split.
-     * @param top Topology.
-     * @return Affinity.
-     */
-    private Collection<UUID> affinity(HadoopInputSplit split, HadoopMapReducePlanTopology top) {
-        Collection<UUID> res = new HashSet<>();
-
-        for (String host : split.hosts()) {
-            HadoopMapReducePlanGroup grp = top.groupForHost(host);
-
-            if (grp != null) {
-                for (int i = 0; i < grp.nodeCount(); i++)
-                    res.add(grp.node(i).id());
-            }
-        }
-
-        return res;
-    }
-
-    /**
-     * Get best mapper node.
-     *
-     * @param affIds Affintiy node IDs.
+     * @param affIds Affinity node IDs.
      * @param top Topology.
      * @return Result.
      */
     private UUID bestMapperNode(@Nullable Collection<UUID> affIds, HadoopMapReducePlanTopology top) {
-        int affWeight = 100;
-        int nonAffWeight = Math.round(affWeight * affNodePreferenceFactor);
-
         // Priority node.
-        UUID priorityAffId = F.isEmpty(affIds) ? null : affIds.iterator().next();
+        UUID priorityAffId = F.first(affIds);
 
         // Find group with the least weight.
-        HadoopMapReducePlanGroup leastGrp = null;
-        int leastPriority = 0;
-        int leastWeight = Integer.MAX_VALUE;
+        HadoopMapReducePlanGroup resGrp = null;
+        MapperPriority resPrio = MapperPriority.NORMAL;
+        int resWeight = Integer.MAX_VALUE;
 
         for (HadoopMapReducePlanGroup grp : top.groups()) {
-            int priority = groupPriority(grp, affIds, priorityAffId);
-            int weight = grp.mappersWeight() + (leastPriority == 0 ? nonAffWeight : affWeight);
+            MapperPriority priority = groupPriority(grp, affIds, priorityAffId);
 
-            if (leastGrp == null) {
-                leastGrp = grp;
-                leastPriority = priority;
-                leastWeight = weight;
-            }
-            else if (weight < leastWeight || weight == leastWeight && priority > leastPriority) {
-                leastGrp = grp;
-                leastPriority = priority;
-                leastWeight = weight;
+            int weight = grp.mappersWeight() +
+                (priority == MapperPriority.NORMAL ? rmtMapperWeight : locMapperWeight);
+
+            if (resGrp == null || weight < resWeight || weight == resWeight && priority.value() > resPrio.value()) {
+                resGrp = grp;
+                resPrio = priority;
+                resWeight = weight;
             }
         }
 
-        assert leastGrp != null;
+        assert resGrp != null;
 
         // Update group weight for further runs.
-        leastGrp.mappersWeight(leastWeight);
+        resGrp.mappersWeight(resWeight);
 
+        // Return the best node from the group.
+        return bestMapperNodeForGroup(resGrp, resPrio, affIds, priorityAffId);
+    }
+
+    /**
+     * Get best node in the group.
+     *
+     * @param grp Group.
+     * @param priority Priority.
+     * @param affIds Affinity IDs.
+     * @param priorityAffId Priority affinitiy IDs.
+     * @return Best node ID in the group.
+     */
+    private static UUID bestMapperNodeForGroup(HadoopMapReducePlanGroup grp, MapperPriority priority,
+        @Nullable Collection<UUID> affIds, @Nullable UUID priorityAffId) {
         // Return the best node from the group.
         int idx = 0;
 
         // This is rare situation when several nodes are started on the same host.
-        if (!leastGrp.single()) {
-            if (leastPriority == 0)
-                // Pick any node.
-                idx = ThreadLocalRandom.current().nextInt(leastGrp.nodeCount());
-            else if (leastPriority == 1) {
-                // Pick any affinity node.
-                assert affIds != null;
+        if (!grp.single()) {
+            switch (priority) {
+                case NORMAL: {
+                    // Pick any node.
+                    idx = ThreadLocalRandom.current().nextInt(grp.nodeCount());
 
-                List<Integer> cands = new ArrayList<>();
-
-                for (int i = 0; i < leastGrp.nodeCount(); i++) {
-                    UUID id = leastGrp.node(i).id();
-
-                    if (affIds.contains(id))
-                        cands.add(i);
+                    break;
                 }
+                case HIGH: {
+                    // Pick any affinity node.
+                    assert affIds != null;
 
-                idx = cands.get(ThreadLocalRandom.current().nextInt(cands.size()));
-            }
-            else {
-                // Find primary node.
-                assert priorityAffId != null;
+                    List<Integer> cands = new ArrayList<>();
 
-                for (int i = 0; i < leastGrp.nodeCount(); i++) {
-                    UUID id = leastGrp.node(i).id();
+                    for (int i = 0; i < grp.nodeCount(); i++) {
+                        UUID id = grp.node(i).id();
 
-                    if (F.eq(id, priorityAffId)) {
-                        idx = i;
-
-                        break;
+                        if (affIds.contains(id))
+                            cands.add(i);
                     }
+
+                    idx = cands.get(ThreadLocalRandom.current().nextInt(cands.size()));
+
+                    break;
+                }
+                default: {
+                    // Find primary node.
+                    assert priorityAffId != null;
+
+                    for (int i = 0; i < grp.nodeCount(); i++) {
+                        UUID id = grp.node(i).id();
+
+                        if (F.eq(id, priorityAffId)) {
+                            idx = i;
+
+                            break;
+                        }
+                    }
+
+                    assert priority == MapperPriority.HIGHEST;
                 }
             }
         }
 
-        return leastGrp.node(idx).id();
+        return grp.node(idx).id();
     }
 
     /**
@@ -320,10 +339,12 @@ public class IgniteHadoopAffinityMapReducePlanner extends HadoopAbstractMapReduc
      * @param mappers Mappers.
      * @param reducerCnt Reducer count.
      * @return Reducers.
-     * @throws IgniteCheckedException If fialed.
+     * @throws IgniteCheckedException If failed.
      */
-    private Map<UUID, int[]> reducers(HadoopMapReducePlanTopology top, Map<UUID, Collection<HadoopInputSplit>> mappers,
+    private Map<UUID, int[]> assignReducers(HadoopMapReducePlanTopology top, Map<UUID, Collection<HadoopInputSplit>> mappers,
         int reducerCnt) throws IgniteCheckedException {
+
+
         // TODO
         return null;
     }
@@ -336,26 +357,22 @@ public class IgniteHadoopAffinityMapReducePlanner extends HadoopAbstractMapReduc
      * @param priorityAffId Priority affinity ID.
      * @return Group priority.
      */
-    private static int groupPriority(HadoopMapReducePlanGroup grp, @Nullable Collection<UUID> affIds,
+    private static MapperPriority groupPriority(HadoopMapReducePlanGroup grp, @Nullable Collection<UUID> affIds,
         @Nullable UUID priorityAffId) {
-        if (F.isEmpty(affIds)) {
-            assert priorityAffId == null;
+        MapperPriority priority = MapperPriority.NORMAL;
 
-            return 0;
-        }
+        if (!F.isEmpty(affIds)) {
+            for (int i = 0; i < grp.nodeCount(); i++) {
+                UUID id = grp.node(i).id();
 
-        int priority = 0;
+                if (affIds.contains(id)) {
+                    priority = MapperPriority.HIGH;
 
-        for (int i = 0; i < grp.nodeCount(); i++) {
-            UUID id = grp.node(i).id();
+                    if (F.eq(priorityAffId, id)) {
+                        priority = MapperPriority.HIGHEST;
 
-            if (affIds.contains(id)) {
-                priority = 1;
-
-                if (F.eq(priorityAffId, id)) {
-                    priority = 2;
-
-                    break;
+                        break;
+                    }
                 }
             }
         }
@@ -363,12 +380,104 @@ public class IgniteHadoopAffinityMapReducePlanner extends HadoopAbstractMapReduc
         return priority;
     }
 
-    public float getAffinityNodePreferenceFactor() {
-        return affNodePreferenceFactor;
+    /**
+     * Get local mapper weight.
+     *
+     * @return Remote mapper weight.
+     */
+    // TODO: Docs.
+    public int getLocalMapperWeight() {
+        return locMapperWeight;
     }
 
-    public void setAffinityNodePreferenceFactor(float affNodePreferenceFactor) {
-        this.affNodePreferenceFactor = affNodePreferenceFactor;
+    /**
+     * Set local mapper weight. See {@link #getLocalMapperWeight()} for more information.
+     *
+     * @param locMapperWeight Local mapper weight.
+     */
+    public void setLocalMapperWeight(int locMapperWeight) {
+        this.locMapperWeight = locMapperWeight;
+    }
+
+    /**
+     * Get remote mapper weight.
+     *
+     * @return Remote mapper weight.
+     */
+    // TODO: Docs.
+    public int getRemoteMapperWeight() {
+        return rmtMapperWeight;
+    }
+
+    /**
+     * Set remote mapper weight. See {@link #getRemoteMapperWeight()} for more information.
+     *
+     * @param rmtMapperWeight Remote mapper weight.
+     */
+    public void setRemoteMapperWeight(int rmtMapperWeight) {
+        this.rmtMapperWeight = rmtMapperWeight;
+    }
+
+    /**
+     * Get local reducer weight.
+     *
+     * @return Local reducer weight.
+     */
+    // TODO: Docs.
+    public int getLocalReducerWeight() {
+        return locReducerWeight;
+    }
+
+    /**
+     * Set local reducer weight. See {@link #getLocalReducerWeight()} for more information.
+     *
+     * @param locReducerWeight Local reducer weight.
+     */
+    public void setLocalReducerWeight(int locReducerWeight) {
+        this.locReducerWeight = locReducerWeight;
+    }
+
+    /**
+     * Get remote reducer weight.
+     *
+     * @return Remote reducer weight.
+     */
+    // TODO: Docs.
+    public int getRemoteReducerWeight() {
+        return rmtMapperWeight;
+    }
+
+    /**
+     * Set remote reducer weight. See {@link #getRemoteReducerWeight()} for more information.
+     *
+     * @param rmtMapperWeight Remote reducer weight.
+     */
+    public void setRemoteReducerWeight(int rmtMapperWeight) {
+        this.rmtMapperWeight = rmtMapperWeight;
+    }
+
+    /**
+     * Get reducer migration threshold weight.
+     *
+     * @return Reducer migration threshold weight.
+     */
+    // TODO: Docs.
+    public int getReducerMigrationThresholdWeight() {
+        return reducerMigrationThresholdWeight;
+    }
+
+    /**
+     * Set reducer migration threshold weight. See {@link #getReducerMigrationThresholdWeight()} for more information.
+     *
+     * @param reducerMigrationThresholdWeight Reducer migration threshold weight.
+     */
+    public void setReducerMigrationThresholdWeight(int reducerMigrationThresholdWeight) {
+        this.reducerMigrationThresholdWeight = reducerMigrationThresholdWeight;
+    }
+
+    /** {@inheritDoc} */
+    @Override public String toString() {
+        return S.toString(IgniteHadoopAffinityMapReducePlanner.class, this);
     }
 
     /**
@@ -417,54 +526,35 @@ public class IgniteHadoopAffinityMapReducePlanner extends HadoopAbstractMapReduc
     }
 
     /**
-     * Split wrapper for sorting.
+     * Mapper priority enumeration.
      */
-    private static class SplitSortWrapper implements Comparable<SplitSortWrapper> {
-        /** Unique ID. */
-        private final int id;
+    private enum MapperPriority {
+        /** Normal node. */
+        NORMAL(0),
 
-        /** Split. */
-        private final HadoopInputSplit split;
+        /** Affinity node. */
+        HIGH(1),
 
-        /** Split length. */
-        private final long len;
+        /** Node with the highest priority (e.g. because it hosts more data than other nodes). */
+        HIGHEST(2);
+
+        /** Value. */
+        private final int val;
 
         /**
          * Constructor.
          *
-         * @param id Unique ID.
-         * @param split Split.
-         * @param len Split length.
+         * @param val Value.
          */
-        public SplitSortWrapper(int id, HadoopInputSplit split, long len) {
-            this.id = id;
-            this.split = split;
-            this.len = len;
+        MapperPriority(int val) {
+            this.val = val;
         }
 
-        /** {@inheritDoc} */
-        @SuppressWarnings("NullableProblems")
-        @Override public int compareTo(SplitSortWrapper other) {
-            assert other != null;
-
-            long res = len - other.len;
-
-            if (res > 0)
-                return 1;
-            else if (res < 0)
-                return -1;
-            else
-                return id - other.id;
-        }
-
-        /** {@inheritDoc} */
-        @Override public int hashCode() {
-            return id;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean equals(Object obj) {
-            return obj instanceof SplitSortWrapper && id == ((SplitSortWrapper)obj).id;
+        /**
+         * @return Value.
+         */
+        public int value() {
+            return val;
         }
     }
 }
