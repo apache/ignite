@@ -387,7 +387,8 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
         }
 
         // Assign the rest reducers.
-        assignRemoteReducers(remaining, res);
+        if (remaining > 0)
+            assignRemoteReducers(remaining, res);
 
         return res;
     }
@@ -397,13 +398,37 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
      *
      * @param split Split.
      * @param cnt Reducer count.
+     * @param top Topology.
+     * @param mappers Mappers.
      * @param resMap Reducers result map.
      * @return Number of assigned reducers.
      */
-    private int assignLocalReducers(HadoopInputSplit split, int cnt, Map<UUID, Integer> resMap) {
-        // TODO;
+    private int assignLocalReducers(HadoopInputSplit split, int cnt, HadoopMapReducePlanTopology top, Mappers mappers,
+        Map<UUID, Integer> resMap) {
+        // Dereference node.
+        UUID nodeId = mappers.splitToNode.get(split);
 
-        return 0;
+        assert nodeId != null;
+
+        // Dereference group.
+        HadoopMapReducePlanGroup grp = top.groupForId(nodeId);
+
+        assert grp != null;
+
+        // Assign more reducers to the node until threshold is reached.
+        int res = 0;
+
+        while (grp.weight() < reducerMigrationThresholdWeight) {
+            res++;
+
+            grp.weight(grp.weight() + locReducerWeight);
+        }
+
+        // Update result map.
+        if (res > 0)
+            resMap.put(nodeId, res);
+
+        return res;
     }
 
     /**
