@@ -97,5 +97,14 @@ namespace Apache.Ignite.Core.Tests
 
             Assert.IsTrue(_errSb.ToString().Contains("SPI parameter failed condition check: idleConnTimeout > 0"));
         }
+
+        /// <summary>
+        /// Tests multiple appdomains and multiple console handlers.
+        /// </summary>
+        [Test]
+        public void TestMultipleDomains()
+        {
+            // TODO
+        }
     }
 }
