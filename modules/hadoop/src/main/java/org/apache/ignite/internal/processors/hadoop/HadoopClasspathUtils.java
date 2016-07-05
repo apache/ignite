@@ -33,6 +33,24 @@ import java.util.List;
  * Hadoop classpath utilities.
  */
 public class HadoopClasspathUtils {
+    /** Prefix directory. */
+    public static final String PREFIX = "HADOOP_PREFIX";
+
+    /** Home directory. */
+    public static final String HOME = "HADOOP_HOME";
+
+    /** Home directory. */
+    public static final String COMMON_HOME = "HADOOP_COMMON_HOME";
+
+    /** Home directory. */
+    public static final String HDFS_HOME = "HADOOP_HDFS_HOME";
+
+    /** Home directory. */
+    public static final String MAPRED_HOME = "HADOOP_MAPRED_HOME";
+
+    /** Empty string. */
+    private static final String EMPTY_STR = "";
+
     /**
      * Gets Hadoop class path as list of classpath elements for process.
      *
@@ -80,16 +98,77 @@ public class HadoopClasspathUtils {
     /**
      * Gets Hadoop locations.
      *
-     * @return The Hadoop locations, never null.
+     * @return The locations as determined from the environment.
      */
-    public static HadoopLocations hadoopLocations() throws IOException {
-        final String hadoopHome = systemOrEnv("HADOOP_HOME", systemOrEnv("HADOOP_PREFIX", null));
+    public static HadoopLocations locations() throws IOException {
+        // Query environment.
+        String hadoopHome = systemOrEnv(PREFIX, systemOrEnv(HOME, EMPTY_STR));
 
-        String commonHome = resolveLocation("HADOOP_COMMON_HOME", hadoopHome, "/share/hadoop/common");
-        String hdfsHome = resolveLocation("HADOOP_HDFS_HOME", hadoopHome, "/share/hadoop/hdfs");
-        String mapredHome = resolveLocation("HADOOP_MAPRED_HOME", hadoopHome, "/share/hadoop/mapreduce");
+        String commonHome = systemOrEnv(COMMON_HOME, EMPTY_STR);
+        String hdfsHome = systemOrEnv(HDFS_HOME, EMPTY_STR);
+        String mapredHome = systemOrEnv(MAPRED_HOME, EMPTY_STR);
 
-        return new HadoopLocations(hadoopHome, commonHome, hdfsHome, mapredHome);
+        // If any composite location is defined, use only them.
+        if (!isEmpty(commonHome) || !isEmpty(hdfsHome) || !isEmpty(mapredHome)) {
+            HadoopLocations res = new HadoopLocations(hadoopHome, commonHome, hdfsHome, mapredHome);
+
+            if (res.valid())
+                return res;
+            else
+                throw new IOException("Failed to resolve Hadoop classpath because some environment variables are " +
+                    "either undefined or point to nonexistent directories [" +
+                    "[env=" + COMMON_HOME + ", value=" + commonHome + ", exists=" + res.commonExists() + "], " +
+                    "[env=" + HDFS_HOME + ", value=" + hdfsHome + ", exists=" + res.hdfsExists() + "], " +
+                    "[env=" + MAPRED_HOME + ", value=" + mapredHome + ", exists=" + res.mapredExists() + "]]");
+        }
+        else if (!isEmpty(hadoopHome)) {
+            // All further checks will be based on HADOOP_HOME, so check for it's existence.
+            if (!exists(hadoopHome))
+                throw new IOException("Failed to resolve Hadoop classpath because " + HOME + " environment " +
+                    "variable points to nonexistent directory: " + hadoopHome);
+
+            // Probe Apache Hadoop.
+            HadoopLocations res = new HadoopLocations(
+                hadoopHome,
+                hadoopHome + "/share/hadoop/common",
+                hadoopHome + "/share/hadoop/hdfs",
+                hadoopHome + "/share/hadoop/mapreduce"
+            );
+
+            if (res.valid())
+                return res;
+
+            // Probe CDH.
+            res = new HadoopLocations(
+                hadoopHome,
+                hadoopHome,
+                hadoopHome + "/../hadoop-hdfs",
+                hadoopHome + "/../hadoop-mapreduce"
+            );
+
+            if (res.valid())
+                return res;
+
+            // Probe HDP.
+            res = new HadoopLocations(
+                hadoopHome,
+                hadoopHome,
+                hadoopHome + "/../hadoop-hdfs-client",
+                hadoopHome + "/../hadoop-mapreduce-client"
+            );
+
+            if (res.valid())
+                return res;
+
+            // Failed.
+            throw new IOException("Failed to resolve Hadoop classpath because " + HOME + " environment variable " +
+                "is either invalid or points to non-standard Hadoop distribution: " + hadoopHome);
+        }
+        else {
+            // Advise to set HADOOP_HOME only as this is preferred way to configure classpath.
+            throw new IOException("Failed to resolve Hadoop classpath (please define " + HOME + " environment " +
+                "variable and point it to your Hadoop distribution).");
+        }
     }
 
     /**
@@ -99,57 +178,30 @@ public class HadoopClasspathUtils {
      * @throws IOException if a mandatory classpath location is not found.
      */
     private static Collection<SearchDirectory> classpathDirectories() throws IOException {
-        HadoopLocations loc = hadoopLocations();
+        HadoopLocations loc = locations();
 
         Collection<SearchDirectory> res = new ArrayList<>();
 
-        res.add(new SearchDirectory(new File(loc.commonHome(), "lib"), null));
-        res.add(new SearchDirectory(new File(loc.hdfsHome(), "lib"), null));
-        res.add(new SearchDirectory(new File(loc.mapredHome(), "lib"), null));
+        res.add(new SearchDirectory(new File(loc.common(), "lib"), null));
+        res.add(new SearchDirectory(new File(loc.hdfs(), "lib"), null));
+        res.add(new SearchDirectory(new File(loc.mapred(), "lib"), null));
 
-        res.add(new SearchDirectory(new File(loc.commonHome()), "hadoop-common-"));
-        res.add(new SearchDirectory(new File(loc.commonHome()), "hadoop-auth-"));
+        res.add(new SearchDirectory(new File(loc.common()), "hadoop-common-"));
+        res.add(new SearchDirectory(new File(loc.common()), "hadoop-auth-"));
 
-        res.add(new SearchDirectory(new File(loc.hdfsHome()), "hadoop-hdfs-"));
+        res.add(new SearchDirectory(new File(loc.hdfs()), "hadoop-hdfs-"));
 
-        res.add(new SearchDirectory(new File(loc.mapredHome()), "hadoop-mapreduce-client-common"));
-        res.add(new SearchDirectory(new File(loc.mapredHome()), "hadoop-mapreduce-client-core"));
+        res.add(new SearchDirectory(new File(loc.mapred()), "hadoop-mapreduce-client-common"));
+        res.add(new SearchDirectory(new File(loc.mapred()), "hadoop-mapreduce-client-core"));
 
         return res;
     }
 
     /**
-     * Resolves a Hadoop location directory.
-     *
-     * @param envVarName Environment variable name. The value denotes the location path.
-     * @param hadoopHome Hadoop home location, may be null.
-     * @param expHadoopHomeRelativePath The path relative to Hadoop home, expected to start with path separator.
-     * @throws IOException If the value cannot be resolved to an existing directory.
-     */
-    private static String resolveLocation(String envVarName, String hadoopHome, String expHadoopHomeRelativePath)
-        throws IOException {
-        String val = systemOrEnv(envVarName, null);
-
-        if (val == null) {
-            // The env. variable is not set. Try to resolve the location relative HADOOP_HOME:
-            if (!directoryExists(hadoopHome))
-                throw new IOException("Failed to resolve Hadoop installation location. " +
-                        envVarName + " or HADOOP_HOME environment variable should be set.");
-
-            val = hadoopHome + expHadoopHomeRelativePath;
-        }
-
-        if (!directoryExists(val))
-            throw new IOException("Failed to resolve Hadoop location [path=" + val + ']');
-
-        return val;
-    }
-
-    /**
-     * Note that this method does not treat empty value as an absent value.
+     * Get system property or environment variable with the given name.
      *
      * @param name Variable name.
-     * @param dflt Default.
+     * @param dflt Default value.
      * @return Value.
      */
     private static String systemOrEnv(String name, String dflt) {
@@ -158,7 +210,7 @@ public class HadoopClasspathUtils {
         if (res == null)
             res = System.getenv(name);
 
-        return res == null ? dflt : res;
+        return res != null ? res : dflt;
     }
 
     /**
@@ -167,13 +219,23 @@ public class HadoopClasspathUtils {
      * @param path The directory path.
      * @return {@code True} if the given path denotes an existing directory.
      */
-    private static boolean directoryExists(String path) {
+    public static boolean exists(String path) {
         if (path == null)
             return false;
 
         Path p = Paths.get(path);
 
         return Files.exists(p) && Files.isDirectory(p) && Files.isReadable(p);
+    }
+
+    /**
+     * Check if string is empty.
+     *
+     * @param val Value.
+     * @return {@code True} if empty.
+     */
+    private static boolean isEmpty(String val) {
+        return val == null || val.isEmpty();
     }
 
     /**
@@ -196,7 +258,7 @@ public class HadoopClasspathUtils {
             this.dir = dir;
             this.filter = filter;
 
-            if (!directoryExists(dir.getAbsolutePath()))
+            if (!exists(dir.getAbsolutePath()))
                 throw new IOException("Directory cannot be read: " + dir.getAbsolutePath());
         }
 
