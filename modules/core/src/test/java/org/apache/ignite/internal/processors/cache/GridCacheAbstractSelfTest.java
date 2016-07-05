@@ -220,16 +220,18 @@ public abstract class GridCacheAbstractSelfTest extends GridCommonAbstractTest {
     protected CacheConfiguration cacheConfiguration(String gridName) throws Exception {
         CacheConfiguration cfg = defaultCacheConfiguration();
 
-        Factory<? extends CacheStore<Object, Object>> storeFactory = storeStgy.getStoreFactory();
+        if (storeStgy != null) {
+            Factory<? extends CacheStore<Object, Object>> storeFactory = storeStgy.getStoreFactory();
 
-        CacheStore<?, ?> store = storeFactory.create();
+            CacheStore<?, ?> store = storeFactory.create();
 
-        if (store != null) {
-            cfg.setCacheStoreFactory(storeFactory);
-            cfg.setReadThrough(true);
-            cfg.setWriteThrough(true);
-            cfg.setLoadPreviousValue(true);
-            storeStgy.updateCacheConfiguration(cfg);
+            if (store != null) {
+                cfg.setCacheStoreFactory(storeFactory);
+                cfg.setReadThrough(true);
+                cfg.setWriteThrough(true);
+                cfg.setLoadPreviousValue(true);
+                storeStgy.updateCacheConfiguration(cfg);
+            }
         }
 
         cfg.setSwapEnabled(swapEnabled());

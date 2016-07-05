@@ -71,6 +71,7 @@ import org.apache.ignite.internal.IgniteKernal;
 import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.lang.GridAbsPredicateX;
+import org.apache.ignite.internal.util.lang.IgnitePair;
 import org.apache.ignite.internal.util.typedef.CIX1;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.PA;
@@ -3462,9 +3463,6 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
      * @throws Exception If failed.
      */
     private void checkTtl(boolean inTx, boolean oldEntry) throws Exception {
-        if (isMultiJvm())
-            fail("https://issues.apache.org/jira/browse/IGNITE-1089");
-
         if (memoryMode() == OFFHEAP_TIERED)
             return;
 
@@ -3476,22 +3474,14 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         final String key = primaryKeysForCache(1).get(0);
 
-        GridCacheAdapter<String, Integer> internalCache = internalCache(serverNodeCache());
-
-        if (internalCache.isNear())
-            internalCache = internalCache.context().near().dht();
-
-        GridCacheEntryEx entry;
+        IgnitePair<Long> entryTtl;
 
         if (oldEntry) {
             c.put(key, 1);
 
-            entry = internalCache.peekEx(key);
-
-            assert entry != null;
-
-            assertEquals(0, entry.ttl());
-            assertEquals(0, entry.expireTime());
+            entryTtl = entryTtl(serverNodeCache(), key);
+            assertEquals((Long)0L, entryTtl.get1());
+            assertEquals((Long)0L, entryTtl.get2());
         }
 
         long startTime = System.currentTimeMillis();
@@ -3508,10 +3498,12 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             }
 
             if (oldEntry) {
-                entry = internalCache.peekEx(key);
+                entryTtl = entryTtl(serverNodeCache(), key);
 
-                assertEquals(0, entry.ttl());
-                assertEquals(0, entry.expireTime());
+                assertNotNull(entryTtl.get1());
+                assertNotNull(entryTtl.get2());
+                assertEquals((Long)0L, entryTtl.get1());
+                assertEquals((Long)0L, entryTtl.get2());
             }
         }
 
@@ -3533,18 +3525,13 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         for (int i = 0; i < gridCount(); i++) {
             if (grid(i).affinity(cacheName()).isPrimaryOrBackup(grid(i).localNode(), key)) {
-                GridCacheAdapter<Object, Object> cache = internalCache(jcache(i));
+                IgnitePair<Long> curEntryTtl = entryTtl(jcache(i), key);
 
-                if (cache.context().isNear())
-                    cache = cache.context().near().dht();
-
-                GridCacheEntryEx curEntry = cache.peekEx(key);
-
-                assertEquals(ttl, curEntry.ttl());
-
-                assert curEntry.expireTime() > startTime;
-
-                expireTimes[i] = curEntry.expireTime();
+                assertNotNull(curEntryTtl.get1());
+                assertNotNull(curEntryTtl.get2());
+                assertEquals(ttl, (long)curEntryTtl.get1());
+                assertTrue(curEntryTtl.get2() > startTime);
+                expireTimes[i] = curEntryTtl.get2();
             }
         }
 
@@ -3566,18 +3553,13 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         for (int i = 0; i < gridCount(); i++) {
             if (grid(i).affinity(cacheName()).isPrimaryOrBackup(grid(i).localNode(), key)) {
-                GridCacheAdapter<Object, Object> cache = internalCache(jcache(i));
+                IgnitePair<Long> curEntryTtl = entryTtl(jcache(i), key);
 
-                if (cache.context().isNear())
-                    cache = cache.context().near().dht();
-
-                GridCacheEntryEx curEntry = cache.peekEx(key);
-
-                assertEquals(ttl, curEntry.ttl());
-
-                assert curEntry.expireTime() > startTime;
-
-                expireTimes[i] = curEntry.expireTime();
+                assertNotNull(curEntryTtl.get1());
+                assertNotNull(curEntryTtl.get2());
+                assertEquals(ttl, (long)curEntryTtl.get1());
+                assertTrue(curEntryTtl.get2() > startTime);
+                expireTimes[i] = curEntryTtl.get2();
             }
         }
 
@@ -3599,18 +3581,13 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         for (int i = 0; i < gridCount(); i++) {
             if (grid(i).affinity(cacheName()).isPrimaryOrBackup(grid(i).localNode(), key)) {
-                GridCacheAdapter<Object, Object> cache = internalCache(jcache(i));
+                IgnitePair<Long> curEntryTtl = entryTtl(jcache(i), key);
 
-                if (cache.context().isNear())
-                    cache = cache.context().near().dht();
-
-                GridCacheEntryEx curEntry = cache.peekEx(key);
-
-                assertEquals(ttl, curEntry.ttl());
-
-                assert curEntry.expireTime() > startTime;
-
-                expireTimes[i] = curEntry.expireTime();
+                assertNotNull(curEntryTtl.get1());
+                assertNotNull(curEntryTtl.get2());
+                assertEquals(ttl, (long)curEntryTtl.get1());
+                assertTrue(curEntryTtl.get2() > startTime);
+                expireTimes[i] = curEntryTtl.get2();
             }
         }
 
@@ -3636,15 +3613,12 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         for (int i = 0; i < gridCount(); i++) {
             if (grid(i).affinity(cacheName()).isPrimaryOrBackup(grid(i).localNode(), key)) {
-                GridCacheAdapter cache = internalCache(jcache(i));
+                IgnitePair<Long> curEntryTtl = entryTtl(jcache(i), key);
 
-                if (cache.context().isNear())
-                    cache = cache.context().near().dht();
-
-                GridCacheEntryEx curEntry = cache.peekEx(key);
-
-                assertEquals(ttl, curEntry.ttl());
-                assertEquals(expireTimes[i], curEntry.expireTime());
+                assertNotNull(curEntryTtl.get1());
+                assertNotNull(curEntryTtl.get2());
+                assertEquals(ttl, (long)curEntryTtl.get1());
+                assertEquals(expireTimes[i], (long)curEntryTtl.get2());
             }
         }
 
@@ -3680,21 +3654,24 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             }
         }, Math.min(ttl * 10, getTestTimeout())));
 
-        if (internalCache.isLocal())
-            return;
+        IgniteCache srvNodeCache = serverNodeCache();
+
+        if (!isMultiJvmObject(srvNodeCache)) {
+            GridCacheAdapter internalCache = internalCache(srvNodeCache);
+
+            if (internalCache.isLocal())
+                return;
+        }
 
         assert c.get(key) == null;
 
-        internalCache = internalCache(serverNodeCache());
-
-        if (internalCache.isNear())
-            internalCache = internalCache.context().near().dht();
-
         // Ensure that old TTL and expire time are not longer "visible".
-        entry = internalCache.peekEx(key);
+        entryTtl = entryTtl(srvNodeCache, key);
 
-        assertEquals(0, entry.ttl());
-        assertEquals(0, entry.expireTime());
+        assertNotNull(entryTtl.get1());
+        assertNotNull(entryTtl.get2());
+        assertEquals(0, (long)entryTtl.get1());
+        assertEquals(0, (long)entryTtl.get2());
 
         // Ensure that next update will not pick old expire time.
 
@@ -3713,12 +3690,14 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
 
         U.sleep(2000);
 
-        entry = internalCache.peekEx(key);
+        entryTtl = entryTtl(srvNodeCache, key);
 
         assertEquals((Integer)10, c.get(key));
 
-        assertEquals(0, entry.ttl());
-        assertEquals(0, entry.expireTime());
+        assertNotNull(entryTtl.get1());
+        assertNotNull(entryTtl.get2());
+        assertEquals(0, (long)entryTtl.get1());
+        assertEquals(0, (long)entryTtl.get2());
     }
 
     /**
@@ -4297,6 +4276,15 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
     protected List<String> primaryKeysForCache(int cnt)
         throws IgniteCheckedException {
         return primaryKeysForCache(testedNodeIdx, cnt, 1);
+    }
+
+    /**
+     * @param cache Cache.
+     * @param key Entry key.
+     * @return Pair [ttl, expireTime]; both values null if entry not found
+     */
+    protected IgnitePair<Long> entryTtl(IgniteCache cache, String key) {
+        return executeOnLocalOrRemoteJvm(cache, new EntryTtlTask(key));
     }
 
     /**
@@ -5640,6 +5628,33 @@ public class IgniteCacheConfigVariationsFullApiTest extends IgniteCacheConfigVar
             }
 
             throw new IgniteException("Unable to find " + cnt + " keys as primary for cache.");
+        }
+    }
+
+    /** */
+    private static class EntryTtlTask implements TestCacheCallable<String, Integer, IgnitePair<Long>> {
+        /** */
+        private final String key;
+
+        /**
+         * @param key Key.
+         */
+        private EntryTtlTask(String key) {
+            this.key = key;
+        }
+
+        /** {@inheritDoc} */
+        @Override public IgnitePair<Long> call(Ignite ignite, IgniteCache<String, Integer> cache) throws Exception {
+            GridCacheAdapter<?, ?> internalCache = internalCache0(cache);
+
+            if (internalCache.context().isNear())
+                internalCache = internalCache.context().near().dht();
+
+            GridCacheEntryEx entry = internalCache.peekEx(key);
+
+            return entry != null ?
+                new IgnitePair<>(entry.ttl(), entry.expireTime()) :
+                new IgnitePair<Long>(null, null);
         }
     }
 
