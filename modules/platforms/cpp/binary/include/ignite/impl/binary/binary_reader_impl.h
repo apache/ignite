@@ -21,6 +21,7 @@
 #include <stdint.h>
 
 #include <ignite/common/common.h>
+#include <ignite/common/fixed_size_array.h>
 
 #include "ignite/impl/interop/interop_input_stream.h"
 #include "ignite/impl/binary/binary_common.h"
@@ -1397,14 +1398,14 @@ namespace ignite
                 {
                     int32_t realLen = stream->ReadInt32();
 
-                    ignite::common::SafeArray<char> arr(realLen + 1);
+                    ignite::common::FixedSizeArray<char> arr(realLen + 1);
 
-                    for (int i = 0; i < realLen; i++)
-                        *(arr.target + i) = static_cast<char>(stream->ReadInt8());
+                    for (int32_t i = 0; i < realLen; i++)
+                        arr[i] = static_cast<char>(stream->ReadInt8());
 
-                    *(arr.target + realLen) = 0;
+                    arr[realLen] = 0;
 
-                    return std::string(arr.target);
+                    return std::string(arr.GetData());
                 }
 
                 else if (typeId == IGNITE_HDR_NULL)

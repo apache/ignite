@@ -48,9 +48,9 @@ namespace Apache.Ignite.Core.Tests
                 return;
             }
 
-            //TestOne(typeof(BinaryStringTest), "Test");
+            TestOne(typeof(AffinityFunctionTest), "TestSimpleInheritance");
 
-            TestAll(typeof (AffinityFunctionTest));
+            //TestAll(typeof (AffinityFunctionTest));
             //TestAllInAssembly();
         }
 

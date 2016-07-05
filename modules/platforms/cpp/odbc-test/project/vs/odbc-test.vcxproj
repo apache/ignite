@@ -157,7 +157,6 @@
     <ClCompile Include="..\..\..\odbc\src\config\configuration.cpp" />
     <ClCompile Include="..\..\..\odbc\src\config\connection_info.cpp" />
     <ClCompile Include="..\..\..\odbc\src\cursor.cpp" />
-    <ClCompile Include="..\..\..\odbc\src\decimal.cpp" />
     <ClCompile Include="..\..\..\odbc\src\result_page.cpp" />
     <ClCompile Include="..\..\..\odbc\src\row.cpp" />
     <ClCompile Include="..\..\..\odbc\src\utility.cpp" />
