@@ -106,7 +106,12 @@ namespace Apache.Ignite.Core.Tests
         {
             Console.WriteLine("Starting test...");
 
-            RunInNewDomain();
+            using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
+            {
+                RunInNewDomain();
+
+                Assert.AreEqual(3, ignite.GetCluster().TopologyVersion);
+            }
 
             Console.WriteLine("Test stopped.");
         }

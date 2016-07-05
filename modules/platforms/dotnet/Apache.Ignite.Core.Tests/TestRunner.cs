@@ -48,7 +48,7 @@ namespace Apache.Ignite.Core.Tests
                 return;
             }
 
-            TestOne(typeof(AffinityFunctionTest), "TestSimpleInheritance");
+            TestOne(typeof(ConsoleRedirectTest), "TestMultipleDomains");
 
             //TestAll(typeof (AffinityFunctionTest));
             //TestAllInAssembly();
