@@ -22,6 +22,7 @@ import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.internal.S;
 
 import java.util.ArrayList;
+import java.util.UUID;
 
 /**
  * Map-reduce plan group of nodes.
@@ -82,23 +83,29 @@ public class HadoopMapReducePlanGroup {
     }
 
     /**
-     * Get node by index.
+     * Get node ID by index.
      *
      * @param idx Index.
      * @return Node.
      */
-    public ClusterNode node(int idx) {
+    public UUID nodeId(int idx) {
+        ClusterNode res;
+
         if (node != null) {
             assert idx == 0;
 
-            return node;
+            res = node;
         }
         else {
             assert nodes != null;
             assert idx < nodes.size();
 
-            return nodes.get(idx);
+            res = nodes.get(idx);
         }
+
+        assert res != null;
+
+        return res.id();
     }
 
     /**

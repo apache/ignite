@@ -150,7 +150,7 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
 
                 if (grp != null) {
                     for (int i = 0; i < grp.nodeCount(); i++)
-                        nodeIds.add(grp.node(i).id());
+                        nodeIds.add(grp.nodeId(i));
                 }
             }
         }
@@ -293,7 +293,7 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
                     List<Integer> cands = new ArrayList<>();
 
                     for (int i = 0; i < grp.nodeCount(); i++) {
-                        UUID id = grp.node(i).id();
+                        UUID id = grp.nodeId(i);
 
                         if (affIds.contains(id))
                             cands.add(i);
@@ -308,7 +308,7 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
                     assert priorityAffId != null;
 
                     for (int i = 0; i < grp.nodeCount(); i++) {
-                        UUID id = grp.node(i).id();
+                        UUID id = grp.nodeId(i);
 
                         if (F.eq(id, priorityAffId)) {
                             idx = i;
@@ -322,7 +322,7 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
             }
         }
 
-        return grp.node(idx).id();
+        return grp.nodeId(idx);
     }
 
     /**
@@ -453,7 +453,7 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
             List<UUID> affIds = null;
 
             for (int i = 0; i < grp.nodeCount(); i++) {
-                UUID nodeId = grp.node(i).id();
+                UUID nodeId = grp.nodeId(i);
 
                 if (mappers.nodeToSplits.containsKey(nodeId)) {
                     if (affIds == null)
@@ -473,7 +473,7 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
                 newWeight = grp.weight() + locReducerWeight;
             }
             else {
-                id = grp.node(ThreadLocalRandom.current().nextInt(grp.nodeCount())).id();
+                id = grp.nodeId(ThreadLocalRandom.current().nextInt(grp.nodeCount()));
 
                 newWeight = grp.weight() + rmtReducerWeight;
             }
@@ -559,7 +559,7 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
 
         if (!F.isEmpty(affIds)) {
             for (int i = 0; i < grp.nodeCount(); i++) {
-                UUID id = grp.node(i).id();
+                UUID id = grp.nodeId(i);
 
                 if (affIds.contains(id)) {
                     priority = MapperPriority.HIGH;
