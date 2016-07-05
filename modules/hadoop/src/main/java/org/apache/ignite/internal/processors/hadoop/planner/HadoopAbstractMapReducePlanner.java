@@ -38,7 +38,6 @@ import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_MACS;
  * Base class for map-reduce planners.
  */
 public abstract class HadoopAbstractMapReducePlanner implements HadoopMapReducePlanner {
-
     /** Injected grid. */
     @IgniteInstanceResource
     protected Ignite ignite;
