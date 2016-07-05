@@ -50,6 +50,7 @@ import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
 import org.apache.ignite.internal.processors.igfs.IgfsInputStreamAdapter;
 import org.apache.ignite.internal.processors.igfs.IgfsLocalMetrics;
+import org.apache.ignite.internal.processors.igfs.IgfsMock;
 import org.apache.ignite.internal.processors.igfs.IgfsPaths;
 import org.apache.ignite.internal.processors.igfs.IgfsStatus;
 import org.apache.ignite.internal.util.typedef.F;
@@ -681,7 +682,14 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
     /**
      * Mocked IGFS.
      */
-    private static class MockIgfs implements IgfsEx {
+    private static class MockIgfs extends IgfsMock {
+        /**
+         * Constructor.
+         */
+        public MockIgfs() {
+            super(null);
+        }
+
         /** {@inheritDoc} */
         @Override public boolean isProxy(URI path) {
             return PROXY_MAP.containsKey(path) && PROXY_MAP.get(path);
@@ -693,247 +701,8 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
         }
 
         /** {@inheritDoc} */
-        @Override public Collection<IgfsBlockLocation> affinity(IgfsPath path, long start, long len,
-            long maxLen) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void stop(boolean cancel) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsContext context() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsPaths proxyPaths() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsInputStreamAdapter open(IgfsPath path, int bufSize, int seqReadsBeforePrefetch) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsInputStreamAdapter open(IgfsPath path) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsInputStreamAdapter open(IgfsPath path, int bufSize) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsStatus globalSpace() throws IgniteCheckedException {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void globalSampling(@Nullable Boolean val) throws IgniteCheckedException {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public Boolean globalSampling() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsLocalMetrics localMetrics() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long groupBlockSize() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public String clientLogDirectory() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void clientLogDirectory(String logDir) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean evictExclude(IgfsPath path, boolean primary) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public String name() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public FileSystemConfiguration configuration() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
         @Override public boolean exists(IgfsPath path) {
             return true;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public IgfsFile info(IgfsPath path) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsPathSummary summary(IgfsPath path) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public IgfsFile update(IgfsPath path, Map<String, String> props) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void rename(IgfsPath src, IgfsPath dest) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean delete(IgfsPath path, boolean recursive) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void mkdirs(IgfsPath path) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public void mkdirs(IgfsPath path, @Nullable Map<String, String> props) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<IgfsPath> listPaths(IgfsPath path) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Collection<IgfsFile> listFiles(IgfsPath path) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long usedSpaceSize() {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsOutputStream create(IgfsPath path, boolean overwrite) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsOutputStream create(IgfsPath path, int bufSize, boolean overwrite, int replication,
-            long blockSize, @Nullable Map<String, String> props) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsOutputStream create(IgfsPath path, int bufSize, boolean overwrite,
-            @Nullable IgniteUuid affKey, int replication, long blockSize, @Nullable Map<String, String> props) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsOutputStream append(IgfsPath path, boolean create) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsOutputStream append(IgfsPath path, int bufSize, boolean create,
-            @Nullable Map<String, String> props) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void setTimes(IgfsPath path, long accessTime, long modificationTime) {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsMetrics metrics() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void resetMetrics() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public long size(IgfsPath path) {
-            return 0;
-        }
-
-        /** {@inheritDoc} */
-        @Override public void format() {
-            // No-op.
-        }
-
-        /** {@inheritDoc} */
-        @Override public <T, R> R execute(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
-            Collection<IgfsPath> paths, @Nullable T arg) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public <T, R> R execute(IgfsTask<T, R> task, @Nullable IgfsRecordResolver rslvr,
-            Collection<IgfsPath> paths, boolean skipNonExistentFiles, long maxRangeLen, @Nullable T arg) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public <T, R> R execute(Class<? extends IgfsTask<T, R>> taskCls,
-            @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, @Nullable T arg) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public <T, R> R execute(Class<? extends IgfsTask<T, R>> taskCls,
-            @Nullable IgfsRecordResolver rslvr, Collection<IgfsPath> paths, boolean skipNonExistentFiles,
-            long maxRangeLen, @Nullable T arg) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteUuid nextAffinityKey() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteFileSystem withAsync() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isAsync() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public <R> IgniteFuture<R> future() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgfsSecondaryFileSystem asSecondary() {
-            return null;
         }
     }
 
