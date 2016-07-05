@@ -74,7 +74,7 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
     private static final IgniteFileSystem IGFS = new MockIgfs();
 
     /** Mocked Grid. */
-    private static final MockIgnite GRID = new MockIgnite(IGFS);
+    private static final IgfsIgniteMock GRID = new IgfsIgniteMock(null, IGFS);
 
     /** Planner. */
     private static final HadoopMapReducePlanner PLANNER = new IgniteHadoopMapReducePlanner();
@@ -682,21 +682,6 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
         /** {@inheritDoc} */
         @Override public boolean exists(IgfsPath path) {
             return true;
-        }
-    }
-
-    /**
-     * Mocked Grid.
-     */
-    @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    private static class MockIgnite extends IgfsIgniteMock {
-        /**
-         * Constructor.
-         *
-         * @param igfs IGFS.
-         */
-        public MockIgnite(IgniteFileSystem igfs) {
-            super(null, igfs);
         }
     }
 }
