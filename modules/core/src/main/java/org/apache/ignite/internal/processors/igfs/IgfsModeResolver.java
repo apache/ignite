@@ -75,7 +75,7 @@ public class IgfsModeResolver {
 
             if (mode == null) {
                 for (T2<IgfsPath, IgfsMode> entry : modes) {
-                    if (path.isSubDirectoryOf(entry.getKey())) {
+                    if (path.isSame(entry.getKey()) || path.isSubDirectoryOf(entry.getKey())) {
                         // As modes ordered from most specific to least specific first mode found is ours.
                         mode = entry.getValue();
 
