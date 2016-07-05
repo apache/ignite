@@ -57,6 +57,8 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_RETRIES_COUNT;
+import static org.apache.ignite.igfs.IgfsMode.DUAL_ASYNC;
+import static org.apache.ignite.igfs.IgfsMode.DUAL_SYNC;
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGFS;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
@@ -743,18 +745,11 @@ public class IgfsUtils {
     /**
      * Answers if directory of this mode can contain a subdirectory of the given mode.
      *
+     * @param parent Parent mode.
+     * @param child Child mode.
      * @return {@code true} if directory of this mode can contain a directory of the given mode.
      */
-    @SuppressWarnings("SimplifiableIfStatement")
-    public static boolean canContain(IgfsMode x, IgfsMode y) {
-        // PRIMARY can contain PRIMARY only:
-        if (x== PRIMARY)
-            return y == PRIMARY;
-
-        // PROXY can contain PROXY only:
-        if (x == PROXY)
-            return y == PROXY;
-
-        return true;
+    public static boolean canContain(IgfsMode parent, IgfsMode child) {
+        return parent == DUAL_SYNC || parent == DUAL_ASYNC || parent == child;
     }
 }
