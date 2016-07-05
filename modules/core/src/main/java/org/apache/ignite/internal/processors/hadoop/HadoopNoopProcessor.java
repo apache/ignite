@@ -74,4 +74,9 @@ public class HadoopNoopProcessor extends HadoopProcessorAdapter {
     @Override public boolean kill(HadoopJobId jobId) throws IgniteCheckedException {
         return false;
     }
+
+    /** {@inheritDoc} */
+    @Override public void validateEnvironment() throws IgniteCheckedException {
+        // No-oop.
+    }
 }

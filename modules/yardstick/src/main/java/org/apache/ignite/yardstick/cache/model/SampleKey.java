@@ -100,6 +100,6 @@ public class SampleKey implements Externalizable, Binarylizable {
 
     /** {@inheritDoc} */
     @Override public String toString() {
-        return "Key [id=" + id + ']';
+        return "SampleKey [id=" + id + ']';
     }
 }
