@@ -88,7 +88,7 @@ public class IgfsModeResolverSelfTest extends TestCase {
     public void testModesValidation() throws Exception {
         // Another mode inside PRIMARY directory:
         try {
-            IgfsImpl.filterModes(DUAL_SYNC, Arrays.asList(
+            IgfsUtils.preparePathModes(DUAL_SYNC, Arrays.asList(
                 new T2<>(new IgfsPath("/a/"), PRIMARY),
                 new T2<>(new IgfsPath("/a/b/"), DUAL_ASYNC)));
 
@@ -102,8 +102,7 @@ public class IgfsModeResolverSelfTest extends TestCase {
         for (IgfsMode m: IgfsMode.values()) {
             if (m != IgfsMode.PRIMARY) {
                 try {
-                    IgfsImpl.filterModes(PRIMARY, Arrays.asList(new T2<>(new IgfsPath("/a/"),
-                        DUAL_ASYNC)));
+                    IgfsUtils.preparePathModes(PRIMARY, Arrays.asList(new T2<>(new IgfsPath("/a/"), DUAL_ASYNC)));
 
                     fail("IgniteCheckedException expected");
                 }
@@ -114,7 +113,7 @@ public class IgfsModeResolverSelfTest extends TestCase {
         }
 
         // Duplicated sub-folders should be ignored:
-        List<T2<IgfsPath, IgfsMode>> modes = IgfsImpl.filterModes(DUAL_SYNC, Arrays.asList(
+        List<T2<IgfsPath, IgfsMode>> modes = IgfsUtils.preparePathModes(DUAL_SYNC, Arrays.asList(
             new T2<>(new IgfsPath("/a"), PRIMARY),
             new T2<>(new IgfsPath("/c/d/"), PRIMARY),
             new T2<>(new IgfsPath("/c/d/e/f"), PRIMARY)
@@ -127,7 +126,7 @@ public class IgfsModeResolverSelfTest extends TestCase {
         ));
 
         // Non-duplicated sub-folders should not be ignored:
-        modes = IgfsImpl.filterModes(DUAL_SYNC, Arrays.asList(
+        modes = IgfsUtils.preparePathModes(DUAL_SYNC, Arrays.asList(
             new T2<>(new IgfsPath("/a/b"), DUAL_ASYNC),
             new T2<>(new IgfsPath("/a/b/c"), DUAL_SYNC),
             new T2<>(new IgfsPath("/a/b/c/d"), DUAL_ASYNC)

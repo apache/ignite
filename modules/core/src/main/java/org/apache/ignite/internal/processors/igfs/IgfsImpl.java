@@ -175,60 +175,6 @@ public final class IgfsImpl implements IgfsEx {
     private final IgniteThreadPoolExecutor dualPool;
 
     /**
-     * Checks, filters and sorts the modes.
-     *
-     * @param dfltMode The root mode. Must always be not null.
-     * @param modes The subdirectory modes.
-     * @return Descending list of filtered and checked modes.
-     * @throws IgniteCheckedException On error or
-     */
-    static List<T2<IgfsPath, IgfsMode>> filterModes(final IgfsMode dfltMode,
-        @Nullable List<T2<IgfsPath, IgfsMode>> modes)
-        throws IgniteCheckedException {
-        if (modes == null)
-            return null;
-
-        // Sort by depth, shallow first:
-        Collections.sort(modes, new Comparator<Map.Entry<IgfsPath, IgfsMode>>() {
-            @Override public int compare(Map.Entry<IgfsPath, IgfsMode> o1, Map.Entry<IgfsPath, IgfsMode> o2) {
-                return o1.getKey().depth() - o2.getKey().depth();
-            }
-        });
-
-        final List<T2<IgfsPath, IgfsMode>> consistentModes = new LinkedList<T2<IgfsPath, IgfsMode>>() {{ add(new T2<>
-            (new IgfsPath("/"), dfltMode)); }};
-
-        for (T2<IgfsPath, IgfsMode> m: modes) {
-            assert m.getKey() != null;
-
-            for (T2<IgfsPath, IgfsMode> consistent: consistentModes) {
-                if (m.getKey().isSubDirectoryOf(consistent.getKey())) {
-                    assert consistent.getValue() != null;
-
-                    if (consistent.getValue() == m.getValue())
-                        // No reason to add a sub-path of the same mode, ignore this pair.
-                        break;
-
-                    if (!IgfsUtils.canContain(consistent.getValue(), m.getValue()))
-                        throw new IgniteCheckedException("Subdirectory " + m.getKey() + " mode "
-                            + m.getValue() + " is not compatible with upper level "
-                            + consistent.getKey() + " directory mode " + consistent.getValue() + ".");
-
-                    // Add to the 1st position (deep first):
-                    consistentModes.add(0, m);
-
-                    break;
-                }
-            }
-        }
-
-        // Remove root, because this class contract is that root mode is not contained in the list.
-        consistentModes.remove(consistentModes.size() - 1);
-
-        return consistentModes;
-    }
-
-    /**
      * Creates IGFS instance with given context.
      *
      * @param igfsCtx Context.
@@ -251,7 +197,7 @@ public final class IgfsImpl implements IgfsEx {
             ((LifecycleAware) secondaryFs).start();
 
         /* Default IGFS mode. */
-        final IgfsMode dfltMode;
+        IgfsMode dfltMode;
 
         if (secondaryFs == null) {
             if (cfg.getDefaultMode() == PROXY)
@@ -304,7 +250,7 @@ public final class IgfsImpl implements IgfsEx {
             }
         }
 
-        modeRslvr = new IgfsModeResolver(dfltMode, filterModes(dfltMode, modes));
+        modeRslvr = new IgfsModeResolver(dfltMode, IgfsUtils.preparePathModes(dfltMode, modes));
 
         Object secondaryFsPayload = null;
 
