@@ -126,14 +126,6 @@ public final class IgfsImpl implements IgfsEx {
     /** Default directory metadata. */
     static final Map<String, String> DFLT_DIR_META = F.asMap(IgfsUtils.PROP_PERMISSION, PERMISSION_DFLT_VAL);
 
-    /** Depth-based comparator. Deep paths go first. */
-    private static final Comparator<Map.Entry<IgfsPath, IgfsMode>> SHALLOW_FIRST_PATH_DEPTH_CMP
-        = new Comparator<Map.Entry<IgfsPath, IgfsMode>>() {
-        @Override public int compare(Map.Entry<IgfsPath, IgfsMode> o1, Map.Entry<IgfsPath, IgfsMode> o2) {
-            return o1.getKey().depth() - o2.getKey().depth();
-        }
-    };
-
     /** Handshake message. */
     private final IgfsPaths secondaryPaths;
 
@@ -196,26 +188,33 @@ public final class IgfsImpl implements IgfsEx {
         if (modes == null)
             return null;
 
-        Collections.sort(modes, SHALLOW_FIRST_PATH_DEPTH_CMP);
+        // Sort by depth, shallow first:
+        Collections.sort(modes, new Comparator<Map.Entry<IgfsPath, IgfsMode>>() {
+            @Override public int compare(Map.Entry<IgfsPath, IgfsMode> o1, Map.Entry<IgfsPath, IgfsMode> o2) {
+                return o1.getKey().depth() - o2.getKey().depth();
+            }
+        });
 
         final List<T2<IgfsPath, IgfsMode>> consistentModes = new LinkedList<T2<IgfsPath, IgfsMode>>() {{ add(new T2<>
             (new IgfsPath("/"), dfltMode)); }};
 
         for (T2<IgfsPath, IgfsMode> m: modes) {
+            assert m.getKey() != null;
+
             for (T2<IgfsPath, IgfsMode> consistent: consistentModes) {
-                if (IgfsModeResolver.startsWith(m.getKey(), consistent.getKey())) {
+                if (m.getKey().isSubDirectoryOf(consistent.getKey())) {
                     assert consistent.getValue() != null;
 
                     if (consistent.getValue() == m.getValue())
                         // No reason to add a sub-path of the same mode, ignore this pair.
                         break;
 
-                    if (!consistent.getValue().canContain(m.getValue()))
+                    if (!IgfsUtils.canContain(consistent.getValue(), m.getValue()))
                         throw new IgniteCheckedException("Subdirectory " + m.getKey() + " mode "
                             + m.getValue() + " is not compatible with upper level "
                             + consistent.getKey() + " directory mode " + consistent.getValue() + ".");
 
-                    // Add to the 1st position (depest first):
+                    // Add to the 1st position (deep first):
                     consistentModes.add(0, m);
 
                     break;

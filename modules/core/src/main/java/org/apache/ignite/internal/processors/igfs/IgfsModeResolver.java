@@ -20,7 +20,6 @@ package org.apache.ignite.internal.processors.igfs;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.util.GridBoundedConcurrentLinkedHashMap;
@@ -48,10 +47,8 @@ public class IgfsModeResolver {
      *
      * @param dfltMode Default IGFS mode.
      * @param modes List of configured modes. The order is significant as modes are added in order of occurrence.
-     * @throws IgniteCheckedException On error.
      */
-    public IgfsModeResolver(IgfsMode dfltMode, @Nullable List<T2<IgfsPath, IgfsMode>> modes)
-        throws IgniteCheckedException {
+    public IgfsModeResolver(IgfsMode dfltMode, @Nullable List<T2<IgfsPath, IgfsMode>> modes) {
         assert dfltMode != null;
 
         this.dfltMode = dfltMode;
@@ -78,7 +75,7 @@ public class IgfsModeResolver {
 
             if (mode == null) {
                 for (T2<IgfsPath, IgfsMode> entry : modes) {
-                    if (startsWith(path, entry.getKey())) {
+                    if (path.isSubDirectoryOf(entry.getKey())) {
                         // As modes ordered from most specific to least specific first mode found is ours.
                         mode = entry.getValue();
 
@@ -102,20 +99,5 @@ public class IgfsModeResolver {
      */
     @Nullable public List<T2<IgfsPath, IgfsMode>> modesOrdered() {
         return modes != null ? Collections.unmodifiableList(modes) : null;
-    }
-
-    /**
-     * Check if path starts with prefix.
-     *
-     * @param path Path.
-     * @param prefix Prefix.
-     * @return {@code true} if path starts with prefix, {@code false} if not.
-     */
-    static boolean startsWith(IgfsPath path, IgfsPath prefix) {
-        String pathStr = path.toString();
-        String prefStr = prefix.toString();
-
-        return pathStr.startsWith(prefStr) &&
-            (pathStr.length() == prefStr.length() || "/".equals(prefStr) || pathStr.charAt(prefStr.length()) == '/');
     }
 }

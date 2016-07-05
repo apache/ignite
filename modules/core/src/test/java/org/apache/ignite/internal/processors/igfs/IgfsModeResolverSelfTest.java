@@ -48,16 +48,16 @@ public class IgfsModeResolverSelfTest extends TestCase {
     public void testCanContain() throws Exception {
         for (IgfsMode m: IgfsMode.values()) {
             // Each mode can contain itself:
-            assertTrue(m.canContain(m));
+            assertTrue(IgfsUtils.canContain(m, m));
 
             // PRIMARY and PROXY can contain itself only:
-            assertTrue(PRIMARY.canContain(m) == (m == PRIMARY));
-            assertTrue(PROXY.canContain(m) == (m == PROXY));
+            assertTrue(IgfsUtils.canContain(PRIMARY,m) == (m == PRIMARY));
+            assertTrue(IgfsUtils.canContain(PROXY,m) == (m == PROXY));
 
             // Any mode but PRIMARY & PROXY can contain any mode:
             if (m != PRIMARY && m != PROXY)
                 for (IgfsMode n: IgfsMode.values())
-                    assertTrue(m.canContain(n));
+                    assertTrue(IgfsUtils.canContain(m,n));
         }
     }
 

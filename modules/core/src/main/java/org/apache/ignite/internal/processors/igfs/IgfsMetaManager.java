@@ -2306,7 +2306,7 @@ public class IgfsMetaManager extends IgfsManager {
                 IgfsFile status;
 
                 try {
-                    status = fs.info(curPath);
+                    status = fs.info(curPath); // ********* this is the call we're trying to avoid.
                 }
                 catch (IgniteException e) {
                     throw new IgniteCheckedException("Failed to get path information: " + e, e);
@@ -2328,6 +2328,8 @@ public class IgfsMetaManager extends IgfsManager {
 
                     return null;
                 }
+
+                // *****
 
                 // Recreate the path locally.
                 IgfsEntryInfo curInfo = status.isDirectory() ?

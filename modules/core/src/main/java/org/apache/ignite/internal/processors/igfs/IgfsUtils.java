@@ -30,6 +30,7 @@ import org.apache.ignite.configuration.FileSystemConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.IgfsEvent;
 import org.apache.ignite.igfs.IgfsException;
+import org.apache.ignite.igfs.IgfsMode;
 import org.apache.ignite.igfs.IgfsPath;
 import org.apache.ignite.internal.GridKernalContext;
 import org.apache.ignite.internal.binary.BinaryUtils;
@@ -59,6 +60,8 @@ import static org.apache.ignite.IgniteSystemProperties.IGNITE_CACHE_RETRIES_COUN
 import static org.apache.ignite.internal.IgniteNodeAttributes.ATTR_IGFS;
 import static org.apache.ignite.transactions.TransactionConcurrency.PESSIMISTIC;
 import static org.apache.ignite.transactions.TransactionIsolation.REPEATABLE_READ;
+import static org.apache.ignite.igfs.IgfsMode.PRIMARY;
+import static org.apache.ignite.igfs.IgfsMode.PROXY;
 
 /**
  * Common IGFS utility methods.
@@ -735,5 +738,23 @@ public class IgfsUtils {
                     return true;
 
         return false;
+    }
+
+    /**
+     * Answers if directory of this mode can contain a subdirectory of the given mode.
+     *
+     * @return {@code true} if directory of this mode can contain a directory of the given mode.
+     */
+    @SuppressWarnings("SimplifiableIfStatement")
+    public static boolean canContain(IgfsMode x, IgfsMode y) {
+        // PRIMARY can contain PRIMARY only:
+        if (x== PRIMARY)
+            return y == PRIMARY;
+
+        // PROXY can contain PROXY only:
+        if (x == PROXY)
+            return y == PROXY;
+
+        return true;
     }
 }
