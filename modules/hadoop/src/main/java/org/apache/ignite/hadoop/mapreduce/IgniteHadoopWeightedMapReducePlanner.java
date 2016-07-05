@@ -502,14 +502,14 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
     private static class GroupWeightComparator implements Comparator<HadoopMapReducePlanGroup> {
         /** {@inheritDoc} */
         @Override public int compare(HadoopMapReducePlanGroup first, HadoopMapReducePlanGroup second) {
-            int res = second.weight() - first.weight();
+            int res = first.weight() - second.weight();
 
             if (res < 0)
                 return -1;
             else if (res > 0)
                 return 1;
-
-            return first.macs().compareTo(second.macs());
+            else
+                return first.macs().compareTo(second.macs());
         }
     }
 
@@ -703,9 +703,9 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
             long res = len - obj.len;
 
             if (res > 0)
-                return 1;
-            else if (res < 0)
                 return -1;
+            else if (res < 0)
+                return 1;
             else
                 return id.compareTo(obj.id);
         }

@@ -24,7 +24,7 @@ import org.apache.ignite.internal.util.typedef.internal.S;
 import java.util.ArrayList;
 
 /**
- * Map-reduce plan group.
+ * Map-reduce plan group of nodes.
  */
 public class HadoopMapReducePlanGroup {
     /** Node. */
@@ -35,9 +35,6 @@ public class HadoopMapReducePlanGroup {
 
     /** MAC addresses. */
     private final String macs;
-
-    /** CPUs. */
-    private final int cpus;
 
     /** Weight. */
     private int weight;
@@ -51,8 +48,6 @@ public class HadoopMapReducePlanGroup {
     public HadoopMapReducePlanGroup(ClusterNode node, String macs) {
         this.node = node;
         this.macs = macs;
-
-        cpus = node.metrics().getTotalCpus();
     }
 
     /**
@@ -61,8 +56,6 @@ public class HadoopMapReducePlanGroup {
      * @param newNode New node.
      */
     public void add(ClusterNode newNode) {
-        assert newNode.metrics().getTotalCpus() == cpus;
-
         if (node != null) {
             nodes = new ArrayList<>(2);
 
@@ -113,13 +106,6 @@ public class HadoopMapReducePlanGroup {
      */
     public int nodeCount() {
         return node != null ? 1 : nodes.size();
-    }
-
-    /**
-     * @return CPU count.
-     */
-    public int cpuCount() {
-        return cpus;
     }
 
     /**

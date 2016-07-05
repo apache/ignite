@@ -415,9 +415,9 @@ public class HadoopUtils {
             long res = len - other.len;
 
             if (res > 0)
-                return 1;
-            else if (res < 0)
                 return -1;
+            else if (res < 0)
+                return 1;
             else
                 return id - other.id;
         }
