@@ -108,22 +108,30 @@ public class TxDeadlockDetection {
         stack.push(txId);
 
         while (!stack.isEmpty()) {
-            GridCacheVersion v = stack.pop();
+            GridCacheVersion v = stack.peek();
 
-            if (visited.contains(v))
+            if (visited.contains(v)) {
+                stack.pop();
+                inPath.remove(v);
+
                 continue;
+            }
 
             visited.add(v);
 
             Set<GridCacheVersion> children = wfg.get(v);
 
-            if (children == null || children.isEmpty())
+            if (children == null || children.isEmpty()) {
+                stack.pop();
+                inPath.remove(v);
+
                 continue;
+            }
 
             inPath.add(v);
 
             for (GridCacheVersion w : children) {
-                if (inPath.contains(w)) {
+                if (inPath.contains(w) && visited.contains(w)) {
                     List<GridCacheVersion> cycle = new ArrayList<>();
 
                     for (GridCacheVersion x = v; !x.equals(w); x = edgeTo.get(x))

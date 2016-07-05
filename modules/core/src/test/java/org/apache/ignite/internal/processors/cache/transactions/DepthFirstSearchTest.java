@@ -95,6 +95,14 @@ public class DepthFirstSearchTest extends TestCase {
 
         wfg = new HashMap<GridCacheVersion, Set<GridCacheVersion>>() {{
             put(T1, new HashSet<GridCacheVersion>(){{add(T2);}});
+            put(T2, new HashSet<GridCacheVersion>(){{add(T3);}});
+            put(T4, new HashSet<GridCacheVersion>(){{add(T1); add(T2); add(T3);}});
+        }};
+
+        assertAllNull(wfg);
+
+        wfg = new HashMap<GridCacheVersion, Set<GridCacheVersion>>() {{
+            put(T1, new HashSet<GridCacheVersion>(){{add(T2);}});
             put(T3, new HashSet<GridCacheVersion>(){{add(T4);}});
             put(T4, new HashSet<GridCacheVersion>(){{add(T1);}});
         }};
@@ -225,6 +233,21 @@ public class DepthFirstSearchTest extends TestCase {
         assertEquals(F.asList(T4, T6, T5, T4), findCycle(wfg, T5));
         assertEquals(F.asList(T5, T4, T6, T5), findCycle(wfg, T6));
 
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testFindCycle4() throws Exception {
+        Map<GridCacheVersion, Set<GridCacheVersion>> wfg = new HashMap<GridCacheVersion, Set<GridCacheVersion>>() {{
+            put(T1, Collections.singleton(T2));
+            put(T2, asLinkedHashSet(T3, T4));
+            put(T3, Collections.singleton(T4));
+            put(T4, Collections.singleton(T5));
+            put(T6, Collections.singleton(T3));
+        }};
+
+        assertNull(findCycle(wfg, T1));
     }
 
     /**
