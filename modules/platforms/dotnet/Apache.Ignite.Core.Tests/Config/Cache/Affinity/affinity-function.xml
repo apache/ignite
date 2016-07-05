@@ -64,6 +64,46 @@
                             </property>
                         </bean>
                     </property>
+                </bean>                
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="cache2"/>
+
+                    <property name="affinity">
+                        <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetAffinityFunction">
+                            <property name="typeName" value="Apache.Ignite.Core.Tests.Cache.Affinity.AffinityFunctionSpringTest+TestFairFunc, Apache.Ignite.Core.Tests"/>
+                            <property name="properties">
+                                <map>
+                                    <entry key="Property1">
+                                        <value type="java.lang.Integer">1</value>
+                                    </entry>
+                                    <entry key="Property2" value="1"/>
+                                    <entry key="Partitions">
+                                        <value type="java.lang.Integer">5</value>
+                                    </entry>
+                                </map>
+                            </property>
+                        </bean>
+                    </property>
+                </bean>
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="dyn-cache2-*"/>
+
+                    <property name="affinity">
+                        <bean class="org.apache.ignite.platform.dotnet.PlatformDotNetAffinityFunction">
+                            <property name="typeName" value="Apache.Ignite.Core.Tests.Cache.Affinity.AffinityFunctionSpringTest+TestFairFunc, Apache.Ignite.Core.Tests"/>
+                            <property name="properties">
+                                <map>
+                                    <entry key="Property1">
+                                        <value type="java.lang.Integer">1</value>
+                                    </entry>
+                                    <entry key="Property2" value="1"/>
+                                    <entry key="Partitions">
+                                        <value type="java.lang.Integer">5</value>
+                                    </entry>
+                                </map>
+                            </property>
+                        </bean>
+                    </property>
                 </bean>
             </list>
         </property>

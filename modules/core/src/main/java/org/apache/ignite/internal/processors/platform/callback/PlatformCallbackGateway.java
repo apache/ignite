@@ -19,6 +19,7 @@ package org.apache.ignite.internal.processors.platform.callback;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.internal.processors.platform.cache.affinity.PlatformAffinityFunctionTarget;
 import org.apache.ignite.internal.util.GridStripedSpinBusyLock;
 
 /**
@@ -954,13 +955,14 @@ public class PlatformCallbackGateway {
      * Initializes affinity function.
      *
      * @param memPtr Pointer to a stream with serialized affinity function.
+     * @param baseFunc Optional func for base calls.
      * @return Affinity function pointer.
      */
-    public long affinityFunctionInit(long memPtr) {
+    public long affinityFunctionInit(long memPtr, PlatformAffinityFunctionTarget baseFunc) {
         enter();
 
         try {
-            return PlatformCallbackUtils.affinityFunctionInit(envPtr, memPtr);
+            return PlatformCallbackUtils.affinityFunctionInit(envPtr, memPtr, baseFunc);
         }
         finally {
             leave();

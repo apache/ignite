@@ -48,25 +48,13 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
     private static final long serialVersionUID = 0L;
 
     /** .NET type name. */
-    private String typName;
+    private transient String typName;
 
     /** Properties. */
-    private Map<String, ?> props;
-
-    /**
-     * Partition count.
-     *
-     * 1) Java calls partitions() method very early (before LifecycleAware.start) during CacheConfiguration validation.
-     * 2) Partition count never changes.
-     * Therefore, we get the value on .NET side once, and pass it along with PlatformAffinity.
-     */
-    private int partitions;
+    private transient Map<String, ?> props;
 
     /** Inner function. */
-    private transient PlatformAffinityFunction func;
-
-    /** Ignite. */
-    private transient Ignite ignite;
+    private PlatformAffinityFunction func;
 
     /**
      * Gets .NET type name.
@@ -113,7 +101,9 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
 
     /** {@inheritDoc} */
     @Override public int partitions() {
-        return partitions;
+        assert func != null;
+
+        return func.partitions();
     }
 
     /** {@inheritDoc} */
@@ -137,66 +127,48 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
         func.removeNode(nodeId);
     }
 
-    /**
-     * Writes this func to the writer.
-     *
-     * @param writer Writer.
-     */
-    public void write(BinaryRawWriter writer) {
-        assert writer != null;
-
-        writer.writeObject(typName);
-        writer.writeMap(props);
-    }
-
     /** {@inheritDoc} */
     @Override public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeObject(typName);
-        out.writeObject(props);
-        out.writeInt(partitions);
+        out.writeObject(func);
     }
 
     /** {@inheritDoc} */
     @Override public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        typName = (String)in.readObject();
-        props = (Map<String, ?>)in.readObject();
-        partitions = in.readInt();
+        func = (PlatformAffinityFunction) in.readObject();
     }
 
     /**
-     * Initializes the partitions count.
+     * Initializes this instance.
      *
-     * @param partitions Number of partitions.
+     * @param func Underlying func.
      */
-    public void initPartitions(int partitions) {
-        this.partitions = partitions;
+    public void init(PlatformAffinityFunction func) {
+        assert func != null;
+
+        this.func = func;
     }
 
     /** {@inheritDoc} */
     @Override public void start() throws IgniteException {
-        assert ignite != null;
+        assert func != null;
 
-        PlatformContext ctx = PlatformUtils.platformContext(ignite);
-        assert ctx != null;
-
-        try (PlatformMemory mem = ctx.memory().allocate()) {
-            PlatformOutputStream out = mem.output();
-            BinaryRawWriterEx writer = ctx.writer(out);
-
-            write(writer);
-
-            out.synchronize();
-
-            long ptr = ctx.gateway().affinityFunctionInit(mem.pointer());
-
-            func = new PlatformAffinityFunction(ctx, ptr, partitions);
-        }
+        func.start();
     }
 
     /** {@inheritDoc} */
     @Override public void stop() throws IgniteException {
-        if (func != null)
-            func.stop();
+        assert func != null;
+
+        func.stop();
+    }
+
+    /**
+     * Gets the inner func.
+     *
+     * @return The inner func.
+     */
+    public PlatformAffinityFunction getFunc() {
+        return func;
     }
 
     /**
@@ -204,8 +176,11 @@ public class PlatformDotNetAffinityFunction implements AffinityFunction, Externa
      *
      * @param ignite Ignite.
      */
+    @SuppressWarnings("unused")
     @IgniteInstanceResource
     private void setIgnite(Ignite ignite) {
-        this.ignite = ignite;
+        assert func != null;
+
+        func.setIgnite(ignite);
     }
 }
