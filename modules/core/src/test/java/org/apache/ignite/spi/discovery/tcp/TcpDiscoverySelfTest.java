@@ -58,6 +58,7 @@ import org.apache.ignite.internal.processors.port.GridPortRecord;
 import org.apache.ignite.internal.util.lang.GridAbsPredicate;
 import org.apache.ignite.internal.util.typedef.F;
 import org.apache.ignite.internal.util.typedef.G;
+import org.apache.ignite.internal.util.typedef.PA;
 import org.apache.ignite.internal.util.typedef.X;
 import org.apache.ignite.internal.util.typedef.internal.U;
 import org.apache.ignite.lang.IgniteBiPredicate;
@@ -68,6 +69,7 @@ import org.apache.ignite.spi.IgniteSpiException;
 import org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi;
 import org.apache.ignite.spi.discovery.DiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryNode;
+import org.apache.ignite.spi.discovery.tcp.internal.TcpDiscoveryStatistics;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder;
 import org.apache.ignite.spi.discovery.tcp.messages.TcpDiscoveryAbstractMessage;
@@ -1814,6 +1816,54 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
     }
 
     /**
+     * @throws Exception If failed.
+     */
+    public void testNoExtraNodeFailedMessage() throws Exception {
+        try {
+            final int NODES = 10;
+
+            startGridsMultiThreaded(NODES);
+
+            int stopIdx = 5;
+
+            Ignite failIgnite = ignite(stopIdx);
+
+            ((TcpDiscoverySpi)failIgnite.configuration().getDiscoverySpi()).simulateNodeFailure();
+
+            for (int i = 0; i < NODES; i++) {
+                if (i != stopIdx) {
+                    final Ignite ignite = ignite(i);
+
+                    GridTestUtils.waitForCondition(new PA() {
+                        @Override public boolean apply() {
+                            return ignite.cluster().topologyVersion() >= NODES + 1;
+                        }
+                    }, 10_000);
+
+                    TcpDiscoverySpi spi = (TcpDiscoverySpi)ignite.configuration().getDiscoverySpi();
+
+                    TcpDiscoveryStatistics stats = GridTestUtils.getFieldValue(spi, "stats");
+
+                    Integer cnt = stats.sentMessages().get(TcpDiscoveryNodeFailedMessage.class.getSimpleName());
+
+                    log.info("Count1: " + cnt);
+
+                    assertTrue("Invalid message count: " + cnt, cnt == null || cnt <= 2);
+
+                    cnt = stats.receivedMessages().get(TcpDiscoveryNodeFailedMessage.class.getSimpleName());
+
+                    log.info("Count2: " + cnt);
+
+                    assertTrue("Invalid message count: " + cnt, cnt == null || cnt <= 2);
+                }
+            }
+        }
+        finally {
+            stopAllGrids();
+        }
+    }
+
+    /**
      * @param nodeName Node name.
      * @throws Exception If failed.
      */
@@ -1829,7 +1879,7 @@ public class TcpDiscoverySelfTest extends GridCommonAbstractTest {
                     return true;
                 }
             }
-        }, 10_000);
+        }, 30_000);
 
         if (!wait)
             U.dumpThreads(log);
