@@ -17,6 +17,20 @@
 
 package org.apache.ignite.internal.processors.hadoop;
 
+import org.apache.ignite.IgniteCheckedException;
+import org.apache.ignite.IgniteFileSystem;
+import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.hadoop.mapreduce.IgniteHadoopMapReducePlanner;
+import org.apache.ignite.igfs.IgfsBlockLocation;
+import org.apache.ignite.igfs.IgfsPath;
+import org.apache.ignite.internal.processors.hadoop.planner.HadoopAbstractMapReducePlanner;
+import org.apache.ignite.internal.processors.igfs.IgfsBlockLocationImpl;
+import org.apache.ignite.internal.processors.igfs.IgfsIgniteMock;
+import org.apache.ignite.internal.processors.igfs.IgfsMock;
+import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.testframework.GridTestNode;
+import org.apache.ignite.testframework.GridTestUtils;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -24,42 +38,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import org.apache.ignite.IgniteCheckedException;
-import org.apache.ignite.IgniteFileSystem;
-import org.apache.ignite.IgniteSpringBean;
-import org.apache.ignite.cluster.ClusterNode;
-import org.apache.ignite.configuration.FileSystemConfiguration;
-import org.apache.ignite.hadoop.mapreduce.IgniteHadoopMapReducePlanner;
-import org.apache.ignite.igfs.IgfsBlockLocation;
-import org.apache.ignite.igfs.IgfsFile;
-import org.apache.ignite.igfs.IgfsMetrics;
-import org.apache.ignite.igfs.IgfsOutputStream;
-import org.apache.ignite.igfs.IgfsPath;
-import org.apache.ignite.igfs.IgfsPathSummary;
-import org.apache.ignite.igfs.mapreduce.IgfsRecordResolver;
-import org.apache.ignite.igfs.mapreduce.IgfsTask;
-import org.apache.ignite.igfs.secondary.IgfsSecondaryFileSystem;
-import org.apache.ignite.internal.GridKernalContext;
-import org.apache.ignite.internal.IgniteEx;
-import org.apache.ignite.internal.cluster.IgniteClusterEx;
-import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
-import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
-import org.apache.ignite.internal.processors.hadoop.planner.HadoopAbstractMapReducePlanner;
-import org.apache.ignite.internal.processors.igfs.IgfsBlockLocationImpl;
-import org.apache.ignite.internal.processors.igfs.IgfsContext;
-import org.apache.ignite.internal.processors.igfs.IgfsEx;
-import org.apache.ignite.internal.processors.igfs.IgfsInputStreamAdapter;
-import org.apache.ignite.internal.processors.igfs.IgfsLocalMetrics;
-import org.apache.ignite.internal.processors.igfs.IgfsMock;
-import org.apache.ignite.internal.processors.igfs.IgfsPaths;
-import org.apache.ignite.internal.processors.igfs.IgfsStatus;
-import org.apache.ignite.internal.util.typedef.F;
-import org.apache.ignite.lang.IgniteFuture;
-import org.apache.ignite.lang.IgnitePredicate;
-import org.apache.ignite.lang.IgniteUuid;
-import org.apache.ignite.testframework.GridTestNode;
-import org.apache.ignite.testframework.GridTestUtils;
-import org.jetbrains.annotations.Nullable;
 
 /**
  *
@@ -92,11 +70,11 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
     /** */
     private static final String INVALID_HOST_3 = "invalid_host3";
 
-    /** Mocked Grid. */
-    private static final MockIgnite GRID = new MockIgnite();
-
     /** Mocked IGFS. */
     private static final IgniteFileSystem IGFS = new MockIgfs();
+
+    /** Mocked Grid. */
+    private static final MockIgnite GRID = new MockIgnite(IGFS);
 
     /** Planner. */
     private static final HadoopMapReducePlanner PLANNER = new IgniteHadoopMapReducePlanner();
@@ -111,7 +89,7 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
     private static final ThreadLocal<HadoopMapReducePlan> PLAN = new ThreadLocal<>();
 
     /**
-     *
+     * Static initializer.
      */
     static {
         GridTestUtils.setFieldValue(PLANNER, HadoopAbstractMapReducePlanner.class, "ignite", GRID);
@@ -635,6 +613,7 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
         }
 
         /** {@inheritDoc} */
+        @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
         @Override public HadoopJobInfo info() {
             return new HadoopDefaultJobInfo() {
                 @Override public int reducers() {
@@ -687,7 +666,7 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
          * Constructor.
          */
         public MockIgfs() {
-            super(null);
+            super("igfs");
         }
 
         /** {@inheritDoc} */
@@ -710,83 +689,14 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
      * Mocked Grid.
      */
     @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-    private static class MockIgnite extends IgniteSpringBean implements IgniteEx {
-        /** {@inheritDoc} */
-        @Override public IgniteClusterEx cluster() {
-            return (IgniteClusterEx)super.cluster();
-        }
-
-        /** {@inheritDoc} */
-        @Override public IgniteFileSystem igfsx(String name) {
-            assert F.eq("igfs", name);
-
-            return IGFS;
-        }
-
-        /** {@inheritDoc} */
-        @Override public Hadoop hadoop() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String name() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public <K extends GridCacheUtilityKey, V> IgniteInternalCache<K, V> utilityCache() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public <K, V> IgniteInternalCache<K, V> cachex(@Nullable String name) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Nullable @Override public <K, V> IgniteInternalCache<K, V> cachex() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @SuppressWarnings("unchecked")
-        @Override public Collection<IgniteInternalCache<?, ?>> cachesx(@Nullable IgnitePredicate<? super IgniteInternalCache<?, ?>>... p) {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean eventUserRecordable(int type) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean allEventsUserRecordable(int[] types) {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isJmxRemoteEnabled() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public boolean isRestartEnabled() {
-            return false;
-        }
-
-        /** {@inheritDoc} */
-        @Override public ClusterNode localNode() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public String latestVersion() {
-            return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public GridKernalContext context() {
-            return null;
+    private static class MockIgnite extends IgfsIgniteMock {
+        /**
+         * Constructor.
+         *
+         * @param igfs IGFS.
+         */
+        public MockIgnite(IgniteFileSystem igfs) {
+            super(null, igfs);
         }
     }
 }
