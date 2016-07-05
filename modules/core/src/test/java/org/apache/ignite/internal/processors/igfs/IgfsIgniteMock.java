@@ -65,6 +65,9 @@ import java.util.concurrent.ExecutorService;
  * Mocked Ignite implementation for IGFS tests.
  */
 public class IgfsIgniteMock implements IgniteEx {
+    /** Name. */
+    private final String name;
+
     /** IGFS. */
     private final IgniteFileSystem igfs;
 
@@ -73,7 +76,8 @@ public class IgfsIgniteMock implements IgniteEx {
      *
      * @param igfs IGFS instance.
      */
-    public IgfsIgniteMock(IgniteFileSystem igfs) {
+    public IgfsIgniteMock(@Nullable String name, IgniteFileSystem igfs) {
+        this.name = name;
         this.igfs = igfs;
     }
 
@@ -137,9 +141,7 @@ public class IgfsIgniteMock implements IgniteEx {
 
     /** {@inheritDoc} */
     @Nullable @Override public IgniteFileSystem igfsx(@Nullable String name) {
-        throwUnsupported();
-
-        return null;
+        return F.eq(name, igfs.name()) ? igfs : null;
     }
 
     /** {@inheritDoc} */
@@ -179,9 +181,7 @@ public class IgfsIgniteMock implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public String name() {
-        throwUnsupported();
-
-        return null;
+        return name;
     }
 
     /** {@inheritDoc} */
@@ -382,10 +382,12 @@ public class IgfsIgniteMock implements IgniteEx {
 
     /** {@inheritDoc} */
     @Override public IgniteFileSystem fileSystem(String name) {
-        if (F.eq(name, igfs.name()))
-            return igfs;
+        IgniteFileSystem res = igfsx(name);
 
-        throw new IllegalArgumentException("IGFS is not configured: " + name);
+        if (res == null)
+            throw new IllegalArgumentException("IGFS is not configured: " + name);
+
+        return res;
     }
 
     /** {@inheritDoc} */

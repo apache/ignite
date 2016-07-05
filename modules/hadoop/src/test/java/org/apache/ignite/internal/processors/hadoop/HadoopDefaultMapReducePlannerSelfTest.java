@@ -44,6 +44,7 @@ import org.apache.ignite.internal.IgniteEx;
 import org.apache.ignite.internal.cluster.IgniteClusterEx;
 import org.apache.ignite.internal.processors.cache.GridCacheUtilityKey;
 import org.apache.ignite.internal.processors.cache.IgniteInternalCache;
+import org.apache.ignite.internal.processors.hadoop.planner.HadoopAbstractMapReducePlanner;
 import org.apache.ignite.internal.processors.igfs.IgfsBlockLocationImpl;
 import org.apache.ignite.internal.processors.igfs.IgfsContext;
 import org.apache.ignite.internal.processors.igfs.IgfsEx;
@@ -112,12 +113,12 @@ public class HadoopDefaultMapReducePlannerSelfTest extends HadoopAbstractSelfTes
      *
      */
     static {
-        GridTestUtils.setFieldValue(PLANNER, "ignite", GRID);
+        GridTestUtils.setFieldValue(PLANNER, HadoopAbstractMapReducePlanner.class, "ignite", GRID);
     }
 
     /** {@inheritDoc} */
     @Override protected void beforeTest() throws Exception {
-        GridTestUtils.setFieldValue(PLANNER, "log", log());
+        GridTestUtils.setFieldValue(PLANNER, HadoopAbstractMapReducePlanner.class, "log", log());
 
         BLOCK_MAP.clear();
         PROXY_MAP.clear();

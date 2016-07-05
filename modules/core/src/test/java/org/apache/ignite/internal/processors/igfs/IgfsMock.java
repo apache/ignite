@@ -50,7 +50,7 @@ public class IgfsMock implements IgfsEx {
      *
      * @param name Name.
      */
-    public IgfsMock(String name) {
+    public IgfsMock(@Nullable String name) {
         this.name = name;
     }
 
