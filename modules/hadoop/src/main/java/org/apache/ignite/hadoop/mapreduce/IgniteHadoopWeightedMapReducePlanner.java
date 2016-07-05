@@ -19,6 +19,7 @@ package org.apache.ignite.hadoop.mapreduce;
 
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
+import org.apache.ignite.IgniteFileSystem;
 import org.apache.ignite.cluster.ClusterNode;
 import org.apache.ignite.igfs.IgfsBlockLocation;
 import org.apache.ignite.igfs.IgfsPath;
@@ -50,8 +51,6 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
-
-import static org.apache.ignite.IgniteFileSystem.IGFS_SCHEME;
 
 /**
  * Map-reduce planner which tries to assign map jobs to affinity nodes.
@@ -170,7 +169,7 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
         if (split instanceof HadoopFileBlock) {
             HadoopFileBlock split0 = (HadoopFileBlock)split;
 
-            if (IGFS_SCHEME.equalsIgnoreCase(split0.file().getScheme())) {
+            if (IgniteFileSystem.IGFS_SCHEME.equalsIgnoreCase(split0.file().getScheme())) {
                 HadoopIgfsEndpoint endpoint = new HadoopIgfsEndpoint(split0.file().getAuthority());
 
                 IgfsEx igfs = null;
