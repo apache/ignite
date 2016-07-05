@@ -562,4 +562,8 @@ extern "C" {
     void IGNITE_CALL IgniteSetConsoleHandler(gcj::ConsoleWriteHandler consoleHandler) {
         gcj::JniContext::SetConsoleHandler(consoleHandler);
     }
+
+    void IGNITE_CALL IgniteRemoveConsoleHandler(gcj::ConsoleWriteHandler consoleHandler) {
+        gcj::JniContext::RemoveConsoleHandler(consoleHandler);
+    }
 }

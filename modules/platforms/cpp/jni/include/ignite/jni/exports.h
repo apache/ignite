@@ -183,6 +183,7 @@ extern "C" {
     bool IGNITE_CALL IgniteListenableIsCancelled(gcj::JniContext* ctx, void* obj);
 
     void IGNITE_CALL IgniteSetConsoleHandler(gcj::ConsoleWriteHandler consoleHandler);
+    void IGNITE_CALL IgniteRemoveConsoleHandler(gcj::ConsoleWriteHandler consoleHandler);
 }
 
 #endif //_IGNITE_JNI_EXPORTS

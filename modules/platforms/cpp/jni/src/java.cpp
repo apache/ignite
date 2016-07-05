@@ -2520,6 +2520,9 @@ namespace ignite
             }
 
             void JniContext::RemoveConsoleHandler(ConsoleWriteHandler consoleHandler) {
+                if (!consoleHandler)
+                    throw std::invalid_argument("consoleHandler can not be null");
+
                 CONSOLE_LOCK.Enter();
                     
                 consoleWriteHandlers.erase(remove(consoleWriteHandlers.begin(), consoleWriteHandlers.end(), 
