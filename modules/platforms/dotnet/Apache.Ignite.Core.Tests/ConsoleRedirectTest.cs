@@ -122,37 +122,32 @@ namespace Apache.Ignite.Core.Tests
             }
         }
 
+        /// <summary>
+        /// Runs the Ignite in a new domain.
+        /// </summary>
         private static void RunInNewDomain()
         {
             AppDomain childDomain = null;
 
             try
             {
-                // Construct and initialize settings for a second AppDomain.
-                var domainSetup = new AppDomainSetup
+                childDomain = AppDomain.CreateDomain("Child", null, new AppDomainSetup
                 {
                     ApplicationBase = AppDomain.CurrentDomain.SetupInformation.ApplicationBase,
                     ConfigurationFile = AppDomain.CurrentDomain.SetupInformation.ConfigurationFile,
                     ApplicationName = AppDomain.CurrentDomain.SetupInformation.ApplicationName,
                     LoaderOptimization = LoaderOptimization.MultiDomainHost
-                };
+                });
 
-                // Create the child AppDomain used for the service tool at runtime.
-                childDomain = AppDomain.CreateDomain(
-                    "Your Child AppDomain", null, domainSetup);
-
-                // Create an instance of the runtime in the second AppDomain. 
-                // A proxy to the object is returned.
-                var runtime = (IIgniteRunner)childDomain.CreateInstanceAndUnwrap(
+                var runner = (IIgniteRunner)childDomain.CreateInstanceAndUnwrap(
                     typeof(IgniteRunner).Assembly.FullName, typeof(IgniteRunner).FullName);
 
-                // start the runtime.  call will marshal into the child runtime appdomain
-                runtime.Run();
+                runner.Run();
             }
             finally
             {
-                // runtime has exited, finish off by unloading the runtime appdomain
-                if (childDomain != null) AppDomain.Unload(childDomain);
+                if (childDomain != null)
+                    AppDomain.Unload(childDomain);
             }
         }
 
