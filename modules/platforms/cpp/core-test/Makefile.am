@@ -47,6 +47,7 @@ ignite_tests_LDFLAGS = \
     -static-libtool-libs
 
 ignite_tests_SOURCES = \
+    src/bits_test.cpp \
     src/cache_test.cpp \
     src/cache_query_test.cpp \
     src/concurrent_test.cpp \
@@ -59,6 +60,9 @@ ignite_tests_SOURCES = \
     src/binary_reader_writer_raw_test.cpp \
     src/binary_reader_writer_test.cpp \
     src/binary_session_test.cpp \
+	src/decimal_test.cpp \
+	src/dynamic_size_array_test.cpp \
+    src/fixed_size_array_test.cpp \
     src/transactions_test.cpp \
     src/teamcity_messages.cpp \
     src/teamcity_boost.cpp
