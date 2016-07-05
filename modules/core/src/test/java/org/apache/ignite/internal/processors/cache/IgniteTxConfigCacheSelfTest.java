@@ -156,7 +156,7 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
      * Success if implicit tx fails.
      *
      * @param cache Cache name.
-     * @throws Exception
+     * @throws Exception If failed.
      */
     protected void checkImplicitTxTimeout(final IgniteCache<Object, Object> cache) throws Exception {
         TestCommunicationSpi.delay = true;
@@ -183,7 +183,7 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
      *
      * @param cache Cache name.
      * @param ignite Ignite instance.
-     * @throws Exception
+     * @throws Exception If failed.
      */
     protected void checkExplicitTxTimeout(final IgniteCache<Object, Object> cache, final Ignite ignite)
         throws Exception {
@@ -250,7 +250,7 @@ public class IgniteTxConfigCacheSelfTest extends GridCommonAbstractTest {
     /**
      * Sleep multiple {@link #TX_TIMEOUT} times.
      *
-     * @throws InterruptedException
+     * @throws InterruptedException If interrupted.
      */
     private void sleepForTxFailure() throws InterruptedException {
         Thread.sleep(TX_TIMEOUT * 3);

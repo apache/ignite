@@ -785,39 +785,32 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
 
     /** {@inheritDoc} */
     @Override public IgniteInternalFuture<?> prepareAsync() {
-        long timeout = remainingTime();
-
         GridNearTxPrepareFutureAdapter fut = (GridNearTxPrepareFutureAdapter)prepFut.get();
 
         if (fut == null) {
+            long timeout = remainingTime();
+
             // Future must be created before any exception can be thrown.
             if (optimistic()) {
                 if (serializable())
                     fut = new GridNearOptimisticSerializableTxPrepareFuture(cctx, this);
-                else {
+                else
                     fut = new GridNearOptimisticTxPrepareFuture(cctx, this);
-
-                    if (timeout == -1)
-                        ((GridNearOptimisticTxPrepareFuture)fut).onError(timeoutException());
-                }
             }
-            else {
+            else
                 fut = new GridNearPessimisticTxPrepareFuture(cctx, this);
-
-                if (timeout == -1)
-                    fut.onDone(this, timeoutException());
-            }
 
             if (!prepFut.compareAndSet(null, fut))
                 return prepFut.get();
-        }
-        else {
-            // Prepare was called explicitly.
-            if (timeout == -1)
+
+            if (timeout == -1) {
                 fut.onDone(this, timeoutException());
 
-            return fut;
+                return fut;
+            }
         }
+        else
+            return fut;
 
         mapExplicitLocks();
 

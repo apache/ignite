@@ -474,6 +474,7 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
 
             synchronized (this) {
                 long timeout = tx.remainingTime();
+
                 if (timeout != -1) {
                     GridNearTxPrepareRequest req = new GridNearTxPrepareRequest(
                         futId,
