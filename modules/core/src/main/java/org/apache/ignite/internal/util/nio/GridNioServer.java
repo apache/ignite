@@ -1467,8 +1467,7 @@ public class GridNioServer<T> {
                                     sb.append("]").append(U.nl());
                                 }
 
-                                if (log.isInfoEnabled())
-                                    log.info(sb.toString());
+                                U.warn(log, sb.toString());
 
                                 // Complete the request just in case (none should wait on this future).
                                 req.onDone(true);
@@ -1739,13 +1738,6 @@ public class GridNioServer<T> {
                 if (e != null)
                     filterChain.onExceptionCaught(ses, e);
 
-                try {
-                    filterChain.onSessionClosed(ses);
-                }
-                catch (IgniteCheckedException e1) {
-                    filterChain.onExceptionCaught(ses, e1);
-                }
-
                 ses.removeMeta(BUF_META_KEY);
 
                 // Since ses is in closed state, no write requests will be added.
@@ -1771,6 +1763,13 @@ public class GridNioServer<T> {
 
                     while ((fut = (NioOperationFuture<?>)ses.pollFuture()) != null)
                         fut.connectionClosed();
+                }
+
+                try {
+                    filterChain.onSessionClosed(ses);
+                }
+                catch (IgniteCheckedException e1) {
+                    filterChain.onExceptionCaught(ses, e1);
                 }
 
                 return true;
