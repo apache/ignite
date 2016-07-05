@@ -160,8 +160,10 @@ namespace Apache.Ignite.Core.Tests
             public void Run()
             {
                 Console.WriteLine("Running in a new domain!");
-
-                var ignite = Ignition.Start(TestUtils.GetTestConfiguration());
+                var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
+                {
+                    GridName = "grid2"
+                });
                 Ignition.Stop(ignite.Name, true);
             }
         }
