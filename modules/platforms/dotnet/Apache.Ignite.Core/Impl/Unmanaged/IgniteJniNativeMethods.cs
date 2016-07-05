@@ -432,5 +432,8 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteSetConsoleHandler")]
         public static extern void* SetConsoleHandler(void* consoleHandler);
+
+        [DllImport(IgniteUtils.FileIgniteJniDll, EntryPoint = "IgniteRemoveConsoleHandler")]
+        public static extern void* RemoveConsoleHandler(void* consoleHandler);
     }
 }
