@@ -26,5 +26,6 @@ namespace Apache.Ignite.Core.Cache.Affinity.Rendezvous
     public class RendezvousAffinityFunction : AffinityFunctionBase
     {
         // No-op.
+        // Actual implementation is in Java, see AffinityFunctionSerializer.Write method.
     }
 }

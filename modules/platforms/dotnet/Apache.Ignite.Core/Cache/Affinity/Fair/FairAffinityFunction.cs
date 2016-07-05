@@ -27,5 +27,6 @@ namespace Apache.Ignite.Core.Cache.Affinity.Fair
     public class FairAffinityFunction : AffinityFunctionBase
     {
         // No-op.
+        // Actual implementation is in Java, see AffinityFunctionSerializer.Write method.
     }
 }
