@@ -75,7 +75,7 @@ namespace Apache.Ignite.Core.Tests
         {
             using (Ignition.Start(TestUtils.GetTestConfiguration()))
             {
-                Assert.IsTrue(_outSb.ToString().Contains("Topology snapshot ["));
+                Assert.IsTrue(_outSb.ToString().Contains("[ver=1, servers=1, clients=0,"));
             }
         }
 
@@ -104,16 +104,22 @@ namespace Apache.Ignite.Core.Tests
         [Test]
         public void TestMultipleDomains()
         {
-            Console.WriteLine("Starting test...");
-
             using (var ignite = Ignition.Start(TestUtils.GetTestConfiguration()))
             {
+                Assert.IsTrue(_outSb.ToString().Contains("[ver=1, servers=1, clients=0,"));
+
                 RunInNewDomain();
 
-                Assert.AreEqual(3, ignite.GetCluster().TopologyVersion);
-            }
+                var outTxt = _outSb.ToString();
 
-            Console.WriteLine("Test stopped.");
+                // Check output from another domain
+                Assert.IsTrue(outTxt.Contains("[ver=2, servers=2, clients=0,"));
+                Assert.IsTrue(outTxt.Contains(">>> Grid name: newDomainGrid"));
+
+                // Check that current domain produces output again
+                Assert.AreEqual(3, ignite.GetCluster().TopologyVersion);
+                Assert.IsTrue(outTxt.Contains("[ver=3, servers=1, clients=0,"));
+            }
         }
 
         private static void RunInNewDomain()
@@ -159,10 +165,9 @@ namespace Apache.Ignite.Core.Tests
         {
             public void Run()
             {
-                Console.WriteLine("Running in a new domain!");
                 var ignite = Ignition.Start(new IgniteConfiguration(TestUtils.GetTestConfiguration())
                 {
-                    GridName = "grid2"
+                    GridName = "newDomainGrid"
                 });
                 Ignition.Stop(ignite.Name, true);
             }
