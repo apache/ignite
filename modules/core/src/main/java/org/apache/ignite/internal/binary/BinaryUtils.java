@@ -54,6 +54,7 @@ import org.apache.ignite.binary.BinaryObject;
 import org.apache.ignite.binary.BinaryObjectException;
 import org.apache.ignite.binary.BinaryRawReader;
 import org.apache.ignite.binary.BinaryRawWriter;
+import org.apache.ignite.binary.BinaryType;
 import org.apache.ignite.binary.Binarylizable;
 import org.apache.ignite.internal.binary.builder.BinaryLazyValue;
 import org.apache.ignite.internal.binary.streams.BinaryInputStream;
@@ -602,6 +603,7 @@ public class BinaryUtils {
      * @param map Map.
      * @return New map of the same type or null.
      */
+    @SuppressWarnings("unchecked")
     public static <K, V> Map<K, V> newKnownMap(Object map) {
         Class<?> cls = map == null ? null : map.getClass();
 
@@ -676,6 +678,7 @@ public class BinaryUtils {
      * @param col Collection.
      * @return New empty collection.
      */
+    @SuppressWarnings("unchecked")
     public static <V> Collection<V> newKnownCollection(Object col) {
         Class<?> cls = col == null ? null : col.getClass();
 
@@ -1392,6 +1395,7 @@ public class BinaryUtils {
     /**
      * @return Value.
      */
+    @SuppressWarnings("ConstantConditions")
     public static Object doReadProxy(BinaryInputStream in, BinaryContext ctx, ClassLoader ldr,
         BinaryReaderHandlesHolder handles) {
         Class<?>[] intfs = new Class<?>[in.readInt()];
@@ -2123,8 +2127,7 @@ public class BinaryUtils {
                         throw new BinaryObjectException("Malformed input around byte: " + (off - 1));
 
                     res[charArrCnt++] = (char)(((c & 0x0F) << 12) |
-                        ((c2 & 0x3F) << 6) |
-                        ((c3 & 0x3F) << 0));
+                        ((c2 & 0x3F) << 6) | (c3 & 0x3F));
 
                     break;
                 default:
@@ -2180,6 +2183,34 @@ public class BinaryUtils {
         }
 
         return arr;
+    }
+
+    /**
+     * Create binary type proxy.
+     *
+     * @param ctx Context.
+     * @param obj Binary object.
+     * @return Binary type proxy.
+     */
+    public static BinaryType typeProxy(BinaryContext ctx, BinaryObjectEx obj) {
+        if (ctx == null)
+            throw new BinaryObjectException("BinaryContext is not set for the object.");
+
+        return new BinaryTypeProxy(ctx, obj.typeId());
+    }
+
+    /**
+     * Create binary type which is used by users.
+     *
+     * @param ctx Context.
+     * @param obj Binary object.
+     * @return Binary type.
+     */
+    public static BinaryType type(BinaryContext ctx, BinaryObjectEx obj) {
+        if (ctx == null)
+            throw new BinaryObjectException("BinaryContext is not set for the object.");
+
+        return ctx.metadata(obj.typeId());
     }
 
     /**
