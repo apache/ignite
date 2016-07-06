@@ -17,27 +17,38 @@
 
 package org.apache.ignite.internal.processors.platform.dotnet;
 
-import org.apache.ignite.internal.processors.platform.PlatformAbstractBootstrap;
-import org.apache.ignite.internal.processors.platform.PlatformAbstractConfigurationClosure;
+import org.apache.ignite.internal.processors.platform.callback.PlatformCallbackGateway;
 
-import java.io.PrintStream;
+import java.io.IOException;
+import java.io.OutputStream;
 
 /**
- * Interop .Net bootstrap.
+ * Stream that writes to the .NET console.
  */
-public class PlatformDotNetBootstrap extends PlatformAbstractBootstrap {
-    /** {@inheritDoc} */
-    @Override public void init() {
-        // Initialize console propagation.
-        // This call is idempotent, doing it on each node start is fine.
-        System.setOut(new PrintStream(new PlatformDotNetConsoleStream(false)));
-        System.setErr(new PrintStream(new PlatformDotNetConsoleStream(true)));
+public class PlatformDotNetConsoleStream extends OutputStream {
+    /** Indicates whether this is an error stream. */
+    private final boolean isErr;
 
-        super.init();
+    /**
+     * Ctor.
+     *
+     * @param err Error stream flag.
+     */
+    public PlatformDotNetConsoleStream(boolean err) {
+        isErr = err;
     }
 
     /** {@inheritDoc} */
-    @Override protected PlatformAbstractConfigurationClosure closure(long envPtr) {
-        return new PlatformDotNetConfigurationClosure(envPtr);
+    @Override public void write(byte[] b, int off, int len) throws IOException {
+        String s = new String(b, off, len);
+
+        PlatformCallbackGateway.consoleWrite(s, isErr);
+    }
+
+    /** {@inheritDoc} */
+    @Override public void write(int b) throws IOException {
+        String s = String.valueOf((char) b);
+
+        PlatformCallbackGateway.consoleWrite(s, isErr);
     }
 }
