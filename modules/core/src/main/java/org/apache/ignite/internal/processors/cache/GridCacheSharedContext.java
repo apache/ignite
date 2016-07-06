@@ -51,6 +51,7 @@ import org.apache.ignite.internal.util.future.GridCompoundFuture;
 import org.apache.ignite.internal.util.future.GridFinishedFuture;
 import org.apache.ignite.internal.util.tostring.GridToStringExclude;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.CU;
 import org.apache.ignite.lang.IgniteFuture;
 import org.apache.ignite.marshaller.Marshaller;
 import org.jetbrains.annotations.Nullable;
@@ -104,6 +105,24 @@ public class GridCacheSharedContext<K, V> {
     /** Indicating whether local store keeps primary only. */
     private final boolean locStorePrimaryOnly = IgniteSystemProperties.getBoolean(IGNITE_LOCAL_STORE_KEEPS_PRIMARY_ONLY);
 
+    /** */
+    private final IgniteLogger msgLog;
+
+    /** */
+    private final IgniteLogger atomicMsgLog;
+
+    /** */
+    private final IgniteLogger txPrepareMsgLog;
+
+    /** */
+    private final IgniteLogger txFinishMsgLog;
+
+    /** */
+    private final IgniteLogger txLockMsgLog;
+
+    /** */
+    private final IgniteLogger txRecoveryMsgLog;
+
     /**
      * @param kernalCtx  Context.
      * @param txMgr Transaction manager.
@@ -137,6 +156,55 @@ public class GridCacheSharedContext<K, V> {
         ctxMap = new ConcurrentHashMap<>();
 
         locStoreCnt = new AtomicInteger();
+
+        msgLog = kernalCtx.log(CU.CACHE_MSG_LOG_CATEGORY);
+        atomicMsgLog = kernalCtx.log(CU.ATOMIC_MSG_LOG_CATEGORY);
+        txPrepareMsgLog = kernalCtx.log(CU.TX_MSG_PREPARE_LOG_CATEGORY);
+        txFinishMsgLog = kernalCtx.log(CU.TX_MSG_FINISH_LOG_CATEGORY);
+        txLockMsgLog = kernalCtx.log(CU.TX_MSG_LOCK_LOG_CATEGORY);
+        txRecoveryMsgLog = kernalCtx.log(CU.TX_MSG_RECOVERY_LOG_CATEGORY);
+    }
+
+    /**
+     * @return Logger.
+     */
+    public IgniteLogger messageLogger() {
+        return msgLog;
+    }
+
+    /**
+     * @return Logger.
+     */
+    public IgniteLogger atomicMessageLogger() {
+        return atomicMsgLog;
+    }
+
+    /**
+     * @return Logger.
+     */
+    public IgniteLogger txPrepareMessageLogger() {
+        return txPrepareMsgLog;
+    }
+
+    /**
+     * @return Logger.
+     */
+    public IgniteLogger txFinishMessageLogger() {
+        return txFinishMsgLog;
+    }
+
+    /**
+     * @return Logger.
+     */
+    public IgniteLogger txLockMessageLogger() {
+        return txLockMsgLog;
+    }
+
+    /**
+     * @return Logger.
+     */
+    public IgniteLogger txRecoveryMessageLogger() {
+        return txRecoveryMsgLog;
     }
 
     /**

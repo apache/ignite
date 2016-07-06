@@ -75,7 +75,10 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
     private static final AtomicReference<IgniteLogger> logRef = new AtomicReference<>();
 
     /** Logger. */
-    protected static IgniteLogger log;
+    private static IgniteLogger log;
+
+    /** Logger. */
+    private static IgniteLogger msgLog;
 
     /** Cache context. */
     private final GridCacheContext cctx;
@@ -216,8 +219,10 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         this.keepBinary = keepBinary;
         this.waitTopFut = waitTopFut;
 
-        if (log == null)
+        if (log == null) {
+            msgLog = cctx.shared().atomicMessageLogger();
             log = U.logger(cctx.kernalContext(), logRef, GridFutureAdapter.class);
+        }
 
         fastMap = F.isEmpty(filter) && op != TRANSFORM && cctx.config().getWriteSynchronizationMode() == FULL_SYNC &&
             cctx.config().getAtomicWriteOrderMode() == CLOCK &&
@@ -463,15 +468,25 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         }
         else {
             try {
-                if (log.isDebugEnabled())
-                    log.debug("Sending near atomic update request [nodeId=" + req.nodeId() + ", req=" + req + ']');
-
                 cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
+
+                if (msgLog.isDebugEnabled()) {
+                    msgLog.debug("Near update fut, sent request [futId=" + req.futureVersion() +
+                        ", writeVer=" + req.updateVersion() +
+                        ", node=" + req.nodeId() + ']');
+                }
 
                 if (syncMode == FULL_ASYNC)
                     onDone(new GridCacheReturn(cctx, true, true, null, true));
             }
             catch (IgniteCheckedException e) {
+                if (msgLog.isDebugEnabled()) {
+                    msgLog.debug("Near update fut, failed to send request [futId=" + req.futureVersion() +
+                        ", writeVer=" + req.updateVersion() +
+                        ", node=" + req.nodeId() +
+                        ", err=" + e + ']');
+                }
+
                 state.onSendError(req, e);
             }
         }
@@ -497,12 +512,22 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
             }
             else {
                 try {
-                    if (log.isDebugEnabled())
-                        log.debug("Sending near atomic update request [nodeId=" + req.nodeId() + ", req=" + req + ']');
-
                     cctx.io().send(req.nodeId(), req, cctx.ioPolicy());
+
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("Near update fut, sent request [futId=" + req.futureVersion() +
+                            ", writeVer=" + req.updateVersion() +
+                            ", node=" + req.nodeId() + ']');
+                    }
                 }
                 catch (IgniteCheckedException e) {
+                    if (msgLog.isDebugEnabled()) {
+                        msgLog.debug("Near update fut, failed to send request [futId=" + req.futureVersion() +
+                            ", writeVer=" + req.updateVersion() +
+                            ", node=" + req.nodeId() +
+                            ", err=" + e + ']');
+                    }
+
                     state.onSendError(req, e);
                 }
             }
@@ -572,9 +597,9 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
         void onNodeLeft(UUID nodeId) {
             GridNearAtomicUpdateResponse res = null;
 
-            synchronized (this) {
-                GridNearAtomicUpdateRequest req;
+            GridNearAtomicUpdateRequest req;
 
+            synchronized (this) {
                 if (singleReq != null)
                     req = singleReq.nodeId().equals(nodeId) ? singleReq : null;
                 else
@@ -595,8 +620,15 @@ public class GridNearAtomicUpdateFuture extends GridFutureAdapter<Object>
                 }
             }
 
-            if (res != null)
+            if (res != null) {
+                if (msgLog.isDebugEnabled()) {
+                    msgLog.debug("Near update fut, node left [futId=" + req.futureVersion() +
+                        ", writeVer=" + req.updateVersion() +
+                        ", node=" + nodeId + ']');
+                }
+
                 onResult(nodeId, res, true);
+            }
         }
 
         /**
