@@ -1795,6 +1795,8 @@ public class GridServiceProcessor extends GridProcessorAdapter {
 
         /** {@inheritDoc} */
         @Override public Map<UUID, Integer> call() throws Exception {
+            ignite.context().cache().awaitStarted();
+
             return serviceTopology(ignite.context().cache().utilityCache(), svcName);
         }
     }
