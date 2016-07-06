@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Impl.Unmanaged
 {
     using System;
+    using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
     using System.Runtime.InteropServices;
     using Apache.Ignite.Core.Common;
@@ -60,7 +61,9 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private static void CurrentDomain_DomainUnload(object sender, EventArgs e)
         {
             // Clean the handler to avoid JVM crash.
-            JNI.RemoveConsoleHandler(UnmanagedCallbacks.ConsoleWriteHandler);
+            var removedCnt = JNI.RemoveConsoleHandler(UnmanagedCallbacks.ConsoleWriteHandler);
+
+            Debug.Assert(removedCnt == 1);
         }
 
         /// <summary>
