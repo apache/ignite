@@ -1207,6 +1207,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             super(name,
                 cacheId,
                 pageMem,
+                cctx.shared().wal(),
                 metaPageId,
                 reuseList,
                 PendingEntryInnerIO.VERSIONS,
@@ -1324,10 +1325,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
 
         /** {@inheritDoc} */
-        @Override public void store(ByteBuffer buf, int idx,
-            PendingRow row) throws IgniteCheckedException {
-            setExpireTime(row.expireTime, buf, idx);
-            setLink(row.link, buf, idx);
+        @Override public void storeByOffset(ByteBuffer buf, int off, PendingRow row) throws IgniteCheckedException {
+            buf.putLong(off, row.expireTime);
+            buf.putLong(off + 8, row.link);
         }
 
         /** {@inheritDoc} */
@@ -1392,10 +1392,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
 
         /** {@inheritDoc} */
-        @Override public void store(ByteBuffer buf, int idx,
-            PendingRow row) throws IgniteCheckedException {
-            setExpireTime(row.expireTime, buf, idx);
-            setLink(row.link, buf, idx);
+        @Override public void storeByOffset(ByteBuffer buf, int off, PendingRow row) throws IgniteCheckedException {
+            buf.putLong(off, row.expireTime);
+            buf.putLong(off + 8, row.link);
         }
 
         /** {@inheritDoc} */

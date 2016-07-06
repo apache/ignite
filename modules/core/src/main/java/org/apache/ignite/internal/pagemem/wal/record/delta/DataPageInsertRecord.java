@@ -113,7 +113,8 @@ public class DataPageInsertRecord extends PageDeltaRecord {
 
         CacheObjectContext coctx = cctx.cacheObjectContext();
 
-        int itemId = io.addRow(coctx, buf, key, val, ver, entrySize);
+        // TODO GG-11133 expire time.
+        int itemId = io.addRow(coctx, buf, key, val, ver, 0, entrySize);
 
         if (itemId != this.itemId)
             throw new DeltaApplicationException("Unexpected itemId: " + itemId);
