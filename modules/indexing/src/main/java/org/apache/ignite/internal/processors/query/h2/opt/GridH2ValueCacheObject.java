@@ -122,7 +122,7 @@ public class GridH2ValueCacheObject extends Value {
 
     /** {@inheritDoc} */
     @Override public Object getObject() {
-        return obj.isPlatformType() ? obj.value(objectContext(), cctx.config().isCopyOnRead()) : obj;
+        return obj.isPlatformType() ? obj.value(objectContext(), cctx != null && cctx.config().isCopyOnRead()) : obj;
     }
 
     /** {@inheritDoc} */
