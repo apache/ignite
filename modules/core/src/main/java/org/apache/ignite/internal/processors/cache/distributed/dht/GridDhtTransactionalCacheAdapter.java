@@ -375,6 +375,13 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
      * @param req Request.
      */
     protected final void processDhtLockRequest(final UUID nodeId, final GridDhtLockRequest req) {
+        if (txLockMsgLog.isDebugEnabled()) {
+            txLockMsgLog.debug("Received dht lock request [txId=" + req.nearXidVersion() +
+                ", dhtTxId=" + req.version() +
+                ", inTx=" + req.inTx() +
+                ", node=" + nodeId + ']');
+        }
+
         IgniteInternalFuture<Object> keyFut = F.isEmpty(req.keys()) ? null :
             ctx.dht().dhtPreloader().request(req.keys(), req.topologyVersion());
 
@@ -450,10 +457,6 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         assert req != null;
         assert !nodeId.equals(locNodeId);
 
-        if (log.isDebugEnabled())
-            log.debug("Processing dht lock request [locNodeId=" + locNodeId + ", nodeId=" + nodeId + ", req=" + req +
-                ']');
-
         int cnt = F.size(req.keys());
 
         GridDhtLockResponse res;
@@ -527,15 +530,30 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
             try {
                 // Reply back to sender.
                 ctx.io().send(nodeId, res, ctx.ioPolicy());
+
+                if (txLockMsgLog.isDebugEnabled()) {
+                    txLockMsgLog.debug("Sent dht lock response [txId=" + req.nearXidVersion() +
+                        ", dhtTxId=" + req.version() +
+                        ", inTx=" + req.inTx() +
+                        ", node=" + nodeId + ']');
+                }
             }
             catch (ClusterTopologyCheckedException ignored) {
-                U.warn(log, "Failed to send lock reply to remote node because it left grid: " + nodeId);
+                U.warn(txLockMsgLog, "Failed to send dht lock response, node failed [" +
+                    "txId=" + req.nearXidVersion() +
+                    ", dhtTxId=" + req.version() +
+                    ", inTx=" + req.inTx() +
+                    ", node=" + nodeId + ']');
 
                 fail = true;
                 releaseAll = true;
             }
             catch (IgniteCheckedException e) {
-                U.error(log, "Failed to send lock reply to node (lock will not be acquired): " + nodeId, e);
+                U.error(txLockMsgLog, "Failed to send dht lock response (lock will not be acquired) " +
+                    "txId=" + req.nearXidVersion() +
+                    ", dhtTxId=" + req.version() +
+                    ", inTx=" + req.inTx() +
+                    ", node=" + nodeId + ']', e);
 
                 fail = true;
             }
@@ -600,14 +618,18 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         assert nodeId != null;
         assert req != null;
 
-        if (log.isDebugEnabled())
-            log.debug("Processing near lock request [locNodeId=" + locNodeId + ", nodeId=" + nodeId + ", req=" + req +
-                ']');
+        if (txLockMsgLog.isDebugEnabled()) {
+            txLockMsgLog.debug("Received near lock request [txId=" + req.version() +
+                ", inTx=" + req.inTx() +
+                ", node=" + nodeId + ']');
+        }
 
         ClusterNode nearNode = ctx.discovery().node(nodeId);
 
         if (nearNode == null) {
-            U.warn(log, "Received lock request from unknown node (will ignore): " + nodeId);
+            U.warn(txLockMsgLog, "Received near lock request from unknown node (will ignore) [txId=" + req.version() +
+                ", inTx=" + req.inTx() +
+                ", node=" + nodeId + ']');
 
             return;
         }
@@ -630,10 +652,17 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
         GridDhtLockFuture fut = (GridDhtLockFuture)ctx.mvcc().<Boolean>mvccFuture(res.version(), res.futureId());
 
         if (fut == null) {
-            if (log.isDebugEnabled())
-                log.debug("Received response for unknown future (will ignore): " + res);
+            if (txLockMsgLog.isDebugEnabled())
+                txLockMsgLog.debug("Received dht lock response for unknown future [txId=null" +
+                    ", dhtTxId=" + res.version() +
+                    ", node=" + nodeId + ']');
 
             return;
+        }
+        else if (txLockMsgLog.isDebugEnabled()) {
+            txLockMsgLog.debug("Received dht lock response [txId=" + fut.nearLockVersion() +
+                ", dhtTxId=" + res.version() +
+                ", node=" + nodeId + ']');
         }
 
         fut.onResult(nodeId, res);
@@ -1283,12 +1312,30 @@ public abstract class GridDhtTransactionalCacheAdapter<K, V> extends GridDhtCach
 
         try {
             // Don't send reply message to this node or if lock was cancelled.
-            if (!nearNode.id().equals(ctx.nodeId()) && !X.hasCause(err, GridDistributedLockCancelledException.class))
+            if (!nearNode.id().equals(ctx.nodeId()) && !X.hasCause(err, GridDistributedLockCancelledException.class)) {
                 ctx.io().send(nearNode, res, ctx.ioPolicy());
+
+                if (txLockMsgLog.isDebugEnabled()) {
+                    txLockMsgLog.debug("Sent near lock response [txId=" + req.version() +
+                        ", inTx=" + req.inTx() +
+                        ", node=" + nearNode.id() + ']');
+                }
+            }
+            else {
+                if (txLockMsgLog.isDebugEnabled() && !nearNode.id().equals(ctx.nodeId())) {
+                    txLockMsgLog.debug("Skip send near lock response [txId=" + req.version() +
+                        ", inTx=" + req.inTx() +
+                        ", node=" + nearNode.id() +
+                        ", err=" + err + ']');
+                }
+            }
         }
         catch (IgniteCheckedException e) {
-            U.error(log, "Failed to send lock reply to originating node (will rollback transaction) [node=" +
-                U.toShortString(nearNode) + ", req=" + req + ']', e);
+            U.error(txLockMsgLog, "Failed to send near lock response (will rollback transaction) [" +
+                "txId=" + req.version() +
+                ", inTx=" + req.inTx() +
+                ", node=" + nearNode.id() +
+                ", res=" + res + ']', e);
 
             if (tx != null)
                 tx.rollbackAsync();
