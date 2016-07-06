@@ -109,19 +109,22 @@ namespace Apache.Ignite.Core.Tests
             {
                 Assert.IsTrue(_outSb.ToString().Contains("[ver=1, servers=1, clients=0,"));
 
+                // Run twice
                 RunInNewDomain();
+                RunInNewDomain();
+
+                Assert.AreEqual(5, ignite.GetCluster().TopologyVersion);
 
                 var outTxt = _outSb.ToString();
 
                 // Check output from another domain
-                Assert.IsTrue(outTxt.Contains(">>> Grid name: newDomainGrid"));
+                Assert.AreEqual(4, Regex.Matches(outTxt, ">>> Grid name: newDomainGrid").Count);
 
                 // Both domains produce the topology snapshot
                 Assert.AreEqual(2, Regex.Matches(outTxt, "ver=2, servers=2, clients=0,").Count);
-
-                // Check that current domain still produces output
-                Assert.AreEqual(3, ignite.GetCluster().TopologyVersion);
-                Assert.IsTrue(outTxt.Contains("[ver=3, servers=1, clients=0,"));
+                Assert.AreEqual(1, Regex.Matches(outTxt, "ver=3, servers=1, clients=0,").Count);
+                Assert.AreEqual(2, Regex.Matches(outTxt, "ver=4, servers=2, clients=0,").Count);
+                Assert.AreEqual(1, Regex.Matches(outTxt, "ver=5, servers=1, clients=0,").Count);
             }
         }
 
