@@ -61,6 +61,7 @@ public class PlatformIgnition {
         Thread.currentThread().setContextClassLoader(PlatformProcessor.class.getClassLoader());
 
         try {
+            // TODO: We should initialize platform logging BEFORE this step
             IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> cfg = configuration(springCfgPath);
 
             if (gridName != null)
