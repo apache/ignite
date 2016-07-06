@@ -2530,7 +2530,7 @@ namespace ignite
                 consoleWriteHandlers.erase(remove(consoleWriteHandlers.begin(), consoleWriteHandlers.end(), 
                     consoleHandler), consoleWriteHandlers.end());
 
-                int removedCnt = static_cast<int>(consoleWriteHandlers.size()) - oldSize;
+                int removedCnt = oldSize - static_cast<int>(consoleWriteHandlers.size());
 
                 CONSOLE_LOCK.Leave();
 
