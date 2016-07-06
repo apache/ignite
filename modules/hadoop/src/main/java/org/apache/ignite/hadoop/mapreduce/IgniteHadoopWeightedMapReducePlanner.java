@@ -115,23 +115,29 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
      */
     private Mappers assignMappers(Collection<HadoopInputSplit> splits,
         HadoopMapReducePlanTopology top) throws IgniteCheckedException {
-        Mappers res = new Mappers();
+        Mappers bestSplitMapping = new Mappers();
 
         for (HadoopInputSplit split : splits) {
-            // Try getting IGFS affinity.
+            // Try getting IGFS affinity. Note that an empty collection may be returned
+            // if this is an HDFS split that does not belong to any Ignite node host.
             Collection<UUID> nodeIds = affinityNodesForSplit(split, top);
 
-            // Get best node.
+            // Get best node for this split:
             UUID node = bestMapperNode(nodeIds, top);
 
-            res.add(split, node);
+            assert node != null;
+
+            bestSplitMapping.add(split, node);
         }
 
-        return res;
+        return bestSplitMapping;
     }
 
     /**
      * Get affinity nodes for the given input split.
+     *
+     * <p/>In general, order in the returned collection *is* significant, meaning that nodes containing more data
+     * go first. This way, the 1st nodes in the collection considered to be preferable for scheduling.
      *
      * @param split Split.
      * @param top Topology.
@@ -140,11 +146,14 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
      */
     private Collection<UUID> affinityNodesForSplit(HadoopInputSplit split, HadoopMapReducePlanTopology top)
         throws IgniteCheckedException {
+        // IGFS part:
         Collection<UUID> nodeIds = igfsAffinityNodesForSplit(split);
 
+        // HDFS part:
         if (nodeIds == null) {
             nodeIds = new HashSet<>();
 
+            // TODO: also sort hosts there in non-ascending data order, as we do in case of IGFS affinity splits.
             for (String host : split.hosts()) {
                 HadoopMapReducePlanGroup grp = top.groupForHost(host);
 
@@ -160,6 +169,9 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
 
     /**
      * Get IGFS affinity nodes for split if possible.
+     *
+     * <p/>Order in the returned collection *is* significant, meaning that nodes containing more data
+     * go first. This way, the 1st nodes in the collection considered to be preferable for scheduling.
      *
      * @param split Input split.
      * @return IGFS affinity or {@code null} if IGFS is not available.
@@ -207,6 +219,8 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
                                 }
                             }
 
+                            // Sort the nodes in non-ascending order by contained data lengths.
+                            // NodeIdAndLength objects are used as keys to handle comparison when the lengths are equal.
                             Map<NodeIdAndLength, UUID> res = new TreeMap<>();
 
                             for (Map.Entry<UUID, Long> idToLenEntry : idToLen.entrySet()) {
@@ -215,7 +229,7 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
                                 res.put(new NodeIdAndLength(id, idToLenEntry.getValue()), id);
                             }
 
-                            return new HashSet<>(res.values());
+                            return new ArrayList<>(res.values());
                         }
                     }
                 }
@@ -233,8 +247,8 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
      * @return Result.
      */
     private UUID bestMapperNode(@Nullable Collection<UUID> affIds, HadoopMapReducePlanTopology top) {
-        // Priority node.
-        UUID priorityAffId = F.first(affIds);
+        // Priority node, may be null or empty.
+        final @Nullable UUID prioAffId = F.first(affIds);
 
         // Find group with the least weight.
         HadoopMapReducePlanGroup resGrp = null;
@@ -242,14 +256,15 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
         int resWeight = Integer.MAX_VALUE;
 
         for (HadoopMapReducePlanGroup grp : top.groups()) {
-            MapperPriority priority = groupPriority(grp, affIds, priorityAffId);
+            MapperPriority prio = groupPriority(grp, affIds, prioAffId);
 
             int weight = grp.weight() +
-                (priority == MapperPriority.NORMAL ? rmtMapperWeight : locMapperWeight);
+                (prio == MapperPriority.NORMAL ? rmtMapperWeight : locMapperWeight);
 
-            if (resGrp == null || weight < resWeight || weight == resWeight && priority.value() > resPrio.value()) {
+            // TODO: may be just consider HIGHEST prio to have load weight (locMapperWeight - 1)?
+            if (resGrp == null || weight < resWeight || weight == resWeight && prio.value() > resPrio.value()) {
                 resGrp = grp;
-                resPrio = priority;
+                resPrio = prio;
                 resWeight = weight;
             }
         }
@@ -260,7 +275,7 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
         resGrp.weight(resWeight);
 
         // Return the best node from the group.
-        return bestMapperNodeForGroup(resGrp, resPrio, affIds, priorityAffId);
+        return bestMapperNodeForGroup(resGrp, resPrio, affIds, prioAffId);
     }
 
     /**
@@ -288,7 +303,7 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
                 }
                 case HIGH: {
                     // Pick any affinity node.
-                    assert affIds != null;
+                    assert !F.isEmpty(affIds);
 
                     List<Integer> cands = new ArrayList<>();
 
@@ -298,6 +313,8 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
                         if (affIds.contains(id))
                             cands.add(i);
                     }
+
+                    assert cands.size() >= 1;
 
                     idx = cands.get(ThreadLocalRandom.current().nextInt(cands.size()));
 
@@ -317,6 +334,9 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
                         }
                     }
 
+                    // TODO: can we just return 'priorityAffId' there?
+                    // TODO: is that really possible that prio == HIGHEST, but the id is not 'priorityAffId'?
+                    //assert priorityAffId.equals(grp.nodeId(idx));
                     assert priority == MapperPriority.HIGHEST;
                 }
             }
@@ -351,7 +371,7 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
             res.put(reducerEntry.getKey(), arr);
         }
 
-        assert reducerCnt == cnt;
+        assert reducerCnt == cnt : reducerCnt + " != " + cnt;
 
         return res;
     }
@@ -550,22 +570,30 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
      *
      * @param grp Group.
      * @param affIds Affintiy IDs.
-     * @param priorityAffId Priority affinity ID.
+     * @param prioAffId Priority affinity ID.
      * @return Group priority.
      */
     private static MapperPriority groupPriority(HadoopMapReducePlanGroup grp, @Nullable Collection<UUID> affIds,
-        @Nullable UUID priorityAffId) {
-        MapperPriority priority = MapperPriority.NORMAL;
+        @Nullable UUID prioAffId) {
+        // prioAffId is actually the 1st element of affIds:
+        assert F.isEmpty(affIds) ? prioAffId == null : prioAffId == F.first(affIds);
+        assert grp != null;
+
+        MapperPriority prio = MapperPriority.NORMAL;
 
         if (!F.isEmpty(affIds)) {
+            // Iterate over all the nodes on this machine:
             for (int i = 0; i < grp.nodeCount(); i++) {
                 UUID id = grp.nodeId(i);
 
                 if (affIds.contains(id)) {
-                    priority = MapperPriority.HIGH;
+                    // If there is an affinity node among this machine nodes, the prio is HIGH:
+                    prio = MapperPriority.HIGH;
 
-                    if (F.eq(priorityAffId, id)) {
-                        priority = MapperPriority.HIGHEST;
+                    // If preferred node (node containing most of the data) found on this machine,
+                    // the prio gets HIGHEST:
+                    if (F.eq(prioAffId, id)) {
+                        prio = MapperPriority.HIGHEST;
 
                         break;
                     }
@@ -573,7 +601,7 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
             }
         }
 
-        return priority;
+        return prio;
     }
 
     /**
@@ -722,7 +750,7 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
     }
 
     /**
-     * Mappers.
+     * Bi-Map from node id to a collection of splits.
      */
     private static class Mappers {
         /** Node-to-splits map. */

@@ -72,6 +72,12 @@ public class HadoopWeightedMapReducePlannerTest extends GridCommonAbstractTest {
     /** Host 3. */
     private static final String HOST_3 = "host3";
 
+    /** Host 4. */
+    private static final String HOST_4 = "host4";
+
+    /** Host 5. */
+    private static final String HOST_5 = "host5";
+
     /** Standard node 1. */
     private static final MockNode NODE_1 = new MockNode(ID_1, MAC_1, HOST_1);
 
@@ -116,6 +122,36 @@ public class HadoopWeightedMapReducePlannerTest extends GridCommonAbstractTest {
         assert plan.mappers() == 1;
         assert plan.mapperNodeIds().size() == 1;
         assert plan.mapperNodeIds().contains(ID_1);
+    }
+
+    /**
+     * Test one HDFS split being assigned to affinity node.
+     *
+     * @throws Exception If failed.
+     */
+    public void testOneHdfsSplitAffinity() throws Exception {
+        IgfsMock igfs = LocationsBuilder.create().add(0, NODE_1).add(50, NODE_2).add(100, NODE_3).buildIgfs();
+
+        Collection<HadoopInputSplit> splits = new ArrayList<>();
+
+        splits.add(new HadoopFileBlock(new String[] { HOST_1 }, URI.create("hfds://" + HOST_1 + "/x"), 0, 50));
+        splits.add(new HadoopFileBlock(new String[] { HOST_2 }, URI.create("hfds://" + HOST_2 + "/x"), 50, 100));
+        splits.add(new HadoopFileBlock(new String[] { HOST_3 }, URI.create("hfds://" + HOST_3 + "/x"), 100, 37));
+        // hosts that are out of Ignite topology at all:
+        splits.add(new HadoopFileBlock(new String[] { HOST_4 }, URI.create("hfds://" + HOST_4 + "/x"), 138, 2));
+        splits.add(new HadoopFileBlock(new String[] { HOST_5 }, URI.create("hfds://" + HOST_5 + "/x"), 140, 3));
+
+        HadoopPlannerMockJob job = new HadoopPlannerMockJob(splits, 3);
+
+        IgniteHadoopWeightedMapReducePlanner planner = createPlanner(igfs);
+
+        HadoopMapReducePlan plan = planner.preparePlan(job, NODES, null);
+
+        assertEquals(5, plan.mappers());
+        assertEquals(3, plan.mapperNodeIds().size());
+        assert plan.mapperNodeIds().contains(ID_1);
+
+        // TODO: enhance tests.
     }
 
     /**
