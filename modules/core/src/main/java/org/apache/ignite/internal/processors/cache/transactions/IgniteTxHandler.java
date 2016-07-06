@@ -111,8 +111,7 @@ public class IgniteTxHandler {
      * @param req Request.
      * @return Prepare future.
      */
-    public IgniteInternalFuture<?> processNearTxPrepareRequest(final UUID nearNodeId,
-        final GridNearTxPrepareRequest req) {
+    public IgniteInternalFuture<?> processNearTxPrepareRequest(final UUID nearNodeId, GridNearTxPrepareRequest req) {
         if (txPrepareMsgLog.isDebugEnabled()) {
             txPrepareMsgLog.debug("Received near prepare request [txId=" + req.version() +
                 ", node=" + nearNodeId + ']');
@@ -497,16 +496,24 @@ public class IgniteTxHandler {
 
         try {
             ctx.io().send(nearNodeId, res, req.policy());
+
+            if (txPrepareMsgLog.isDebugEnabled()) {
+                txPrepareMsgLog.debug("Sent remap response for near prepare [txId=" + req.version() +
+                    ", node=" + nearNodeId + ']');
+            }
         }
         catch (ClusterTopologyCheckedException ignored) {
-            if (log.isDebugEnabled())
-                log.debug("Failed to send" +
-                    (top != null ? " client tx remap" : "") + " response, client node failed " +
-                    "[node=" + nearNodeId + ", req=" + req + ']');
+            if (txPrepareMsgLog.isDebugEnabled()) {
+                txPrepareMsgLog.debug("Failed to send remap response for near prepare, node failed [" +
+                    "txId=" + req.version() +
+                    ", node=" + nearNodeId + ']');
+            }
         }
         catch (IgniteCheckedException e) {
-                U.error(log, "Failed to send " + (top != null ? " client tx remap" : "") + " response " +
-                    "[node=" + nearNodeId + ", req=" + req + ']', e);
+            U.error(txPrepareMsgLog, "Failed to send remap response for near prepare " +
+                "[txId=" + req.version() +
+                ", node=" + nearNodeId +
+                ", req=" + req + ']', e);
         }
 
         return res;

@@ -541,39 +541,41 @@ public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepa
                         // partition reassignments are not possible here.
                         IgniteInternalFuture<GridNearTxPrepareResponse> prepFut = cctx.tm().txHandler().prepareTx(n.id(), tx, req);
 
-                prepFut.listen(new CI1<IgniteInternalFuture<GridNearTxPrepareResponse>>() {
-                    @Override public void apply(IgniteInternalFuture<GridNearTxPrepareResponse> prepFut) {
+                        prepFut.listen(new CI1<IgniteInternalFuture<GridNearTxPrepareResponse>>() {
+                            @Override public void apply(IgniteInternalFuture<GridNearTxPrepareResponse> prepFut) {
+                                try {
+                                    fut.onResult(prepFut.get());
+                                }
+                                catch (IgniteCheckedException e) {
+                                    fut.onResult(e);
+                                }
+                            }
+                        });
+                    }
+                    else {
                         try {
-                            fut.onResult(n.id(), prepFut.get());
+                            cctx.io().send(n, req, tx.ioPolicy());
+
+                            if (msgLog.isDebugEnabled()) {
+                                msgLog.debug("Near optimistic prepare fut, sent request [txId=" + tx.nearXidVersion() +
+                                    ", node=" + n.id() + ']');
+                            }
+                        }
+                        catch (ClusterTopologyCheckedException e) {
+                            e.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
+
+                            fut.onResult(e);
                         }
                         catch (IgniteCheckedException e) {
+                            if (msgLog.isDebugEnabled()) {
+                                msgLog.debug("Near optimistic prepare fut, failed to sent request [txId=" + tx.nearXidVersion() +
+                                    ", node=" + n.id() +
+                                    ", err=" + e + ']');
+                            }
+
                             fut.onResult(e);
                         }
                     }
-                });
-            }
-            else {
-                try {
-                    cctx.io().send(n, req, tx.ioPolicy());
-
-                    if (msgLog.isDebugEnabled()) {
-                        msgLog.debug("Near optimistic prepare fut, sent request [txId=" + tx.nearXidVersion() +
-                            ", node=" + n.id() + ']');
-                    }
-                }
-                catch (ClusterTopologyCheckedException e) {
-                    e.retryReadyFuture(cctx.nextAffinityReadyFuture(tx.topologyVersion()));
-
-                    fut.onResult(e);
-                }
-                catch (IgniteCheckedException e) {
-                    if (msgLog.isDebugEnabled()) {
-                        msgLog.debug("Near optimistic prepare fut, failed to sent request [txId=" + tx.nearXidVersion() +
-                            ", node=" + n.id() +
-                            ", err=" + e + ']');
-                    }
-
-                    fut.onResult(e);
                 }
                 else
                     onTimeout();
