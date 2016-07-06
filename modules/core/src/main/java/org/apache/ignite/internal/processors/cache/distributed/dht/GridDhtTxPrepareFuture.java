@@ -93,7 +93,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 
 /**
- *
+ * // TODO IGNITE-2969: synchronize on 'futs'.
  */
 @SuppressWarnings("unchecked")
 public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInternalTx, GridNearTxPrepareResponse>
@@ -244,6 +244,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         this.timeout = timeout;
 
         if (timeout > 0) {
+            // TODO IGNITE-2969: init after 'readyLocks'.
             timeoutObj = new PrepareTimeoutObject();
 
             cctx.time().addTimeoutObject(timeoutObj);
@@ -269,9 +270,6 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
     /** {@inheritDoc} */
     @Override public boolean onOwnerChanged(GridCacheEntryEx entry, GridCacheMvccCandidate owner) {
-        if (isDone() || timedOut)
-            return false;
-
         if (log.isDebugEnabled())
             log.debug("Transaction future received owner changed callback: " + entry);
 
@@ -491,7 +489,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
      * @param res Result.
      */
     public void onResult(UUID nodeId, GridDhtTxPrepareResponse res) {
-        if (isDone() || timedOut) {
+        if (isDone()) {
             if (msgLog.isDebugEnabled()) {
                 msgLog.debug("DHT prepare fut, response for finished future [txId=" + tx.nearXidVersion() +
                     ", dhtTxId=" + tx.xidVersion() +
@@ -553,7 +551,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
     /**
      * Marks all locks as ready for local transaction.
      */
-    private synchronized void readyLocks() {
+    private void readyLocks() {
         // Ready all locks.
         if (log.isDebugEnabled())
             log.debug("Marking all local candidates as ready: " + this);
@@ -584,8 +582,11 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
                 txEntry.cached(entry);
             }
 
-            if (tx.optimistic() && txEntry.explicitVersion() == null)
-                lockKeys.add(txEntry.txKey());
+            if (tx.optimistic() && txEntry.explicitVersion() == null) {
+                synchronized (this){
+                    lockKeys.add(txEntry.txKey());
+                }
+            }
 
             while (true) {
                 try {
@@ -1762,9 +1763,9 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                 err.compareAndSet(null, new IgniteTxTimeoutCheckedException("Failed to acquire lock within " +
                         "provided timeout for transaction [timeout=" + tx.timeout() + ", tx=" + tx + ']'));
-
-                onComplete(null);
             }
+
+            onComplete(null);
         }
 
         /** {@inheritDoc} */

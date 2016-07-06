@@ -327,17 +327,12 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
                 return f;
             }
         }
-        else {
-            // Prepare was called explicitly.
-            if (timeout == -1)
-                fut.onError(timeoutException());
-
+        else
             return fut;
-        }
 
         if (!state(PREPARING)) {
             if (setRollbackOnly()) {
-                if (remainingTime() == -1)
+                if (timeout == -1)
                     fut.onError(new IgniteTxTimeoutCheckedException("Transaction timed out and was rolled back: " +
                         this));
                 else
@@ -427,9 +422,6 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
             assert fut.nearMiniId().equals(nearMiniId) : "Wrong near mini id on existing future " +
                 "[futMiniId=" + fut.nearMiniId() + ", miniId=" + nearMiniId + ", fut=" + fut + ']';
 
-            if (timeout == -1)
-                fut.onError(timeoutException());
-
             // Prepare was called explicitly.
             return chainOnePhasePrepare(fut);
         }
@@ -439,7 +431,7 @@ public class GridDhtTxLocal extends GridDhtTxLocalAdapter implements GridCacheMa
                 if (state() == PREPARED && isSystemInvalidate())
                     fut.complete();
                 if (setRollbackOnly()) {
-                    if (remainingTime() == -1)
+                    if (timeout == -1)
                         fut.onError(new IgniteTxTimeoutCheckedException("Transaction timed out and was rolled back: " +
                             this));
                     else

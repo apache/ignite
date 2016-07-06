@@ -67,7 +67,7 @@ import static org.apache.ignite.transactions.TransactionState.PREPARED;
 import static org.apache.ignite.transactions.TransactionState.PREPARING;
 
 /**
- *
+ * TODO 2969 (synchronization is not needed).
  */
 public class GridNearOptimisticTxPrepareFuture extends GridNearOptimisticTxPrepareFutureAdapter {
     /** */

@@ -1153,13 +1153,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
     }
 
     /** {@inheritDoc} */
-    @Override public long endTime() {
-        long endTime = timeout == 0 ? Long.MAX_VALUE : startTime + timeout;
-
-        return endTime > 0 ? endTime : endTime < 0 ? Long.MAX_VALUE : endTime;
-    }
-
-    /** {@inheritDoc} */
     @Override public boolean timedOut() {
         return timedOut;
     }
@@ -2388,11 +2381,6 @@ public abstract class IgniteTxAdapter extends GridMetadataAwareAdapter
         /** {@inheritDoc} */
         @Override public TransactionProxy proxy() {
             return null;
-        }
-
-        /** {@inheritDoc} */
-        @Override public long endTime() {
-            return 0;
         }
 
         /** {@inheritDoc} */

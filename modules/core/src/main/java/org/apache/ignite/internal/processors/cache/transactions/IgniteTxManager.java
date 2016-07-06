@@ -2062,7 +2062,8 @@ public class IgniteTxManager extends GridCacheSharedManagerAdapter {
 
     /**
      * @param tx Tx. Must be instance of {@link GridNearTxLocal}.
-     * @return Colocated future.
+     * @param cls Future class.
+     * @return Cache future.
      */
     private IgniteInternalFuture mvccFuture(IgniteInternalTx tx, Class<? extends IgniteInternalFuture> cls) {
         assert tx instanceof GridNearTxLocal : tx;

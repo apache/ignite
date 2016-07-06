@@ -128,9 +128,6 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
     /** Lock timeout. */
     private final long timeout;
 
-    /** Timed out. */
-    private volatile boolean timedOut;
-
     /** Filter. */
     private final CacheEntryPredicate[] filter;
 
@@ -529,8 +526,7 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
             log.debug("Received onDone(..) callback [success=" + success + ", err=" + err + ", fut=" + this + ']');
 
         // Local GridDhtLockFuture
-        if (inTx() && cctx.tm().deadlockDetectionEnabled() &&
-            (this.err instanceof IgniteTxTimeoutCheckedException || timedOut))
+        if (inTx() && this.err instanceof IgniteTxTimeoutCheckedException && cctx.tm().deadlockDetectionEnabled())
             return false;
 
         if (isDone())
@@ -1329,12 +1325,14 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
 
         /** {@inheritDoc} */
         @Override public void onTimeout() {
-            timedOut = true;
-
             if (log.isDebugEnabled())
                 log.debug("Timed out waiting for lock response: " + this);
 
             if (inTx() && cctx.tm().deadlockDetectionEnabled()) {
+                synchronized (futs) {
+                    futs.clear(); // Stop response processing.
+                }
+
                 Set<IgniteTxKey> keys = new HashSet<>();
 
                 for (IgniteTxEntry txEntry : tx.allEntries()) {
@@ -1472,8 +1470,8 @@ public final class GridDhtColocatedLockFuture extends GridCompoundIdentityFuture
             }
 
             if (res.error() != null) {
-                if (inTx() && cctx.tm().deadlockDetectionEnabled() &&
-                    (res.error() instanceof IgniteTxTimeoutCheckedException || timedOut))
+                if (inTx() && res.error() instanceof IgniteTxTimeoutCheckedException &&
+                    cctx.tm().deadlockDetectionEnabled())
                     return;
 
                 if (log.isDebugEnabled())

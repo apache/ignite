@@ -422,7 +422,9 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
 
         final ClusterNode n = m.node();
 
-        if (tx.remainingTime() == -1) {
+        long timeout = tx.remainingTime();
+
+        if (timeout == -1) {
             IgniteTxTimeoutCheckedException err = new IgniteTxTimeoutCheckedException("Transaction timed out and " +
                 "was rolled back: " + this);
 
@@ -435,7 +437,7 @@ public class GridNearOptimisticSerializableTxPrepareFuture extends GridNearOptim
             futId,
             tx.topologyVersion(),
             tx,
-            tx.timeout(),
+            timeout,
             m.reads(),
             m.writes(),
             m.near(),

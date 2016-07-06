@@ -963,8 +963,10 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
         Map<UUID, Collection<UUID>> txNodes,
         boolean last
     ) {
+        long timeout = remainingTime();
+
         if (state() != PREPARING) {
-            if (remainingTime() == -1)
+            if (timeout == -1)
                 return new GridFinishedFuture<>(
                     new IgniteTxTimeoutCheckedException("Transaction timed out: " + this));
 
@@ -973,8 +975,6 @@ public class GridNearTxLocal extends GridDhtTxLocalAdapter {
             return new GridFinishedFuture<>(
                 new IgniteCheckedException("Invalid transaction state for prepare [state=" + state() + ", tx=" + this + ']'));
         }
-
-        long timeout = remainingTime();
 
         if (timeout == -1)
             return new GridFinishedFuture<>(timeoutException());

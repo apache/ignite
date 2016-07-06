@@ -98,13 +98,6 @@ public interface IgniteInternalTx extends AutoCloseable {
     public long startTime();
 
     /**
-     * End time of this transaction.
-     *
-     * @return End time.
-     */
-    public long endTime();
-
-    /**
      * Cache transaction isolation level.
      *
      * @return Isolation level.
