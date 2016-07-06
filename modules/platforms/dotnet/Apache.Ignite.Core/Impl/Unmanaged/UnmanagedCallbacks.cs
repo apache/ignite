@@ -21,7 +21,6 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Diagnostics.CodeAnalysis;
-    using System.IO;
     using System.Runtime.InteropServices;
     using System.Threading;
     using Apache.Ignite.Core.Cache.Affinity;
@@ -30,6 +29,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
     using Apache.Ignite.Core.Impl.Binary;
     using Apache.Ignite.Core.Impl.Binary.IO;
     using Apache.Ignite.Core.Impl.Cache;
+    using Apache.Ignite.Core.Impl.Cache.Affinity;
     using Apache.Ignite.Core.Impl.Cache.Query.Continuous;
     using Apache.Ignite.Core.Impl.Cache.Store;
     using Apache.Ignite.Core.Impl.Common;
@@ -166,7 +166,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
         private delegate void OnClientDisconnectedDelegate(void* target);
         private delegate void OnClientReconnectedDelegate(void* target, bool clusterRestarted);
 
-        private delegate long AffinityFunctionInitDelegate(void* target, long memPtr);
+        private delegate long AffinityFunctionInitDelegate(void* target, long memPtr, void* baseFunc);
         private delegate int AffinityFunctionPartitionDelegate(void* target, long ptr, long memPtr);
         private delegate void AffinityFunctionAssignPartitionsDelegate(void* target, long ptr, long inMemPtr, long outMemPtr);
         private delegate void AffinityFunctionRemoveNodeDelegate(void* target, long ptr, long memPtr);
@@ -1109,21 +1109,23 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
         #region AffinityFunction
 
-        private long AffinityFunctionInit(void* target, long memPtr)
+        private long AffinityFunctionInit(void* target, long memPtr, void* baseFunc)
         {
             return SafeCall(() =>
             {
                 using (var stream = IgniteManager.Memory.Get(memPtr).GetStream())
                 {
                     var reader = _ignite.Marshaller.StartUnmarshal(stream);
-
-                    var funcOrTypeName = reader.ReadObject<object>();
-
-                    var func = funcOrTypeName as IAffinityFunction
-                               ?? IgniteUtils.CreateInstance<IAffinityFunction>((string) funcOrTypeName,
-                                   reader.ReadDictionaryAsGeneric<string, object>());
+                        
+                    var func = reader.ReadObjectEx<IAffinityFunction>();
 
                     ResourceProcessor.Inject(func, _ignite);
+
+                    var affBase = func as AffinityFunctionBase;
+
+                    if (affBase != null)
+                        affBase.SetBaseFunction(new PlatformAffinityFunction(
+                            _ignite.InteropProcessor.ChangeTarget(baseFunc), _ignite.Marshaller));
 
                     return _handleRegistry.Allocate(func);
                 }
@@ -1158,38 +1160,7 @@ namespace Apache.Ignite.Core.Impl.Unmanaged
 
                     using (var outStream = IgniteManager.Memory.Get(outMemPtr).GetStream())
                     {
-                        var writer = _ignite.Marshaller.StartMarshal(outStream);
-
-                        var partCnt = 0;
-                        writer.WriteInt(partCnt);  // reserve size
-
-                        foreach (var part in parts)
-                        {
-                            if (part == null)
-                                throw new IgniteException(func.GetType() +
-                                                          ".AssignPartitions() returned invalid partition: null");
-
-                            partCnt++;
-
-                            var nodeCnt = 0;
-                            var cntPos = outStream.Position;
-                            writer.WriteInt(nodeCnt);  // reserve size
-
-                            foreach (var node in part)
-                            {
-                                nodeCnt++;
-                                writer.WriteGuid(node.Id);
-                            }
-
-                            var endPos = outStream.Position;
-                            outStream.Seek(cntPos, SeekOrigin.Begin);
-                            outStream.WriteInt(nodeCnt);
-                            outStream.Seek(endPos, SeekOrigin.Begin);
-                        }
-
-                        outStream.SynchronizeOutput();
-                        outStream.Seek(0, SeekOrigin.Begin);
-                        writer.WriteInt(partCnt);
+                        AffinityFunctionSerializer.WritePartitions(parts, outStream, _ignite.Marshaller);
                     }
                 }
             });

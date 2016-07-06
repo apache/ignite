@@ -17,9 +17,12 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -161,6 +164,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** */
     private volatile IgniteCheckedException stopErr;
+
+    /** */
+    private int longRunningOpsDumpCnt;
+
+    /** */
+    private DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
 
     /** Discovery listener. */
     private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
@@ -1160,6 +1169,100 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
         // Dump IO manager statistics.
         cctx.gridIO().dumpStats();
+    }
+
+    /**
+     * @param timeout Operation timeout.
+     */
+    public void dumpLongRunningOperations(long timeout) {
+        try {
+            GridDhtPartitionsExchangeFuture lastFut = lastInitializedFut;
+
+            // If exchange is in progress it will dump all hanging operations if any.
+            if (lastFut != null && !lastFut.isDone())
+                return;
+
+            long curTime = U.currentTimeMillis();
+
+            boolean found = false;
+
+            IgniteTxManager tm = cctx.tm();
+
+            if (tm != null) {
+                for (IgniteInternalTx tx : tm.activeTransactions()) {
+                    if (curTime - tx.startTime() > timeout) {
+                        found = true;
+
+                        if (longRunningOpsDumpCnt < GridDhtPartitionsExchangeFuture.DUMP_PENDING_OBJECTS_THRESHOLD) {
+                            U.warn(log, "Found long running transaction [startTime=" + formatTime(tx.startTime()) +
+                                ", curTime=" + formatTime(curTime) + ", tx=" + tx + ']');
+                        }
+                        else
+                            break;
+                    }
+                }
+            }
+
+            GridCacheMvccManager mvcc = cctx.mvcc();
+
+            if (mvcc != null) {
+                for (GridCacheFuture<?> fut : mvcc.activeFutures()) {
+                    if (curTime - fut.startTime() > timeout) {
+                        found = true;
+
+                        if (longRunningOpsDumpCnt < GridDhtPartitionsExchangeFuture.DUMP_PENDING_OBJECTS_THRESHOLD) {
+                            U.warn(log, "Found long running cache future [startTime=" + formatTime(fut.startTime()) +
+                                ", curTime=" + formatTime(curTime) + ", fut=" + fut + ']');
+                        }
+                        else
+                            break;
+                    }
+                }
+
+                for (GridCacheFuture<?> fut : mvcc.atomicFutures()) {
+                    if (curTime - fut.startTime() > timeout) {
+                        found = true;
+
+                        if (longRunningOpsDumpCnt < GridDhtPartitionsExchangeFuture.DUMP_PENDING_OBJECTS_THRESHOLD) {
+                            U.warn(log, "Found long running cache future [startTime=" + formatTime(fut.startTime()) +
+                                ", curTime=" + formatTime(curTime) + ", fut=" + fut + ']');
+                        }
+                        else
+                            break;
+                    }
+                }
+            }
+
+            if (found) {
+                if (longRunningOpsDumpCnt < GridDhtPartitionsExchangeFuture.DUMP_PENDING_OBJECTS_THRESHOLD) {
+                    longRunningOpsDumpCnt++;
+
+                    if (IgniteSystemProperties.getBoolean(IGNITE_THREAD_DUMP_ON_EXCHANGE_TIMEOUT, false)) {
+                        U.warn(log, "Found long running cache operations, dump threads.");
+
+                        U.dumpThreads(log);
+                    }
+
+                    U.warn(log, "Found long running cache operations, dump IO statistics.");
+
+                    // Dump IO manager statistics.
+                    cctx.gridIO().dumpStats();
+                }
+            }
+            else
+                longRunningOpsDumpCnt = 0;
+        }
+        catch (Exception e) {
+            U.error(log, "Failed to dump debug information: " + e, e);
+        }
+    }
+
+    /**
+     * @param time Time.
+     * @return Time string.
+     */
+    private String formatTime(long time) {
+        return dateFormat.format(new Date(time));
     }
 
     /**
