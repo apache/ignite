@@ -31,14 +31,13 @@ import java.io.PrintStream;
  */
 public class PlatformDotNetBootstrap extends PlatformAbstractBootstrap {
     /** {@inheritDoc} */
-    @Override public PlatformProcessor start(IgniteConfiguration cfg, @Nullable GridSpringResourceContext springCtx,
-                                             long envPtr, long dataPtr) {
+    @Override public void init(long envPtr) {
         // Initialize console propagation.
         // This call is idempotent, doing it on each node start is fine.
         System.setOut(new PrintStream(new PlatformDotNetConsoleStream(false)));
         System.setErr(new PrintStream(new PlatformDotNetConsoleStream(true)));
 
-        return super.start(cfg, springCtx, envPtr, dataPtr);
+        super.init(envPtr);
     }
 
     /** {@inheritDoc} */

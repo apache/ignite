@@ -61,15 +61,17 @@ public class PlatformIgnition {
         Thread.currentThread().setContextClassLoader(PlatformProcessor.class.getClassLoader());
 
         try {
-            // TODO: We should initialize platform logging BEFORE this step
+            PlatformBootstrap bootstrap = bootstrap(factoryId);
+
+            // This should be done before Spring XML initialization so that redirected stream is picked up.
+            bootstrap.init(envPtr);
+
             IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> cfg = configuration(springCfgPath);
 
             if (gridName != null)
                 cfg.get1().setGridName(gridName);
             else
                 gridName = cfg.get1().getGridName();
-
-            PlatformBootstrap bootstrap = bootstrap(factoryId);
 
             PlatformProcessor proc = bootstrap.start(cfg.get1(), cfg.get2(), envPtr, dataPtr);
 
