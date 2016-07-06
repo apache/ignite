@@ -19,12 +19,17 @@ package org.apache.ignite.source.flink;
 
 
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.datastream.DataStreamSink;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.events.CacheEvent;
 import org.apache.ignite.testframework.junits.common.GridCommonAbstractTest;
+
+import java.util.Iterator;
+import java.util.Map;
 
 /**
  * Tests for {@link IgniteSource}.
@@ -35,10 +40,10 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
     private static final String TEST_CACHE = "testCache";
 
     /** Cache entries count. */
-    private static final int CACHE_ENTRY_COUNT = 1000;
+    private static final int CACHE_ENTRY_COUNT = 10;
 
     /** Streaming events for testing. */
-    private static final long DFLT_STREAMING_EVENT = 1000;
+    private static final long DFLT_STREAMING_EVENT = 10;
 
     /** Ignite instance. */
     private Ignite ignite;
@@ -82,7 +87,7 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
 
         igniteSource.start();
 
-        DataStream<CacheEvent> stream = env.addSource(igniteSource);
+        DataStream<Map> stream = env.addSource(igniteSource);
 
         IgniteCache cache = ignite.cache(TEST_CACHE);
 
@@ -93,9 +98,12 @@ public class FlinkIgniteSourceSelfTest extends GridCommonAbstractTest {
             cnt++;
         }
 
-        // sink data into the grid.
-        stream.print();
-
+        stream.addSink(new SinkFunction<Map>() {
+            @Override
+            public void invoke(Map map) throws Exception {
+                System.out.println(map);
+            }
+        });
         try {
             env.execute();
         }

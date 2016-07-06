@@ -28,9 +28,7 @@ import org.apache.ignite.resources.IgniteInstanceResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -40,7 +38,7 @@ import static org.apache.ignite.events.EventType.EVT_CACHE_OBJECT_PUT;
 /**
  * Apache Flink Ignite source implemented as a RichSourceFunction.
  */
-public class IgniteSource extends RichSourceFunction<CacheEvent>{
+public class IgniteSource extends RichSourceFunction<Map>{
 
     private static final long serialVersionUID = 1L;
 
@@ -159,8 +157,9 @@ public class IgniteSource extends RichSourceFunction<CacheEvent>{
      * @param ctx SourceContext.
      */
     @Override
-    public void run(SourceContext<CacheEvent> ctx) {
+    public void run(SourceContext<Map> ctx) {
         List<CacheEvent> evts = new ArrayList<>(evtBatchSize);
+        Map map = new HashMap();
 
         try{
           while (!stopped) {
@@ -168,10 +167,10 @@ public class IgniteSource extends RichSourceFunction<CacheEvent>{
 
                   if (evtBuf.drainTo(evts, evtBatchSize) > 0) {
                       for (CacheEvent evt : evts) {
-                          ctx.collect(evt);
+                          map.put(evt.key(),evt.newValue());
                       }
-
                   }
+                  ctx.collect(map);
               }
           }
         } catch (Exception e){
