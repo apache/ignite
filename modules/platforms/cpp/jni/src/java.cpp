@@ -2519,16 +2519,22 @@ namespace ignite
                 CONSOLE_LOCK.Leave();
             }
 
-            void JniContext::RemoveConsoleHandler(ConsoleWriteHandler consoleHandler) {
+            int JniContext::RemoveConsoleHandler(ConsoleWriteHandler consoleHandler) {
                 if (!consoleHandler)
                     throw std::invalid_argument("consoleHandler can not be null");
 
                 CONSOLE_LOCK.Enter();
+
+                int oldSize = static_cast<int>(consoleWriteHandlers.size());
                     
                 consoleWriteHandlers.erase(remove(consoleWriteHandlers.begin(), consoleWriteHandlers.end(), 
                     consoleHandler), consoleWriteHandlers.end());
 
+                int removedCnt = static_cast<int>(consoleWriteHandlers.size()) - oldSize;
+
                 CONSOLE_LOCK.Leave();
+
+                return removedCnt;
             }
 
             void JniContext::ThrowToJava(char* msg) {
