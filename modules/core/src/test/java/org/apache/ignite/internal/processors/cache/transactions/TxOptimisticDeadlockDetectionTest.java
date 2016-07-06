@@ -254,7 +254,7 @@ public class TxOptimisticDeadlockDetectionTest extends GridCommonAbstractTest {
                 try (Transaction tx = ignite.transactions().txStart(OPTIMISTIC, REPEATABLE_READ, txTimeout, 0)) {
                     IgniteInternalTx tx0 = ((TransactionProxyImpl)tx).tx();
 
-                    involvedTxs.add(((TransactionProxyImpl)tx).tx());
+                    involvedTxs.add(tx0);
 
                     Integer key = keys.get(0);
 

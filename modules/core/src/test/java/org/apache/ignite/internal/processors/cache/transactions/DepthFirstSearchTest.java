@@ -24,10 +24,12 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 import junit.framework.TestCase;
 import org.apache.ignite.internal.processors.cache.version.GridCacheVersion;
 import org.apache.ignite.internal.util.typedef.F;
+import org.apache.ignite.internal.util.typedef.internal.U;
 
 import static org.apache.ignite.internal.processors.cache.transactions.TxDeadlockDetection.findCycle;
 
@@ -248,6 +250,79 @@ public class DepthFirstSearchTest extends TestCase {
         }};
 
         assertNull(findCycle(wfg, T1));
+    }
+
+    /**
+     * @throws Exception If failed.
+     */
+    public void testRandomNoExceptions() throws Exception {
+        int maxNodesCnt = 100;
+        int minNodesCnt = 10;
+        int maxWaitForNodesCnt = 20;
+
+        int cyclesFound = 0;
+        int cyclesNotFound = 0;
+
+        Random seedRnd = new Random();
+
+        Random rnd = new Random();
+
+        for (int i = 0; i < 50000; i++) {
+            long seed = seedRnd.nextLong();
+
+            rnd.setSeed(seed);
+
+            System.out.println(">>> Iteration " + i + " with seed " + seed);
+
+            int nodesCnt = rnd.nextInt(maxNodesCnt - minNodesCnt) + minNodesCnt;
+
+            Map<GridCacheVersion, Set<GridCacheVersion>> wfg = new HashMap<>();
+
+            for (int j = 0; j < nodesCnt; j++) {
+                if (rnd.nextInt(100) > 30) {
+                    int waitForNodesCnt = rnd.nextInt(maxWaitForNodesCnt);
+
+                    Set<GridCacheVersion> waitForNodes = null;
+
+                    if (waitForNodesCnt > 0) {
+                        waitForNodes = new LinkedHashSet<>();
+
+                        for (int k = 0; k < waitForNodesCnt;) {
+                            int n = rnd.nextInt(nodesCnt);
+
+                            if (n != j) {
+                                waitForNodes.add(new GridCacheVersion(n, 0, 0, 0));
+                                k++;
+                            }
+                        }
+                    }
+
+                    wfg.put(new GridCacheVersion(j, 0, 0, 0), waitForNodes);
+                }
+            }
+
+            for (int j = 0; j < nodesCnt; j++) {
+                try {
+                    List<GridCacheVersion> cycle = findCycle(wfg, new GridCacheVersion(j, 0, 0, 0));
+
+                    if (cycle == null)
+                        cyclesNotFound++;
+                    else
+                        cyclesFound++;
+                }
+                catch (Throwable e) {
+                    U.error(null, "Error during finding cycle in graph: ", e);
+
+                    U.warn(null, "Seed: " + seed);
+
+                    U.warn(null, "Wait-for-graph: " + wfg);
+
+                    fail();
+                }
+            }
+        }
+
+        System.out.println(">>> Test finished. Cycles found: " + cyclesFound + ", cycles not found: " + cyclesNotFound);
     }
 
     /**

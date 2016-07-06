@@ -93,7 +93,7 @@ import static org.apache.ignite.internal.processors.cache.GridCacheOperation.UPD
 import static org.apache.ignite.transactions.TransactionState.PREPARED;
 
 /**
- * // TODO IGNITE-2969: synchronize on 'futs'.
+ *
  */
 @SuppressWarnings("unchecked")
 public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInternalTx, GridNearTxPrepareResponse>
@@ -242,13 +242,6 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         assert nearMap != null;
 
         this.timeout = timeout;
-
-        if (timeout > 0) {
-            // TODO IGNITE-2969: init after 'readyLocks'.
-            timeoutObj = new PrepareTimeoutObject();
-
-            cctx.time().addTimeoutObject(timeoutObj);
-        }
     }
 
     /** {@inheritDoc} */
@@ -275,7 +268,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
         boolean rmv;
 
-        synchronized (this) {
+        synchronized (futs) {
             rmv = lockKeys.remove(entry.txKey());
         }
 
@@ -306,7 +299,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
         if (!locksReady)
             return false;
 
-        synchronized (this) {
+        synchronized (futs) {
             return lockKeys.isEmpty();
         }
     }
@@ -526,26 +519,28 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
      * @return Mini future.
      */
     @SuppressWarnings("ForLoopReplaceableByForEach")
-    private synchronized MiniFuture miniFuture(IgniteUuid miniId) {
-        // We iterate directly over the futs collection here to avoid copy.
-        // Avoid iterator creation.
-        for (int i = 0; i < futs.size(); i++) {
-            IgniteInternalFuture<IgniteInternalTx> fut = futs.get(i);
+    private MiniFuture miniFuture(IgniteUuid miniId) {
+        synchronized (futs) {
+            // We iterate directly over the futs collection here to avoid copy.
+            // Avoid iterator creation.
+            for (int i = 0; i < futs.size(); i++) {
+                IgniteInternalFuture<IgniteInternalTx> fut = futs.get(i);
 
-            if (!isMini(fut))
-                continue;
+                if (!isMini(fut))
+                    continue;
 
-            MiniFuture mini = (MiniFuture)fut;
+                MiniFuture mini = (MiniFuture)fut;
 
-            if (mini.futureId().equals(miniId)) {
-                if (!mini.isDone())
-                    return mini;
-                else
-                    return null;
+                if (mini.futureId().equals(miniId)) {
+                    if (!mini.isDone())
+                        return mini;
+                    else
+                        return null;
+                }
             }
-        }
 
-        return null;
+            return null;
+        }
     }
 
     /**
@@ -583,7 +578,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
             }
 
             if (tx.optimistic() && txEntry.explicitVersion() == null) {
-                synchronized (this){
+                synchronized (futs) {
                     lockKeys.add(txEntry.txKey());
                 }
             }
@@ -991,6 +986,12 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
         readyLocks();
 
+        if (timeout > 0) {
+            timeoutObj = new PrepareTimeoutObject();
+
+            cctx.time().addTimeoutObject(timeoutObj);
+        }
+
         mapIfLocked();
     }
 
@@ -1182,7 +1183,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                     MiniFuture fut;
 
-                    synchronized (this) {
+                    synchronized (futs) {
                         if (timedOut)
                             return;
 
@@ -1301,7 +1302,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
                         MiniFuture fut;
 
-                        synchronized (this) {
+                        synchronized (futs) {
                             if (timedOut)
                                 return;
 
@@ -1754,7 +1755,7 @@ public final class GridDhtTxPrepareFuture extends GridCompoundFuture<IgniteInter
 
         /** {@inheritDoc} */
         @Override public void onTimeout() {
-            synchronized (GridDhtTxPrepareFuture.this) {
+            synchronized (futs) {
                 timedOut = true;
 
                 futs.clear();

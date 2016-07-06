@@ -180,7 +180,6 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
      *
      */
     private void preparePessimistic() {
-        // TODO IGNITE-2969.
         Map<IgniteBiTuple<ClusterNode, Boolean>, GridDistributedTxMapping> mappings = new HashMap<>();
 
         AffinityTopologyVersion topVer = tx.topologyVersion();
@@ -221,6 +220,8 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
 
         checkOnePhase();
 
+        long timeout = tx.remainingTime();
+
         for (final GridDistributedTxMapping m : mappings.values()) {
             final ClusterNode node = m.node();
 
@@ -228,7 +229,7 @@ public class GridNearPessimisticTxPrepareFuture extends GridNearTxPrepareFutureA
                 futId,
                 tx.topologyVersion(),
                 tx,
-                tx.timeout(),
+                timeout,
                 m.reads(),
                 m.writes(),
                 m.near(),

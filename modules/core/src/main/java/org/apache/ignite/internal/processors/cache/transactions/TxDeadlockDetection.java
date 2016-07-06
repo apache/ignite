@@ -463,8 +463,8 @@ public class TxDeadlockDetection {
                 GridCacheVersion txOwner = null;
 
                 for (TxLock lock : e.getValue().txLocks()) {
-                    if (lock.owner()) {
-                        assert txOwner == null;
+                    if (lock.owner() && txOwner == null) {
+                        //assert txOwner == null;
 
                         txOwner = lock.txId();
 
@@ -480,7 +480,7 @@ public class TxDeadlockDetection {
                         continue;
                     }
 
-                    if (lock.candiate()) {
+                    if (lock.candiate() || lock.owner()) {
                         GridCacheVersion txId0 = lock.txId();
 
                         Set<GridCacheVersion> waitForTxs = wfg.get(txId0);
