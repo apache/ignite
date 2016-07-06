@@ -17,12 +17,8 @@
 
 package org.apache.ignite.internal.processors.platform.dotnet;
 
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractBootstrap;
 import org.apache.ignite.internal.processors.platform.PlatformAbstractConfigurationClosure;
-import org.apache.ignite.internal.processors.platform.PlatformProcessor;
-import org.apache.ignite.internal.processors.resource.GridSpringResourceContext;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.PrintStream;
 
@@ -31,13 +27,13 @@ import java.io.PrintStream;
  */
 public class PlatformDotNetBootstrap extends PlatformAbstractBootstrap {
     /** {@inheritDoc} */
-    @Override public void init(long envPtr) {
+    @Override public void init() {
         // Initialize console propagation.
         // This call is idempotent, doing it on each node start is fine.
         System.setOut(new PrintStream(new PlatformDotNetConsoleStream(false)));
         System.setErr(new PrintStream(new PlatformDotNetConsoleStream(true)));
 
-        super.init(envPtr);
+        super.init();
     }
 
     /** {@inheritDoc} */

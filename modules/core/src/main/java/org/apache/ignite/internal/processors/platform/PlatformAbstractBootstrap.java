@@ -50,7 +50,7 @@ public abstract class PlatformAbstractBootstrap implements PlatformBootstrap {
     }
 
     /** {@inheritDoc} */
-    @Override public void init(long envPtr) {
+    @Override public void init() {
         // No-op.
     }
 

@@ -64,7 +64,7 @@ public class PlatformIgnition {
             PlatformBootstrap bootstrap = bootstrap(factoryId);
 
             // This should be done before Spring XML initialization so that redirected stream is picked up.
-            bootstrap.init(envPtr);
+            bootstrap.init();
 
             IgniteBiTuple<IgniteConfiguration, GridSpringResourceContext> cfg = configuration(springCfgPath);
 

@@ -40,7 +40,6 @@ public interface PlatformBootstrap {
     /**
      * Init the bootstrap.
      *
-     * @param envPtr Environment pointer.
      */
-    public void init(long envPtr);
+    public void init();
 }
