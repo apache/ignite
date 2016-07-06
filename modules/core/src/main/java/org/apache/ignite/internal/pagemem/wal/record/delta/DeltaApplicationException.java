@@ -23,6 +23,9 @@ import org.apache.ignite.IgniteCheckedException;
  * Thrown in case when delta application to the page failed.
  */
 public class DeltaApplicationException extends IgniteCheckedException {
+    /** */
+    private static final long serialVersionUID = 0L;
+
     /**
      * @param msg Message.
      */
