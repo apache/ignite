@@ -1524,7 +1524,7 @@ public class IgniteTxHandler {
 
             if (txRecoveryMsgLog.isDebugEnabled()) {
                 txRecoveryMsgLog.debug("Sent tx recovery response [txId=" + req.nearXidVersion() +
-                    ", node=" + nodeId + ']');
+                    ", node=" + nodeId + ", res=" + res + ']');
             }
         }
         catch (ClusterTopologyCheckedException ignored) {
@@ -1547,8 +1547,11 @@ public class IgniteTxHandler {
      * @param res Response.
      */
     protected void processCheckPreparedTxResponse(UUID nodeId, GridCacheTxRecoveryResponse res) {
-        if (txRecoveryMsgLog.isDebugEnabled())
-            txRecoveryMsgLog.debug("Received tx recovery response [txId=" + res.version() + ", node=" + nodeId + ']');
+        if (txRecoveryMsgLog.isDebugEnabled()) {
+            txRecoveryMsgLog.debug("Received tx recovery response [txId=" + res.version() +
+                ", node=" + nodeId +
+                ", res=" + res + ']');
+        }
 
         GridCacheTxRecoveryFuture fut = (GridCacheTxRecoveryFuture)ctx.mvcc().future(res.futureId());
 

@@ -17,6 +17,8 @@
 
 package org.apache.ignite.internal.processors.cache;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -164,6 +166,9 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
     /** */
     private int longRunningOpsDumpCnt;
+
+    /** */
+    private DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss.SSS");
 
     /** Discovery listener. */
     private final GridLocalEventListener discoLsnr = new GridLocalEventListener() {
@@ -1139,9 +1144,7 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
             if (lastFut != null && !lastFut.isDone())
                 return;
 
-            long curTimeMs = U.currentTimeMillis();
-
-            Date curTime = new Date(curTimeMs);
+            long curTime = U.currentTimeMillis();
 
             boolean found = false;
 
@@ -1149,12 +1152,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             if (tm != null) {
                 for (IgniteInternalTx tx : tm.activeTransactions()) {
-                    if (curTimeMs - tx.startTime() > timeout) {
+                    if (curTime - tx.startTime() > timeout) {
                         found = true;
 
                         if (longRunningOpsDumpCnt < GridDhtPartitionsExchangeFuture.DUMP_PENDING_OBJECTS_THRESHOLD) {
-                            U.warn(log, "Found long running transaction [startTime=" + new Date(tx.startTime()) +
-                                ", curTime=" + curTime + ", tx=" + tx + ']');
+                            U.warn(log, "Found long running transaction [startTime=" + formatTime(tx.startTime()) +
+                                ", curTime=" + formatTime(curTime) + ", tx=" + tx + ']');
                         }
                         else
                             break;
@@ -1166,12 +1169,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
 
             if (mvcc != null) {
                 for (GridCacheFuture<?> fut : mvcc.activeFutures()) {
-                    if (curTimeMs - fut.startTime() > timeout) {
+                    if (curTime - fut.startTime() > timeout) {
                         found = true;
 
                         if (longRunningOpsDumpCnt < GridDhtPartitionsExchangeFuture.DUMP_PENDING_OBJECTS_THRESHOLD) {
-                            U.warn(log, "Found long running cache future [startTime=" + new Date(fut.startTime()) +
-                                ", curTime=" + curTime + ", fut=" + fut + ']');
+                            U.warn(log, "Found long running cache future [startTime=" + formatTime(fut.startTime()) +
+                                ", curTime=" + formatTime(curTime) + ", fut=" + fut + ']');
                         }
                         else
                             break;
@@ -1179,12 +1182,12 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
                 }
 
                 for (GridCacheFuture<?> fut : mvcc.atomicFutures()) {
-                    if (curTimeMs - fut.startTime() > timeout) {
+                    if (curTime - fut.startTime() > timeout) {
                         found = true;
 
                         if (longRunningOpsDumpCnt < GridDhtPartitionsExchangeFuture.DUMP_PENDING_OBJECTS_THRESHOLD) {
-                            U.warn(log, "Found long running cache future [startTime=" + new Date(fut.startTime()) +
-                                ", curTime=" + curTime + ", fut=" + fut + ']');
+                            U.warn(log, "Found long running cache future [startTime=" + formatTime(fut.startTime()) +
+                                ", curTime=" + formatTime(curTime) + ", fut=" + fut + ']');
                         }
                         else
                             break;
@@ -1214,6 +1217,14 @@ public class GridCachePartitionExchangeManager<K, V> extends GridCacheSharedMana
         catch (Exception e) {
             U.error(log, "Failed to dump debug information: " + e, e);
         }
+    }
+
+    /**
+     * @param time Time.
+     * @return Time string.
+     */
+    private String formatTime(long time) {
+        return dateFormat.format(new Date(time));
     }
 
     /**

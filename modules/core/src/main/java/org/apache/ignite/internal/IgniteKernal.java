@@ -1078,7 +1078,7 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
         }
 
         final long longOpDumpTimeout =
-            IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, 30_000);
+            IgniteSystemProperties.getLong(IgniteSystemProperties.IGNITE_LONG_OPERATIONS_DUMP_TIMEOUT, 60_000);
 
         if (longOpDumpTimeout > 0) {
             longOpDumpTask = ctx.timeout().schedule(new Runnable() {
@@ -1900,6 +1900,9 @@ public class IgniteKernal implements IgniteEx, IgniteMXBean, Externalizable {
 
             if (metricsLogTask != null)
                 metricsLogTask.close();
+
+            if (longOpDumpTask != null)
+                longOpDumpTask.close();
 
             boolean interrupted = false;
 
