@@ -20,6 +20,7 @@ namespace Apache.Ignite.Core.Tests
     using System;
     using System.IO;
     using System.Text;
+    using System.Text.RegularExpressions;
     using Apache.Ignite.Core.Common;
     using Apache.Ignite.Core.Communication.Tcp;
     using NUnit.Framework;
@@ -113,10 +114,12 @@ namespace Apache.Ignite.Core.Tests
                 var outTxt = _outSb.ToString();
 
                 // Check output from another domain
-                Assert.IsTrue(outTxt.Contains("[ver=2, servers=2, clients=0,"));
                 Assert.IsTrue(outTxt.Contains(">>> Grid name: newDomainGrid"));
 
-                // Check that current domain produces output again
+                // Both domains produce the topology snapshot
+                Assert.AreEqual(2, Regex.Matches(outTxt, "ver=2, servers=2, clients=0,").Count);
+
+                // Check that current domain still produces output
                 Assert.AreEqual(3, ignite.GetCluster().TopologyVersion);
                 Assert.IsTrue(outTxt.Contains("[ver=3, servers=1, clients=0,"));
             }
