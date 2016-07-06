@@ -287,8 +287,6 @@ public abstract class IgniteCountDownLatchAbstractSelfTest extends IgniteAtomics
      * @throws Exception If failed.
      */
     public void testLatchMultinode1() throws Exception {
-        fail("https://issues.apache.org/jira/browse/IGNITE-1802");
-
         if (gridCount() == 1)
             return;
 
