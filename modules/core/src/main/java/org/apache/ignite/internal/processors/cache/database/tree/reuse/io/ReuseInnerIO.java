@@ -47,7 +47,7 @@ public final class ReuseInnerIO extends BPlusInnerIO<Number> {
             PageIdUtils.pageIndex(((ReuseLeafIO)srcIo).getPageId(src, srcIdx)) :
             ((ReuseInnerIO)srcIo).getPageIndex(src, srcIdx);
 
-        store(dst, dstIdx, pageIdx);
+        doStore(dst, offset(dstIdx), pageIdx);
     }
 
     /**
@@ -61,16 +61,16 @@ public final class ReuseInnerIO extends BPlusInnerIO<Number> {
 
     /**
      * @param buf Buffer.
-     * @param idx Index.
+     * @param off Offset in bytes.
      * @param pageIdx Page index.
      */
-    private void store(ByteBuffer buf, int idx, int pageIdx) {
-        buf.putInt(offset(idx), pageIdx);
+    private void doStore(ByteBuffer buf, int off, int pageIdx) {
+        buf.putInt(off, pageIdx);
     }
 
     /** {@inheritDoc} */
-    @Override public void store(ByteBuffer buf, int idx, Number row) {
-        store(buf, idx, row.getClass() == Integer.class ? row.intValue() :
+    @Override public void storeByOffset(ByteBuffer buf, int off, Number row) {
+        doStore(buf, off, row.getClass() == Integer.class ? row.intValue() :
             PageIdUtils.pageIndex(row.longValue()));
     }
 

@@ -52,7 +52,7 @@ public class IgniteCacheDatabaseSharedManager extends GridCacheSharedManagerAdap
 
             pageMem.start();
 
-            meta = new MetadataStorage(pageMem);
+            meta = new MetadataStorage(pageMem, cctx.wal());
         }
     }
 

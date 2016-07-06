@@ -47,11 +47,8 @@ public abstract class BPlusLeafIO<L> extends BPlusIO<L> {
         PageHandler.copyMemory(src, dst, offset(srcIdx), offset(dstIdx), cnt * itemSize);
     }
 
-    /**
-     * @param idx Index of item.
-     * @return Offset.
-     */
-    protected final int offset(int idx) {
+    /** {@inheritDoc} */
+    @Override protected final int offset(int idx) {
         assert idx >= 0: idx;
 
         return ITEMS_OFF + idx * itemSize;

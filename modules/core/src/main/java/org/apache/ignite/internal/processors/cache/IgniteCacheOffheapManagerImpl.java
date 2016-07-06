@@ -97,7 +97,8 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             cctx.shared().database().checkpointReadLock();
 
             try {
-                reuseList = new ReuseList(cctx.cacheId(), dbMgr.pageMemory(), cpus * 2, dbMgr.meta());
+                reuseList = new ReuseList(cctx.cacheId(), dbMgr.pageMemory(), cctx.shared().wal(),
+                    cpus * 2, dbMgr.meta());
                 freeList = new FreeList(cctx, reuseList);
 
                 if (cctx.isLocal()) {
@@ -902,10 +903,10 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             GridCacheContext cctx,
             PageMemory pageMem,
             FullPageId metaPageId,
-            boolean initNew)
-            throws IgniteCheckedException
-        {
-            super(name, cctx.cacheId(), pageMem, metaPageId, reuseList, DataInnerIO.VERSIONS, DataLeafIO.VERSIONS);
+            boolean initNew
+        ) throws IgniteCheckedException {
+            super(name, cctx.cacheId(), pageMem, cctx.shared().wal(), metaPageId,
+                reuseList, DataInnerIO.VERSIONS, DataLeafIO.VERSIONS);
 
             assert rowStore != null;
 
@@ -996,6 +997,17 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     }
 
     /**
+     * @param buf Buffer.
+     * @param off Offset.
+     * @param link Link.
+     * @param hash Hash.
+     */
+    private static void store0(ByteBuffer buf, int off, long link, int hash) {
+        buf.putLong(off, link);
+        buf.putInt(off + 8, hash);
+    }
+
+    /**
      *
      */
     private interface RowLinkIO {
@@ -1017,7 +1029,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
     /**
      *
      */
-    private static class DataInnerIO extends BPlusInnerIO<KeySearchRow> implements RowLinkIO {
+    public static final class DataInnerIO extends BPlusInnerIO<KeySearchRow> implements RowLinkIO {
         /** */
         public static final IOVersions<DataInnerIO> VERSIONS = new IOVersions<>(
             new DataInnerIO(1)
@@ -1031,11 +1043,10 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
 
         /** {@inheritDoc} */
-        @Override public void store(ByteBuffer buf, int idx, KeySearchRow row) {
+        @Override public void storeByOffset(ByteBuffer buf, int off, KeySearchRow row) {
             assert row.link != 0;
 
-            setHash(buf, idx, row.hash);
-            setLink(buf, idx, row.link);
+            store0(buf, off, row.link, row.hash);
         }
 
         /** {@inheritDoc} */
@@ -1052,8 +1063,7 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             int hash = ((RowLinkIO)srcIo).getHash(src, srcIdx);
             long link = ((RowLinkIO)srcIo).getLink(src, srcIdx);
 
-            setHash(dst, dstIdx, hash);
-            setLink(dst, dstIdx, link);
+            store0(dst, offset(dstIdx), link, hash);
         }
 
         /** {@inheritDoc} */
@@ -1063,37 +1073,16 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             return buf.getLong(offset(idx));
         }
 
-        /**
-         * @param buf Buffer.
-         * @param idx Index.
-         * @param link Link.
-         */
-        private void setLink(ByteBuffer buf, int idx, long link) {
-            buf.putLong(offset(idx), link);
-
-            assert getLink(buf, idx) == link;
-        }
-
-
         /** {@inheritDoc} */
         @Override public int getHash(ByteBuffer buf, int idx) {
             return buf.getInt(offset(idx) + 8);
-        }
-
-        /**
-         * @param buf Buffer.
-         * @param idx Index.
-         * @param hash Hash.
-         */
-        private void setHash(ByteBuffer buf, int idx, int hash) {
-            buf.putInt(offset(idx) + 8, hash);
         }
     }
 
     /**
      *
      */
-    private static class DataLeafIO extends BPlusLeafIO<KeySearchRow> implements RowLinkIO {
+    public static final class DataLeafIO extends BPlusLeafIO<KeySearchRow> implements RowLinkIO {
         /** */
         public static final IOVersions<DataLeafIO> VERSIONS = new IOVersions<>(
             new DataLeafIO(1)
@@ -1107,20 +1096,18 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
         }
 
         /** {@inheritDoc} */
-        @Override public void store(ByteBuffer buf, int idx, KeySearchRow row) {
+        @Override public void storeByOffset(ByteBuffer buf, int off, KeySearchRow row) {
             DataRow row0 = (DataRow)row;
 
             assert row0.link != 0;
 
-            setHash(buf, idx, row0.hash);
-            setLink(buf, idx, row0.link);
+            store0(buf, off, row.link, row.hash);
         }
 
         /** {@inheritDoc} */
         @Override public void store(ByteBuffer dst, int dstIdx, BPlusIO<KeySearchRow> srcIo, ByteBuffer src, int srcIdx)
             throws IgniteCheckedException {
-            setHash(dst, dstIdx, getHash(src, srcIdx));
-            setLink(dst, dstIdx, getLink(src, srcIdx));
+            store0(dst, offset(dstIdx), getLink(src, srcIdx), getHash(src, srcIdx));
         }
 
         /** {@inheritDoc} */
@@ -1140,29 +1127,9 @@ public class IgniteCacheOffheapManagerImpl extends GridCacheManagerAdapter imple
             return buf.getLong(offset(idx));
         }
 
-        /**
-         * @param buf Buffer.
-         * @param idx Index.
-         * @param link Link.
-         */
-        private void setLink(ByteBuffer buf, int idx, long link) {
-            buf.putLong(offset(idx), link);
-
-            assert getLink(buf, idx) == link;
-        }
-
         /** {@inheritDoc} */
         @Override public int getHash(ByteBuffer buf, int idx) {
             return buf.getInt(offset(idx) + 8);
-        }
-
-        /**
-         * @param buf Buffer.
-         * @param idx Index.
-         * @param hash Hash.
-         */
-        private void setHash(ByteBuffer buf, int idx, int hash) {
-            buf.putInt(offset(idx) + 8, hash);
         }
     }
 

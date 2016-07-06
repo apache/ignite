@@ -41,10 +41,10 @@ public final class ReuseLeafIO extends BPlusLeafIO<Number> {
     }
 
     /** {@inheritDoc} */
-    @Override public void store(ByteBuffer buf, int idx, Number pageId) {
+    @Override public void storeByOffset(ByteBuffer buf, int off, Number pageId) {
         assert pageId.getClass() == Long.class;
 
-        buf.putLong(offset(idx), pageId.longValue());
+        buf.putLong(off, pageId.longValue());
     }
 
     /** {@inheritDoc} */
