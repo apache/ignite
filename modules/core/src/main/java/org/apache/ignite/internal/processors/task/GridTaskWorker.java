@@ -561,7 +561,7 @@ class GridTaskWorker<T, R> extends GridWorker implements GridTimeoutObject {
             if (node == null)
                 throw new IgniteCheckedException("Node can not be null [mappedJob=" + mappedJob + ", ses=" + ses + ']');
 
-            IgniteUuid jobId = IgniteUuid.fromUuid(node.id());
+            IgniteUuid jobId = IgniteUuid.fromUuid(ctx.localNodeId());
 
             GridJobSiblingImpl sib = new GridJobSiblingImpl(ses.getId(), jobId, node.id(), ctx);
 
