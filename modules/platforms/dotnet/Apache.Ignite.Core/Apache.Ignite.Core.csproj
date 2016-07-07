@@ -86,6 +86,7 @@
     <Compile Include="Binary\BinaryReflectiveSerializer.cs" />
     <Compile Include="Cache\Affinity\AffinityTopologyVersion.cs" />
     <Compile Include="Cache\Affinity\AffinityFunctionContext.cs" />
+    <Compile Include="Common\JavaException.cs" />
     <Compile Include="Impl\Binary\BinaryReflectiveSerializerInternal.cs" />
     <Compile Include="Impl\Binary\IBinarySerializerInternal.cs" />
     <Compile Include="Binary\Package-Info.cs" />

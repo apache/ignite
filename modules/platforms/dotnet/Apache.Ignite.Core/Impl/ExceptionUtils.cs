@@ -118,10 +118,9 @@ namespace Apache.Ignite.Core.Impl
         /// <returns>Exception.</returns>
         public static Exception GetException(IIgnite ignite, string clsName, string msg, string stackTrace, BinaryReader reader = null)
         {
-            ExceptionFactoryDelegate ctor;
+            Exception innerException = string.IsNullOrEmpty(stackTrace) ? null : new JavaException(stackTrace);
 
-            // TODO: Construct InnerException out of StackTrace
-            // TODO: Should it be named "JavaException"?
+            ExceptionFactoryDelegate ctor;
 
             if (Exs.TryGetValue(clsName, out ctor))
             {
@@ -130,24 +129,24 @@ namespace Apache.Ignite.Core.Impl
                 ExceptionFactoryDelegate innerCtor;
 
                 if (match.Success && Exs.TryGetValue(match.Groups[1].Value, out innerCtor))
-                    return ctor(ignite, msg, innerCtor(ignite, match.Groups[2].Value, null));
+                    return ctor(ignite, msg, innerCtor(ignite, match.Groups[2].Value, innerException));
 
-                return ctor(ignite, msg, null);
+                return ctor(ignite, msg, innerException);
             }
 
             if (ClsNoClsDefFoundErr.Equals(clsName, StringComparison.OrdinalIgnoreCase))
                 return new IgniteException("Java class is not found (did you set IGNITE_HOME environment " +
-                    "variable?): " + msg);
+                    "variable?): " + msg, innerException);
 
             if (ClsNoSuchMthdErr.Equals(clsName, StringComparison.OrdinalIgnoreCase))
                 return new IgniteException("Java class method is not found (did you set IGNITE_HOME environment " +
-                    "variable?): " + msg);
+                    "variable?): " + msg, innerException);
 
             if (ClsCachePartialUpdateErr.Equals(clsName, StringComparison.OrdinalIgnoreCase))
                 return ProcessCachePartialUpdateException(ignite, msg, stackTrace, reader);
 
-            return new IgniteException(string.Format("Java exception occurred [class={0}, message={1}, " +
-                                                     "stack trace={2}]", clsName, msg, stackTrace));
+            return new IgniteException(string.Format("Java exception occurred [class={0}, message={1}]", clsName, msg),
+                innerException);
         }
 
         /// <summary>
@@ -159,7 +158,8 @@ namespace Apache.Ignite.Core.Impl
         /// <param name="reader">Reader.</param>
         /// <returns>CachePartialUpdateException.</returns>
         [SuppressMessage("Microsoft.Design", "CA1031:DoNotCatchGeneralExceptionTypes")]
-        private static Exception ProcessCachePartialUpdateException(IIgnite ignite, string msg, string stackTrace, BinaryReader reader)
+        private static Exception ProcessCachePartialUpdateException(IIgnite ignite, string msg, string stackTrace, 
+            BinaryReader reader)
         {
             if (reader == null)
                 return new CachePartialUpdateException(msg, new IgniteException("Failed keys are not available."));
