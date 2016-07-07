@@ -20,9 +20,7 @@ package org.apache.ignite.internal.processors.hadoop;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -395,7 +393,21 @@ public class HadoopMapReduceTest extends HadoopAbstractWordCountTest {
         cfg.setLocalHost("127.0.0.1");
         cfg.setConnectorConfiguration(null);
 
+        HadoopConfiguration hadoopCfg = createHadoopConfiguration();
+
+        if (hadoopCfg != null)
+            cfg.setHadoopConfiguration(hadoopCfg);
+
         return G.start(cfg);
+    }
+
+    /**
+     * Creates custom Hadoop configuration.
+     *
+     * @return The Hadoop configuration.
+     */
+    protected HadoopConfiguration createHadoopConfiguration() {
+        return null;
     }
 
     /**

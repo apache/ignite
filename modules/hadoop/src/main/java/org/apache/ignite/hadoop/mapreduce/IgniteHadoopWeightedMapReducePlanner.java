@@ -17,6 +17,7 @@
 
 package org.apache.ignite.hadoop.mapreduce;
 
+import java.util.LinkedHashSet;
 import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteException;
 import org.apache.ignite.IgniteFileSystem;
@@ -229,7 +230,7 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
                                 res.put(new NodeIdAndLength(id, idToLenEntry.getValue()), id);
                             }
 
-                            return new ArrayList<>(res.values());
+                            return new LinkedHashSet<>(res.values());
                         }
                     }
                 }
@@ -247,7 +248,8 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
      * @return Result.
      */
     private UUID bestMapperNode(@Nullable Collection<UUID> affIds, HadoopMapReducePlanTopology top) {
-        // Priority node, may be null or empty.
+        // Priority node, may be null or empty in case if this is a Hadoop split from a data node that does
+        // not match any Ignite node.
         final @Nullable UUID prioAffId = F.first(affIds);
 
         // Find group with the least weight.
@@ -356,8 +358,11 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
      */
     private Map<UUID, int[]> assignReducers(Collection<HadoopInputSplit> splits, HadoopMapReducePlanTopology top,
         Mappers mappers, int reducerCnt) {
+        // 'reducers' is mapping from node id to number of reducers to be assigned to that node.
         Map<UUID, Integer> reducers = assignReducers0(top, splits, mappers, reducerCnt);
 
+        // Convert the result of previous invocation: number of reducers is converted to same length array filled with
+        // reducer order number:
         int cnt = 0;
 
         Map<UUID, int[]> res = new HashMap<>(reducers.size());
@@ -378,6 +383,7 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
 
     /**
      * Generate reducers.
+     * Determines the number of reducers to be assigned to each node.
      *
      * @param top Topology.
      * @param splits Input splits.
@@ -387,13 +393,17 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
      */
     private Map<UUID, Integer> assignReducers0(HadoopMapReducePlanTopology top, Collection<HadoopInputSplit> splits,
         Mappers mappers, int reducerCnt) {
-        Map<UUID, Integer> res = new HashMap<>();
-
         // Assign reducers to splits.
+        // The map contains hom many reducers should be assigned per split:
         Map<HadoopInputSplit, Integer> splitToReducerCnt = assignReducersToSplits(splits, reducerCnt);
+
+//        int sum = sum(splitToReducerCnt);
+//        assert reducerCnt == sum : "exp: " + reducerCnt + ", act: " + sum;
 
         // Assign as much local reducers as possible.
         int remaining = 0;
+
+        Map<UUID, Integer> res = new HashMap<>();
 
         for (Map.Entry<HadoopInputSplit, Integer> entry : splitToReducerCnt.entrySet()) {
             HadoopInputSplit split = entry.getKey();
@@ -401,6 +411,8 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
 
             if (cnt > 0) {
                 int assigned = assignLocalReducers(split, cnt, top, mappers, res);
+
+                assert assigned <= cnt;
 
                 remaining += cnt - assigned;
             }
@@ -410,6 +422,9 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
         if (remaining > 0)
             assignRemoteReducers(remaining, top, mappers, res);
 
+//        sum = sum(res);
+//        assert reducerCnt == sum : "exp: " + reducerCnt + ", act: " + sum;
+
         return res;
     }
 
@@ -417,11 +432,11 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
      * Assign local split reducers.
      *
      * @param split Split.
-     * @param cnt Reducer count.
+     * @param cnt Reducer count: how many reducers should be assigned for this split.
      * @param top Topology.
      * @param mappers Mappers.
      * @param resMap Reducers result map.
-     * @return Number of assigned reducers.
+     * @return Number of locally assigned reducers.
      */
     private int assignLocalReducers(HadoopInputSplit split, int cnt, HadoopMapReducePlanTopology top, Mappers mappers,
         Map<UUID, Integer> resMap) {
@@ -446,9 +461,40 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
 
         // Update result map.
         if (res > 0)
-            resMap.put(nodeId, res);
+            inc(resMap, nodeId, res);
 
         return res;
+    }
+
+    /**
+     * TODO: Docs
+     * @param reducers
+     * @return summary count.
+     */
+    public static int sum(Map<?, Integer> reducers) {
+        int sum = 0;
+
+        for (Integer i: reducers.values())
+            sum += i;
+
+        return sum;
+    }
+
+    /**
+     * TODO Docs.
+     * @param resMap
+     * @param key
+     * @param increment
+     * @param <K>
+     */
+    public static <K> void inc(Map<K, Integer> resMap, K key, int increment) {
+        assert increment > 0;
+
+        // Update result map.
+        Integer res = resMap.get(key);
+
+        // 1 reducer was added for 'id':
+        resMap.put(key, res == null ? increment : res + increment);
     }
 
     /**
@@ -467,6 +513,7 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
         set.addAll(top.groups());
 
         while (cnt-- > 0) {
+            // The least loaded machine:
             HadoopMapReducePlanGroup grp = set.first();
 
             // Look for affinity nodes.
@@ -509,10 +556,8 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
 
             assert add;
 
-            // Update result map.
-            Integer res = resMap.get(id);
-
-            resMap.put(id, res == null ? 1 : res + 1);
+            // Exactly 1 reducer was added for 'id':
+            inc(resMap, id, 1);
         }
     }
 
@@ -544,10 +589,14 @@ public class IgniteHadoopWeightedMapReducePlanner extends HadoopAbstractMapReduc
         int reducerCnt) {
         Map<HadoopInputSplit, Integer> res = new IdentityHashMap<>(splits.size());
 
+        // reducers per 1 split:
         int base = reducerCnt / splits.size();
 
+        // TODO: may that be not equal to (reducerCnt % splits.size()) ?
         int remainder = reducerCnt - base * splits.size();
 
+        // Not considering remainder, each split gets 'base' reducers.
+        // Distribute the remainder with round-robin strategy:
         for (HadoopInputSplit split : splits) {
             int val = base;
 
