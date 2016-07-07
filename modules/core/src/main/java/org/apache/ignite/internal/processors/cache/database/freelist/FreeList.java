@@ -74,13 +74,40 @@ public class FreeList {
     };
 
     /** */
-    private final PageHandler<FreeTree, Void> removeRow = new PageHandler<FreeTree, Void>() {
-        @Override public Void run(long pageId, Page page, ByteBuffer buf, FreeTree tree, int itemId) throws IgniteCheckedException {
+    private final PageHandler<DataPageIO.FragmentCtx, Void> writeFragmentRow = new PageHandler<DataPageIO.FragmentCtx, Void>() {
+        @Override public Void run(long pageId, Page page, ByteBuffer buf, DataPageIO.FragmentCtx fctx, int entrySize)
+            throws IgniteCheckedException {
+            final CacheDataRow row = fctx.row;
+
+            DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
+
+            io.writeRowFragment(fctx);
+
+            assert fctx.lastIdx >= 0 : fctx.lastIdx;
+
+            fctx.lastLink = PageIdUtils.linkFromDwordOffset(pageId, fctx.lastIdx);
+
+            int freeSpace = io.getFreeSpace(buf);
+
+            // Put our free item.
+            tree(row.partition()).put(new FreeItem(freeSpace, pageId, cctx.cacheId()));
+
+            return null;
+        }
+    };
+
+    /** */
+    private final PageHandler<FreeTree, Long> removeRow = new PageHandler<FreeTree, Long>() {
+        @Override public Long run(long pageId, Page page, ByteBuffer buf, FreeTree tree, int itemId) throws IgniteCheckedException {
             assert tree != null;
 
             DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
 
             assert DataPageIO.check(itemId): itemId;
+
+            final int dataOff = io.getDataOffset(buf, itemId);
+
+            final long nextLink = DataPageIO.getNextFragmentLink(buf, dataOff);
 
             int oldFreeSpace = io.getFreeSpace(buf);
 
@@ -100,7 +127,7 @@ public class FreeList {
                 assert old == null;
             }
 
-            return null;
+            return nextLink;
         }
     };
 
@@ -176,8 +203,19 @@ public class FreeList {
 
         FreeTree tree = tree(partId);
 
+        long nextLink;
+
         try (Page page = pageMem.page(cctx.cacheId(), pageId)) {
-            writePage(pageId, page, removeRow, tree, itemId);
+            nextLink = writePage(pageId, page, removeRow, tree, itemId);
+        }
+
+        while (nextLink != 0) {
+            itemId = PageIdUtils.dwordsOffset(nextLink);
+            pageId = PageIdUtils.pageId(nextLink);
+
+            try (Page page = pageMem.page(cctx.cacheId(), pageId)) {
+                nextLink = writePage(pageId, page, removeRow, tree, itemId);
+            }
         }
     }
 
@@ -211,7 +249,7 @@ public class FreeList {
 
             for (int i = 0; i < chunks; i++) {
                 FreeItem item = take(tree,
-                    new FreeItem(i == 0 ? availablePageSize : freeLast, 0, cctx.cacheId()));
+                    new FreeItem(i == 0 ? freeLast : availablePageSize, 0, cctx.cacheId()));
 
                 try (Page page = item == null ?
                     allocateDataPage(row.partition()) :
@@ -227,7 +265,7 @@ public class FreeList {
                         try {
                             io.initNewPage(buf, page.id());
 
-                            io.writeRowFragment(fctx);
+                            writeFragmentRow.run(page.id(), page, buf, fctx, 0);
                         } finally {
                             page.finishInitialWrite();
                         }
@@ -238,9 +276,7 @@ public class FreeList {
 
                             fctx.buf = buf;
 
-                            final DataPageIO io = DataPageIO.VERSIONS.forPage(buf);
-
-                            io.writeRowFragment(fctx);
+                            writeFragmentRow.run(page.id(), page, buf, fctx, 0);
                         }
                         finally {
                             page.releaseWrite(true);

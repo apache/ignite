@@ -347,6 +347,12 @@ public abstract class IgniteDbPutGetAbstractTest extends GridCommonAbstractTest 
 
             assertEquals(large, entry.getValue());
         }
+
+        cache.remove(0);
+        cache1.remove(1);
+
+        assertNull(cache.get(0));
+        assertNull(cache1.get(1));
     }
 
     /**

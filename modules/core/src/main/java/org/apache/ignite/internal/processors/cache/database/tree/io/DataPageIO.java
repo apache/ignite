@@ -581,6 +581,13 @@ public class DataPageIO extends PageIO {
             // Get the entry size before the actual remove.
             int rmvEntrySize = getEntrySize(buf, getDataOffset(buf, itemId), false);
 
+            // Entry size may have fragment flag set.
+            if ((rmvEntrySize & FRAGMENTED_FLAG) > 0) {
+                rmvEntrySize &= ~FRAGMENTED_FLAG;
+
+                rmvEntrySize += LINK_SIZE;
+            }
+
             int indirectId = 0;
 
             if (itemId >= directCnt) { // Need to remove indirect item.
