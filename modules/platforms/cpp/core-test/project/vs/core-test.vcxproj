@@ -22,6 +22,9 @@
     <ProjectReference Include="..\..\..\binary\project\vs\binary.vcxproj">
       <Project>{4f15669b-92eb-49f0-b774-8f19bae0b960}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\..\common\project\vs\common.vcxproj">
+      <Project>{b63f2e01-5157-4719-8491-0e1c7cd3b701}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\..\..\core\project\vs\core.vcxproj">
       <Project>{e2dea693-f2ea-43c2-a813-053378f6e4db}</Project>
     </ProjectReference>
@@ -36,6 +39,9 @@
   <ItemGroup>
     <ClCompile Include="..\..\src\cache_test.cpp" />
     <ClCompile Include="..\..\src\concurrent_test.cpp" />
+    <ClCompile Include="..\..\src\decimal_test.cpp" />
+    <ClCompile Include="..\..\src\dynamic_size_array_test.cpp" />
+    <ClCompile Include="..\..\src\fixed_size_array_test.cpp" />
     <ClCompile Include="..\..\src\ignite_error_test.cpp" />
     <ClCompile Include="..\..\src\ignition_test.cpp" />
     <ClCompile Include="..\..\src\handle_registry_test.cpp" />
@@ -46,6 +52,7 @@
     <ClCompile Include="..\..\src\cache_query_test.cpp" />
     <ClCompile Include="..\..\src\interop_memory_test.cpp" />
     <ClCompile Include="..\..\src\interop_test.cpp" />
+    <ClCompile Include="..\..\src\bits_test.cpp" />
     <ClCompile Include="..\..\src\teamcity_boost.cpp" />
     <ClCompile Include="..\..\src\teamcity_messages.cpp" />
     <ClCompile Include="..\..\src\transactions_test.cpp" />

@@ -18,6 +18,7 @@
 namespace Apache.Ignite.Core.Cache.Affinity
 {
     using System.Collections.Generic;
+    using System.Diagnostics;
     using Apache.Ignite.Core.Binary;
     using Apache.Ignite.Core.Cluster;
     using Apache.Ignite.Core.Events;
@@ -49,6 +50,14 @@ namespace Apache.Ignite.Core.Cache.Affinity
         /// <param name="reader">The reader.</param>
         internal AffinityFunctionContext(IBinaryRawReader reader)
         {
+            Debug.Assert(reader != null);
+
+            _currentTopologySnapshot = IgniteUtils.ReadNodes(reader);
+            _backups = reader.ReadInt();
+            _currentTopologyVersion = new AffinityTopologyVersion(reader.ReadLong(), reader.ReadInt());
+            _discoveryEvent = EventReader.Read<DiscoveryEvent>(reader);
+
+            // Prev assignment
             var cnt = reader.ReadInt();
 
             if (cnt > 0)
@@ -58,11 +67,6 @@ namespace Apache.Ignite.Core.Cache.Affinity
                 for (var i = 0; i < cnt; i++)
                     _previousAssignment.Add(IgniteUtils.ReadNodes(reader));
             }
-
-            _backups = reader.ReadInt();
-            _currentTopologySnapshot = IgniteUtils.ReadNodes(reader);
-            _currentTopologyVersion = new AffinityTopologyVersion(reader.ReadLong(), reader.ReadInt());
-            _discoveryEvent = EventReader.Read<DiscoveryEvent>(reader);
         }
 
         /// <summary>

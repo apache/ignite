@@ -15,9 +15,11 @@
  * limitations under the License.
  */
 
-#include <cstring>
 #include <string>
 #include <exception>
+#include <vector>
+#include <algorithm>
+#include <stdexcept>
 
 #include "ignite/jni/utils.h"
 #include "ignite/common/concurrent.h"
@@ -363,11 +365,13 @@ namespace ignite
             JniMethod M_PLATFORM_CALLBACK_UTILS_ON_CLIENT_DISCONNECTED = JniMethod("onClientDisconnected", "(J)V", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_ON_CLIENT_RECONNECTED = JniMethod("onClientReconnected", "(JZ)V", true);
 
-            JniMethod M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_INIT = JniMethod("affinityFunctionInit", "(JJ)J", true);
+            JniMethod M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_INIT = JniMethod("affinityFunctionInit", "(JJLorg/apache/ignite/internal/processors/platform/cache/affinity/PlatformAffinityFunctionTarget;)J", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_PARTITION = JniMethod("affinityFunctionPartition", "(JJJ)I", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_ASSIGN_PARTITIONS = JniMethod("affinityFunctionAssignPartitions", "(JJJJ)V", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_REMOVE_NODE = JniMethod("affinityFunctionRemoveNode", "(JJJ)V", true);
             JniMethod M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_DESTROY = JniMethod("affinityFunctionDestroy", "(JJ)V", true);
+            
+            JniMethod M_PLATFORM_CALLBACK_UTILS_CONSOLE_WRITE = JniMethod("consoleWrite", "(Ljava/lang/String;Z)V", true);
 
             const char* C_PLATFORM_UTILS = "org/apache/ignite/internal/processors/platform/utils/PlatformUtils";
             JniMethod M_PLATFORM_UTILS_REALLOC = JniMethod("reallocate", "(JI)V", true);
@@ -436,8 +440,10 @@ namespace ignite
 
             /* STATIC STATE. */
             gcc::CriticalSection JVM_LOCK;
+            gcc::CriticalSection CONSOLE_LOCK;
             JniJvm JVM;
             bool PRINT_EXCEPTION = false;
+            std::vector<ConsoleWriteHandler> consoleWriteHandlers;
 
             /* HELPER METHODS. */
 
@@ -828,7 +834,7 @@ namespace ignite
 
             void RegisterNatives(JNIEnv* env) {
                 {
-					JNINativeMethod methods[59];
+					JNINativeMethod methods[60];
 
                     int idx = 0;
 
@@ -910,6 +916,7 @@ namespace ignite
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_ASSIGN_PARTITIONS, reinterpret_cast<void*>(JniAffinityFunctionAssignPartitions));
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_REMOVE_NODE, reinterpret_cast<void*>(JniAffinityFunctionRemoveNode));
                     AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_AFFINITY_FUNCTION_DESTROY, reinterpret_cast<void*>(JniAffinityFunctionDestroy));
+                    AddNativeMethod(methods + idx++, M_PLATFORM_CALLBACK_UTILS_CONSOLE_WRITE, reinterpret_cast<void*>(JniConsoleWrite));
 
                     jint res = env->RegisterNatives(FindClass(env, C_PLATFORM_CALLBACK_UTILS), methods, idx);
 
@@ -2501,6 +2508,35 @@ namespace ignite
                 }
             }
 
+            void JniContext::SetConsoleHandler(ConsoleWriteHandler consoleHandler) {
+                if (!consoleHandler)
+                    throw std::invalid_argument("consoleHandler can not be null");
+
+                CONSOLE_LOCK.Enter();
+                    
+                consoleWriteHandlers.push_back(consoleHandler);
+
+                CONSOLE_LOCK.Leave();
+            }
+
+            int JniContext::RemoveConsoleHandler(ConsoleWriteHandler consoleHandler) {
+                if (!consoleHandler)
+                    throw std::invalid_argument("consoleHandler can not be null");
+
+                CONSOLE_LOCK.Enter();
+
+                int oldSize = static_cast<int>(consoleWriteHandlers.size());
+                    
+                consoleWriteHandlers.erase(remove(consoleWriteHandlers.begin(), consoleWriteHandlers.end(), 
+                    consoleHandler), consoleWriteHandlers.end());
+
+                int removedCnt = oldSize - static_cast<int>(consoleWriteHandlers.size());
+
+                CONSOLE_LOCK.Leave();
+
+                return removedCnt;
+            }
+
             void JniContext::ThrowToJava(char* msg) {
                 JNIEnv* env = Attach();
 
@@ -2847,8 +2883,9 @@ namespace ignite
                 IGNITE_SAFE_PROC(env, envPtr, OnClientReconnectedHandler, onClientReconnected, clusterRestarted);
             }
             
-            JNIEXPORT jlong JNICALL JniAffinityFunctionInit(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr) {
-                IGNITE_SAFE_FUNC(env, envPtr, AffinityFunctionInitHandler, affinityFunctionInit, memPtr);
+            JNIEXPORT jlong JNICALL JniAffinityFunctionInit(JNIEnv *env, jclass cls, jlong envPtr, jlong memPtr, jobject baseFunc) {                
+                void* baseFuncRef = baseFunc ? env->NewGlobalRef(baseFunc) : nullptr;
+                IGNITE_SAFE_FUNC(env, envPtr, AffinityFunctionInitHandler, affinityFunctionInit, memPtr, baseFuncRef);
             }
 
             JNIEXPORT jint JNICALL JniAffinityFunctionPartition(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr, jlong memPtr) {
@@ -2865,6 +2902,23 @@ namespace ignite
 
             JNIEXPORT void JNICALL JniAffinityFunctionDestroy(JNIEnv *env, jclass cls, jlong envPtr, jlong ptr) {
                 IGNITE_SAFE_PROC(env, envPtr, AffinityFunctionDestroyHandler, affinityFunctionDestroy, ptr);
+            }
+
+            JNIEXPORT void JNICALL JniConsoleWrite(JNIEnv *env, jclass cls, jstring str, jboolean isErr) {
+                CONSOLE_LOCK.Enter();
+
+                if (consoleWriteHandlers.size() > 0) {
+                    ConsoleWriteHandler consoleWrite = consoleWriteHandlers.at(0);
+
+                    const char* strChars = env->GetStringUTFChars(str, nullptr);
+                    const int strCharsLen = env->GetStringUTFLength(str);
+
+                    consoleWrite(strChars, strCharsLen, isErr);
+
+                    env->ReleaseStringUTFChars(str, strChars);
+                }
+
+                CONSOLE_LOCK.Leave();
             }
         }
     }

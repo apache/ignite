@@ -40,6 +40,24 @@
     <ClInclude Include="..\..\include\ignite\ignite_error.h">
       <Filter>Code</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\include\ignite\common\fixed_size_array.h">
+      <Filter>Code\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\common\big_integer.h">
+      <Filter>Code\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\common\dynamic_size_array.h">
+      <Filter>Code\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\common\default_allocator.h">
+      <Filter>Code\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\common\bits.h">
+      <Filter>Code\common</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\include\ignite\common\decimal.h">
+      <Filter>Code\common</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\src\date.cpp">
@@ -62,6 +80,15 @@
     </ClCompile>
     <ClCompile Include="..\..\src\ignite_error.cpp">
       <Filter>Code</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\big_integer.cpp">
+      <Filter>Code\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\decimal.cpp">
+      <Filter>Code\common</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\src\common\bits.cpp">
+      <Filter>Code\common</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
