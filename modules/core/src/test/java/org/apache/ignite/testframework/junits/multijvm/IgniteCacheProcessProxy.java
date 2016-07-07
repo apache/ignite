@@ -735,7 +735,7 @@ public class IgniteCacheProcessProxy<K, V> implements IgniteCache<K, V> {
          * @param loc Local.
          */
         public PartitionSizeLongTask(String cacheName, boolean async, CachePeekMode[] peekModes, int partition, boolean loc) {
-            super(cacheName, async, null);
+            super(cacheName, async);
             this.loc = loc;
             this.peekModes = peekModes;
             this.partition = partition;
