@@ -64,6 +64,7 @@ import org.apache.ignite.internal.processors.cache.query.GridCacheTwoStepQuery;
 import org.apache.ignite.internal.processors.query.GridQueryCacheObjectsIterator;
 import org.apache.ignite.internal.processors.query.h2.GridH2ResultSetIterator;
 import org.apache.ignite.internal.processors.query.h2.IgniteH2Indexing;
+import org.apache.ignite.internal.processors.query.h2.opt.GridH2ValueCacheObject;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlQuerySplitter;
 import org.apache.ignite.internal.processors.query.h2.sql.GridSqlType;
 import org.apache.ignite.internal.processors.query.h2.twostep.messages.GridQueryCancelRequest;
@@ -618,8 +619,12 @@ public class GridReduceQueryExecutor {
 
                             List<Object> resRow  = new ArrayList<>(cols);
 
-                            for (int c = 0; c < cols; c++)
-                                resRow.add(row.getValue(c).getObject());
+                            for (int c = 0; c < cols; c++) {
+                                Value val = row.getValue(c);
+
+                                resRow.add(val instanceof GridH2ValueCacheObject ?
+                                    ((GridH2ValueCacheObject)val).getObjectCopyIfNeeded() : val.getObject());
+                            }
 
                             res.add(resRow);
                         }
