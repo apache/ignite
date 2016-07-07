@@ -519,6 +519,13 @@ public class GridCacheIoManager extends GridCacheSharedManagerAdapter {
 
             break;
 
+            case 59: {
+                GridCacheQueryRequest res = (GridCacheQueryRequest)msg;
+                sendResponseOnFailedMessage(nodeId, res, cctx, ctx.ioPolicy());
+            }
+
+            break;
+
             case 114: {
                 processMessage(nodeId,msg,c);// Will be handled by Rebalance Demander.
             }

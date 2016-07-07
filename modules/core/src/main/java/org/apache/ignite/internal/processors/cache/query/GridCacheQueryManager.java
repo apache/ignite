@@ -2106,6 +2106,13 @@ public abstract class GridCacheQueryManager<K, V> extends GridCacheManagerAdapte
     }
 
     /**
+     * Increment fails counter.
+     */
+    public void onCacheFails() {
+        metrics.incrementOnFails();
+    }
+
+    /**
      * @param duration Execution duration.
      * @param fail {@code true} if execution failed.
      */

@@ -44,6 +44,7 @@ import org.apache.ignite.IgniteCheckedException;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.CacheEntryEventSerializableFilter;
 import org.apache.ignite.cluster.ClusterNode;
+import org.apache.ignite.events.CacheFailEvent;
 import org.apache.ignite.events.CacheQueryExecutedEvent;
 import org.apache.ignite.events.CacheQueryReadEvent;
 import org.apache.ignite.internal.GridKernalContext;
@@ -61,6 +62,7 @@ import org.apache.ignite.internal.processors.cache.GridCacheContext;
 import org.apache.ignite.internal.processors.cache.GridCacheDeploymentManager;
 import org.apache.ignite.internal.processors.cache.distributed.dht.atomic.GridDhtAtomicUpdateFuture;
 import org.apache.ignite.internal.processors.cache.query.CacheQueryType;
+import org.apache.ignite.internal.processors.cache.query.GridCacheQueryManager;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager.JCacheQueryLocalListener;
 import org.apache.ignite.internal.processors.cache.query.continuous.CacheContinuousQueryManager.JCacheQueryRemoteFilter;
 import org.apache.ignite.internal.processors.continuous.GridContinuousBatch;
@@ -84,6 +86,7 @@ import org.jsr166.ConcurrentLinkedDeque8;
 
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_EXECUTED;
 import static org.apache.ignite.events.EventType.EVT_CACHE_QUERY_OBJECT_READ;
+import static org.apache.ignite.events.EventType.EVT_UNHANDLED_EXCEPTION;
 
 /**
  * Continuous query handler.
@@ -648,6 +651,7 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
         }
 
         final Collection<CacheEntryEvent<? extends K, ? extends V>> entries0 = new ArrayList<>(entries.size());
+        GridCacheQueryManager queryManager = cctx.queries();
 
         for (CacheContinuousQueryEntry e : entries) {
             GridCacheDeploymentManager depMgr = cctx.deploy();
@@ -672,10 +676,18 @@ public class CacheContinuousQueryHandler<K, V> implements GridContinuousHandler 
                     entries0.addAll(evts);
             }
             catch (IgniteCheckedException ex) {
+                String shortMsg = "Failed to unmarshal entry.";
                 if (ignoreClsNotFound)
                     assert internal;
                 else
-                    U.error(ctx.log(getClass()), "Failed to unmarshal entry.", ex);
+                    U.error(ctx.log(getClass()), shortMsg, ex);
+
+                queryManager.onCacheFails();
+                ctx.exceptionRegistry().onException(shortMsg, ex);
+
+                ClusterNode node = ctx.discovery().localNode();
+                CacheFailEvent evt = new CacheFailEvent(node, shortMsg, ex, EVT_UNHANDLED_EXCEPTION);
+                ctx.event().record(evt);
             }
         }
 
