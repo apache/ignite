@@ -96,22 +96,27 @@ public class IgniteCacheLockPartitionOnAffinityRunTest extends GridCacheAbstract
     /** Test timeout. */
     private static final long TEST_TIMEOUT = 5 * 60 * 1000;
 
-    /** Test timeout. */
+    /** Timeout between restart of a node. */
     private static final long RESTART_TIMEOUT = 3_000;
-    /** Org ids. */
+
+    /** Name of the cache with special affinity functon (all partition are placed on the first node). */
     private static final String OTHER_CACHE_NAME = "otherCache";
-    /** Org ids. */
+
+    /** Regex for reserved partition exception message (when the partition is mapped to another node). */
     private static final Pattern EXCEPTION_MSG_REGEX = Pattern.compile("Partition \\d+ of the cache \\w+ is not primary on the node");
+
     /** Flag to use custom CollisionSpi that cancels all jobs. */
     private static boolean collisionSpiCancelAll;
 
     /** Node restart thread future. */
     private static IgniteInternalFuture<?> nodeRestartFut;
 
-    /** Org ids. */
+    /** Organization ids. */
     private static List<Integer> orgIds;
-    /** Stop. */
+
+    /** Stop a test flag . */
     private final AtomicBoolean stop = new AtomicBoolean();
+
     /** Test end time. */
     private long endTime = System.currentTimeMillis() + TEST_TIMEOUT - 60_000;
 
